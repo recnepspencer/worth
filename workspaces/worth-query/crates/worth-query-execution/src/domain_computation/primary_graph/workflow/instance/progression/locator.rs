@@ -55,8 +55,9 @@ impl WorkflowAssessmentEvidenceLocator {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionProgressObservation {
+    captured_inputs: Option<std::sync::Arc<crate::domain_computation::primary_graph::workflow::captured_input::WorkflowCapturedInputSupport>>,
     transition: WorkflowTransitionLocator,
     assessment_evidence: Option<EntityId>,
     evidence_bytes: u64,
@@ -71,6 +72,7 @@ impl WorkflowTransitionProgressObservation {
             transition,
             assessment_evidence,
             evidence_bytes: 0,
+            captured_inputs: None,
         }
     }
 
@@ -84,15 +86,22 @@ impl WorkflowTransitionProgressObservation {
     }
 
     pub(in crate::domain_computation::primary_graph) const fn transition(
-        self,
+        &self,
     ) -> WorkflowTransitionLocator {
         self.transition
     }
 
     pub(in crate::domain_computation::primary_graph) const fn assessment_evidence(
-        self,
+        &self,
     ) -> Option<EntityId> {
         self.assessment_evidence
+    }
+    pub(in crate::domain_computation::primary_graph) fn retaining_captured_inputs(
+        mut self,
+        support: Option<std::sync::Arc<crate::domain_computation::primary_graph::workflow::captured_input::WorkflowCapturedInputSupport>>,
+    ) -> Self {
+        self.captured_inputs = support;
+        self
     }
 }
 
@@ -117,6 +126,9 @@ impl WorkflowInstanceProgress {
     ) {
         let locator = observation.transition;
         let node = locator.settlement().node();
+        if let Some(support) = observation.captured_inputs {
+            self.retain_captured_inputs(locator, support);
+        }
         self.retained_evidence_bytes = self
             .retained_evidence_bytes
             .saturating_add(observation.evidence_bytes);

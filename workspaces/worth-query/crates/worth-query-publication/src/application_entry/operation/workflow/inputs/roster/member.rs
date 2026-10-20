@@ -47,6 +47,21 @@ where
         WorthQueryTerminalWorkflowOperation<S, I, P, A>,
         T::Terminal,
     >;
+    fn capture(
+        &self,
+        context: &mut super::super::capture::WorthQueryWorkflowInputCapture<'_, '_, '_, S>,
+    ) -> Result<(), WorthQueryWorkflowInputDenial> {
+        let target = self
+            .target
+            .as_ref()
+            .ok_or(WorthQueryWorkflowInputDenial::UnqualifiedTarget)?;
+        let description = self
+            .description
+            .as_ref()
+            .ok_or(WorthQueryWorkflowInputDenial::AlreadyTransferred)?;
+        context.retain(target, description)?;
+        self.tail.capture(context)
+    }
     fn registration_denial(
         &self,
         binding: &str,

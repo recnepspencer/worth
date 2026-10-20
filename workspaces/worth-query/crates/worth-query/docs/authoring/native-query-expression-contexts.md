@@ -37,8 +37,8 @@ schema has one operand, `source`, whose record fields are the installed query's
 output names. Optional values remain `Option`; relations preserve their
 declared exactly-one, optional-one or many cardinality.
 
-The observed source retains the context and its native dependency footprint
-together. Clones share immutable custody. Dropping the result does not destroy
+The observed row and complete-set sources retain the requested context and its
+native dependency footprint together. Clones share immutable custody. Dropping the result does not destroy
 a source clone's context. A context is the earlier observation, not a live view.
 
 ## How It Executes
@@ -132,6 +132,26 @@ membership changes can stale the later mutation. The retained value itself
 remains immutable. A new read is new source intent, not an automatic retry of
 an ambiguous old mutation.
 
+For the same complete exactly-one context read, an operation may instead bind
+the original complete-set source:
+
+```rust,ignore
+let result = request.query(ReadReadiness(tenant)).execute_with_expression_context()?;
+let original_set = result.result_set_observation().expect("complete one-shot read").clone();
+let original = request.mutate(Check(tenant))
+    .expect_result_set(original_set).idempotency_owned(logical_key)?;
+```
+
+This shares the already-captured context and retains every recursive field and
+adjacency dependency, as well as whole-set selection. The additional dependency
+copy is admitted against retained-byte and custody-work budgets before allocation;
+it does not reevaluate the query or re-project its values. Editing a nested
+context-consumed value stales fresh execution even when root membership is
+unchanged. Row and result-set sources remain different original contracts:
+switching between them is not an equivalent retry. A set from a read without
+context retention remains membership evidence, not value custody. This does not
+add multi-root expression contexts or turn an incomplete set into a complete one.
+
 For an authored context requirement, cold admission checks the complete embedded
 query against its schema declaration and the mutation binding. Installation
 checks the actual binding's source-query correspondence. Native source admission
@@ -191,7 +211,8 @@ individually failed child field.
 
 Do not reconstruct a context from application DTOs, infer correlation by zipping
 lists, coerce omission into `None`, erase units, or treat the record as authority.
-Do not interpret a result-set membership token as whole-result value custody.
+Do not interpret a result-set membership token as whole-result value custody
+unless its original read actually retained the supported native context.
 
 ## Current Limits
 

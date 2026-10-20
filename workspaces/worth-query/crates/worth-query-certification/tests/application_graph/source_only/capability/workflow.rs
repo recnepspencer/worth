@@ -1,6 +1,12 @@
 //! Capability-selected completion acceptance is independent of permission to advance.
+#[path = "workflow/actor_binding.rs"]
+pub(super) mod actor_binding;
+#[path = "workflow/actor_program.rs"]
+mod actor_program;
 #[path = "workflow/bindings.rs"]
 pub(super) mod bindings;
+#[path = "workflow/captured_actor.rs"]
+mod captured_actor;
 #[path = "workflow/program.rs"]
 mod program;
 use super::{grants::*, host, schema::*};

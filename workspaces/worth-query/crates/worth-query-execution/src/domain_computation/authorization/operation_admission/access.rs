@@ -332,6 +332,17 @@ impl<Schema, Operation, Input, Scope>
     pub(in crate::domain_computation) fn bind_source_partition(&mut self, identity: [u8; 32]) {
         self.source_partition_identity = Some(identity);
     }
+    pub(in crate::domain_computation) fn bind_source_expectation_kind(
+        &mut self,
+        kind: crate::domain_computation::primary_graph::WorthQuerySourceExpectationKind,
+    ) {
+        self.source_expectation_kind = Some(kind);
+    }
+    pub(in crate::domain_computation) const fn source_expectation_kind(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQuerySourceExpectationKind> {
+        self.source_expectation_kind
+    }
 
     pub(in crate::domain_computation) const fn source_partition_identity(
         &self,

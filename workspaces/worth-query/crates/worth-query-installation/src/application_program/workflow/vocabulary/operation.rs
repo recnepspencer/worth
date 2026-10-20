@@ -38,6 +38,7 @@ impl InstalledWorkflowOperation {
             && match operation.binding() {
                 Some((identity, marker, posture)) => {
                     self.binding_type == marker
+                        && self.reference.is_workflow_control() == operation.is_workflow_control()
                         && self.binding_identity == identity
                         && self.requires_workflow_authority == posture
                 }

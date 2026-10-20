@@ -88,6 +88,10 @@ name = "native_operation_bodies"
 path = "tests/native_operation_bodies.rs"
 
 [[test]]
+name = "native_workflow_operations"
+path = "tests/native_workflow_operations.rs"
+
+[[test]]
 name = "native_graph_input_guards"
 path = "tests/native_graph_input_guards.rs"
 

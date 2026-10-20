@@ -1665,10 +1665,13 @@ tooling. This guide does not state that application crates may depend on it.
 - `draft.author::<Schema, Spec>(&installed)` rebuilds an `AuthoredWorkflowDefinition` against an installed spec. Operation evidence must exactly match the installed binding: an old absent contract cannot silently acquire an explicit-empty or explicit-required floor. An inbound wait resolves its origin and complete source/effect/protocol/limits contract against the installed typed vocabulary; archive bytes never provide a Rust effect marker. It refuses with `WorthQueryWorkflowDefinitionDraftDenial` and names the node it refuses.
 - A draft carries no instances, approvals, or authority. Decoded bytes mint nothing. The rebuilt definition still validates, binds, and publishes through the ordinary path.
 
-The captured-input profile is currently declarable and portable only: installed
-binding and cold reconstruction refuse it with `CapturedOperationInputsNotSupported`.
-It does not yet publish per-target input records or issue heterogeneous operation
-requirements. See [workflow operation inputs](workflow-operation-inputs.md).
+The captured-input profile publishes target contracts with the native proposal
+and retains reconstructible native support. Target invocation checks its original
+input/key/source/preconditions, while recorded-actor rules still observe the
+original proposal. Owning execution and recovery retain that correspondence;
+fresh authorization remains mandatory. Portable carriage alone grants no
+execution support or authority. This is not a durable whole-command runner. See
+[workflow operation inputs](workflow-operation-inputs.md).
 
 ## Denials
 

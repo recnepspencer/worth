@@ -19,13 +19,12 @@ input source for different portable input contracts. Ordinary authored
 `OperationInput` edges require the source and target to have the same portable
 input type; the resulting target requirement also carries the source proposal's
 exact canonical input identity. A target description must match both. There is
-currently no native proposal funnel for capturing a different input per target
-node. Do not pad unrelated inputs into one type or omit members from identity to
+no implicit per-target capture from registration alone. Do not pad unrelated
+inputs into one type or omit members from identity to
 make such a workflow pass.
 
 `graph.captured_operation_input(&proposal, &target)` now declares the separate
-target-specific profile. It is **declaration/transport only**, not native execution
-support. Validation requires an actual bound native control source, a bound
+target-specific profile. Validation requires a bound native control source, a bound
 guarded non-control target, and exactly one incoming input edge across both
 profiles. The same method is available inside components; expansion preserves
 the qualified correspondence. Ordinary `operation_input` retains its exact old
@@ -34,11 +33,19 @@ Control posture comes from typed binding metadata, never an untrusted boolean or
 a source operation's name. Archive readmission resolves the exact installed
 binding again; pure validation alone does not establish installed support.
 
-Installed binding and cold native reconstruction currently refuse that profile
-with `CapturedOperationInputsNotSupported`. Neither a validated definition,
-archive roundtrip nor `with_at` supplies the missing native proposal records,
-complete-contract replay binding or first-effect checks. Keep that execution path
-blocked until those owners implement it; do not fall back to homogeneous input.
+The native `prepare_workflow_proposal_with_inputs(workflow, instance, &inputs)`
+funnel now borrows the original typed descriptions, publishes target contracts
+with the proposal, binds them into replay identity, and issues target-specific
+requirements. Fresh invocation still authorizes the real action and compares
+the original key, input, resource, source shape/identity and explicit preconditions
+before consuming its source or occurrence authority. Native progress retains
+reconstructible, byte-accounted descriptive support; it is not a host registry.
+The original proposal and the captured target keep separate canonical identities.
+Recorded-actor rules still select the original proposal's actor, not an actor
+supplied in the target input. Owning execution and recovery carry only native
+source locators; each attempt freshly checks the principal and current grants.
+Neither archive bytes nor a successful `with_at` call replaces publication or
+grants permission.
 
 ## Stable Entry Points
 
@@ -48,6 +55,7 @@ Import these through `worth_query_host::facade::application_entry`:
 - `inputs.with::<InstalledAction, _>(original_description)`.
 - `inputs.with_at::<InstalledAction, _>(&qualified_input_node, original_description)`.
 - `inputs.select(workflow_vocabulary, &required)`.
+- `request.mutate(original_control)…prepare_workflow_proposal_with_inputs(workflow, instance, &inputs)`.
 - Selected owner: `required`, `advance`, `close`, `into_operation`.
 - Completed owner: `required`, `close`, `into_operation`.
 - Terminal owner: `close`, `into_operation`; no execution entrance.
@@ -83,7 +91,10 @@ an inspected binding string nor an input pack grants permission.
 
 1. Capture each original intent using `idempotency_owned` and register its actual
    complete installed action before running any effects.
-2. Advance the authored graph through its native control surface. When it returns
+2. For explicit captured-input edges, publish through
+   `prepare_workflow_proposal_with_inputs(workflow, instance, &inputs)` before
+   effects; the complete declared target set must match. Otherwise keep the
+   homogeneous proposal contract. Advance the native control surface; when it returns
    `AwaitingOperation(required)`, pass that requirement to `select`.
 3. Advance the selected owner with a fresh authenticated request on its original
    branch. Native admission, publication, recovery and settlement remain in the
@@ -110,6 +121,10 @@ Given original funded descriptions and complete installed actions:
 let mut inputs = WorthQueryWorkflowOperationInputs::new(program_runtime)
     .with_at::<SubmitAction, _>(&submit_input, original_submit)?
     .with_at::<BeginAction, _>(&begin_input, original_begin)?;
+// For a definition with explicit captured-operation-input edges:
+let proposal = request.mutate(original_control).without_source().idempotency(&proposal_key)
+    .prepare_workflow_proposal_with_inputs(&workflow, instance, &inputs)?.execute();
+// Retain/classify the native proposal outcome before requesting the next need.
 let selected = inputs.select(&workflow, &required)?;
 let progress = selected.advance(&fresh_request);
 ```
@@ -125,9 +140,9 @@ names the next action.
 
 Suppose a graph orders Submit then BeginReview, with both inputs lawfully supplied
 by its native proposal contracts. If BeginReview needs a separately captured
-audit time or another distinct portable input, that heterogeneous proposal path
-is currently unsupported; the input pack alone does not close it.
-Submit publishes a Submitted
+audit time or another distinct portable input, author explicit captured-input
+edges and publish the original descriptions through the native capture funnel.
+The input pack alone does not publish these contracts. Submit publishes a Submitted
 posture and its audit; BeginReview publishes Review and another audit. These are
 two business commits, not an atomic transaction. Capture both original descriptions
 before the first commit. Keep the completed Submit owner while the graph issues
@@ -202,9 +217,14 @@ original input. No scalar input is substituted from recorded digests.
 Action delivery must be source-completion; output-delivery composition is not
 generalized by this API.
 
-Per-target captured input publication and replay binding of those target contracts
-are not implemented by this API. A successful `with` or `with_at` call proves
-neither graph input compatibility nor proposal publication.
+Per-target publication and replay binding belong to the native proposal funnel,
+not registration. A successful `with` or `with_at` call proves neither graph input
+compatibility nor proposal publication. The captured profile currently supports
+one exact native resource per proposal, not cross-subject joins. A new visit to
+the same proposal node needs its own original captures and native occurrence;
+an earlier visit's key cannot spend the new requirement. Native cancellation,
+cold cache reconstruction and keyed recovery preserve their existing owners.
+Recovered `Indeterminate` completion is not a fresh effect or Store crash recovery.
 Keep missing native correspondence blocked instead of adding a host dispatcher
 or weakening final requirement identity checks.
 

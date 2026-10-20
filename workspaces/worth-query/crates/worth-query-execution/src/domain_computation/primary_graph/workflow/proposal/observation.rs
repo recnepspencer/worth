@@ -10,11 +10,18 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
+mod captured;
+mod captured_history;
+mod captured_inventory;
+pub(in crate::domain_computation::primary_graph) use captured_history::observe as observe_captured_workflow_history;
 mod coverage;
+pub(in crate::domain_computation::primary_graph) use captured::target as observe_captured_workflow_input;
 use coverage::observe_coverages;
 pub(in crate::domain_computation::primary_graph) use coverage::observe_workflow_proposal_coverages;
 
 pub(in crate::domain_computation::primary_graph) struct ObservedWorkflowOperationInput {
+    pub(in crate::domain_computation::primary_graph) captured_identity: Option<[u8; 32]>,
+    pub(in crate::domain_computation::primary_graph) captured_count: Option<u64>,
     pub(in crate::domain_computation::primary_graph) input_identity: [u8; 32],
     pub(in crate::domain_computation::primary_graph) proposal: EntityId,
     pub(in crate::domain_computation::primary_graph) proposal_identity: String,
@@ -73,6 +80,9 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
         &layout.proposal.identity,
         &mut facts,
     )?;
+    let captured_profile =
+        captured::profile(execution, runtime, snapshot, layout, proposal, &mut facts)?;
+    let captured_identity = captured_profile.map(|profile| profile.0);
     let operation = required_text(
         execution,
         runtime,
@@ -142,7 +152,8 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
             &input_type,
             input_identity,
             source_identity,
-        ),
+        )
+        .with_captured(captured_identity),
         &mut facts,
         observation_request,
     )?;
@@ -151,7 +162,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
         .proposer
         .observe(runtime, execution, snapshot, proposal, kind, &mut facts)?
         .ok_or_else(|| denial("current proposal lacks proposer"))?;
-    let expected = super::derive_workflow_proposal(
+    let expected = super::derive_captured_workflow_proposal(
         transition_identity,
         &operation,
         &input_type,
@@ -160,6 +171,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
         &node_path,
         coverages,
         proposer,
+        captured_identity,
     );
     if identity != expected.identity()
         || operation != expected_operation
@@ -170,6 +182,8 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_operation_i
     }
     check_request_live(observation_request, "workflow operation input")?;
     Ok(ObservedWorkflowOperationInput {
+        captured_count: captured_profile.map(|profile| profile.1),
+        captured_identity,
         input_identity,
         proposal,
         proposal_identity: identity,
@@ -237,6 +251,12 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal(
             value,
         },
     ];
+    if captured::profile(execution, runtime, snapshot, layout, proposal, &mut facts)?
+        .map(|profile| profile.0)
+        != expected.captured_identity
+    {
+        return Err(denial("workflow proposal captured inventory changed"));
+    }
     if layout
         .proposal
         .proposer
@@ -271,7 +291,8 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal(
             &expected.input_type,
             &expected.input_identity,
             expected.source_identity.as_deref(),
-        ),
+        )
+        .with_captured(expected.captured_identity),
         &mut facts,
         observation_request,
     )?;
@@ -289,102 +310,6 @@ fn denial(subject: &str) -> WorthQueryApplicationAttemptDenial {
     )
 }
 
-fn required_text(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    entity: EntityId,
-    kind: worth_relational::facade::identity::KindId,
-    locator: &worth_foundational::facade::AspectFieldLocator,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<String, WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
-        .ok_or_else(|| denial("workflow operation input field is unavailable"))?;
-    let AspectValue::String(InternedString::Raw(text)) = &value else {
-        return Err(denial("workflow operation input field has the wrong type"));
-    };
-    let text = text.clone();
-    facts.push(WorthQueryApplicationObservedFact::Field {
-        entity_id: entity,
-        kind,
-        locator: locator.clone(),
-        value,
-    });
-    Ok(text)
-}
-
-fn required_u64(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    entity: EntityId,
-    kind: worth_relational::facade::identity::KindId,
-    locator: &worth_foundational::facade::AspectFieldLocator,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<u64, WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
-        .ok_or_else(|| denial("workflow proposal numeric field is unavailable"))?;
-    let AspectValue::UInt64(number) = value else {
-        return Err(denial("workflow proposal numeric field has the wrong type"));
-    };
-    facts.push(WorthQueryApplicationObservedFact::Field {
-        entity_id: entity,
-        kind,
-        locator: locator.clone(),
-        value: AspectValue::UInt64(number),
-    });
-    Ok(number)
-}
-
-fn optional_identity(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    entity: EntityId,
-    kind: worth_relational::facade::identity::KindId,
-    locator: &worth_foundational::facade::AspectFieldLocator,
-    facts: &mut Vec<WorthQueryApplicationObservedFact>,
-) -> Result<Option<[u8; 32]>, WorthQueryApplicationAttemptDenial> {
-    let Some(value) = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
-    else {
-        return Ok(None);
-    };
-    let AspectValue::String(InternedString::Raw(text)) = &value else {
-        return Err(denial(
-            "workflow operation source identity has the wrong type",
-        ));
-    };
-    let identity = decode_identity(text)
-        .ok_or_else(|| denial("workflow operation source identity is malformed"))?;
-    facts.push(WorthQueryApplicationObservedFact::Field {
-        entity_id: entity,
-        kind,
-        locator: locator.clone(),
-        value,
-    });
-    Ok(Some(identity))
-}
-
-pub(in crate::domain_computation::primary_graph) fn decode_identity(
-    text: &str,
-) -> Option<[u8; 32]> {
-    if text.len() != 64 || !text.is_ascii() {
-        return None;
-    }
-    let mut identity = [0_u8; 32];
-    for (index, byte) in identity.iter_mut().enumerate() {
-        *byte = u8::from_str_radix(&text[index * 2..index * 2 + 2], 16).ok()?;
-    }
-    Some(identity)
-}
-
-#[cfg(test)]
-mod identity_tests {
-    #[test]
-    fn proposal_identity_rejects_utf8_split_before_slicing() {
-        let corrupt = format!("aé{}", "0".repeat(61));
-        assert_eq!(corrupt.len(), 64);
-        assert!(super::decode_identity(&corrupt).is_none());
-        assert_eq!(super::decode_identity(&"0".repeat(64)), Some([0; 32]));
-    }
-}
+mod fields;
+pub(in crate::domain_computation::primary_graph) use fields::decode_identity;
+use fields::{optional_identity, required_text, required_u64};

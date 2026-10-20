@@ -1,3 +1,5 @@
+#[path = "operation/actor_origin.rs"]
+mod actor_origin;
 #[path = "operation/approval_denial.rs"]
 mod approval_denial;
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
@@ -45,10 +47,13 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowOperation<Schema, Operatio
 /// authority slot that lets exactly one matching effect run.
 #[derive(Clone, Debug)]
 pub struct RequiredWorkflowOperation {
+    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) captured_input:
+        Option<crate::domain_computation::primary_graph::WorkflowCapturedInputContract>,
     pub(super) branch: crate::basis::WorthQueryProductBranch,
     pub(super) instance: worth_relational::facade::identity::EntityId,
     original_instance: super::super::super::PublishedWorkflowInstanceRef,
     original_runtime: u64,
+    original_program_revision: ApplicationProgramRevision,
     original_sources: Option<super::super::actor_context::OriginalActorSources>,
     pub(super) node_path: String,
     pub(super) transition_identity: String,
@@ -69,6 +74,8 @@ pub struct WorkflowOperationAuthoritySlot {
 }
 
 pub struct WorkflowOperationAuthority {
+    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) captured_input:
+        Option<crate::domain_computation::primary_graph::WorkflowCapturedInputContract>,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) operation:
         String,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) binding:
@@ -125,29 +132,13 @@ impl WorkflowOperationAuthoritySlot {
 }
 
 impl RequiredWorkflowOperation {
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn original_sources(
-        &self,
-    ) -> Option<&super::super::actor_context::OriginalActorSources> {
-        self.original_sources.as_ref()
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn original_runtime(
-        &self,
-    ) -> u64 {
-        self.original_runtime
-    }
-    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn original_instance(
-        &self,
-    ) -> &super::super::super::PublishedWorkflowInstanceRef {
-        &self.original_instance
-    }
-
     pub fn workflow_execution_requirements(&self) -> &worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements{
         &self.workflow_execution_requirements
     }
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn from_selected(
         branch: crate::basis::WorthQueryProductBranch,
         original_runtime: u64,
+        original_program_revision: ApplicationProgramRevision,
         original_instance: super::super::super::PublishedWorkflowInstanceRef,
         original_sources: Option<super::super::actor_context::OriginalActorSources>,
         node_path: String,
@@ -159,10 +150,12 @@ impl RequiredWorkflowOperation {
         authority: Option<WorkflowOperationAuthority>,
     ) -> Self {
         Self {
+            captured_input: None,
             branch,
             instance: original_instance.entity_id(),
             original_instance,
             original_runtime,
+            original_program_revision,
             original_sources,
             node_path,
             transition_identity,
@@ -182,6 +175,14 @@ impl RequiredWorkflowOperation {
 
     pub const fn instance(&self) -> worth_relational::facade::identity::EntityId {
         self.instance
+    }
+
+    #[doc(hidden)]
+    pub fn captured_input_contract(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+    ) -> Option<&crate::domain_computation::primary_graph::WorkflowCapturedInputContract> {
+        self.captured_input.as_ref()
     }
 
     pub const fn branch(&self) -> crate::basis::WorthQueryProductBranch {
@@ -254,6 +255,7 @@ impl WorkflowOperationAuthority {
         >,
     ) -> Self {
         Self {
+            captured_input: None,
             operation,
             binding,
             transition_identity,

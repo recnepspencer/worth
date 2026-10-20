@@ -99,6 +99,7 @@ pub(super) fn lower_platform_entities(
             identities[13],
             identities[14],
             identities[16],
+            identities[17],
         ],
         subject_kinds,
     )?;

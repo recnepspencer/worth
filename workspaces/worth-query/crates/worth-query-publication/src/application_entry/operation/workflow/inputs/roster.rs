@@ -59,6 +59,11 @@ pub trait WorthQueryWorkflowInputList<S: ApplicationSchema, P: ApplicationProgra
     type Completed;
     type Terminal;
     #[doc(hidden)]
+    fn capture(
+        &self,
+        context: &mut super::capture::WorthQueryWorkflowInputCapture<'_, '_, '_, S>,
+    ) -> Result<(), WorthQueryWorkflowInputDenial>;
+    #[doc(hidden)]
     fn registration_denial(
         &self,
         binding: &str,

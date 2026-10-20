@@ -19,7 +19,7 @@ use crate::domain_computation::primary_graph::workflow::{
         admit_workflow_transition, select_proposal_replay_transition, select_proposal_transition,
     },
     proposal::{
-        derive_workflow_proposal, derive_workflow_proposal_context_identity,
+        derive_captured_workflow_proposal, derive_workflow_proposal_context_identity,
         observe_workflow_proposal, visit_workflow_proposal_facts, WorkflowProposalCoverageMeaning,
     },
 };
@@ -56,6 +56,7 @@ where
         instance: super::PublishedWorkflowInstanceRef,
         input_identity: [u8; 32],
         source_identity: Option<[u8; 32]>,
+        mut captured: crate::domain_computation::primary_graph::WorkflowCapturedInputs,
         clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
     ) -> Result<
         PreparedWorkflowProposal<Schema, Operation, Input, Scope>,
@@ -153,12 +154,16 @@ where
                     input_type.as_str(),
                     input_identity,
                     source_identity,
+                    &captured,
                 )?
             }
             Err(error) => return Err(error),
         };
         let coverages = self.proposal_coverages(&compiled, selected.node())?;
-        let proposal = derive_workflow_proposal(
+        captured.validate(&compiled, selected.node()).map_err(|_| {
+            denial("captured workflow target inputs do not match the pinned definition")
+        })?;
+        let mut proposal = derive_captured_workflow_proposal(
             selected.identity(),
             Operation::IDENTIFIER,
             input_type.as_str(),
@@ -167,7 +172,10 @@ where
             selected.node_path(),
             coverages,
         crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission).entity(),
+        captured.identity,
     );
+        proposal.captured = captured.targets;
+        facts.append(&mut captured.facts);
         let replay = !replay_facts.is_empty();
         facts.append(&mut replay_facts);
         if replay {
@@ -219,7 +227,7 @@ where
             Some(admitted.prepare_progress_update(
                 worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
                 None,
-            )?)
+            )?.retaining_captured_inputs(proposal.take_captured_support()?))
         };
         Ok(PreparedWorkflowProposal {
             program: WorthQueryApplicationEffectProgram {
@@ -247,6 +255,7 @@ where
             input_type: input_type.as_str().to_owned(),
             input_identity,
             source_identity,
+            captured_identity: captured.identity,
             progress_update,
         })
     }
@@ -262,6 +271,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         input_type: &str,
         input_identity: [u8; 32],
         source_identity: Option<[u8; 32]>,
+        captured: &crate::domain_computation::primary_graph::WorkflowCapturedInputs,
     ) -> Result<
         (
             crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowTransition,
@@ -294,7 +304,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             ) else {
                 continue;
             };
-            let proposal = derive_workflow_proposal(
+            let proposal = derive_captured_workflow_proposal(
                 selected.identity(),
                 operation,
                 input_type,
@@ -303,6 +313,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 selected.node_path(),
                 self.proposal_coverages(compiled, selected.node())?,
         crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission).entity(),
+        captured.identity,
     );
             let proposal_facts = self.lease.handle().with_runtime(execution, |runtime| {
                 observe_workflow_proposal(

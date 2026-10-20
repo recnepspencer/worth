@@ -74,6 +74,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowTransition
 {
+    pub(super) captured_inputs: Option<std::sync::Arc<crate::domain_computation::primary_graph::workflow::captured_input::WorkflowCapturedInputSupport>>,
     pub(in crate::domain_computation::primary_graph::application_attempt) entity: EntityId,
     pub(in crate::domain_computation::primary_graph::application_attempt) identity: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) settlement:

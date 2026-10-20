@@ -4,6 +4,15 @@ use super::{
 use sha2::{Digest, Sha256};
 
 impl WorthQueryApplicationIdempotencyBinding {
+    pub(in crate::domain_computation::primary_graph) fn matches_captured_workflow_contract(
+        &self,
+        expected: &crate::domain_computation::primary_graph::WorkflowCapturedInputContract,
+    ) -> bool {
+        self.workflow_client_key_identity == Some(expected.key)
+            && self.source_identity == expected.source.map(|source| source.1)
+            && self.source_partition_identity == expected.source.map(|source| source.2)
+            && self.intent_identity == expected.input
+    }
     pub(in crate::domain_computation::primary_graph) const fn bind_workflow_support(
         mut self,
         identity: &[u8; 32],

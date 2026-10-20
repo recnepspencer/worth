@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 use super::custody_work::RetainedCustodyWork;
+mod result_set_footprint;
 use super::{
     admit_request, denial, validate_authentication_lifetime, validate_basis_lifetime,
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,
@@ -19,6 +20,7 @@ use crate::domain_computation::primary_graph::application_query::{
     WorthQueryApplicationProjection, WorthQueryApplicationQueryAccessReceipt,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use result_set_footprint::ResultSetFootprint;
 
 pub(in crate::domain_computation::primary_graph::application_query) fn finalize_one_shot<
     Schema,
@@ -85,6 +87,13 @@ where
     if let [footprint] = source_footprints.as_mut_slice() {
         footprint.root_selection = Some(std::sync::Arc::clone(&result_set_selection));
     }
+    let set_footprint = ResultSetFootprint::prepare(
+        plan.scope.entity_id(),
+        result_set_selection,
+        expression_context.is_some(),
+        &source_footprints,
+    )
+    .map_err(|kind| denial(kind, plan.query.name(), plan.query.name()))?;
     let request = plan.controls.request_scope();
     let basis_identity = plan.basis.identity().clone();
     let basis_version = plan.basis.version_id();
@@ -141,30 +150,6 @@ where
                 plan.query.name(),
             )
         })?;
-    let descriptor_bytes = plan
-        .query
-        .name()
-        .len()
-        .checked_add(basis_identity.branch_id().0.len())
-        .and_then(|bytes| bytes.checked_add(std::mem::size_of::<String>()))
-        .and_then(|bytes| {
-            bytes.checked_add(std::mem::size_of::<
-                worth_relational::facade::history::BranchId,
-            >())
-        })
-        .and_then(|bytes| {
-            bytes.checked_add(std::mem::size_of::<
-                super::super::resource_lifecycle::WorthQueryRetainedSourceCharge,
-            >())
-        })
-        .and_then(|bytes| bytes.checked_add(6 * std::mem::size_of::<usize>()))
-        .ok_or_else(|| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?;
     // Custody copies are retention, not reading: the receipt's work and the
     // Query's declared limit cover only what the read examined.
     let custody = RetainedCustodyWork::of(
@@ -173,9 +158,17 @@ where
         plan.query.name(),
         basis_identity.branch_id(),
     )
+    .and_then(|work| work.with_source_footprint(set_footprint.copy_bytes()))
     .ok_or_else(|| {
         denial(
             WorthQueryApplicationOneShotDenialKind::WorkLimitExceeded,
+            plan.query.name(),
+            plan.query.name(),
+        )
+    })?;
+    let descriptor_bytes = custody.descriptor_retained_bytes().ok_or_else(|| {
+        denial(
+            WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded,
             plan.query.name(),
             plan.query.name(),
         )
@@ -245,6 +238,7 @@ where
             })?;
     }
     let query_identifier = std::sync::Arc::new(plan.query.name().to_owned());
+    let result_set_footprint = set_footprint.materialize();
     let branch = std::sync::Arc::new(basis_identity.branch_id().clone());
     let descriptor_charge = std::sync::Arc::new(descriptor_charge);
     let mut observed_sources = Vec::with_capacity(source_footprints.len());
@@ -283,14 +277,6 @@ where
             _marker: PhantomData,
         });
     }
-    let result_set_footprint = super::super::observed_source::WorthQueryObservedSourceFootprint {
-        root: plan.scope.entity_id(),
-        complete: true,
-        entities: Vec::new(),
-        aspects: Vec::new(),
-        adjacencies: Vec::new(),
-        root_selection: Some(result_set_selection),
-    };
     let result_set_meaning = application
         .source_meanings
         .intern_result_set(
@@ -308,7 +294,7 @@ where
         })?;
     let result_set_observation =
         super::super::WorthQueryObservedResultSet::new(super::super::WorthQueryObservedSource {
-            expression_context: None,
+            expression_context,
             runtime_authority: plan.runtime_authority.as_u64(),
             schema_binding: plan.query.binding_identity().clone(),
             query_identity: plan.query.identity().clone(),

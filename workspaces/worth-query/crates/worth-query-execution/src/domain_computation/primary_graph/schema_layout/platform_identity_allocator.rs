@@ -5,16 +5,16 @@ use super::{contract_space_exhausted, WorthQueryPrimaryGraphInstallationDenial};
 
 pub(super) fn allocate_platform_aspect_identities(
     catalog: &WorthQueryInstalledApplicationSchemaContractCatalog,
-) -> Result<[AspectIdentity; 17], WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<[AspectIdentity; 18], WorthQueryPrimaryGraphInstallationDenial> {
     allocate_after(catalog.maximum_aspect_identity())
 }
 
 fn allocate_after(
     maximum_application_identity: Option<AspectIdentity>,
-) -> Result<[AspectIdentity; 17], WorthQueryPrimaryGraphInstallationDenial> {
+) -> Result<[AspectIdentity; 18], WorthQueryPrimaryGraphInstallationDenial> {
     let maximum = maximum_application_identity.map_or(0, |identity| identity.0);
     let mut next = maximum;
-    let mut identities = [AspectIdentity(0); 17];
+    let mut identities = [AspectIdentity(0); 18];
     for identity in &mut identities {
         next = next.checked_add(1).ok_or_else(contract_space_exhausted)?;
         *identity = AspectIdentity(next);
@@ -39,16 +39,16 @@ mod tests {
     }
 
     #[test]
-    fn maximum_minus_seventeen_is_the_last_successful_application_identity() {
+    fn maximum_minus_eighteen_is_the_last_successful_application_identity() {
         assert_eq!(
-            allocate_after(Some(AspectIdentity(u64::MAX - 17))).unwrap(),
-            std::array::from_fn(|index| AspectIdentity(u64::MAX - 16 + index as u64))
+            allocate_after(Some(AspectIdentity(u64::MAX - 18))).unwrap(),
+            std::array::from_fn(|index| AspectIdentity(u64::MAX - 17 + index as u64))
         );
     }
 
     #[test]
-    fn final_seventeen_identity_positions_deny_platform_allocation() {
-        for maximum in (u64::MAX - 16)..=u64::MAX {
+    fn final_eighteen_identity_positions_deny_platform_allocation() {
+        for maximum in (u64::MAX - 17)..=u64::MAX {
             let denial = allocate_after(Some(AspectIdentity(maximum))).unwrap_err();
             assert_eq!(
                 denial.kind(),

@@ -154,6 +154,11 @@ where
         if !required.authority_slot().was_issued() {
             return Err(WorthQueryWorkflowOperationBindingDenial::AuthorityUnavailable);
         }
+        self.workflow_captured_input = required
+            .captured_input_contract(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+            )
+            .cloned();
         Ok(self.bind_workflow_transition(
             *required.transition_identity_bytes(),
             input,
@@ -199,6 +204,11 @@ where
             })
             .map_err(WorthQueryWorkflowOperationBindingDenial::ExecutionRequest)??;
 
+        self.workflow_captured_input = required
+            .captured_input_contract(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+            )
+            .cloned();
         Ok(self.bind_workflow_recovery_transition(*required.transition_identity_bytes(), input))
     }
 

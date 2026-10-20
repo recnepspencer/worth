@@ -24,6 +24,12 @@ use worth_query_execution::{
 /// Registration returns original inputs; failed native binding restores the entry.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowInputDenial {
+    CaptureAdmission(crate::application_entry::WorthQueryApplicationRequestMutationDenial),
+    Capture(
+        worth_query_execution::publication_boundary::workflow_proposal::WorkflowCapturedInputDenial,
+    ),
+    CaptureBranchMismatch,
+    UnqualifiedTarget,
     DuplicateBinding,
     DuplicateTarget,
     NotGuarded,
@@ -187,5 +193,27 @@ impl<
         self.roster
             .select(&self.runtime, workflow, required)
             .map(WorthQuerySelectedWorkflowOperation::new)
+    }
+
+    pub(in crate::application_entry) fn prepare_capture(
+        &self,
+        request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, S>,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+        selected: &worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<'_, S>,
+    ) -> Result<Vec<(ApplicationWorkflowNodeIdentity,
+    worth_query_execution::publication_boundary::workflow_proposal::PreparedWorkflowCapturedInput)>, WorthQueryWorkflowInputDenial>{
+        if !std::ptr::eq(self.runtime.runtime(), request.application) {
+            return Err(WorthQueryWorkflowInputDenial::Construction(
+                WorthQueryOperationConstructionDenial::ForeignRuntime,
+            ));
+        }
+        let mut context = super::capture::WorthQueryWorkflowInputCapture {
+            request,
+            phase,
+            selected,
+            inputs: Vec::new(),
+        };
+        self.roster.capture(&mut context)?;
+        Ok(context.inputs)
     }
 }

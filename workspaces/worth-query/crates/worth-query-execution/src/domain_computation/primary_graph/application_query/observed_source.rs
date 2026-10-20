@@ -25,6 +25,7 @@ pub(crate) mod retained_dependencies;
 mod retained_parameters;
 mod root_selection;
 mod scope_selector;
+mod workflow_capture;
 pub(in crate::domain_computation::primary_graph) use admitted_clone::WorthQueryObservedSourceCloneStop;
 pub(in crate::domain_computation::primary_graph) use admitted_epoch::WorthQueryObservedEpochStop;
 pub use denial::{WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind};
@@ -40,8 +41,23 @@ pub use result_set::WorthQueryObservedResultSet;
 /// Pass it to `bind_idempotency` so the idempotency binding covers that source.
 #[derive(Clone, Copy)]
 pub struct WorthQueryBoundSourceExpectation {
+    kind: WorthQuerySourceExpectationKind,
     identity: [u8; 32],
     partition_identity: [u8; 32],
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation) enum WorthQuerySourceExpectationKind {
+    Row,
+    ResultSet,
+}
+impl WorthQuerySourceExpectationKind {
+    pub(in crate::domain_computation) const fn code(self) -> u64 {
+        match self {
+            Self::Row => 1,
+            Self::ResultSet => 2,
+        }
+    }
 }
 
 impl WorthQueryBoundSourceExpectation {

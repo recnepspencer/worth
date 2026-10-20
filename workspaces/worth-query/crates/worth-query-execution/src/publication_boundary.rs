@@ -103,6 +103,10 @@ pub mod workflow_proposal {
         PublishedWorkflowProposalRef, WorkflowProposalBindingDenial, WorkflowProposalOutcome,
         WorkflowProposalPreparationDenial, WorthQueryWorkflowProposalAdapter,
     };
+    pub use crate::domain_computation::primary_graph::{
+        PreparedWorkflowCapturedInput, WorkflowCapturedInputContract, WorkflowCapturedInputDenial,
+        WorkflowCapturedInputSource, WorkflowCapturedInputs,
+    };
 }
 
 /// Opaque original-discovery evidence for Publication's complete-set guard.

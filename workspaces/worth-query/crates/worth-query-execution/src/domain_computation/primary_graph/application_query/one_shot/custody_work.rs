@@ -18,6 +18,19 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Retai
 }
 
 impl RetainedCustodyWork {
+    pub(super) fn with_source_footprint(mut self, bytes: usize) -> Option<Self> {
+        self.descriptor = self.descriptor.checked_add(bytes)?;
+        Some(self)
+    }
+    pub(super) fn descriptor_retained_bytes(self) -> Option<usize> {
+        self.descriptor
+            .checked_add(std::mem::size_of::<String>())?
+            .checked_add(std::mem::size_of::<BranchId>())?
+            .checked_add(std::mem::size_of::<
+                super::super::resource_lifecycle::WorthQueryRetainedSourceCharge,
+            >())?
+            .checked_add(6 * std::mem::size_of::<usize>())
+    }
     pub(in crate::domain_computation::primary_graph::application_query) fn of(
         scope_locator: &AspectFieldLocator,
         scope_value: &AspectValue,

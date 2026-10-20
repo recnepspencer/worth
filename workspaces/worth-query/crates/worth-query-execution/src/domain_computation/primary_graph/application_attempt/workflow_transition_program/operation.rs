@@ -26,6 +26,7 @@ use crate::domain_computation::primary_graph::{
 
 mod authority_binding;
 mod evidence;
+mod settlement;
 use evidence::WorkflowOperationEvidence;
 mod receipt;
 pub(in crate::domain_computation::primary_graph::application_attempt) use receipt::operation_receipt_requires_recovery;
@@ -65,7 +66,13 @@ where
         WorthQueryApplicationAttemptDenial,
     > {
         let handoff_start = facts.len();
-        let mut sources = compiled.operation_input_sources(selected.node());
+        let captured_profile = compiled
+            .captured_operation_input_sources(selected.node())
+            .next()
+            .is_some();
+        let mut sources = compiled
+            .operation_input_sources(selected.node())
+            .chain(compiled.captured_operation_input_sources(selected.node()));
         let source = sources
             .next()
             .ok_or_else(|| mismatch(selected.node_path()))?;
@@ -80,7 +87,7 @@ where
         else {
             return Err(mismatch(selected.node_path()));
         };
-        if source_input_type != &operation.input_type {
+        if !captured_profile && source_input_type != &operation.input_type {
             return Err(mismatch(selected.node_path()));
         }
         let source_transition = progress
@@ -118,7 +125,45 @@ where
                 input_request,
             )
         })?;
-        let input_identity = input_observation.input_identity;
+        let captured_contract = if captured_profile {
+            if input_observation.captured_identity.is_none() {
+                return Err(mismatch(selected.node_path()));
+            }
+            let support = progress
+                .captured_input_support(source_transition)
+                .ok_or_else(|| mismatch("captured workflow input support is unavailable"))?;
+            let expected = support
+                .target(
+                    &input_observation.proposal_identity,
+                    input_observation
+                        .captured_identity
+                        .expect("checked captured profile"),
+                    input_observation
+                        .captured_count
+                        .ok_or_else(|| mismatch("captured input count is unavailable"))?,
+                    selected.node_path(),
+                )
+                .ok_or_else(|| mismatch("captured workflow input support changed"))?;
+            let contract = self.lease.handle().with_runtime(execution, |runtime| {
+                crate::domain_computation::primary_graph::workflow::proposal::observe_captured_workflow_input(
+                    execution, runtime, self.lease.snapshot(), layout, input_observation.proposal,
+                    &input_observation.proposal_identity, selected.node_path(), self.admission.scope_entity_id(),
+                    &mut input_observation.facts,
+                )
+            })?;
+            if &contract != expected
+                || Some(contract.binding.as_str()) != operation.binding.as_deref()
+                || contract.input_type != operation.input_type
+            {
+                return Err(mismatch(selected.node_path()));
+            }
+            Some(contract)
+        } else {
+            None
+        };
+        let input_identity = captured_contract
+            .as_ref()
+            .map_or(input_observation.input_identity, |c| c.input);
         facts.append(&mut input_observation.facts);
         // An external operation records its custody on the instance; the
         // reading it replaces travels with the operation's authority. This
@@ -175,6 +220,7 @@ where
             })
             .transpose()?;
         let original_sources = super::actor_context::OriginalActorSources {
+            proposal_input_identity: input_observation.input_identity,
             parent_instance,
             proposal: input_observation.proposal,
             proposal_identity: input_observation.proposal_identity,
@@ -234,9 +280,14 @@ where
             ),
             WorkflowOperationEvidence::Unavailable => None,
         };
-        let required = RequiredWorkflowOperation::from_selected(
+        let authority = authority.map(|mut authority| {
+            authority.captured_input = captured_contract.clone();
+            authority
+        });
+        let mut required = RequiredWorkflowOperation::from_selected(
             branch,
             runtime_authority,
+            *compiled.program_revision(),
             instance.clone(),
             Some(original_sources),
             admitted.node_path().to_owned(),
@@ -247,6 +298,7 @@ where
             input_identity,
             authority,
         );
+        required.captured_input = captured_contract;
         Ok(PreparedWorkflowAdvance::AwaitingOperation(
             PreparedWorkflowOperation {
                 admitted,
@@ -256,131 +308,6 @@ where
                 replays: Default::default(),
             },
         ))
-    }
-}
-
-impl<Schema, Operation, Input, Scope> PreparedWorkflowOperation<Schema, Operation, Input, Scope>
-where
-    Schema: ApplicationSchema,
-    Operation: 'static,
-{
-    pub(super) fn settle<Binding>(
-        self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        receipt: &WorthQueryApplicationCommitReceipt,
-    ) -> Result<
-        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        WorthQueryApplicationAttemptDenial,
-    >
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-    {
-        let performed = validate_operation_receipt::<Schema, Binding>(
-            runtime,
-            &self.required,
-            self.admitted.subject(),
-            self.admitted.read_set().lease.product().product_branch(),
-            receipt,
-            None,
-        )?;
-        self.settle_validated(performed)
-    }
-
-    pub(super) fn settle_recovered<Binding>(
-        self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        receipt: &WorthQueryApplicationCommitReceipt,
-        recovery: &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
-    ) -> Result<
-        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        WorthQueryApplicationAttemptDenial,
-    >
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-    {
-        let performed = validate_operation_receipt::<Schema, Binding>(
-            runtime,
-            &self.required,
-            self.admitted.subject(),
-            self.admitted.read_set().lease.product().product_branch(),
-            receipt,
-            Some(recovery),
-        )?;
-        self.settle_validated(performed)
-    }
-
-    fn settle_validated(
-        self,
-        performed: ValidatedWorkflowOperationReceipt<'_>,
-    ) -> Result<
-        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        WorthQueryApplicationAttemptDenial,
-    > {
-        let receipt_identity = performed.identity();
-        let executor = crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_performed_receipt(&performed);
-        let mut effects = Vec::new();
-        let transition = visit_workflow_operation_transition_facts(
-            &self.layout,
-            &self.admitted,
-            &receipt_identity,
-            executor,
-            |effect| {
-                effects.push(effect);
-                Ok::<(), WorthQueryApplicationAttemptDenial>(())
-            },
-        )?;
-        crate::domain_computation::primary_graph::workflow::operation_output::append_operation_outputs(
-            &self.layout, transition, self.required.binding().expect("validated operation binding"),
-            performed.outputs().native_witness_roles().map(|(role, posture, entity, target)|
-                (role, posture, entity, worth_relational::facade::transactions::EntityReference::Existing(target))),
-            &mut effects,
-        );
-        let mut demand = super::PlatformEffectDemand::default();
-        for effect in &effects {
-            demand.observe(effect)?;
-        }
-        let reservation = super::admit_platform_effects(self.admitted.read_set(), demand)?;
-        reservation.materialize(&effects)?;
-        let transition_identity = self.admitted.identity().to_owned();
-        let transition_identity_bytes = *self.admitted.identity_bytes();
-        let instance = self.admitted.instance();
-        let node_path = self.admitted.node_path().to_owned();
-        let progress_update = self.admitted.prepare_progress_update(
-            worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
-            Some(receipt_identity),
-        )?;
-        let program = WorthQueryApplicationEffectProgram {
-            read_set: self.admitted.into_read_set(),
-            effects,
-            emission_retained_bytes: 0,
-            emission_retained_bytes_ceiling: 0,
-            conditional_definition: None,
-            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
-            output_correspondence: Default::default(),
-            retain_output_demand_observation: false,
-            retain_client_observation: false,
-            producer_required_invariants: &[],
-            output_currentness_facts: None,
-        };
-        Ok(PreparedWorkflowAdvance::Transition {
-            program,
-            program_revision: self.program_revision,
-            transition_identity,
-            transition_identity_bytes,
-            transition_identity_locator: self.layout.transition.identity.clone(),
-            assessment_identity_locator: self.layout.assessment_evidence.identity.clone(),
-            instance,
-            node_path,
-            assessment: None,
-            supporting_identity: Some(receipt_identity),
-            operation_receipt_identity: Some(receipt_identity),
-            progress_update: Some(progress_update),
-            terminal: false,
-            approval: None,
-            approval_identity: None,
-            approval_authentication: None,
-            replays: self.replays,
-        })
     }
 }
 

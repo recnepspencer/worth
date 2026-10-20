@@ -8,6 +8,12 @@ impl<S: ApplicationSchema, P: ApplicationProgramDefinition<S>> WorthQueryWorkflo
     type Operation = Infallible;
     type Completed = Infallible;
     type Terminal = Infallible;
+    fn capture(
+        &self,
+        _: &mut super::super::capture::WorthQueryWorkflowInputCapture<'_, '_, '_, S>,
+    ) -> Result<(), WorthQueryWorkflowInputDenial> {
+        Ok(())
+    }
     fn registration_denial(
         &self,
         _: &str,

@@ -105,12 +105,15 @@ fn observe_proposal_scope(
         &layout.proposal.source_identity,
         facts,
     )?;
+    let captured_identity =
+        super::captured::profile(execution, runtime, snapshot, layout, proposal, facts)?;
     Ok(WorkflowProposalCoverageScope::from_identities(
         &operation,
         &input_type,
         input_identity,
         source_identity,
-    ))
+    )
+    .with_captured(captured_identity.map(|profile| profile.0)))
 }
 
 pub(super) fn observe_coverages(

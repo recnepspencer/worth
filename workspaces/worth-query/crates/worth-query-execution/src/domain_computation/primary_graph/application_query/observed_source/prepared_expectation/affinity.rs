@@ -99,7 +99,7 @@ where
     }
 }
 
-pub(super) fn parameter_denial(
+pub(in crate::domain_computation::primary_graph::application_query::observed_source) fn parameter_denial(
     subject: &str,
     denial: worth_query_admission::facade::application_query::WorthQueryApplicationQueryParameterDenial,
 ) -> WorthQuerySourceExpectationDenial {

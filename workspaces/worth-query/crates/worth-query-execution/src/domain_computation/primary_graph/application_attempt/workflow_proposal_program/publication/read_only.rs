@@ -25,7 +25,15 @@ pub(in crate::domain_computation::primary_graph) fn observe(
         return Err(Denial::Corrupt);
     }
     let kind = layout.proposal.entity_kind;
-    fields.protocol(entity, kind, &layout.proposal.protocol_version)?;
+    match fields.u64(entity, kind, &layout.proposal.protocol_version)? {
+        super::super::super::super::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION => {},
+        super::super::super::super::workflow::schema::version::WORKFLOW_CAPTURED_PROPOSAL_PROTOCOL_VERSION => {
+            let captured = fields.text(entity, kind, &layout.proposal.captured_identity)?;
+            identity(captured.bytes())?;
+            if fields.u64(entity, kind, &layout.proposal.captured_count)? == 0 { return Err(Denial::Corrupt); }
+        },
+        _ => return Err(Denial::Corrupt),
+    }
     let id = fields.text(entity, kind, &layout.proposal.identity)?;
     identity(id.bytes())?;
     let operation = fields.text(entity, kind, &layout.proposal.operation)?;

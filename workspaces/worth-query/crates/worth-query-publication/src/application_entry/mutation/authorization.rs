@@ -307,6 +307,24 @@ where
 {
     let principal_identity = authorized.principal_identity;
     let mut admission = authorized.admission;
+    if let Some(expected) = &request.workflow_captured_input {
+        use worth_query_execution::publication_boundary::workflow_proposal::WorkflowCapturedInputSource;
+        let original_source = match source.as_ref() {
+            None => WorkflowCapturedInputSource::None,
+            Some(WorthQueryMutationExpectedSource::Row(s)) => WorkflowCapturedInputSource::Row(s),
+            Some(WorthQueryMutationExpectedSource::ResultSet(s)) => {
+                WorkflowCapturedInputSource::ResultSet(s)
+            }
+        };
+        expected
+            .validate_admission(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+                &admission,
+                identities,
+                original_source,
+            )
+            .map_err(WorthQueryApplicationRequestMutationDenial::WorkflowCapturedInput)?;
+    }
     // The request encoded its key and input once, before admission; report that
     // work in the admission phase so a fresh commit and a replayed retry both
     // carry it.

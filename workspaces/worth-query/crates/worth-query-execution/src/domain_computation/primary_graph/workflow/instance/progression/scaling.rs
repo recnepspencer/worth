@@ -7,6 +7,7 @@ fn entity(slot: u64) -> EntityId {
 
 fn populated(count: u64) -> WorkflowInstanceProgress {
     let mut progress = WorkflowInstanceProgress {
+        captured_inputs: None,
         head: entity(count + 1),
         next_occurrence: count,
         retry_counts: OrdMap::new(),

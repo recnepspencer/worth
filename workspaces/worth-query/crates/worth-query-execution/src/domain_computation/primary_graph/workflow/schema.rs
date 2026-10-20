@@ -6,6 +6,7 @@ use worth_relational::facade::schema::{RelationalSchemaRegistry, SchemaId, Schem
 
 mod approval;
 mod assessment;
+mod captured_input;
 mod evidence_dependency;
 mod fact_custody;
 mod indexes;
@@ -56,7 +57,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
     schema_id: &SchemaId,
     schema_version_id: SchemaVersionId,
     first_kind: KindId,
-    identities: [AspectIdentity; 12],
+    identities: [AspectIdentity; 13],
     subject_kinds: Vec<KindId>,
 ) -> Result<
     (RelationalSchemaRegistry, WorthQueryWorkflowLayout),
@@ -300,11 +301,21 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         first_kind,
         kinds[14],
         identities[11],
+        subject_kinds.clone(),
+    )?;
+    let (registry, captured_input) = captured_input::lower(
+        registry,
+        schema_id,
+        schema_version_id,
+        first_kind,
+        kinds[18],
+        identities[12],
         subject_kinds,
     )?;
     Ok((
         registry,
         WorthQueryWorkflowLayout::new(WorkflowLayoutFields {
+            captured_input,
             lineage,
             definition,
             node,

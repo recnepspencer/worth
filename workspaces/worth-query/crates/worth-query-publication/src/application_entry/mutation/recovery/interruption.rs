@@ -73,6 +73,7 @@ pub(super) fn request_stop(denial: &Request) -> Option<Denial> {
         | Request::ApplicationProgramMismatch
         | Request::RequiresWorkflowTransition
         | Request::WorkflowAuthoritySpent
+        | Request::WorkflowCapturedInput(..)
         | Request::PreparationSpent
         | Request::WorkflowTransitionCurrentness(..)
         | Request::SignedCreation(..) => None,

@@ -26,4 +26,18 @@ where
     {
         self.native.prepare_workflow_proposal(workflow, instance)
     }
+
+    pub fn prepare_workflow_proposal_with_inputs<'workflow, Spec, Program, R>(
+        self,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
+        instance: PublishedWorkflowInstanceRef,
+        inputs: &crate::application_entry::WorthQueryWorkflowOperationInputs<Schema, Program, R>,
+    ) -> Result<WorthQueryWorkflowProposalRequest<'application, Schema, MutationOperation<Schema, Intent>, MutationInput<Schema, Intent>, MutationScope<Schema, IntentBinding<Schema, Intent>>>, WorthQueryWorkflowProposalPreparationDenial>
+    where Schema: 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+        Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
+        R: crate::application_entry::WorthQueryWorkflowInputList<Schema, Program>,
+    {
+        self.native.prepare_workflow_proposal_with_inputs(workflow, instance, inputs)
+    }
 }

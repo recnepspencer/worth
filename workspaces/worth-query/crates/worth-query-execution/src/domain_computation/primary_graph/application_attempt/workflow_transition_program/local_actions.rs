@@ -157,6 +157,7 @@ where
         let required = RequiredWorkflowOperation::from_selected(
             branch,
             runtime_authority,
+            *compiled.program_revision(),
             instance,
             None,
             admitted.node_path().to_owned(),

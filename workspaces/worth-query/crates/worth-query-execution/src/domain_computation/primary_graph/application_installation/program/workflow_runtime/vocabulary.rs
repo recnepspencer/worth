@@ -55,6 +55,16 @@ where
         self.runtime
     }
 
+    /// Exact installed meaning for a retained command; never falls back to another revision.
+    pub(in crate::domain_computation::primary_graph) fn workflow_spec_at_revision(
+        &self,
+        revision: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
+    ) -> Option<&'vocabulary WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>> {
+        std::iter::once(self.initial)
+            .chain(self.supported.iter())
+            .find(|installed| installed.program_revision() == revision)
+    }
+
     /// The spec installed for the program the selected branch runs.
     ///
     /// When the branch's program cannot be inspected or has no installed

@@ -259,6 +259,7 @@ where
         authorization_basis: WorthQueryOperationAuthorizationBasis::Capability { input },
         graph_work: revalidated.graph_work,
         source_partition_identity: None,
+        source_expectation_kind: None,
         source_facts: Vec::new(),
         query_context: None,
         required_output_demand: None,

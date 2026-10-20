@@ -19,19 +19,19 @@ use super::WorthQueryWorkflowLayout;
 
 #[derive(Clone)]
 struct WorkflowFactCustody {
-    entity_kinds: [KindId; 5],
+    entity_kinds: [KindId; 8],
     instance_kind: KindId,
     started_revision: worth_foundational::facade::AspectFieldLocator,
-    relation_kinds: [KindId; 13],
+    relation_kinds: [KindId; 17],
     /// `(new source kind, relation kind)` pairs that may attach to an
     /// existing fact. Every other existing-endpoint attachment is forbidden.
-    existing_target_links: [(KindId, KindId); 6],
+    existing_target_links: [(KindId, KindId); 7],
 }
 
 // The installed identity predates approval custody; retain its name across
 // semantic versions so diagnostics preserve the same rule lineage.
 const RULE_ID: &str = "worth-query.workflow.publication-immutability";
-const RULE_VERSION: CustomInvariantSemanticVersion = CustomInvariantSemanticVersion::new(1, 5);
+const RULE_VERSION: CustomInvariantSemanticVersion = CustomInvariantSemanticVersion::new(1, 6);
 const MAXIMUM_WORK_UNITS: u64 = 2_000_000;
 
 pub(in crate::domain_computation::primary_graph) const fn fact_custody_receipt_contract(
@@ -51,6 +51,9 @@ pub(in crate::domain_computation::primary_graph) fn fact_custody_registration(
         instance_kind: layout.instance.entity_kind,
         started_revision: layout.instance.started_program_revision.clone(),
         entity_kinds: [
+            layout.proposal.entity_kind,
+            layout.proposal_coverage.entity_kind,
+            layout.captured_input.entity_kind,
             layout.node.entity_kind,
             layout.connection.entity_kind,
             layout.approval.entity_kind,
@@ -58,6 +61,10 @@ pub(in crate::domain_computation::primary_graph) fn fact_custody_registration(
             layout.operation_output.entity_kind,
         ],
         relation_kinds: [
+            layout.transition_proposal_relation,
+            layout.proposal_coverage_relation,
+            layout.captured_input.membership,
+            layout.captured_input.resource,
             layout.definition_node_relation,
             layout.definition_connection_relation,
             layout.definition_start_relation,
@@ -73,6 +80,10 @@ pub(in crate::domain_computation::primary_graph) fn fact_custody_registration(
             layout.operation_output.target,
         ],
         existing_target_links: [
+            (
+                layout.captured_input.entity_kind,
+                layout.captured_input.resource,
+            ),
             (
                 layout.operation_output.entity_kind,
                 layout.operation_output.target,

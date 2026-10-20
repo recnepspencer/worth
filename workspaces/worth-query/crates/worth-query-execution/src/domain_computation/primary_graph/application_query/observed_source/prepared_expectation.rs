@@ -1,6 +1,6 @@
 mod affinity;
 mod pending;
-use affinity::parameter_denial;
+pub(super) use affinity::parameter_denial;
 pub use pending::WorthQueryPendingSourceExpectation;
 
 use super::*;
@@ -77,6 +77,7 @@ impl PreparedObservedSourceExpectation {
             ));
         }
         admission.bind_source_partition(self.bound.partition_identity);
+        admission.bind_source_expectation_kind(self.bound.kind);
         admission.bind_source_facts(self.facts, self.context);
         Ok(self.bound)
     }
@@ -214,7 +215,13 @@ where
         >,
     {
         let identity = source.idempotency_identity().bytes();
-        self.bind_checked_source_expectation::<Binding, Scope>(admission, source, identity, input)
+        self.bind_checked_source_expectation::<Binding, Scope>(
+            admission,
+            source,
+            identity,
+            input,
+            WorthQuerySourceExpectationKind::Row,
+        )
     }
 
     pub fn bind_application_result_set_expectation<Binding, Scope>(
@@ -241,6 +248,7 @@ where
             result_set.source,
             identity,
             input,
+            WorthQuerySourceExpectationKind::ResultSet,
         )
     }
 
@@ -313,6 +321,7 @@ where
             selected_product: checked.selected_product,
             observed_product,
             bound: WorthQueryBoundSourceExpectation {
+                kind: WorthQuerySourceExpectationKind::Row,
                 identity,
                 partition_identity,
             },
@@ -326,6 +335,7 @@ where
         source: WorthQueryObservedSource<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>,
         identity: [u8; 32],
         input: &Binding::Input,
+        kind: WorthQuerySourceExpectationKind,
     ) -> Result<WorthQueryPendingSourceExpectation<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>, WorthQuerySourceExpectationDenial>
     where Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<Schema>,
     {
@@ -345,10 +355,12 @@ where
             Some(admission.publication_request()),
         )?;
         let bound = WorthQueryBoundSourceExpectation {
+            kind,
             identity,
             partition_identity: source.partition_identity(),
         };
         admission.bind_source_partition(bound.partition_identity);
+        admission.bind_source_expectation_kind(bound.kind);
         Ok(WorthQueryPendingSourceExpectation {
             admission_identity: admission.admission_identity(),
             selected_product: checked.selected_product,

@@ -27,6 +27,7 @@ pub struct WorthQueryWorkflowActorContext {
 }
 #[derive(Clone, Debug)]
 pub(super) struct OriginalActorSources {
+    pub proposal_input_identity: [u8; 32],
     pub(super) parent_instance: worth_relational::facade::identity::EntityId,
     pub(super) proposal: worth_relational::facade::identity::EntityId,
     pub(super) proposal_identity: String,
@@ -41,6 +42,8 @@ pub(super) struct OriginalActorSources {
 
 #[derive(Clone, Debug)]
 pub(super) struct OperationActorCommand {
+    pub(super) captured_input:
+        Option<crate::domain_computation::primary_graph::WorkflowCapturedInputContract>,
     pub(super) instance: worth_relational::facade::identity::EntityId,
     pub(super) branch: crate::basis::WorthQueryProductBranch,
     pub(super) node_path: String,
@@ -62,6 +65,28 @@ pub(super) enum Command {
 }
 
 impl WorthQueryWorkflowAdvanceAdapter {
+    /// Own only original locators from the exact installed vocabulary; authorization stays fresh.
+    pub fn bind_owned_operation_actor_context<Schema, Spec, Binding>(
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        workflow: crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
+        required: &RequiredWorkflowOperation,
+    ) -> Result<Option<WorthQueryWorkflowActorContext>, WorthQueryApplicationAttemptDenial>
+    where
+        Schema: ApplicationSchema,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        if required.original_runtime() != workflow.runtime().runtime.authority_identity().as_u64() {
+            return Err(affinity("foreign workflow actor runtime"));
+        }
+        let installed = workflow
+            .workflow_spec_at_revision(required.original_program_revision())
+            .ok_or_else(|| {
+                affinity("original workflow actor vocabulary revision is unavailable")
+            })?;
+        Self::bind_operation_actor_context::<Schema, Spec, Binding>(access, installed, required)
+    }
+
     /// Publication alone supplies the original typed command before admission.
     /// The context is an untrusted locator; native selection checks its facts.
     pub fn bind_approval_actor_context<Schema, Spec, Binding>(
@@ -107,6 +132,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             required.original_instance(),
             Command::Operation {
                 required: OperationActorCommand {
+                    captured_input: required.captured_input.clone(),
                     instance: required.instance(),
                     branch: required.branch(),
                     node_path: required.node_path().to_owned(),

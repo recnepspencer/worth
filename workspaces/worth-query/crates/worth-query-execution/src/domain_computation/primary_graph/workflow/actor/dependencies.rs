@@ -158,6 +158,12 @@ impl WorkflowActorDependencies {
         while let Some(fact) = reader.next_fact().map_err(decode_denial)? {
             match fact {
                 Fact::Entity { .. } | Fact::SourceEntity { .. } => counts[0] += 1,
+                Fact::IndexedEntitySelection { candidates, .. } => {
+                    // Preserve the complete predicate, including absence of extra matches.
+                    // Cardinality describes its returned entities and one field predicate.
+                    counts[0] += candidates.len();
+                    counts[2] += 1;
+                }
                 Fact::SourceAdjacencyRevision {
                     endpoints,
                     comparison_work_limit: 1,

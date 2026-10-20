@@ -218,5 +218,4 @@ pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQ
 #[cfg(test)]
 pub(in crate::domain_computation) use fact::consult_observation;
 
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use fact::observe_indexed_entity_selection;

@@ -71,7 +71,7 @@ pub struct WorthQueryApplicationIdempotencyBinding {
     conditional_definition_identity: Option<[u8; 32]>,
     workflow_definition_identity: Option<[u8; 32]>,
     workflow_instance_identity: Option<[u8; 32]>,
-    workflow_proposal_context_identity: Option<[u8; 32]>,
+    workflow_proposal: workflow_proposal_context::WorkflowProposalIdempotency,
     workflow_transition_identity: Option<[u8; 32]>,
     workflow_support_identity: Option<[u8; 32]>,
     workflow_client_key_identity: Option<[u8; 32]>,
@@ -95,7 +95,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             conditional_definition_identity: None,
             workflow_definition_identity: None,
             workflow_instance_identity: None,
-            workflow_proposal_context_identity: None,
+            workflow_proposal: workflow_proposal_context::WorkflowProposalIdempotency::empty(),
             workflow_transition_identity: None,
             workflow_support_identity: None,
             workflow_client_key_identity: None,
@@ -151,10 +151,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         );
         workflow_definition::append_identity_slot(&mut encoded, self.workflow_definition_identity);
         workflow_instance::append_identity_slot(&mut encoded, self.workflow_instance_identity);
-        workflow_proposal_context::append_identity_slot(
-            &mut encoded,
-            self.workflow_proposal_context_identity,
-        );
+        workflow_proposal_context::append_identity_slot(&mut encoded, self.workflow_proposal);
         workflow_transition::append_identity_slot(&mut encoded, self.workflow_transition_identity);
         workflow_transition::append_support_identity_slot(
             &mut encoded,
@@ -217,7 +214,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             conditional_definition_identity: self.conditional_definition_identity,
             workflow_definition_identity: self.workflow_definition_identity,
             workflow_instance_identity: self.workflow_instance_identity,
-            workflow_proposal_context_identity: self.workflow_proposal_context_identity,
+            workflow_proposal: self.workflow_proposal,
             workflow_transition_identity: self.workflow_transition_identity,
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
@@ -259,7 +256,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             conditional_definition_identity: self.conditional_definition_identity,
             workflow_definition_identity: self.workflow_definition_identity,
             workflow_instance_identity: self.workflow_instance_identity,
-            workflow_proposal_context_identity: self.workflow_proposal_context_identity,
+            workflow_proposal: self.workflow_proposal,
             workflow_transition_identity: self.workflow_transition_identity,
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
@@ -289,7 +286,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             conditional_definition_identity: self.conditional_definition_identity,
             workflow_definition_identity: self.workflow_definition_identity,
             workflow_instance_identity: self.workflow_instance_identity,
-            workflow_proposal_context_identity: self.workflow_proposal_context_identity,
+            workflow_proposal: self.workflow_proposal,
             workflow_transition_identity: self.workflow_transition_identity,
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
@@ -319,7 +316,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             conditional_definition_identity: self.conditional_definition_identity,
             workflow_definition_identity: self.workflow_definition_identity,
             workflow_instance_identity: self.workflow_instance_identity,
-            workflow_proposal_context_identity: self.workflow_proposal_context_identity,
+            workflow_proposal: self.workflow_proposal,
             workflow_transition_identity: self.workflow_transition_identity,
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
@@ -349,7 +346,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             conditional_definition_identity: self.conditional_definition_identity,
             workflow_definition_identity: self.workflow_definition_identity,
             workflow_instance_identity: self.workflow_instance_identity,
-            workflow_proposal_context_identity: self.workflow_proposal_context_identity,
+            workflow_proposal: self.workflow_proposal,
             workflow_transition_identity: self.workflow_transition_identity,
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,
@@ -379,7 +376,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             },
             workflow_definition_identity: self.workflow_definition_identity,
             workflow_instance_identity: self.workflow_instance_identity,
-            workflow_proposal_context_identity: self.workflow_proposal_context_identity,
+            workflow_proposal: self.workflow_proposal,
             workflow_transition_identity: self.workflow_transition_identity,
             workflow_support_identity: self.workflow_support_identity,
             workflow_client_key_identity: self.workflow_client_key_identity,

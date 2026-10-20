@@ -12,6 +12,7 @@ use worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBud
 use worth_relational::facade::identity::EntityId;
 
 mod budget;
+mod captured_inputs;
 pub(super) mod operation_outputs;
 use super::super::fact::WorkflowHistoryRequirement;
 use super::super::fact::{observe_adjacency_checked, AdjacencyObservationDenial};
@@ -239,7 +240,23 @@ pub(super) fn observe(
             transition.to,
             &mut scratch,
         )?;
+        let captured_inputs = match nodes {
+            HistoryNodes::Compiled(compiled) => captured_inputs::observe(
+                execution,
+                runtime,
+                snapshot,
+                layout,
+                compiled,
+                instance,
+                settlement.node(),
+                transition.to,
+                &mut charge,
+                &mut scratch,
+            )?,
+            HistoryNodes::Recorded => None,
+        };
         settled.push(ObservedWorkflowTransition {
+            captured_inputs,
             entity: transition.to,
             identity,
             settlement,
