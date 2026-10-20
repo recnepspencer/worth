@@ -38,6 +38,7 @@ pub(in crate::domain_computation::primary_graph) use required_continuations::{
 use required_provenance::DemandProgressionProvenance;
 
 mod denial;
+pub(in crate::domain_computation::primary_graph) use denial::ProducerPublicationStale;
 mod managed_cleanup;
 mod read_close;
 pub use denial::{

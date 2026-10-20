@@ -1,6 +1,8 @@
 //! Installed producer execution on the required wave's one selected Product.
 
-use super::super::demand::{DecisionInput, PerformedMembers, SelectedDecisionInput};
+use super::super::demand::{
+    DecisionInput, PerformedMembers, ProducerPublicationStale, SelectedDecisionInput,
+};
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::{
@@ -226,8 +228,7 @@ where
                     .output_demands
                     .claim_required_ready_refresh(selected, admission)
                     .map_err(ProducerExecutionStop::ExecutionStopped)?
-                    // The selected Ready moved before its refresh was claimed:
-                    // a later wave selects the row as it is now.
+                    // A later wave must select the Ready row after this claim moved.
                     .ok_or_else(|| {
                         WorthQueryOutputDemandDenial::new(
                             WorthQueryOutputDemandDenialKind::PublicationStale,
@@ -236,6 +237,9 @@ where
                         .with_recovery_posture(
                             crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
                         )
+                        .with_publication_stale(Some(ProducerPublicationStale::ready_refresh_claim_moved(
+                            shared.selected().product().observation(),
+                        )))
                     })?;
                 let fresh = source_readmission::disclose_prepared_on_selected::<Schema, Binding>(
                     &execution,

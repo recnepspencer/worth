@@ -1,3 +1,4 @@
+use super::super::demand::ProducerPublicationStale;
 use super::denial::{denial, failed, handler_execution_failed, request_authority_stop};
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::primary_graph as graph;
@@ -131,8 +132,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     }
     // A stopped native companion preflight belongs to this advance. A budget
     // refusal or replaced selected image leaves the original producer claimable.
-    if let Some(kind) = refused_preflight(&outcome) {
-        return Err(denial(kind, identity.to_owned()));
+    if let Some(refused) = refused_preflight(identity, &outcome) {
+        return Err(refused);
     }
     match outcome {
         WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
@@ -164,11 +165,16 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 .into_prerequisite_denial()
                 .expect("required prerequisite deferral retains its actual denial"))
         }
-        WorthQueryApplicationCommitOutcome::Stale(_)
-        | WorthQueryApplicationCommitOutcome::ProductStale(_) => Err(denial(
+        WorthQueryApplicationCommitOutcome::Stale(stale) => Err(denial(
             WorthQueryOutputDemandDenialKind::PublicationStale,
             identity.to_owned(),
-        )),
+        )
+        .with_publication_stale(Some(ProducerPublicationStale::CommitDecisionFacts(stale)))),
+        WorthQueryApplicationCommitOutcome::ProductStale(stale) => Err(denial(
+            WorthQueryOutputDemandDenialKind::PublicationStale,
+            identity.to_owned(),
+        )
+        .with_publication_stale(Some(ProducerPublicationStale::product_head(&stale)))),
         WorthQueryApplicationCommitOutcome::Cancelled => Err(denial(
             WorthQueryOutputDemandDenialKind::Cancelled,
             identity.to_owned(),
@@ -195,7 +201,12 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 Kind::ProductBasisStale => denial(
                     WorthQueryOutputDemandDenialKind::PublicationStale,
                     identity.to_owned(),
-                ),
+                )
+                .with_publication_stale(Some(
+                    ProducerPublicationStale::CommitProductBasisStale {
+                        stage: commit_denial.stage(),
+                    },
+                )),
                 Kind::IdempotencyIntentDrift => denial(
                     WorthQueryOutputDemandDenialKind::ProducerUnavailable,
                     format!("{identity}: {commit_denial:?}"),
@@ -269,21 +280,26 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 /// Native preflight refuses this advance before effects. Preserve original
 /// budgets and a replaced selected image as retryable owner outcomes.
 fn refused_preflight(
+    identity: &str,
     outcome: &WorthQueryApplicationCommitOutcome,
-) -> Option<WorthQueryOutputDemandDenialKind> {
+) -> Option<WorthQueryOutputDemandDenial> {
     use graph::WorthQueryApplicationCommitDeferredKind as Deferred;
     use worth_relational::facade::mvcc::{
         CompanionPreflightStop as Stop, RelationalPublicationDeferred::CompanionPreflight,
     };
-    let stop = match outcome {
+    let (stop, origin) = match outcome {
         WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => match no_effect.cause() {
-            WorthQueryApplicationNoEffectCause::RelationalDeferred(CompanionPreflight(stop)) => {
-                stop
-            }
+            WorthQueryApplicationNoEffectCause::RelationalDeferred(CompanionPreflight(stop)) => (
+                stop,
+                ProducerPublicationStale::CommitNoEffectPreflight(stop),
+            ),
             _ => return None,
         },
         WorthQueryApplicationCommitOutcome::Deferred(deferred) => match deferred.kind() {
-            Deferred::RelationalDeferred(CompanionPreflight(stop)) => stop,
+            Deferred::RelationalDeferred(CompanionPreflight(stop)) => (
+                stop,
+                ProducerPublicationStale::CommitDeferredPreflight(stop),
+            ),
             _ => return None,
         },
         WorthQueryApplicationCommitOutcome::CleanupRequired(_)
@@ -299,7 +315,7 @@ fn refused_preflight(
         | WorthQueryApplicationCommitOutcome::SettlementDeferred(_)
         | WorthQueryApplicationCommitOutcome::Indeterminate(_) => return None,
     };
-    match stop {
+    let kind = match stop {
         Stop::SelectedSourceMismatch => Some(WorthQueryOutputDemandDenialKind::PublicationStale),
         Stop::WorkExhausted { .. }
         | Stop::WorkExhaustedWithoutRequirement { .. }
@@ -310,7 +326,9 @@ fn refused_preflight(
             Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
         }
         _ => None,
-    }
+    }?;
+    let stale = (stop == Stop::SelectedSourceMismatch).then_some(origin);
+    Some(denial(kind, identity.to_owned()).with_publication_stale(stale))
 }
 
 #[cfg(test)]

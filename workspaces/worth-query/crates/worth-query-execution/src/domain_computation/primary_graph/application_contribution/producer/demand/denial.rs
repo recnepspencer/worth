@@ -1,6 +1,8 @@
 pub(super) mod cleanup_custody;
 mod kind;
+mod publication_stale;
 pub use kind::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture};
+pub(in crate::domain_computation::primary_graph) use publication_stale::ProducerPublicationStale;
 
 /// A refusal to select, admit, or advance an output demand, with the subject it
 /// names (usually the output family or producer).
@@ -23,6 +25,7 @@ pub struct WorthQueryOutputDemandDenial {
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct DemandDenialEvidence {
+    publication_stale: Option<ProducerPublicationStale>,
     commit_denial_kind:
         Option<crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind>,
     commit_execution: Option<(
