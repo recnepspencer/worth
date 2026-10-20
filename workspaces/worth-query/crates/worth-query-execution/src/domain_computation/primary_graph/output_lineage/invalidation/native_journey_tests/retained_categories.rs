@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::output_binding_identity::OutputBin
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 #[test]
-fn late_capacity_fallback_does_not_accept_the_provisional_exact_marking() {
+fn exhausted_retention_publishes_fallback_without_accepting_exact_marks() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let world = super::marking_ceiling::world_installing(|defaults| {
@@ -43,15 +43,12 @@ fn late_capacity_fallback_does_not_accept_the_provisional_exact_marking() {
                 &before_handle, entity, locator.clone());
             register(owner, output.clone(), Arc::from([old.clone()]), &before, OrdSet::new());
             let cell = owner.cell_for_read(&before, &mut owner.edit_admission()).unwrap().unwrap();
-            let image = cell.read_image();
-            // Competing custody leaves one whole-index quote. The partial
-            // mark can fit, but after spending that capacity the late guard
-            // cannot retain another whole index of headroom for future edits.
-            let room = super::super::retention::state_bound(&image.payload().current)
-                .unwrap();
+            let _prior_image = cell.read_image();
+            // Genuine competing custody fills the remaining physical ledger.
+            // The source must still publish through its pre-funded empty image.
             let retained_before = owner.resources.retained_capacity_bytes();
             let remaining = owner.resources.installation().maximum_retained_bytes.expect("this court installs a finite retained ceiling") - retained_before;
-            let competing = owner.resources.reserve_retained_capacity(remaining.checked_sub(room).unwrap()).unwrap();
+            let competing = owner.resources.reserve_retained_capacity(remaining).unwrap();
             let _observation = crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
             super::super::marking_observation::native_marking_on_this_thread_for_test();
             write_field(execution, runtime, entity, locator.clone(), "closed");
@@ -59,17 +56,13 @@ fn late_capacity_fallback_does_not_accept_the_provisional_exact_marking() {
             let commit = after.commit_id().unwrap();
             let reports = super::super::marking_observation::native_marking_on_this_thread_for_test();
             let attempts: Vec<_> = reports.iter().filter(|report| report.commit == commit).collect();
-            let provisional = attempts.iter().position(|report| matches!(report.precision,
-                super::super::logical_marking::WorthQueryNativeMarkingPrecision::Exact(_)))
-                .expect("the actual marking completed before later capacity admission failed");
             let fallback = attempts.iter().position(|report| matches!(report.precision,
                 super::super::logical_marking::WorthQueryNativeMarkingPrecision::RetainedCapacityExhausted(_))
                 && report.charged_work.is_none())
-                .expect("the same native commit prepared the empty-image fallback");
-            assert!(provisional < fallback, "provisional work precedes fallback selection: {reports:?}");
-            assert!(attempts[provisional].charged_work.is_some_and(|work| work > 0));
-            assert!(attempts[provisional].affected.as_ref().is_some_and(|outputs|
-                outputs.iter().any(|marked| marked.root == source.scope)));
+                .expect("actual exhausted allocation uses the paid empty-image fallback");
+            assert!(!attempts.iter().any(|report| matches!(report.precision,
+                super::super::logical_marking::WorthQueryNativeMarkingPrecision::Exact(_))),
+                "no exact mark image can be admitted with the physical ledger exhausted: {reports:?}");
             assert!(attempts[fallback].affected.is_none(), "unknown affected outputs are not an exact empty set");
             // Acceptance comes from the installed native image and source
             // snapshot, independently of either prepared diagnostic report.

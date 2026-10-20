@@ -125,22 +125,9 @@ impl SourceInvalidationOwner {
         let left = left.as_ref().map(|left| &*left.state);
         retention::admit_edited_history(&mut root, &self.resources, context)?;
         retention::admit_root(&mut root, left, &self.resources, context)?;
-        // A same-position Query edit must retain its predecessor while it
-        // prepares the replacement. Under a supplied retained-byte ceiling,
-        // keep this cache only if a whole current index has that headroom;
-        // otherwise publish the paid empty image rather than strand later edits.
-        let edit_bytes = retention::state_bound(&root.current)
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        if let Some(maximum) = self.resources.installation().maximum_retained_bytes {
-            let retained = self.resources.retained_capacity_bytes();
-            if edit_bytes > maximum.saturating_sub(retained) {
-                return Err(CompanionPreflightStop::RetainedCompanionCapacityExhausted {
-                    requested: edit_bytes,
-                    retained,
-                    maximum,
-                });
-            }
-        }
+        // The edited version and its actual root/history allocations are now
+        // funded beside their shared predecessors. A hypothetical future edit
+        // owns no storage here; it must admit its own copied paths when made.
         let mut effect = context.seal_replacement(reserved, Arc::new(root))?;
         if !selected.is_empty() {
             let retained = retention::reserve(

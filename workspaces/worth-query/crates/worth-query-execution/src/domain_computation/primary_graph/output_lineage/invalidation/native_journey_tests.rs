@@ -46,6 +46,8 @@ mod request_recording;
 mod required_hints;
 #[path = "native_journey_tests/retained_categories.rs"]
 mod retained_categories;
+#[path = "native_journey_tests/retained_headroom.rs"]
+mod retained_headroom;
 #[path = "native_journey_tests/shared_versions.rs"]
 mod shared_versions;
 #[path = "native_journey_tests/transitive_propagation.rs"]

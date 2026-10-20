@@ -4,7 +4,7 @@ use super::*;
 
 /// The first failed predicate at the actual refresh selection under the registry lock.
 /// Descriptions only; these values retain no row, source or Ready custody.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum RequiredRefreshRejection {
     MissingRow,
     NotRequired {
@@ -15,10 +15,36 @@ pub(in crate::domain_computation::primary_graph) enum RequiredRefreshRejection {
     MembershipChanged,
     SourceChanged,
     NotOutput,
-    NotIdle,
+    NotIdle {
+        advancement: RequiredRefreshAdvancement,
+        checkpoint: RequiredRefreshCheckpoint,
+    },
     MissingReady,
     ReadyCellChanged,
     RequiredKeyMissing,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum RequiredRefreshAdvancement {
+    Claimed {
+        claim: u64,
+    },
+    Stopped {
+        denial: WorthQueryOutputDemandDenialKind,
+        recovery_posture:
+            crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture,
+        interrupted_claim: Option<u64>,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum RequiredRefreshCheckpoint {
+    Absent,
+    Published,
+    Delivered,
+    ReadyCommitted,
+    ReadyStable,
+    ReadyRestored,
 }
 
 /// A temporary real interest in the exact Ready row selected for a required
@@ -140,8 +166,40 @@ impl WorthQueryOutputDemandRegistry {
         let DemandState::Output(output) = &record.state else {
             return Ok(Err(RequiredRefreshRejection::NotOutput));
         };
-        if !matches!(output.advancement(), WorthQueryOutputAdvancement::Idle) {
-            return Ok(Err(RequiredRefreshRejection::NotIdle));
+        let advancement = match output.advancement() {
+            WorthQueryOutputAdvancement::Idle => None,
+            WorthQueryOutputAdvancement::Claimed(claim) => {
+                Some(RequiredRefreshAdvancement::Claimed { claim: claim.0 })
+            }
+            WorthQueryOutputAdvancement::Stopped {
+                denial,
+                interrupted_claim,
+            } => Some(RequiredRefreshAdvancement::Stopped {
+                denial: denial.kind(),
+                recovery_posture: denial.recovery_posture(),
+                interrupted_claim: interrupted_claim.map(|claim| claim.0),
+            }),
+        };
+        if let Some(advancement) = advancement {
+            use super::super::WorthQueryAcceptedOutputAuthority as Authority;
+            let checkpoint = match &output.checkpoint {
+                None => RequiredRefreshCheckpoint::Absent,
+                Some(WorthQueryOutputCheckpoint::Published { .. }) => {
+                    RequiredRefreshCheckpoint::Published
+                }
+                Some(WorthQueryOutputCheckpoint::Delivered { .. }) => {
+                    RequiredRefreshCheckpoint::Delivered
+                }
+                Some(WorthQueryOutputCheckpoint::Ready(ready)) => match &ready.authority {
+                    Authority::Committed(_) => RequiredRefreshCheckpoint::ReadyCommitted,
+                    Authority::Stable(_) => RequiredRefreshCheckpoint::ReadyStable,
+                    Authority::Restored(_) => RequiredRefreshCheckpoint::ReadyRestored,
+                },
+            };
+            return Ok(Err(RequiredRefreshRejection::NotIdle {
+                advancement,
+                checkpoint,
+            }));
         }
         let Some(WorthQueryOutputCheckpoint::Ready(current)) = &output.checkpoint else {
             return Ok(Err(RequiredRefreshRejection::MissingReady));
