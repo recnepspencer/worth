@@ -170,7 +170,7 @@ fn install_configured(
         Some(1_000_000),
         RETAINED_COMMITS as usize,
     );
-    let limits = support::limits_with_room(RETAINED_COMMITS, 16, 64, invalidation, candidates);
+    let limits = support::limits_with_room(RETAINED_COMMITS, 16, 64, invalidation);
     let program = ApplicationProgramAuthoring::<CheckpointSchema, HistoryProgram>::begin()
         .validated_program()
         .unwrap();

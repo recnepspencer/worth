@@ -122,5 +122,5 @@ worth_query_mutation_binding!(
         ReadOnly,
         NoApplicationUnit,
     field BusinessIdentityField::reference(),
-    value business_scope
+    value business_scope,
 );

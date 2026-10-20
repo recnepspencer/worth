@@ -78,7 +78,7 @@ macro_rules! institution_movement_binding {
                 ReadOnly,
                 NoApplicationUnit,
             field InstitutionIdentityField::reference(),
-            value $scope
+            value $scope,
         );
     };
 }
@@ -136,5 +136,5 @@ worth_query_mutation_binding!(
         ReadOnly,
         NoApplicationUnit,
     field AccountIdentity::reference(),
-    value send_scope
+    value send_scope,
 );

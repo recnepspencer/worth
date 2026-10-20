@@ -110,7 +110,7 @@ worth_query_mutation_binding!(
         ReadOnly,
         NoApplicationUnit,
     field AccountIdentity::reference(),
-    value grant_scope
+    value grant_scope,
 );
 
 worth_query_mutation_binding!(
@@ -138,5 +138,5 @@ worth_query_mutation_binding!(
         ReadOnly,
         NoApplicationUnit,
     field AccountIdentity::reference(),
-    value revoke_scope
+    value revoke_scope,
 );

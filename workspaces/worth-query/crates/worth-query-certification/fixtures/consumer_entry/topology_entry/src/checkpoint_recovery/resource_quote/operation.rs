@@ -43,7 +43,7 @@ worth_query_mutation_binding! {
         mapping ExternalPrincipalMapping,principal_entity Principal,principal_identity u64,
         identity_binding U64ApplicationValueBinding,
     scope Body,PlanarPosition,BodyKey,String,ReadOnly,NoApplicationUnit,
-    field BodyKey::reference(),value_field scope_key
+    field BodyKey::reference(),value_field scope_key,
 }
 worth_query_mutation_binding! {
     pub EditBinding for Edit,schema generic S:TopologySchemaBinding,
@@ -56,7 +56,7 @@ worth_query_mutation_binding! {
         mapping ExternalPrincipalMapping,principal_entity Principal,principal_identity u64,
         identity_binding U64ApplicationValueBinding,
     scope Body,PlanarPosition,BodyKey,String,ReadOnly,NoApplicationUnit,
-    field BodyKey::reference(),value_field scope_key
+    field BodyKey::reference(),value_field scope_key,
 }
 pub(super) fn declare<S: TopologySchemaBinding>(
     schema: ApplicationSchemaDeclarationBuilder<S>,

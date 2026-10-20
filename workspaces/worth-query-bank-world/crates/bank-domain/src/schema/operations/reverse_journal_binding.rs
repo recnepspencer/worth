@@ -49,5 +49,5 @@ worth_query_mutation_binding!(
         ReadOnly,
         NoApplicationUnit,
     field InstitutionIdentityField::reference(),
-    value reversal_scope
+    value reversal_scope,
 );

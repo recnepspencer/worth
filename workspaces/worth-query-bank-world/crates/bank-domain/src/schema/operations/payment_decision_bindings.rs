@@ -90,7 +90,7 @@ worth_query_mutation_binding!(
         ReadOnly,
         NoApplicationUnit,
     field PaymentIdentityField::reference(),
-    value payment_scope_from_approval
+    value payment_scope_from_approval,
 );
 
 worth_query_mutation_binding!(
@@ -118,5 +118,5 @@ worth_query_mutation_binding!(
         ReadOnly,
         NoApplicationUnit,
     field PaymentIdentityField::reference(),
-    value payment_scope_from_rejection
+    value payment_scope_from_rejection,
 );

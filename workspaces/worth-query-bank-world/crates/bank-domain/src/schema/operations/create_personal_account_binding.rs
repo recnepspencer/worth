@@ -145,7 +145,7 @@ worth_query_mutation_binding!(
         ReadOnly,
         NoApplicationUnit,
     field InstitutionIdentityField::reference(),
-    value institution_scope
+    value institution_scope,
 );
 
 fn derive_identity<const N: usize>(
