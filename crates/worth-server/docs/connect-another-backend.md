@@ -151,6 +151,29 @@ not Store-backed crash recovery or an atomic whole-graph compare-and-swap promis
 
 ## Inspection and debugging
 
+### Product-surface refusals
+
+A product route can be admitted by transport but refused before it has a product
+execution envelope. The HTTP response then has
+`transport_denial_code: "ProductOperationDenied"`, not `UnknownRoute`. Its optional
+`product_operation_denial` describes the original surface refusal under
+`worth-server-product-surface-denial.v1` (numeric version 1). It preserves the
+owner's code, readiness/session code, expected/observed basis, execution boundary,
+rebase requirement, and available idempotency/recovery metadata. In Rust,
+`WorthServerTransportDenial::product_operation_denial()` retains the exact original
+typed refusal and its facts.
+
+For example, a stale product basis reports `ReadinessDenied`, readiness
+`PreconditionFailed`, the exact expected/observed basis values, and
+`RejectedBeforeAdapterExecution`. Consumers can reconcile using these structured
+facts; they must not parse `detail` or infer that a route is absent. No performed
+operation, plan, result or commit envelope is fabricated for this refusal.
+
+Other surface refusals can follow an attempted execution. Inspect the carried
+execution/recovery posture rather than treating every refusal as no effect or
+automatically retrying. Recovery metadata describes original custody; it is not
+an authorization token or a replacement for the installed recovery owner.
+
 Log and preserve:
 
 - operation name

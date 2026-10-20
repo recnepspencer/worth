@@ -135,6 +135,7 @@ pub(super) fn transport_denial_response(denial: WorthServerTransportDenial) -> R
                 "transport_denial_code": format!("{:?}", denial.code()),
                 "transport_denial_reason_key": denial.reason_key(),
                 "detail": denial.detail(),
+                "product_operation_denial": denial.product_operation_denial().map(super::product_surface_denial::project),
             })),
         ),
         transport_denial_headers(denial.code()),

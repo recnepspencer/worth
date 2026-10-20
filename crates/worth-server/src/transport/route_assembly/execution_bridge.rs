@@ -207,12 +207,7 @@ fn execute_semantic_route(
             let operation = compat_http
                 .product_operations()
                 .execute_product_protocol(prepared_request, input)
-                .map_err(|denial| {
-                    WorthServerTransportDenial::new(
-                        WorthServerTransportDenialCode::UnknownRoute,
-                        denial.detail().to_string(),
-                    )
-                })?;
+                .map_err(WorthServerTransportDenial::from_product_operation)?;
             Ok(WorthServerRouteExecutionOutcome::ProductOperation(
                 Box::new(operation),
             ))
@@ -251,12 +246,7 @@ fn execute_semantic_route(
             let operation = compat_http
                 .product_operations()
                 .execute_product_protocol(prepared_request, input)
-                .map_err(|denial| {
-                    WorthServerTransportDenial::new(
-                        WorthServerTransportDenialCode::UnknownRoute,
-                        denial.detail().to_string(),
-                    )
-                })?;
+                .map_err(WorthServerTransportDenial::from_product_operation)?;
             Ok(WorthServerRouteExecutionOutcome::ProductOperation(
                 Box::new(operation),
             ))
