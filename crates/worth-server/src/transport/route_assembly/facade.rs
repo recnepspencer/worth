@@ -102,6 +102,8 @@ impl WorthServerRouteAssembly {
 
 #[derive(Clone, Debug)]
 pub struct WorthServerOperationRouter {
+    instance_selection: crate::WorthServerInstanceSelectionPolicy,
+    instance: crate::WorthServerInstanceIdentity,
     assembly: WorthServerRouteAssembly,
     compat_http: WorthServerCompatibilityFacade,
     caller_admission: crate::transport::WorthServerTransportCallerAdmission,
@@ -109,11 +111,15 @@ pub struct WorthServerOperationRouter {
 
 impl WorthServerOperationRouter {
     pub(crate) fn new(
+        instance: crate::WorthServerInstanceIdentity,
+        instance_selection: crate::WorthServerInstanceSelectionPolicy,
         assembly: WorthServerRouteAssembly,
         compat_http: WorthServerCompatibilityFacade,
         caller_admission: crate::transport::WorthServerTransportCallerAdmission,
     ) -> Self {
         Self {
+            instance_selection,
+            instance,
             assembly,
             compat_http,
             caller_admission,
@@ -130,7 +136,14 @@ impl WorthServerOperationRouter {
             .iter()
             .find(|route| route.method() == method && route.path() == path)
             .cloned()
-            .map(|route| WorthServerRouteExecutionBridge::semantic(route, self.compat_http.clone()))
+            .map(|route| {
+                WorthServerRouteExecutionBridge::semantic(
+                    route,
+                    self.compat_http.clone(),
+                    self.instance.clone(),
+                    self.instance_selection,
+                )
+            })
             .or_else(|| {
                 self.assembly
                     .operational_routes()
@@ -141,6 +154,7 @@ impl WorthServerOperationRouter {
                         WorthServerRouteExecutionBridge::operational(
                             route,
                             self.compat_http.clone(),
+                            self.instance.clone(),
                         )
                     })
             })

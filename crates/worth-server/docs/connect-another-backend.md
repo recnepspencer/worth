@@ -55,6 +55,39 @@ That means:
 
 ## How it executes
 
+### Fence a live Server instance
+
+An in-memory Server assembly has one OS-entropy-backed
+`WorthServer::instance_identity()`. Its session IDs include that identity; session
+coordination responses expose it as `server_instance`. It is a live address
+domain, not a Query installation identity, package/release pin, capability or
+persistence guarantee. A replacement assembly receives another identity even
+when its address, configuration, graph IDs and session counters repeat.
+Application affinity assumes the assembly retains its immutable adapter
+registrations; applications still need their own typed locator and release
+correspondence. The Server identity does not replace either.
+
+For an endpoint whose locators must not silently move to a replacement, install
+`builder.with_instance_selection_policy(
+WorthServerInstanceSelectionPolicy::RequiredForProductCalls)`. Product calls and
+session closure then require `x-worth-server-instance`; only the two session-open
+discovery entrances permit absence. `Optional` preserves the existing default
+for other hosts. Either policy rejects a supplied mismatching selector before
+request preparation, session lookup, response replay or adapter execution.
+
+Retain the originally observed selection with the locator. Missing selection
+returns `MissingServerInstance`; mismatch returns `ServerInstanceMismatch` with
+`requested_server_instance` and `actual_server_instance`. Do not adopt the latter
+as the target of an existing locator or retry an old mutation against it. A proxy
+must bind the selector to its authenticated assertion so removing/substituting
+the header cannot turn a selected request into discovery.
+
+The actual policy projects `requires_server_instance` in protocol descriptors
+and both generated languages. The generated Python remote request scope carries
+`server_instance_identity`; caller headers cannot override it. Static catalogs
+include required selection, never the live identity. Optional/default rows omit
+the false extension, preserving their prior serialized meaning and digest.
+
 The simplest service-to-service pattern is:
 
 1. Resolve the target operation.

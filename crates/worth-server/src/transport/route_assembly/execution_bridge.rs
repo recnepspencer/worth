@@ -18,6 +18,8 @@ use super::{
 
 #[derive(Clone, Debug)]
 pub struct WorthServerRouteExecutionBridge {
+    instance_selection: crate::WorthServerInstanceSelectionPolicy,
+    instance: crate::WorthServerInstanceIdentity,
     route: WorthServerRouteBridgeTarget,
     compat_http: WorthServerCompatibilityFacade,
 }
@@ -26,8 +28,12 @@ impl WorthServerRouteExecutionBridge {
     pub(crate) fn semantic(
         route: WorthServerDeclaredRoute,
         compat_http: WorthServerCompatibilityFacade,
+        instance: crate::WorthServerInstanceIdentity,
+        instance_selection: crate::WorthServerInstanceSelectionPolicy,
     ) -> Self {
         Self {
+            instance_selection,
+            instance,
             route: WorthServerRouteBridgeTarget::Semantic(route),
             compat_http,
         }
@@ -36,8 +42,11 @@ impl WorthServerRouteExecutionBridge {
     pub(crate) fn operational(
         route: WorthServerOperationalRoute,
         compat_http: WorthServerCompatibilityFacade,
+        instance: crate::WorthServerInstanceIdentity,
     ) -> Self {
         Self {
+            instance_selection: crate::WorthServerInstanceSelectionPolicy::Optional,
+            instance,
             route: WorthServerRouteBridgeTarget::Operational(route),
             compat_http,
         }
@@ -70,6 +79,24 @@ impl WorthServerRouteExecutionBridge {
     ) -> Result<WorthServerRouteExecutionOutcome, WorthServerTransportDenial> {
         match &self.route {
             WorthServerRouteBridgeTarget::Semantic(route) => {
+                if self
+                    .instance_selection
+                    .requires_selection(route.operation_family(), route.operation_name())
+                    && header_value(&request, "x-worth-server-instance").is_none()
+                {
+                    return Err(WorthServerTransportDenial::new(
+                        WorthServerTransportDenialCode::MissingServerInstance,
+                        "this operation requires the originally selected Server instance",
+                    ));
+                }
+                if let Some(requested) = header_value(&request, "x-worth-server-instance")
+                    && self.instance.as_str() != requested
+                {
+                    return Err(WorthServerTransportDenial::instance_mismatch(
+                        requested,
+                        self.instance.as_str(),
+                    ));
+                }
                 let prepared_request = self.prepare_request(&request, route)?;
                 execute_semantic_route(&self.compat_http, route, &request, &prepared_request)
             }

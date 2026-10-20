@@ -28,6 +28,7 @@ RESERVED_HEADERS = frozenset(
         "x-tenant-id",
         "x-worth-product-protocol-catalog-digest",
         "x-workspace-id",
+        "x-worth-server-instance",
     }
 )
 
@@ -71,6 +72,7 @@ class WorthServerRemoteRequestScope:
     product_session_identity: str | None = None
     basis_digest: str | None = None
     idempotency_key: str | None = None
+    server_instance_identity: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -200,6 +202,9 @@ def _request_headers(
     if operation.requires_product_session:
         _require_scope_identity(scope.product_session_identity, "product_session_identity")
         headers["x-product-session-id"] = scope.product_session_identity
+    if operation.requires_server_instance or scope.server_instance_identity is not None:
+        _require_scope_identity(scope.server_instance_identity, "server_instance_identity")
+        headers["x-worth-server-instance"] = scope.server_instance_identity
     if isinstance(operation, WorthServerProductOperation) and operation.requires_idempotency_key:
         _require_scope_identity(scope.idempotency_key, "idempotency_key")
         headers["idempotency-key"] = scope.idempotency_key

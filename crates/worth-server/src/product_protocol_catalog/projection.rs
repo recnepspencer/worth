@@ -18,21 +18,23 @@ use super::{
 pub(crate) fn project_product_protocol_catalog(
     registry: &WorthServerProductAdapterRegistry,
     routes: &WorthServerRouteInventory,
+    instance_selection: crate::WorthServerInstanceSelectionPolicy,
 ) -> Result<WorthServerProductProtocolCatalog, WorthServerProductProtocolCatalogError> {
     let route_index = product_route_index(routes);
-    let operations = project_operation_protocols(registry, &route_index)?;
-    let session_operations = project_session_operation_protocols(routes)?;
+    let operations = project_operation_protocols(registry, &route_index, instance_selection)?;
+    let session_operations = project_session_operation_protocols(routes, instance_selection)?;
     Ok(assemble_catalog(operations, session_operations))
 }
 
 fn project_operation_protocols(
     registry: &WorthServerProductAdapterRegistry,
     route_index: &BTreeMap<&str, Vec<&WorthServerRouteInventoryRow>>,
+    instance_selection: crate::WorthServerInstanceSelectionPolicy,
 ) -> Result<Vec<WorthServerProductOperationProtocol>, WorthServerProductProtocolCatalogError> {
     let mut operations = registry
         .declarations()
         .into_iter()
-        .map(|declaration| project_operation_protocol(declaration, route_index))
+        .map(|declaration| project_operation_protocol(declaration, route_index, instance_selection))
         .collect::<Result<Vec<_>, _>>()?;
     operations.sort_by(|left, right| left.operation_name().cmp(right.operation_name()));
     Ok(operations)
@@ -41,6 +43,7 @@ fn project_operation_protocols(
 fn project_operation_protocol(
     declaration: &WorthServerProductOperationDeclaration,
     route_index: &BTreeMap<&str, Vec<&WorthServerRouteInventoryRow>>,
+    instance_selection: crate::WorthServerInstanceSelectionPolicy,
 ) -> Result<WorthServerProductOperationProtocol, WorthServerProductProtocolCatalogError> {
     let route = require_exact_route(declaration.operation_name(), route_index)?;
     let result = declaration.result_contract();
@@ -61,6 +64,8 @@ fn project_operation_protocol(
             requires_product_session: requires_product_session(declaration),
             requires_idempotency_key: declaration.operation_family()
                 == WorthServerOperationFamily::ProductApplicationMutation,
+            requires_server_instance: instance_selection
+                .requires_selection(declaration.operation_family(), declaration.operation_name()),
         },
     ))
 }
@@ -86,6 +91,7 @@ fn require_exact_route<'a>(
 
 fn project_session_operation_protocols(
     routes: &WorthServerRouteInventory,
+    instance_selection: crate::WorthServerInstanceSelectionPolicy,
 ) -> Result<Vec<WorthServerProductSessionOperationProtocol>, WorthServerProductProtocolCatalogError>
 {
     let declarations = crate::product_session_coordination::product_session_protocol_declarations();
@@ -99,7 +105,9 @@ fn project_session_operation_protocols(
     reject_unexpected_session_routes(&session_routes, &declarations)?;
     let mut operations = declarations
         .iter()
-        .map(|declaration| project_session_operation_protocol(*declaration, &session_routes))
+        .map(|declaration| {
+            project_session_operation_protocol(*declaration, &session_routes, instance_selection)
+        })
         .collect::<Result<Vec<_>, _>>()?;
     operations.sort_by(|left, right| left.operation_name().cmp(right.operation_name()));
     Ok(operations)
@@ -128,6 +136,7 @@ fn reject_unexpected_session_routes(
 fn project_session_operation_protocol(
     declaration: crate::product_session_coordination::WorthServerProductSessionProtocolDeclaration,
     routes: &[&WorthServerRouteInventoryRow],
+    instance_selection: crate::WorthServerInstanceSelectionPolicy,
 ) -> Result<WorthServerProductSessionOperationProtocol, WorthServerProductProtocolCatalogError> {
     let matching_routes = routes
         .iter()
@@ -152,6 +161,10 @@ fn project_session_operation_protocol(
         declaration.request_schema_identity().to_string(),
         declaration.response_schema_identity().to_string(),
         declaration.requires_product_session(),
+        instance_selection.requires_selection(
+            WorthServerOperationFamily::ProductSessionCoordination,
+            declaration.operation_name(),
+        ),
     ))
 }
 
@@ -275,6 +288,7 @@ mod tests {
             basis_kind: "query-derived".to_string(),
             requires_product_session: false,
             requires_idempotency_key: false,
+            requires_server_instance: false,
         })
     }
 
@@ -286,6 +300,7 @@ mod tests {
             "worth-server-product-session.v1".to_string(),
             "worth-server-product-session-coordination.response.v1".to_string(),
             true,
+            false,
         )
     }
 }

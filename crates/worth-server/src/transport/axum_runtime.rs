@@ -46,6 +46,12 @@ pub(crate) async fn serve_runtime(runtime: WorthServerRuntime) -> io::Result<()>
     let router = project_axum_router(
         runtime.assembly().route_assembly(),
         WorthServerOperationRouter::new(
+            runtime
+                .assembly()
+                .product_session_registry()
+                .instance_identity()
+                .clone(),
+            runtime.assembly().instance_selection(),
             runtime.assembly().route_assembly().clone(),
             compat_http,
             runtime.assembly().transport_caller_admission().clone(),

@@ -27,6 +27,7 @@ use super::server::WorthServer;
 
 #[derive(Debug, Default)]
 pub struct WorthServerBuilder {
+    instance_selection: crate::WorthServerInstanceSelectionPolicy,
     config: Option<WorthServerConfig>,
     surface_registrations: Vec<WorthServerSurfaceRegistration>,
     operation_registrations: Vec<WorthServerOperationRegistration>,
@@ -39,6 +40,14 @@ pub struct WorthServerBuilder {
 }
 
 impl WorthServerBuilder {
+    pub fn with_instance_selection_policy(
+        mut self,
+        policy: crate::WorthServerInstanceSelectionPolicy,
+    ) -> Self {
+        self.instance_selection = policy;
+        self
+    }
+
     pub fn with_config(mut self, config: WorthServerConfig) -> Self {
         self.config = Some(config);
         self
@@ -118,6 +127,9 @@ impl WorthServerBuilder {
 
     pub fn build(self) -> Result<WorthServer, WorthServerBuildError> {
         let config = self.config.ok_or(WorthServerBuildError::MissingConfig)?;
+        let server_instance = crate::WorthServerInstanceIdentity::fresh().map_err(|cause| {
+            WorthServerBuildError::InstanceIdentityUnavailable(cause.to_string())
+        })?;
         let counters = Arc::new(WorthServerCounters::default());
         let surface_registry =
             WorthServerSurfaceRegistry::build(self.surface_registrations, counters.as_ref())
@@ -136,6 +148,8 @@ impl WorthServerBuilder {
         )
         .map_err(WorthServerBuildError::InvalidRouteAssembly)?;
         let assembly = WorthServerRuntimeAssembly::new(WorthServerRuntimeAssemblyParts {
+            server_instance,
+            instance_selection: self.instance_selection,
             config,
             surface_registry,
             operation_registry,
@@ -155,6 +169,7 @@ impl WorthServerBuilder {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthServerBuildError {
     MissingConfig,
+    InstanceIdentityUnavailable(String),
     InvalidSurfaceRegistry(WorthServerSurfaceRegistryError),
     InvalidOperationRegistry(WorthServerOperationRegistryError),
     InvalidProductAdapterRegistry(WorthServerProductAdapterRegistryError),

@@ -116,6 +116,7 @@ impl WorthServer {
         project_product_protocol_catalog(
             self.runtime.assembly().product_adapter_registry(),
             self.runtime.assembly().route_assembly().inventory(),
+            self.runtime.assembly().instance_selection(),
         )
     }
 
@@ -135,6 +136,14 @@ impl WorthServer {
 
     pub fn product_session_registry(&self) -> WorthServerProductSessionRegistry {
         self.runtime.assembly().product_session_registry().clone()
+    }
+
+    /// Describes this live assembly, not a program/release identity or authorization grant.
+    pub fn instance_identity(&self) -> &crate::WorthServerInstanceIdentity {
+        self.runtime
+            .assembly()
+            .product_session_registry()
+            .instance_identity()
     }
 
     pub fn operation_runtime_certification(
@@ -246,6 +255,8 @@ impl WorthServer {
 
     pub fn operation_router(&self) -> WorthServerOperationRouter {
         WorthServerOperationRouter::new(
+            self.instance_identity().clone(),
+            self.runtime.assembly().instance_selection(),
             self.runtime.assembly().route_assembly().clone(),
             self.compat_http(),
             self.runtime.assembly().transport_caller_admission().clone(),

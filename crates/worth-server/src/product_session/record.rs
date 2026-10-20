@@ -5,6 +5,7 @@ use super::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthServerProductSession {
+    server_instance: crate::WorthServerInstanceIdentity,
     identity: WorthServerProductSessionIdentity,
     lifecycle: WorthServerProductSessionLifecycle,
     expiry_posture: WorthServerProductSessionExpiryPosture,
@@ -17,6 +18,7 @@ pub struct WorthServerProductSession {
 }
 
 pub(crate) struct WorthServerProductSessionParts {
+    pub(crate) server_instance: crate::WorthServerInstanceIdentity,
     pub(crate) identity: WorthServerProductSessionIdentity,
     pub(crate) lifecycle: WorthServerProductSessionLifecycle,
     pub(crate) expiry_posture: WorthServerProductSessionExpiryPosture,
@@ -30,6 +32,7 @@ pub(crate) struct WorthServerProductSessionParts {
 impl WorthServerProductSession {
     pub(crate) fn new(parts: WorthServerProductSessionParts) -> Self {
         let WorthServerProductSessionParts {
+            server_instance,
             identity,
             lifecycle,
             expiry_posture,
@@ -51,6 +54,7 @@ impl WorthServerProductSession {
             basis_digest.as_deref().unwrap_or("none"),
         );
         Self {
+            server_instance,
             identity,
             lifecycle,
             expiry_posture,
@@ -65,6 +69,10 @@ impl WorthServerProductSession {
 
     pub fn identity(&self) -> &WorthServerProductSessionIdentity {
         &self.identity
+    }
+
+    pub fn server_instance(&self) -> &crate::WorthServerInstanceIdentity {
+        &self.server_instance
     }
 
     pub fn lifecycle(&self) -> WorthServerProductSessionLifecycle {

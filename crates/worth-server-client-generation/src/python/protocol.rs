@@ -30,6 +30,7 @@ class WorthServerProductOperation:
     requires_product_session: bool
     requires_basis: bool
     requires_idempotency_key: bool
+    requires_server_instance: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +41,7 @@ class WorthServerProductSessionOperation:
     request_schema: str
     response_schema: str
     requires_product_session: bool
+    requires_server_instance: bool
 
 
 WorthServerRemoteOperation = WorthServerProductOperation | WorthServerProductSessionOperation
@@ -93,6 +95,7 @@ def _decode_product_session_response(value: object) -> WorthServerOperationOutco
         not isinstance(value, dict)
         or value.get("route_kind") != "product_session"
         or not isinstance(value.get("product_session_identity"), str)
+        or ("server_instance" in value and not isinstance(value["server_instance"], str))
         or not isinstance(value.get("plan_digest"), str)
     ):
         raise ValueError("worth_product_session_response_invalid")
@@ -170,7 +173,7 @@ PRODUCT_OPERATIONS: dict[str, WorthServerProductOperation] = {{
     );
     for operation in catalog.operations() {
         output.push_str(&format!(
-            "    {:?}: WorthServerProductOperation(\n        name={:?}, method=WorthServerHttpMethod.{}, route_path={:?},\n        request_schema={:?}, result_schema={:?}, result_schema_version={}, result_max_inline_bytes={},\n        requires_product_session={}, requires_basis={}, requires_idempotency_key={},\n    ),\n",
+            "    {:?}: WorthServerProductOperation(\n        name={:?}, method=WorthServerHttpMethod.{}, route_path={:?},\n        request_schema={:?}, result_schema={:?}, result_schema_version={}, result_max_inline_bytes={},\n        requires_product_session={}, requires_basis={}, requires_idempotency_key={}, requires_server_instance={},\n    ),\n",
             operation.operation_name(),
             operation.operation_name(),
             operation.method(),
@@ -182,6 +185,7 @@ PRODUCT_OPERATIONS: dict[str, WorthServerProductOperation] = {{
             python_bool(operation.requires_product_session()),
             python_bool(operation.requires_basis()),
             python_bool(operation.requires_idempotency_key()),
+            python_bool(operation.requires_server_instance()),
         ));
     }
     output.push_str(
@@ -189,7 +193,7 @@ PRODUCT_OPERATIONS: dict[str, WorthServerProductOperation] = {{
     );
     for operation in catalog.product_session_operations() {
         output.push_str(&format!(
-            "    {:?}: WorthServerProductSessionOperation(\n        name={:?}, method=WorthServerHttpMethod.{}, route_path={:?},\n        request_schema={:?}, response_schema={:?}, requires_product_session={},\n    ),\n",
+            "    {:?}: WorthServerProductSessionOperation(\n        name={:?}, method=WorthServerHttpMethod.{}, route_path={:?},\n        request_schema={:?}, response_schema={:?}, requires_product_session={}, requires_server_instance={},\n    ),\n",
             operation.operation_name(),
             operation.operation_name(),
             operation.method(),
@@ -197,6 +201,7 @@ PRODUCT_OPERATIONS: dict[str, WorthServerProductOperation] = {{
             operation.request_schema_identity(),
             operation.response_schema_identity(),
             python_bool(operation.requires_product_session()),
+            python_bool(operation.requires_server_instance()),
         ));
     }
     output.push_str(

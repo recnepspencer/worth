@@ -1438,6 +1438,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "flate2",
+ "getrandom",
  "serde",
  "serde_json",
  "sha2",

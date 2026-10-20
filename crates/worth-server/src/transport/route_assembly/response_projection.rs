@@ -19,6 +19,7 @@ pub(super) fn semantic_response(outcome: WorthServerRouteExecutionOutcome) -> Re
             Json(json!({
                 "route_kind": "product_session",
                 "product_session_identity": coordination.session().identity().as_str(),
+                "server_instance": coordination.session().server_instance().as_str(),
                 "basis": coordination.session().basis_digest(),
                 "plan_digest": coordination.plan().canonical_digest(),
             })),
@@ -134,6 +135,8 @@ pub(super) fn transport_denial_response(denial: WorthServerTransportDenial) -> R
             Json(json!({
                 "transport_denial_code": format!("{:?}", denial.code()),
                 "transport_denial_reason_key": denial.reason_key(),
+                "requested_server_instance": denial.requested_server_instance(),
+                "actual_server_instance": denial.actual_server_instance(),
                 "detail": denial.detail(),
                 "product_operation_denial": denial.product_operation_denial().map(super::product_surface_denial::project),
             })),

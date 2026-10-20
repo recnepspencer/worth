@@ -256,6 +256,7 @@ pub use response::{
     WorthServerResponsePlan, WorthServerResponseReceipt, WorthServerResponseTransform,
     WorthServerSuccessEnvelope, WorthServerSuccessKind, WorthServerSuccessPayload,
 };
+pub use runtime::{WorthServerInstanceIdentity, WorthServerInstanceSelectionPolicy};
 pub use surfaces::{
     BinarySurface, BinarySurfaceRoot, CompatHttpSurface, CompatHttpSurfaceRoot, IntegrationSurface,
     IntegrationSurfaceRoot, LeaseSurface, LeaseSurfaceRoot, SyncSurface, SyncSurfaceRoot,
