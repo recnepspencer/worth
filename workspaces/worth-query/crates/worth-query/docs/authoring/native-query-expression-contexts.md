@@ -160,6 +160,19 @@ Boolean or validation loop as an alternate admission path.
 
 ## Inspection And Debugging
 
+Payload codecs receiving `ApplicationQueryExpressionSnapshot` can inspect nested
+exactly-one and optional-one records with `snapshot.field_path(&["owner", "name"])`.
+The snapshot schema owns nominal record names and field positions; do not hard-code
+Query's generated names or zip values against copied field lists. Intermediate
+optional-one records are unwrapped only when present. A final optional field stays
+an option value; an absent intermediate record, unknown/malformed path or list
+returns `None`. Collections require an explicit policy, never a first-row fallback.
+
+`ExpressionValue::record_fields()` is the record-only data view, unlike `items()`
+which also exposes lists and entries. Both these views and `field_path` inspect
+descriptive data only. A publicly constructed snapshot remains untrusted and
+cannot stand in for an admitted query/source observation or operation authority.
+
 Use `expression_context()` to inspect the exact schema and value. `None` means
 the read did not request retention. `ExpressionContextUnavailable` means the
 installed shape cannot provide a supported context. `ExpressionContextIncomplete`
