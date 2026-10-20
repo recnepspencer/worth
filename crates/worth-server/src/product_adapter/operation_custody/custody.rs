@@ -134,8 +134,9 @@ impl<C: SourceCommand> Record<C> {
                 .map_err(Some),
         }
     }
-    pub(super) fn view(&self) -> View {
+    pub(super) fn view(&self, application: &C) -> View {
         super::view::describe::<C>(
+            application,
             &self.custody,
             self.refusal.as_ref(),
             self.close_refusal.as_ref(),

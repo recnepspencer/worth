@@ -105,6 +105,7 @@ pub enum WorthServerSourceReply<CompletionData = ()> {
     },
     DisclosureRefused {
         custody_id: String,
+        next_sequence: Option<u64>,
         diagnostic: Option<super::diagnostic::WorthServerSourceDiagnostic>,
     },
 }
@@ -131,11 +132,11 @@ impl<C: Serialize> WorthServerProductResultValue for PublishedReply<'_, C> {
         self.identity
     }
     fn result_schema_version(&self) -> u32 {
-        4
+        5
     }
 }
 pub(super) fn result_contract(identity: &str) -> WorthServerProductResultContract {
-    WorthServerProductResultContract::canonical_json(identity, 4, 16 * 1024)
+    WorthServerProductResultContract::canonical_json(identity, 5, 16 * 1024)
         .expect("fixed owning source result")
 }
 

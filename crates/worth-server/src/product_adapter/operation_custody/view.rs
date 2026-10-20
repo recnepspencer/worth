@@ -33,6 +33,7 @@ pub enum View {
     Completed {
         recovered: bool,
         outcome_identity: Option<u64>,
+        committed_basis: Option<String>,
         close_refusal: Option<WorthServerSourceDiagnostic>,
     },
     Terminal {
@@ -90,6 +91,7 @@ pub enum CommitPosture {
 }
 
 pub(super) fn describe<C: SourceCommand>(
+    application: &C,
     custody: &Custody<C>,
     refusal: Option<&WorthQuerySourceOnlyDenial>,
     close: Option<&WorthQueryOperationCloseDenial>,
@@ -109,6 +111,7 @@ pub(super) fn describe<C: SourceCommand>(
             };
             View::Completed {
                 recovered,
+                committed_basis: application.program().runtime().application_commit_basis_token(receipt).ok(),
                 outcome_identity: receipt.outcome_identity().map(worth_query_host::facade::primary_graph::WorthQueryApplicationCommitOutcomeIdentity::get),
                 close_refusal: close.map(diagnostic::cleanup),
             }

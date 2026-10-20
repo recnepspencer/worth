@@ -109,7 +109,19 @@ metadata is not fabricated from a latest-state lookup or a replacement intent.
 
 If Query currently denies inspection, retain the original command and present
 `DisclosureRefused`. Do not expose cached completion or treat it as no-effect.
-When lawful again, inspect and use the newly returned next sequence.
+For the authenticated matching command owner, that reply still carries mechanical
+`next_sequence`; it grants no Query permission and exposes no business state.
+Explicit advancement may retry a retained preparation; native authorization still
+decides whether it may proceed. A definitive first-Create `NotExecuted` capacity,
+queue, quiesce or disconnected-worker refusal accepted no new custody. Duplicate
+or unavailable-address refusals do not prove an earlier command had no effect.
+
+Result revision 5 includes `native.Completed.committed_basis`, derived using
+Query's `application_commit_basis_token` on the actual fresh/recovered receipt,
+not the latest head. Compare it to the governed reload basis before automatically
+submitting queued edits. A mismatch or missing correspondence requires explicit
+review; otherwise another writer between commit and reload would silently rebase
+those edits. These descriptive tokens convey no publication or recovery authority.
 
 ## How It Relates To Other Features
 

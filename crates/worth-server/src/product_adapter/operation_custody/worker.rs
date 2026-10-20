@@ -205,13 +205,14 @@ fn held<C: SourceCommand>(
     if let Err(cause) = record.assess(application, request) {
         return Reply::DisclosureRefused {
             custody_id: id.to_owned(),
+            next_sequence: record.sequence.checked_add(1),
             diagnostic: cause.as_ref().map(super::diagnostic::mutation),
         };
     }
     Reply::Held {
         custody_id: id.to_owned(),
         next_sequence: record.sequence.checked_add(1),
-        native: record.view(),
+        native: record.view(application),
         completion_data: record.completion_data(),
     }
 }
