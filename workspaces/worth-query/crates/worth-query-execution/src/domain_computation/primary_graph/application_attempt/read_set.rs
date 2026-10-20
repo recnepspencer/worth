@@ -122,6 +122,8 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) workflow_succession_binding:
         Option<super::workflow_instance_program::WorkflowSuccessionBindingProof>,
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
+    pub(super) local_action_settlement:
+        Option<super::workflow_transition_program::LocalActionSettlementProof>,
     /// Earned optional-effect guard disposition from the same sealed decision.
     /// It cannot be supplied by a caller or inferred from an absent payload.
     pub(super) body_external_emission:

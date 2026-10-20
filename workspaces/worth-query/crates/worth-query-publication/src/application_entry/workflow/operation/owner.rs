@@ -41,6 +41,7 @@ pub enum WorthQueryWorkflowOperationOwnerPosture {
 /// the owner already committed it.
 #[derive(Debug)]
 pub enum WorthQueryWorkflowOperationOwnerAcceptanceDenial {
+    LocalActionPreparation(worth_query_execution::publication_boundary::workflow_advance::WorkflowTransitionPreparationDenial),
     Binding(WorthQueryWorkflowOperationBindingDenial),
     Request(WorthQueryApplicationRequestMutationDenial),
     Opening(WorthQueryApplicationRecoveryRequestDenial),
@@ -55,6 +56,9 @@ pub enum WorthQueryWorkflowOperationOwnerAcceptanceDenial {
 impl std::fmt::Display for WorthQueryWorkflowOperationOwnerAcceptanceDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::LocalActionPreparation(denial) => {
+                write!(formatter, "local action completion: {denial}")
+            }
             Self::Binding(denial) => {
                 write!(formatter, "workflow operation binding denied: {denial:?}")
             }

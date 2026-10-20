@@ -63,11 +63,28 @@ where
         WorthQueryApplicationAttemptDenial,
     > {
         let receipt_identity = performed.identity();
+        let local_origin =
+            self.required.local_action.is_some().then(|| {
+                super::LocalActionSettlementProof::from_performed(&self.required, &performed)
+            });
         let executor = crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_performed_receipt(&performed);
         let mut effects = Vec::new();
-        let transition = visit_workflow_operation_transition_facts(
+        let basis = match self.required.local_action_kind() {
+            Some(super::super::WorkflowLocalActionKind::Return) => self
+                .admitted
+                .operation_settlement_basis()
+                .for_business_return(),
+            Some(super::super::WorkflowLocalActionKind::Terminate) => self
+                .admitted
+                .operation_settlement_basis()
+                .for_business_termination(),
+            None => self.admitted.operation_settlement_basis(),
+        };
+        let terminal = self.required.local_action_kind()
+            == Some(super::super::WorkflowLocalActionKind::Terminate);
+        let transition = crate::domain_computation::primary_graph::workflow::instance::visit_workflow_operation_settlement_facts(
             &self.layout,
-            &self.admitted,
+            &basis,
             &receipt_identity,
             executor,
             |effect| {
@@ -85,18 +102,28 @@ where
         for effect in &effects {
             demand.observe(effect)?;
         }
-        let reservation = super::super::admit_platform_effects(self.admitted.read_set(), demand)?;
+        let reservation = if self.required.local_action.is_some() {
+            super::super::super::effect_program::admit_workflow_settlement_effects(
+                &self.admitted.read_set().admission,
+                demand,
+            )?
+        } else {
+            super::super::admit_platform_effects(self.admitted.read_set(), demand)?
+        };
         reservation.materialize(&effects)?;
         let transition_identity = self.admitted.identity().to_owned();
         let transition_identity_bytes = *self.admitted.identity_bytes();
         let instance = self.admitted.instance();
         let node_path = self.admitted.node_path().to_owned();
-        let progress_update = self.admitted.prepare_progress_update(
-            worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
-            Some(receipt_identity),
-        )?;
+        let progress_update = if terminal {
+            None
+        } else {
+            Some(basis.prepare_progress_update(receipt_identity)?)
+        };
+        let mut read_set = self.admitted.into_read_set();
+        read_set.local_action_settlement = local_origin;
         let program = WorthQueryApplicationEffectProgram {
-            read_set: self.admitted.into_read_set(),
+            read_set,
             effects,
             emission_retained_bytes: 0,
             emission_retained_bytes_ceiling: 0,
@@ -120,8 +147,8 @@ where
             assessment: None,
             supporting_identity: Some(receipt_identity),
             operation_receipt_identity: Some(receipt_identity),
-            progress_update: Some(progress_update),
-            terminal: false,
+            progress_update,
+            terminal,
             approval: None,
             approval_identity: None,
             approval_authentication: None,

@@ -1,6 +1,4 @@
-use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::{
-    progression_denied, WorthQueryProviderProgressionOutcome,
-};
+use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialStage as DenialStage;
 
 pub(super) struct WorthQueryAdmittedProviderSession<'run> {
@@ -41,9 +39,11 @@ pub(super) fn admit_provider_session<'run>(
         .map(|prepared| prepared.bind_reads_and_effects())
     {
         Ok(staged) => staged,
-        Err(_) => {
+        Err(cause) => {
             return Err(WorthQueryProviderSessionAdmissionFailure {
-                outcome: progression_denied(DenialStage::ProviderPlan),
+                outcome: WorthQueryProviderProgressionOutcome::Denied(
+                    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                        DenialStage::ProviderPlan,format!("provider session admission: {cause:?}"))),
                 mutation_run,
             })
         }
@@ -57,7 +57,9 @@ pub(super) fn admit_provider_session<'run>(
         Err(mutation_run) => {
             let _ = staged.abort();
             Err(WorthQueryProviderSessionAdmissionFailure {
-                outcome: progression_denied(DenialStage::ProviderPlan),
+                outcome: WorthQueryProviderProgressionOutcome::Denied(
+                    crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+                        DenialStage::ProviderPlan, "provider session does not match the admitted mutation run")),
                 mutation_run,
             })
         }

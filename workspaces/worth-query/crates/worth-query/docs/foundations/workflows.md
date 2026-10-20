@@ -1178,8 +1178,9 @@ nonterminal prior point reachable along the forward graph; self, forward,
 terminal and ambiguous routes are refused. A Back edge is explicit caller-driven
 meaning, not an automatic control successor. Only an installed local, unsigned
 native operation body with occurrence authority and explicit empty workflow
-execution requirements can serve it. An installed handler, matching name,
-external effect, or approval floor is insufficient.
+execution requirements can serve it. An installed handler, matching name or
+approval floor is insufficient. A declared external effect uses the completion
+path below; its outbox is not permission to move the cursor.
 
 For example, a return body can require business stage `Review`, assign `Draft`
 and capture the actual source stage and admitted actor in an audit. It should
@@ -1213,8 +1214,10 @@ Preparation changes nothing. Query derives input identity from the admitted
 input, checks the binding-associated installed capability, resolves the current
 source occurrence and exact route, and retains its facts in the operation
 authority. Normal mutation execution freshly authorizes the request and admits
-the body. Its business effects, audit and native `Returned` settlement publish
-in one candidate. The same compiled route drives incremental progression and
+the body. Without an emitted external effect, its business effects, audit and
+native `Returned` settlement publish in one candidate. With an emitted effect,
+business effects and the outbox publish first; exact owner custody fences the
+frontier until native completion and local-action acceptance below. The same compiled route drives incremental progression and
 cold reconstruction; no second host call moves the cursor after commit.
 
 Retain `required` together with the original input and key until the outcome
@@ -1240,8 +1243,8 @@ no authority. Definitions with neither Back nor global actions retain v4; Back-o
 or changed members refuse readmission and incompatible program adoption cannot
 silently carry the route.
 
-Back does not implement Reopen, an atomic multi-operation Submit, external-effect
-Back, automatic signature invalidation or compensation of earlier performed
+Back does not implement Reopen, an atomic multi-operation Submit,
+automatic signature invalidation or compensation of earlier performed
 effects. For an authored business ending such as Void, use the following surface.
 
 ## Business termination
@@ -1265,8 +1268,9 @@ input justification. Query owns occurrence selection and native ending.
 
 Install the actual local, unsigned body as a vocabulary operation. Like business
 Back, the binding requires program and workflow authority with explicit empty
-workflow execution requirements. External effects and approval floors are not
-supported by this local join. Each binding appears at most once in the global
+workflow execution requirements. Approval floors are not supported by this
+local join; declared external effects retain their ordinary outbox/recovery
+owners and need local-action acceptance below. Each binding appears at most once in the global
 collection, and each action counts against the declared effect ceiling. Multiple
 distinct bindings are allowed; canonical identity retains their exact contracts.
 
@@ -1291,12 +1295,80 @@ let outcome = application.request(&principal, &scope)
 
 The issuer derives identity from admitted input and verifies the exact
 binding-associated installed capability. Normal execution freshly authorizes
-and admits the native body. Business writes, audit, receipted `Terminated`
+and admits the native body. Without an emitted effect, business writes, audit, receipted `Terminated`
 settlement, distinct Terminated instance state and live-membership retirement
 publish in one candidate. There is no successor progress update. A denied body
 publishes none of these; a competing forward publication makes the whole
 candidate stale, and a winning ending prevents held forward authority publishing.
 External owner custody must settle first; termination cannot abandon it.
+
+### Complete a local action with an external effect
+
+Retain the original action through the same ordinary owning funnel as other
+guarded operations. Use advanced access only for native route preparation; the
+owner keeps original input, source, preconditions, key and issued requirement:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+// Preserve the native owner on every refusal.
+let required = request.advanced().mutate(original.clone())
+    .without_source().idempotency(&key)
+    .prepare_workflow_termination_action(workflow, instance)?;
+let operation = request.mutate(original).without_source().idempotency_owned(key)?
+    .for_workflow_operation(workflow, &required)?
+    .retain_operation::<Program, EndingAction>(workflow.program_runtime())?;
+let outcome = operation.advance(&fresh_request);
+```
+
+For a source-bound action, both captures use the exact original source, not a
+new observation after the business commit. `advance` can return `Progress`
+after that commit while dispatch remains pending. Business termination status
+may already be committed, but the kernel instance is still live and owes its
+ending. Acknowledgement is not completion. Keep the actual owner; use its
+installed transport recovery or authenticated inbound source, never a second
+mutation, copied receipt, local pending ledger or cursor update.
+
+Once `advance` returns the completed owner, accept it under the original action
+binding's fresh capability. A Quality-Manager-only ending need not borrow an
+unrelated editor or Advance capability:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let accepted = completed.accept_local_action(&fresh_request, workflow)
+    .map_err(|(original_owner, denial)| retain_refusal(original_owner, denial))?;
+match &accepted.progress {
+    WorkflowProgressOutcome::Completed(step) => show_native_settlement(step),
+    other => retain_native_outcome(other), // commit denial/partial is not successful ending
+}
+// Keep accepted.operation until its separate actual cleanup is discharged.
+```
+
+Acceptance rechecks the exact runtime, pinned program and installed vocabulary,
+original binding/input, native receipt and settled external custody. Native
+selection reobserves the same authored route/frontier and admits only that
+receipt's own pending custody. It publishes `Returned` or `Terminated`—not an
+ordinary forward `Completed` transition. Termination retires live membership
+only with this settlement. A different pending operation cannot be abandoned;
+an issued but unperformed operation instead loses currentness when another
+publication wins. Native proposal publication and frontier movement retain
+custody facts, including absence, against those races.
+
+The separate settlement has a native occurrence-derived idempotency namespace
+while retaining the original client intent. Exact acceptance replay returns its
+original settlement before ended-state rejection, but never before fresh
+authorization. If the declared effect was suppressed, the source already jointly
+settled: acceptance only projects that original receipt, with no new commit.
+An ordinary forward operation cannot use this local-action entrance; use
+`accept_owned_operation` for its corresponding native Advance request.
+
+`Ok` returns both typed progress and the original completed owner; it is not a
+blanket success label. Classify `accepted.progress` and retain any actual pending
+publication or indeterminate carrier. Do not auto-retry stale work, drop recovery
+authority, recapture original input, or equate source-owner close with workflow
+settlement. Live owners are process-local; this API does not serialize them or
+promise Store-backed restart recovery.
 
 Exact retry through the retained requirement returns the original outcome even
 after ending. Different input cannot bind that requirement, and a different key
@@ -1605,6 +1677,7 @@ until the owner's receipt is accepted. While it is unsettled:
 - cancellation is refused with `WorkflowOperationInOwnerCustody`;
 - migration and fork continuation are refused;
 - program adoption reports the instance as `OperationInOwnerCustody` and gives it no legal disposition.
+- another local action, fresh proposal publication or different ordinary frontier cannot bypass it; matching ordinary requirement recovery remains available.
 
 Accept the owner's receipt (see [Operations](#operations)), then retry.
 

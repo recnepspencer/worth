@@ -41,6 +41,7 @@ mod evidence_join;
 mod local_actions;
 mod navigation;
 mod operation;
+pub(in crate::domain_computation::primary_graph::application_attempt) use operation::LocalActionSettlementProof;
 pub(in crate::domain_computation::primary_graph) use operation::ValidatedWorkflowOperationReceipt;
 pub(super) use operation::{operation_receipt_requires_recovery, receipt_identity_from_outcome};
 mod preparation;
@@ -62,7 +63,7 @@ pub use publication::{
     WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
 };
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) enum WorkflowTransitionRequestKind {
     Advance,
     NavigateBack,
@@ -71,6 +72,7 @@ pub(in crate::domain_computation::primary_graph) enum WorkflowTransitionRequestK
         requested:
             crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowOperation,
         input_identity: [u8; 32],
+        completion: Option<local_actions::VerifiedLocalActionCompletion>,
     },
     CollectAssessment {
         node_path: String,

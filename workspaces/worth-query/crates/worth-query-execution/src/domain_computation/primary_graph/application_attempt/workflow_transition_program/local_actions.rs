@@ -19,6 +19,40 @@ use worth_query_declaration::facade::application_schema::ApplicationOperationMar
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::RelationId;
 
+/// A native verified original receipt may settle only its own pending custody.
+/// It grants no executable operation authority and has no public constructor.
+#[derive(Clone)]
+pub(in crate::domain_computation::primary_graph) struct VerifiedLocalActionCompletion {
+    pub(super) transition: String,
+}
+#[derive(Clone, Debug)]
+pub(super) struct LocalActionDescriptor {
+    pub(super) kind: WorkflowLocalActionKind,
+    pub(super) spec: String,
+    pub(super) support: [u8; 32],
+}
+impl LocalActionDescriptor {
+    pub(super) fn new<S, Spec>(
+        installed: &worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec<
+            S,
+            Spec,
+        >,
+        kind: WorkflowLocalActionKind,
+    ) -> Self
+    where
+        S: ApplicationSchema,
+        Spec: worth_query_declaration::facade::application_program::ApplicationWorkflowSpec<
+            Schema = S,
+        >,
+    {
+        Self {
+            kind,
+            spec: Spec::IDENTITY.as_str().to_owned(),
+            support: *installed.support_identity_bytes(),
+        }
+    }
+}
+
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
         Schema,
@@ -32,6 +66,58 @@ where
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
     #[allow(clippy::too_many_arguments)]
+    pub(super) fn materialize_observed_local_action(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        layout: &WorthQueryWorkflowLayout,
+        compiled: &CompiledWorkflowDefinition,
+        instance: PublishedWorkflowInstanceRef,
+        observed: &mut super::super::workflow_instance_observation::ObservedWorkflowInstance,
+        requested: &SelectedWorkflowOperation,
+        maximum_transitions: usize,
+        origin: LocalActionDescriptor,
+        membership: RelationId,
+        mut facts: Vec<WorthQueryApplicationObservedFact>,
+        input_identity: [u8; 32],
+        allowance: WorkflowStepAllowance,
+        completion: Option<&VerifiedLocalActionCompletion>,
+    ) -> Result<
+        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationAttemptDenial,
+    > {
+        let selected = self.select_observed_local_action(
+            execution,
+            layout,
+            compiled,
+            &instance,
+            observed,
+            requested,
+            maximum_transitions,
+            origin.kind,
+            completion,
+        )?;
+        if completion.is_some_and(|original| selected.identity() != original.transition) {
+            return Err(super::denial(
+                super::WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+                "local completion's original authored route or frontier changed",
+            ));
+        }
+        facts.append(&mut observed.facts);
+        self.materialize_local_action_requirement(
+            layout,
+            compiled,
+            instance,
+            selected,
+            membership,
+            facts,
+            requested.clone(),
+            input_identity,
+            allowance,
+            origin,
+            completion,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn select_observed_local_action(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -42,6 +128,7 @@ where
         requested: &SelectedWorkflowOperation,
         maximum_transitions: usize,
         kind: WorkflowLocalActionKind,
+        completion: Option<&VerifiedLocalActionCompletion>,
     ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
         if self.admission.operation() != requested.operation {
             return Err(super::denial(
@@ -62,6 +149,16 @@ where
             )
         })?;
         let custody = self.lease.handle().with_runtime(execution, |runtime| {
+            if let Some(completion) = completion {
+                let (custody, fact) = super::super::workflow_instance_observation::instance_binding::owner_custody(
+                    execution, runtime, self.lease.snapshot(), layout, instance.entity_id(),
+                )?;
+                if custody.as_deref() != Some(completion.transition.as_str()) {
+                    return Err(super::denial(super::WorthQueryApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody,
+                        "local completion does not own the exact pending occurrence"));
+                }
+                Ok(fact)
+            } else {
             super::super::workflow_instance_observation::instance_binding::fence_owner_custody(
                 execution,
                 runtime,
@@ -71,6 +168,7 @@ where
                 &observed.transitions,
                 "local workflow action cannot abandon owner custody",
             )
+            }
         })?;
         observed.facts.push(custody);
         let select = match kind {
@@ -97,7 +195,8 @@ where
         operation: SelectedWorkflowOperation,
         input_identity: [u8; 32],
         allowance: WorkflowStepAllowance,
-        kind: WorkflowLocalActionKind,
+        origin: LocalActionDescriptor,
+        completion: Option<&VerifiedLocalActionCompletion>,
     ) -> Result<
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
@@ -127,34 +226,36 @@ where
             instance.entity_id(),
             subject,
             membership,
-            matches!(kind, WorkflowLocalActionKind::Terminate),
+            matches!(origin.kind, WorkflowLocalActionKind::Terminate),
             allowance,
         );
-        let authority = WorkflowOperationAuthority::new(
-            operation.operation.clone(),
-            binding,
-            *admitted.identity_bytes(),
-            input_identity,
-            runtime_authority,
-            session,
-            observation,
-            authority_facts,
-            match kind {
-                WorkflowLocalActionKind::Terminate => admitted
-                    .operation_settlement_basis()
-                    .for_business_termination(),
-                WorkflowLocalActionKind::Return => {
-                    admitted.operation_settlement_basis().for_business_return()
-                }
-            },
-            layout.clone(),
-            None,
-            operation.workflow_execution_requirements.clone(),
-            handle,
-            graph_layout,
-        )
-        .with_deadline(deadline);
-        let required = RequiredWorkflowOperation::from_selected(
+        let authority = completion.is_none().then(|| {
+            WorkflowOperationAuthority::new(
+                operation.operation.clone(),
+                binding,
+                *admitted.identity_bytes(),
+                input_identity,
+                runtime_authority,
+                session,
+                observation,
+                authority_facts,
+                match origin.kind {
+                    WorkflowLocalActionKind::Terminate => admitted
+                        .operation_settlement_basis()
+                        .for_business_termination(),
+                    WorkflowLocalActionKind::Return => {
+                        admitted.operation_settlement_basis().for_business_return()
+                    }
+                },
+                layout.clone(),
+                None,
+                operation.workflow_execution_requirements.clone(),
+                handle,
+                graph_layout,
+            )
+            .with_deadline(deadline)
+        });
+        let mut required = RequiredWorkflowOperation::from_selected(
             branch,
             runtime_authority,
             *compiled.program_revision(),
@@ -166,8 +267,9 @@ where
             admitted.occurrence(),
             operation,
             input_identity,
-            Some(authority),
+            authority,
         );
+        required.local_action = Some(origin);
         Ok(PreparedWorkflowAdvance::AwaitingOperation(
             PreparedWorkflowOperation {
                 admitted,

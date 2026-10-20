@@ -12,6 +12,7 @@ mod governed_start_path;
 mod transition_roles;
 pub(in crate::domain_computation::primary_graph::application_attempt) use actors::observe as observe_instance_roles;
 pub(in crate::domain_computation::primary_graph::application_attempt) use transition_roles::observe as observe_transition_roles;
+mod owner_custody;
 pub(in crate::domain_computation::primary_graph) mod read_only;
 mod retained_history;
 pub(in crate::domain_computation::primary_graph) use read_only::ReadOnlyWorkflowHistory;

@@ -13,6 +13,7 @@ mod completion;
 mod construction;
 mod inputs;
 mod inspection;
+mod local_completion;
 pub use inspection::{
     WorthQueryWorkflowSourceInspection, WorthQueryWorkflowSourceInspectionDenial,
     WorthQueryWorkflowSourcePosture,

@@ -13,7 +13,7 @@ use crate::domain_computation::primary_graph::{
     application_attempt::workflow_instance_observation::{
         instance_binding, observe_retained_transition,
     },
-    workflow::instance::{visit_workflow_operation_transition_facts, WorkflowInstanceProgress},
+    workflow::instance::WorkflowInstanceProgress,
     workflow::{
         definition::{CompiledWorkflowDefinition, CompiledWorkflowNodeKind},
         proposal::observe_workflow_operation_input,
@@ -26,8 +26,10 @@ use crate::domain_computation::primary_graph::{
 
 mod authority_binding;
 mod evidence;
+mod local_settlement;
 mod settlement;
 use evidence::WorkflowOperationEvidence;
+pub(in crate::domain_computation::primary_graph::application_attempt) use local_settlement::LocalActionSettlementProof;
 mod receipt;
 pub(in crate::domain_computation::primary_graph::application_attempt) use receipt::operation_receipt_requires_recovery;
 pub(in crate::domain_computation::primary_graph::application_attempt) use receipt::receipt_identity_from_outcome;

@@ -117,14 +117,24 @@ impl WorthQueryRegisteredProviderEffects {
         self.body_external_emission = selection;
     }
     /// Mandatory contracts remain mandatory unless the native body earned an
-    /// exact matching suppressed disposition at this decision observation.
+    /// exact suppression, or this is receipt-backed settlement only. That
+    /// origin cannot carry a new emission or a body-emission disposition.
     pub(super) fn selected_external_contract<'a>(
         &self,
         original: &'a worth_query_installation::facade::InstalledExternalEffectContract,
+        settlement: Option<&super::super::workflow_transition_program::LocalActionSettlementProof>,
     ) -> Result<
         Option<&'a worth_query_installation::facade::InstalledExternalEffectContract>,
         &'static str,
     > {
+        if settlement.is_some() {
+            if self.body_external_emission.is_some() || self.emissions.len() != 0 {
+                return Err(
+                    "native local settlement cannot carry a body emission disposition or emissions",
+                );
+            }
+            return Ok(None);
+        }
         crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection::selected_external_contract(
             self.body_external_emission.as_ref(), original,
         )

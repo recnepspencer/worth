@@ -212,7 +212,7 @@ where
         Ok(self.bind_workflow_recovery_transition(*required.transition_identity_bytes(), input))
     }
 
-    fn validate_workflow_operation_binding<Spec>(
+    pub(in crate::application_entry) fn validate_workflow_operation_binding<Spec>(
         &self,
         workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
         required: &RequiredWorkflowOperation,

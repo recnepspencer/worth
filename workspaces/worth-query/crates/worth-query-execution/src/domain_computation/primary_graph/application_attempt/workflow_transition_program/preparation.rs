@@ -32,8 +32,9 @@ mod adapter_preparation;
 mod adapter_replay;
 #[path = "preparation/local_actions.rs"]
 mod local_actions;
+mod local_completion;
 /// Which authored local action the binding requests; never a destination or authority.
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkflowLocalActionKind {
     Return,
     Terminate,
@@ -57,6 +58,9 @@ pub enum WorkflowTransitionPreparationDenial {
     Binding(WorkflowTransitionBindingDenial),
     Projection(WorthQueryOperationProjectionDenial),
     Attempt(WorthQueryApplicationAttemptDenial),
+    IdempotencyInspection(
+        crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
+    ),
 }
 
 impl std::fmt::Display for WorkflowTransitionPreparationDenial {
@@ -65,6 +69,9 @@ impl std::fmt::Display for WorkflowTransitionPreparationDenial {
             Self::Binding(denial) => write!(formatter, "workflow transition binding: {denial:?}"),
             Self::Projection(denial) => denial.fmt(formatter),
             Self::Attempt(denial) => denial.fmt(formatter),
+            Self::IdempotencyInspection(denial) => {
+                write!(formatter, "workflow settlement custody: {denial:?}")
+            }
         }
     }
 }

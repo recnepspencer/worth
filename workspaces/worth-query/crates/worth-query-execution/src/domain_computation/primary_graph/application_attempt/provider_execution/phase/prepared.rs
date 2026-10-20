@@ -112,6 +112,7 @@ impl<Schema, Operation, Input, Scope>
 }
 
 struct WorthQueryProviderAttemptPreparation {
+    local_action_settlement: Option<super::super::super::workflow_transition_program::LocalActionSettlementProof>,
     signing_lifecycle_memory: Option<super::super::super::signing_lifecycle::LifecycleMemory>,
     body_external_emission: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,

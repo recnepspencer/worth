@@ -159,6 +159,17 @@ where
             }
             Err(error) => return Err(error),
         };
+        if replay_facts.is_empty() {
+            observed.fence_other_owner(
+                execution,
+                self.lease.handle(),
+                self.lease.snapshot(),
+                &layout,
+                instance.entity_id(),
+                &compiled,
+                None,
+            )?;
+        }
         let coverages = self.proposal_coverages(&compiled, selected.node())?;
         captured.validate(&compiled, selected.node()).map_err(|_| {
             denial("captured workflow target inputs do not match the pinned definition")

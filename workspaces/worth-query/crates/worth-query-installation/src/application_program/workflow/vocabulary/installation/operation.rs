@@ -67,11 +67,6 @@ where
         let supports_local_workflow_action = Binding::REQUIRES_APPLICATION_PROGRAM
             && Binding::REQUIRES_WORKFLOW_AUTHORITY
             && !Binding::WORKFLOW_CONTROL
-            && !installed
-                .operation()
-                .contracts()
-                .external_effect()
-                .is_declared()
             && installed.operation().body().is_some_and(|body| {
                 body.creation()
                     .is_none_or(|creation| creation.signing().is_none())

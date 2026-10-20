@@ -61,20 +61,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
                 subject,
             ))
         };
-        if !installed.supports_local_workflow_action::<Binding>() {
-            return Err(deny(
-                "binding has no installed local native workflow action body",
-            ));
-        }
-        let capability = selected.application().installed_schema().capability(
-            ApplicationCapabilityRef::<Schema, Capability>::from_declaration(),
-            ApplicationOperationRef::<Schema, Binding::Operation, Binding::Input>::from_declaration(),
-        ).map_err(|_| deny("workflow action binding capability is not installed"))?;
-        if admission.installed_capability_identity() != Some(*capability.identity().bytes()) {
-            return Err(deny(
-                "workflow action requires the binding's exact admitted capability",
-            ));
-        }
+        validate_action_admission::<Schema, Spec, Binding, Scope>(selected, installed, &admission)?;
         let input_identity = admission
             .governed_input_identity()
             .copied()
@@ -97,7 +84,54 @@ impl WorthQueryWorkflowAdvanceAdapter {
                 kind,
                 requested,
                 input_identity,
+                completion: None,
             },
         )
     }
+}
+
+/// Fresh operation capability correspondence, shared by first execution and completion.
+pub(super) fn validate_action_admission<S, Spec, B, Scope>(
+    selected: &WorthQuerySelectedProductOperation<'_, S>,
+    installed: &WorthQueryInstalledApplicationWorkflowSpec<S, Spec>,
+    admission: &WorthQueryAdmittedApplicationOperation<S, B::Operation, B::Input, Scope>,
+) -> Result<(), WorkflowTransitionPreparationDenial>
+where
+    S: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = S>,
+    B: ApplicationCapabilityMutationBinding<S>,
+    B::Operation: ApplicationOperationMarkerIdentity<S>,
+    B::Input: ApplicationCapabilityRequest<
+        S,
+        B::Capability,
+        Scope = <B::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope,
+    >,
+    <B::Operation as ApplicationOperationMarkerIdentity<S>>::InputBinding:
+        ApplicationStructuredValueBinding<Value = B::Input>,
+{
+    let deny = |subject| {
+        WorkflowTransitionPreparationDenial::Attempt(WorthQueryApplicationAttemptDenial::new(
+            WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAuthorityMismatch,
+            subject,
+        ))
+    };
+    if !installed.supports_local_workflow_action::<B>() {
+        return Err(deny(
+            "binding has no installed local native workflow action body",
+        ));
+    }
+    let capability = selected
+        .application()
+        .installed_schema()
+        .capability(
+            ApplicationCapabilityRef::<S, B::Capability>::from_declaration(),
+            ApplicationOperationRef::<S, B::Operation, B::Input>::from_declaration(),
+        )
+        .map_err(|_| deny("workflow action binding capability is not installed"))?;
+    if admission.installed_capability_identity() != Some(*capability.identity().bytes()) {
+        return Err(deny(
+            "workflow action requires the binding's exact admitted capability",
+        ));
+    }
+    Ok(())
 }

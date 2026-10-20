@@ -47,30 +47,6 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_transition_fa
     visit_transition_facts(layout, admitted, outcome, state, None, None, emit)
 }
 
-pub(in crate::domain_computation::primary_graph) fn visit_workflow_operation_transition_facts<
-    Schema,
-    Operation,
-    Input,
-    Scope,
-    Error,
->(
-    layout: &WorthQueryWorkflowLayout,
-    admitted: &AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
-    operation_receipt_identity: &[u8; 32],
-    executor: WorkflowAdmittedActor,
-    emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
-) -> Result<CreatedEntityRef, Error> {
-    visit_transition_facts(
-        layout,
-        admitted,
-        worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
-        super::super::state::WorkflowInstanceState::Ready,
-        Some(operation_receipt_identity),
-        Some(executor),
-        emit,
-    )
-}
-
 pub(in crate::domain_computation::primary_graph) fn visit_workflow_operation_settlement_facts<
     Error,
 >(

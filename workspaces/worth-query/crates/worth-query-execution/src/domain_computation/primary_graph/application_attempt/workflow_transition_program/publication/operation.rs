@@ -47,6 +47,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowOperation<Schema, Operatio
 /// authority slot that lets exactly one matching effect run.
 #[derive(Clone, Debug)]
 pub struct RequiredWorkflowOperation {
+    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) local_action: Option<super::super::local_actions::LocalActionDescriptor>,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) captured_input:
         Option<crate::domain_computation::primary_graph::WorkflowCapturedInputContract>,
     pub(super) branch: crate::basis::WorthQueryProductBranch,
@@ -132,6 +133,13 @@ impl WorkflowOperationAuthoritySlot {
 }
 
 impl RequiredWorkflowOperation {
+    /// Descriptive action kind; it carries no execution or settlement authority.
+    pub const fn local_action_kind(&self) -> Option<super::super::WorkflowLocalActionKind> {
+        match &self.local_action {
+            Some(action) => Some(action.kind),
+            None => None,
+        }
+    }
     pub fn workflow_execution_requirements(&self) -> &worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements{
         &self.workflow_execution_requirements
     }
@@ -151,6 +159,7 @@ impl RequiredWorkflowOperation {
     ) -> Self {
         Self {
             captured_input: None,
+            local_action: None,
             branch,
             instance: original_instance.entity_id(),
             original_instance,
