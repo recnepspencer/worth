@@ -1,6 +1,4 @@
 use std::marker::PhantomData;
-use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
-use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
@@ -10,9 +8,9 @@ use worth_query_decl::facade::{
 use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
     WorthQueryApplicationProducerProvider, WorthQueryDecisionContextDependencies,
-    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
-    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
-    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
+    WorthQueryProducerApplicability, WorthQueryProducerInputReuseContract,
+    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerOutputFamily,
 };
 use worth_query_host::facade::{application_contribution, domain};
 
@@ -75,8 +73,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.final-planar-mutation.v2";
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.final-planar-handler.v2";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.final-planar-command.v1";
-    const CANDIDATES: ApplicationCandidatePolicy =
-        ApplicationCandidatePolicy::finite(super::requirements(3, 3, 0, 12, 4096));
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -223,17 +219,6 @@ impl<Schema: TopologySchemaBinding>
         PROVIDER_CONTACTS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         (super::planar_source_key(source_identity) ^ 0x9174_f1a1_0000_0001) | self.key_mask
     }
-
-    fn demand_resources(
-        &self,
-        _: &PlanarReadResult,
-    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
-        Ok({
-            #[cfg(test)]
-            PROVIDER_CONTACTS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            super::planar_producer_resources()
-        })
-    }
 }
 
 pub struct PlanarFinalOutputProducer<Schema>(PhantomData<fn() -> Schema>);
@@ -256,7 +241,6 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
             0,
             ApplicationInvariantExecutionPoint::CommitBoundary,
         )];
-    const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = Schema::FINAL_INPUT_REUSE;
 }

@@ -7,7 +7,6 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
     let completion = super::super::WorthQueryCompletedOutputDemand {
         authority: super::super::WorthQueryAcceptedOutputAuthority::Committed(receipt),
         readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-        resources: None,
     };
     DemandState::Output(super::super::WorthQueryOutputProgress::new(
         WorthQueryOutputCheckpoint::Ready(super::super::ReadyCompletion::for_test(completion)),

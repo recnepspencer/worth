@@ -5,8 +5,7 @@ use crate::application_capability::{
 };
 use crate::application_schema::{
     ApplicationEffectMarkerIdentity, ApplicationEffectRef, ApplicationOperationMarkerIdentity,
-    ApplicationOperationProgramTarget, ApplicationRetainedEffectBinding, OperationEmits,
-    WorthQueryPortableApplicationSchemaRecord,
+    ApplicationOperationProgramTarget, OperationEmits, WorthQueryPortableApplicationSchemaRecord,
 };
 
 pub(crate) struct ActivityEffect;
@@ -23,12 +22,6 @@ crate::worth_query_structured_value_binding!(
     }
 );
 struct RejectingRequestOperation;
-
-impl ApplicationRetainedEffectBinding for ActivityPayloadBinding {
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        std::mem::size_of::<String>() as u64 + value.capacity() as u64
-    }
-}
 
 impl ApplicationEffectMarkerIdentity<Schema> for ActivityEffect {
     type PayloadBinding = ActivityPayloadBinding;

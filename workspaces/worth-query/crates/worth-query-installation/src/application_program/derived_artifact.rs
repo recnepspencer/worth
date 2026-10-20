@@ -2,9 +2,8 @@ use std::marker::PhantomData;
 
 use worth_query_declaration::facade::{
     application_program::{
-        ApplicationArtifactResourceCeiling, ApplicationCompositionInstance,
-        ApplicationDerivedArtifact, ApplicationDerivedArtifactDeclaration, ApplicationFeature,
-        ApplicationProgramDefinition,
+        ApplicationCompositionInstance, ApplicationDerivedArtifact,
+        ApplicationDerivedArtifactDeclaration, ApplicationFeature, ApplicationProgramDefinition,
     },
     application_schema::ApplicationSchema,
 };
@@ -20,16 +19,7 @@ pub enum WorthQueryProgramArtifactPosture {
 
 /// Installed evidence for one exact feature occurrence and derived artifact.
 pub struct WorthQueryInstalledDerivedArtifact<Schema, Instance, Feature, Artifact> {
-    ceiling: ApplicationArtifactResourceCeiling,
     marker: PhantomData<fn() -> (Schema, Instance, Feature, Artifact)>,
-}
-
-impl<Schema, Instance, Feature, Artifact>
-    WorthQueryInstalledDerivedArtifact<Schema, Instance, Feature, Artifact>
-{
-    pub const fn resource_ceiling(&self) -> ApplicationArtifactResourceCeiling {
-        self.ceiling
-    }
 }
 
 impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program>
@@ -55,8 +45,7 @@ where
             .derived_artifacts()
             .iter()
             .find(|declared| declared.artifact_type() == artifact)
-            .map(|declared| WorthQueryInstalledDerivedArtifact {
-                ceiling: declared.resource_ceiling(),
+            .map(|_| WorthQueryInstalledDerivedArtifact {
                 marker: PhantomData,
             })
     }

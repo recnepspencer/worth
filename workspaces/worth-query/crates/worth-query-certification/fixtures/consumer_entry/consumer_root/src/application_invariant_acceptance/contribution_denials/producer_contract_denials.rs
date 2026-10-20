@@ -3,7 +3,6 @@ use std::sync::{
     atomic::{AtomicBool, AtomicUsize},
     Arc,
 };
-use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 
 use worth_query_decl::facade::application_schema::{
     ApplicationInvariantExecutionPoint, ApplicationSchema, ApplicationSchemaComposition,
@@ -16,8 +15,8 @@ use worth_query_host::facade::{
         WorthQueryApplicationContribution, WorthQueryApplicationContributionContracts,
         WorthQueryApplicationContributionSetup, WorthQueryApplicationProducerBinding,
         WorthQueryApplicationProducerProvider, WorthQueryProducerApplicability,
-        WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
-        WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
+        WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+        WorthQueryProducerOutputFamily,
     },
     application_installation,
     primary_graph::{
@@ -77,7 +76,6 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
             0,
             ApplicationInvariantExecutionPoint::CommitBoundary,
         )];
-    const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
 }
 
@@ -109,7 +107,6 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.foreign-operation-producer.v1";
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[INITIAL];
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-    const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
 }
 
@@ -125,13 +122,6 @@ impl<Schema: TopologySchemaBinding>
 
     fn idempotency_key(&self, _: &PlanarReadResult, source_identity: &[u8; 32]) -> u64 {
         worth_query_topology_entry::planar_source_key(source_identity)
-    }
-
-    fn demand_resources(
-        &self,
-        _: &PlanarReadResult,
-    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
-        Ok({ worth_query_topology_entry::planar_producer_resources() })
     }
 }
 
@@ -159,13 +149,6 @@ impl<Schema: TopologySchemaBinding>
 
     fn idempotency_key(&self, _: &PlanarReadResult, source_identity: &[u8; 32]) -> u64 {
         worth_query_topology_entry::planar_source_key(source_identity)
-    }
-
-    fn demand_resources(
-        &self,
-        _: &PlanarReadResult,
-    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
-        Ok({ worth_query_topology_entry::planar_producer_resources() })
     }
 }
 

@@ -1,22 +1,13 @@
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_decl::facade::worth_query_structured_value_binding;
 use worth_query_decl::facade::{
-    application_schema::{
-        ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
-        ApplicationRetainedEffectBinding,
-    },
+    application_schema::{ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol},
     worth_query_effect,
 };
 
 use crate::{estate::EstateDeathNotificationRequest, schema::BankSchema};
 
 worth_query_structured_value_binding!(pub EstateDeathNotificationRequestBinding for EstateDeathNotificationRequest { identity: "bank.estate.effect.death-notification.payload.v1" });
-
-impl ApplicationRetainedEffectBinding for EstateDeathNotificationRequestBinding {
-    fn retained_bytes(_: &Self::Value) -> u64 {
-        u64::try_from(std::mem::size_of::<EstateDeathNotificationRequest>()).unwrap_or(u64::MAX)
-    }
-}
 
 impl ApplicationExternalEffectBinding for EstateDeathNotificationRequestBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(
@@ -38,29 +29,13 @@ worth_query_effect!(pub EstateDeathNotificationEffect for BankSchema, payload Es
 
 #[cfg(test)]
 mod tests {
-    use worth_query_decl::facade::application_schema::{
-        ApplicationExternalEffectBinding, ApplicationRetainedEffectBinding,
-    };
+    use worth_query_decl::facade::application_schema::ApplicationExternalEffectBinding;
 
     use super::{EstateDeathNotificationRequest, EstateDeathNotificationRequestBinding};
     use crate::{
         estate::{DeathNoticeId, EstateCaseId},
         model::BankPrincipalId,
     };
-
-    #[test]
-    fn death_notification_request_retains_exact_fixed_width() {
-        let request = EstateDeathNotificationRequest::new(
-            EstateCaseId::new(1).unwrap(),
-            DeathNoticeId::new(2).unwrap(),
-            BankPrincipalId::new(3).unwrap(),
-        );
-
-        assert_eq!(
-            EstateDeathNotificationRequestBinding::retained_bytes(&request),
-            u64::try_from(std::mem::size_of::<EstateDeathNotificationRequest>()).unwrap()
-        );
-    }
 
     #[test]
     fn v1_encoder_matches_the_frozen_external_corpus() {

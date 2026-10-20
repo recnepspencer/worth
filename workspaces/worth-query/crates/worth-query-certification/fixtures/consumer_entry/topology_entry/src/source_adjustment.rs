@@ -1,5 +1,4 @@
 use std::marker::PhantomData;
-use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, PositiveLength};
 use worth_query_decl::facade::{
@@ -72,8 +71,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.planar-source-adjustment-command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidatePolicy =
-        ApplicationCandidatePolicy::finite(requirements(0, 0, 0, 1, 1024));
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -138,14 +135,6 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarSourceAdjustm
             Ok(target) => HandlerResult::Completed(target),
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &PlanarSourceAdjustment,
-        _: &WorthQueryInvariantMutationTarget<Schema, Body>,
-    ) -> ApplicationCandidateRequirements {
-        requirements(0, 0, 0, 1, 1024)
     }
 
     fn build_candidate(

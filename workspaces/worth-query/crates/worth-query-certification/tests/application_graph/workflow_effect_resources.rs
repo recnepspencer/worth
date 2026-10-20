@@ -1,17 +1,15 @@
-//! Real workflow effects must fit the installed operation's candidate envelope.
+//! Real approval publishes its complete authored review evidence.
 
 use worth_query_host::facade::{
     application_entry::{
         WorkflowApprovalDecision, WorkflowDefinitionExpectedPredecessor,
         WorkflowDefinitionPublicationOutcome, WorkflowInstanceStartOutcome,
-        WorkflowProgressOutcome, WorkflowProposalOutcome, WorkflowTransitionPreparationDenial,
-        WorthQueryWorkflowAdvancePreparationDenial,
+        WorkflowProgressOutcome, WorkflowProposalOutcome,
     },
     declaration::application_program::{
         ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
         ApplicationWorkflowEvidenceJoinPolicy, ValidatedWorkflowDefinition,
     },
-    primary_graph::WorthQueryApplicationAttemptDenialKind,
 };
 
 use super::document_retention_model::{
@@ -26,34 +24,21 @@ use super::document_retention_model::{
 };
 
 #[test]
-fn approval_effect_links_are_admitted_against_the_installed_operation_ceiling() {
-    // The installed approval binding allows nine links. Approval emits four
-    // fixed links plus one per retained evidence entity: five reviews fit;
-    // six exceed the real candidate envelope during transition preparation.
-    for (review_count, key) in [(5, 52_000), (6, 53_000)] {
-        let (application, instance, proposal, required) = approval_ready(review_count, key);
-        let result = approve_instance(
-            &application,
-            instance,
-            &required,
-            &proposal,
-            WorkflowApprovalDecision::Approve,
-            key + 100,
-        );
-        if review_count == 5 {
-            assert!(matches!(result, Ok(WorkflowProgressOutcome::Completed(_))));
-        } else {
-            assert!(
-                matches!(
-                    &result,
-                    Err(WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation(
-                        WorkflowTransitionPreparationDenial::Attempt(attempt)
-                    )) if attempt.kind() == WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded
-                ),
-                "expected the installed candidate ceiling to deny approval, got {result:?}"
-            );
-        }
-    }
+fn approval_publishes_all_review_evidence_without_resource_estimates() {
+    let key = 53_000;
+    let (application, instance, proposal, required) = approval_ready(6, key);
+    let result = approve_instance(
+        &application,
+        instance,
+        &required,
+        &proposal,
+        WorkflowApprovalDecision::Approve,
+        key + 100,
+    );
+    assert!(
+        matches!(result, Ok(WorkflowProgressOutcome::Completed(_))),
+        "the complete authored review graph must approve: {result:?}"
+    );
 }
 
 fn approval_ready(

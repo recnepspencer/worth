@@ -29,10 +29,7 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
         .start_required_outputs(
             application,
             request,
-            WorthQueryOutputDemandControls::new(
-                NonZeroUsize::new(4_096).unwrap(),
-                NonZeroUsize::new(8_192).unwrap(),
-            ),
+            WorthQueryOutputDemandControls::default(),
         )
         .unwrap_or_else(|failure| {
             panic!("the declared output graph starts: {:?}", failure.denial())

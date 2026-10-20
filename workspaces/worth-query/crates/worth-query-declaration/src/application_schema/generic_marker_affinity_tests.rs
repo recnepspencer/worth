@@ -1,9 +1,8 @@
 use super::{
     ApplicationAspectMarkerIdentity, ApplicationEffectMarkerIdentity,
     ApplicationEntityMarkerIdentity, ApplicationExternalEffectBinding,
-    ApplicationExternalEffectProtocol, ApplicationOperationMarkerIdentity,
-    ApplicationRetainedEffectBinding, ApplicationSchema, ApplicationStructuredValueBinding,
-    ApplicationValueValidationDenial,
+    ApplicationExternalEffectProtocol, ApplicationOperationMarkerIdentity, ApplicationSchema,
+    ApplicationStructuredValueBinding, ApplicationValueValidationDenial,
 };
 use crate::application_query::ApplicationQueryMarkerIdentity;
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
@@ -72,12 +71,6 @@ structured_binding!(
     "worth.query.test.work-result.v1"
 );
 structured_binding!(PayloadBinding, Payload, "worth.query.test.work-payload.v1");
-
-impl ApplicationRetainedEffectBinding for PayloadBinding {
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        value.0.capacity() as u64
-    }
-}
 
 impl ApplicationExternalEffectBinding for PayloadBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(
@@ -180,7 +173,6 @@ fn structured_work_markers_share_explicit_schema_affinity_without_value_owned_qu
         house_effect.payload_identity().as_str(),
         PayloadBinding::IDENTITY_NAME
     );
-    assert_eq!(PayloadBinding::retained_bytes(&Payload(vec![1, 2, 3])), 3);
     assert_eq!(
         PayloadBinding::external_effect_bytes(&Payload(vec![4, 5])),
         vec![4, 5]

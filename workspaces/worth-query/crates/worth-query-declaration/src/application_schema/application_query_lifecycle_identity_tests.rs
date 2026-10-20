@@ -1,7 +1,6 @@
 use super::{
     ApplicationEffectMarkerIdentity, ApplicationEffectRef, ApplicationEntityRef,
-    ApplicationFieldRef, ApplicationRelationRef, ApplicationRetainedEffectBinding,
-    EqualityPredicate, NoApplicationUnit, ReadOnly,
+    ApplicationFieldRef, ApplicationRelationRef, EqualityPredicate, NoApplicationUnit, ReadOnly,
 };
 use crate::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
@@ -127,12 +126,6 @@ impl crate::application_schema::RequiredApplicationFieldValue for ChildIdentity 
 pub(super) struct Cause {
     root: u64,
     child: u64,
-}
-
-impl ApplicationRetainedEffectBinding for CauseBinding {
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        std::mem::size_of_val(value) as u64
-    }
 }
 
 struct LiveBinding;

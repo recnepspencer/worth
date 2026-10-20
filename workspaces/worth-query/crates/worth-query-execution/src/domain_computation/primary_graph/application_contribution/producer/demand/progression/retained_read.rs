@@ -31,7 +31,6 @@ pub(super) fn read_retained_source<Schema, Family>(
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     branch: crate::basis::WorthQueryProductBranch,
-    limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
     request_admission: &mut InvalidationEditAdmission,
 ) -> Result<
     WorthQueryApplicationOutputDemandSource<
@@ -79,7 +78,6 @@ where
         .maximum_work()
         .map(NonZeroUsize::get)
         .into_iter()
-        .chain(limits.producer_work())
         .chain(request_admission.remaining_work())
         .min();
     let maximum_work = ceiling

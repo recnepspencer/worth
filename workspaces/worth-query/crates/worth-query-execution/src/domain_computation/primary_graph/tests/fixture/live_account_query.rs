@@ -50,16 +50,6 @@ impl LiveActivityEvent {
 }
 
 worth_query_declaration::worth_query_structured_value_binding!(pub LiveActivityEventBinding for LiveActivityEvent { identity: "worth.query.test.live-activity-event.v1" });
-impl worth_query_declaration::facade::application_schema::ApplicationRetainedEffectBinding
-    for LiveActivityEventBinding
-{
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        u64::try_from(std::mem::size_of::<Self::Value>())
-            .unwrap_or(u64::MAX)
-            .saturating_add(u64::try_from(value.account.capacity()).unwrap_or(u64::MAX))
-            .saturating_add(u64::try_from(value.activity.capacity()).unwrap_or(u64::MAX))
-    }
-}
 
 worth_query_effect!(
     pub LiveActivityEffect for IdentityExecutionSchema, payload LiveActivityEventBinding

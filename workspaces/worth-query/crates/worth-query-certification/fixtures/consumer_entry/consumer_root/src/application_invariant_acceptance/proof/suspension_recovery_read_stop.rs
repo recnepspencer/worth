@@ -61,10 +61,7 @@ fn prove(at_preparation: bool) {
         .start_required_outputs(
             application,
             &request,
-            worth_query_host::facade::application_entry::WorthQueryOutputDemandControls::new(
-                std::num::NonZeroUsize::new(4096).unwrap(),
-                std::num::NonZeroUsize::new(8192).unwrap(),
-            ),
+            worth_query_host::facade::application_entry::WorthQueryOutputDemandControls::default(),
         )
         .unwrap_or_else(|failure| panic!("output graph starts: {:?}", failure.denial()));
     assert!(matches!(

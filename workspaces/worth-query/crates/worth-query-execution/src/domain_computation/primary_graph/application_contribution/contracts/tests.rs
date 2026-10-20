@@ -147,7 +147,7 @@ fn producer(
         applicability: supported.to_vec(),
         supported: supported.to_vec(),
         required_invariants: Vec::new(),
-        resource_policy: "bounded".to_owned(),
+
         reuse_policy: "exact-source".to_owned(),
         input_reuse: None,
         binding_type: TypeId::of::<()>(),

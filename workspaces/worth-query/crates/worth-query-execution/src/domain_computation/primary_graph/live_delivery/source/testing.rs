@@ -6,9 +6,8 @@ use crate::domain_computation::primary_graph::{
 };
 
 impl WorthQueryLiveDeliverySource {
-    pub(crate) fn set_limits(&self, batch_capacity: usize, byte_capacity: u64) {
+    pub(crate) fn set_limits(&self, batch_capacity: usize) {
         self.batch_capacity.store(batch_capacity, Ordering::Release);
-        self.byte_capacity.store(byte_capacity, Ordering::Release);
     }
 
     pub(crate) fn set_after_reservation_hook(&self, hook: Option<Arc<dyn Fn() + Send + Sync>>) {
@@ -38,16 +37,6 @@ impl WorthQueryLiveDeliverySource {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .published_commit_count
-    }
-
-    pub(crate) fn retained_payload_bytes(&self) -> u64 {
-        self.state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .partitions
-            .values()
-            .map(|partition| partition.retained_payload_bytes)
-            .sum()
     }
 
     pub(crate) fn active_partition_count(&self) -> usize {

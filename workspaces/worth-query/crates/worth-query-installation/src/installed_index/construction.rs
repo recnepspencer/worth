@@ -130,7 +130,9 @@ impl InstalledIndexConstruction {
                 worth_foundational::facade::CanonicalDigestDerivationDenial::EncodedByteLimitExceeded {
                     ..
                 } => WorthQueryInstalledPackageIndexDenialKind::CanonicalEncodedByteBudgetExceeded,
-                worth_foundational::facade::CanonicalDigestDerivationDenial::UnsupportedAlgorithm
+                worth_foundational::facade::CanonicalDigestDerivationDenial::AllocationUnavailable
+                | worth_foundational::facade::CanonicalDigestDerivationDenial::LengthOverflow
+                | worth_foundational::facade::CanonicalDigestDerivationDenial::UnsupportedAlgorithm
                 | worth_foundational::facade::CanonicalDigestDerivationDenial::RuleVersionMismatch
                 | worth_foundational::facade::CanonicalDigestDerivationDenial::InputDomainMismatch
                 | worth_foundational::facade::CanonicalDigestDerivationDenial::InputShapeMismatch => {

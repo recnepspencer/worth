@@ -223,7 +223,6 @@ where
             output_occurrence,
             output_generation,
             observed_source_facts: exact.observed_source_facts,
-            resources: exact.resources,
         };
         match prepared.execute(
             phase

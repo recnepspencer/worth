@@ -18,7 +18,7 @@ macro_rules! declared_world {
     ($world:ident,$request:ident,$delivery:ty) => {
         let program=ApplicationProgramAuthoring::<ConsumerSchema,Program<$delivery>>::begin().validated_program().unwrap();
         let grants=[crate::program_deployment::ConsumerDeploymentGrantSeed::for_program::<Program<$delivery>>("model-owner","model-owner")];
-        let $world=installation::install_selected_program(&crate::installed_schema(),8192,4096,worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(),&grants,program).unwrap();
+        let $world=installation::install_selected_program(&crate::installed_schema(),4096,worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(),&grants,program).unwrap();
         let adapter=authentication::admit($world.application.installed_schema());
         let scope=authentication::request_scope();
         let principal=authentication::block_on(adapter.authenticate(authentication::LocalCredential::issued_for_model_owner(),&scope)).unwrap();
@@ -59,7 +59,6 @@ fn discovered_owning_original_partial_recovers_native_settlement_and_closes() {
     ];
     let world = installation::install_selected_program(
         &crate::installed_schema(),
-        8192,
         4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),

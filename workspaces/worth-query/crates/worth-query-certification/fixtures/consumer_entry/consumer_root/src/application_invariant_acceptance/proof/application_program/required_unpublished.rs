@@ -73,8 +73,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
             "model-owner",
         ),
     ];
-    let mut world =
-        installation::install_with_roster(foreign, 8192, 4096, roster, &grants).unwrap();
+    let mut world = installation::install_with_roster(foreign, 4096, roster, &grants).unwrap();
     let request_runtime = world.application.clone();
     let constructing = std::mem::replace(&mut world.application, request_runtime);
     let adapter = authentication::admit(world.application.installed_schema());

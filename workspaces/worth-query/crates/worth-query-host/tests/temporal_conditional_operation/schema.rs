@@ -201,13 +201,6 @@ pub struct TemporalExecutionNotice {
 worth_query_portable_type!(TemporalExecutionNotice => "worth.query.test.host.temporal.execution_notice.v1");
 
 worth_query_structured_value_binding!(pub TemporalExecutionNoticeBinding for TemporalExecutionNotice { identity: "worth.query.test.host.temporal.execution_notice.v1" });
-impl declaration::application_schema::ApplicationRetainedEffectBinding
-    for TemporalExecutionNoticeBinding
-{
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        u64::try_from(value.identity.len()).unwrap_or(u64::MAX)
-    }
-}
 
 worth_query_effect!(pub TemporalExecutionEffect for TemporalHostSchema, payload TemporalExecutionNoticeBinding);
 worth_query_operation_emits!(ExecuteTemporal => [TemporalExecutionEffect]);
@@ -225,13 +218,6 @@ pub struct TemporalAmendmentNotice(pub String);
 worth_query_portable_type!(TemporalAmendmentNotice => "worth.query.test.host.temporal.amendment_notice.v1");
 
 worth_query_structured_value_binding!(pub TemporalAmendmentNoticeBinding for TemporalAmendmentNotice { identity: "worth.query.test.host.temporal.amendment_notice.v1" });
-impl declaration::application_schema::ApplicationRetainedEffectBinding
-    for TemporalAmendmentNoticeBinding
-{
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        u64::try_from(value.0.len()).unwrap_or(u64::MAX)
-    }
-}
 
 impl declaration::application_schema::ApplicationExternalEffectBinding
     for TemporalAmendmentNoticeBinding

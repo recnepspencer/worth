@@ -8,7 +8,7 @@ use super::effect_lowering::{
     WorthQueryLoweredProviderEffect,
 };
 use super::{
-    retained_bytes_denial, WorthQueryAdmittedApplicationEmissionBatch,
+    invalid_emission_denial, WorthQueryAdmittedApplicationEmissionBatch,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
     WorthQueryApplicationRealizedEffect,
 };
@@ -79,8 +79,6 @@ impl<'facts, 'layout> WorthQueryProviderEffectAccumulator<'facts, 'layout> {
 
     pub(super) fn finish(
         self,
-        expected_emission_retained_bytes: u64,
-        emission_retained_bytes_ceiling: u64,
         output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     ) -> Result<WorthQueryRegisteredProviderEffects, WorthQueryApplicationAttemptDenial> {
         let (intents, emissions, expected_steps) = materialize_commit_projections(self.lowered)?;
@@ -88,14 +86,8 @@ impl<'facts, 'layout> WorthQueryProviderEffectAccumulator<'facts, 'layout> {
             WorkerIntentBatch::new("application-provider-attempt"),
             WorkerIntentBatch::push,
         );
-        let emissions = WorthQueryAdmittedApplicationEmissionBatch::admit(
-            emissions,
-            emission_retained_bytes_ceiling,
-        )
-        .map_err(|_| retained_bytes_denial())?;
-        if emissions.retained_bytes() != expected_emission_retained_bytes {
-            return Err(retained_bytes_denial());
-        }
+        let emissions = WorthQueryAdmittedApplicationEmissionBatch::admit(emissions)
+            .map_err(|_| invalid_emission_denial())?;
         Ok(WorthQueryRegisteredProviderEffects {
             expected_steps,
             batch,

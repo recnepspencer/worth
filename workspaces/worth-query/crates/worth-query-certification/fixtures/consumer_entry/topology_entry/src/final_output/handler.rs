@@ -25,19 +25,6 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarMutation
         }
     }
 
-    fn candidate_requirements(
-        &self,
-        _: &FinalPlanarMutation,
-        _: &worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget<
-            Schema,
-            Body,
-        >,
-    ) -> ApplicationCandidateRequirements {
-        FinalPlanarMutationBinding::<Schema>::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
-    }
-
     fn build_candidate(
         &self,
         input: &FinalPlanarMutation,

@@ -5,7 +5,7 @@ use worth_query_decl::facade::{
     application_schema::{
         ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
         ApplicationInboundOccurrenceBinding, ApplicationInboundOccurrenceLimits,
-        ApplicationInboundOccurrenceProtocol, ApplicationRetainedEffectBinding,
+        ApplicationInboundOccurrenceProtocol,
     },
     worth_query_effect, worth_query_structured_value_binding,
 };
@@ -49,12 +49,6 @@ impl ApprovedPaymentSettlementRequest {
 }
 
 worth_query_structured_value_binding!(pub ApprovedPaymentSettlementRequestBinding for ApprovedPaymentSettlementRequest { identity: "bank.payment.effect.approved-settlement.payload.v1" });
-
-impl ApplicationRetainedEffectBinding for ApprovedPaymentSettlementRequestBinding {
-    fn retained_bytes(_: &Self::Value) -> u64 {
-        u64::try_from(std::mem::size_of::<ApprovedPaymentSettlementRequest>()).unwrap_or(u64::MAX)
-    }
-}
 
 impl ApplicationExternalEffectBinding for ApprovedPaymentSettlementRequestBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(
@@ -108,9 +102,7 @@ pub fn approved_payment_inbound_binding(
 
 #[cfg(test)]
 mod tests {
-    use worth_query_decl::facade::application_schema::{
-        ApplicationExternalEffectBinding, ApplicationRetainedEffectBinding,
-    };
+    use worth_query_decl::facade::application_schema::ApplicationExternalEffectBinding;
 
     use super::{ApprovedPaymentSettlementRequest, ApprovedPaymentSettlementRequestBinding};
     use crate::model::{AccountId, BankPrincipalId, PaymentId};
@@ -126,10 +118,6 @@ mod tests {
         );
         let encoded = ApprovedPaymentSettlementRequestBinding::external_effect_bytes(&request);
         assert!(encoded.len() as u64 <= 268);
-        assert_eq!(
-            ApprovedPaymentSettlementRequestBinding::retained_bytes(&request),
-            u64::try_from(std::mem::size_of::<ApprovedPaymentSettlementRequest>()).unwrap()
-        );
         assert_eq!(
             encoded,
             [

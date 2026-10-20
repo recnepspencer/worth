@@ -6,7 +6,7 @@ use super::super::super::{
     },
     WorthQueryApplicationOutputPosture, WorthQueryPrimaryGraphPublication,
 };
-use super::super::{resources, WorthQueryCheckpointCaptureDenial, FORMAT_VERSION};
+use super::super::{WorthQueryCheckpointCaptureDenial, FORMAT_VERSION};
 use super::sizing::ValidatedCheckpointSize;
 
 pub(super) fn write(
@@ -37,7 +37,6 @@ pub(super) fn write(
         writer.bytes(&[u8::from(accepted.producer_dependency.is_some())])?;
         writer.bytes(&accepted.producer_dependency.unwrap_or_default())?;
         writer.bytes(&accepted.idempotency_key)?;
-        writer.bytes(&resources::encode_profile(accepted.resources))?;
         writer.length(accepted.roles.len())?;
         for role in accepted.roles.iter() {
             writer.length(role.role.len())?;

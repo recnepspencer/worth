@@ -91,7 +91,6 @@ impl ApplicationProgramManifest {
                     .map(|dependency| dependency.identity())
                     .collect::<Vec<_>>();
                 dependencies.sort_unstable();
-                let resources = artifact.resource_ceiling();
                 records.push(framed_record(
                     "artifact",
                     [
@@ -123,18 +122,6 @@ impl ApplicationProgramManifest {
                     )
                     .chain([
                         ("reuse", artifact.reuse_rule().to_owned()),
-                        (
-                            "work",
-                            resources
-                                .maximum_work()
-                                .map_or_else(|| "absent".to_owned(), |work| work.to_string()),
-                        ),
-                        (
-                            "bytes",
-                            resources
-                                .maximum_retained_bytes()
-                                .map_or_else(|| "absent".to_owned(), |bytes| bytes.to_string()),
-                        ),
                         ("stopped", artifact.stopped_outcome().to_owned()),
                     ]),
                 ));

@@ -20,7 +20,6 @@ fn committed() -> (u64, ApplicationSchemaBindingIdentity, ReadyCompletion) {
     let completion = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
         authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
         readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-        resources: None,
     });
     (runtime_authority, schema, completion)
 }

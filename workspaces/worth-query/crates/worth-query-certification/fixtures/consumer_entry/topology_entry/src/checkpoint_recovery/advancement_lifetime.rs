@@ -5,10 +5,7 @@ fn a_leased_output_demand_shares_one_request_with_signal_and_native_reads() {
     let application = install(None);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let mut output = request
         .advanced()
         .start_program_outputs::<CheckpointProgram, CheckpointRoot>(
@@ -239,10 +236,7 @@ fn signal_reservation_uses_the_advancement_work_ceiling() {
     let request = application.request(&principal, &scope);
     // This computational allowance is declared by the caller, not fitted to a measured total.
     let handler_allowance = 8_192;
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(handler_allowance).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let mut output = request
         .advanced()
         .start_program_outputs::<CheckpointProgram, CheckpointRoot>(

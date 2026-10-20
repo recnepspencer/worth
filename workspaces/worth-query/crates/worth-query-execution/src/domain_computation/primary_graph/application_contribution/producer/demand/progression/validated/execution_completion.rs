@@ -39,7 +39,6 @@ pub(super) fn finish(
         execution::ProducerExecutionStop,
     >,
     selected_execution_finish: RunningSelectedExecution<'_>,
-    retained_resources: Option<crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerDemandResources>,
     performed: &std::cell::RefCell<PerformedMembers>,
     readiness: super::super::required_wave::performed::PublicationReadiness,
     runtime_identity: u64,
@@ -54,7 +53,6 @@ pub(super) fn finish(
                     crate::domain_computation::primary_graph::application_output_demand::WorthQueryCompletedOutputDemand {
                         authority: crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Stable(stable),
                         readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
-                        resources: retained_resources,
                     },
                 );
             let checkpoint = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputCheckpoint::Ready(completion);

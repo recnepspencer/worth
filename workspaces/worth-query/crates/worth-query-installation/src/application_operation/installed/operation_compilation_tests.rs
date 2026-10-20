@@ -263,7 +263,6 @@ fn compile_with_portable_members(
     WorthQueryApplicationOperationCompilation::resolve(
         binding,
         members,
-        &[],
         &portable,
         "freeze",
         "FixtureInput",

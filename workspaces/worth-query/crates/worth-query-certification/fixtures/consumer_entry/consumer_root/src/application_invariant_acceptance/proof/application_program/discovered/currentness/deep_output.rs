@@ -42,7 +42,7 @@ fn discovered_currentness_all_retained_dependent_settlements() {
         .start_required_outputs(
             &world.application,
             &request,
-            WorthQueryOutputDemandControls::new(NonZeroUsize::new(4096).unwrap(), retained_bytes()),
+            WorthQueryOutputDemandControls::default(),
         )
         .unwrap_or_else(|failure| panic!("native source: {:?}", failure.denial()));
     let aggregate = settled!(world, request, started);

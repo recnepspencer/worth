@@ -8,8 +8,7 @@ use worth_query_installation::facade::{
 use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
 
 use super::{
-    candidate_representation_denial, denial, retained_representation, CandidateItemKind,
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    denial, WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationCreationPartition, WorthQueryApplicationEffectEntity,
     WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationEntityKey,
     WorthQueryApplicationRealizedEffect,
@@ -124,9 +123,7 @@ impl<Schema, Operation, Input, Scope>
                 entity_name,
             ));
         }
-        let retained_bytes = retained_representation::created_entity(&key, entity_name)
-            .ok_or_else(candidate_representation_denial)?;
-        self.charge_candidate_representation(CandidateItemKind::Create, retained_bytes, 0)?;
+        self.reserve_effects(1)?;
         self.keys.insert((kind, key.clone()));
         self.creation_partition = Some(partition);
         let reference = EntityReference::Created(CreatedEntityRef {

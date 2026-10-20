@@ -15,8 +15,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryAcceptedOutput
     pub(in crate::domain_computation::primary_graph) source_partition: [u8; 32],
     pub(in crate::domain_computation::primary_graph) producer_dependency: Option<[u8; 32]>,
     pub(in crate::domain_computation::primary_graph) idempotency_key: [u8; 32],
-    pub(in crate::domain_computation::primary_graph) resources:
-        Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
     pub(in crate::domain_computation::primary_graph) roles:
         std::sync::Arc<Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole>>,
     /// Authenticated encoding of the complete rebased producer fact set.
@@ -47,7 +45,6 @@ impl WorthQueryAcceptedOutputCheckpointIdentity {
             .then_with(|| self.source_partition.cmp(&other.source_partition))
             .then_with(|| self.producer_dependency.cmp(&other.producer_dependency))
             .then_with(|| self.idempotency_key.cmp(&other.idempotency_key))
-            .then_with(|| self.resources.cmp(&other.resources))
             .then_with(|| self.roles.cmp(&other.roles))
     }
 

@@ -34,10 +34,9 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
     WorthQueryPreparedManagedComputation, WorthQueryPreparedPartitionedComputation,
-    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
-    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
-    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
-    WorthQueryProducerResourceQuoteDenial, WorthQueryReductionInputDenial,
+    WorthQueryProducerApplicability, WorthQueryProducerInputReuseContract,
+    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerOutputFamily, WorthQueryReductionInputDenial,
     WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
 /// What a partitioned owner's results and denials declare to execution, the

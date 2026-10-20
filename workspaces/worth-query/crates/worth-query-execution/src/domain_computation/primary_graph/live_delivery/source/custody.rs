@@ -14,7 +14,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryLivePublicatio
     pub(super) state: Arc<Mutex<WorthQueryLiveDeliverySourceState>>,
     pub(super) key: WorthQueryLiveProductKey,
     pub(super) slot: Option<Arc<WorthQueryLiveCommitBatchCell>>,
-    pub(super) retained_payload_bytes: u64,
     pub(super) evictions: usize,
     pub(super) active: bool,
 }
@@ -28,7 +27,6 @@ impl WorthQueryLivePublicationReservation {
             state,
             key,
             slot: None,
-            retained_payload_bytes: 0,
             evictions: 0,
             active: false,
         }

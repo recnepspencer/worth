@@ -359,13 +359,6 @@ where
                                 == worth_foundational::facade::DeterminismContract::CanonicalBitwise
                         })
                     {
-                        let resources = candidate.resources.ok_or_else(|| {
-                            WorthQueryOutputDemandDenial::new(
-                                WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
-                                "retained output lacks its producer resource profile",
-                            )
-                        })?;
-                        selected.retained_resources = Some(resources);
                         selected.retained_idempotency_key =
                             Some(candidate.idempotency_key_identity);
                         selected.retained_output_binding = Some(candidate.binding);

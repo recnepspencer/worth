@@ -233,8 +233,6 @@ fn lower(
         .unwrap(),
         Vec::new(),
         effects,
-        0,
-        0,
         None,
         None,
         Default::default(),

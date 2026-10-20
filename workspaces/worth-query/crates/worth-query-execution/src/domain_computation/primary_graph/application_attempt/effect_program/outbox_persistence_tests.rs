@@ -16,7 +16,6 @@ use worth_foundational::facade::{
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
-    ApplicationRetainedEffectBinding,
 };
 use worth_query_installation::facade::InstalledExternalEffectContract;
 use worth_relational::facade::history::BranchId;
@@ -51,11 +50,6 @@ worth_query_declaration::worth_query_portable_type!(
 );
 
 worth_query_declaration::worth_query_structured_value_binding!(DeathNoticeBinding for DeathNotice { identity: "worth.query.test.death-notice.v1" });
-impl ApplicationRetainedEffectBinding for DeathNoticeBinding {
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        u64::try_from(std::mem::size_of::<Self::Value>() + value.0.capacity()).unwrap_or(u64::MAX)
-    }
-}
 
 impl ApplicationExternalEffectBinding for DeathNoticeBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = EXTERNAL_PROTOCOL;
@@ -252,17 +246,14 @@ fn installed_contract() -> InstalledExternalEffectContract {
 }
 
 fn admitted_notice() -> WorthQueryAdmittedApplicationEmissionBatch {
-    WorthQueryAdmittedApplicationEmissionBatch::admit(
-        vec![
-            WorthQueryApplicationEmission::new_external::<DeathNoticeBinding>(
-                EFFECT,
-                DeathNotice(NOTICE.to_vec()),
-            )
-            .expect("the fixture projection stays within its declared bound"),
-        ],
-        1_024,
-    )
-    .expect("the fixture batch stays within its retained-byte ceiling")
+    WorthQueryAdmittedApplicationEmissionBatch::admit(vec![
+        WorthQueryApplicationEmission::new_external::<DeathNoticeBinding>(
+            EFFECT,
+            DeathNotice(NOTICE.to_vec()),
+        )
+        .expect("the fixture projection stays within its declared bound"),
+    ])
+    .expect("the fixture batch carries valid typed emissions")
 }
 
 fn layout() -> WorthQueryDispatchOutboxLayout {

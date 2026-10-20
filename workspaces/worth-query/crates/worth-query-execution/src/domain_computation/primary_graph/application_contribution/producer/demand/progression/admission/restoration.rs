@@ -310,7 +310,6 @@ where
                 restored.checkpoint.producer_dependency,
                 restored.checkpoint.idempotency_key,
                 readmitted.computation_source.retain_facts(restored.observed_source_facts.clone()),
-                restored.checkpoint.resources,
                 restored.native_output_witness.as_ref().map(std::sync::Arc::clone),
 
         );

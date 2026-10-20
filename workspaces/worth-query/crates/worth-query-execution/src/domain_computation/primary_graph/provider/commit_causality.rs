@@ -13,12 +13,8 @@ impl WorthQueryPrimaryGraphProvider {
     }
 
     #[cfg(test)]
-    pub(crate) fn set_application_commit_causality_limits(
-        &self,
-        batch_capacity: usize,
-        byte_capacity: u64,
-    ) {
-        self.live_delivery.set_limits(batch_capacity, byte_capacity);
+    pub(crate) fn set_application_commit_causality_limits(&self, batch_capacity: usize) {
+        self.live_delivery.set_limits(batch_capacity);
     }
 
     #[cfg(test)]
@@ -32,12 +28,11 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn reserve_application_commit_causality(
         &self,
         product: &worth_runtime_world::facade::ProductBranchObservation,
-        retained_payload_bytes: u64,
     ) -> Result<
         crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePublicationReservation,
         &'static str,
     >{
-        self.live_delivery.reserve(product, retained_payload_bytes)
+        self.live_delivery.reserve(product)
     }
 
     pub(in crate::domain_computation::primary_graph) fn publish_application_commit_causality(
@@ -62,11 +57,6 @@ impl WorthQueryPrimaryGraphProvider {
     #[cfg(test)]
     pub(crate) fn published_application_commit_count(&self) -> usize {
         self.live_delivery.published_commit_count()
-    }
-
-    #[cfg(test)]
-    pub(crate) fn retained_application_emission_bytes(&self) -> u64 {
-        self.live_delivery.retained_payload_bytes()
     }
 
     #[cfg(test)]

@@ -251,14 +251,6 @@ impl WorthQueryManagedGraphWorkSession {
         }
     }
 
-    pub(in crate::domain_computation) fn candidate_host_envelope(
-        &self,
-    ) -> Option<&worth_query_installation::facade::WorthQueryExecutionResourceEnvelope> {
-        self.plan
-            .operation_resources()
-            .map(|resources| resources.support_snapshot().executor().envelope())
-    }
-
     pub(in crate::domain_computation) fn take_operation_capacity(
         &mut self,
     ) -> Option<worth_query_admission::integration::WorthQueryCapacityReservedExecutionResourcePlan>

@@ -289,10 +289,7 @@ fn settle_for<'application, 'principal, 'scope>(
 ) -> worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputSettlement<
     PlanarQuery,
 > {
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let mut output = request
         .advanced()
         .start_program_outputs::<CheckpointProgram, CheckpointRoot>(

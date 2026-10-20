@@ -109,7 +109,6 @@ fn scenario(rejoin: bool, late_hold: bool) {
             let ready = ready_backing.complete(super::super::WorthQueryCompletedOutputDemand {
                 authority: super::super::WorthQueryAcceptedOutputAuthority::Committed(receipt),
                 readiness: crate::domain_computation::primary_graph::WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
-                resources: None,
             });
             registry
                 .finish_checkpoint(

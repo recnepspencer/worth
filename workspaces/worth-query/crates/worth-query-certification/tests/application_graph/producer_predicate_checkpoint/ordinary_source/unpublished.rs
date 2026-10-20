@@ -176,10 +176,7 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
         source.receipt().commit_reference(),
         receipt.commit_reference()
     );
-    let controls = WorthQueryOutputDemandControls::new(
-        std::num::NonZeroUsize::new(4096).unwrap(),
-        std::num::NonZeroUsize::new(8192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let request = host.request(&principal, &scope);
     let mut outputs = source
         .start_required_outputs(&host, &request, controls)

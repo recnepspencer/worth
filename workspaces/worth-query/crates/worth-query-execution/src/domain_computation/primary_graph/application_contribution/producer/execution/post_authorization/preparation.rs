@@ -24,7 +24,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Input,
         MutationScope<Schema, Binding>,
     >,
-    mut required_output: RequiredOutputDemandContext,
+    required_output: RequiredOutputDemandContext,
     provider: std::sync::Arc<Binding::Provider>,
     source: SourceValue<Schema, Binding>,
     observed_source: crate::domain_computation::primary_graph::WorthQueryObservedSource<
@@ -32,7 +32,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     >,
     input: <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Input,
     matched_predecessors: Option<super::super::super::demand::MatchedRequiredPredecessors<'_>>,
-    resources: super::super::super::WorthQueryProducerDemandResources,
     successor_of: Option<[u8; 32]>,
     commit_authority: WorthQueryProducerCommitAuthority,
     edition: super::super::super::InstalledProducerEdition,
@@ -134,7 +133,6 @@ where
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .map_err(|error| input_cutoff::source_preparation_denial(Binding::IDENTITY, error))?;
-    required_output.retain_actual_resources(resources);
     let mut currentness = runtime
         .primary_provider
         .graph
@@ -152,7 +150,6 @@ where
             prepared_key,
             prepared_context,
             matched_predecessors,
-            resources,
             edition,
             request_admission,
             &mut currentness,

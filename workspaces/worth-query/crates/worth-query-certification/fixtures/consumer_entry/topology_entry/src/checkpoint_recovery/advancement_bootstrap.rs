@@ -55,7 +55,6 @@ fn bootstrap_opens_once_before_its_registry_reader_and_seeding() {
                 16,
                 64,
                 support::invalidation(128 * 1_024 * 1_024, Some(1_000_000), 32),
-                support::candidates(),
                 policy,
             );
             let checkpoint = restored.then(|| {

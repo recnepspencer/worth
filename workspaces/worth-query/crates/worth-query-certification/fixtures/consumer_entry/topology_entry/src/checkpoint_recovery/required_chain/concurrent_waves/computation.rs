@@ -219,7 +219,6 @@ impl ApplicationDerivedArtifact<CheckpointSchema, PlanarOutputFeature> for Artif
             <PlanarSourceFeature as ApplicationFeature<CheckpointSchema>>::IDENTITY,
         )];
     const REUSE_RULE: &'static str = "wave-exact";
-    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(Some(4096), Some(8192));
+
     const STOPPED_OUTCOME: &'static str = "wave-declared-failure";
 }

@@ -5,9 +5,7 @@ use bank_domain::schema::{
     BankSchema, JournalIdentityField, JournalReversal, MoneyMovementResult, ReverseJournal,
     ReverseJournalMutationBinding,
 };
-use worth_query_host::facade::declaration::application_operation::{
-    ApplicationCandidateRequirements, ApplicationMutationBinding,
-};
+
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
@@ -52,16 +50,6 @@ impl OperationHandler<BankSchema, ReverseJournalMutationBinding> for ReverseJour
             Ok(proposal) => HandlerResult::Completed(proposal),
             Err(denial) => HandlerResult::DomainDenied(denial),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &ReverseJournal,
-        _: &BankInvariantApprovedProposal,
-    ) -> ApplicationCandidateRequirements {
-        ReverseJournalMutationBinding::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

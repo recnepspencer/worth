@@ -41,7 +41,6 @@ fn completed_stage(claimed_with_ready: bool) {
         let completion = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
             authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
             readiness: crate::domain_computation::primary_graph::WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
-            resources: None,
         });
         let mut progress = WorthQueryOutputProgress::restored(completion);
         progress.claim(WorthQueryOutputClaimIdentity(1));

@@ -1,4 +1,3 @@
-mod application_candidate_resources;
 mod application_query_resources;
 mod branch_coordination_resources;
 mod installation_authority;
@@ -11,10 +10,6 @@ pub(in crate::domain_computation) mod source_invalidation;
 #[cfg(test)]
 mod tests;
 
-pub use application_candidate_resources::{
-    WorthQueryApplicationCandidateResourceProfile,
-    WorthQueryApplicationCandidateResourceProfileDenial,
-};
 pub use application_query_resources::{
     WorthQueryApplicationQueryResourceProfile, WorthQueryApplicationQueryResourceProfileDenial,
 };

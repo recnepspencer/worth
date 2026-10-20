@@ -124,11 +124,9 @@ impl WorthQueryOutputDemandRegistry {
             state.defer_cancelled_settlement_vacancy(posting.cleanup);
             return Err(denial);
         }
-        let resources = restored.checkpoint.resources;
         let completion = super::WorthQueryCompletedOutputDemand {
             authority: super::WorthQueryAcceptedOutputAuthority::Restored(restored),
             readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
-            resources,
         };
         prepared_record.record.interests = 1;
         prepared_record.record.required_interests = usize::from(admission_kind.is_required());

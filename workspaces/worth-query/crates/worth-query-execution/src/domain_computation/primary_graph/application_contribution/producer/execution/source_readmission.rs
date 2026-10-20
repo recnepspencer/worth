@@ -15,7 +15,6 @@ use super::{
     WorthQueryApplicationProducerBinding, WorthQueryOutputDemandDenialKind,
 };
 use crate::basis::WorthQueryProductBranch;
-use crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits;
 use crate::domain_computation::primary_graph::output_lineage::{
     invalidation::{InvalidationEditAdmission, SettlementRegistrationStop},
     AcceptedCurrentCandidate, CurrentAcceptedResult, CurrentAcceptedStop,
@@ -176,7 +175,6 @@ pub(super) fn readmit_source<Schema, Binding>(
     request: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
-    limits: WorthQueryOutputDemandLimits,
     admission: &mut InvalidationEditAdmission,
     edition: super::super::InstalledProducerEdition,
 ) -> Result<
@@ -208,7 +206,6 @@ where
         request,
         branch,
         retained,
-        limits,
         admission,
         edition,
         authorized,
@@ -225,7 +222,6 @@ pub(super) fn readmit_authorized_source<'runtime, Schema, Binding>(
     request: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
-    limits: WorthQueryOutputDemandLimits,
     admission: &mut InvalidationEditAdmission,
     edition: super::super::InstalledProducerEdition,
     authorized: AuthorizedRetainedSource<'runtime, Schema, Binding>,
@@ -256,7 +252,6 @@ where
         .maximum_work()
         .map(NonZeroUsize::get)
         .into_iter()
-        .chain(limits.producer_work())
         .chain(admission.remaining_work())
         .min();
     let maximum_work = query_ceiling

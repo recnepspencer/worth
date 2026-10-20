@@ -133,14 +133,6 @@ fn external_receipt_clones_do_not_pin_an_evicted_historical_basis() {
                 .is_empty(),
             "the first batch must be absent from the bounded live source"
         );
-        assert_eq!(
-            world
-                .application
-                .primary_provider
-                .retained_application_emission_bytes(),
-            0,
-            "evicting the only nonempty batch must release its accounted payload bytes"
-        );
 
         let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
             world.application.compare_and_commit_application(

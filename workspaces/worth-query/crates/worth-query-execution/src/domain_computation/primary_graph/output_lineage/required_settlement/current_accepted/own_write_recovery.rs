@@ -74,7 +74,7 @@ fn check_own_write_recovery(index_loss: bool) {
     let ready = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
         authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
         readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-        resources: None,
+
     });
     let candidate = AcceptedCurrentCandidate { selected, ready };
     let (_, product, _) = retained_product.into_parts();

@@ -163,10 +163,7 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
     );
     let receipt = performed.receipt().clone();
     drop(performed);
-    let controls = WorthQueryOutputDemandControls::new(
-        std::num::NonZeroUsize::new(4096).unwrap(),
-        std::num::NonZeroUsize::new(8192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let mut recovered = request
         .advanced()
         .recover_required_outputs::<OrdinaryAssessmentProgram, OrdinaryRoot>(

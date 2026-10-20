@@ -84,7 +84,7 @@ impl IdentityEntries {
     ) -> Result<(), Denial> {
         self.number(format!("{name}.count"), fields.len() as u64);
         for (index, (locator, value)) in fields.iter().enumerate() {
-            admit_assembly(context, value.owned_allocation_capacity_bytes())?;
+            check_interruption(context)?;
             let prefix = format!("{name}.{index}");
             self.path(&prefix, locator, context)?;
             self.value(
@@ -100,7 +100,7 @@ impl IdentityEntries {
         locator: &AspectFieldLocator,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<(), Denial> {
-        admit_assembly(context, locator.owned_allocation_capacity_bytes())?;
+        check_interruption(context)?;
         self.text(
             format!("{prefix}.aspect"),
             locator.aspect().aspect_key().as_str(),
@@ -110,7 +110,7 @@ impl IdentityEntries {
             locator.field_path().fields().len() as u64,
         );
         for (index, field) in locator.field_path().fields().iter().enumerate() {
-            admit_assembly(context, field.as_str().len())?;
+            check_interruption(context)?;
             self.text(format!("{prefix}.segment.{index}"), field.as_str());
         }
         Ok(())
@@ -118,20 +118,18 @@ impl IdentityEntries {
     pub(super) fn derive(
         self,
         rule: &str,
-        maximum_bytes: usize,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<
         ([u8; 32], WorthQueryCanonicalWorkEvidence),
         super::sealing::WorthQuerySignedCreationPreparationDenial,
     > {
-        super::canonical::derive(self.0, DOMAIN, rule, maximum_bytes, request, context)
+        super::canonical::derive(self.0, DOMAIN, rule, request, context)
     }
 }
 
 pub(super) fn candidate(
     effects: &[Effect],
-    maximum_bytes: usize,
     request: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<
@@ -139,10 +137,10 @@ pub(super) fn candidate(
     super::sealing::WorthQuerySignedCreationPreparationDenial,
 > {
     let mut entries = IdentityEntries::new();
-    admit_assembly(context, 0)?;
+    check_interruption(context)?;
     entries.number("effect-count", effects.len() as u64);
     for (index, effect) in effects.iter().enumerate() {
-        admit_assembly(context, 0)?;
+        check_interruption(context)?;
         let prefix = format!("effect.{index}");
         match effect {
             Effect::CreateEntity {
@@ -151,7 +149,7 @@ pub(super) fn candidate(
                 fields,
                 partition,
             } => {
-                admit_assembly(context, key.len())?;
+                check_interruption(context)?;
                 entries.text(format!("{prefix}.kind"), "create");
                 entries.number(format!("{prefix}.entity-kind"), u64::from(kind.as_u32()));
                 entries.text(format!("{prefix}.key"), key);
@@ -171,7 +169,7 @@ pub(super) fn candidate(
                 entity_id,
                 fields,
             } => {
-                admit_assembly(context, entity.len())?;
+                check_interruption(context)?;
                 entries.text(format!("{prefix}.kind"), "update");
                 entries.text(format!("{prefix}.entity-kind"), entity);
                 entries.entity(&prefix, *entity_id);
@@ -182,19 +180,13 @@ pub(super) fn candidate(
                 entity_id,
                 fields,
             } => {
-                admit_assembly(context, entity.len())?;
+                check_interruption(context)?;
                 entries.text(format!("{prefix}.kind"), "optional");
                 entries.text(format!("{prefix}.entity-kind"), entity);
                 entries.entity(&prefix, *entity_id);
                 entries.number(format!("{prefix}.count"), fields.len() as u64);
                 for (index, (locator, write)) in fields.iter().enumerate() {
-                    admit_assembly(
-                        context,
-                        write
-                            .value
-                            .as_ref()
-                            .map_or(0, AspectValue::owned_allocation_capacity_bytes),
-                    )?;
+                    check_interruption(context)?;
                     let field = format!("{prefix}.{index}");
                     entries.path(&field, locator, context)?;
                     entries.value(
@@ -212,19 +204,7 @@ pub(super) fn candidate(
                 from,
                 to,
             } => {
-                admit_assembly(context, key.len())?;
-                for reference in [from, to] {
-                    if let EntityReference::Created(created) = reference {
-                        admit_assembly(
-                            context,
-                            created
-                                .client_key
-                                .as_raw_str()
-                                .ok_or(Denial::Canonicalization)?
-                                .len(),
-                        )?;
-                    }
-                }
+                check_interruption(context)?;
                 entries.text(format!("{prefix}.kind"), "link");
                 entries.number(format!("{prefix}.relation-kind"), u64::from(kind.as_u32()));
                 entries.text(format!("{prefix}.key"), key);
@@ -248,19 +228,13 @@ pub(super) fn candidate(
             }
         }
     }
-    entries.derive(
-        "worth-query-signed-creation-candidate-v1",
-        maximum_bytes,
-        request,
-        context,
-    )
+    entries.derive("worth-query-signed-creation-candidate-v1", request, context)
 }
 
 pub(super) fn subject(
     fields: &BTreeMap<AspectFieldLocator, AspectValue>,
     scope: EntityId,
     facts: &[super::super::WorthQueryApplicationObservedFact],
-    maximum_bytes: usize,
     request: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<
@@ -268,11 +242,11 @@ pub(super) fn subject(
     super::sealing::WorthQuerySignedCreationPreparationDenial,
 > {
     let mut entries = IdentityEntries::new();
-    admit_assembly(context, 0)?;
+    check_interruption(context)?;
     entries.entity("scope", scope);
     entries.fields("subject", fields, context)?;
     for (index, fact) in facts.iter().enumerate() {
-        admit_assembly(context, 0)?;
+        check_interruption(context)?;
         if let super::super::WorthQueryApplicationObservedFact::SourceFieldRevision {
             entity_id,
             locator,
@@ -297,25 +271,14 @@ pub(super) fn subject(
             );
         }
     }
-    entries.derive(
-        "worth-query-signed-creation-subject-v1",
-        maximum_bytes,
-        request,
-        context,
-    )
+    entries.derive("worth-query-signed-creation-subject-v1", request, context)
 }
 
-/// The enclosing Query request already reserves assembly storage. Charge and
-/// check interruption before copying each native carrier, not only at hashing.
-pub(in crate::domain_computation::primary_graph::application_attempt) fn admit_assembly(
+/// Poll the active request without accumulating a resource bill.
+pub(in crate::domain_computation::primary_graph::application_attempt) fn check_interruption(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
-    bytes: usize,
 ) -> Result<(), Denial> {
-    let work = u64::try_from(bytes)
-        .ok()
-        .and_then(|bytes| bytes.checked_add(1))
-        .ok_or(Denial::RepresentationCapacity)?;
-    context.checkpoint(work).map_err(|cause| {
+    context.checkpoint(0).map_err(|cause| {
         Denial::Execution(
             crate::domain_computation::primary_graph::application_contribution::advancement_denial(
                 worth_execution::WorkCeilingDenial::Stopped(cause),

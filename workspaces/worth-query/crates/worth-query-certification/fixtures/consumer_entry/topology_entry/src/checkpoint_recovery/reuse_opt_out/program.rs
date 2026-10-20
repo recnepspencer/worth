@@ -1,9 +1,8 @@
 //! Required final artifact with separate Initial and Preserve bindings.
 use super::*;
 use worth_query_decl::facade::application_program::{
-    ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
-    ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationDerivedArtifact,
-    ApplicationFeature,
+    ApplicationArtifactDependency, ApplicationArtifactRetention, ApplicationArtifactSuccession,
+    ApplicationDerivedArtifact, ApplicationFeature,
 };
 use worth_query_host::facade::application_contribution::WorthQueryProducerOutputFamily;
 
@@ -62,8 +61,7 @@ impl ApplicationDerivedArtifact<NoReuseSchema, PlanarFinalOutputFeature> for Req
             <PlanarOutputFeature as ApplicationFeature<NoReuseSchema>>::IDENTITY,
         )];
     const REUSE_RULE: &'static str = "exact-source";
-    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(Some(4_096), Some(8_192));
+
     const STOPPED_OUTCOME: &'static str = "final-output-resource-denied";
 }
 

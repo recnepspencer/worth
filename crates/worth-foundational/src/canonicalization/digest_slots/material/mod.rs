@@ -37,12 +37,14 @@ use writer::{CanonicalEncodedMaterial, CanonicalMaterialResult, CanonicalMateria
 pub(super) fn canonical_digest_material(
     algorithm: &CanonicalDigestAlgorithmMetadata,
     evidence: &CanonicalDigestInputEvidence,
-    maximum_encoded_bytes: usize,
+    maximum_encoded_bytes: Option<usize>,
     admission: Option<&mut CanonicalResourceAdmission<'_>>,
 ) -> CanonicalMaterialResult<CanonicalEncodedMaterial> {
-    let mut material = match admission {
-        Some(admission) => CanonicalMaterialWriter::admitted(maximum_encoded_bytes, admission),
-        None => CanonicalMaterialWriter::bounded(maximum_encoded_bytes),
+    let mut material = match (maximum_encoded_bytes, admission) {
+        (Some(maximum), Some(admission)) => CanonicalMaterialWriter::admitted(maximum, admission),
+        (Some(maximum), None) => CanonicalMaterialWriter::bounded(maximum),
+        (None, None) => CanonicalMaterialWriter::owned(),
+        (None, Some(_)) => unreachable!("explicit admission supplies its declared budget"),
     };
     append_algorithm_material(&mut material, algorithm)?;
     append_input_evidence_material(&mut material, evidence)?;

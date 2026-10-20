@@ -1,8 +1,8 @@
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
-    ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationRetainedEffectBinding,
-    ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+    ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationSchema,
+    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
     ApplicationStructuredValueBinding,
 };
 use worth_query_installation::facade::{
@@ -40,11 +40,7 @@ macro_rules! moved_payload_module {
             );
             worth_query_declaration::worth_query_operation_emits!(Notify => [Notice]);
 
-            impl ApplicationRetainedEffectBinding for PayloadBinding {
-                fn retained_bytes(_value: &Self::Value) -> u64 {
-                    std::mem::size_of::<Self::Value>() as u64
-                }
-            }
+
 
             impl ApplicationExternalEffectBinding for PayloadBinding {
                 const PROTOCOL: ApplicationExternalEffectProtocol =

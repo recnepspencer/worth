@@ -153,7 +153,6 @@ where
             }
             validate_identity(&binding.output_role)?;
             validate_identity(&binding.provider_identity)?;
-            validate_identity(&binding.resource_policy)?;
             validate_identity(&binding.reuse_policy)?;
             if binding.applicability.is_empty()
                 || binding.supported.is_empty()

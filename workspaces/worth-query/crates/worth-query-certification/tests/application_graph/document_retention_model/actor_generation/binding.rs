@@ -20,8 +20,6 @@ worth_query_mutation_binding!(
         principal_identity u64, identity_binding U64ApplicationValueBinding,
     scope Document, DocumentFacts, DocumentIdentityField, String, ReadOnly, NoApplicationUnit,
     field DocumentIdentityField::reference(), value resource,
-    candidates creates 1, deletes 1, links 10, unlinks 10, writes 2, emits 0,
-    resources retained_representation_bytes 8192
 );
 #[derive(Clone)]
 pub struct ActorLifecycleIntent {

@@ -7,7 +7,6 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
 };
 
-use super::effect_program::{admit_platform_effects, PlatformEffectDemand};
 use super::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
     WorthQueryApplicationEffectProgram, WorthQueryApplicationObservedFact,
@@ -204,17 +203,12 @@ where
             false,
             allowance,
         );
-        let mut demand = PlatformEffectDemand::default();
-        visit_workflow_proposal_facts(&layout, &admitted, &proposal, |effect| {
-            demand.observe(&effect)
-        })?;
-        let reservation = admit_platform_effects(admitted.read_set(), demand)?;
         let mut effects = Vec::new();
         visit_workflow_proposal_facts(&layout, &admitted, &proposal, |effect| {
             effects.push(effect);
             Ok::<(), WorthQueryApplicationAttemptDenial>(())
         })?;
-        reservation.materialize(&effects)?;
+
         let progress_update = if replay {
             None
         } else {
@@ -225,12 +219,8 @@ where
         };
         Ok(PreparedWorkflowProposal {
             program: WorthQueryApplicationEffectProgram {
-            candidate_requirements: None,
-            effect_backing_memory: None,
                 read_set: admitted.into_read_set(),
                 effects,
-                emission_retained_bytes: 0,
-                emission_retained_bytes_ceiling: 0,
                 conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
                 output_correspondence: Default::default(),

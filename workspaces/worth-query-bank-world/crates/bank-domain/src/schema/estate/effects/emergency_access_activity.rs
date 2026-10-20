@@ -1,8 +1,7 @@
 use worth_query_decl::facade::worth_query_structured_value_binding;
 use worth_query_decl::facade::{
     application_capability::ApplicationCapabilityLifecycleEffect,
-    application_schema::{ApplicationEffectRef, ApplicationRetainedEffectBinding},
-    worth_query_effect,
+    application_schema::ApplicationEffectRef, worth_query_effect,
 };
 
 use crate::{
@@ -20,11 +19,7 @@ pub struct EstateEmergencyAccessActivityEvent {
 }
 
 worth_query_structured_value_binding!(pub EstateEmergencyAccessActivityEventBinding for EstateEmergencyAccessActivityEvent { identity: "bank.estate.effect.emergency-access-activity.payload.v1" });
-impl ApplicationRetainedEffectBinding for EstateEmergencyAccessActivityEventBinding {
-    fn retained_bytes(_: &Self::Value) -> u64 {
-        u64::try_from(std::mem::size_of::<EstateEmergencyAccessActivityEvent>()).unwrap_or(u64::MAX)
-    }
-}
+
 worth_query_effect!(pub EstateEmergencyAccessActivityEffect for BankSchema, payload EstateEmergencyAccessActivityEventBinding);
 
 macro_rules! lifecycle_effect {
@@ -72,26 +67,11 @@ lifecycle_effect!(
 #[cfg(test)]
 mod tests {
     use worth_query_decl::facade::application_capability::ApplicationCapabilityLifecycleEffect;
-    use worth_query_decl::facade::application_schema::ApplicationRetainedEffectBinding;
 
-    use super::{EstateEmergencyAccessActivityEvent, EstateEmergencyAccessActivityEventBinding};
     use crate::{
         estate::{EmergencyAccessId, EstateAction, EstateCaseId},
         schema::{BankSchema, RequestEstateEmergencyAccessOperation},
     };
-
-    #[test]
-    fn activity_event_retains_exact_fixed_width() {
-        let event = EstateEmergencyAccessActivityEvent {
-            estate: EstateCaseId::new(1).unwrap(),
-            access: EmergencyAccessId::new(2).unwrap(),
-        };
-
-        assert_eq!(
-            EstateEmergencyAccessActivityEventBinding::retained_bytes(&event),
-            u64::try_from(std::mem::size_of::<EstateEmergencyAccessActivityEvent>()).unwrap()
-        );
-    }
 
     #[test]
     fn wrong_operation_variant_derives_no_activity_effect() {

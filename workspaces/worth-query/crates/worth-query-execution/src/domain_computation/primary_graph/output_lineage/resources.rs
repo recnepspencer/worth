@@ -1,6 +1,4 @@
-use super::super::{
-    application_contribution::WorthQueryProducerDemandResources, WorthQueryApplicationCommitReceipt,
-};
+use super::super::WorthQueryApplicationCommitReceipt;
 use super::{SemanticSource, WorthQueryApplicationOutputLineage};
 
 impl WorthQueryApplicationOutputLineage {
@@ -52,34 +50,5 @@ impl WorthQueryApplicationOutputLineage {
             recorded.checkpoint_source_facts()?,
             recorded.native_output_witness()?,
         ))
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn producer_resources_for_receipt(
-        &self,
-        receipt: &WorthQueryApplicationCommitReceipt,
-    ) -> Option<WorthQueryProducerDemandResources> {
-        let output_binding = receipt.output_correspondence().binding_type()?;
-        let scope = receipt.principal_scope();
-        let source = SemanticSource {
-            runtime_authority: scope.runtime_authority(),
-            schema: scope.binding_identity().clone(),
-            scope: scope.scope(),
-            output_binding: self.binding_identity(output_binding)?,
-        };
-        let publication = receipt.committed_product_publication();
-        self.by_source
-            .get(&source)?
-            .get(&publication.product_incarnation())?
-            .get(&publication.product_generation().get())?
-            .iter()
-            .filter_map(|cell| cell.get())
-            .find(|recorded| {
-                std::ptr::eq(
-                    recorded.correspondence.as_ref(),
-                    receipt.output_correspondence(),
-                ) && recorded.source_partition_identity
-                    == receipt.idempotency_binding().source_partition_identity()
-            })?
-            .resources()
     }
 }

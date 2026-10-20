@@ -74,7 +74,7 @@ fn inclusive_evidence_admission_charges_the_decimal_publication_width() {
                     WorthQueryApplicationAttemptDenialKind::WorkflowInstanceEvidenceCapacityUnavailable,
                 );
             } else {
-                let (_, actual) = result.expect("the inclusive evidence allowance is sufficient");
+                let actual = result.expect("the inclusive evidence allowance is sufficient");
                 assert_eq!(actual, charge);
             }
         }

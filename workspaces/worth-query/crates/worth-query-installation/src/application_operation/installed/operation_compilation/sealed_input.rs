@@ -8,7 +8,6 @@ impl WorthQuerySealedOperationContractCompilation {
         Option<ApplicationOperationBodyProgram>,
         WorthQueryInstalledApplicationOperationAuthorization,
         Vec<WorthQueryInstalledAbilityRequirement>,
-        usize,
         Option<usize>,
         usize,
         Vec<WorthQueryInstalledMutationPrecondition>,
@@ -19,7 +18,6 @@ impl WorthQuerySealedOperationContractCompilation {
         WorthQueryOperationTouchContract,
         WorthQueryOperationEmissionContract,
         usize,
-        WorthQueryApplicationCandidateDemand,
         super::super::super::contracts::SigningLifecycleClosure,
         Vec<WorthQueryInstalledApplicationInvariantDescriptor>,
     ) {
@@ -27,7 +25,6 @@ impl WorthQuerySealedOperationContractCompilation {
             self.body,
             self.authorization,
             self.ability_requirements,
-            self.authored_program_width,
             self.projection_work_budget,
             self.additional_authorization_fact_count,
             self.mutation_preconditions,
@@ -38,7 +35,6 @@ impl WorthQuerySealedOperationContractCompilation {
             self.touches,
             self.emissions,
             self.graph_mutation_count,
-            self.candidate_demand,
             self.signing_lifecycle,
             self.invariant_invocations,
         )

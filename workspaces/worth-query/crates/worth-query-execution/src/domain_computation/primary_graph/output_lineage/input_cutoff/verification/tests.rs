@@ -323,7 +323,6 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
                     mutable: Mutex::new(RecordedOutputMutable::new(
                         None,
                         Some(evidence.retain_facts(facts)),
-                        None,
                         RecordedComputation::Absent(PriorAbsence::FirstRun),
                     )),
                 };

@@ -1,6 +1,5 @@
 use super::*;
-use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
-use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
+
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
     WorthQueryInvariantMutationTarget,
@@ -95,8 +94,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.final-planar-preserve-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.final-planar-preserve-command.v1";
-    const CANDIDATES: ApplicationCandidatePolicy =
-        ApplicationCandidatePolicy::finite(super::super::requirements(0, 0, 0, 6, 4096));
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -267,16 +264,6 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarPreserve
         }
     }
 
-    fn candidate_requirements(
-        &self,
-        _: &FinalPlanarPreserve,
-        _: &[WorthQueryInvariantMutationTarget<Schema, Body>; 3],
-    ) -> ApplicationCandidateRequirements {
-        FinalPlanarPreserveBinding::<Schema>::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
-    }
-
     fn build_candidate(
         &self,
         input: &FinalPlanarPreserve,
@@ -356,13 +343,6 @@ impl<Schema: TopologySchemaBinding>
     fn idempotency_key(&self, source: &PlanarReadResult, identity: &[u8; 32]) -> u64 {
         <Self as WorthQueryApplicationProducerProvider<Schema, PlanarFinalOutputProducer<Schema>>>::idempotency_key(self, source, identity)
     }
-
-    fn demand_resources(
-        &self,
-        source: &PlanarReadResult,
-    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
-        <Self as WorthQueryApplicationProducerProvider<Schema, PlanarFinalOutputProducer<Schema>>>::demand_resources(self, source)
-    }
 }
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
@@ -383,7 +363,6 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
             0,
             ApplicationInvariantExecutionPoint::CommitBoundary,
         )];
-    const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
         Some(WorthQueryProducerInputReuseContract::canonical_bitwise(

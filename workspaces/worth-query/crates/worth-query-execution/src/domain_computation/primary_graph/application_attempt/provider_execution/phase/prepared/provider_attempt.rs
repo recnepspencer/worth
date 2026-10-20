@@ -10,8 +10,6 @@ pub(super) fn prepare_application_provider_attempt(
     preparation: WorthQueryProviderAttemptPreparation,
     mutation_partition: worth_relational::facade::identity::PartitionId,
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, WorthQueryApplicationAttemptDenial> {
-    // Hold the original ticket until lowering has consumed the original Vec.
-    let _effect_backing_memory = preparation.effect_backing_memory;
     prepare_provider_attempt(
         lease.layout.unique_fields(),
         mutation_partition,
@@ -20,8 +18,6 @@ pub(super) fn prepare_application_provider_attempt(
         preparation.facts,
         preparation.consumed_outputs,
         preparation.effects,
-        preparation.emission_retained_bytes,
-        preparation.emission_retained_bytes_ceiling,
         preparation.preimage_demand,
         preparation.conditional_definition,
         preparation.output_correspondence,

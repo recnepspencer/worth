@@ -33,11 +33,11 @@ pub fn admit_canonical_sequence_digest_derivation(
     sequence: CanonicalBasisReadyArtifact,
     slot: CanonicalSingleSequenceDigestAlgorithmSlot,
 ) -> TransitionOutcome<CanonicalDigestDerivationReadyArtifact, CanonicalDigestDerivationDenial> {
-    admit_canonical_sequence_digest_derivation_with_budget(
-        sequence,
-        slot,
-        CanonicalDigestWorkBudget::standard(),
-    )
+    let (sequence, _proofs, _basis) = sequence.into_parts().into_parts();
+    let evidence = CanonicalDigestInputEvidence::SingleSequence(
+        CanonicalDigestBasisSequence::from_owned_sequence(sequence),
+    );
+    admit_canonical_digest_derivation(slot.into_metadata(), evidence, None)
 }
 
 pub fn admit_canonical_sequence_digest_derivation_with_budget(
@@ -49,7 +49,7 @@ pub fn admit_canonical_sequence_digest_derivation_with_budget(
     let evidence = CanonicalDigestInputEvidence::SingleSequence(
         CanonicalDigestBasisSequence::from_owned_sequence(sequence),
     );
-    admit_canonical_digest_derivation(slot.into_metadata(), evidence, budget)
+    admit_canonical_digest_derivation(slot.into_metadata(), evidence, Some(budget))
 }
 
 pub fn admit_canonical_bundle_digest_derivation(
@@ -87,7 +87,7 @@ pub fn admit_canonical_bundle_digest_derivation_with_budget(
         sequences,
     ));
 
-    admit_canonical_digest_derivation(slot.into_metadata(), evidence, budget)
+    admit_canonical_digest_derivation(slot.into_metadata(), evidence, Some(budget))
 }
 
 pub fn admit_canonical_export_digest_derivation(
@@ -125,27 +125,35 @@ pub fn admit_canonical_export_digest_derivation_with_budget(
         sequences,
     ));
 
-    admit_canonical_digest_derivation(slot.into_metadata(), evidence, budget)
+    admit_canonical_digest_derivation(slot.into_metadata(), evidence, Some(budget))
 }
 
 fn admit_canonical_digest_derivation(
     algorithm: CanonicalDigestAlgorithmMetadata,
     evidence: CanonicalDigestInputEvidence,
-    budget: CanonicalDigestWorkBudget,
+    budget: Option<CanonicalDigestWorkBudget>,
 ) -> TransitionOutcome<CanonicalDigestDerivationReadyArtifact, CanonicalDigestDerivationDenial> {
     match prepare_canonical_digest_derivation(algorithm, evidence, budget, None) {
         Ok(ready) => TransitionOutcome::success(ready),
         Err(CanonicalDigestPreparationStop::Derivation(denial)) => {
             TransitionOutcome::denied(denial)
         }
-        Err(stop) => unreachable!("ordinary codec has no resource-refusal port: {stop:?}"),
+        Err(CanonicalDigestPreparationStop::AllocationUnavailable) => {
+            TransitionOutcome::denied(CanonicalDigestDerivationDenial::AllocationUnavailable)
+        }
+        Err(CanonicalDigestPreparationStop::AccountingOverflow) => {
+            TransitionOutcome::denied(CanonicalDigestDerivationDenial::LengthOverflow)
+        }
+        Err(CanonicalDigestPreparationStop::ResourceRefused) => {
+            unreachable!("ordinary codec has no resource-refusal port")
+        }
     }
 }
 
 pub(super) fn prepare_canonical_digest_derivation(
     algorithm: CanonicalDigestAlgorithmMetadata,
     evidence: CanonicalDigestInputEvidence,
-    budget: CanonicalDigestWorkBudget,
+    budget: Option<CanonicalDigestWorkBudget>,
     mut admission: Option<&mut CanonicalResourceAdmission<'_>>,
 ) -> Result<CanonicalDigestDerivationReadyArtifact, CanonicalDigestPreparationStop> {
     if let Some(admission) = admission.as_deref_mut() {
@@ -188,7 +196,9 @@ pub(super) fn prepare_canonical_digest_derivation(
         ));
     }
     let entry_count = evidence.entry_count();
-    if entry_count > budget.maximum_entry_count() {
+    if let Some(budget) = budget
+        && entry_count > budget.maximum_entry_count()
+    {
         return Err(CanonicalDigestPreparationStop::Derivation(
             CanonicalDigestDerivationDenial::EntryLimitExceeded {
                 maximum: budget.maximum_entry_count(),
@@ -199,7 +209,7 @@ pub(super) fn prepare_canonical_digest_derivation(
     let material = canonical_digest_material(
         &algorithm,
         &evidence,
-        budget.maximum_encoded_bytes(),
+        budget.map(CanonicalDigestWorkBudget::maximum_encoded_bytes),
         admission.as_deref_mut(),
     )?;
     let work = CanonicalDigestWorkEvidence::new(

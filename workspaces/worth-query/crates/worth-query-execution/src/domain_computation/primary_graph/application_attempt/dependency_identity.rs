@@ -10,7 +10,6 @@ use output_postcondition::{complete_output_currentness_facts, normalized_output_
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerIdentityDenial {
-    DependencyByteCapacityUnsupported,
     DependencyCanonicalizationRejected,
     MissingSourcePartition,
     LineageLookupBudgetExceeded,
@@ -37,18 +36,8 @@ impl<Schema, Operation, Input, Scope>
         OutputBinding: 'static,
     {
         let dependency_facts = normalized_output_facts(&self.read_set.facts, &self.effects);
-        let maximum_dependency_bytes = usize::try_from(
-            runtime
-                .runtime
-                .application_candidate_resource_profile()
-                .maximum_producer_dependency_bytes(),
-        )
-        .map_err(|_| WorthQueryProducerIdentityDenial::DependencyByteCapacityUnsupported)?;
-        let (dependency, work) =
-            dependency_identity(declared_key, &dependency_facts, maximum_dependency_bytes)
-                .map_err(|_| {
-                    WorthQueryProducerIdentityDenial::DependencyCanonicalizationRejected
-                })?;
+        let (dependency, work) = dependency_identity(declared_key, &dependency_facts)
+            .map_err(|_| WorthQueryProducerIdentityDenial::DependencyCanonicalizationRejected)?;
         // An owner call read its facts before this effect, so a field the
         // effect replaced is one the computation has not seen.
         let moved = (self.read_set.computation_fact_ordinals.iter().copied())

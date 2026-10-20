@@ -1,9 +1,6 @@
 use super::*;
-use worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy;
+use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_operation::NoApplicationMutationOutputs;
-use worth_query_declaration::facade::application_operation::{
-    ApplicationCandidateRequirements, ApplicationMutationBinding,
-};
 use worth_query_declaration::facade::application_schema::{
     NoApplicationUnit, ReadWrite, U64ApplicationValueBinding,
 };
@@ -69,8 +66,6 @@ worth_query_declaration::worth_query_mutation_binding!(
     scope Account, AccountPolicy, AccountStatus, String, ReadWrite, NoApplicationUnit,
     field AccountStatus::reference(),
     value program_required_scope,
-    candidates creates 0, deletes 0, links 0, unlinks 0, writes 1, emits 0,
-    resources retained_representation_bytes 64
 );
 
 fn program_required_scope(input: &ProgramRequiredInput) -> String {
@@ -102,16 +97,6 @@ impl
         crate::domain_computation::primary_graph::application_entry::mutation::HandlerResult::Completed(
             input.clone(),
         )
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &ProgramRequiredInput,
-        _: &ProgramRequiredInput,
-    ) -> ApplicationCandidateRequirements {
-        ProgramRequiredMutationBinding::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(
@@ -194,8 +179,6 @@ impl ApplicationMutationBinding<IdentityExecutionSchema> for ProgramRequiredSibl
     const HANDLER_IDENTITY: &'static str = "worth.query.test.program-required-sibling-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::IDEMPOTENCY_IDENTITY;
-    const CANDIDATES: ApplicationCandidatePolicy =
-        <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::CANDIDATES;
 
     fn scope_field() -> worth_query_declaration::facade::application_schema::ApplicationFieldRef<
         IdentityExecutionSchema,

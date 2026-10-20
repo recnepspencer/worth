@@ -123,7 +123,7 @@ fn installed_preview_runtime() -> WorthQueryProgramApplicationRuntime<PreviewSch
         program, PreviewSchema::declaration().unwrap(), ((),),
         WorthQueryInMemoryApplicationLimits::new(
             crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
-            Default::default(), Default::default(),
+            Default::default(),
             worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
         ),
         |_, graph, installed| {

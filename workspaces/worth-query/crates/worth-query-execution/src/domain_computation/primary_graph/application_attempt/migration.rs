@@ -65,12 +65,8 @@ where
         );
     }
     let WorthQueryApplicationEffectProgram {
-        candidate_requirements: _candidate_requirements,
-        effect_backing_memory: _effect_backing_memory,
         read_set,
         effects,
-        emission_retained_bytes,
-        emission_retained_bytes_ceiling: _,
         conditional_definition,
         effect_posture,
         output_correspondence,
@@ -109,10 +105,9 @@ where
             ),
         );
     }
-    if emission_retained_bytes != 0
-        || effects
-            .iter()
-            .any(|effect| matches!(effect, WorthQueryApplicationRealizedEffect::Emit(_)))
+    if effects
+        .iter()
+        .any(|effect| matches!(effect, WorthQueryApplicationRealizedEffect::Emit(_)))
     {
         return Err(
             WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
