@@ -36,7 +36,9 @@ pub(super) fn write(
     output.u16(*major)?;
     output.u16(*minor)?;
     output.u16(point_tag(*execution_point))?;
-    output.u64(maximum_work_units.get())?;
+    if let Some(maximum) = maximum_work_units {
+        output.u64(maximum.get())?;
+    }
     output.u16(enforcement_tag(*enforcement))?;
     write_sequence(output, required_groups, |output, group| {
         output.u16(group_tag(*group))
@@ -48,6 +50,7 @@ pub(super) fn write(
 }
 
 pub(super) fn decode(
+    tag: u16,
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
@@ -57,8 +60,14 @@ pub(super) fn decode(
         major: input.u16()?,
         minor: input.u16()?,
         execution_point: decode_point(input.u16()?)?,
-        maximum_work_units: NonZeroU64::new(input.u64()?)
-            .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?,
+        maximum_work_units: if tag == 27 {
+            Some(
+                NonZeroU64::new(input.u64()?)
+                    .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?,
+            )
+        } else {
+            None
+        },
         enforcement: decode_enforcement(input.u16()?)?,
         required_groups: decode_sequence(input, budget, 2, |input, _| decode_group(input.u16()?))?,
         read_closure: decode_sequence(input, budget, 6, |input, _| decode_target(input))?,

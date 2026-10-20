@@ -266,32 +266,58 @@ fn exact_view_pin_keeps_original_root_after_commit_snapshot_release_and_rejects_
     drop(runtime);
     drop(foreign);
     use crate::visibility::materialization::read_records::projection::ProjectionRecordSource;
+    use crate::visibility::materialization::read_records::{read_stop::ReadStop, read_work};
     use worth_foundational::facade::{
         AspectValue, ContractValidatedAspectValueView, InternedString,
     };
-    let original = pin
-        .authoritative_entity_record(&request, original_entity)
-        .expect("original request reads the retained root")
-        .expect("the original entity survives through its exact pin");
-    assert_eq!(original.entity_id, original_entity);
-    assert!(
-        pin.authoritative_entity_record(&request, later_entity)
-            .expect("original request reads the retained root")
-            .is_none(),
-        "the later entity is absent from the original root"
-    );
-    let state = original
-        .authoritative_aspect_state
-        .as_ref()
-        .expect("original payload");
-    // The generic create fixture supplies a Raw string to its scalar EntityField contract.
-    let ContractValidatedAspectValueView::Scalar(AspectValue::String(InternedString::Raw(text))) =
-        state
-            .get(&aspect_key("name"))
-            .expect("original name aspect")
-            .view()
-    else {
-        panic!("the actual original scalar payload must carry a present plain string");
-    };
-    assert_eq!(text, "original-view");
+    for (entity, expected_present) in [(original_entity, true), (later_entity, false)] {
+        let seen = read_work::metered_with_memory(
+            &request,
+            |context, memory| {
+                pin.with_entity_record(
+                    &request,
+                    entity,
+                    |work, bytes| {
+                        context
+                            .checkpoint(work)
+                            .map_err(crate::execution::denial::kernel_stop)?;
+                        memory.resize(bytes).map_err(|cause| {
+                            crate::execution::denial::lease_denial(
+                                worth_execution::LeaseDenial::MemoryExhausted(cause),
+                            )
+                        })
+                    },
+                    |record| {
+                        assert_eq!(record.entity_id, entity);
+                        let state = record
+                            .authoritative_aspect_state
+                            .as_ref()
+                            .expect("original payload");
+                        // The generic birth uses a Raw string in its scalar EntityField contract.
+                        let ContractValidatedAspectValueView::Scalar(AspectValue::String(
+                            InternedString::Raw(text),
+                        )) = state
+                            .get(&aspect_key("name"))
+                            .expect("original name aspect")
+                            .view()
+                        else {
+                            panic!("the original scalar payload must retain its plain string");
+                        };
+                        assert_eq!(text, "original-view");
+                    },
+                )
+                .map_err(|stop| match stop {
+                    ReadStop::Request(cause) | ReadStop::Admission(cause) => cause,
+                })
+            },
+            |_| 0, // Only an optional unit escapes; native temporary record custody is settled above.
+        )
+        .expect("original request funds the pinned read")
+        .expect("the pinned record read succeeds");
+        assert_eq!(
+            seen.is_some(),
+            expected_present,
+            "the original pin excludes the later entity"
+        );
+    }
 }

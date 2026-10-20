@@ -93,7 +93,7 @@ impl<'view> IndexProjectionSource<'view> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: KindId,
-        before_candidate: impl FnMut(u64) -> Result<(), E>,
+        before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
     ) -> Result<(), crate::visibility::materialization::read_records::read_stop::ReadStop<E>> {
         self.projection.try_for_each_entity_record(
@@ -108,7 +108,7 @@ impl<'view> IndexProjectionSource<'view> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: KindId,
-        before_candidate: impl FnMut(u64) -> Result<(), E>,
+        before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
     ) -> Result<(), crate::visibility::materialization::read_records::read_stop::ReadStop<E>> {
         self.projection.try_for_each_relation_record(
@@ -132,8 +132,16 @@ impl<'view> IndexProjectionSource<'view> {
             .map(inspect))
     }
 
-    pub(in crate::indexes) fn candidate_entity_bytes(&self, entity_id: EntityId) -> u64 {
-        self.projection.candidate_entity_bytes_for_id(entity_id)
+    pub(in crate::indexes) fn with_entity_checked<T, E>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity_id: EntityId,
+        before: impl FnMut(u64, u64) -> Result<(), E>,
+        inspect: impl FnOnce(&EntityReadRecord) -> T,
+    ) -> Result<Option<T>, crate::visibility::materialization::read_records::read_stop::ReadStop<E>>
+    {
+        self.projection
+            .with_entity_record(execution, entity_id, before, inspect)
     }
 
     pub(in crate::indexes) fn with_relation<T>(

@@ -44,7 +44,9 @@ fn diagnostic_count_maps_and_plan_widths_match_their_retained_representations() 
             )
             .unwrap();
     assert_eq!(
-        report.retained_heap_charge(&mut Work::new(10000)).unwrap(),
+        report
+            .retained_heap_charge(&mut Work::new(Some(10000)))
+            .unwrap(),
         expected
     );
     let plan = flow.planning.plan;
@@ -54,7 +56,7 @@ fn diagnostic_count_maps_and_plan_widths_match_their_retained_representations() 
         .bytes()
         + (plan.stage_widths.capacity() * std::mem::size_of::<u32>()) as u64;
     assert_eq!(
-        plan.retained_heap_charge(&mut Work::new(10000))
+        plan.retained_heap_charge(&mut Work::new(Some(10000)))
             .unwrap()
             .bytes(),
         expected
@@ -68,20 +70,22 @@ fn diagnostic_graph_samples_charge_capacity_while_metrics_remain_inline() {
         * std::mem::size_of::<crate::data::handle::NodeId>();
     assert_eq!(
         graph
-            .retained_heap_charge(&mut Work::new(10000))
+            .retained_heap_charge(&mut Work::new(Some(10000)))
             .unwrap()
             .bytes(),
         expected as u64
     );
     let original = graph.clone();
-    let before = graph.retained_heap_charge(&mut Work::new(10000)).unwrap();
+    let before = graph
+        .retained_heap_charge(&mut Work::new(Some(10000)))
+        .unwrap();
     let old_capacity = graph.sample_dirty_nodes.capacity();
     graph.sample_dirty_nodes.reserve_exact(128);
     let delta = (graph.sample_dirty_nodes.capacity() - old_capacity)
         * std::mem::size_of::<crate::data::handle::NodeId>();
     assert_eq!(
         graph
-            .retained_heap_charge(&mut Work::new(10000))
+            .retained_heap_charge(&mut Work::new(Some(10000)))
             .unwrap()
             .bytes()
             - before.bytes(),

@@ -10,7 +10,7 @@ where
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-        maximum_history_work: std::num::NonZeroUsize,
+        maximum_history_work: Option<std::num::NonZeroUsize>,
     ) -> Result<(), WorthQuerySourceOnlyDenial> {
         let SourceState::<S, I>::RetainedPending(evidence) = &self.state else {
             unreachable!("retained delivery owns recovered evidence")

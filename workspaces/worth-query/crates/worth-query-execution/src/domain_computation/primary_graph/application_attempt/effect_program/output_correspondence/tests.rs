@@ -47,7 +47,7 @@ struct Binding;
 #[test]
 fn checkpoint_roles_reject_invalid_names_unknown_entities_and_duplicates() {
     let host = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(64 << 20),
+        worth_execution::SerialMemoryBudget::new(None),
         worth_execution::CancellationToken::new(),
         None,
     );

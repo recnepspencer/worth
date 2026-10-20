@@ -161,7 +161,7 @@ fn latest_stable_alias_checkpoint_restores_output_and_source_change_requires_fre
     );
     request
         .at(&after)
-        .require_current_output_demand(&recovered, support::currentness_work_limit())
+        .require_current_output_demand(&recovered, Some(support::currentness_work_limit().get()))
         .unwrap();
     require_fresh_after_root_edit(&restored, &request, 0x32a4);
 }
@@ -212,6 +212,6 @@ fn require_fresh_after_root_edit<'application>(
     let current = support::retain_read(application, request).unwrap();
     request
         .at(&current)
-        .require_current_output_demand(&fresh, support::currentness_work_limit())
+        .require_current_output_demand(&fresh, Some(support::currentness_work_limit().get()))
         .unwrap();
 }

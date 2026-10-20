@@ -14,8 +14,7 @@ fn program_commit_keeps_caller_only_cancellation_after_advancement_opening() {
     let installed = installed.as_ref().as_ref().unwrap();
     let branch = application.current_world();
     let source = CancellationSource::new();
-    let caller =
-        SerialRequest::from_memory(SerialMemoryBudget::new(64 << 20), source.token(), None);
+    let caller = SerialRequest::from_memory(SerialMemoryBudget::new(None), source.token(), None);
     let injected = Rc::new(Cell::new(false));
     let stopped = super::source_change::change_input_with_commit_probe(
         &ExecutionRequest::serial(&caller),

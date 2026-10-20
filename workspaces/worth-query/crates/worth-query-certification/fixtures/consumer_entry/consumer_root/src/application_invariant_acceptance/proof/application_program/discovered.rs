@@ -226,20 +226,7 @@ pub(super) fn isolated_source_settles_without_roots(
         }
     });
     let current = settled
-        .deliver_current(
-            &request,
-            WorthQueryOperationDeliveryPolicy::currentness(
-                NonZeroUsize::new(
-                    world
-                        .application
-                        .runtime()
-                        .output_demand_resource_profile()
-                        .limits()
-                        .source_currentness_work(),
-                )
-                .expect("installed finite positive currentness allowance"),
-            ),
-        )
+        .deliver_current(&request, WorthQueryOperationDeliveryPolicy::default())
         .unwrap();
     assert_eq!(
         current.selected_commit(),

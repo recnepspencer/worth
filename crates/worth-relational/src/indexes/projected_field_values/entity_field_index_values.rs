@@ -59,10 +59,10 @@ pub(in crate::indexes) fn build_entity_aspect_field_index_checked(
                     request_execution,
                     plan.kind_id,
                     field_locator,
-                    |bytes| {
+                    |units, bytes| {
                         projected_bytes.set(bytes);
-                        budget.borrow_mut().checkpoint(1)?;
-                        budget.borrow().check_scratch_peak(bytes)
+                        budget.borrow_mut().checkpoint(units)?;
+                        budget.borrow().settle_temporary_scratch(bytes)
                     },
                     |record_id, value| {
                         let Some(value) = value else {

@@ -218,7 +218,7 @@ impl CustomInvariantRule for OutputInvariant {
             },
             display_name: "Output invariant".into(),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: std::num::NonZeroU64::new(1024).unwrap(),
+                maximum_work_units: Some(std::num::NonZeroU64::new(1024).unwrap()),
                 execution_point: InvariantExecutionPoint::CommitBoundary,
                 groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
                 cost_class: InvariantCostClass::Touched,

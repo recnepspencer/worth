@@ -38,7 +38,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
             .retained_clone();
         let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(admission.publication_request(), allocation_policy);
         let completed = self
-            .project_bounded(
+            .project_with_work_limit(
                 execution,
                 admission.allowed_graph_contract().projection_work_budget(),
                 product.relational_basis().clone(),
@@ -55,11 +55,10 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                     let mut operation_reader =
                         WorthQueryApplicationOperationInvariantProjectionReader {
                             reader,
+                            admitted_contracts: Some(admission.allowed_graph_contract()),
+                            admitted_principal: Some(admission.graph_work().principal()),
                             source_query,
                             source_context_use,
-                            admitted_graph_reads: Some(
-                                admission.allowed_graph_contract().graph_reads(),
-                            ),
                             runtime_authority: self.runtime_authority,
                             binding_identity: &self.binding_identity,
                             admission_identity: Some(admission.admission_identity()),

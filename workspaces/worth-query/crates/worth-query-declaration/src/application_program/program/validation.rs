@@ -4,6 +4,10 @@ use super::*;
 pub(super) fn validate<Schema, Program>(
     connections: Vec<ApplicationConnectionDeclaration>,
     rules: Vec<ApplicationProgramRuleDeclaration>,
+    operation_bodies: Vec<(
+        String,
+        crate::application_schema::ApplicationOperationBodyProgram,
+    )>,
 ) -> Result<ValidatedApplicationProgram<Schema, Program>, ApplicationProgramValidationDenial>
 where
     Schema: ApplicationSchema,
@@ -159,6 +163,7 @@ where
             }
         }
     }
+    body_binding::bind(&mut actions, &operation_bodies);
     let identity = Program::IDENTITY.clone();
     let features = features.into_boxed_slice();
     let actions = actions.into_boxed_slice();

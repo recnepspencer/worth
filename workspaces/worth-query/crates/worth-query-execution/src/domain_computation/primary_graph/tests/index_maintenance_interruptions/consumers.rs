@@ -26,7 +26,7 @@ fn currency_consumer(consumer: u8) {
   let (healthy,count)=with_request_consult_observer_for_test(|_|{},||handle.ensure_primary_indexes_for_basis(&setup,runtime,&basis));healthy.unwrap();assert!(count>2);eprintln!("currency consults={count}");
   for k in 1..=count+1 {
    discard(runtime);let source=CancellationSource::new();let cancel=source.clone();
-   let host=SerialRequest::from_memory(SerialMemoryBudget::new(64*1024*1024),source.token(),None);let execution=ExecutionRequest::serial(&host);
+   let host=SerialRequest::from_memory(SerialMemoryBudget::new(None),source.token(),None);let execution=ExecutionRequest::serial(&host);
    let (result,_)=with_request_consult_observer_for_test(move |at|if at==k{cancel.cancel();},||handle.ensure_primary_indexes_for_basis(&execution,runtime,&basis));
    if k>count {result.unwrap();continue;}
    let Err(crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop))=result else{panic!("consult {k} must return its request stop")};
@@ -34,8 +34,8 @@ fn currency_consumer(consumer: u8) {
    assert_consumer(stop,consumer);
   }
   discard(runtime);
-  let (healthy,report)=setup.run(ExecutionWorkCeiling::new(100_000),|_|handle.ensure_primary_indexes_for_basis(&setup,runtime,&basis)).unwrap();healthy.unwrap();discard(runtime);
-  let (short,_)=setup.run(ExecutionWorkCeiling::new(report.charged_work()-1),|_|handle.ensure_primary_indexes_for_basis(&setup,runtime,&basis)).unwrap();
+  let (healthy,report)=setup.run(ExecutionWorkCeiling::new(Some(100_000)),|_|handle.ensure_primary_indexes_for_basis(&setup,runtime,&basis)).unwrap();healthy.unwrap();discard(runtime);
+  let (short,_)=setup.run(ExecutionWorkCeiling::new(Some(report.charged_work()-1)),|_|handle.ensure_primary_indexes_for_basis(&setup,runtime,&basis)).unwrap();
   let Err(crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop))=short else{panic!("work-short must stay typed")};
   let stop=crate::facade::primary_graph::relational_execution_kind(stop,None);assert_eq!(stop,Ok(Kind::ExecutionResource{denial:Resource::WorkExhausted,partition_identity:None,policy_ancestor:None}));assert_consumer(stop,consumer);
  });

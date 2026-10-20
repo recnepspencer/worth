@@ -73,6 +73,7 @@ pub(super) fn query_preparation_request_stop(
 pub(super) fn prepare_query_packets(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+    declared_bytes: u64,
     build: impl FnOnce(
         &mut QueryPreparationBudget<'_, '_, '_>,
     ) -> Result<Vec<PacketizedQueryWork>, MapKernelFailure<()>>,
@@ -80,7 +81,9 @@ pub(super) fn prepare_query_packets(
     let identity = PartitionIdentity::new(1);
     let scan = ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())])
         .map_err(QueryReadExecutionStop::PreparationAdmission)?;
-    let ceiling = execution.memory_limit() / PREPARATION_MEMORY_DIVISOR;
+    let ceiling = execution
+        .memory_limit()
+        .map_or(declared_bytes, |limit| limit / PREPARATION_MEMORY_DIVISOR);
     let mut build = Some(build);
     match scan.run(lease, (), 0, ceiling, 0, ceiling, |_, _, context| {
         let mut budget = QueryPreparationBudget {
@@ -111,7 +114,7 @@ pub(super) fn remaining_work_lease<'a>(
     let budget = policy.budget();
     let remaining = budget
         .work_ceiling()
-        .saturating_sub(preparation.charged_work());
+        .map(|ceiling| ceiling.saturating_sub(preparation.charged_work()));
     lease
         .child(LeaseRequest {
             policy: worth_foundational::ExecutionRequestPolicy::new(

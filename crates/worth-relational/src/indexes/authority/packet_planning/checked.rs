@@ -42,7 +42,33 @@ pub(in crate::indexes::authority) fn plan_index_packets_checked(
 ) -> Result<PlannedIndexPackets, PacketExecutionStop> {
     let identity = PartitionIdentity::new(1);
     let scan = crate::execution::admit_ordered_scan(vec![(identity, ())])?;
-    let ceiling = lease.policy().budget().charged_memory_bytes() / 8;
+    let descriptor_bytes = (index_ids.len() as u64)
+        .checked_mul(
+            (size_of::<ReadOnlyPacket<IndexPreparationPacket>>()
+                + 2 * size_of::<DerivedIndexId>()
+                + 3 * size_of::<PartitionIdentity>()) as u64,
+        )
+        .ok_or(PacketExecutionStop::Admission(
+            crate::execution::PacketAdmissionDenial::MemoryOverflow,
+        ))?;
+    let declared_bytes = index_ids
+        .iter()
+        .try_fold(descriptor_bytes, |bytes, id| {
+            bytes.checked_add(
+                runtime
+                    .indexes
+                    .definition(*id)
+                    .map_or(0, |definition| definition.owned_allocation_capacity_bytes()),
+            )
+        })
+        .ok_or(PacketExecutionStop::Admission(
+            crate::execution::PacketAdmissionDenial::MemoryOverflow,
+        ))?;
+    let ceiling = lease
+        .policy()
+        .budget()
+        .charged_memory_bytes()
+        .map_or(declared_bytes, |limit| limit / 8);
     let outcome = crate::execution::run_with_remaining_request_work(
         lease,
         Some(work_budget),
@@ -83,8 +109,10 @@ pub(in crate::indexes::authority) fn plan_index_packets_checked(
                         inputs.push(ReadOnlyPacket {
                             identity: PartitionIdentity::new(packet_index as u64),
                             input_bytes: owned,
-                            kernel_scratch_bytes: 0,
-                            max_result_bytes: 0,
+                            memory: crate::execution::PacketMemory::Declared {
+                                scratch: 0,
+                                result: 0,
+                            },
                             value: packet_for_definition(packet_index, definition.as_ref().clone()),
                         });
                     } else {
@@ -103,12 +131,19 @@ pub(in crate::indexes::authority) fn plan_index_packets_checked(
                         input.value.header.packet_index,
                     )
                 });
-                let packet_ceiling = lease.policy().budget().charged_memory_bytes()
-                    / (inputs.len().max(1) as u64).saturating_mul(8);
+                let memory = lease.policy().budget().charged_memory_bytes().map_or(
+                    crate::execution::PacketMemory::Tracked,
+                    |limit| {
+                        let ceiling = limit / (inputs.len().max(1) as u64).saturating_mul(8);
+                        crate::execution::PacketMemory::Declared {
+                            scratch: ceiling,
+                            result: ceiling,
+                        }
+                    },
+                );
                 for (ordinal, input) in inputs.iter_mut().enumerate() {
                     input.identity = PartitionIdentity::new(ordinal as u64);
-                    input.kernel_scratch_bytes = packet_ceiling;
-                    input.max_result_bytes = packet_ceiling;
+                    input.memory = memory;
                 }
                 Ok((
                     (),

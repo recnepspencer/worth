@@ -17,6 +17,7 @@ pub struct ApplicationOperationDefinition<Schema, Operation, Input> {
     pub(super) input_type: WorthQueryPortableTypeIdentity,
     pub(super) external_effect: Option<DeclaredExternalEffectSlot>,
     pub(super) aftermath: Option<PortableApplicationAftermathContract>,
+    pub(super) body: Option<super::ApplicationOperationBodyProgram>,
     pub(super) marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
@@ -30,6 +31,21 @@ impl<Schema, Operation, Input> std::fmt::Debug
             .field("input_type", &self.input_type)
             .field("has_external_effect", &self.external_effect.is_some())
             .field("has_aftermath", &self.aftermath.is_some())
+            .field("body", &self.body)
             .finish()
+    }
+}
+
+impl<Schema, Operation, Input> ApplicationOperationDefinition<Schema, Operation, Input> {
+    /// Attaches executable value meaning once to this exact operation type.
+    pub fn with_body(
+        mut self,
+        body: super::ApplicationOperationBody<Schema, Operation, Input>,
+    ) -> Result<Self, super::ApplicationOperationBodyAuthoringDenial> {
+        if self.body.is_some() {
+            return Err(super::ApplicationOperationBodyAuthoringDenial::DuplicateAttachment);
+        }
+        self.body = Some(body.program);
+        Ok(self)
     }
 }

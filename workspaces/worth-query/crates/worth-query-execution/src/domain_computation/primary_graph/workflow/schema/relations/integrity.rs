@@ -140,6 +140,22 @@ fn evidence_integrity() -> ApplicationRelationIntegrity {
     ))
 }
 
+/// A v3 instance binds one actual application subject. A v2 instance has no
+/// relation, so the versioned native reader enforces presence, not a catalog
+/// minimum that would reject historical records. Definition and subject may
+/// live in different contexts; only native enrollment creates this relation.
+pub(in crate::domain_computation::primary_graph::workflow::schema) fn subject_integrity(
+) -> ApplicationRelationIntegrity {
+    ApplicationRelationIntegrity::new(
+        ApplicationRelationEndpoints::new(
+            false,
+            ApplicationRelationCrossContextPolicy::AllowExplicit,
+        ),
+        ApplicationRelationCardinality::new(None, Some(1), None, None, None, Some(1)),
+        ApplicationRelationDeletionPolicy::RequireRelationDeletionInSameCommit,
+    )
+}
+
 fn integrity(cardinality: ApplicationRelationCardinality) -> ApplicationRelationIntegrity {
     ApplicationRelationIntegrity::new(
         ApplicationRelationEndpoints::new(false, ApplicationRelationCrossContextPolicy::Forbid),

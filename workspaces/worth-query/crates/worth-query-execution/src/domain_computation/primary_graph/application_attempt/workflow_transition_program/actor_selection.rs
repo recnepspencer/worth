@@ -182,7 +182,7 @@ impl WorthQueryWorkflowActorContext {
                     proposal,
                     match &self.command {
                         Command::Operation { required } => {
-                            match (approval, required.original_sources.approval_parent) {
+                            match (approval, required.original_sources.as_ref().and_then(|original| original.approval_parent)) {
                                 (Some(_), Some(parent)) => parent,
                                 (None, None) => self.instance.entity_id(), // no record is read
                                 _ => {

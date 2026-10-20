@@ -1,3 +1,5 @@
+mod admission;
+mod proposal;
 use super::*;
 
 impl<Schema, Operation, Input, Scope>
@@ -36,14 +38,12 @@ where
                 self.admission.operation(),
             ));
         }
-        if !installed.advance_binding_matches::<Capability, Operation>()
-            || self.admission.installed_capability_identity()
-                != Some(*installed.advance_capability_identity_bytes())
-        {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAuthorityMismatch,
-                self.admission.operation(),
-            ));
+        let business_action = matches!(
+            request_kind,
+            WorkflowTransitionRequestKind::LocalAction { .. }
+        );
+        if !business_action {
+            self.authorize_advance::<Capability, Spec>(installed)?;
         }
         let layout = self.lease.layout.workflow().clone();
         let published = super::super::PublishedWorkflowDefinitionRef::retained(
@@ -89,6 +89,12 @@ where
         let (live_membership, retire_live_membership) = match observed.live_membership {
             Some(membership) => (membership, true),
             None => {
+                if business_action {
+                    return Err(denial(
+                        WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAlreadySettled,
+                        "settled workflow has no live business action",
+                    ));
+                }
                 if request_kind == WorkflowTransitionRequestKind::NavigateBack {
                     return Ok(self.navigation_replay_denial(
                         &layout,
@@ -172,23 +178,7 @@ where
             None
         };
         if let Some(proposal) = proposal {
-            let required = publication::RequiredWorkflowProposal::from_selected(
-                instance.entity_id(),
-                observed.progress_basis.progress().next_occurrence(),
-                proposal,
-            );
-            // Waiting describes native truth; it neither publishes a transition
-            // nor consumes a step or establishes a new admission deadline.
-            return Ok(PreparedWorkflowAdvance::AwaitingProposal {
-                read_set: self,
-                transition_identity_locator: layout.transition.identity.clone(),
-                assessment_identity_locator: layout.assessment_evidence.identity.clone(),
-                instance: instance.entity_id(),
-                required,
-                replays: publication::PreparedWorkflowTransitionReplays::retained(std::mem::take(
-                    &mut observed.replays,
-                )),
-            });
+            return Ok(self.await_proposal(&layout, instance.entity_id(), proposal, &mut observed));
         }
         // A step recorded before the budget is spent or the deadline passes
         // still replays after it.
@@ -212,6 +202,36 @@ where
                 });
             }
         };
+        if let WorkflowTransitionRequestKind::LocalAction {
+            kind,
+            requested,
+            input_identity,
+        } = &request_kind
+        {
+            let selected = self.select_observed_local_action(
+                execution,
+                &layout,
+                &compiled,
+                &instance,
+                &mut observed,
+                requested,
+                maximum_transitions,
+                *kind,
+            )?;
+            facts.append(&mut observed.facts);
+            return self.materialize_local_action_requirement(
+                &layout,
+                &compiled,
+                instance,
+                selected,
+                live_membership,
+                facts,
+                requested.clone(),
+                *input_identity,
+                allowance,
+                *kind,
+            );
+        }
         if request_kind == WorkflowTransitionRequestKind::NavigateBack {
             let selected = match select_navigation_back_transition(
                 &compiled,
@@ -261,6 +281,9 @@ where
                 )
             }
             WorkflowTransitionRequestKind::NavigateBack => unreachable!("Back returned above"),
+            WorkflowTransitionRequestKind::LocalAction { .. } => {
+                unreachable!("local business action returned above")
+            }
         };
         let selected = match selection {
             Ok(selected) => selected,

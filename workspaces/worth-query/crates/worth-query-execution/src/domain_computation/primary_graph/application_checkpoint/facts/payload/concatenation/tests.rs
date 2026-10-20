@@ -16,7 +16,7 @@ fn appends_keep_original_objects_funding_and_balanced_paths() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 24, 1_000_000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(1 << 24), Some(1_000_000)),
     );
     with_bootstrap_advancement(policy, |phase| {
         let execution = phase.execution_request();
@@ -93,7 +93,7 @@ fn refused_append_keeps_old_owner_and_releases_all_partial_join_funding() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 20, 1_000_000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(1 << 20), Some(1_000_000)),
     );
     with_bootstrap_advancement(policy, |phase| {
         let execution = phase.execution_request();
@@ -105,7 +105,11 @@ fn refused_append_keeps_old_owner_and_releases_all_partial_join_funding() {
         let tail = native(1, control);
         let held_bytes = parent.charged_memory_bytes();
         let full = parent
-            .reserve_memory(parent.available_memory_bytes())
+            .reserve_memory(
+                parent
+                    .available_memory_bytes()
+                    .expect("this fixture supplies a finite memory ceiling"),
+            )
             .unwrap();
         assert!(source.append_completed(tail.clone(), control).is_err());
         drop(full);
@@ -133,7 +137,7 @@ fn replacing_alias_suffix_releases_obsolete_aggregate_roots_and_suffix_grants() 
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 24, 1_000_000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(1 << 24), Some(1_000_000)),
     );
     with_bootstrap_advancement(policy, |phase| {
         let execution = phase.execution_request();

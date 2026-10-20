@@ -40,6 +40,7 @@ effects when an instance is canceled, migrated, or continued on a fork.
 17. [Approvals](#approvals)
 18. [Operations](#operations)
 19. [Navigate back](#navigate-back)
+20. [Business termination](#business-termination)
 20. [The ordinary convenience lane](#the-ordinary-convenience-lane)
 21. [Caller-pumped progression](#caller-pumped-progression)
 22. [Cancellation](#cancellation)
@@ -109,7 +110,7 @@ read a workflow instance.
 | Propose | Caller request | `prepare_workflow_proposal` | `WorkflowProposalOutcome` |
 | Advance | Caller request | `prepare_workflow_advance` | `WorkflowProgressOutcome` |
 | Settle a need | Caller request | assessment, condition, approval, or operation lanes | `WorkflowProgressOutcome` or a mutation outcome |
-| End | Caller request | terminal node, `prepare_workflow_instance_cancellation`, or migration | Terminal transition, cancellation, or successor |
+| End | Caller request | terminal node, `prepare_workflow_termination_action`, cancellation, or migration | Terminal transition, jointly performed business ending, cancellation, or successor |
 | Retire a lineage | Caller request | `prepare_workflow_definition_retirement` | `WorkflowDefinitionRetirementOutcome` |
 
 ## Declare a workflow vocabulary
@@ -204,6 +205,7 @@ let installed = WorthQueryApplicationWorkflowSpecInstallation::<
 - `.operation::<Binding>()`, `.assessment::<Binding>()`, and `.condition_operand::<Binding>()` add members. Each member must already be installed in the program.
 - `.approval::<Capability, Operation, Input>()` adds an approval capability.
 - `.authoring_capability`, `.instance_start_capability`, and `.advance_capability` are required. Without them, `finish()` refuses.
+- Member categories are optional individually. An operation-only information-gathering workflow needs no assessment or approval member. `finish()` rejects only when all operation, assessment, condition and approval collections are empty. Definition binding still rejects every member outside the installed vocabulary; do not install dummy approvals to satisfy vocabulary shape.
 - `finish()` returns `WorthQueryInstalledApplicationWorkflowSpec`. It exposes `schema_binding()`, `program_revision()`, `resources()`, and `bind_definition(..)`.
 - `WorthQueryApplicationWorkflowResourceCeiling::new` returns `None` when a ceiling is zero. `with_history_reconstruction_budget(..)` sets how much retained history a request may reconstruct (`WorthQueryWorkflowHistoryReconstructionBudget::standard()` is the default budget).
 
@@ -505,6 +507,10 @@ preparation refusals are `WorthQueryWorkflowDefinitionRetirementPreparationDenia
 
 ## Start an instance
 
+For a subject that must be created and enrolled in the same publication, use
+[Workflow-Enrolled Creations](../authoring/workflow-enrolled-creations.md).
+The ordinary start below intentionally operates on an already existing subject.
+
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
@@ -756,12 +762,28 @@ let outcome = signing.sign(&event).map(|request| request.execute())?;
 - `prepare_workflow_approval` returns `WorthQueryWorkflowApprovalSigningRequest`. When the key already recorded a decision, `authentication_intent()` is `None` and `execute_replay()` returns the recorded outcome without a new event.
 - On `Approved`, the approval becomes required evidence for the operation connected by `approval_authority`. It is not permission: the principal who later executes that operation still needs ordinary permission for it and need not be the approver (see [Three independent checks](#three-independent-checks)). On `Rejected`, a retry route (if authored) sends the instance back.
 
+The expected signer is retained from native principal admission. Both the
+ordinary signing request and the advanced prepared-approval path require the
+authentication event to belong to that exact external identity (issuer and
+subject), not merely a user who can authenticate. Supplying another principal
+to advanced `sign_approval` returns `PrincipalMismatch` before consuming the
+event. Publication checks the consumed proof against the same retained signer.
+Do not infer this correspondence from an application actor number, a display
+name, or a decoded durable approval snapshot. Committed replay still recovers
+the original decision without its historical authentication event.
+
 Approval refusals surface as attempt denial kinds: `WorkflowApprovalPrincipalStale`,
 `WorkflowApprovalGrantUnavailable`, `WorkflowApprovalExpired`,
 `WorkflowApprovalDelegationChanged`, and `WorkflowApprovalAuthorityDenied`.
 
 ## Operations
 
+Early domain attestation is separate from the approval control step above. A
+later operation can require a native current signed-evidence operand derived
+from the completed signing body. This checks current business evidence; it does
+not mint an approval grant or replace occurrence authority or ordinary policy.
+See [Signed Operation Creations](../authoring/signed-operation-creations.md)
+for the producer reference, bounded observation and same-program-revision policy.
 Retain the original description with `for_workflow_operation(..)?.retain_operation(..)`.
 `WorthQueryWorkflowOperation` owns the original slot, exact runtime and native source/recovery
 custody; every `advance(&fresh_request)` selects the original action and freshly admits its
@@ -1039,6 +1061,23 @@ after the separate audit gate. No authorization snapshot or external identity
 credential is returned. Keep discovery intent rather than rebuilding private
 start digests or treating an application status table as native workflow truth.
 
+### Approval evidence follows its declared source history
+
+Request fresh operation authority when executing later; do not reuse a spent
+slot or mistake an unrelated branch advance for a changed signed subject.
+Native field-revision dependencies retain history, not just the displayed value.
+For example, changing a consumed retention value from `7` to `8` and back to `7`
+does not revive the old approval: a fresh operation requirement has unavailable
+authority, and `for_workflow_operation` returns `AuthorityUnavailable`. Changing
+another resource outside that approval's dependencies leaves the original
+approval usable through a fresh matching requirement.
+
+Keep the distinction between approval evidence and an application's business
+attestation. These native currentness rules do not independently declare a
+signature's business supersession event or permit signing an arbitrary future
+approval node. Reconcile changed evidence through the authored proposal/review
+path; do not manufacture a grant from restored values or a signature-shaped row.
+
 ## Navigate back
 
 `prepare_workflow_navigate_back(&workflow, instance)` returns a request whose
@@ -1048,6 +1087,167 @@ instance head and authority are rechecked at commit. No effect or receipt is
 replayed. Back spends a step. Back is refused with
 `WorkflowTransitionOperationUnsettled` when it would abandon an approved
 operation that has not settled.
+
+### Business Back actions
+
+Use `back_action` when returning also changes business state or appends an
+audit. This is not historical cursor navigation, cancellation, or rollback.
+Declare the target and its native body binding together:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+definition.back_action::<ReturnToDraftBinding, _, _>(&review, &draft);
+```
+
+There is at most one business Back route per source. Its target must be a
+nonterminal prior point reachable along the forward graph; self, forward,
+terminal and ambiguous routes are refused. A Back edge is explicit caller-driven
+meaning, not an automatic control successor. Only an installed local, unsigned
+native operation body with occurrence authority and explicit empty workflow
+execution requirements can serve it. An installed handler, matching name,
+external effect, or approval floor is insufficient.
+
+For example, a return body can require business stage `Review`, assign `Draft`
+and capture the actual source stage and admitted actor in an audit. It should
+not clear document fields or supersede signatures merely because the cursor
+returns. Declare certified dependencies separately through native signing
+lifecycle; a later relevant edit, not navigation alone, supersedes them.
+
+Prepare under the return binding's own capability, not the Advance capability.
+The request supplies intent and logical key, never a destination:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let required = application.request(&principal, &scope)
+    .on_branch(instance.branch())
+    .mutate(ReturnToDraft { identity: identity.clone() })
+    .without_source()
+    .idempotency(&key)
+    .prepare_workflow_back_action(&workflow, instance.clone())?;
+
+let outcome = application.request(&principal, &scope)
+    .on_branch(required.branch())
+    .mutate(ReturnToDraft { identity })
+    .without_source()
+    .idempotency(&key)
+    .for_workflow_operation(&workflow, &required)?
+    .execute_capability_in_program(&program, ExecutionAllocationPolicy::SystemAllocation)?;
+```
+
+Preparation changes nothing. Query derives input identity from the admitted
+input, checks the binding-associated installed capability, resolves the current
+source occurrence and exact route, and retains its facts in the operation
+authority. Normal mutation execution freshly authorizes the request and admits
+the body. Its business effects, audit and native `Returned` settlement publish
+in one candidate. The same compiled route drives incremental progression and
+cold reconstruction; no second host call moves the cursor after commit.
+
+Retain `required` together with the original input and key until the outcome
+is known. Retry through `for_workflow_operation`, not fresh Back preparation
+against a cursor that may already have moved. The retained idempotency owner
+returns the original outcome before trying to reuse consumed authority. A
+different key or input is not the original request. Preserve typed committed,
+stale, indeterminate and recovery outcomes; do not blindly retry a stale action.
+No cross-restart reconstruction of a live requirement is promised by this API.
+
+An ordinary mutation cannot bypass occurrence authority. Cursor-only
+`prepare_workflow_navigate_back` refuses a head with an authored business Back
+action. Back cannot abandon approved-but-unsettled operations or external owner
+custody. Concurrent forward progress makes the entire return stale: no partial
+audit, business change or cursor movement. Closed or ended instances have no
+fresh Back action, and deadlines/step limits still apply to fresh attempts.
+
+Back declarations participate in canonical definition identity, retained native
+facts and adoption dependency coverage even when their operation appears only
+on the action edge. Draft protocol v5 carries the operation, input, binding and
+execution requirements and readmits them against installed vocabulary; it carries
+no authority. Definitions with neither Back nor global actions retain v4; Back-only definitions retain v5. Missing
+or changed members refuse readmission and incompatible program adoption cannot
+silently carry the route.
+
+Back does not implement Reopen, an atomic multi-operation Submit, external-effect
+Back, automatic signature invalidation or compensation of earlier performed
+effects. For an authored business ending such as Void, use the following surface.
+
+## Business termination
+
+Use one definition-level action when an application body must run together with
+ending a live instance. This is not a fake terminal node, cancellation, rollback,
+or a second host call after the business mutation:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+definition.termination_action::<VoidBinding>();
+```
+
+The declaration applies at every live frontier, including a terminal cursor
+whose completion has not yet published. Actual ended state and membership—not
+node kind—govern availability. The native body owns business eligibility; for
+example, it can require Active status, assign Voided, preserve CurrentStage and
+append an immutable audit containing the actual preimage, admitted actor and
+input justification. Query owns occurrence selection and native ending.
+
+Install the actual local, unsigned body as a vocabulary operation. Like business
+Back, the binding requires program and workflow authority with explicit empty
+workflow execution requirements. External effects and approval floors are not
+supported by this local join. Each binding appears at most once in the global
+collection, and each action counts against the declared effect ceiling. Multiple
+distinct bindings are allowed; canonical identity retains their exact contracts.
+
+Prepare under the action's own capability, then retain the returned requirement
+with the original input and logical key:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let intent = VoidRequest { identity, justification };
+let required = application.request(&principal, &scope)
+    .on_branch(instance.branch()).mutate(intent.clone())
+    .without_source().idempotency(&key)
+    .prepare_workflow_termination_action(&workflow, instance)?;
+
+let outcome = application.request(&principal, &scope)
+    .on_branch(required.branch()).mutate(intent)
+    .without_source().idempotency(&key)
+    .for_workflow_operation(&workflow, &required)?
+    .execute_capability_in_program(&program, ExecutionAllocationPolicy::SystemAllocation)?;
+```
+
+The issuer derives identity from admitted input and verifies the exact
+binding-associated installed capability. Normal execution freshly authorizes
+and admits the native body. Business writes, audit, receipted `Terminated`
+settlement, distinct Terminated instance state and live-membership retirement
+publish in one candidate. There is no successor progress update. A denied body
+publishes none of these; a competing forward publication makes the whole
+candidate stale, and a winning ending prevents held forward authority publishing.
+External owner custody must settle first; termination cannot abandon it.
+
+Exact retry through the retained requirement returns the original outcome even
+after ending. Different input cannot bind that requirement, and a different key
+is not the original request. Preserve the complete native outcome family; never
+automatically retry stale or indeterminate work. Fresh requests to a terminated
+instance return `WorkflowInstanceTerminated`. A live requirement is not a
+restart-stable recovery carrier.
+
+Global actions are retained immutable definition facts, cold compiled meaning
+and definition-level adoption dependencies—not synthetic node dependencies.
+Draft v6 carries them and readmits against installed vocabulary. Old v1–v5 drafts
+remain readable; absent global actions do not change earlier canonical meaning
+or encoding. Missing/changed suppliers cannot silently carry a performed instance.
+`Terminated` is kernel settlement meaning, never an authored control arm.
+
+Current limits: fresh business endings still spend native step/deadline budgets;
+this does not establish Void after expiry or exhaustion. Budget/deadline refusal
+retains its native typed cause. Ordinary cancellation refuses to bypass an
+attached business ending; explicit administrative adoption dispositions retain
+their separate authority. A global attachment also requires an enrolled native
+instance—it does not terminate a business draft before enrollment. Reopen must
+create a fresh instance/round through its own supported join; this API never
+revives an ended instance. Signature supersession remains dependency-owned, not
+an automatic consequence of termination.
 
 ## The ordinary convenience lane
 
@@ -1161,6 +1361,7 @@ instance where it stands, on the request's branch.
 
 - Cancellation is not rollback. Every effect the instance performed remains, and the outcome names each one.
 - The start capability authorizes cancellation.
+- Ordinary cancellation cannot bypass a definition's declared business termination body; use its action binding. Explicit program-adoption dispositions are separate administrative authority, not business Void.
 - The same key replays exactly. Any other request for a canceled instance is refused with `WorkflowInstanceCancelled`.
 - A step admitted before the cancellation commits goes stale before its effect. A cancellation prepared before a step settles goes stale in turn.
 - Other instances keep running.
@@ -1217,6 +1418,12 @@ stops. The [aftermath guide](../execution/application-aftermath-and-recovery.md#
 describes accepted-pending recovery and duplicate outcomes.
 
 ## Budgets and deadlines
+
+Fresh business termination remains a budgeted guarded operation, unlike bare
+cancellation. Where a global ending is attached, ordinary cancellation cannot
+bypass that body; the cancellation-after-expiry allowances below describe the
+bare cancellation owner, not business Void. Explicit administrative adoption
+dispositions retain their separate authority.
 
 | Budget | Where it is set | Refusal |
 |---|---|---|
@@ -1308,7 +1515,7 @@ Read with `WorthQueryApplicationAttemptDenial::kind()` and `subject()`.
 | Family | Kinds |
 |---|---|
 | Definition | `WorkflowDefinitionAffinityMismatch`, `WorkflowDefinitionAuthorityMismatch`, `WorkflowDefinitionIntentIdentityUnavailable`, `WorkflowLineageUnavailable`, `WorkflowDefinitionCompilationUnavailable`, `WorkflowDefinitionSuperseded`, `WorkflowDefinitionRetired` |
-| Instance lifecycle | `WorkflowInstanceCancelled`, `WorkflowInstanceCompleted`, `WorkflowInstanceMigrated`, `WorkflowInstanceMigrationUnmapped`, `WorkflowInstanceHistoryUnavailable`, `WorkflowOperationInOwnerCustody` |
+| Instance lifecycle | `WorkflowInstanceCancelled`, `WorkflowInstanceTerminated`, `WorkflowInstanceCompleted`, `WorkflowInstanceMigrated`, `WorkflowInstanceMigrationUnmapped`, `WorkflowInstanceHistoryUnavailable`, `WorkflowOperationInOwnerCustody` |
 | Budgets and time | `WorkflowInstanceCapacityUnavailable`, `WorkflowInstanceEvidenceCapacityUnavailable`, `WorkflowLineageCapacityUnavailable`, `WorkflowInstanceDeadlineElapsed`, `WorkflowTrustedTimeUnavailable`, `WorkflowHistoryReconstructionBudgetExceeded` |
 | Evidence | `WorkflowAssessmentEvidenceIncomplete`, `WorkflowAssessmentEvidenceMismatch` |
 | Condition | `WorkflowConditionExpressionDenied` |
@@ -1641,6 +1848,10 @@ not grant authority or replace the lifecycle explanations above.
 | `ControlCycle` | unit |
 | `MissingTerminal` | unit |
 | `CanonicalBudgetExceeded` | unit |
+| `InvalidBackAction` | unit |
+| `AmbiguousBackAction` | unit |
+| `InvalidGlobalAction` | unit |
+| `DuplicateGlobalAction` | unit |
 <!-- source-facts: workflow-validation-denials end -->
 
 ## Owning capability commands

@@ -25,7 +25,7 @@ fn related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_dec
         policy: ExecutionRequestPolicy::new(
             worth_foundational::ExecutionPosture::Serial,
             worth_foundational::DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, 0, 1),
+            ExecutionBudget::new(NonZeroUsize::MIN, Some(0), Some(1)),
         ),
         cancellation: scope.cancellation().execution_token(),
         deadline: scope.deadline(),
@@ -71,7 +71,7 @@ fn related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_dec
     assert_eq!(
         cause.kind(),
         ExecutionAllocationDenialKind::Lease(worth_execution::LeaseDenial::MemoryExhausted(
-            worth_execution::MemoryLimitDenial {
+            worth_execution::MemoryLimitDenial::Capacity {
                 requested,
                 admitted: 0,
                 level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
@@ -82,7 +82,7 @@ fn related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_dec
         ExecutionRequestPolicy::new(
             worth_foundational::ExecutionPosture::Serial,
             worth_foundational::DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, 8_000_000),
+            ExecutionBudget::new(NonZeroUsize::MIN, Some(64 * 1024 * 1024), Some(8_000_000)),
         ),
         |phase| {
             pending

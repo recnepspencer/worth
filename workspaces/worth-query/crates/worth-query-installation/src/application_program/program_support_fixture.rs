@@ -135,7 +135,7 @@ where
     ApplicationInvariantDefinition::new(
         Invariant::reference(),
         ApplicationInvariantExecutionPoint::CommitBoundary,
-        RelationalInvariantWorkBudget::new(NonZeroU64::new(64).expect("64 is nonzero")),
+        RelationalInvariantWorkBudget::new(Some(NonZeroU64::new(64).expect("64 is nonzero"))),
         ApplicationInvariantOperationalContract::new(
             ApplicationInvariantEnforcement::BlockCommit,
             [ApplicationInvariantGroup::SchemaCompliance],

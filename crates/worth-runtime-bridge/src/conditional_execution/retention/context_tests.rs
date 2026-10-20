@@ -76,7 +76,7 @@ pub(crate) fn assert_context_retention(
         assert_eq!(ledger.usage(), (0, 0, baseline));
         let result = request_execution
             .run(
-                worth_execution::ExecutionWorkCeiling::new(8_000_000),
+                worth_execution::ExecutionWorkCeiling::new(Some(8_000_000)),
                 |_| {
                     owner.execute_admitted_conditional(
                         request_execution,

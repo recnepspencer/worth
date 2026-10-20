@@ -9,7 +9,10 @@ use super::super::{
 };
 use super::DecisionContextUse;
 
+mod candidate_outputs;
+mod candidate_representation;
 mod interruption;
+mod operation_body;
 mod predecode_admission;
 
 /// Why a mutation handler stopped before finishing.

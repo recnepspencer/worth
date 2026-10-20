@@ -57,7 +57,11 @@ fn changed_codec_retained_snapshot_keeps_original_pin_and_latched_completion() {
                                 policy: ExecutionRequestPolicy::new(
                                     parent.policy().posture(),
                                     parent.policy().determinism(),
-                                    ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, work),
+                                    ExecutionBudget::new(
+                                        NonZeroUsize::MIN,
+                                        Some(64 * 1024 * 1024),
+                                        Some(work),
+                                    ),
                                 ),
                                 cancellation: cancellation.token(),
                                 deadline: scope.deadline(),
@@ -67,7 +71,7 @@ fn changed_codec_retained_snapshot_keeps_original_pin_and_latched_completion() {
                     .unwrap();
                 let request = ExecutionRequest::leased(&child);
                 let (result, report) = request
-                    .run(ExecutionWorkCeiling::new(work), |_| {
+                    .run(ExecutionWorkCeiling::new(Some(work)), |_| {
                         snapshot.read_fields(&request, |reader| {
                             let first = reader
                                 .field(&identities[0], schema::DerivedValueField::reference())

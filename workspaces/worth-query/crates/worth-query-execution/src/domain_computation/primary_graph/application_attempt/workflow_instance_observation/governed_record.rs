@@ -57,6 +57,7 @@ pub(in crate::domain_computation::primary_graph) fn observe<Schema>(
         WorkflowInstanceState::Completed => State::Completed,
         WorkflowInstanceState::Cancelled => State::Cancelled,
         WorkflowInstanceState::Migrated => State::Migrated,
+        WorkflowInstanceState::Terminated => State::Terminated,
     };
     let occurrence = exact_u64(
         execution,
@@ -179,27 +180,9 @@ pub(in crate::domain_computation::primary_graph) fn observe<Schema>(
     } else {
         None
     };
-    let mut components = [0u64; 3];
-    for (i, field) in [
-        &layout.instance.subject_partition,
-        &layout.instance.subject_slot,
-        &layout.instance.subject_generation,
-    ]
-    .into_iter()
-    .enumerate()
-    {
-        components[i] = exact_u64(
-            execution, runtime, snapshot, instance, kind, field, &mut facts,
-        )
-        .map_err(Denial::Execution)?;
-    }
-    let subject = EntityId::new(
-        worth_relational::facade::identity::PartitionId::new(
-            u32::try_from(components[0]).map_err(|_| Denial::Corrupt)?,
-        ),
-        components[1],
-        u32::try_from(components[2]).map_err(|_| Denial::Corrupt)?,
-    );
+    let subject =
+        super::subject::read_subject(execution, runtime, snapshot, layout, instance, &mut facts)
+            .map_err(Denial::Execution)?;
     let history = read_only::observe_read_only_history(
         execution,
         runtime,

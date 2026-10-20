@@ -176,8 +176,7 @@ fn common_operation_handoff_retains_actual_commit_observation() {
             &application,
         )
         .unwrap_or_else(|(_, denial)| panic!("retained commit constructor: {denial:?}"));
-    let WorthQuerySourceOnlyAdvance::Completed(completed) =
-        operation.advance(&request, std::num::NonZeroUsize::new(8).unwrap())
+    let WorthQuerySourceOnlyAdvance::Completed(completed) = operation.advance(&request, None)
     else {
         panic!("the actual commit retains an observation");
     };
@@ -247,8 +246,8 @@ fn common_operation_handoff_completes_source_without_retained_observation() {
     }
     let budget = RestoreBudget(bound(Some(worth_foundational::ExecutionBudget::new(
         std::num::NonZeroUsize::MIN,
-        1,
-        u64::MAX,
+        Some(1),
+        None,
     ))));
     let refused = operation.advance(&request);
     drop(budget);

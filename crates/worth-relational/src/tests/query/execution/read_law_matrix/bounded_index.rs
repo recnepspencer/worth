@@ -73,8 +73,8 @@ fn runtime_bounded_index_law_keeps_cold_stop_limit_and_generation() {
                                 DeterminismContract::CanonicalBitwise,
                                 ExecutionBudget::new(
                                     std::num::NonZeroUsize::new(width).unwrap(),
-                                    MEMORY,
-                                    100_000,
+                                    None,
+                                    Some(100_000),
                                 ),
                             ),
                             deadline: None,
@@ -95,7 +95,7 @@ fn runtime_bounded_index_law_keeps_cold_stop_limit_and_generation() {
                 )
                 .unwrap();
                 let (outcome, report) = request
-                    .run(ExecutionWorkCeiling::new(100_000), |_| {
+                    .run(ExecutionWorkCeiling::new(Some(100_000)), |_| {
                         runtime.index_access().execute_bounded_entity_field_lookup(
                             input,
                             BoundedIndexParityMode::Production,

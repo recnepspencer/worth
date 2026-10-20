@@ -117,6 +117,7 @@ impl WorthQueryApplicationOutputLineage {
         observation: &ProductBranchObservation,
         source_partition_identity: [u8; 32],
         edition: InstalledProducerEdition,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<ComputationPrior, CompanionPreflightStop> {
         let source = SemanticSource {
@@ -135,6 +136,7 @@ impl WorthQueryApplicationOutputLineage {
             &source,
             coordinate,
             source_partition_identity,
+            execution,
             admission,
         )?
         else {

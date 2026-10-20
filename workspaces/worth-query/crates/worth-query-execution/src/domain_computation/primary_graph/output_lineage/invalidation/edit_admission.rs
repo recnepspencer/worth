@@ -16,7 +16,8 @@ pub(super) use retained_checkpoint::RetainedIndexCheckpoint;
 /// than creating a fresh allowance for every settlement. It is request-local:
 /// no kernel or concurrent compute charges it.
 pub(in crate::domain_computation) struct InvalidationEditAdmission {
-    budget: CompanionPreflightBudget,
+    maximum_work: Option<u64>,
+    maximum_preparation_bytes: Option<u64>,
     counters: AdmissionCounters,
     request_local: RequestLocal,
 }
@@ -59,7 +60,7 @@ pub(in crate::domain_computation::primary_graph) struct CarriedRequestInvalidati
 #[must_use]
 pub(in crate::domain_computation::primary_graph) struct ReservedExternalWork<'a> {
     admission: &'a mut InvalidationEditAdmission,
-    reserved: u64,
+    reserved: Option<u64>,
 }
 
 impl ReservedExternalWork<'_> {
@@ -75,8 +76,10 @@ impl ReservedExternalWork<'_> {
         self,
         spent: u64,
     ) -> Result<(), CompanionPreflightStop> {
-        let unused = self
-            .reserved
+        let Some(reserved) = self.reserved else {
+            return self.admission.charge_external_work(spent);
+        };
+        let unused = reserved
             .checked_sub(spent)
             .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
         self.admission.with_totals_mut(|totals| {
@@ -101,28 +104,18 @@ impl InvalidationEditAdmission {
     pub(in crate::domain_computation::primary_graph) fn new(
         budget: CompanionPreflightBudget,
     ) -> Self {
-        Self {
-            budget,
-            counters: AdmissionCounters::Local(AdmissionTotals::default()),
-            request_local: PhantomData,
-        }
+        Self::with_work_limit(budget.maximum_work_visits, budget.maximum_preparation_bytes)
     }
 
-    /// One request advance: framework preparation (principal capture,
-    /// admitted lookup, Query readmission and validation) and the producers it
-    /// runs. Its work has no aggregate ceiling because every part is already
-    /// bounded where it is declared: preparation by the installed program,
-    /// each producer by its own producer-work lane, and each Query read by its
-    /// declared maximum. Work is still counted at every charge; bytes stay
-    /// limited by the installed preparation-bytes allowance.
-    pub(in crate::domain_computation::primary_graph) const fn structurally_bounded_request(
-        maximum_preparation_bytes: u64,
+    /// Work and preparation ceilings are caller choices. Accounting and absence
+    /// are retained by every child and carried meter.
+    pub(in crate::domain_computation::primary_graph) const fn with_work_limit(
+        maximum_work: Option<u64>,
+        maximum_preparation_bytes: Option<u64>,
     ) -> Self {
         Self {
-            budget: CompanionPreflightBudget {
-                maximum_work_visits: u64::MAX,
-                maximum_preparation_bytes,
-            },
+            maximum_work,
+            maximum_preparation_bytes,
             counters: AdmissionCounters::Local(AdmissionTotals {
                 work: 0,
                 bytes: 0,
@@ -162,23 +155,16 @@ impl InvalidationEditAdmission {
         self.with_totals(|totals| totals.index_bytes)
     }
 
-    /// A count bound saturating at the machine word; never a work amount.
-    pub(in crate::domain_computation::primary_graph) fn remaining_work(&self) -> usize {
-        match usize::try_from(self.remaining_work_amount()) {
-            Ok(bound) => bound,
-            Err(_) => usize::MAX,
-        }
+    pub(in crate::domain_computation::primary_graph) fn remaining_work(&self) -> Option<usize> {
+        self.remaining_work_amount()
+            .map(|remaining| usize::try_from(remaining).unwrap_or(usize::MAX))
     }
 
-    /// The exact unspent work amount, independent of the machine word.
-    pub(in crate::domain_computation::primary_graph) fn remaining_work_amount(&self) -> u64 {
-        self.budget.maximum_work_visits - self.charged_work()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn exhaust_work_for_test(
-        &mut self,
-    ) -> Result<(), CompanionPreflightStop> {
-        self.work(self.remaining_work_amount())
+    pub(in crate::domain_computation::primary_graph) fn remaining_work_amount(
+        &self,
+    ) -> Option<u64> {
+        self.maximum_work
+            .map(|maximum| maximum - self.charged_work())
     }
 
     pub(in crate::domain_computation::primary_graph) fn carry_for_publication(
@@ -213,7 +199,8 @@ impl InvalidationEditAdmission {
         };
         Ok(CarriedRequestInvalidationAdmission {
             admission: Self {
-                budget: self.budget,
+                maximum_work: self.maximum_work,
+                maximum_preparation_bytes: self.maximum_preparation_bytes,
                 counters: AdmissionCounters::Carried(Arc::clone(carried)),
                 request_local: PhantomData,
             },
@@ -265,45 +252,15 @@ impl InvalidationEditAdmission {
     /// amount until this custody settles its actual spent work.
     pub(in crate::domain_computation::primary_graph) fn reserve_external_work(
         &mut self,
-        maximum: u64,
+        maximum: Option<u64>,
     ) -> Result<ReservedExternalWork<'_>, CompanionPreflightStop> {
-        self.work(maximum)?;
+        if let Some(maximum) = maximum {
+            self.work(maximum)?;
+        }
         Ok(ReservedExternalWork {
             admission: self,
             reserved: maximum,
         })
-    }
-
-    /// A bounded read that reports what it spent, paid from this meter. The
-    /// remaining work is reserved before the read, the read stays within it,
-    /// and the reservation settles at what the read spent. A read that fails
-    /// keeps its reservation charged. A read that reports spending more than
-    /// it was given is a bug, never a budget answer: the only stop returned
-    /// is the reservation's own.
-    pub(in crate::domain_computation::primary_graph) fn reserved_read<Answer, Failure>(
-        &mut self,
-        read: impl FnOnce(usize) -> Result<(Answer, usize), Failure>,
-    ) -> Result<Result<Answer, Failure>, CompanionPreflightStop> {
-        let maximum = self.remaining_work();
-        let reserved = self.reserve_external_work(
-            u64::try_from(maximum).expect("the admitted count fits a u64 work amount"),
-        )?;
-        match read(maximum) {
-            Ok((answer, spent)) => {
-                let spent = u64::try_from(spent).expect("the spent count fits a u64 work amount");
-                debug_assert!(
-                    spent <= reserved.reserved,
-                    "a reserved read spent {spent} of {}",
-                    reserved.reserved
-                );
-                let spent = spent.min(reserved.reserved);
-                reserved
-                    .settle(spent)
-                    .expect("settling within a reservation returns only its unused work");
-                Ok(Ok(answer))
-            }
-            Err(failure) => Ok(Err(failure)),
-        }
     }
 
     /// A closure's visited set uses the same pinned im ordered index as the

@@ -41,7 +41,7 @@ impl<R, E> Prefix<R, E> {
             return None;
         }
         let next = self.work.checked_add(outcome.work);
-        if next.is_none_or(|sum| sum > limits.ceiling()) {
+        if next.is_none_or(|sum| limits.ceiling().is_some_and(|ceiling| sum > ceiling)) {
             if self.owner != Some(NestedStopOwner::Request) {
                 self.owner = Some(if next.is_none() {
                     NestedStopOwner::Request
@@ -49,7 +49,14 @@ impl<R, E> Prefix<R, E> {
                     limits.work_stop_owner()
                 });
             }
-            self.stop = Some(BatchStop::WorkExhausted { identity: id });
+            self.stop = Some(if next.is_none() {
+                BatchStop::Failure {
+                    identity: id,
+                    cause: KernelFailure::Stop(KernelStop::WorkCounterOverflow),
+                }
+            } else {
+                BatchStop::WorkExhausted { identity: id }
+            });
             self.boundary = Some(id);
             self.discarded = self.discarded.saturating_add(outcome.work);
             return None;

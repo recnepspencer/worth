@@ -85,6 +85,10 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         >,
     pub(in crate::domain_computation::primary_graph::application_attempt) effects:
         Vec<WorthQueryApplicationRealizedEffect>,
+    pub(in crate::domain_computation::primary_graph::application_attempt) candidate_requirements:
+        Option<worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements>,
+    pub(in crate::domain_computation::primary_graph::application_attempt) effect_backing_memory:
+        Option<crate::domain_computation::primary_graph::application_attempt::effect_program::candidate_backing::CandidateBackingReservation>,
     pub(in crate::domain_computation::primary_graph::application_attempt) emission_retained_bytes:
         u64,
     pub(in crate::domain_computation::primary_graph::application_attempt) emission_retained_bytes_ceiling:
@@ -151,6 +155,7 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
     pub(super) layout: Arc<super::super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
     pub(super) program: Arc<()>,
     pub(super) effects: Vec<WorthQueryApplicationRealizedEffect>,
+    pub(super) effect_backing_memory: Option<crate::domain_computation::primary_graph::application_attempt::effect_program::candidate_backing::CandidateBackingReservation>,
     pub(super) field_write_positions: super::FieldWriteIndex,
     pub(super) keys: BTreeSet<(KindId, String)>,
     pub(super) emission_retained_bytes: u64,

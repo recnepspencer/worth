@@ -74,7 +74,7 @@ fn call_range_refusal_descends_to_the_first_actual_unfitting_call() {
         let mut full = Budget::bounded(remaining);
         let stop = calls.iter().position(|(_, (charge, _))| {
             if full.can_afford(charge.demand) {
-                full.consume(charge.consumed);
+                assert!(full.consume(charge.consumed));
                 false
             } else {
                 true
@@ -92,7 +92,7 @@ fn call_range_refusal_descends_to_the_first_actual_unfitting_call() {
                         if !ranged.can_afford(charge.demand) {
                             return Err(at);
                         }
-                        ranged.consume(charge.consumed);
+                        assert!(ranged.consume(charge.consumed));
                         Ok(true)
                     }
                 }
@@ -116,7 +116,7 @@ fn funded_tree(calls: &[(ComputationRead, Call)]) -> Arc<Node> {
     let execution = QueryRequestExecution::open(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
             std::num::NonZeroUsize::MIN,
-            1 << 24,
+            Some(1 << 24),
         )),
         &request,
     );

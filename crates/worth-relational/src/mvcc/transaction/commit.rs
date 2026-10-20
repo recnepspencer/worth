@@ -45,7 +45,7 @@ impl RelationalRuntime {
     /// use worth_relational::facade::schema::RelationalSchemaRegistry;
     /// use worth_relational::facade::transactions::WorkerIntentBatch;
     /// # let host_request = worth_execution::SerialRequest::from_memory(
-    /// #     worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+    /// #     worth_execution::SerialMemoryBudget::new(None),
     /// #     worth_execution::CancellationSource::new().token(), None,
     /// # );
     /// # let execution = &worth_execution::ExecutionRequest::serial(&host_request);

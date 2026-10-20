@@ -100,8 +100,12 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         .unwrap()
         .unwrap();
     let historical = cell.read_image();
-    let baseline_capacity =
-        Arc::downgrade(&historical.payload().current.settlements[&first]._fact_capacity);
+    let baseline_capacity = historical.payload().current.settlements[&first]
+        .facts
+        .postconditions()
+        .lock_retention()
+        .allocation
+        .clone();
     let original = historical.payload().current.settlements[&first]
         .facts
         .clone();

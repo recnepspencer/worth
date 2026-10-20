@@ -82,6 +82,8 @@ pub struct WorthQueryProviderSessionFailure {
     source_query_authorization: Option<
         Box<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind>,
     >,
+    output_verification_capacity:
+        Option<crate::domain_computation::primary_graph::VerificationCapacityStop>,
     checked_read: Option<
         Box<
             Result<
@@ -109,7 +111,25 @@ impl WorthQueryProviderSessionFailure {
             native_preparation: None,
             checked_read: None,
             source_query_authorization: None,
+            output_verification_capacity: None,
         }
+    }
+
+    pub(in crate::domain_computation) fn with_output_verification_capacity_stop(
+        mut self,
+        stop: crate::domain_computation::primary_graph::VerificationCapacityStop,
+    ) -> Self {
+        self.output_verification_capacity = Some(stop);
+        self
+    }
+
+    /// Original capacity refusal from consumed-output verification before
+    /// publication, separate from native transaction preparation. Diagnostic
+    /// data does not change the failure's category or recovery posture.
+    pub const fn output_verification_capacity_stop(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::VerificationCapacityStop> {
+        self.output_verification_capacity
     }
 
     pub(in crate::domain_computation) fn checked_read_stopped(

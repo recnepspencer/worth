@@ -9,6 +9,8 @@ use worth_query_declaration::facade::application_schema::{
 };
 
 use super::WorthQueryInstalledApplicationWorkflowSpec;
+mod global_actions;
+pub use global_actions::WorthQueryWorkflowGlobalActionDependency;
 
 /// One node a published workflow definition depends on, exactly as its
 /// retained definition facts record it.
@@ -17,6 +19,13 @@ use super::WorthQueryInstalledApplicationWorkflowSpec;
 /// plan to learn what a definition needs.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum WorthQueryWorkflowNodeDependency {
+    /// A requested Back operation declared on this source node's outgoing route.
+    BackAction {
+        identifier: String,
+        input_type: String,
+        binding: String,
+        requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
+    },
     Operation {
         identifier: String,
         input_type: String,
@@ -56,6 +65,11 @@ impl WorthQueryWorkflowNodeDependency {
     /// or query identifier and, when present, its installed binding.
     pub fn program_names(&self) -> impl Iterator<Item = &str> {
         let (identifier, binding) = match self {
+            Self::BackAction {
+                identifier,
+                binding,
+                ..
+            } => (Some(identifier.as_str()), Some(binding.as_str())),
             Self::Operation {
                 identifier,
                 binding,
@@ -94,6 +108,7 @@ pub struct WorthQueryWorkflowVocabularyCoverage {
     spec: String,
     identity: [u8; 32],
     nodes: Box<[WorthQueryWorkflowNodeDependency]>,
+    global_actions: Box<[WorthQueryWorkflowGlobalActionDependency]>,
 }
 
 impl WorthQueryWorkflowVocabularyCoverage {
@@ -116,6 +131,10 @@ impl WorthQueryWorkflowVocabularyCoverage {
     /// Whether this vocabulary executes the node exactly as retained.
     pub fn covers(&self, node: &WorthQueryWorkflowNodeDependency) -> bool {
         self.nodes.binary_search(node).is_ok()
+    }
+
+    pub fn covers_global_action(&self, action: &WorthQueryWorkflowGlobalActionDependency) -> bool {
+        self.global_actions.binary_search(action).is_ok()
     }
 }
 
@@ -191,6 +210,20 @@ where
                     capability_identity: hex(&approval.binding.installed_identity),
                 });
         let mut nodes = operations
+            .chain(
+                self.operations
+                    .iter()
+                    .filter(|operation| operation.supports_local_workflow_action)
+                    .map(|operation| WorthQueryWorkflowNodeDependency::BackAction {
+                        identifier: operation.identifier.to_owned(),
+                        input_type: operation.input_type.as_str().to_owned(),
+                        binding: operation.binding_identity.to_owned(),
+                        requirements: operation
+                            .reference
+                            .workflow_execution_requirements()
+                            .clone(),
+                    }),
+            )
             .chain(direct)
             .chain(inbound)
             .chain(assessments)
@@ -199,12 +232,31 @@ where
             .collect::<Vec<_>>();
         nodes.sort_unstable();
         nodes.dedup();
+        let mut global_actions = self
+            .operations
+            .iter()
+            .filter(|operation| operation.supports_local_workflow_action)
+            .map(
+                |operation| WorthQueryWorkflowGlobalActionDependency::Terminate {
+                    identifier: operation.identifier.to_owned(),
+                    input_type: operation.input_type.as_str().to_owned(),
+                    binding: operation.binding_identity.to_owned(),
+                    requirements: operation
+                        .reference
+                        .workflow_execution_requirements()
+                        .clone(),
+                },
+            )
+            .collect::<Vec<_>>();
+        global_actions.sort_unstable();
+        global_actions.dedup();
         WorthQueryWorkflowVocabularyCoverage {
             schema_binding: self.schema_binding.clone(),
             program_revision: self.program_revision,
             spec: Spec::IDENTITY.as_str().to_owned(),
             identity: self.support_identity,
             nodes: nodes.into_boxed_slice(),
+            global_actions: global_actions.into_boxed_slice(),
         }
     }
 }

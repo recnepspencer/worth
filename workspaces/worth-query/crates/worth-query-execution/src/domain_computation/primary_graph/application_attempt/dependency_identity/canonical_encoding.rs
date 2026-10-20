@@ -9,14 +9,20 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 
 use super::super::WorthQueryApplicationObservedFact;
 
+mod aspect_presence;
 mod canonical_digest;
 mod indexed_selection;
+mod observation_identity;
 mod source_publication;
+pub(in crate::domain_computation::primary_graph::application_attempt) use observation_identity::authentication_observation_identity;
 mod workflow_fact;
 pub(super) use canonical_digest::derive_identity;
 
 const DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.application-producer-content-tree");
+const RULE_VERSION: &str = "worth-query-application-producer-dependencies-v1";
+const INDEX_GUARD_RULE_VERSION: &str =
+    "worth-query-application-producer-dependencies-v2-index-definition";
 const LINEAGE_RULE_VERSION: &str = "worth-query-application-producer-lineage-v2-content-tree";
 const MAXIMUM_LINEAGE_CANONICAL_BYTES: usize = 4 * 1_024 * 1_024;
 
@@ -99,6 +105,11 @@ fn append_fact(
             number_u64(entries, prefix, "created-at", created_at.as_u64());
             number_u64(entries, prefix, "deleted-at", deleted_at.as_u64());
         }
+        WorthQueryApplicationObservedFact::AspectPresence {
+            kind: entity_kind,
+            present,
+            ..
+        } => aspect_presence::append(entries, prefix, *entity_kind, *present),
         WorthQueryApplicationObservedFact::SourceEntity { .. } => {
             kind(entries, prefix, "source-entity")
         }

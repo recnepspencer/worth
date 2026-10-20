@@ -138,10 +138,9 @@ impl<Schema: ApplicationSchema + 'static, Operation>
                 return Err(Cause::SourceMismatch.into());
             }
             let execution = self.reader.execution;
-            let maximum = std::num::NonZeroUsize::new(self.reader.work_budget.remaining()).ok_or(Cause::Verification(
-            crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::WorkExhausted))?;
+            let maximum = self.reader.work_budget.remaining();
             let owner = std::sync::Arc::clone(&self.reader.invalidation_owner);
-            let mut admission = owner.edit_admission_within(maximum);
+            let mut admission = owner.edit_admission_with_work_limit(maximum);
             let observed = (|| {
                 let mut native = ApplicationQueryNativeAccess::borrowed(
                     access
@@ -227,9 +226,18 @@ impl<Schema: ApplicationSchema + 'static, Operation>
                 Ok((posture, entity))
             })();
             let charged = usize::try_from(admission.charged_work()).unwrap_or(usize::MAX);
-            self.reader.work_budget.consume(charged);
+            let accounted = self.reader.work_budget.consume(charged);
             self.reader.work.record_output_lineage_selection(charged);
             let (posture, entity) = observed.map_err(WorthQueryOutputAvailabilityDenial::from)?;
+            if !accounted {
+                let stop = if self.reader.work_budget.overflowed() {
+                    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::Execution(
+                        worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow)
+                } else {
+                    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::WorkExhausted
+                };
+                return Err(Cause::Verification(stop).into());
+            }
             let state =
                 match posture {
                     ObservedOutputPosture::Pending => WorthQueryOutputAvailabilityState::Pending,

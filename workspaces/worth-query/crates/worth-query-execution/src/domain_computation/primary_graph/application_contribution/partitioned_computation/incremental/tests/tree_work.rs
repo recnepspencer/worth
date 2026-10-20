@@ -75,7 +75,7 @@ fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
     )
     .unwrap();
     let partition = template.partitions.values().next().unwrap();
-    let policy = crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::MIN, 1 << 36);
+    let policy = crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::MIN, Some(1 << 36));
     let native = worth_execution::SerialRequest::from_policy(
         &policy,
         worth_execution::CancellationToken::new(),
@@ -101,7 +101,7 @@ fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
     } = map
         .run_retained_run(
             worth_execution::ExecutionRequest::serial(&native),
-            worth_execution::ExecutionWorkCeiling::new(u64::MAX),
+            worth_execution::ExecutionWorkCeiling::new(None),
             |_, context| {
                 context.checkpoint(1)?;
                 Ok::<_, worth_execution::MapKernelFailure<()>>(1_u64)
@@ -152,7 +152,7 @@ fn plan(keys: &[Id]) -> ReductionPlan {
 // admits the declared path-copy holds of the fixed mean-law workload.
 fn serial_placement() -> RuntimeWorldExecutionPlacement<'static> {
     use super::super::super::super::request_execution::test_policy;
-    RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, 1 << 36))
+    RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, None))
 }
 
 fn run(

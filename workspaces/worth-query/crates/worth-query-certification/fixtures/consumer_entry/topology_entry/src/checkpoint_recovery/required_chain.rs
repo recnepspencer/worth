@@ -47,7 +47,7 @@ where
 {
     ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
         .derived_artifact::<Artifact>()
-        .conditional_operation::<MutatePlanar>()
+        .conditional_mutation::<PlanarMutationBinding<CheckpointSchema>>()
         .conditional_operation::<PublishChain>()
         .finish()
 }
@@ -92,7 +92,10 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
         profile,
         32,
         128 * 1_024 * 1_024,
-        u64::try_from(profile.limits().source_currentness_work()).unwrap(),
+        profile
+            .limits()
+            .source_currentness_work()
+            .map(|work| u64::try_from(work).unwrap()),
         source_world::seed,
     );
     let (scope, principal) = authenticate(&application);

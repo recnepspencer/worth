@@ -126,7 +126,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     // A request refused authorization at commit time stops as that request
     // does anywhere else; the producer did not fail.
     if let WorthQueryApplicationCommitOutcome::Denied(commit_denial) = &outcome
-        && let Some(authority) = commit_denial.request_authority()
+        && let Some(authority) = commit_denial.authorization_denial_kind()
     {
         return Err(request_authority_stop(identity, authority));
     }
@@ -230,6 +230,14 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 | Kind::IndexGenerationIdentityExhausted
                 | Kind::IdempotencyReceiptNotRetained { .. }
                 | Kind::IdempotencyIntentUnverifiable
+                | Kind::OperationBodyExecutionRequired
+                | Kind::SignedCreationAuthentication { .. }
+                | Kind::SignedEntityImmutable
+                | Kind::SigningLifecycleForgery
+                | Kind::SigningLifecycleUnavailable
+                | Kind::SigningLifecycleEvidenceCapacity { .. }
+                | Kind::SigningLifecycleRepresentationCapacity
+                | Kind::SigningLifecycleObservation { .. }
                 | Kind::MutationBindingMismatch
                 | Kind::MutationInputMismatch
                 | Kind::ElevationTransitionRequired
@@ -328,7 +336,11 @@ fn refused_preflight(
         _ => None,
     }?;
     let stale = (stop == Stop::SelectedSourceMismatch).then_some(origin);
-    Some(denial(kind, identity.to_owned()).with_publication_stale(stale))
+    Some(
+        denial(kind, identity.to_owned())
+            .with_publication_stale(stale)
+            .with_publication_companion_stop(stop),
+    )
 }
 
 #[cfg(test)]

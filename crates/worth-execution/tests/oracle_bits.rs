@@ -71,7 +71,7 @@ fn oracle_certifies_identical_nan_bits_and_rejects_different_value_bits() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 1024, 10),
+                ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), Some(1024), Some(10)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),
@@ -141,7 +141,7 @@ fn oracle_certifies_identical_nan_bits_and_rejects_different_value_bits() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 1, 10),
+                ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), Some(1), Some(10)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),

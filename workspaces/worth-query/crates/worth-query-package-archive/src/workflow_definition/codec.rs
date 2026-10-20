@@ -25,9 +25,10 @@ use crate::limits::WorthQueryPackageArchiveLimits;
 
 const MAGIC: &[u8; 4] = b"WQWD";
 
-/// Current deterministic workflow definition draft protocol. Version 5
-/// carries explicit execution, observation and recorded-actor policies. Only this version is supported.
-pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 5;
+/// Current deterministic draft protocol. Version 7 combines explicit execution,
+/// observation and actor policies with local Back and global termination actions.
+/// Earlier competing development layouts are refused without reinterpretation.
+pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 7;
 
 /// Encodes one validated definition's authored meaning. Only the draft
 /// travels: nothing about instances, approvals or publication is read.
@@ -41,7 +42,8 @@ where
     let limits = limits.narrowed();
     let mut output = BinaryOutput::with_capacity(256);
     output.raw_bytes(MAGIC);
-    output.u16(WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION);
+    let version = WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION;
+    output.u16(version);
     records::text(&mut output, Spec::IDENTITY.as_str())?;
     records::text(
         &mut output,
@@ -58,6 +60,12 @@ where
     output.u32(count(definition.connections().len())?);
     for connection in definition.connections() {
         records::encode_connection(&mut output, connection)?;
+    }
+    if version >= 6 {
+        output.u32(count(definition.global_actions().len())?);
+        for action in definition.global_actions() {
+            super::global_actions::encode(&mut output, action)?;
+        }
     }
     let bytes = output.into_bytes();
     require_byte_budget(bytes.len(), limits)?;
@@ -122,7 +130,16 @@ pub fn decode_workflow_definition_draft(
     )?;
     let mut connections = Vec::with_capacity(connection_count);
     for _ in 0..connection_count {
-        connections.push(records::decode_connection(&mut input)?);
+        connections.push(records::decode_connection(&mut input, version)?);
+    }
+    let mut global_actions = Vec::new();
+    if version >= 6 {
+        let declared = input.u32()?;
+        let count = bounded_count(&input, declared, definition_limits.maximum_effects(), 17)?;
+        global_actions.reserve(count);
+        for _ in 0..count {
+            global_actions.push(super::global_actions::decode(&mut input)?);
+        }
     }
     if !input.is_finished() {
         return Err(Denial::new(Kind::TrailingBytes));
@@ -136,6 +153,7 @@ pub fn decode_workflow_definition_draft(
         start,
         nodes: nodes.into_boxed_slice(),
         connections: connections.into_boxed_slice(),
+        global_actions: global_actions.into_boxed_slice(),
     })
 }
 

@@ -49,7 +49,7 @@ fn a_second_declared_capacity_with_no_sum_is_an_overflow_before_its_gather() {
     assert_eq!(std::env::var(CHILD).unwrap(), "1");
     let request = live_scope();
     let execution = QueryRequestExecution::open(
-        RuntimeWorldExecutionPlacement::Serial(test_policy(NonZeroUsize::MIN, u64::MAX)),
+        RuntimeWorldExecutionPlacement::Serial(test_policy(NonZeroUsize::MIN, None)),
         &request,
     );
     let mut memory = GatheredMemory::new::<u32>(&execution, u64::MAX).unwrap();

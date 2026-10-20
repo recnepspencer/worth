@@ -128,7 +128,7 @@ impl ContinuationTestContext {
                 parameters("account-1"),
                 crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                     NonZeroUsize::new(1).unwrap(),
-                    NonZeroUsize::new(10_000).unwrap(),
+                    Some(NonZeroUsize::new(10_000).unwrap()),
                     &request,
                 ),
             )
@@ -174,7 +174,7 @@ impl ContinuationTestContext {
                 continuation,
                 WorthQueryApplicationQueryResumeControls::new(
                     NonZeroUsize::new(page_width).unwrap(),
-                    NonZeroUsize::new(maximum_work).unwrap(),
+                    Some(NonZeroUsize::new(maximum_work).unwrap()),
                     request,
                 ),
             )

@@ -6,7 +6,7 @@ use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
     ApplicationRelationRef, ApplicationSchema, ApplicationSignedAggregateValueBinding,
     DeclaredApplicationFieldValue, EqualityPredicate, OperationReads,
-    WorthQueryOperationGraphReadContract, WritePosture,
+    WorthQueryCompiledApplicationOperationContracts, WritePosture,
 };
 
 mod admitted_projection;
@@ -15,6 +15,7 @@ pub(in crate::domain_computation::primary_graph) use prepared_inputs::PreparedCu
 mod computation_calls;
 mod current_output;
 pub(super) use current_output::CertifiedOutputCorrespondence;
+mod candidate_representation;
 mod decision_plan;
 mod decision_reads;
 mod output_availability;
@@ -70,11 +71,12 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
     reader: &'reader mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
     source_query: Option<&'reader crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<'reader, Schema>>,
     source_context_use: Option<&'reader std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>>,
-    admitted_graph_reads: Option<&'reader WorthQueryOperationGraphReadContract>,
+    admitted_contracts: Option<&'reader WorthQueryCompiledApplicationOperationContracts>,
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     binding_identity: &'reader worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
+    admitted_principal: Option<worth_relational::facade::identity::EntityId>,
     operation_scope:
         Option<crate::domain_computation::authorization::WorthQueryOperationScopeBinding>,
     decision_facts: &'reader mut DecisionReads,
@@ -161,10 +163,11 @@ where
                         reader,
                         source_query: None,
                         source_context_use: None,
-                        admitted_graph_reads: None,
+                        admitted_contracts: None,
                         runtime_authority: self.runtime_authority,
                         binding_identity: &self.binding_identity,
                         admission_identity: None,
+                        admitted_principal: None,
                         operation_scope: None,
                         decision_facts: &mut decision_facts,
                         _operation: PhantomData,
@@ -199,9 +202,9 @@ where
         WorthQueryInspectedOperationInvariantProjection<Operation, Output>,
         WorthQueryInvariantProjectionDenial,
     > {
-        let completed = self.project_bounded(
+        let completed = self.project_with_work_limit(
             execution,
-            usize::MAX,
+            None,
             product.relational_basis().clone(),
             |reader| {
                 let mut decision_facts = DecisionReads::default();
@@ -210,10 +213,11 @@ where
                         reader,
                         source_query: None,
                         source_context_use: None,
-                        admitted_graph_reads: None,
+                        admitted_contracts: None,
                         runtime_authority: self.runtime_authority,
                         binding_identity: &self.binding_identity,
                         admission_identity: None,
+                        admitted_principal: None,
                         operation_scope: None,
                         decision_facts: &mut decision_facts,
                         _operation: PhantomData,

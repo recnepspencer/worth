@@ -47,7 +47,7 @@ fn actual_v2_three_role_retirement_unlinks_only_observed_edges_and_reopens_curre
         })
         .page(
             std::num::NonZeroUsize::MIN,
-            std::num::NonZeroUsize::new(65_536).unwrap()
+            Some(std::num::NonZeroUsize::new(65_536).unwrap())
         )
         .is_err());
     assert_eq!(successor::output::literals(&owned).1, 1012);

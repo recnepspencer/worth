@@ -77,6 +77,9 @@ where
         }
         Fact::SourceAspectRevision {
             entity_id, aspect, ..
+        }
+        | Fact::AspectPresence {
+            entity_id, aspect, ..
         } => {
             projection.key(1, 0, || Key::EntityLifecycle(*entity_id))?;
             let bytes = aspect.owned_allocation_capacity_bytes();

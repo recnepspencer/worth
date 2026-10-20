@@ -35,7 +35,7 @@ fn original_request_cancellation_dominates_companion_result_and_preserves_retry(
     for domain_refusal in [true, false] {
         let original_cancellation = worth_execution::CancellationSource::new();
         let original = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+            worth_execution::SerialMemoryBudget::new(Some(64 * 1024 * 1024)),
             original_cancellation.token(),
             None,
         );
@@ -72,8 +72,8 @@ fn original_request_cancellation_dominates_companion_result_and_preserves_retry(
             .activate(
                 participant.clone(),
                 CompanionPreflightBudget {
-                    maximum_work_visits: 64,
-                    maximum_preparation_bytes: 8192,
+                    maximum_work_visits: Some(64),
+                    maximum_preparation_bytes: Some(8192),
                 },
             )
             .unwrap();

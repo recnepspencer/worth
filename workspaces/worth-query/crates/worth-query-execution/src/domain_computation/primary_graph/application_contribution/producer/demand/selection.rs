@@ -36,7 +36,7 @@ where
             <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
         >,
         profile_kind: &'static str,
-        maximum_work: usize,
+        maximum_work: Option<std::num::NonZeroUsize>,
     ) -> Result<WorthQuerySelectedApplicationProducer, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -44,21 +44,18 @@ where
         let execution = phase
             .execution_request_for(&self.product_runtime)
             .map_err(|cause| WorthQueryOutputDemandDenial::request_admission(cause.into()))?;
-        // The selection's meter is the caller's declared maximum.
-        let maximum_work = std::num::NonZeroUsize::new(
-            maximum_work.min(
-                self.output_demand_resource_profile()
-                    .limits()
-                    .source_currentness_work(),
-            ),
-        )
-        .ok_or_else(|| selection_budget_denial(Family::IDENTITY))?;
+        let limits = self.output_demand_resource_profile().limits();
+        let maximum_work = maximum_work
+            .map(std::num::NonZeroUsize::get)
+            .into_iter()
+            .chain(limits.source_currentness_work())
+            .min();
         let mut admission = self
             .primary_provider
             .graph
             .source_owner
             .invalidation_owner
-            .edit_admission_within(maximum_work);
+            .edit_admission_with_work_limit(maximum_work);
         self.select_output_producer_with_remaining::<Family>(
             &execution,
             source,

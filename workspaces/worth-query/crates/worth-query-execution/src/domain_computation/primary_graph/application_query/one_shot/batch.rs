@@ -142,7 +142,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         plan.runtime_authority.as_u64(),
                         plan.query.binding_identity(),
                         plan.query.identity(),
-                        plan.controls.maximum_work().get(),
+                        plan.controls
+                            .maximum_work()
+                            .map(std::num::NonZeroUsize::get),
                         plan.controls.maximum_result_count().get(),
                     )
                     .map_err(Resource)?;
@@ -158,7 +160,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             )
             .map_err(Resource)?;
         let reservation = batch
-            .reserve_read(plan.controls.maximum_work().get())
+            .reserve_read(
+                plan.controls
+                    .maximum_work()
+                    .map(std::num::NonZeroUsize::get),
+            )
             .map_err(Resource)?;
         let maximum = reservation.maximum();
         let spent = match charge {
@@ -170,7 +176,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             plan,
             Some(&spent),
             Some(batch),
-            Some(maximum),
+            maximum,
         );
         let Some(actual) = spent.read() else {
             // Validation, refreshed authorization or buffer admission may stop

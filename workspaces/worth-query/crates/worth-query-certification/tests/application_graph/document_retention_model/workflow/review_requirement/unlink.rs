@@ -1,5 +1,8 @@
 //! A real native unlink lets the certification court observe relation ABA.
 
+use worth_query_decl::facade::application_operation::{
+    ApplicationCandidatePolicy, ApplicationCandidateRequirements,
+};
 use worth_query_decl::facade::{worth_query_operation_reads, worth_query_operation_unlinks};
 use worth_query_host::facade::worth_query_operation;
 use worth_query_host::facade::worth_query_structured_value_binding;
@@ -47,12 +50,11 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for UnlinkReviewRequire
         "worth.query.certification.review-requirement-unlink-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.review-requirement-unlink-command.v1";
-    const CANDIDATES:
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 1, 0, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(1024),
-        );
+        ));
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -145,8 +147,8 @@ impl OperationHandler<DocumentRetentionSchema, UnlinkReviewRequirementBinding>
         _: &ReviewRequirementTargets,
     ) -> ApplicationCandidateRequirements {
         UnlinkReviewRequirementBinding::CANDIDATES
-            .fixed_requirements()
-            .expect("fixed candidate contract")
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
     fn build_candidate(
         &self,

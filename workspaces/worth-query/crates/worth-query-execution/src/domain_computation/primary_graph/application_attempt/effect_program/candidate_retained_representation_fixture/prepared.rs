@@ -91,12 +91,15 @@ impl<const FIXED: bool> ApplicationMutationBinding<ReservationSchema> for Prepar
     };
     const HANDLER_IDENTITY: &'static str = Self::IDENTITY;
     const IDEMPOTENCY_IDENTITY: &'static str = Self::IDENTITY;
-    const CANDIDATES: ApplicationCandidateContract = if FIXED {
-        ApplicationCandidateContract::fixed_cardinality(
-            ApplicationCandidateCardinalityCeiling::fixed(1, 0, 0, 0, 1, 0),
+    const CANDIDATES: ApplicationCandidatePolicy = if FIXED {
+        ApplicationCandidatePolicy::new(
+            Some(ApplicationCandidateCardinalityCeiling::fixed(
+                1, 0, 0, 0, 1, 0,
+            )),
+            None,
         )
     } else {
-        ApplicationCandidateContract::prepared()
+        ApplicationCandidatePolicy::new(None, None)
     };
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()

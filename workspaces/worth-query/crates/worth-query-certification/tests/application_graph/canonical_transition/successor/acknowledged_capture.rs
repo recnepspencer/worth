@@ -33,7 +33,7 @@ fn acknowledged_codec_successor_keeps_exact_capture_cause_and_repairs_without_re
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 0, 1),
+                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(0), Some(1)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),
@@ -75,11 +75,13 @@ fn acknowledged_codec_successor_keeps_exact_capture_cause_and_repairs_without_re
     assert!(requested > 0);
     assert_eq!(
         cause.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(MemoryLimitDenial {
-            requested,
-            admitted: 0,
-            level: MemoryLimitLevel::Policy { ancestor: 0 },
-        }))
+        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
+            MemoryLimitDenial::Capacity {
+                requested,
+                admitted: 0,
+                level: MemoryLimitLevel::Policy { ancestor: 0 },
+            }
+        ))
     );
     assert_eq!(
         callbacks, 1,
@@ -90,7 +92,7 @@ fn acknowledged_codec_successor_keeps_exact_capture_cause_and_repairs_without_re
         ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 64 * 1024 * 1024, u64::MAX),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(64 * 1024 * 1024), None),
         ),
         |phase| {
             pending

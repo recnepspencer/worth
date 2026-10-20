@@ -1,5 +1,8 @@
 use super::*;
 
+#[path = "effect_currentness/dependency_history.rs"]
+mod dependency_history;
+
 #[test]
 fn approved_effect_denies_stale_evidence_before_handler_work() {
     let (application, _, instance, proposal, approval, _) = approval_journey("applied", 930);

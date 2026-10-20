@@ -8,7 +8,8 @@ use std::{fmt::Debug, marker::PhantomData};
 use super::{
     application_mutation_key_identity, application_mutation_key_identity_admitted,
     encoder::CanonicalEncodeError, input_identity, input_identity_admitted,
-    ApplicationCanonicalWork, ApplicationEncodedInput, CanonicalEncodingCharge,
+    ApplicationCanonicalInput, ApplicationCanonicalWork, ApplicationEncodedInput,
+    CanonicalEncodingCharge,
 };
 use crate::application_operation::ApplicationMutationBinding;
 use crate::application_schema::{ApplicationSchema, ApplicationValueEncodeDenial};
@@ -35,7 +36,7 @@ pub enum ApplicationMutationIdentityAdmittedDenial<E: Debug> {
     Allocation,
 }
 
-fn admitted_denial<E: Debug>(
+pub(super) fn admitted_denial<E: Debug>(
     error: CanonicalEncodeError<E>,
     serialization: ApplicationValueEncodeDenial,
     key: bool,
@@ -79,26 +80,28 @@ where
     key_identity: [u8; 32],
     input_identity: [u8; 32],
     work: ApplicationCanonicalWork,
+    capture: Option<ApplicationCanonicalInput>,
     marker: PhantomData<fn() -> Schema>,
 }
 
 // Derives would demand `Schema` and `Binding` implement the same traits; the
-// fields hold only shared references and digests, so these hold for every pair.
+// The optional snapshot shares its native captured backing without re-encoding.
 impl<Schema, Binding> Clone for ApplicationMutationIdentities<'_, Schema, Binding>
 where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
     fn clone(&self) -> Self {
-        *self
+        Self {
+            key: self.key,
+            input: self.input,
+            key_identity: self.key_identity,
+            input_identity: self.input_identity,
+            work: self.work,
+            capture: self.capture.clone(),
+            marker: PhantomData,
+        }
     }
-}
-
-impl<Schema, Binding> Copy for ApplicationMutationIdentities<'_, Schema, Binding>
-where
-    Schema: ApplicationSchema,
-    Binding: ApplicationMutationBinding<Schema>,
-{
 }
 
 impl<Schema, Binding> std::fmt::Debug for ApplicationMutationIdentities<'_, Schema, Binding>
@@ -152,6 +155,7 @@ where
             key_identity: key_identity.identity(),
             input_identity: input_identity.identity(),
             work: key_identity.work().combine(input_identity.work()),
+            capture: input_identity.capture,
             marker: PhantomData,
         })
     }
@@ -181,20 +185,14 @@ where
                     )
                 })?;
         let input_identity =
-            input_identity_admitted::<Binding::InputBinding, _, _>(input, admission)
-                .map_err(|error| {
-                    admitted_denial(
-                        error,
-                        super::rejected(<Binding::InputBinding as crate::application_schema::ApplicationStructuredValueBinding>::IDENTITY),
-                        false,
-                    )
-                })?;
+            input_identity_admitted::<Binding::InputBinding, _, _>(input, admission)?;
         Ok(Self {
             key,
             input,
             key_identity: key_identity.identity(),
             input_identity: input_identity.identity(),
             work: key_identity.work().combine(input_identity.work()),
+            capture: input_identity.capture,
             marker: PhantomData,
         })
     }
@@ -217,6 +215,7 @@ where
             key_identity: key_identity.identity(),
             input_identity: *input.identity(),
             work: key_identity.work().combine(input.canonical_work()),
+            capture: input.canonical_input().cloned(),
             marker: PhantomData,
         })
     }
@@ -230,7 +229,11 @@ where
     where
         Binding::Input: Clone,
     {
-        ApplicationEncodedInput::reported_elsewhere(self.input.clone(), self.input_identity)
+        ApplicationEncodedInput::reported_elsewhere(
+            self.input.clone(),
+            self.input_identity,
+            self.capture.clone(),
+        )
     }
 
     /// The client idempotency key these identities were encoded from.
@@ -251,6 +254,10 @@ where
     /// Identity of the mutation input, scoped to its input type.
     pub const fn input_identity(&self) -> &[u8; 32] {
         &self.input_identity
+    }
+
+    pub const fn canonical_input(&self) -> Option<&ApplicationCanonicalInput> {
+        self.capture.as_ref()
     }
 
     /// The work that derived both identities: one derivation for the key and

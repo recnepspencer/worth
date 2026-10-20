@@ -1,7 +1,7 @@
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 
 use worth_foundational::facade::{
-    prepare_aspect_value_identity_basis, AspectFieldLocator, AspectValue,
+    prepare_aspect_value_identity_basis, AspectFieldLocator, AspectKey, AspectValue,
 };
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
 use worth_relational::facade::indexes::DerivedIndexId;
@@ -48,6 +48,16 @@ impl<'facts, Facts: FactSequence + ?Sized> ObservedFactIndex<'facts, Facts> {
         >,
     ) -> Self {
         Self { facts, routes }
+    }
+
+    pub(super) fn aspect_presence(
+        &self,
+        entity: EntityId,
+        aspect: &AspectKey,
+    ) -> Result<bool, WorthQueryApplicationAttemptDenial> {
+        self.routes
+            .aspect_presence(entity, aspect)
+            .ok_or_else(progression_denial)
     }
 
     /// The entity kind the sealed fact for this field records.

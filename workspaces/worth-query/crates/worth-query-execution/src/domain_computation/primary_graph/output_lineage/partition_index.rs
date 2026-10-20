@@ -203,7 +203,7 @@ impl WorthQueryApplicationOutputLineage {
         Some(Arc::clone(&displaced.settlement_identity))
     }
 
-    fn recorded_at_partition_slot(
+    pub(super) fn recorded_at_partition_slot(
         &self,
         source: &SemanticSource,
         occurrence: ProductBranchIncarnation,
@@ -216,7 +216,7 @@ impl WorthQueryApplicationOutputLineage {
             .expect("a partition locator must reference retained output authority")
     }
 
-    fn cell_at_partition_slot(
+    pub(super) fn cell_at_partition_slot(
         &self,
         source: &SemanticSource,
         occurrence: ProductBranchIncarnation,
@@ -248,9 +248,9 @@ impl WorthQueryApplicationOutputLineage {
         source: &SemanticSource,
         coordinate: ProductCoordinate,
         partition: [u8; 32],
-        maximum_work: usize,
+        maximum_work: Option<usize>,
     ) -> Result<(Option<&Arc<OnceLock<RecordedOutput>>>, usize), ()> {
-        if maximum_work == 0 {
+        if maximum_work == Some(0) {
             return Err(());
         }
         let (location, work) =
@@ -273,9 +273,9 @@ impl WorthQueryApplicationOutputLineage {
         source: &SemanticSource,
         coordinate: ProductCoordinate,
         partition: [u8; 32],
-        maximum_work: usize,
+        maximum_work: Option<usize>,
     ) -> Result<(Option<&RecordedOutput>, usize), ()> {
-        if maximum_work == 0 {
+        if maximum_work == Some(0) {
             return Err(());
         }
         let (location, work) =
@@ -298,9 +298,13 @@ impl WorthQueryApplicationOutputLineage {
         source: &SemanticSource,
         coordinate: ProductCoordinate,
         partition: [u8; 32],
-        maximum_work: usize,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        admission: &mut super::invalidation::InvalidationEditAdmission,
         mut matches: impl FnMut(&RecordedOutput) -> bool,
-    ) -> Result<(Option<&RecordedOutput>, usize), ()> {
+    ) -> Result<
+        (Option<&RecordedOutput>, usize),
+        worth_relational::facade::mvcc::CompanionPreflightStop,
+    > {
         let mut work = 0_usize;
         if let Some(generations) = self
             .partition_index
@@ -310,10 +314,13 @@ impl WorthQueryApplicationOutputLineage {
             .and_then(|partitions| partitions.get(&Some(partition)))
         {
             for (generation, slot) in generations.range(..=coordinate.generation).rev() {
-                work = work.checked_add(1).ok_or(())?;
-                if work > maximum_work {
-                    return Err(());
-                }
+                work = work.checked_add(1).ok_or(
+                    worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
+                )?;
+                execution.consult().map_err(|stop| {
+                    worth_relational::facade::mvcc::CompanionPreflightStop::Execution(stop.into())
+                })?;
+                admission.charge_external_work(1)?;
                 let Some(slot) = slot.get() else { continue };
                 let recorded = self.recorded_at_partition_slot(
                     source,
@@ -328,9 +335,7 @@ impl WorthQueryApplicationOutputLineage {
             }
         }
         if work == 0 {
-            if maximum_work == 0 {
-                return Err(());
-            }
+            admission.charge_external_work(1)?;
             work = 1;
         }
         Ok((None, work))
@@ -340,9 +345,13 @@ impl WorthQueryApplicationOutputLineage {
         &self,
         source: &SemanticSource,
         coordinate: ProductCoordinate,
-        maximum_work: usize,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        admission: &mut super::invalidation::InvalidationEditAdmission,
         mut matches: impl FnMut(&RecordedOutput) -> bool,
-    ) -> Result<(Option<&RecordedOutput>, usize), ()> {
+    ) -> Result<
+        (Option<&RecordedOutput>, usize),
+        worth_relational::facade::mvcc::CompanionPreflightStop,
+    > {
         let mut work = 0_usize;
         if let Some(history) = self
             .by_source
@@ -351,10 +360,15 @@ impl WorthQueryApplicationOutputLineage {
         {
             for (_, records) in history.range(..=coordinate.generation).rev() {
                 for recorded in records {
-                    work = work.checked_add(1).ok_or(())?;
-                    if work > maximum_work {
-                        return Err(());
-                    }
+                    work = work.checked_add(1).ok_or(
+                        worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
+                    )?;
+                    execution.consult().map_err(|stop| {
+                        worth_relational::facade::mvcc::CompanionPreflightStop::Execution(
+                            stop.into(),
+                        )
+                    })?;
+                    admission.charge_external_work(1)?;
                     let Some(recorded) = recorded.get() else {
                         continue;
                     };
@@ -365,9 +379,7 @@ impl WorthQueryApplicationOutputLineage {
             }
         }
         if work == 0 {
-            if maximum_work == 0 {
-                return Err(());
-            }
+            admission.charge_external_work(1)?;
             work = 1;
         }
         Ok((None, work))

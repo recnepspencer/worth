@@ -83,26 +83,28 @@ fn merge_record(node: NodeId) -> (LineageRecord, u64) {
 fn lineage_merge_charge_includes_outer_inner_vector_and_name_capacity() {
     let (_, node) = emitted_lineage();
     let (record, expected) = merge_record(node);
-    let mut work = Work::new(1000);
+    let mut work = Work::new(Some(1000));
     assert_eq!(
         record.retained_heap_charge(&mut work).unwrap().bytes(),
         expected
     );
     assert_eq!(
         record
-            .retained_heap_charge(&mut Work::new(work.visits()))
+            .retained_heap_charge(&mut Work::new(Some(work.visits())))
             .unwrap()
             .bytes(),
         expected
     );
     assert_eq!(
-        record.retained_heap_charge(&mut Work::new(work.visits() - 1)),
+        record.retained_heap_charge(&mut Work::new(Some(work.visits() - 1))),
         Err(Denial::WorkExhausted {
             maximum_visits: work.visits() - 1
         })
     );
     let mut changed = record.clone();
-    let before = changed.retained_heap_charge(&mut Work::new(1000)).unwrap();
+    let before = changed
+        .retained_heap_charge(&mut Work::new(Some(1000)))
+        .unwrap();
     let LineageRecordKind::BranchMerge {
         resolution_plan: Some(plan),
         ..
@@ -116,7 +118,7 @@ fn lineage_merge_charge_includes_outer_inner_vector_and_name_capacity() {
         * std::mem::size_of::<ConflictResolutionStrategy>();
     assert_eq!(
         changed
-            .retained_heap_charge(&mut Work::new(1000))
+            .retained_heap_charge(&mut Work::new(Some(1000)))
             .unwrap()
             .bytes()
             - before.bytes(),
@@ -130,12 +132,12 @@ fn lineage_history_denial_preserves_roots_and_incoming_nested_allocations() {
     let (emitted, node) = emitted_lineage();
     let original: DiagnosticHistory<_> = [emitted].into_iter().collect();
     let old_charge = original
-        .prepare_retained_charge(&mut Work::new(1000))
+        .prepare_retained_charge(&mut Work::new(Some(1000)))
         .unwrap();
     let (candidate, heap) = merge_record(node);
     let exact = two_frame_charge(old_charge, heap);
     let mut admitted = original.clone();
-    let mut work = Work::new(1000);
+    let mut work = Work::new(Some(1000));
     admitted
         .append_with_retained_capacity(candidate, exact, &mut work)
         .unwrap();
@@ -152,7 +154,8 @@ fn lineage_history_denial_preserves_roots_and_incoming_nested_allocations() {
         };
         let incoming_records = merge_records_ptr(&candidate);
         let mut draft = original.clone();
-        let result = draft.append_with_retained_capacity(candidate, maximum, &mut Work::new(limit));
+        let result =
+            draft.append_with_retained_capacity(candidate, maximum, &mut Work::new(Some(limit)));
         if limit == visits && !short_bytes {
             result.unwrap();
             assert_eq!(draft, admitted);
@@ -164,7 +167,7 @@ fn lineage_history_denial_preserves_roots_and_incoming_nested_allocations() {
         assert_eq!(&returned, admitted.back().unwrap());
         assert_eq!(
             returned
-                .retained_heap_charge(&mut Work::new(1000))
+                .retained_heap_charge(&mut Work::new(Some(1000)))
                 .unwrap()
                 .bytes(),
             heap
@@ -185,7 +188,7 @@ fn lineage_history_denial_preserves_roots_and_incoming_nested_allocations() {
         assert_eq!(denial, expected);
     }
     let removed = admitted
-        .evict_front_with_retained_charge(&mut Work::new(1000))
+        .evict_front_with_retained_charge(&mut Work::new(Some(1000)))
         .unwrap()
         .unwrap();
     assert!(std::ptr::eq(

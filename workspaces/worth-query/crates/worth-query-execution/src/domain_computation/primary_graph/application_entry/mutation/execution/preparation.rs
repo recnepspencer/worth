@@ -233,7 +233,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         .begin_reserved_effect_program(
                             requirements,
                             installed_ceiling,
-                            runtime.runtime.application_candidate_resource_profile(),
                             allocation_control.policy(),
                         )
                         .map_err(MutationHandlerExecutionDenial::Attempt)?;

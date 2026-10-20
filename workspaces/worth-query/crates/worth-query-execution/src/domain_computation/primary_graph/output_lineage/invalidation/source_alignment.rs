@@ -237,13 +237,10 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         identity: &RecordedSettlementIdentity,
     ) -> Option<u64> {
         let row = self.state.settlements.get(identity)?;
-        row._fact_capacity
-            .bytes()
-            .checked_sub(row.facts.postconditions().retained_storage_bytes()?)?
-            .checked_sub(super::index_capacity::arc_bytes::<
-                PositionedRelationalSnapshot,
-            >()?)?
-            .checked_sub(u64::try_from(row.read_basis.branch_id().0.capacity()).ok()?)
+        row.facts
+            .postconditions()
+            .retained_resident_bytes()?
+            .checked_sub(row.facts.postconditions().retained_storage_bytes()?)
     }
     pub(super) fn computation_projection(
         &self,
@@ -255,7 +252,7 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
             .same_binding(facts)
             .then(|| super::settlement::PostingComputationStorage {
                 projection: Arc::clone(&row.posting_projection),
-                _fact_capacity: Arc::clone(&row._fact_capacity),
+                _fact_capacity: row._fact_capacity.clone(),
             })
     }
     pub(super) fn computation_frontier(

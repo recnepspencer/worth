@@ -133,6 +133,46 @@ fn corrupted_member_set_rejects_distinct_aftermaths_before_identity() {
     );
 }
 
+#[test]
+fn operation_projection_budget_is_optional_and_explicit_zero_is_rejected() {
+    let operation =
+        ApplicationOperationRef::<CardinalitySchema, CardinalityOperation, ()>::from_declaration();
+    let declaration = || {
+        ApplicationSchemaDeclarationBuilder::<CardinalitySchema>::for_schema().operation(
+            operation
+                .definition()
+                .no_external_effect()
+                .no_aftermath()
+                .finish(),
+        )
+    };
+    let unlimited = declaration().build().expect("omission has no work ceiling");
+    assert!(!unlimited.erased().members().iter().any(|member| matches!(
+        member,
+        ApplicationSchemaMember::OperationProjectionWorkBudget { .. }
+    )));
+    let finite = declaration()
+        .operation_projection_work_budget(operation, 32)
+        .build()
+        .expect("a positive explicit ceiling is valid");
+    assert_ne!(unlimited.erased().identity(), finite.erased().identity());
+    assert_eq!(
+        declaration()
+            .operation_projection_work_budget(operation, 0)
+            .build()
+            .unwrap_err(),
+        ApplicationSchemaDeclarationDenial::InvalidOperationProjectionWorkBudget,
+    );
+    assert_eq!(
+        declaration()
+            .operation_projection_work_budget(operation, 32)
+            .operation_projection_work_budget(operation, 64)
+            .build()
+            .unwrap_err(),
+        ApplicationSchemaDeclarationDenial::InvalidOperationProjectionWorkBudget,
+    );
+}
+
 fn external_effect(operation: &str, effect: &str) -> ApplicationSchemaMember {
     ApplicationSchemaMember::OperationExternalEffect {
         operation: operation.to_owned(),

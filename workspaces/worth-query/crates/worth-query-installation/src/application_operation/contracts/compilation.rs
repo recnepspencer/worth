@@ -31,6 +31,7 @@ impl WorthQueryCompiledApplicationOperationContracts {
         compilation: WorthQuerySealedOperationContractCompilation,
     ) -> Result<Self, ()> {
         let (
+            body,
             authorization,
             mut ability_requirements,
             authored_program_width,
@@ -45,6 +46,7 @@ impl WorthQueryCompiledApplicationOperationContracts {
             emissions,
             graph_mutation_count,
             candidate_demand,
+            signing_lifecycle,
             invariant_invocations,
         ) = compilation.into_parts();
         ability_requirements.sort();
@@ -61,11 +63,19 @@ impl WorthQueryCompiledApplicationOperationContracts {
                 .iter()
                 .flat_map(|role| role.read_scopes().iter().cloned())
                 .collect(),
-            touches.scopes().to_vec(),
+            signing_lifecycle.publication_touches.scopes().to_vec(),
         );
         let decision_facts = application_decision_fact_contract(authorization_fact_count);
+        let candidate_demand = candidate_demand.with_workflow_birth(
+            body.as_ref()
+                .and_then(|body| body.creation())
+                .and_then(|creation| creation.enrollment())
+                .is_some(),
+        )?;
         let resources = application_resource_contract(authored_program_width, candidate_demand)?;
         Ok(Self {
+            signing_lifecycle,
+            body,
             authorization,
             ability_requirements,
             graph_reads,
@@ -118,24 +128,23 @@ fn application_resource_contract(
     candidate_demand: WorthQueryApplicationCandidateDemand,
 ) -> Result<WorthQueryExecutionResourceContract, ()> {
     let program_width = u64::try_from(program_width).map_err(|_| ())?;
-    // Prepared dimensions are deferred by the explicit installed candidate contract.
-    // They are admitted from the runtime profile and funded before candidate authoring.
     let mut scale = WorthQuerySemanticScaleRequest::selective()
         .with(WorthQuerySemanticScaleAxis::BatchWidth, program_width);
     if let Some(items) = candidate_demand.candidate_items() {
         scale = scale.with(WorthQuerySemanticScaleAxis::CandidateItems, items);
     }
-    let mut limits = WorthQueryResourceLimitRequest::selective()
+    let mut resources = WorthQueryResourceLimitRequest::selective()
         .with(WorthQueryResourceDimension::RetainedBytes, 262_144);
     if let Some(bytes) = candidate_demand.retained_representation_bytes() {
-        limits = limits.with(
+        resources = resources.with(
             WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
             bytes,
         );
     }
+
     let envelope = WorthQueryExecutionResourceEnvelope::atomic(
         scale,
-        limits,
+        resources,
         WorthQueryCancellationSafePointFamily::new(APPLICATION_EXECUTION_SAFE_POINT_FAMILY)
             .expect("static application safe-point family is canonical"),
     );

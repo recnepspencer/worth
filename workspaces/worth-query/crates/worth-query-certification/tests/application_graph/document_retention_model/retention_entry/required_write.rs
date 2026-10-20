@@ -1,5 +1,6 @@
 //! The guarded counterpart of the ordinary retention write used by workflow courts.
 
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_host::facade::{
     declaration::{
         application_operation::{
@@ -58,9 +59,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ExplicitReviewedSet
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.document-retention.explicit-reviewed-command.v1";
     const REQUIRES_WORKFLOW_AUTHORITY: bool = true;
-    const CANDIDATES:
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
-        SetRetentionBinding::CANDIDATES;
+    const CANDIDATES: ApplicationCandidatePolicy = SetRetentionBinding::CANDIDATES;
 
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::requiring_approval::<WorkflowApprovalCapability>()

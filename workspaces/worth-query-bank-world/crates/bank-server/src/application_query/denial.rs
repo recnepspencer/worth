@@ -66,6 +66,9 @@ pub enum BankApplicationOutputSettlementDenialKind {
     MissingApplicableProducer,
     AmbiguousApplicableProducer,
     ProducerUnavailable,
+    ProducerResourceQuote(
+        worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial,
+    ),
     ProducerDomainDenied,
     RequestAuthorization(BankAuthorizationDenialKind),
     ProductSelection(BankProductSelectionDenialKind),
@@ -294,6 +297,7 @@ impl BankApplicationQueryDenial {
             Query::MissingApplicableProducer => Bank::MissingApplicableProducer,
             Query::AmbiguousApplicableProducer => Bank::AmbiguousApplicableProducer,
             Query::ProducerUnavailable => Bank::ProducerUnavailable,
+            Query::ProducerResourceQuote(cause) => Bank::ProducerResourceQuote(cause),
             Query::ProducerDomainDenied => Bank::ProducerDomainDenied,
             Query::RequestAuthorization(kind) => Bank::RequestAuthorization(authorization(worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(kind))),
             Query::ProductSelection(refusal) => Bank::ProductSelection(product_selection(worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial::Refused(refusal))),

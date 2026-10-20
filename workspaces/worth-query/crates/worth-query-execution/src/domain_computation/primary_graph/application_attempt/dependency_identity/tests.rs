@@ -55,6 +55,33 @@ fn producer_identity_changes_with_any_completed_dependency() {
 }
 
 #[test]
+fn optional_aspect_initialization_presence_is_canonical_not_a_revision_alias() {
+    let entity_id = EntityId::new(PartitionId::main(), 17, 2);
+    let aspect = AspectKey::new("assessment").unwrap();
+    let predicate = |present| WorthQueryApplicationObservedFact::AspectPresence {
+        entity_id,
+        kind: KindId(4),
+        aspect: aspect.clone(),
+        present,
+    };
+    let absent = dependency_identity([9; 32], &[predicate(false)]).unwrap().0;
+    let present = dependency_identity([9; 32], &[predicate(true)]).unwrap().0;
+    let revision = dependency_identity(
+        [9; 32],
+        &[WorthQueryApplicationObservedFact::SourceAspectRevision {
+            entity_id,
+            aspect,
+            native_revision: None,
+        }],
+    )
+    .unwrap()
+    .0;
+    assert_ne!(absent, present);
+    assert_ne!(absent, revision);
+    assert_ne!(present, revision);
+}
+
+#[test]
 fn field_presence_values_and_relation_sets_are_distinct_dependencies() {
     let entity_id = EntityId::new(PartitionId::main(), 17, 2);
     let other = EntityId::new(PartitionId::main(), 18, 2);

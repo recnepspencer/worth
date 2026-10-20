@@ -11,7 +11,7 @@ fn approval_request_round_trip_preserves_every_authorization_axis() {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024, 1),
+            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(1)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -148,7 +148,7 @@ fn canonical_envelope_native_backing_keeps_its_charge_until_last_clone() {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, 64, 1),
+            ExecutionBudget::new(NonZeroUsize::MIN, Some(64), Some(1)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -186,7 +186,7 @@ fn envelope_count_bound_precedes_exact_native_payload_refusal() {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, 0, 1),
+            ExecutionBudget::new(NonZeroUsize::MIN, Some(0), Some(1)),
         ),
         deadline: None,
         cancellation: cancellation.token(),

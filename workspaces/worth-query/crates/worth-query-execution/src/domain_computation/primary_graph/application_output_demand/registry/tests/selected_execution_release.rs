@@ -44,8 +44,8 @@ fn selected_release_refuses_before_running_then_releases_without_new_allowance()
         let full_work = measured.charged_work();
         let budget = |work| {
             InvalidationEditAdmission::new(CompanionPreflightBudget {
-                maximum_work_visits: work,
-                maximum_preparation_bytes: 8 * 1024 * 1024,
+                maximum_work_visits: Some(work),
+                maximum_preparation_bytes: None,
             })
         };
         let mut short = budget(full_work - 1);
@@ -67,7 +67,7 @@ fn selected_release_refuses_before_running_then_releases_without_new_allowance()
         let release = registry
             .prepare_selected_execution_finish(&denied, &mut exact)
             .expect("the same retained membership retries with its exact allowance");
-        assert_eq!(exact.remaining_work(), 0);
+        assert_eq!(exact.remaining_work(), Some(0));
         assert!(matches!(
             registry.begin(&denied),
             super::super::WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: None }

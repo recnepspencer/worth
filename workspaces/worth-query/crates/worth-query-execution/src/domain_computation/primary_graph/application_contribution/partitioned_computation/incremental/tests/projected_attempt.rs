@@ -187,7 +187,7 @@ where
                             let (computed, report) = execution
                                 .execution_request()
                                 .unwrap()
-                                .run(worth_execution::ExecutionWorkCeiling::new(ceiling), |_| {
+                                .run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| {
                                     compute()
                                 })
                                 .unwrap();

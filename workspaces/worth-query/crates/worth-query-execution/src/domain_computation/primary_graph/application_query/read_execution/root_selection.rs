@@ -46,7 +46,7 @@ pub(super) fn select_bounded_roots(
     result_buffer: &mut super::super::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
     capture_result_set: bool,
     spent: Option<&OneShotReadWorkObservation<'_>>,
-    maximum_work: usize,
+    maximum_work: Option<usize>,
     interruption: super::ReadInterruption<'_>,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     interruption.checkpoint(plan.name)?;
@@ -119,7 +119,7 @@ fn select_indexed_root(
     result_buffer: &mut super::super::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
     capture_result_set: bool,
     spent: Option<&OneShotReadWorkObservation<'_>>,
-    maximum_work: usize,
+    maximum_work: Option<usize>,
     interruption: super::ReadInterruption<'_>,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let (entity, aspect, field) = predicate.field();

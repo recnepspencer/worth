@@ -47,7 +47,7 @@ pub(super) struct OperationActorCommand {
     pub(super) operation: String,
     pub(super) binding: Option<String>,
     pub(super) input_identity: [u8; 32],
-    pub(super) original_sources: OriginalActorSources,
+    pub(super) original_sources: Option<OriginalActorSources>,
 }
 
 #[derive(Clone, Debug)]
@@ -113,7 +113,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
                     operation: required.operation().to_owned(),
                     binding: required.binding().map(str::to_owned),
                     input_identity: *required.input_identity(),
-                    original_sources: required.original_sources().clone(),
+                    original_sources: required.original_sources().cloned(),
                 },
             },
         )

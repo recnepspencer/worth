@@ -1,6 +1,8 @@
 //! The public program-owner commit door cannot bypass workflow authority.
 
 use super::*;
+#[path = "commit_boundary/authenticated_signer.rs"]
+mod authenticated_signer;
 use worth_query_decl::facade::application_operation::ApplicationMutationIdentities;
 use worth_query_host::facade::{
     application_installation::WorthQueryProgramOwner,

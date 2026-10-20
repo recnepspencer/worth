@@ -18,19 +18,27 @@ mod verdict_reduction;
 
 pub(crate) fn evaluate_invariant_packet<'state>(
     runtime: &InvariantRuntimeView<'state>,
+    execution: worth_execution::ExecutionRequest<'state, 'state>,
     packet: &InvariantWorkPacket<'state>,
 ) -> InvariantWorkerEnvelope {
-    evaluate_invariant_packet_inner(runtime, packet, None)
+    evaluate_invariant_packet_inner(runtime, execution, packet, None)
 }
 
 pub(crate) fn evaluate_invariant_packet_checked<'state>(
     runtime: &InvariantRuntimeView<'state>,
+    execution: worth_execution::ExecutionRequest<'state, 'state>,
     packet: &InvariantWorkPacket<'state>,
     context: &mut crate::execution::PacketKernelContext<'_, '_, '_>,
     status: worth_execution::ExecutionLeaseStatus,
 ) -> Result<InvariantWorkerEnvelope, InvariantBudgetStop> {
+    execution
+        .check_live()
+        .map_err(worth_execution::MapKernelFailure::Stop)?;
     let budget = LeasedInvariantBudget::new(context, status);
-    let envelope = evaluate_invariant_packet_inner(runtime, packet, Some(&budget));
+    let envelope = evaluate_invariant_packet_inner(runtime, execution, packet, Some(&budget));
+    execution
+        .check_live()
+        .map_err(worth_execution::MapKernelFailure::Stop)?;
     if let Some(failure) = budget.take_failure() {
         return Err(failure);
     }
@@ -42,6 +50,7 @@ pub(crate) fn evaluate_invariant_packet_checked<'state>(
 
 fn evaluate_invariant_packet_inner<'state>(
     runtime: &InvariantRuntimeView<'state>,
+    execution: worth_execution::ExecutionRequest<'state, 'state>,
     packet: &InvariantWorkPacket<'state>,
     budget: Option<&dyn InvariantBudget>,
 ) -> InvariantWorkerEnvelope {
@@ -51,7 +60,7 @@ fn evaluate_invariant_packet_inner<'state>(
         "planned invariant packet violated preparation proof contract: {:?}",
         preparation_failures
     );
-    let evaluation = registered_rule::evaluate_registered_rule(runtime, packet, budget);
+    let evaluation = registered_rule::evaluate_registered_rule(runtime, execution, packet, budget);
     let reduced = verdict_reduction::reduce_invariant_verdicts(packet, evaluation);
 
     let worker_result_count = reduced.results.len();

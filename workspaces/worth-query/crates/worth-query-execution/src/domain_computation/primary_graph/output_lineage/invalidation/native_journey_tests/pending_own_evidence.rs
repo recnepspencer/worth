@@ -81,7 +81,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         }],
         |_| Some(TypeId::of::<()>()),
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),
             None,
         )),

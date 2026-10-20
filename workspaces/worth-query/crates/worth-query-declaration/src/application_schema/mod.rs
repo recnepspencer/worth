@@ -52,6 +52,20 @@ mod relation_integrity;
 mod schema_identity;
 mod schema_member;
 mod shape;
+mod signing_provenance;
+mod signing_supersession;
+pub use signing_provenance::{
+    ApplicationSigningEntityCoordinates, ApplicationSigningProvenance,
+    ApplicationSigningProvenanceBinding, ApplicationSigningProvenanceEncoding,
+    ApplicationSigningProvenanceMetadata, ApplicationSigningProvenanceParts,
+    ApplicationSigningProvenanceValueBinding, ApplicationSigningSubjectDependency,
+    ApplicationSigningSubjectProvenance, ApplicationSigningSubjectProvenanceBinding,
+    ApplicationSigningSubjectProvenanceParts,
+};
+pub use signing_supersession::{
+    ApplicationSigningSupersession, ApplicationSigningSupersessionBinding,
+    ApplicationSigningSupersessionParts,
+};
 mod value_binding;
 mod values;
 
@@ -149,7 +163,21 @@ pub use mutation_precondition::{
     TypedMutationPrecondition, TypedMutationPreconditions,
 };
 pub use operation_definition::{
+    ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
+    ApplicationOperationBodyBuilder, ApplicationOperationBodyCaptureRole,
+    ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
+    ApplicationOperationBodyCreationBuilder, ApplicationOperationBodyCreationLink,
+    ApplicationOperationBodyCreationLinkDirection, ApplicationOperationBodyCreationLinkPosture,
+    ApplicationOperationBodyEnrollment, ApplicationOperationBodyOutput,
+    ApplicationOperationBodyOutputTarget, ApplicationOperationBodyProgram,
+    ApplicationOperationBodyRelatedFieldSource, ApplicationOperationBodyRequirement,
+    ApplicationOperationBodyRequirementDenial, ApplicationOperationBodyRequirementDirection,
+    ApplicationOperationBodyRequirementExpression, ApplicationOperationBodyRequirementOperand,
+    ApplicationOperationBodyRequirementOperands, ApplicationOperationBodyRequirementProgram,
+    ApplicationOperationBodyRequirementSource, ApplicationOperationBodyScopeField,
+    ApplicationOperationBodySigningLifecycleSpec, ApplicationOperationBodySigningSpec,
     ApplicationOperationDefinition, ApplicationOperationDefinitionBuilder,
+    ApplicationSigningEvidenceRef, ApplicationSigningEvidenceSource,
 };
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;
 pub use portable_schema::{
@@ -192,19 +220,20 @@ pub use value_binding::{
     decode_canonical_value, decode_canonical_value_with_admission, encode_canonical_value,
     ApplicationCanonicalValueContract, ApplicationEncodedScalarValue, ApplicationFieldBindingLocus,
     ApplicationFieldBindingRecipe, ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
-    ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
-    ApplicationSignedAggregateValueBinding, ApplicationStructuredValueBinding,
-    ApplicationUnitIdentity, ApplicationValueDecodeAvailable, ApplicationValueDecodeDenial,
-    ApplicationValueDecodePosture, ApplicationValueDecodeUnavailable, ApplicationValueEncodeDenial,
-    ApplicationValueIdentityPosture, ApplicationValueIsIdentity, ApplicationValueIsNotIdentity,
-    ApplicationValueSignedAggregateAvailable, ApplicationValueSignedAggregatePosture,
-    ApplicationValueSignedAggregateUnavailable, ApplicationValueValidationDenial,
-    BoolApplicationValueBinding, CanonicalValue, ErasedApplicationSignedAggregateDecode,
-    ErasedApplicationValueAdmittedDecode, ErasedApplicationValueDecode,
-    ErasedApplicationValueEncode, ErasedApplicationValueValidation, I64ApplicationValueBinding,
-    InternedStringApplicationValueBinding, StringApplicationValueBinding,
-    U64ApplicationValueBinding, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds,
-    ValueShape,
+    ApplicationNativeInputAdmissionDenial, ApplicationNativeInputDecodeProfile,
+    ApplicationNativeInputDecodeResources, ApplicationReadableScalarValueBinding,
+    ApplicationScalarValueBinding, ApplicationSignedAggregateValueBinding,
+    ApplicationStructuredValueBinding, ApplicationUnitIdentity, ApplicationValueDecodeAvailable,
+    ApplicationValueDecodeDenial, ApplicationValueDecodePosture, ApplicationValueDecodeUnavailable,
+    ApplicationValueEncodeDenial, ApplicationValueIdentityPosture, ApplicationValueIsIdentity,
+    ApplicationValueIsNotIdentity, ApplicationValueSignedAggregateAvailable,
+    ApplicationValueSignedAggregatePosture, ApplicationValueSignedAggregateUnavailable,
+    ApplicationValueValidationDenial, BoolApplicationValueBinding, CanonicalValue,
+    ErasedApplicationSignedAggregateDecode, ErasedApplicationValueAdmittedDecode,
+    ErasedApplicationValueDecode, ErasedApplicationValueEncode, ErasedApplicationValueValidation,
+    I64ApplicationValueBinding, InternedStringApplicationValueBinding,
+    StringApplicationValueBinding, U64ApplicationValueBinding, ValueCodecDenial,
+    ValueDecodeAdmission, ValueDecodeBounds, ValueShape,
 };
 pub use values::{
     DeclaredApplicationFieldValue, OptionalApplicationFieldValue, RequiredApplicationFieldValue,

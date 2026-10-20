@@ -6,6 +6,7 @@ use crate::document_retention_model::{
 };
 use std::num::NonZeroU64;
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_decl::facade::{
     application_operation::*, application_program::*, application_schema::*,
     worth_query_application_contribution, worth_query_effect, worth_query_operation,
@@ -130,12 +131,11 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ArchiveBinding {
     const IDEMPOTENCY_IDENTITY: &'static str = "neutral.archive.key.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const REQUIRES_WORKFLOW_AUTHORITY: bool = true;
-    const CANDIDATES:
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 1),
             ApplicationCandidateResourceCeiling::representation_bytes(4096),
-        );
+        ));
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::requiring_approval::<WorkflowApprovalCapability>()
     }

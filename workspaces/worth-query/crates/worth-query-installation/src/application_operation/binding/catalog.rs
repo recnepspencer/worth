@@ -372,13 +372,10 @@ where
         }
         family_prefixes.push(family.prefix());
     }
-    if descriptor
-        .candidates()
-        .cardinality()
-        .is_some_and(|candidates| {
-            creates > candidates.maximum_creates() || retires > candidates.maximum_deletes()
-        })
-    {
+    let candidates = descriptor.candidates().cardinality();
+    if candidates.is_some_and(|ceiling| {
+        creates > ceiling.maximum_creates() || retires > ceiling.maximum_deletes()
+    }) {
         return Err(denial(
             DenialKind::MutationOutputCandidateMismatch,
             descriptor.identity(),

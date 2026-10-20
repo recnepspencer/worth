@@ -1,10 +1,16 @@
 //! Bank's action for each typed application commit refusal.
 use super::{BankHttpDenial, BankHttpDenialKind, BankHttpNextAction};
 use worth_query_host::facade::{
+    admission::authentication_event::WorthQueryAuthenticationEventDenial as Authentication,
     application_contribution::{
-        WorthQueryManagedComputationResourceDenial as Resource, WorthQueryMemoryLimitLevel as Level,
+        WorthQueryAdvancementDenial as Advancement,
+        WorthQueryManagedComputationInterruption as Interruption,
+        WorthQueryManagedComputationResourceDenial as Resource,
+        WorthQueryMemoryLimitLevel as Level,
     },
-    primary_graph::WorthQueryApplicationCommitDenialKind,
+    primary_graph::{
+        WorthQueryApplicationAttemptDenialKind as Attempt, WorthQueryApplicationCommitDenialKind,
+    },
 };
 
 pub(in crate::http::server) fn commit_denial(
@@ -12,6 +18,35 @@ pub(in crate::http::server) fn commit_denial(
 ) -> BankHttpDenial {
     use WorthQueryApplicationCommitDenialKind as Denial;
     match kind {
+        Denial::SignedCreationAuthentication {
+            kind: Authentication::Cancelled,
+        }
+        | Denial::SigningLifecycleObservation {
+            kind: Attempt::Cancelled,
+        } => super::super::advancement_denial::advancement(Advancement::Interrupted(
+            Interruption::Cancelled,
+        )),
+        Denial::SignedCreationAuthentication {
+            kind: Authentication::DeadlineExceeded,
+        }
+        | Denial::SigningLifecycleObservation {
+            kind: Attempt::DeadlineExceeded,
+        } => super::super::advancement_denial::advancement(Advancement::Interrupted(
+            Interruption::DeadlineExceeded,
+        )),
+        Denial::SigningLifecycleObservation {
+            kind: Attempt::ExecutionRequest(cause),
+        } => super::denial::pending_execution_denial(cause),
+        // Bank's money commands install neither native bodies nor signing
+        // lifecycles. A new client attempt cannot configure those host lanes.
+        Denial::OperationBodyExecutionRequired
+        | Denial::SignedCreationAuthentication { .. }
+        | Denial::SignedEntityImmutable
+        | Denial::SigningLifecycleForgery
+        | Denial::SigningLifecycleUnavailable
+        | Denial::SigningLifecycleEvidenceCapacity { .. }
+        | Denial::SigningLifecycleRepresentationCapacity
+        | Denial::SigningLifecycleObservation { .. } => operator_denial(),
         Denial::ExecutionResource { denial, .. } => execution_resource(denial),
         Denial::ExecutionWorkerPanicked { .. } => operator_denial(),
         Denial::ExecutionUncheckedCustomKernel { .. } => operator_denial(),

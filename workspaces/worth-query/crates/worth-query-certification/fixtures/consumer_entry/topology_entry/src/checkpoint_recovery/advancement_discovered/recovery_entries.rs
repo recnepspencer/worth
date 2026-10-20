@@ -15,7 +15,7 @@ fn zero_work() {
     bound(Some(worth_foundational::ExecutionBudget::new(
         NonZeroUsize::MIN,
         policy.charged_memory_bytes(),
-        0,
+        Some(0),
     )));
 }
 fn opening_refused(denial: RecoveryDenial, before: u64) {

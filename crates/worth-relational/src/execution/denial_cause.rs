@@ -31,6 +31,7 @@ pub enum RelationalExecutionDenialCause {
     NestedStopped,
     ResultCapacityExceeded,
     WorkerFailed,
+    AllocationFailed,
     ScratchCapacityExceeded,
     UncheckedCustomKernel,
     ExpectedIdentitiesNotCanonical,

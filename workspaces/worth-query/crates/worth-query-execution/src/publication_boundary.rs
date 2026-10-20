@@ -33,6 +33,10 @@ pub mod capability_workflow {
     pub use crate::domain_computation::primary_graph::application_attempt::WorthQueryCapabilityWorkflowIdempotency;
 }
 
+pub mod signed_creation {
+    pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationAdapter;
+}
+
 pub mod workflow_definition_publication {
 
     pub use crate::domain_computation::primary_graph::{
@@ -73,9 +77,17 @@ pub mod workflow_advance {
         RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
         RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
         RequiredWorkflowProposal, WorkflowApprovalDecision, WorkflowConditionOperand,
-        WorkflowOperationAuthority, WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
-        WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
-        WorthQueryWorkflowAdvanceAdapter, WorthQueryWorkflowConditionSources,
+        WorkflowLocalActionKind, WorkflowOperationAuthority, WorkflowOperationAuthoritySlot,
+        WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
+        WorkflowTransitionPreparationDenial, WorthQueryWorkflowAdvanceAdapter,
+        WorthQueryWorkflowConditionSources,
+    };
+}
+
+pub mod workflow_birth {
+    pub use crate::domain_computation::primary_graph::application_attempt::{
+        RequiredWorkflowBirth, WorkflowBirthAuthority, WorkflowBirthAuthoritySlot,
+        WorthQueryWorkflowBirthAdapter,
     };
 }
 

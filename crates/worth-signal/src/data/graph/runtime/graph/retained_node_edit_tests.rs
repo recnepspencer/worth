@@ -7,6 +7,7 @@ mod clone_work;
 mod publication_peak;
 mod reservation_lifetime;
 mod selected_roles;
+mod selection_validation;
 use crate::data::node::{NodeColdData, NodeHotData, NodeState, NodeWarmData};
 use crate::data::retained_storage::{
     RetainedStorageCharge as Charge, RetainedStorageMeasurement, RetainedStoragePreparation as Work,
@@ -22,7 +23,7 @@ fn test_ledger() -> std::sync::Arc<crate::data::retained_storage::SignalConditio
         crate::runtime_policy::SignalConditionalEvaluationBudget {
             maximum_retained_slots: 8,
             maximum_retained_bytes: 512 * 1024 * 1024,
-            maximum_attempt_visits: PREPARATION_WORK,
+            maximum_attempt_visits: Some(PREPARATION_WORK),
         },
         crate::runtime_policy::SignalRuntimePolicy::development().conditional_temporal_budget,
     )
@@ -38,17 +39,17 @@ fn prepared_arena() -> NodeArena {
     graph
         .arena
         .hot
-        .prepare_retained_charge(&mut Work::new(1_000))
+        .prepare_retained_charge(&mut Work::new(Some(1_000)))
         .unwrap();
     graph
         .arena
         .warm
-        .prepare_retained_charge(&mut Work::new(1_000))
+        .prepare_retained_charge(&mut Work::new(Some(1_000)))
         .unwrap();
     graph
         .arena
         .cold
-        .prepare_retained_charge(&mut Work::new(1_000))
+        .prepare_retained_charge(&mut Work::new(Some(1_000)))
         .unwrap();
     graph.arena
 }
@@ -93,7 +94,7 @@ fn cumulative_same_page_edits_admit_and_install_all_selected_nodes_together() {
     let short = maximum
         .checked_sub(Charge::capacity::<u8>(1).unwrap())
         .unwrap();
-    let mut work = Work::new(100_000);
+    let mut work = Work::new(Some(100_000));
     assert!(
         matches!(arena.prepare_retained_node_edits(&test_ledger(), &[0, 1], short, &mut work,
         edit_selected_payloads).unwrap(), RetainedNodeEditPreparation::Rejected {
@@ -106,7 +107,7 @@ fn cumulative_same_page_edits_admit_and_install_all_selected_nodes_together() {
                 &test_ledger(),
                 &[0, 1],
                 maximum,
-                &mut Work::new(work.visits() - 1),
+                &mut Work::new(Some(work.visits() - 1)),
                 edit_selected_payloads
             )
             .unwrap(),
@@ -125,7 +126,7 @@ fn cumulative_same_page_edits_admit_and_install_all_selected_nodes_together() {
             &test_ledger(),
             &[0, 1],
             maximum,
-            &mut Work::new(work.visits()),
+            &mut Work::new(Some(work.visits())),
             edit_selected_payloads,
         )
         .unwrap()
@@ -146,25 +147,8 @@ fn cumulative_same_page_edits_admit_and_install_all_selected_nodes_together() {
     }
 }
 
-#[test]
-fn cumulative_selection_validates_every_node_before_editing() {
-    let arena = prepared_arena();
-    let maximum = representation_charge(&arena);
-    for indices in [&[][..], &[0, 0], &[1, 0], &[0, 2]] {
-        assert!(arena
-            .prepare_retained_node_edits(
-                &test_ledger(),
-                indices,
-                maximum,
-                &mut Work::new(10_000),
-                |_| panic!("invalid selection must fail before callback")
-            )
-            .is_err());
-    }
-}
-
 fn representation_charge(arena: &NodeArena) -> Charge {
-    let mut work = Work::new(10_000);
+    let mut work = Work::new(Some(10_000));
     arena
         .hot
         .retained_heap_charge(&mut work)
@@ -191,7 +175,7 @@ fn delayed_retained_node_install_rejects_intervening_page_and_extent_changes() {
                 &test_ledger(),
                 &[0],
                 maximum,
-                &mut Work::new(PREPARATION_WORK),
+                &mut Work::new(Some(PREPARATION_WORK)),
                 edit_selected_payloads,
             )
             .unwrap()
@@ -206,7 +190,7 @@ fn delayed_retained_node_install_rejects_intervening_page_and_extent_changes() {
         } else {
             let edited = arena
                 .warm
-                .edit_with_retained_charge(1, &mut Work::new(10_000), |warm| {
+                .edit_with_retained_charge(1, &mut Work::new(Some(10_000)), |warm| {
                     warm.direct_invalidation_generation = 99
                 })
                 .unwrap();
@@ -258,7 +242,7 @@ fn retained_node_capacity_rejects_all_lanes_together_and_installs_at_exact_bound
             &test_ledger(),
             &[0],
             short,
-            &mut Work::new(PREPARATION_WORK),
+            &mut Work::new(Some(PREPARATION_WORK)),
             edit_selected_payloads,
         )
         .unwrap();
@@ -280,7 +264,7 @@ fn retained_node_capacity_rejects_all_lanes_together_and_installs_at_exact_bound
             &test_ledger(),
             &[0],
             charge,
-            &mut Work::new(PREPARATION_WORK),
+            &mut Work::new(Some(PREPARATION_WORK)),
             edit_selected_payloads,
         )
         .unwrap()
@@ -315,10 +299,13 @@ fn retained_node_denial_and_unwind_preserve_every_original_lane() {
         &mut expected.cold[0],
     );
     let maximum = representation_charge(&expected);
-    let early =
-        arena.prepare_retained_node_edits(&test_ledger(), &[0], maximum, &mut Work::new(0), |_| {
-            panic!("zero-budget edit ran")
-        });
+    let early = arena.prepare_retained_node_edits(
+        &test_ledger(),
+        &[0],
+        maximum,
+        &mut Work::new(Some(0)),
+        |_| panic!("zero-budget edit ran"),
+    );
     assert!(matches!(
         early,
         Err(RetainedNodeEditDenial::Accounting(
@@ -326,7 +313,7 @@ fn retained_node_denial_and_unwind_preserve_every_original_lane() {
         ))
     ));
     let sample = arena.clone();
-    let mut work = Work::new(PREPARATION_WORK);
+    let mut work = Work::new(Some(PREPARATION_WORK));
     assert!(matches!(
         sample
             .prepare_retained_node_edits(
@@ -344,7 +331,7 @@ fn retained_node_denial_and_unwind_preserve_every_original_lane() {
             &test_ledger(),
             &[0],
             maximum,
-            &mut Work::new(work.visits() - 1),
+            &mut Work::new(Some(work.visits() - 1)),
             edit_selected_payloads,
         )
         .unwrap();
@@ -362,7 +349,7 @@ fn retained_node_denial_and_unwind_preserve_every_original_lane() {
             &test_ledger(),
             &[0],
             maximum,
-            &mut Work::new(10_000),
+            &mut Work::new(Some(10_000)),
             |payloads| {
                 edit_selected_payloads(payloads);
                 panic!("detached node edit failed");
@@ -391,7 +378,7 @@ fn retained_node_denial_and_unwind_preserve_every_original_lane() {
             &test_ledger(),
             &[0],
             maximum,
-            &mut Work::new(10_000),
+            &mut Work::new(Some(10_000)),
             |_| panic!("unprepared edit ran")
         ),
         Err(RetainedNodeEditDenial::Lane(_))

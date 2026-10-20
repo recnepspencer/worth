@@ -13,13 +13,29 @@ pub(in crate::domain_computation) use retention::RetainedInvalidationCapacity;
 /// Explicit capacities for canonical delivery and derived invalidation state.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryInvalidationResourceInstallation {
-    pub maximum_marking_work: u64,
-    pub maximum_preparation_bytes: u64,
-    pub maximum_retained_bytes: u64,
+    pub maximum_marking_work: Option<u64>,
+    pub maximum_preparation_bytes: Option<u64>,
+    pub maximum_retained_bytes: Option<u64>,
     pub maximum_retained_positions: usize,
 }
 
 impl WorthQueryInvalidationResourceInstallation {
+    /// Optional caller byte ceilings, without an intrinsic source-marking work
+    /// ceiling. `None` preserves accounting but imposes no logical byte cap;
+    /// it is neither an allocation grant nor a guarantee of available memory.
+    pub const fn new(
+        maximum_preparation_bytes: Option<u64>,
+        maximum_retained_bytes: Option<u64>,
+        maximum_retained_positions: usize,
+    ) -> Self {
+        Self {
+            maximum_marking_work: None,
+            maximum_preparation_bytes,
+            maximum_retained_bytes,
+            maximum_retained_positions,
+        }
+    }
+
     pub const fn bounded(
         maximum_marking_work: u64,
         maximum_preparation_bytes: u64,
@@ -27,9 +43,9 @@ impl WorthQueryInvalidationResourceInstallation {
         maximum_retained_positions: usize,
     ) -> Self {
         Self {
-            maximum_marking_work,
-            maximum_preparation_bytes,
-            maximum_retained_bytes,
+            maximum_marking_work: Some(maximum_marking_work),
+            maximum_preparation_bytes: Some(maximum_preparation_bytes),
+            maximum_retained_bytes: Some(maximum_retained_bytes),
             maximum_retained_positions,
         }
     }
@@ -46,6 +62,10 @@ pub enum WorthQueryInvalidationResourceDenial {
         retained: u64,
         maximum: u64,
     },
+    RetentionCounterOverflow {
+        requested: u64,
+        retained: u64,
+    },
 }
 
 /// Shared managed retention custody. Cloning this binding shares capacity; it
@@ -61,13 +81,13 @@ impl WorthQueryInvalidationResources {
         installation: WorthQueryInvalidationResourceInstallation,
     ) -> Result<Self, WorthQueryInvalidationResourceDenial> {
         use WorthQueryInvalidationResourceDenial as Denial;
-        if installation.maximum_marking_work == 0 {
+        if installation.maximum_marking_work == Some(0) {
             return Err(Denial::ZeroMarkingWork);
         }
-        if installation.maximum_preparation_bytes == 0 {
+        if installation.maximum_preparation_bytes == Some(0) {
             return Err(Denial::ZeroPreparationCapacity);
         }
-        if installation.maximum_retained_bytes == 0 {
+        if installation.maximum_retained_bytes == Some(0) {
             return Err(Denial::ZeroRetentionCapacity);
         }
         if installation.maximum_retained_positions == 0 {
@@ -152,8 +172,8 @@ impl WorthQueryInvalidationResources {
         self.retention.retained_bytes()
     }
 
-    /// Reserve live custody within the hard ceiling. Predecessors remain
-    /// charged until their last holder actually releases them.
+    /// Reserve live custody within any supplied ceiling. Predecessors remain
+    /// charged until their last holder actually releases them, even without a cap.
     pub(in crate::domain_computation) fn reserve_retained_capacity(
         &self,
         bytes: u64,
@@ -175,6 +195,33 @@ impl WorthQueryInvalidationResources {
 mod control_scope_tests {
     use super::*;
     use crate::domain_computation::execution_observation::WorthQueryExecutionObservation;
+    #[test]
+    fn optional_byte_ceilings_preserve_absence_and_reject_explicit_zero() {
+        let installation = WorthQueryInvalidationResourceInstallation::new(None, None, 1);
+        let resources = WorthQueryInvalidationResources::install(installation).unwrap();
+        assert_eq!(resources.installation(), installation);
+        assert_eq!(resources.preflight_budget().maximum_preparation_bytes, None);
+        assert_eq!(resources.preflight_budget().maximum_work_visits, None);
+        for (installation, denial) in [
+            (
+                WorthQueryInvalidationResourceInstallation::new(Some(0), None, 1),
+                WorthQueryInvalidationResourceDenial::ZeroPreparationCapacity,
+            ),
+            (
+                WorthQueryInvalidationResourceInstallation::new(None, Some(0), 1),
+                WorthQueryInvalidationResourceDenial::ZeroRetentionCapacity,
+            ),
+            (
+                WorthQueryInvalidationResourceInstallation::new(None, None, 0),
+                WorthQueryInvalidationResourceDenial::ZeroPositionCapacity,
+            ),
+        ] {
+            assert!(
+                matches!(WorthQueryInvalidationResources::install(installation), Err(actual) if actual == denial)
+            );
+        }
+    }
+
     #[test]
     fn a_delivery_fault_cannot_cross_receiver_ledgers() {
         let _guard = WorthQueryExecutionObservation::install_on_this_thread();

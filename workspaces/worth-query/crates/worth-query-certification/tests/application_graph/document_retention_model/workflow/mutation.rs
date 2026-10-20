@@ -1,3 +1,6 @@
+use worth_query_decl::facade::application_operation::{
+    ApplicationCandidatePolicy, ApplicationCandidateRequirements,
+};
 use worth_query_host::facade::declaration::{
     application_operation::{
         ApplicationCandidateCardinalityCeiling, ApplicationCandidateResourceCeiling,
@@ -87,14 +90,13 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowDefinitionA
         "worth.query.certification.workflow-definition-publication.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const WORKFLOW_CONTROL: bool = true;
-    const CANDIDATES:
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
             // A 10k control graph needs <30k creates, <68k links and <100k
             // writes while keeping the installed aggregate below 200k items.
             ApplicationCandidateCardinalityCeiling::fixed(30_000, 0, 68_000, 2, 100_000, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(128 * 1024 * 1024),
-        );
+        ));
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -202,12 +204,11 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowInstanceSta
         "worth.query.certification.workflow-instance-start.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const WORKFLOW_CONTROL: bool = true;
-    const CANDIDATES:
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(64, 0, 128, 2, 512, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(2 * 1024 * 1024),
-        );
+        ));
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,

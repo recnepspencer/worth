@@ -148,7 +148,21 @@ impl WorthQueryProgramAdoptionRequirements {
         &self,
         node: &crate::application_program::WorthQueryWorkflowNodeDependency,
     ) -> Option<&WorthQueryWorkflowDependencyName> {
-        node.program_names().find_map(|name| {
+        self.changed_workflow_dependency(node.program_names())
+    }
+
+    pub fn changed_workflow_global_action_dependency(
+        &self,
+        action: &crate::application_program::WorthQueryWorkflowGlobalActionDependency,
+    ) -> Option<&WorthQueryWorkflowDependencyName> {
+        self.changed_workflow_dependency(action.program_names())
+    }
+
+    fn changed_workflow_dependency<'a>(
+        &self,
+        mut names: impl Iterator<Item = &'a str>,
+    ) -> Option<&WorthQueryWorkflowDependencyName> {
+        names.find_map(|name| {
             self.changed_workflow_dependencies
                 .binary_search_by(|changed| changed.as_str().cmp(name))
                 .ok()

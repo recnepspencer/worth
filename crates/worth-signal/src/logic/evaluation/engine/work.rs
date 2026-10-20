@@ -41,7 +41,7 @@ impl EvaluationWork<'_, '_> {
 
     pub(crate) fn with_waiter_limit<R>(
         &mut self,
-        maximum_waiter_visits: usize,
+        maximum_waiter_visits: Option<usize>,
         prepare: impl FnOnce(&mut RetainedStoragePreparation) -> Result<R, SignalError>,
     ) -> Result<R, SignalError> {
         match self {
@@ -51,22 +51,39 @@ impl EvaluationWork<'_, '_> {
             )),
             Self::Conditional(work) | Self::RequestPreparation { work, .. } => {
                 let maximum_attempt_visits = work.maximum_visits();
-                let mut limit = work.limit_additional_visits(maximum_waiter_visits);
-                let outer_limited = limit.outer_limited();
-                prepare(&mut limit).map_err(|error| match error {
-                    SignalError::WaiterResolutionWorkExhausted { .. } if outer_limited => {
-                        SignalError::ConditionalEvaluationWorkExhausted {
+                let (result, outer_limited) = if let Some(maximum) = maximum_waiter_visits {
+                    let mut limit = work
+                        .limit_additional_visits(maximum)
+                        .map_err(SignalError::retained_storage_denied)?;
+                    let outer_limited = limit.outer_limited();
+                    (prepare(&mut limit), outer_limited)
+                } else {
+                    (prepare(work), true)
+                };
+                result.map_err(|error| {
+                    match (error, maximum_attempt_visits, maximum_waiter_visits) {
+                        (
+                            SignalError::WaiterResolutionWorkExhausted { .. },
+                            Some(maximum_attempt_visits),
+                            _,
+                        ) if outer_limited => SignalError::ConditionalEvaluationWorkExhausted {
                             maximum_visits: maximum_attempt_visits,
-                        }
-                    }
-                    SignalError::WaiterResolutionWorkExhausted { .. } => {
-                        SignalError::WaiterResolutionWorkExhausted {
+                        },
+                        (
+                            SignalError::WaiterResolutionWorkExhausted { .. },
+                            _,
+                            Some(maximum_waiter_visits),
+                        ) => SignalError::WaiterResolutionWorkExhausted {
                             maximum_visits: maximum_waiter_visits,
-                        }
+                        },
+                        (error, _, _) => error,
                     }
-                    error => error,
                 })
             }
         }
     }
 }
+
+#[cfg(test)]
+#[path = "work_tests.rs"]
+mod tests;

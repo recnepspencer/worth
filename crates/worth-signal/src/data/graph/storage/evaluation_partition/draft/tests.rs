@@ -58,7 +58,7 @@ fn rejected_output_and_retry_keep_distinct_issued_identities() {
     let mut partition = SignalEvaluationPartition::retain_basis_storage(&mut graph);
     let draft = ConditionalEvaluationDraft::begin(
         &mut partition,
-        &mut crate::data::retained_storage::RetainedStoragePreparation::new(1_000_000),
+        &mut crate::data::retained_storage::RetainedStoragePreparation::new(Some(1_000_000)),
     )
     .unwrap();
     let rejected_ids = perform_output(draft.partition, &mut graph, node, 7);
@@ -84,7 +84,7 @@ fn rejected_output_and_retry_keep_distinct_issued_identities() {
         .unwrap();
     let draft = ConditionalEvaluationDraft::begin(
         &mut partition,
-        &mut crate::data::retained_storage::RetainedStoragePreparation::new(1_000_000),
+        &mut crate::data::retained_storage::RetainedStoragePreparation::new(Some(1_000_000)),
     )
     .unwrap();
     let retry_ids = perform_output(draft.partition, &mut graph, node, 9);

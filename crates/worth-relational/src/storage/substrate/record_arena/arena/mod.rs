@@ -100,6 +100,19 @@ impl<K: RecordKind> RecordArena<K> {
         self.slots.len()
     }
 
+    pub(crate) fn try_occupied_slots<Stop>(
+        &self,
+        prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<
+        std::iter::Map<
+            crate::storage::substrate::SharedMapIter<'_, u64, usize>,
+            fn((&u64, &usize)) -> usize,
+        >,
+        Stop,
+    > {
+        Ok(self.slots.try_occupied_slots(prepare)?)
+    }
+
     pub(crate) fn occupied_slots(&self) -> Vec<usize> {
         self.slots.occupied_slots()
     }

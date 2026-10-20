@@ -30,13 +30,14 @@ pub use recipe::{
 };
 pub use representation_identity::{ApplicationFrameIdentity, ApplicationUnitIdentity};
 pub use scalar::{
-    ApplicationIdentityScalarValueBinding, ApplicationReadableScalarValueBinding,
-    ApplicationScalarValueBinding, ApplicationSignedAggregateValueBinding,
-    ApplicationValueDecodeAvailable, ApplicationValueDecodePosture,
-    ApplicationValueDecodeUnavailable, ApplicationValueIdentityPosture, ApplicationValueIsIdentity,
-    ApplicationValueIsNotIdentity, ApplicationValueSignedAggregateAvailable,
-    ApplicationValueSignedAggregatePosture, ApplicationValueSignedAggregateUnavailable,
-    ErasedApplicationSignedAggregateDecode, ErasedApplicationValueAdmittedDecode,
-    ErasedApplicationValueDecode,
+    ApplicationIdentityScalarValueBinding, ApplicationNativeInputAdmissionDenial,
+    ApplicationNativeInputDecodeProfile, ApplicationNativeInputDecodeResources,
+    ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
+    ApplicationSignedAggregateValueBinding, ApplicationValueDecodeAvailable,
+    ApplicationValueDecodePosture, ApplicationValueDecodeUnavailable,
+    ApplicationValueIdentityPosture, ApplicationValueIsIdentity, ApplicationValueIsNotIdentity,
+    ApplicationValueSignedAggregateAvailable, ApplicationValueSignedAggregatePosture,
+    ApplicationValueSignedAggregateUnavailable, ErasedApplicationSignedAggregateDecode,
+    ErasedApplicationValueAdmittedDecode, ErasedApplicationValueDecode,
 };
 pub use structured::ApplicationStructuredValueBinding;

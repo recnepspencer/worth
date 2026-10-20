@@ -2,6 +2,9 @@
 
 #[derive(Debug)]
 pub(super) enum DenialCause {
+    SigningLifecycleAttempt(
+        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    ),
     SourceRebase(crate::domain_computation::primary_graph::provider::PreparedRebaseDenial),
     InvariantExecution(crate::domain_computation::WorthQueryInvariantExecutionFailure),
     ProviderSession(crate::domain_computation::WorthQueryProviderSessionFailure),

@@ -83,8 +83,8 @@ fn install(
         .activate(
             publisher.clone(),
             CompanionPreflightBudget {
-                maximum_work_visits: 1_000_000,
-                maximum_preparation_bytes: 32 * 1024 * 1024,
+                maximum_work_visits: Some(1_000_000),
+                maximum_preparation_bytes: Some(32 * 1024 * 1024),
             },
         )
         .unwrap();

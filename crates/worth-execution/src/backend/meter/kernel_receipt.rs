@@ -102,9 +102,12 @@ impl KernelContext<'_, '_> {
         }
         let remaining = {
             let meter = self.meter.borrow();
-            meter.limits.ceiling.saturating_sub(meter.work)
+            meter
+                .limits
+                .ceiling
+                .map(|ceiling| ceiling.saturating_sub(meter.work))
         };
-        if receipt.0.work <= remaining {
+        if remaining.is_none_or(|remaining| receipt.0.work <= remaining) {
             self.checkpoint(receipt.0.work)
         } else {
             for (units, count) in &receipt.0.steps {

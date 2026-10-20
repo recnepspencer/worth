@@ -236,7 +236,7 @@ fn producer_resource_profile_roundtrips() {
     let mut accepted = accepted_prefix(b"producer", 0, [0; 32]);
     accepted.truncate(accepted.len() - 17);
     accepted.extend_from_slice(&super::resources::encode_profile(
-        Some(crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources::new(4_096, 8_192)),
+        Some(crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources::new(Some(4_096), 8_192)),
     ));
     accepted.extend_from_slice(&0_u64.to_be_bytes());
     accepted.extend_from_slice(&0_u16.to_be_bytes());
@@ -245,7 +245,10 @@ fn producer_resource_profile_roundtrips() {
         .decode()
         .expect("current resource evidence decodes");
     let profile = decoded.accepted_outputs[0].resources.unwrap();
-    assert_eq!((profile.work(), profile.retained_bytes()), (4_096, 8_192));
+    assert_eq!(
+        (profile.work(), profile.retained_bytes()),
+        (Some(4_096), 8_192)
+    );
 }
 
 #[test]

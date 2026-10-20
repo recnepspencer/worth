@@ -9,7 +9,7 @@ use crate::data::retained_storage::{
 
 impl worth_execution::ChargedBytes for PreparedEvaluation {
     fn additional_charged_bytes(&self) -> u64 {
-        self.retained_heap_charge(&mut Preparation::new(usize::MAX))
+        self.retained_heap_charge(&mut Preparation::new(None))
             .map_or(u64::MAX, Charge::bytes)
     }
 }

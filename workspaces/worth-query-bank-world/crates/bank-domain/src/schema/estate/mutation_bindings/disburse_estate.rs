@@ -1,3 +1,5 @@
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
+use worth_query_decl::facade::application_operation::ApplicationCandidateRequirements;
 use worth_query_decl::facade::{
     application_operation::{
         ApplicationCandidateCardinalityCeiling, ApplicationCandidateResourceCeiling,
@@ -81,12 +83,11 @@ impl ApplicationMutationBinding<BankSchema> for DisburseEstateMutationBinding {
     const HANDLER_IDENTITY: &'static str = "bank.estate.disburse.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "bank.application-mutation-client-key.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES:
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(3, 0, 4, 0, 12, 2),
             ApplicationCandidateResourceCeiling::representation_bytes(32768),
-        );
+        ));
 
     fn scope_field() -> ApplicationFieldRef<
         BankSchema,

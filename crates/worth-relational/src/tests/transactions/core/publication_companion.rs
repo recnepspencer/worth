@@ -124,8 +124,8 @@ fn first_write_companion_mints_from_selected_source_without_runtime_reentry() {
         .activate(
             consumer,
             CompanionPreflightBudget {
-                maximum_work_visits: 16,
-                maximum_preparation_bytes: 4_096,
+                maximum_work_visits: Some(16),
+                maximum_preparation_bytes: None,
             },
         )
         .expect("participant is active without a caller-selected branch cell");
@@ -180,8 +180,8 @@ fn direct_publication_invokes_required_companion_and_positions_its_root() {
                 calls: Arc::clone(&calls),
             }),
             CompanionPreflightBudget {
-                maximum_work_visits: 16,
-                maximum_preparation_bytes: 4_096,
+                maximum_work_visits: Some(16),
+                maximum_preparation_bytes: None,
             },
         )
         .expect("required participant is active");
@@ -287,8 +287,8 @@ fn prepared_derived_image_keeps_conflict_and_retired_drop_custody() {
                 calls: Arc::new(AtomicUsize::new(0)),
             }),
             CompanionPreflightBudget {
-                maximum_work_visits: 16,
-                maximum_preparation_bytes: 4_096,
+                maximum_work_visits: Some(16),
+                maximum_preparation_bytes: None,
             },
         )
         .expect("the cell stays registered");

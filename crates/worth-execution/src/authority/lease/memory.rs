@@ -36,7 +36,7 @@ impl ExecutionResourceLease<'_> {
 
     /// Observes the room left by every ancestor and the process. It is not a
     /// reservation: admission checks those limits again under the ledger lock.
-    pub fn available_memory_bytes(&self) -> u64 {
+    pub fn available_memory_bytes(&self) -> Option<u64> {
         let ledger = self
             .authority
             .ledger
@@ -178,7 +178,7 @@ mod room_tests {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::MIN, bytes, 100),
+                ExecutionBudget::new(NonZeroUsize::MIN, Some(bytes), Some(100)),
             ),
             cancellation: crate::CancellationToken::new(),
             deadline: None,
@@ -186,20 +186,61 @@ mod room_tests {
         let parent = ExecutionResourceLease::serial(request(1_000)).unwrap();
         let parent_hold = parent.reserve_memory(300).unwrap();
         let child = parent.child(request(800)).unwrap();
-        assert_eq!(child.available_memory_bytes(), 700);
+        assert_eq!(child.available_memory_bytes(), Some(700));
         let child_hold = child.reserve_memory(100).unwrap();
-        assert_eq!(child.available_memory_bytes(), 600);
+        assert_eq!(child.available_memory_bytes(), Some(600));
         let sibling_hold = parent.reserve_memory(200).unwrap();
-        assert_eq!(child.available_memory_bytes(), 400);
+        assert_eq!(child.available_memory_bytes(), Some(400));
         assert_eq!(
             child.reserve_memory(401).unwrap_err(),
             MemoryLimitDenial::refused(401, 400, crate::MemoryLimitLevel::Policy { ancestor: 1 })
         );
         drop(sibling_hold);
-        assert_eq!(child.available_memory_bytes(), 600);
+        assert_eq!(child.available_memory_bytes(), Some(600));
         drop(child_hold);
-        assert_eq!(child.available_memory_bytes(), 700);
+        assert_eq!(child.available_memory_bytes(), Some(700));
         drop(parent_hold);
-        assert_eq!(child.available_memory_bytes(), 800);
+        assert_eq!(child.available_memory_bytes(), Some(800));
+    }
+}
+
+#[cfg(test)]
+mod optional_room_tests {
+    use super::*;
+    use worth_foundational::{
+        DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+    };
+    #[test]
+    fn absent_child_ceiling_inherits_the_original_finite_lease_lineage() {
+        let request = |memory| super::super::LeaseRequest {
+            policy: ExecutionRequestPolicy::new(
+                ExecutionPosture::Serial,
+                DeterminismContract::CanonicalBitwise,
+                ExecutionBudget::new(std::num::NonZeroUsize::MIN, memory, None),
+            ),
+            cancellation: crate::CancellationToken::new(),
+            deadline: None,
+        };
+        let parent = ExecutionResourceLease::serial(request(Some(19))).unwrap();
+        let child = parent.child(request(None)).unwrap();
+        assert_eq!(child.policy().budget().charged_memory_bytes(), None);
+        let mut held = child.reserve_memory(13).unwrap();
+        let sibling = parent.reserve_memory(5).unwrap();
+        assert_eq!(child.available_memory_bytes(), Some(1));
+        assert_eq!(
+            held.resize(15),
+            Err(crate::MemoryLimitDenial::Capacity {
+                requested: 15,
+                admitted: 14,
+                level: crate::MemoryLimitLevel::Policy { ancestor: 1 },
+            })
+        );
+        assert_eq!(held.bytes(), 13);
+        assert_eq!(parent.charged_memory_bytes(), 18);
+        drop(sibling);
+        held.resize(19).unwrap();
+        drop(held);
+        assert_eq!(parent.charged_memory_bytes(), 0);
+        assert_eq!(child.available_memory_bytes(), Some(19));
     }
 }

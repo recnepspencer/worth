@@ -25,7 +25,7 @@ fn decision_projection_basis(
         attempt,
         class,
         dependencies,
-        &mut crate::data::retained_storage::RetainedStoragePreparation::new(usize::MAX),
+        &mut crate::data::retained_storage::RetainedStoragePreparation::new(None),
     )
     .unwrap()
 }
@@ -252,7 +252,7 @@ fn projection_admission_covers_long_text_before_rendering_and_keeps_installed_me
     }];
     let snapshot = "snapshot-λ|=:".repeat(300);
     let execution = "execution-λ|=:".repeat(200);
-    let mut full = RetainedStoragePreparation::new(1_000_000);
+    let mut full = RetainedStoragePreparation::new(Some(1_000_000));
     let material = super::decision_projection_basis(
         &contract,
         &snapshot,
@@ -267,7 +267,7 @@ fn projection_admission_covers_long_text_before_rendering_and_keeps_installed_me
     assert!(material.contains(&format!("snapshot={}:{}", snapshot.len(), snapshot)));
     let consumed = full.visits();
     for limit in [consumed - 1, consumed] {
-        let mut work = RetainedStoragePreparation::new(limit);
+        let mut work = RetainedStoragePreparation::new(Some(limit));
         let result = super::decision_projection_basis(
             &contract,
             &snapshot,

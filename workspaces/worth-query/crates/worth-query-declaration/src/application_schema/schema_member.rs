@@ -65,7 +65,7 @@ pub enum ApplicationSchemaMember {
         major: u16,
         minor: u16,
         execution_point: super::ApplicationInvariantExecutionPoint,
-        maximum_work_units: std::num::NonZeroU64,
+        maximum_work_units: Option<std::num::NonZeroU64>,
         enforcement: super::ApplicationInvariantEnforcement,
         required_groups: Vec<super::ApplicationInvariantGroup>,
         read_closure: Vec<super::ApplicationInvariantScopeTarget>,
@@ -147,6 +147,10 @@ pub enum ApplicationSchemaMember {
     OperationProgram {
         operation: String,
         target: ApplicationOperationProgramTarget,
+    },
+    OperationBody {
+        operation: String,
+        body: super::ApplicationOperationBodyProgram,
     },
     OperationDecisionRead {
         operation: String,

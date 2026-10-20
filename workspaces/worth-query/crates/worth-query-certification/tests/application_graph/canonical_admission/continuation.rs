@@ -33,7 +33,7 @@ fn first_page(
         .query(query::ReadPage {
             identity: "root".to_owned(),
         })
-        .page(NonZeroUsize::MIN, NonZeroUsize::new(5_120).unwrap())
+        .page(NonZeroUsize::MIN, Some(NonZeroUsize::new(5_120).unwrap()))
 }
 
 fn assert_funded_pages(host: &host::Host) {
@@ -64,7 +64,11 @@ fn assert_funded_pages(host: &host::Host) {
         .query(query::ReadPage {
             identity: "root".to_owned(),
         })
-        .resume(token, NonZeroUsize::MIN, NonZeroUsize::new(5_120).unwrap())
+        .resume(
+            token,
+            NonZeroUsize::MIN,
+            Some(NonZeroUsize::new(5_120).unwrap()),
+        )
         .unwrap();
     assert_eq!(page.rows().len(), 1);
     assert_eq!(

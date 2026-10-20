@@ -32,7 +32,7 @@ fn waiter_draft_resolves_diamond_without_writing_live_nodes_or_index() {
     let original_warm = graph.arena.warm.clone();
     // Generous measurement allowance includes physical index edits; the exact
     // and one-short twins below still establish the actual admission boundary.
-    let mut work = Work::new(100_000);
+    let mut work = Work::new(Some(100_000));
     let prepared = graph
         .prepare_pending_revalidation_resolution(producer, BTreeMap::new(), &mut work)
         .unwrap();
@@ -49,7 +49,7 @@ fn waiter_draft_resolves_diamond_without_writing_live_nodes_or_index() {
         .prepare_pending_revalidation_resolution(
             producer,
             BTreeMap::new(),
-            &mut Work::new(work.visits()),
+            &mut Work::new(Some(work.visits())),
         )
         .unwrap();
     assert_eq!(exact.buckets, prepared.buckets);
@@ -58,7 +58,7 @@ fn waiter_draft_resolves_diamond_without_writing_live_nodes_or_index() {
         graph.prepare_pending_revalidation_resolution(
             producer,
             BTreeMap::new(),
-            &mut Work::new(work.visits() - 1)
+            &mut Work::new(Some(work.visits() - 1))
         ),
         Err(PendingRevalidationPreparationDenial::Storage(
             RetainedStoragePreparationDenial::WorkExhausted { .. }
@@ -99,7 +99,7 @@ fn projected_new_cause_and_structural_obligation_stop_stability_propagation() {
             .prepare_pending_revalidation_resolution(
                 producer,
                 BTreeMap::from([(right, projected)]),
-                &mut Work::new(100_000),
+                &mut Work::new(Some(100_000)),
             )
             .unwrap();
         assert_eq!(prepared.nodes[&left].state, NodeState::Clean);
@@ -139,7 +139,7 @@ fn stale_candidates_consume_work_and_pruning_stays_in_the_draft() {
     // Membership can outlive the pending obligation. Use the same membership
     // owner as ordinary registration to exercise its stale-query contract.
     graph.replace_pending_revalidation_waiters(stale, &[], &[producer]);
-    let mut baseline_work = Work::new(100_000);
+    let mut baseline_work = Work::new(Some(100_000));
     let prepared = graph
         .prepare_pending_revalidation_resolution(producer, BTreeMap::new(), &mut baseline_work)
         .unwrap();
@@ -151,13 +151,17 @@ fn stale_candidates_consume_work_and_pruning_stays_in_the_draft() {
         .unwrap()
         .contains(&stale));
     assert!(matches!(
-        graph.prepare_pending_revalidation_resolution(producer, BTreeMap::new(), &mut Work::new(1)),
+        graph.prepare_pending_revalidation_resolution(
+            producer,
+            BTreeMap::new(),
+            &mut Work::new(Some(1))
+        ),
         Err(PendingRevalidationPreparationDenial::Storage(
             RetainedStoragePreparationDenial::WorkExhausted { .. }
         ))
     ));
     graph.replace_pending_revalidation_waiters(stale, &[producer], &[]);
-    let mut without_stale = Work::new(100_000);
+    let mut without_stale = Work::new(Some(100_000));
     graph
         .prepare_pending_revalidation_resolution(producer, BTreeMap::new(), &mut without_stale)
         .unwrap();
@@ -166,7 +170,7 @@ fn stale_candidates_consume_work_and_pruning_stays_in_the_draft() {
 
 #[test]
 fn waiter_sequence_overflow_denies_without_consuming_or_wrapping_work() {
-    let mut work = Work::new(100);
+    let mut work = Work::new(Some(100));
     work.reserve_visits(7).unwrap();
     assert!(matches!(
         preparation_work::sequence_growth(&mut work, usize::MAX, 1),

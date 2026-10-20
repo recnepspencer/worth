@@ -13,8 +13,7 @@ impl<Schema, Operation, Input, Scope>
     pub(in crate::domain_computation::primary_graph) fn begin_reserved_effect_program(
         self,
         requested: ApplicationCandidateRequirements,
-        contract: ApplicationCandidateContract,
-        runtime_profile: crate::domain_computation::execution_runtime::WorthQueryApplicationCandidateResourceProfile,
+        contract: ApplicationCandidatePolicy,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>,
@@ -33,48 +32,26 @@ impl<Schema, Operation, Input, Scope>
             .admission
             .allowed_graph_contract()
             .workflow_settlement_ceiling();
-        let (sidecar_items, sidecar_bytes) = sidecar.map_or(Ok((0, 0)), |requirements| {
-            let c = requirements.cardinality();
-            let count = [
-                c.maximum_creates(),
-                c.maximum_deletes(),
-                c.maximum_links(),
-                c.maximum_unlinks(),
-                c.maximum_writes(),
-                c.maximum_emits(),
-            ]
-            .into_iter()
-            .try_fold(0u64, |n, v| n.checked_add(u64::try_from(v).ok()?))
+        let host = self
+            .admission
+            .graph_work()
+            .candidate_host_envelope()
             .ok_or_else(candidate_representation_denial)?;
-            Ok::<_, WorthQueryApplicationAttemptDenial>((
-                count,
-                u64::try_from(
-                    requirements
-                        .resources()
-                        .maximum_retained_representation_bytes(),
-                )
-                .map_err(|_| candidate_representation_denial())?,
-            ))
-        })?;
-        let reservation = (|| {
-            WorthQueryCandidateReservation::admit(
-                requested,
-                contract,
-                runtime_profile
-                    .maximum_items()
-                    .checked_sub(sidecar_items)
-                    .ok_or_else(candidate_representation_denial)?,
-                runtime_profile
-                    .maximum_retained_representation_bytes()
-                    .checked_sub(sidecar_bytes)
-                    .ok_or_else(candidate_representation_denial)?,
-            )
-        })();
+        let reservation = WorthQueryCandidateReservation::admit(
+            requested, contract,
+            host.optional_scale_ceiling(worth_query_declaration::facade::domain_computation::WorthQuerySemanticScaleAxis::CandidateItems),
+            host.optional_resource_ceiling(WorthQueryResourceDimension::CandidateRetainedRepresentationBytes),
+        );
         self.admission
             .validate_current_authority()
             .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         let reservation = reservation?;
         let capacity = reservation.total_items();
+        let (effects, effect_backing_memory) = super::candidate_backing::allocate(
+            capacity,
+            allocation_policy,
+            self.admission.publication_request(),
+        )?;
         self.admission
             .validate_current_authority()
             .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
@@ -90,7 +67,7 @@ impl<Schema, Operation, Input, Scope>
             read_set: self,
             layout,
             program: Arc::new(()),
-            effects: Vec::with_capacity(capacity),
+            effects,
             field_write_positions: FieldWriteIndex::default(),
             keys: BTreeSet::new(),
             emission_retained_bytes: 0,
@@ -98,6 +75,7 @@ impl<Schema, Operation, Input, Scope>
             conditional_definition: None,
             candidate_reservation: Some(reservation),
             candidate_funding: Some(candidate_funding),
+            effect_backing_memory,
             output_correspondence: Default::default(),
             creation_partition: None,
         })

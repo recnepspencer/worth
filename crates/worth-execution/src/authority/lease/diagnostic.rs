@@ -34,7 +34,7 @@ impl ExecutionResourceLease<'_> {
                 parent: node.parent.as_deref().map(detached),
                 max_workers: node.max_workers,
                 posture: node.posture,
-                charged_memory_bytes: u64::MAX,
+                charged_memory_bytes: None,
                 deadline: node.deadline,
                 cancellation: node.cancellation.clone(),
             })
@@ -42,7 +42,7 @@ impl ExecutionResourceLease<'_> {
         let policy = ExecutionRequestPolicy::new(
             self.policy.posture(),
             self.policy.determinism(),
-            ExecutionBudget::new(self.policy.budget().max_workers(), u64::MAX, u64::MAX),
+            ExecutionBudget::new(self.policy.budget().max_workers(), None, None),
         );
         DiagnosticResourcesForTest {
             authority: ExecutionAuthority {
@@ -92,11 +92,11 @@ mod tests {
     fn a_diagnostic_detaches_and_restores_the_invoking_worker() {
         let lease = ExecutionResourceLease::serial(request(1, 65_536, 100)).unwrap();
         let foreign = ExecutionResourceLease::serial(request(1, 65_536, 100)).unwrap();
-        let ((), report) = ExecutionWorkCeiling::new(100)
+        let ((), report) = ExecutionWorkCeiling::new(Some(100))
             .run(&lease, || {
-                let ((), diagnostic) = ExecutionWorkCeiling::new(100)
+                let ((), diagnostic) = ExecutionWorkCeiling::new(Some(100))
                     .run_detached_for_test(&lease, |diagnostic| {
-                        ExecutionWorkCeiling::new(100)
+                        ExecutionWorkCeiling::new(Some(100))
                             .run_with_checkpoint(Some(diagnostic), None, |context| {
                                 context.checkpoint(3).unwrap();
                             })
@@ -110,7 +110,7 @@ mod tests {
                     "the diagnostic restores the invoking worker's lineage fence"
                 );
                 assert_eq!(
-                    ExecutionWorkCeiling::new(100).run_detached_for_test(&lease, |_| {
+                    ExecutionWorkCeiling::new(Some(100)).run_detached_for_test(&lease, |_| {
                         panic!("diagnostic panic");
                     }),
                     Err(WorkCeilingDenial::Panicked)

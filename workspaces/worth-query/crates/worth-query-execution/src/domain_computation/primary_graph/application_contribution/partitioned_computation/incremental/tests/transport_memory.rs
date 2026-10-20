@@ -33,14 +33,20 @@ fn an_incremental_transport_fits_its_serial_tree_capacity_exactly() {
     }).unwrap();
     let (expected, capacity) = quoted.expect("the actual prepared transport was observed");
     for short in [0, 1] {
-        let budget = SerialMemoryBudget::new(expected - short);
+        let budget = SerialMemoryBudget::new(Some(expected - short));
         let reservation = budget.reserve(capacity);
         if short == 0 {
             drop(reservation.expect("incremental serial tree capacity fits exactly"));
         } else {
             let denial = reservation.expect_err("one byte under the serial capacity refuses");
-            assert_eq!(denial.requested, expected);
-            assert_eq!(denial.admitted, expected - 1);
+            assert_eq!(
+                denial,
+                worth_execution::MemoryLimitDenial::Capacity {
+                    requested: expected,
+                    admitted: expected - 1,
+                    level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
+                }
+            );
         }
         assert_eq!(budget.charged_memory_bytes(), 0);
     }

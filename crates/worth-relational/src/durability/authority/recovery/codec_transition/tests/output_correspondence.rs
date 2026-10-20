@@ -179,7 +179,7 @@ fn companion_original_funding_and_cancellation_refuse_without_effects_then_fresh
     let (mut target, recovered, selected, _transaction) = staged(execution, &world);
     let before = capture(&target);
     let limited = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(0),
+        worth_execution::SerialMemoryBudget::new(Some(0)),
         worth_execution::CancellationSource::new().token(),
         None,
     );
@@ -204,7 +204,7 @@ fn companion_original_funding_and_cancellation_refuse_without_effects_then_fresh
     );
     let cancel = worth_execution::CancellationSource::new();
     let stopped = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+        worth_execution::SerialMemoryBudget::new(Some(64 * 1024 * 1024)),
         cancel.token(),
         None,
     );

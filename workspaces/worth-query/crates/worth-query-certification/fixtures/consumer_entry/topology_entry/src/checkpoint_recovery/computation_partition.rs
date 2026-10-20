@@ -124,6 +124,15 @@ region_totals!(
     DeterministicPartitioned,
     bytes usize::MAX
 );
+// An explicit caller-memory refusal, independently of arithmetic overflow.
+const PARTITION_MEMORY_POLICY_BYTES: u64 = 128 * 1024 * 1024;
+const OVER_POLICY_DECLARED_BYTES: usize = PARTITION_MEMORY_POLICY_BYTES as usize + 1;
+region_totals!(
+    OverPolicyBytesTotals,
+    RegionKey,
+    DeterministicPartitioned,
+    bytes OVER_POLICY_DECLARED_BYTES
+);
 region_totals!(ProbedTotals, probe::ProbeKey, DeterministicPartitioned);
 
 /// Which computation a region totals program declares, and which owner binding

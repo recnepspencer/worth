@@ -74,23 +74,24 @@ impl ApplicationArtifactDependency {
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ApplicationArtifactResourceCeiling {
-    maximum_work: usize,
-    maximum_retained_bytes: usize,
+    maximum_work: Option<usize>,
+    maximum_retained_bytes: Option<usize>,
 }
 
 impl ApplicationArtifactResourceCeiling {
-    pub const fn new(maximum_work: usize, maximum_retained_bytes: usize) -> Self {
+    pub const fn new(maximum_work: Option<usize>, maximum_retained_bytes: Option<usize>) -> Self {
         Self {
             maximum_work,
             maximum_retained_bytes,
         }
     }
 
-    pub const fn maximum_work(self) -> usize {
+    pub const fn maximum_work(self) -> Option<usize> {
         self.maximum_work
     }
 
-    pub const fn maximum_retained_bytes(self) -> usize {
+    /// An absent artifact policy leaves the receiving host ceiling unchanged.
+    pub const fn maximum_retained_bytes(self) -> Option<usize> {
         self.maximum_retained_bytes
     }
 }

@@ -15,8 +15,8 @@ impl AdmittedSignalRuntimePolicy {
         request: SignalRuntimePolicyRequest,
     ) -> Result<Self, SignalRuntimePolicyAdmissionDenial> {
         let policy = request.policy();
-        if policy.maximum_waiter_resolution_visits == 0
-            || policy.maximum_upstream_dependency_visits == 0
+        if policy.maximum_waiter_resolution_visits == Some(0)
+            || policy.maximum_upstream_dependency_visits == Some(0)
             || !policy.conditional_evaluation_budget.is_valid()
             || !policy.conditional_temporal_budget.is_valid()
             || policy.parallel_admission.throughput_min_parallel_tasks == 0

@@ -148,17 +148,17 @@ fn limits<Schema: BirthSchema>() -> WorthQueryInMemoryApplicationLimits {
     let defaults = WorthQueryApplicationCandidateResourceProfile::default();
     let required_bytes = u64::try_from(
         <Binding<Schema, false> as ApplicationMutationBinding<Schema>>::CANDIDATES
-            .fixed_requirements()
+            .finite_requirements()
             .expect("fixed candidate contract")
             .resources()
             .maximum_retained_representation_bytes(),
     )
     .expect("the real producer candidate requirement fits the host resource type");
-    let candidates = WorthQueryApplicationCandidateResourceProfile::physical_resources(
+    let candidates = WorthQueryApplicationCandidateResourceProfile::policy(
         defaults.maximum_items(),
         defaults
             .maximum_retained_representation_bytes()
-            .max(required_bytes),
+            .map(|bytes| bytes.max(required_bytes)),
     )
     .expect("the default host capacity and declared producer requirement are nonzero");
     WorthQueryInMemoryApplicationLimits::new(

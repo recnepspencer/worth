@@ -39,14 +39,16 @@ mod tests {
             .unwrap()
             .clone();
         let original = value.clone();
-        let before = value.retained_heap_charge(&mut Work::new(10000)).unwrap();
+        let before = value
+            .retained_heap_charge(&mut Work::new(Some(10000)))
+            .unwrap();
         let mut delta = 0;
         for field in [&mut value.schema_version, &mut value.compatibility_digest] {
             delta += grow_string(field);
         }
         assert_eq!(
             value
-                .retained_heap_charge(&mut Work::new(10000))
+                .retained_heap_charge(&mut Work::new(Some(10000)))
                 .unwrap()
                 .bytes()
                 - before.bytes(),

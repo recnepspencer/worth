@@ -184,7 +184,7 @@ fn native_content_refusal_preserves_prior_and_funding_survives_clones() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 24, 1_000_000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(1 << 24), Some(1_000_000)),
     );
     with_bootstrap_advancement(policy, |phase| {
         let request = phase.execution_request();
@@ -204,7 +204,12 @@ fn native_content_refusal_preserves_prior_and_funding_survives_clones() {
         let mut changed = values.clone();
         changed[17] = fact(17, 2);
         let blocked = lease
-            .reserve_memory(lease.available_memory_bytes() - 1)
+            .reserve_memory(
+                lease
+                    .available_memory_bytes()
+                    .expect("this fixture supplies a finite memory ceiling")
+                    - 1,
+            )
             .unwrap();
         assert!(original.refresh(body(&changed), [17], control).is_err());
         assert_eq!(original.identity([9; 32], usize::MAX).unwrap().0, identity);

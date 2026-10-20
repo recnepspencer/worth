@@ -29,7 +29,7 @@ pub(super) fn require_witnessed_output(
             Err(output_reuse::interruption_denial(event))
         }
         Err(CompanionPreflightStop::WorkCounterOverflow) => Err(output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow)),
-        Err(CompanionPreflightStop::PreparationMemoryCounterOverflow) => Err(output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow)),
+        Err(CompanionPreflightStop::PreparationMemoryCounterOverflow | CompanionPreflightStop::RetainedCompanionCounterOverflow { .. }) => Err(output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow)),
         Err(CompanionPreflightStop::PreparationMemoryExhausted { .. } | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }) => Err(output_reuse::memory_denial()),
         Err(CompanionPreflightStop::TopologyPending | CompanionPreflightStop::SelectedSourceMismatch | CompanionPreflightStop::SelectedPositionUnavailable { .. } | CompanionPreflightStop::ForeignCell | CompanionPreflightStop::RegistrationChanged) => Err(denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)),
     }
@@ -39,16 +39,10 @@ pub(super) fn require_current_facts(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    read: &RetainedOutputCurrentnessRead,
+    facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
-    match first_moved_fact(
-        execution,
-        relational,
-        snapshot,
-        read.facts.iter(),
-        admission,
-    ) {
+    match first_moved_fact(execution, relational, snapshot, facts.iter(), admission) {
         Ok(None) => Ok(()),
         Err(RetainedFactStop::OutputObservation(stop)) => Err(output_reuse::verification_denial(
             stop,

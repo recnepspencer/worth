@@ -127,7 +127,10 @@ pub(super) fn two_forks_preserve_predecessor_output(
     assert!(matches!(
         left_request
             .at(right_settled.observation())
-            .require_current_program_output(&right_settled, NonZeroUsize::new(4_096).unwrap()),
+            .require_current_program_output(
+                &right_settled,
+                Some((NonZeroUsize::new(4_096).unwrap()).get())
+            ),
         Err(WorthQueryOutputCurrentnessDenial::ForeignBranch)
     ));
     assert_eq!(

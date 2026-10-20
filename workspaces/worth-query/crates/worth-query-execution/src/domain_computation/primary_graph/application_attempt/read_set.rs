@@ -31,6 +31,7 @@ pub(in crate::domain_computation) use original_read::CompletedOriginalRead;
 mod admitted_arrays;
 mod completed_facts;
 pub(in crate::domain_computation::primary_graph::application_attempt) use completed_facts::admit_completed_facts;
+mod authority_facts;
 mod binding_proof;
 mod completion;
 mod computation_routing;
@@ -142,7 +143,10 @@ pub struct WorthQueryCompleteApplicationReadSet<
     /// The ordinals in `facts`, ascending, of the facts an owner call read.
     pub(super) computation_fact_ordinals: Arc<[usize]>,
     pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
+    pub(super) workflow_birth_binding:
+        Option<super::workflow_instance_program::WorkflowBirthBindingProof>,
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
+    pub(super) signed_creation: Option<super::signed_creation::SignedCreationState<Schema>>,
     /// The Unix-epoch millisecond the workflow instance this attempt steps
     /// must commit before; the provider checks it again at commit.
     pub(super) workflow_deadline: Option<u64>,

@@ -48,7 +48,9 @@ where
                 )
             })?;
         let read = read.map_err(|limit| self.adjacency_limit_denial(limit, relation.name()))?;
-        self.work_budget.consume(read.work_units());
+        if !self.work_budget.consume(read.work_units()) {
+            return Err(work_budget_exceeded(relation.name()));
+        }
         self.work.record_adjacency(
             read.relation_records_examined(),
             read.endpoint_records_reserved(),
@@ -102,7 +104,9 @@ where
                 )
             })?;
         let read = read.map_err(|limit| self.adjacency_limit_denial(limit, relation.name()))?;
-        self.work_budget.consume(read.work_units());
+        if !self.work_budget.consume(read.work_units()) {
+            return Err(work_budget_exceeded(relation.name()));
+        }
         self.work.record_adjacency(
             read.relation_records_examined(),
             read.endpoint_records_reserved(),
@@ -142,32 +146,33 @@ where
             })
     }
 
-    fn admit_adjacency_list(
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn admit_adjacency_list(
         &mut self,
         relation: &str,
     ) -> Result<(), WorthQueryInvariantProjectionTraversalDenial> {
         if !self.work_budget.can_afford(1) {
             return Err(work_budget_exceeded(relation));
         }
-        self.work_budget.consume(1);
+        assert!(self.work_budget.consume(1), "projection work was admitted");
         Ok(())
     }
 
-    fn adjacency_limit_denial(
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn adjacency_limit_denial(
         &mut self,
         limit: worth_relational::facade::runtime::AdjacencyTruthReadLimitExceeded,
         relation: &str,
     ) -> WorthQueryInvariantProjectionTraversalDenial {
-        self.work_budget.consume(limit.consumed_work_units());
-        self.work.record_adjacency(
-            limit.relation_records_examined(),
-            limit.endpoint_records_reserved(),
-        );
+        if self.work_budget.consume(limit.consumed_work_units()) {
+            self.work.record_adjacency(
+                limit.relation_records_examined(),
+                limit.endpoint_records_reserved(),
+            );
+        }
         self.work_budget.mark_exceeded();
         work_budget_exceeded(relation)
     }
 
-    fn endpoint<Entity>(
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn endpoint<Entity>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: worth_relational::facade::identity::EntityId,
@@ -214,7 +219,7 @@ where
 
     /// Reads the snapshot on its own branch root. A version alone would admit
     /// a sibling branch's commits made at older versions.
-    fn branch_view(
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn branch_view(
         &self,
         subject: &str,
     ) -> Result<VisibilityProjectionView, WorthQueryInvariantProjectionTraversalDenial> {

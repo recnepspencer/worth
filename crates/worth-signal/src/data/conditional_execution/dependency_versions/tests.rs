@@ -169,14 +169,14 @@ fn conditional_version_observation_has_fixed_inline_retention_and_bounded_measur
     for mask in [AspectMask::EMPTY, AspectMask::ALL] {
         let observation =
             super::SignalConditionalVersionObservation::new(mask, AspectVersion::zero());
-        let mut work = RetainedStoragePreparation::new(2);
+        let mut work = RetainedStoragePreparation::new(Some(2));
         assert_eq!(
             observation.retained_heap_charge(&mut work),
             Ok(RetainedStorageCharge::ZERO)
         );
         assert_eq!(work.visits(), 2);
         assert!(matches!(
-            observation.retained_heap_charge(&mut RetainedStoragePreparation::new(1)),
+            observation.retained_heap_charge(&mut RetainedStoragePreparation::new(Some(1))),
             Err(RetainedStoragePreparationDenial::WorkExhausted { .. })
         ));
     }

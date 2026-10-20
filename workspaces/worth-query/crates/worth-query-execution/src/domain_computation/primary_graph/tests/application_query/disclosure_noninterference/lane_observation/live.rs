@@ -66,7 +66,7 @@ pub(super) fn observe(
                 context.request.clone(),
                 4,
                 16,
-                2_048,
+                Some(2_048),
             )
             .unwrap(),
         )

@@ -1,6 +1,9 @@
 //! The actual schema identity of the two retained-representation contracts.
 
 use super::bindings::{ReservedDeletionBinding, ReservedEmissionBinding};
+use super::emitted::{QuotedEmissionBinding, QuotedEmissionOperation, QuotedRetainedEffect};
+use super::measured::{MeasuredBinding, MeasuredEmitOperation};
+use super::quoted::{QuotedBinding, QuotedOperation};
 use crate::domain_computation::primary_graph::tests::fixture::MutationFreeNoticeBinding;
 use worth_query_declaration::facade::application_schema::{
     ApplicationAuthorizationPathBuilder, StringApplicationValueBinding, U64ApplicationValueBinding,
@@ -25,6 +28,10 @@ worth_query_field!(pub PrincipalIdentityField for ReservationSchema, Principal, 
     u64 => U64ApplicationValueBinding, read_only, equality);
 worth_query_field!(pub AccountStatus for ReservationSchema, Account, AccountPolicy:
     String => StringApplicationValueBinding, read_write, equality);
+worth_query_field!(pub PrincipalNote for ReservationSchema, Principal, PrincipalIdentity:
+    optional String => StringApplicationValueBinding, read_write, no_equality);
+worth_query_field!(pub AccountNote for ReservationSchema, Account, AccountPolicy:
+    optional String => StringApplicationValueBinding, read_write, no_equality);
 worth_query_relation!(pub MappingTarget in ReservationSchema,
     ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
 worth_query_relation!(pub AccountOwner in ReservationSchema,
@@ -68,6 +75,8 @@ worth_query_application_schema! {
                 .field(ExternalMapping::reference(), MappingStatusField::reference())
                 .field(Principal::reference(), PrincipalIdentityField::reference())
                 .field(Account::reference(), AccountStatus::reference())
+                .field(Principal::reference(), PrincipalNote::reference())
+                .field(Account::reference(), AccountNote::reference())
                 .relation(MappingTarget::reference(), ExternalMapping::reference(), Principal::reference())
                 .relation(AccountOwner::reference(), Principal::reference(), Account::reference())
                 .principal_binding(IdentityBinding::reference())
@@ -77,6 +86,11 @@ worth_query_application_schema! {
                         .forward(AccountOwner::reference()).allow(Account::reference()),
                 ])
                 .effect(MutationFreeExternalEffect::reference())
+                .effect(QuotedRetainedEffect::reference())
+                .operation(QuotedEmissionOperation::reference().definition()
+                    .no_external_effect().no_aftermath().finish())
+                .operation_emit(QuotedEmissionOperation::reference(), QuotedRetainedEffect::reference())
+                .application_mutation_binding::<QuotedEmissionBinding>()
                 .operation(TouchAccountOperation::reference().definition()
                     .no_external_effect().no_aftermath().finish())
                 .operation_projection_work_budget(TouchAccountOperation::reference(), 32)
@@ -91,6 +105,27 @@ worth_query_application_schema! {
                     .no_aftermath().finish())
                 .operation_projection_work_budget(MutationFreeEmitOperation::reference(), 8)
                 .operation_emit(MutationFreeEmitOperation::reference(), MutationFreeExternalEffect::reference())
+                .operation(MeasuredEmitOperation::reference().definition()
+                    .external_effect(MutationFreeExternalEffect::reference(),
+                        worth_query_installation::facade::WorthQueryExternalEffectCorrelationFamily::new("test-measured-rail").unwrap())
+                    .no_aftermath().finish())
+                .operation_projection_work_budget(MeasuredEmitOperation::reference(), 8)
+                .operation_emit(MeasuredEmitOperation::reference(), MutationFreeExternalEffect::reference())
+                .operation(QuotedOperation::reference().definition().no_external_effect().no_aftermath().finish())
+                .operation_requires_ability(QuotedOperation::reference(), ViewAccount::reference())
+                .operation_read_entity(QuotedOperation::reference(), Account::reference())
+                .operation_read_field(QuotedOperation::reference(), AccountStatus::reference())
+                .operation_read_field(QuotedOperation::reference(), AccountNote::reference())
+                .operation_expected_fact(QuotedOperation::reference(), AccountStatus::reference())
+                .operation_expected_fact(QuotedOperation::reference(), AccountNote::reference())
+                .operation_create(QuotedOperation::reference(), Principal::reference())
+                .operation_write(QuotedOperation::reference(), PrincipalIdentityField::reference())
+                .operation_write(QuotedOperation::reference(), PrincipalNote::reference())
+                .operation_write(QuotedOperation::reference(), AccountStatus::reference())
+                .operation_write(QuotedOperation::reference(), AccountNote::reference())
+                .operation_link(QuotedOperation::reference(), AccountOwner::reference())
+                .application_mutation_binding::<QuotedBinding>()
+                .application_mutation_binding::<MeasuredBinding>()
                 .application_mutation_binding::<ReservedEmissionBinding>()
                 .application_mutation_binding::<ReservedDeletionBinding>()
         }

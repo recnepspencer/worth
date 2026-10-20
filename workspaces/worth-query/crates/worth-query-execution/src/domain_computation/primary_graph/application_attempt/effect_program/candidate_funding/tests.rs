@@ -16,7 +16,11 @@ fn candidate_funding_preserves_native_first_interruption_and_final_drop() {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1_000_000, 1_000_000),
+            ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                Some(1_000_000),
+                Some(1_000_000),
+            ),
         ),
         cancellation: CancellationToken::new(),
         deadline: None,
@@ -36,7 +40,13 @@ fn candidate_funding_preserves_native_first_interruption_and_final_drop() {
     let entries = super::super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate::entry_storage_bound(1).unwrap();
     let before = lease.charged_memory_bytes();
     let blocked = lease
-        .reserve_memory(lease.available_memory_bytes() - entries + 1)
+        .reserve_memory(
+            lease
+                .available_memory_bytes()
+                .expect("this fixture supplies a finite memory ceiling")
+                - entries
+                + 1,
+        )
         .unwrap();
     let refused = funding.grow_correspondence(entries).unwrap_err();
     assert!(matches!(
@@ -49,7 +59,11 @@ fn candidate_funding_preserves_native_first_interruption_and_final_drop() {
     let funding = std::sync::Arc::new(funding);
     let clone = funding.clone();
     let held = lease
-        .reserve_memory(lease.available_memory_bytes())
+        .reserve_memory(
+            lease
+                .available_memory_bytes()
+                .expect("this fixture supplies a finite memory ceiling"),
+        )
         .unwrap();
     let cancelled = CancellationSource::new();
     let stopped = lease.controlled_child(
@@ -96,10 +110,19 @@ fn candidate_funding_preserves_native_first_interruption_and_final_drop() {
         let prior = admitted._memory.as_ref().unwrap().bytes();
         let prior_charge = lease.charged_memory_bytes();
         let competing = lease
-            .reserve_memory(lease.available_memory_bytes())
+            .reserve_memory(
+                lease
+                    .available_memory_bytes()
+                    .expect("this fixture supplies a finite memory ceiling"),
+            )
             .unwrap();
         let exhausted_charge = lease.charged_memory_bytes();
-        assert_eq!(lease.available_memory_bytes(), 0);
+        assert_eq!(
+            lease
+                .available_memory_bytes()
+                .expect("this fixture supplies a finite memory ceiling"),
+            0
+        );
         let expected = if let Some(deadline) = deadline {
             std::thread::sleep(deadline.saturating_duration_since(std::time::Instant::now()));
             assert!(original.deadline_elapsed());

@@ -117,9 +117,10 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 observation.reference_generation().get(),
                 &output_bindings,
                 source.partition_identity(),
+                execution,
                 admission,
             )
-            .map_err(|()| selection_budget_denial(Family::IDENTITY))?;
+            .map_err(|stop| selected_basis::selection_lookup_denial(stop, Family::IDENTITY))?;
         drop(lineage);
         let mut live_candidates = Vec::new();
         for candidate in candidates {

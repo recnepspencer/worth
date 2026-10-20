@@ -8,24 +8,48 @@ use worth_foundational::ExecutionRequestPolicy;
 use super::lease::LeaseMemory;
 use super::{ExecutionResourceLease, LeaseDenial};
 mod ledger_issue_order;
+mod result;
 use ledger_issue_order::LedgerIssueOrder;
+pub use result::ExecutionResultMemory;
 
-/// A memory limit refused `requested` bytes. `level` names the limit, the
-/// innermost one that refused, and `admitted` is the room that level left.
+/// A finite ceiling refusal or an unrepresentable live charge, at its original owner.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct MemoryLimitDenial {
-    pub requested: u64,
-    pub admitted: u64,
-    pub level: MemoryLimitLevel,
+pub enum MemoryLimitDenial {
+    /// The innermost supplied ceiling left less room than requested.
+    Capacity {
+        requested: u64,
+        admitted: u64,
+        level: MemoryLimitLevel,
+    },
+    /// The held bytes plus this request do not fit the accounting counter.
+    CounterOverflow {
+        requested: u64,
+        charged: u64,
+        level: MemoryLimitLevel,
+    },
 }
 
 impl MemoryLimitDenial {
     pub(crate) fn refused(requested: u64, admitted: u64, level: MemoryLimitLevel) -> Self {
-        crate::backend::request_refusal(Self {
+        crate::backend::request_refusal(Self::Capacity {
             requested,
             admitted,
             level,
         })
+    }
+
+    pub(crate) fn overflow(requested: u64, charged: u64, level: MemoryLimitLevel) -> Self {
+        crate::backend::request_stop(Self::CounterOverflow {
+            requested,
+            charged,
+            level,
+        })
+    }
+
+    pub fn level(self) -> MemoryLimitLevel {
+        match self {
+            Self::Capacity { level, .. } | Self::CounterOverflow { level, .. } => level,
+        }
     }
 }
 
@@ -56,7 +80,7 @@ pub struct SerialMemoryBudget {
 #[derive(Debug)]
 struct SerialLedger {
     issue_order: LedgerIssueOrder,
-    ceiling: u64,
+    ceiling: Option<u64>,
     charged: Mutex<u64>,
 }
 
@@ -81,6 +105,7 @@ struct SerialLedger {
 #[derive(Debug)]
 pub struct ExecutionMemoryReservation {
     held: Held,
+    activity: Option<crate::backend::MemoryActivityGuard>,
 }
 
 #[derive(Debug)]
@@ -102,7 +127,7 @@ impl SerialMemoryBudget {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
-    pub fn limit(&self) -> u64 {
+    pub fn limit(&self) -> Option<u64> {
         self.ledgers[0].ceiling
     }
 
@@ -111,8 +136,8 @@ impl SerialMemoryBudget {
         Self::new(policy.budget().charged_memory_bytes())
     }
 
-    /// Holds the owner's required policy memory limit; serial work is metered, not bounded.
-    pub fn new(charged_memory_bytes: u64) -> Self {
+    /// Retains an optional caller ceiling; every live byte remains accounted.
+    pub fn new(charged_memory_bytes: Option<u64>) -> Self {
         Self {
             ledgers: Arc::from([Arc::new(SerialLedger {
                 issue_order: LedgerIssueOrder::issue(),
@@ -129,6 +154,7 @@ impl SerialMemoryBudget {
                 budget: self.clone(),
                 bytes,
             },
+            activity: None,
         })
     }
 }
@@ -177,16 +203,19 @@ impl SerialMemoryBudget {
                 .iter()
                 .find(|(index, _)| *index == ancestor)
                 .unwrap();
-            let admitted = ledger.ceiling.saturating_sub(*charge.1 - from);
-            if to > admitted {
-                return Err(MemoryLimitDenial::refused(
-                    to,
-                    admitted,
-                    MemoryLimitLevel::Policy {
-                        ancestor: ancestor as u32,
-                    },
-                ));
+            let charged = *charge.1 - from;
+            let level = MemoryLimitLevel::Policy {
+                ancestor: ancestor as u32,
+            };
+            if let Some(ceiling) = ledger.ceiling {
+                let admitted = ceiling.saturating_sub(charged);
+                if to > admitted {
+                    return Err(MemoryLimitDenial::refused(to, admitted, level));
+                }
             }
+            charged
+                .checked_add(to)
+                .ok_or_else(|| MemoryLimitDenial::overflow(to, charged, level))?;
         }
         for (_, charge) in &mut charges {
             **charge = **charge - from + to;
@@ -203,6 +232,8 @@ impl SerialMemoryBudget {
 
 #[cfg(test)]
 mod lock_order_tests;
+#[cfg(test)]
+mod optional_tests;
 
 impl ExecutionMemoryReservation {
     pub(in crate::authority) fn allocation_status(&self) -> Option<super::ExecutionLeaseStatus> {
@@ -230,6 +261,7 @@ impl ExecutionMemoryReservation {
     pub(super) const fn lease(memory: LeaseMemory) -> Self {
         Self {
             held: Held::Lease(memory),
+            activity: None,
         }
     }
 
@@ -250,7 +282,8 @@ impl ExecutionMemoryReservation {
         serial: Option<&SerialMemoryBudget>,
         bytes: u64,
     ) -> Result<(), LeaseDenial> {
-        match (&mut self.held, lease) {
+        let activity = self.activity.take();
+        let result = match (&mut self.held, lease) {
             (Held::Lease(memory), Some(lease)) => memory.rebind(lease, bytes),
             (
                 Held::Serial {
@@ -258,19 +291,43 @@ impl ExecutionMemoryReservation {
                     bytes: held,
                 },
                 None,
-            ) if serial.is_some_and(|active| budget.same_lineage(active)) => {
-                budget
-                    .resize(*held, bytes)
-                    .map_err(LeaseDenial::MemoryExhausted)?;
-                *held = bytes;
-                Ok(())
-            }
+            ) if serial.is_some_and(|active| budget.same_lineage(active)) => budget
+                .resize(*held, bytes)
+                .map_err(LeaseDenial::MemoryExhausted)
+                .map(|()| {
+                    *held = bytes;
+                }),
             _ => Err(LeaseDenial::refused(LeaseDenial::UnrelatedNestedLease)),
+        };
+        if result.is_err() {
+            self.activity = activity;
         }
+        result
     }
 
     /// Holds `bytes` instead. A refused resize keeps what was held.
     pub fn resize(&mut self, bytes: u64) -> Result<(), MemoryLimitDenial> {
+        let previous = self.bytes();
+        self.resize_held(bytes)?;
+        if let Some(activity) = &mut self.activity
+            && let Err(denial) = activity.resize(bytes)
+        {
+            self.resize_held(previous)
+                .expect("rolling back refused activity growth only releases memory");
+            return Err(denial);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn track_activity(&mut self, limits: &crate::backend::RunLimits) {
+        debug_assert!(
+            self.activity.is_none(),
+            "report custody transfers at take-over"
+        );
+        self.activity = Some(limits.enter_memory(self.bytes()));
+    }
+
+    fn resize_held(&mut self, bytes: u64) -> Result<(), MemoryLimitDenial> {
         match &mut self.held {
             Held::Lease(memory) => memory.resize(bytes),
             Held::Serial {

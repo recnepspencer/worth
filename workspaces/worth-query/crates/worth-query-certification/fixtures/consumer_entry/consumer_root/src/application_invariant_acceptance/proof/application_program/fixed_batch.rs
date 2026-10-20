@@ -155,24 +155,14 @@ fn fixed_batch_aggregate_refusal_and_fresh_retry_preserve_settled_owner() {
         retained_basis.get_or_insert_with(|| scalar.receipt().inspect().basis().clone());
         works.push(scalar.receipt().inspect().read_work().total_work_units());
     }
-    // Fund currentness independently so these refusals reach aggregate batch
-    // admission rather than exhausting an unrelated earlier proof allowance.
-    let policy = WorthQueryOperationDeliveryPolicy::currentness(
-        NonZeroUsize::new(
-            world
-                .application
-                .runtime()
-                .output_demand_resource_profile()
-                .limits()
-                .source_currentness_work(),
-        )
-        .expect("installed finite positive currentness allowance"),
-    );
+    // Add no attempt currentness ceiling: these explicit limits must reach
+    // aggregate batch admission under the installed native policy.
+    let policy = WorthQueryOperationDeliveryPolicy::default();
     let cap = works.iter().copied().max().unwrap();
     assert!(cap < works.iter().sum::<usize>());
     let limits = WorthQueryApplicationQueryBatchLimits::new(
         NonZeroUsize::new(2).unwrap(),
-        NonZeroUsize::new(cap).unwrap(),
+        Some(NonZeroUsize::new(cap).unwrap()),
         NonZeroUsize::MAX,
         NonZeroUsize::MAX,
     );
@@ -180,7 +170,7 @@ fn fixed_batch_aggregate_refusal_and_fresh_retry_preserve_settled_owner() {
     let before = observer.observe();
     let custody_cap = WorthQueryApplicationQueryBatchLimits::new(
         NonZeroUsize::new(2).unwrap(),
-        NonZeroUsize::MAX,
+        None,
         NonZeroUsize::new(1).unwrap(),
         NonZeroUsize::MAX,
     );

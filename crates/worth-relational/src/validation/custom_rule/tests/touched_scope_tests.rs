@@ -35,6 +35,7 @@ fn direct_entities_exclude_neighbors_admitted_for_structural_traversal() {
         prepared_scope_with_access(&runtime, &observation, Some(&merged_plan), &access);
     let planner = test_scope_planner(
         &runtime,
+        *execution,
         &observation,
         runtime.current_version_id(),
         &prepared_scope,
@@ -70,6 +71,7 @@ fn proposed_retarget_direct_scope_keeps_old_and_new_endpoints() {
     ));
     let touched = proposed_relation_scope(
         &runtime,
+        *execution,
         relation_id,
         intent,
         ProposedRelationState::Retarget {
@@ -98,6 +100,7 @@ fn proposed_delete_direct_scope_keeps_both_old_endpoints() {
     }));
     let touched = proposed_relation_scope(
         &runtime,
+        *execution,
         relation_id,
         intent,
         ProposedRelationState::Deleted,
@@ -143,6 +146,7 @@ fn touched_scope_tracks_planned_relation_endpoint_updates() {
     );
     let planner = test_scope_planner(
         &runtime,
+        *execution,
         &observation,
         runtime.current_version_id(),
         &prepared_scope,
@@ -213,6 +217,7 @@ fn touched_scope_tracks_planned_relation_endpoint_updates_to_created_entities() 
     );
     let planner = test_scope_planner(
         &runtime,
+        *execution,
         &observation,
         runtime.current_version_id(),
         &prepared_scope,
@@ -260,6 +265,7 @@ fn touched_scope_tracks_planned_relation_deletes() {
     );
     let planner = test_scope_planner(
         &runtime,
+        *execution,
         &observation,
         runtime.current_version_id(),
         &prepared_scope,
@@ -278,6 +284,7 @@ fn touched_scope_tracks_planned_relation_deletes() {
 
 fn test_scope_planner<'a>(
     runtime: &'a crate::runtime::RelationalRuntime,
+    execution: worth_execution::ExecutionRequest<'a, 'a>,
     observation: &'a InvariantObservation<'a>,
     version: crate::identity::data::VersionId,
     prepared: &PreparedCustomInvariantScope,
@@ -285,11 +292,12 @@ fn test_scope_planner<'a>(
     let view = crate::validation::engine::InvariantRuntimeView::from_runtime(runtime);
     CustomInvariantScopePlanner::new_at_current_version(
         &view,
+        execution,
         observation,
         version,
         runtime.current_version_id(),
         prepared,
-        super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(4096).unwrap()),
+        super::CustomInvariantWorkMeter::new(Some(std::num::NonZeroU64::new(4096).unwrap())),
         Arc::new(crate::validation::data::CustomInvariantAccessContract {
             read_entity_kinds: vec![KindId(1)],
             read_relation_kinds: vec![KindId(2)],
@@ -310,6 +318,7 @@ enum ProposedRelationState {
 
 fn proposed_relation_scope(
     runtime: &crate::runtime::RelationalRuntime,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
     relation_id: crate::identity::data::RelationId,
     intent: MutationIntent,
     proposed_state: ProposedRelationState,
@@ -362,12 +371,18 @@ fn proposed_relation_scope(
         proposed_version,
         Some(&plan),
         &access,
-        &super::CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(4096).unwrap()),
+        &super::CustomInvariantWorkMeter::new(Some(std::num::NonZeroU64::new(4096).unwrap())),
     );
 
-    test_scope_planner(runtime, &observation, proposed_version, &prepared)
-        .touched()
-        .clone()
+    test_scope_planner(
+        runtime,
+        execution,
+        &observation,
+        proposed_version,
+        &prepared,
+    )
+    .touched()
+    .clone()
 }
 
 fn test_access_contract() -> crate::validation::data::CustomInvariantAccessContract {

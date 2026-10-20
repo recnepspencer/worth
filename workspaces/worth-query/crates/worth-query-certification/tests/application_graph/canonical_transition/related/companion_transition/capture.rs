@@ -16,7 +16,7 @@ fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roste
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, 0, 1),
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(0), Some(1)),
         ),
         cancellation: scope.cancellation().execution_token(),
         deadline: scope.deadline(),
@@ -47,11 +47,13 @@ fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roste
     assert_eq!(
         cause.kind(),
         worth_query_host::facade::runtime::ExecutionAllocationDenialKind::Lease(
-            worth_execution::LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial {
-                requested,
-                admitted: 0,
-                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
-            })
+            worth_execution::LeaseDenial::MemoryExhausted(
+                worth_execution::MemoryLimitDenial::Capacity {
+                    requested,
+                    admitted: 0,
+                    level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
+                }
+            )
         )
     );
     assert_eq!(callbacks, 1);
@@ -60,7 +62,11 @@ fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roste
         ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, 64 * 1024 * 1024, 8_000_000),
+            ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                Some(64 * 1024 * 1024),
+                Some(8_000_000),
+            ),
         ),
         |phase| {
             // A second failed attempt returns the SAME capsule and roster.
@@ -104,7 +110,7 @@ fn companion_deferred_append_cancel_and_funded_same_capsule_repair_keep_historic
     // grants no decode budget or migration permission. Bootstrap admission and
     // every repair still run under their own original platform request.
     let placement = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+        worth_execution::SerialMemoryBudget::new(Some(64 * 1024 * 1024)),
         worth_execution::CancellationSource::new().token(),
         None,
     );
@@ -148,7 +154,11 @@ fn companion_deferred_append_cancel_and_funded_same_capsule_repair_keep_historic
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, 64 * 1024 * 1024, 8_000_000),
+            ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                Some(64 * 1024 * 1024),
+                Some(8_000_000),
+            ),
         ),
         cancellation: cancel.token(),
         deadline: None,
@@ -212,7 +222,11 @@ fn repair<T>(
         ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, 64 * 1024 * 1024, 8_000_000),
+            ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                Some(64 * 1024 * 1024),
+                Some(8_000_000),
+            ),
         ),
         |phase| run(&phase),
     )

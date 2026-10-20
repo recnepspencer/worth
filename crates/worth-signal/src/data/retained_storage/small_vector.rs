@@ -36,13 +36,13 @@ mod tests {
         assert!(!values.spilled());
         assert_eq!(
             values
-                .retained_heap_charge(&mut Preparation::new(2))
+                .retained_heap_charge(&mut Preparation::new(Some(2)))
                 .unwrap()
                 .bytes(),
             payload_capacity
         );
         assert!(matches!(
-            values.retained_heap_charge(&mut Preparation::new(1)),
+            values.retained_heap_charge(&mut Preparation::new(Some(1))),
             Err(Denial::WorkExhausted { maximum_visits: 1 })
         ));
 
@@ -51,7 +51,7 @@ mod tests {
         let spill_bytes = (values.capacity() * std::mem::size_of::<String>()) as u64;
         assert_eq!(
             values
-                .retained_heap_charge(&mut Preparation::new(2))
+                .retained_heap_charge(&mut Preparation::new(Some(2)))
                 .unwrap()
                 .bytes(),
             payload_capacity + spill_bytes
@@ -59,7 +59,7 @@ mod tests {
         values.clear();
         assert_eq!(
             values
-                .retained_heap_charge(&mut Preparation::new(1))
+                .retained_heap_charge(&mut Preparation::new(Some(1)))
                 .unwrap()
                 .bytes(),
             spill_bytes
@@ -67,7 +67,7 @@ mod tests {
         values.shrink_to_fit();
         assert_eq!(
             values
-                .retained_heap_charge(&mut Preparation::new(1))
+                .retained_heap_charge(&mut Preparation::new(Some(1)))
                 .unwrap(),
             Charge::ZERO
         );

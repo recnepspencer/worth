@@ -19,7 +19,8 @@ pub use lease::{
     LeaseDenial, LeaseRequest,
 };
 pub use memory::{
-    ExecutionMemoryReservation, MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget,
+    ExecutionMemoryReservation, ExecutionResultMemory, MemoryLimitDenial, MemoryLimitLevel,
+    SerialMemoryBudget,
 };
 pub use request::ExecutionRequest;
 pub use serial::SerialRequest;

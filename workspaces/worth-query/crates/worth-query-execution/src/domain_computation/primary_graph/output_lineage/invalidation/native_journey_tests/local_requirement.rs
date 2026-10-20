@@ -94,13 +94,14 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
     let identity = Arc::clone(
         &lineage
             .resolve_current_family(
+                request_execution,
                 runtime_authority,
                 &schema,
                 scope,
                 "local-requirement",
                 observation.lifecycle_incarnation(),
                 observation.reference_generation().get(),
-                32,
+                Some(32),
             )
             .unwrap()
             .candidates
@@ -133,13 +134,14 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
 
     let candidate = lineage
         .resolve_current_family(
+            request_execution,
             runtime_authority,
             &schema,
             scope,
             "local-requirement",
             observation.lifecycle_incarnation(),
             observation.reference_generation().get(),
-            32,
+            Some(32),
         )
         .unwrap()
         .candidates

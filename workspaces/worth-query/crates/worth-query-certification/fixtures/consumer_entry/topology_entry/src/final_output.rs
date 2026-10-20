@@ -1,4 +1,6 @@
 use std::marker::PhantomData;
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
+use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
@@ -11,9 +13,6 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
     WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
     WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
-};
-use worth_query_host::facade::primary_graph::{
-    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
 use worth_query_host::facade::{application_contribution, domain};
 
@@ -76,8 +75,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.final-planar-mutation.v2";
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.final-planar-handler.v2";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.final-planar-command.v1";
-    const CANDIDATES: ApplicationCandidateContract =
-        ApplicationCandidateContract::FixedShape(super::requirements(3, 3, 0, 12, 4096));
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(super::requirements(3, 3, 0, 12, 4096));
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -116,141 +115,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for FinalP
     }
 }
 
-pub struct FinalPlanarMutationHandler;
-
-impl<Schema: TopologySchemaBinding> OperationHandler<Schema, FinalPlanarMutationBinding<Schema>>
-    for FinalPlanarMutationHandler
-{
-    fn decide(
-        &self,
-        input: &FinalPlanarMutation,
-        reader: &mut DecisionReader<'_, '_, '_, Schema, FinalPlanarMutationBinding<Schema>>,
-    ) -> HandlerResult<
-        worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget<Schema, Body>,
-        worth_query_consumer_values::PlanarMutationDenial,
-    > {
-        match reader.resolve_entity(BodyKey::reference(), input.scope_key.clone()) {
-            Ok(source) => match reader.mutation_target(&source) {
-                Ok(target) => HandlerResult::Completed(target),
-                Err(error) => HandlerResult::ExecutionDenied(error),
-            },
-            Err(error) => HandlerResult::ExecutionDenied(error),
-        }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &FinalPlanarMutation,
-        _: &worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget<
-            Schema,
-            Body,
-        >,
-    ) -> ApplicationCandidateRequirements {
-        FinalPlanarMutationBinding::<Schema>::CANDIDATES
-            .fixed_requirements()
-            .expect("fixed candidate contract")
-    }
-
-    fn build_candidate(
-        &self,
-        input: &FinalPlanarMutation,
-        source: worth_query_host::facade::primary_graph::WorthQueryInvariantMutationTarget<
-            Schema,
-            Body,
-        >,
-        writer: &mut CandidateWriter<'_, Schema, FinalPlanarMutationBinding<Schema>>,
-    ) -> HandlerResult<
-        worth_query_consumer_values::PlanarAdjustmentResult,
-        worth_query_consumer_values::PlanarMutationDenial,
-    > {
-        let retained = match writer.projected_entity(&source) {
-            Ok(entity) => entity,
-            Err(error) => {
-                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
-            }
-        };
-        for bound in [
-            writer.preserve_output::<FinalRetainedSourceOutput<Schema>>(&retained),
-            writer.preserve_member::<FinalRetainedSources<Schema>>(&input.scope_key, &retained),
-        ] {
-            if let Err(error) = bound {
-                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
-            }
-        }
-        let keys = [
-            input.output_key.clone(),
-            format!("{}:b", input.output_key),
-            format!("{}:c", input.output_key),
-        ];
-        let base_y = worth_query_consumer_values::PositiveLength::get(&input.value);
-        let Some(next_y) = base_y.checked_add(1) else {
-            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(
-                std::io::Error::other("final output ordinate exceeds its value binding"),
-            ));
-        };
-        let coordinates = [(1, base_y), (2, base_y), (1, next_y)];
-        let mut entities = Vec::with_capacity(3);
-        for (key, (x, y)) in keys.iter().zip(coordinates) {
-            let entity_key =
-                match worth_query_host::facade::primary_graph::WorthQueryApplicationEntityKey::new(
-                    key,
-                ) {
-                    Ok(key) => key,
-                    Err(error) => {
-                        return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
-                    }
-                };
-            let entity = match writer.create_entity(Body::reference(), entity_key) {
-                Ok(entity) => entity,
-                Err(error) => {
-                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error))
-                }
-            };
-            for result in [
-                writer.initialize_field(&entity, BodyKey::reference(), key.clone()),
-                writer.initialize_field(
-                    &entity,
-                    PositionX::reference(),
-                    worth_query_consumer_values::PositiveLength::new(x).unwrap(),
-                ),
-                writer.initialize_field(
-                    &entity,
-                    PositionY::reference(),
-                    worth_query_consumer_values::PositiveLength::new(y).unwrap(),
-                ),
-                writer.initialize_field(&entity, Length::reference(), input.value),
-            ] {
-                if let Err(error) = result {
-                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
-                }
-            }
-            entities.push(entity);
-        }
-        for index in 0..entities.len() {
-            if let Err(error) = writer.link(
-                PlanarSuccessor::reference(),
-                format!("final-successor:{}", keys[index]),
-                &entities[index],
-                &entities[(index + 1) % entities.len()],
-            ) {
-                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
-            }
-        }
-        let entity = &entities[0];
-        for bound in [
-            writer.create_output::<FinalAnchorOutput<Schema>>(entity),
-            writer.create_member::<FinalCreatedOutputs<Schema>>(&keys[1], &entities[1]),
-            writer.create_output::<FinalClosingOutput<Schema>>(&entities[2]),
-        ] {
-            if let Err(error) = bound {
-                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
-            }
-        }
-        HandlerResult::Completed(worth_query_consumer_values::PlanarAdjustmentResult {
-            changed_vertices: 1,
-        })
-    }
-}
+mod handler;
+pub use handler::FinalPlanarMutationHandler;
 
 const INITIAL: WorthQueryProducerApplicability = WorthQueryProducerApplicability::new(
     "planar-final",
@@ -358,10 +224,15 @@ impl<Schema: TopologySchemaBinding>
         (super::planar_source_key(source_identity) ^ 0x9174_f1a1_0000_0001) | self.key_mask
     }
 
-    fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
-        #[cfg(test)]
-        PROVIDER_CONTACTS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        super::planar_producer_resources()
+    fn demand_resources(
+        &self,
+        _: &PlanarReadResult,
+    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
+        Ok({
+            #[cfg(test)]
+            PROVIDER_CONTACTS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            super::planar_producer_resources()
+        })
     }
 }
 

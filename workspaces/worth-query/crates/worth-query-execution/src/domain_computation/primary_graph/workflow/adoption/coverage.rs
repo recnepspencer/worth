@@ -19,22 +19,37 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowVocabularyCovera
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct ConflictingWorkflowVocabularyCoverage;
 
+/// Holds exclusive registry custody between compatibility admission and installation.
+pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowCoverage<'a> {
+    registry: &'a mut WorkflowVocabularyCoverageRegistry,
+    addition: Option<WorthQueryWorkflowVocabularyCoverage>,
+}
+
+impl AdmittedWorkflowCoverage<'_> {
+    pub(in crate::domain_computation::primary_graph) fn install(self) {
+        if let Some(coverage) = self.addition {
+            self.registry.coverage.push(coverage);
+        }
+    }
+}
+
 impl WorkflowVocabularyCoverageRegistry {
-    /// Records one installed vocabulary. Re-registering the identical
+    /// Admits one installed vocabulary. Re-registering the identical
     /// vocabulary is harmless; a different one under the same key is refused
     /// so adoption never compares against an ambiguous vocabulary.
-    pub(in crate::domain_computation::primary_graph) fn register(
+    pub(in crate::domain_computation::primary_graph) fn admit(
         &mut self,
         coverage: WorthQueryWorkflowVocabularyCoverage,
-    ) -> Result<(), ConflictingWorkflowVocabularyCoverage> {
-        match self.lookup(coverage.spec(), coverage.program_revision()) {
-            Some(existing) if existing == &coverage => Ok(()),
-            Some(_) => Err(ConflictingWorkflowVocabularyCoverage),
-            None => {
-                self.coverage.push(coverage);
-                Ok(())
-            }
-        }
+    ) -> Result<AdmittedWorkflowCoverage<'_>, ConflictingWorkflowVocabularyCoverage> {
+        let addition = match self.lookup(coverage.spec(), coverage.program_revision()) {
+            Some(existing) if existing == &coverage => None,
+            Some(_) => return Err(ConflictingWorkflowVocabularyCoverage),
+            None => Some(coverage),
+        };
+        Ok(AdmittedWorkflowCoverage {
+            registry: self,
+            addition,
+        })
     }
 
     pub(in crate::domain_computation::primary_graph) fn lookup(

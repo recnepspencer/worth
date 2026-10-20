@@ -3,13 +3,14 @@ use std::time::Instant;
 use super::{CancellationToken, SerialMemoryBudget};
 use worth_foundational::ExecutionRequestPolicy;
 
-/// A reusable description of a lease-free request, built from policy-bounded memory.
-/// Serial requests have no request-level work ceiling; computation declarations still bind.
-/// It may outlive a scope; every use opens a bounded scope or draws from its parent.
+/// A reusable description of a lease-free request, built from the original optional memory policy.
+/// Memory and work ceilings are optional; computation declarations still constrain the same request.
+/// It may outlive a scope; every use opens an accounted scope or draws from its parent.
 /// The description grants no access to an absent lease outside that closure.
 #[derive(Debug, Clone)]
 pub struct SerialRequest {
     pub(crate) memory: SerialMemoryBudget,
+    pub(crate) work_ceiling: Option<u64>,
     pub(crate) deadline: Option<Instant>,
     pub(crate) cancellation: CancellationToken,
 }
@@ -34,11 +35,12 @@ impl SerialRequest {
         cancellation: CancellationToken,
         deadline: Option<Instant>,
     ) -> Self {
-        Self::from_memory(
-            SerialMemoryBudget::from_policy(policy),
+        Self {
+            memory: SerialMemoryBudget::from_policy(policy),
+            work_ceiling: policy.budget().work_ceiling(),
             cancellation,
             deadline,
-        )
+        }
     }
 
     /// The budget carries the owner's policy memory limit.
@@ -49,6 +51,7 @@ impl SerialRequest {
     ) -> Self {
         Self {
             memory,
+            work_ceiling: None,
             cancellation,
             deadline,
         }

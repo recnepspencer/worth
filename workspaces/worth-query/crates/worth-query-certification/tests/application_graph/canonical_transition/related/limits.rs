@@ -11,7 +11,11 @@ pub fn limits(work: u64) -> WorthQueryInMemoryApplicationLimits {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 64 * 1024 * 1024, work),
+        ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            Some(64 * 1024 * 1024),
+            Some(work),
+        ),
     );
     let resources = WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
@@ -55,7 +59,7 @@ pub fn limits(work: u64) -> WorthQueryInMemoryApplicationLimits {
     .unwrap();
     WorthQueryInMemoryApplicationLimits::new(
         resources,
-        WorthQueryApplicationCandidateResourceProfile::physical_resources(1024, 1024 * 1024)
+        WorthQueryApplicationCandidateResourceProfile::policy(Some(1024), Some(1024 * 1024))
             .unwrap(),
         WorthQueryApplicationQueryResourceProfile::bounded(65_536, 65_536, 128, 64).unwrap(),
         SignalConditionalEvaluationBudget::development(),

@@ -119,13 +119,15 @@ mod tests {
             .as_strategy_witness()
             .unwrap();
         let mut merge = witness.merge_strategy().clone();
-        let before = merge.retained_heap_charge(&mut Work::new(10000)).unwrap();
+        let before = merge
+            .retained_heap_charge(&mut Work::new(Some(10000)))
+            .unwrap();
         let delta = grow_string(&mut merge.selected_strategy_digest)
             + grow_string(&mut merge.merge_base_digest)
             + grow_string(&mut merge.lowered_strategy_bundle_digest);
         assert_eq!(
             merge
-                .retained_heap_charge(&mut Work::new(10000))
+                .retained_heap_charge(&mut Work::new(Some(10000)))
                 .unwrap()
                 .bytes()
                 - before.bytes(),
@@ -134,13 +136,13 @@ mod tests {
         assert_eq!(&merge, witness.merge_strategy());
         let mut invalidation = witness.invalidation_strategy().clone();
         let before = invalidation
-            .retained_heap_charge(&mut Work::new(10000))
+            .retained_heap_charge(&mut Work::new(Some(10000)))
             .unwrap();
         let delta = grow_string(&mut invalidation.conflict_isolation_digest)
             + grow_string(&mut invalidation.identity_matcher_digest);
         assert_eq!(
             invalidation
-                .retained_heap_charge(&mut Work::new(10000))
+                .retained_heap_charge(&mut Work::new(Some(10000)))
                 .unwrap()
                 .bytes()
                 - before.bytes(),
@@ -149,7 +151,7 @@ mod tests {
         assert_eq!(&invalidation, witness.invalidation_strategy());
         let mut delivery = witness.delivery_strategy().clone();
         let before = delivery
-            .retained_heap_charge(&mut Work::new(10000))
+            .retained_heap_charge(&mut Work::new(Some(10000)))
             .unwrap();
         let mut delta = grow_string(&mut delivery.conflict_policy_digest)
             + grow_string(&mut delivery.source_only_policy_digest)
@@ -163,7 +165,7 @@ mod tests {
         }
         assert_eq!(
             delivery
-                .retained_heap_charge(&mut Work::new(10000))
+                .retained_heap_charge(&mut Work::new(Some(10000)))
                 .unwrap()
                 .bytes()
                 - before.bytes(),
@@ -186,7 +188,7 @@ mod tests {
         );
         assert_eq!(
             entry
-                .retained_heap_charge(&mut Work::new(100))
+                .retained_heap_charge(&mut Work::new(Some(100)))
                 .unwrap()
                 .bytes(),
             expected

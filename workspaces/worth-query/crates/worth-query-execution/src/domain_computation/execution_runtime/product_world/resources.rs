@@ -109,6 +109,22 @@ pub(in crate::domain_computation) fn test_product_world_resources(
     test_product_world_resources_with_history_limit_for_test(1_024)
 }
 
+/// Explicit finite installation for courts that fill the retained ledger.
+#[cfg(test)]
+pub(in crate::domain_computation) fn test_product_world_resources_with_retained_capacity_for_test(
+    maximum_retained_bytes: u64,
+) -> WorthQueryProductWorldResources {
+    let mut resources = test_product_world_resources();
+    resources.invalidation = super::super::WorthQueryInvalidationResources::install(
+        super::super::WorthQueryInvalidationResourceInstallation {
+            maximum_retained_bytes: Some(maximum_retained_bytes),
+            ..resources.invalidation.installation()
+        },
+    )
+    .expect("the explicit test ceiling is nonzero");
+    resources
+}
+
 pub(crate) fn test_product_world_resources_with_history_limit_for_test(
     retained_composite_commits: u64,
 ) -> WorthQueryProductWorldResources {
@@ -150,9 +166,9 @@ pub(crate) fn test_product_world_resources_with_history_limit_for_test(
         WorthQueryProductWorldClock::start(),
         super::super::WorthQueryInvalidationResources::install(
             super::super::WorthQueryInvalidationResourceInstallation {
-                maximum_marking_work: 1_000_000,
-                maximum_preparation_bytes: 64 * 1_024 * 1_024,
-                maximum_retained_bytes: 128 * 1_024 * 1_024,
+                maximum_marking_work: None,
+                maximum_preparation_bytes: None,
+                maximum_retained_bytes: None,
                 maximum_retained_positions: 128,
             },
         )
@@ -162,8 +178,8 @@ pub(crate) fn test_product_world_resources_with_history_limit_for_test(
             worth_foundational::DeterminismContract::CanonicalBitwise,
             worth_foundational::ExecutionBudget::new(
                 std::num::NonZeroUsize::MIN,
-                64 * 1_024 * 1_024,
-                8_000_000,
+                None,
+                Some(8_000_000),
             ),
         ),
     )

@@ -68,14 +68,14 @@ fn mutation_prepare_and_one_call_refuse_before_their_admitted_reader() {
                 bound(Some(worth_foundational::ExecutionBudget::new(
                     NonZeroUsize::MIN,
                     if zero_memory {
-                        0
+                        Some(0)
                     } else {
                         policy.charged_memory_bytes()
                     },
                     if zero_memory {
                         policy.work_ceiling()
                     } else {
-                        0
+                        Some(0)
                     },
                 )));
                 let before = reads();

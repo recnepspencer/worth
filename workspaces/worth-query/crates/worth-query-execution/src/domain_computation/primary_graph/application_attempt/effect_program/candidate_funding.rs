@@ -77,8 +77,8 @@ fn quote(requirements: ApplicationCandidateRequirements) -> Option<u64> {
     let node = 11usize
         .checked_mul(entry)?
         .checked_add(12 * std::mem::size_of::<usize>() + 4 * std::mem::size_of::<usize>())?;
-    let slot = std::mem::size_of::<super::WorthQueryApplicationRealizedEffect>()
-        .checked_add(3usize.checked_mul(node)?)?;
+    // The exact effect Vec slots have the separate native backing ticket.
+    let slot = 3usize.checked_mul(node)?;
     let storage = items
         .checked_mul(slot)?
         .checked_add(std::mem::size_of::<CandidateFunding>() + 4 * std::mem::size_of::<usize>())?

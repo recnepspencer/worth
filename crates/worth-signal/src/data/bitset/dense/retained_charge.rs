@@ -23,7 +23,7 @@ impl DenseBitset {
     }
 
     pub(super) fn write_word(&mut self, index: usize, value: u64) {
-        let mut work = Preparation::new(WORD_CHARGE_VISITS);
+        let mut work = Preparation::new(Some(WORD_CHARGE_VISITS));
         if self
             .words
             .edit_with_retained_charge(index, &mut work, |word| *word = value)
@@ -39,7 +39,7 @@ impl DenseBitset {
     }
 
     pub(super) fn append_zero_word(&mut self) {
-        let mut work = Preparation::new(WORD_CHARGE_VISITS);
+        let mut work = Preparation::new(Some(WORD_CHARGE_VISITS));
         if self.words.push_with_retained_charge(0, &mut work).is_err() {
             self.words.push_back(0);
         }
@@ -52,7 +52,7 @@ impl DenseBitset {
         if let Some(visits) = self.words.len().checked_add(2) {
             let _ = self
                 .words
-                .prepare_retained_charge(&mut Preparation::new(visits));
+                .prepare_retained_charge(&mut Preparation::new(Some(visits)));
         }
     }
 }

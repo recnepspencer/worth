@@ -69,7 +69,7 @@ pub(super) fn project_approval(
                 execution,
                 &std::collections::BTreeSet::from([from]),
                 kind,
-                expected.saturating_mul(2).saturating_add(1),
+                Some(expected.saturating_mul(2).saturating_add(1)),
             )
             .map(|answer| {
                 answer.ok().map(|read| {

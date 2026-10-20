@@ -1,13 +1,15 @@
+pub(super) mod candidate_backing;
 mod candidate_funding;
 mod candidate_preparation;
 mod candidate_reservation;
 pub(in crate::domain_computation::primary_graph) use candidate_funding::CandidateFunding;
-mod candidate_retained_representation;
+pub(in crate::domain_computation::primary_graph) mod candidate_retained_representation;
 mod conditional_definition;
 mod emission;
 mod entity_creation;
 mod entity_selection;
 mod model;
+mod operation_body;
 mod optional_field_authoring;
 mod ordinary_field_authoring;
 pub(super) mod output_correspondence;
@@ -68,11 +70,15 @@ pub use output_correspondence::{
     WorthQueryApplicationTypedOutputCorrespondence,
 };
 pub(in crate::domain_computation::primary_graph) use platform_reservation::{
-    admit_platform_effects, admit_workflow_settlement_effects, PlatformEffectDemand,
+    admit_platform_effects, admit_signing_lifecycle_effects, admit_workflow_settlement_effects,
+    PlatformEffectDemand,
+};
+pub(in crate::domain_computation::primary_graph::application_attempt) use platform_reservation::{
+    check_combined_host_capacity, validate_candidate_extension,
 };
 use target_admission::installed_contract_admits_program_target;
 use worth_query_declaration::facade::application_operation::{
-    ApplicationCandidateContract, ApplicationCandidateRequirements,
+    ApplicationCandidatePolicy, ApplicationCandidateRequirements,
 };
 
 impl<Schema, Operation, Input, Scope>
@@ -115,6 +121,7 @@ impl<Schema, Operation, Input, Scope>
             layout,
             program: Arc::new(()),
             effects: Vec::new(),
+            effect_backing_memory: None,
             field_write_positions: FieldWriteIndex::default(),
             keys: BTreeSet::new(),
             emission_retained_bytes: 0,
@@ -161,6 +168,32 @@ impl<Schema, Operation, Input, Scope>
                 field.field(),
             )
         })?;
+        self.initialize_encoded_field(
+            target,
+            &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus::new(
+                field.entity(),
+                field.aspect(),
+                field.field(),
+            ),
+            std::borrow::Cow::Owned(value),
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn initialize_body_field<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+        value: std::borrow::Cow<'_, worth_foundational::facade::AspectValue>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.initialize_encoded_field(target, field, value)
+    }
+
+    fn initialize_encoded_field<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+        value: std::borrow::Cow<'_, worth_foundational::facade::AspectValue>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.validate_target(target, field.entity())?;
         self.admit_program_target(&ApplicationOperationProgramTarget::Write {
             entity: field.entity().to_string(),
@@ -198,7 +231,7 @@ impl<Schema, Operation, Input, Scope>
         else {
             unreachable!("validated created effect changed before field retention");
         };
-        fields.insert(locator, value);
+        fields.insert(locator, value.into_owned());
         Ok(())
     }
 
@@ -241,6 +274,8 @@ impl<Schema, Operation, Input, Scope>
             read_set: self.read_set,
             effects: self.effects,
             candidate_funding: self.candidate_funding.map(Arc::new),
+            effect_backing_memory: self.effect_backing_memory,
+            candidate_requirements: self.candidate_reservation.as_ref().map(WorthQueryCandidateReservation::requirements),
             emission_retained_bytes: self.emission_retained_bytes,
             emission_retained_bytes_ceiling: self.emission_retained_bytes_ceiling,
             conditional_definition: self.conditional_definition,

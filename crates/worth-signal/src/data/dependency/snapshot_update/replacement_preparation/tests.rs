@@ -16,7 +16,7 @@ fn replacement_preparation_shares_one_allowance_and_preserves_source_on_denial()
             "detail".repeat(32),
         )),
     }));
-    let mut measured = Work::new(100_000_000);
+    let mut measured = Work::new(Some(100_000_000));
     let expected = ReplacementSnapshotUpdate::from_snapshot_with_work(
         source.clone(),
         &mut EvaluationWork::Conditional(&mut measured),
@@ -24,7 +24,7 @@ fn replacement_preparation_shares_one_allowance_and_preserves_source_on_denial()
     .unwrap();
     let cost = measured.visits();
     for available in [cost - 1, cost] {
-        let mut work = Work::new(cost + 19);
+        let mut work = Work::new(Some(cost + 19));
         work.reserve_visits(cost + 19 - available).unwrap();
         let result = ReplacementSnapshotUpdate::from_snapshot_with_work(
             source.clone(),

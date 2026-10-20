@@ -148,7 +148,7 @@ impl PreparedFactRebase {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         fact: &Fact,
         producer_output: bool,
-        maximum_pair_rebase_work: usize,
+        maximum_pair_rebase_work: Option<usize>,
         indexed_width: &mut InvalidationEditAdmission,
         prepared_endpoints: Option<
             crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
@@ -165,6 +165,22 @@ impl PreparedFactRebase {
                 view.entity_aspect_version(*entity_id, locator.aspect().aspect_key())
                     .map(Self::Aspect)
                     .ok_or(unavailable)
+            }
+            Fact::AspectPresence {
+                entity_id,
+                kind,
+                aspect,
+                ..
+            } => {
+                let present = crate::domain_computation::primary_graph::application_attempt::observe_aspect_presence(
+                    runtime, execution, snapshot, *entity_id, *kind, aspect,
+                ).map_err(RebaseVerificationReason::Execution)?.ok_or(unavailable)?;
+                Ok(Self::Replace(Fact::AspectPresence {
+                    entity_id: *entity_id,
+                    kind: *kind,
+                    aspect: aspect.clone(),
+                    present,
+                }))
             }
             Fact::Field {
                 entity_id, locator, ..
@@ -221,7 +237,9 @@ impl PreparedFactRebase {
                     *anchor,
                     *relation_kind,
                     *direction,
-                    (*comparison_work_limit).min(maximum_pair_rebase_work),
+                    maximum_pair_rebase_work.map_or(*comparison_work_limit, |maximum| {
+                        (*comparison_work_limit).min(maximum)
+                    }),
                 ) {
                     Err(AdjacencyStructuralRevisionDenial::Execution(cause)) => {
                         Err(RebaseVerificationReason::Execution(cause))
@@ -265,13 +283,15 @@ impl PreparedFactRebase {
                 // The width reserves before probing and settles actual work,
                 // including entries examined by a failed native lookup.
                 let most = candidate_limit.saturating_add(1);
-                let reserved_work = most.min(indexed_width.remaining_work());
+                let reserved_work = indexed_width
+                    .remaining_work()
+                    .map_or(most, |remaining| most.min(remaining));
                 let reserved = indexed_width
-                    .reserve_external_work(u64::try_from(reserved_work).map_err(|_| {
+                    .reserve_external_work(Some(u64::try_from(reserved_work).map_err(|_| {
                         RebaseVerificationReason::AdmissionDenied(
                             CompanionPreflightStop::WorkCounterOverflow,
                         )
-                    })?)
+                    })?))
                     .map_err(RebaseVerificationReason::AdmissionDenied)?;
                 let mut remaining = reserved_work;
                 let observed = reobserve_indexed_entity_selection(
@@ -294,7 +314,7 @@ impl PreparedFactRebase {
                     Err(IndexedSelectionReobserveDenial::WorkBudgetExceeded) => {
                         let maximum = indexed_width
                             .charged_work()
-                            .saturating_add(indexed_width.remaining_work_amount());
+                            .saturating_add(indexed_width.remaining_work_amount().expect("an exhausted indexed allowance is finite"));
                         Err(RebaseVerificationReason::AdmissionDenied(
                             CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum },
                         ))

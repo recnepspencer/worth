@@ -33,6 +33,30 @@ impl DenseSlotBitSet {
         }
     }
 
+    pub(crate) fn set_true_allocation_bytes(&self, slot: usize) -> Option<u64> {
+        let word = slot / 64;
+        let previous = self.words.get(&word).copied().unwrap_or(0);
+        if previous & (1 << (slot % 64)) != 0 {
+            return Some(0);
+        }
+        self.words.insertion_allocation_bytes(&word)
+    }
+
+    pub(crate) fn owned_allocation_bytes(&self) -> Option<u64> {
+        self.words.shallow_allocation_bytes()
+    }
+
+    pub(crate) fn try_set_slots<Stop>(
+        &self,
+        prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<DenseSlotIterator<'_>, Stop> {
+        Ok(DenseSlotIterator {
+            words: self.words.try_iter(prepare)?,
+            word_index: 0,
+            remaining: 0,
+        })
+    }
+
     pub(crate) fn set(&mut self, slot: usize, value: bool) -> u64 {
         let word = slot / 64;
         let bit = slot % 64;
@@ -172,5 +196,25 @@ impl DenseSlotBitSet {
             visitor,
             &mut crate::storage::substrate::visit_inline_value,
         );
+    }
+}
+
+/// A borrowed word walk with its original preclaimed AVL stack.
+pub(crate) struct DenseSlotIterator<'a> {
+    words: crate::storage::substrate::SharedMapIter<'a, usize, u64>,
+    word_index: usize,
+    remaining: u64,
+}
+impl Iterator for DenseSlotIterator<'_> {
+    type Item = usize;
+    fn next(&mut self) -> Option<usize> {
+        if self.remaining == 0 {
+            let (&index, &word) = self.words.next()?;
+            self.word_index = index;
+            self.remaining = word;
+        }
+        let bit = self.remaining.trailing_zeros() as usize;
+        self.remaining &= self.remaining - 1;
+        Some(self.word_index * 64 + bit)
     }
 }

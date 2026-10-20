@@ -48,7 +48,13 @@ impl<Schema, Operation, Input, Scope, Phase>
             .facts
             .append_completed(tail, StorageControl::new(policy, Some(request)))
             .map_err(|cause| cause.into_attempt_denial(operation))?;
+        let routes = super::super::CompletedFactRoutes::from_facts(
+            joined.clone(),
+            StorageControl::new(policy, Some(request)),
+        )
+        .map_err(|cause| cause.into_attempt_denial(operation))?;
         check()?;
+        self.effect_routes = routes;
         self.facts = joined;
         Ok(())
     }

@@ -24,16 +24,12 @@ use worth_relational::facade::{
 
 #[test]
 fn republication_cannot_certify_output_computed_before_its_own_write() {
-    {
-        suspend_restore_and_read(false);
-    }
+    suspend_restore_and_read(false);
 }
 
 #[test]
 fn restoration_fallback_cannot_certify_output_computed_before_its_own_write() {
-    {
-        suspend_restore_and_read(true);
-    }
+    suspend_restore_and_read(true);
 }
 
 fn suspend_restore_and_read(exhaust_registration: bool) {
@@ -258,7 +254,7 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
         let held = exhaust_registration.then(|| {
             resources
                 .reserve_retained_capacity(
-                    resources.installation().maximum_retained_bytes
+                    resources.installation().maximum_retained_bytes.expect("capacity-exhaustion control requires a finite installed ceiling")
                         - resources.retained_capacity_bytes(),
                 )
                 .unwrap()
@@ -293,29 +289,34 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
                     "computed-account".to_owned(),
                 )],
             )]));
-        let (_, restored_product, _) = world
+        let (family, restored_product) = world
             .application
             .with_host_advancement(|phase| {
-                let phase_custody = &phase.test_host_request();
-
-                world.selected_product(phase_custody).into_parts()
+                let (_, product, _) = world
+                    .selected_product(&phase.test_host_request())
+                    .into_parts();
+                let observation = product.observation();
+                let execution = phase
+                    .execution_request_for(&application.product_runtime)
+                    .unwrap();
+                let family = handle
+                    .output_lineage
+                    .lock()
+                    .unwrap()
+                    .resolve_current_family(
+                        &execution,
+                        application.runtime.authority_identity().as_u64(),
+                        &application.installed_schema.binding_identity(),
+                        receipt.principal_scope().scope(),
+                        "test.retained-account-capacity",
+                        observation.lifecycle_incarnation(),
+                        observation.reference_generation().get(),
+                        None,
+                    )
+                    .unwrap();
+                (family, product)
             })
-            .expect("the fixture read owns its installed host call");
-        let observation = restored_product.observation();
-        let family = handle
-            .output_lineage
-            .lock()
-            .unwrap()
-            .resolve_current_family(
-                application.runtime.authority_identity().as_u64(),
-                &application.installed_schema.binding_identity(),
-                receipt.principal_scope().scope(),
-                "test.retained-account-capacity",
-                observation.lifecycle_incarnation(),
-                observation.reference_generation().get(),
-                usize::MAX,
-            )
-            .unwrap();
+            .expect("the installed host owns the selection's fresh request");
         assert_eq!(family.candidates.len(), 1);
         let candidate = &family.candidates[0];
         assert_eq!(candidate.verification_requirement, exhaust_registration.then_some(FullVerificationReason::CheckpointRestore),

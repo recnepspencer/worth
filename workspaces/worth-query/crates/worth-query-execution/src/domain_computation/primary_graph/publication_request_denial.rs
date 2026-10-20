@@ -41,7 +41,7 @@ mod tests {
             Stop::Stopped(MapKernelStop::DeadlineElapsed),
             Stop::Stopped(MapKernelStop::WorkCeiling),
             Stop::Admission(worth_execution::LeaseDenial::MemoryExhausted(
-                worth_execution::MemoryLimitDenial {
+                worth_execution::MemoryLimitDenial::Capacity {
                     requested: 43,
                     admitted: 17,
                     level: worth_execution::MemoryLimitLevel::Policy { ancestor: 2 },

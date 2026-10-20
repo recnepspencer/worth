@@ -20,9 +20,14 @@ pub(in crate::domain_computation::primary_graph) fn publication_execution_kind(
     Ok(match cause {
         Denial::Admission(LeaseDenial::MemoryExhausted(denial)) => resource(
             memory_denial(denial),
-            match denial.level {
-                MemoryLimitLevel::Policy { ancestor } => Some(ancestor),
-                MemoryLimitLevel::Declared | MemoryLimitLevel::Process => None,
+            match denial {
+                worth_execution::MemoryLimitDenial::Capacity { level, .. }
+                | worth_execution::MemoryLimitDenial::CounterOverflow { level, .. } => {
+                    match level {
+                        MemoryLimitLevel::Policy { ancestor } => Some(ancestor),
+                        MemoryLimitLevel::Declared | MemoryLimitLevel::Process => None,
+                    }
+                }
             },
         ),
         Denial::Admission(denial) => resource(lease_denial(denial), None),

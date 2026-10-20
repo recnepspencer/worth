@@ -6,8 +6,8 @@ use std::num::NonZeroUsize;
 
 pub(in crate::logic::planner) struct CheckedEpochAdmissionGrant {
     width: NonZeroUsize,
-    result_grant_bytes: u64,
-    apply: CheckedApplyCapacity,
+    result_grant_bytes: Option<u64>,
+    apply_bases: Vec<ApplyMemberBasis>,
 }
 
 pub(in crate::logic::planner) struct CheckedApplyCapacity {
@@ -21,11 +21,15 @@ pub(in crate::logic::planner) struct ApplyMemberCapacity {
 }
 
 impl CheckedEpochAdmissionGrant {
-    pub(super) fn new(width: usize, result_grant_bytes: u64, apply: CheckedApplyCapacity) -> Self {
+    pub(super) fn new(
+        width: usize,
+        result_grant_bytes: Option<u64>,
+        apply_bases: Vec<ApplyMemberBasis>,
+    ) -> Self {
         Self {
             width: NonZeroUsize::new(width).expect("admitted epoch contains a task"),
             result_grant_bytes,
-            apply,
+            apply_bases,
         }
     }
 
@@ -33,16 +37,18 @@ impl CheckedEpochAdmissionGrant {
         self.width
     }
 
-    pub(in crate::logic::planner) fn result_grant_bytes(&self) -> u64 {
+    pub(in crate::logic::planner) fn result_grant_bytes(&self) -> Option<u64> {
         self.result_grant_bytes
     }
 
-    pub(in crate::logic::planner) fn apply_capacity(&self) -> &CheckedApplyCapacity {
-        &self.apply
-    }
-
-    pub(in crate::logic::planner) fn into_parts(self) -> (NonZeroUsize, u64, CheckedApplyCapacity) {
-        (self.width, self.result_grant_bytes, self.apply)
+    pub(in crate::logic::planner) fn into_parts(
+        self,
+        measured_result_bytes: u64,
+    ) -> Result<(NonZeroUsize, CheckedApplyCapacity), SignalError> {
+        Ok((
+            self.width,
+            CheckedApplyCapacity::from_bases(self.apply_bases, measured_result_bytes)?,
+        ))
     }
 }
 

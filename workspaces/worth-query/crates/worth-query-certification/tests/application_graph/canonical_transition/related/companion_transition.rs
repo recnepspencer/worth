@@ -190,7 +190,7 @@ fn companion_historical_rows_survive_real_transition_production_preserve_and_reo
         .resume(
             token.unwrap(),
             std::num::NonZeroUsize::MIN,
-            std::num::NonZeroUsize::new(65_536).unwrap(),
+            Some(std::num::NonZeroUsize::new(65_536).unwrap()),
         )
         .unwrap();
     journey::assert_old(&second, "derived-right");

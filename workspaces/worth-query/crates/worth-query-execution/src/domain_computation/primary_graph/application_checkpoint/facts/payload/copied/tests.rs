@@ -19,7 +19,7 @@ fn new_heap_copy_refuses_before_copy_and_funding_survives_views_until_final_drop
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 24, 1_000_000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(1 << 24), Some(1_000_000)),
     );
     with_bootstrap_advancement(policy, |phase| {
         let execution = phase.execution_request();
@@ -40,7 +40,13 @@ fn new_heap_copy_refuses_before_copy_and_funding_survives_views_until_final_drop
         let baseline = lease.charged_memory_bytes();
         let quote = super::super::chunk::deep_clone_bytes(&borrowed[0]).unwrap();
         let held = lease
-            .reserve_memory(lease.available_memory_bytes() - quote + 1)
+            .reserve_memory(
+                lease
+                    .available_memory_bytes()
+                    .expect("this fixture supplies a finite memory ceiling")
+                    - quote
+                    + 1,
+            )
             .unwrap();
         let Err(StoreDenial::Allocation(refusal)) = FactPayload::copy_funded(&borrowed, control)
         else {

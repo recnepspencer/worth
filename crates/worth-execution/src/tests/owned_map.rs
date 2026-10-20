@@ -141,7 +141,7 @@ fn canonical(
     // Only denial byte counts vary with the framework's declared worker width.
     let stop = observed.2.as_ref().map(|stop| match stop {
         MapStop::Admission(LeaseDenial::MemoryExhausted(denial)) => {
-            WidthIndependentStop::Memory(denial.level)
+            WidthIndependentStop::Memory(denial.level())
         }
         other => WidthIndependentStop::Other(other),
     });

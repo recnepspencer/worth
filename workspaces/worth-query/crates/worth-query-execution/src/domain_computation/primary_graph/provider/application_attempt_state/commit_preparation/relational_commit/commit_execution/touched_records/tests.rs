@@ -26,7 +26,7 @@ fn request(bytes: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), bytes, 1),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(bytes), Some(1)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -35,8 +35,8 @@ fn request(bytes: u64) -> LeaseRequest {
 
 fn admission() -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 1_000,
-        maximum_preparation_bytes: 1_024,
+        maximum_work_visits: Some(1_000),
+        maximum_preparation_bytes: None,
     })
 }
 
@@ -174,7 +174,7 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
         assert_eq!(
             cause.kind(),
             ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-                worth_execution::MemoryLimitDenial {
+                worth_execution::MemoryLimitDenial::Capacity {
                     requested: quote,
                     admitted: 0,
                     level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
@@ -247,7 +247,7 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
         drop(child);
         assert!(matches!(
             parent.reserve_memory(1),
-            Err(memory) if memory == worth_execution::MemoryLimitDenial { requested: 1, admitted: 0, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
+            Err(memory) if memory == worth_execution::MemoryLimitDenial::Capacity { requested: 1, admitted: 0, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
         ));
         let publication = product
             .publication_binding()
@@ -290,7 +290,7 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
         drop(published);
         assert!(matches!(
             parent.reserve_memory(1),
-            Err(memory) if memory == worth_execution::MemoryLimitDenial { requested: 1, admitted: 0, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
+            Err(memory) if memory == worth_execution::MemoryLimitDenial::Capacity { requested: 1, admitted: 0, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }
         ));
         drop(retained);
         assert_eq!(parent.reserve_memory(quote).unwrap().bytes(), quote);

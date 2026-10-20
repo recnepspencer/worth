@@ -22,8 +22,12 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 
+#[path = "locked_reader/operation_body.rs"]
+mod operation_body;
 #[path = "locked_reader/predecode_admission.rs"]
 mod predecode_admission;
+mod requirement_collection;
+pub(super) use requirement_collection::ObservedRequirementItems;
 #[path = "locked_reader/traversal_denial.rs"]
 mod traversal_denial;
 pub use traversal_denial::{
@@ -45,6 +49,8 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     entity_resolution: &'runtime super::super::WorthQueryInstalledEntityResolutionContext,
     pub(super) observation: worth_relational::facade::mvcc::RelationalBranchObservation,
     pub(super) authority_identity: u64,
+    pub(super) program_activation:
+        Option<&'runtime super::super::program_occurrence::WorthQueryProgramActivationCell>,
     pub(super) work: WorthQueryInvariantProjectionWork,
     pub(super) work_budget: WorthQueryInvariantProjectionWorkBudget,
     /// A read found no capacity to retain its evidence. The projection then
@@ -137,10 +143,10 @@ where
         )
     }
 
-    pub(super) fn project_bounded<Output>(
+    pub(super) fn project_with_work_limit<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        maximum_work: usize,
+        maximum_work: Option<usize>,
         basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         projection: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
@@ -155,7 +161,10 @@ where
     > {
         self.project_with_work_budget(
             execution,
-            WorthQueryInvariantProjectionWorkBudget::bounded(maximum_work),
+            maximum_work.map_or_else(
+                WorthQueryInvariantProjectionWorkBudget::unbounded,
+                WorthQueryInvariantProjectionWorkBudget::bounded,
+            ),
             basis,
             projection,
             super::super::application_attempt::retained_decision_facts::StorageControl::new(
@@ -210,6 +219,7 @@ where
                     output_lineage: Arc::clone(&self.graph.output_lineage),
                     invalidation_owner: Arc::clone(&self.graph.source_owner.invalidation_owner),
                     selected_product_occurrence: None,
+                    program_activation: self.program_activation.as_ref(),
                     selected_product_generation: None,
                     selected_source_partition_identity: None,
                     prior_output_bindings: HashMap::new(),
@@ -227,7 +237,7 @@ where
                     reader.realized_scope,
                     reader.consumed_outputs,
                     reader.dependent_source_facts.finish(retention_control),
-                    reader.work_budget.exceeded(),
+                    (reader.work_budget.exceeded(), reader.work_budget.overflowed()),
                     reader.retention_exhausted,
                     reader.native_read_stop,
                 )
@@ -251,7 +261,7 @@ where
             realized_scope,
             consumed_outputs,
             dependent_source_facts,
-            exceeded,
+            (exceeded, overflowed),
             retention_exhausted,
             native_read_stop,
         ) = match projected {
@@ -263,6 +273,11 @@ where
         };
         let stopped = if let Some(cause) = native_read_stop {
             Some(WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, Some(work)))
+        } else if overflowed {
+            Some(WorthQueryInvariantProjectionDenial::execution_request_stopped(
+                worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow,
+                Some(work),
+            ))
         } else if exceeded {
             Some(WorthQueryInvariantProjectionDenial::work_budget_exceeded(
                 work,

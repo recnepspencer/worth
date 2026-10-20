@@ -37,13 +37,13 @@ fn release_admission_is_exact_and_denial_preserves_retained_set() {
         Some(&delta)
     );
     let mut fork = source.fork_persistent();
-    let mut measured = Work::new(usize::MAX);
+    let mut measured = Work::new(None);
     fork.admit_release_work(id, &mut EvaluationWork::Conditional(&mut measured))
         .unwrap();
     let cost = measured.visits();
     assert!(cost >= 2 * scope.len());
     for available in [cost - 1, cost] {
-        let mut work = Work::new(cost + 11);
+        let mut work = Work::new(Some(cost + 11));
         work.reserve_visits(cost + 11 - available).unwrap();
         let result = fork.admit_release_work(id, &mut EvaluationWork::Conditional(&mut work));
         if available == cost {
@@ -94,7 +94,7 @@ fn conditional_release_denies_missing_generation_metadata_without_repair() {
     );
     let id = store.insert([cause]);
     store.slot_generations.clear();
-    let mut work = Work::new(usize::MAX);
+    let mut work = Work::new(None);
     assert!(store
         .admit_release_work(id, &mut EvaluationWork::Conditional(&mut work))
         .is_err());

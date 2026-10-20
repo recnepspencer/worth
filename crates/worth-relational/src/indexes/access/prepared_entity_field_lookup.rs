@@ -77,7 +77,7 @@ impl PreparedEntityFieldLookup {
     }
     /// Complete finite selection. The callback controls interruption; it does
     /// not claim admission of temporary key or result Vec backing.
-    pub fn execute_prepared_entity_field_lookup<E>(
+    pub fn execute_prepared_entity_field_lookup<E: worth_execution::ChargedBytes>(
         &self,
         value: &AspectValue,
         limit: usize,
@@ -96,7 +96,7 @@ impl PreparedEntityFieldLookup {
         self.collect_prepared_entity_field_lookup(value, limit, parity, execution, admission)
     }
 
-    pub(super) fn collect_prepared_entity_field_lookup<E>(
+    pub(super) fn collect_prepared_entity_field_lookup<E: worth_execution::ChargedBytes>(
         &self,
         value: &AspectValue,
         limit: usize,

@@ -39,6 +39,7 @@ where
         scope,
         observation,
         &coordination,
+        execution,
         admission,
     )?;
     let publication = address.prepare_record(fresh, operation, resources, execution, admission)?;
@@ -64,7 +65,7 @@ where
         observation,
         &runtime.product_runtime.owner.observation_port(),
         registration,
-        admission,
+        execution, admission,
     ).map_err(|stop| match stop {
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::Demand(stop) => ProducerExecutionStop::ExecutionStopped(stop),
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::RequestAuthority(stop) => super::denial::request_authority_denied(Binding::IDENTITY, stop),

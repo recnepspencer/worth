@@ -27,7 +27,7 @@ where
         let binding = std::any::TypeId::of::<Binding>();
         self.actions
             .iter()
-            .find(|action| action.mutation_binding_type() == Some(binding))
+            .find(|action| action.ordinary_mutation_binding_type() == Some(binding))
     }
 
     pub fn scoped_action<Binding, Scope, Shape>(
@@ -44,7 +44,7 @@ where
         self.actions
             .iter()
             .any(|action| {
-                action.mutation_binding_type() == Some(binding)
+                action.ordinary_mutation_binding_type() == Some(binding)
                     && action
                         .locality()
                         .is_some_and(|declared| declared.scope_type() == scope)

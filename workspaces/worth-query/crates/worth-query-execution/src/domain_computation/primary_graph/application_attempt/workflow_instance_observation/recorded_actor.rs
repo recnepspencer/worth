@@ -185,13 +185,17 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn origina
         entity_id: entity,
         kind,
     });
-    for (locator, value) in [
-        (&layout.instance.protocol_version, crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION),
-        (&layout.instance.branch_occurrence, instance.started_occurrence()),
-        (&layout.instance.subject_partition, u64::from(subject.partition_value())),
-        (&layout.instance.subject_slot, subject.local_slot_value()),
-        (&layout.instance.subject_generation, u64::from(subject.generation_value())),
-    ] { exact(execution, runtime, snapshot, entity, kind, locator, AspectValue::UInt64(value), facts)?; }
+    super::subject::observe_subject(execution, runtime, snapshot, layout, entity, subject, facts)?;
+    exact(
+        execution,
+        runtime,
+        snapshot,
+        entity,
+        kind,
+        &layout.instance.branch_occurrence,
+        AspectValue::UInt64(instance.started_occurrence()),
+        facts,
+    )?;
     exact(
         execution,
         runtime,

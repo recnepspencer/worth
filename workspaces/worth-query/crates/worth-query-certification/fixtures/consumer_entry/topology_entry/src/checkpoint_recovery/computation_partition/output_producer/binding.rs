@@ -114,13 +114,21 @@ impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
             key
         }
     }
-    fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
-        if MODE == 1 {
-            // The wide-key decision may disclose every declared Native fact.
-            // Reserve its finite projection bound, including own-write rebasing.
-            WorthQueryProducerDemandResources::new(4096, DECISION_FACT_BUDGET * 512)
-        } else {
-            planar_producer_resources()
-        }
+    fn demand_resources(
+        &self,
+        _: &PlanarReadResult,
+    ) -> Result<
+        WorthQueryProducerDemandResources,
+        super::runtime_api::application_contribution::WorthQueryProducerResourceQuoteDenial,
+    > {
+        Ok({
+            if MODE == 1 {
+                // The wide-key decision may disclose every declared Native fact.
+                // Reserve its finite projection bound, including own-write rebasing.
+                WorthQueryProducerDemandResources::new(Some(4096), DECISION_FACT_BUDGET * 512)
+            } else {
+                planar_producer_resources()
+            }
+        })
     }
 }

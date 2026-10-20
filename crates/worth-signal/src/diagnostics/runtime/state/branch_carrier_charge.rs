@@ -191,23 +191,23 @@ mod tests {
         let source = DiagnosticsState::default();
         let mut carrier = source.fork_branch_carrier();
         let before = carrier
-            .retained_branch_carrier_charge(&mut Preparation::new(1_000))
+            .retained_branch_carrier_charge(&mut Preparation::new(Some(1_000)))
             .unwrap();
         let branch = carrier.branch_catalog.get_mut(&SignalBranchId(0)).unwrap();
         let original_capacity = branch.name.capacity();
         branch.name.reserve_exact(8_192);
         let additional_capacity = branch.name.capacity() - original_capacity;
-        let mut work = Preparation::new(1_000);
+        let mut work = Preparation::new(Some(1_000));
         let after = carrier.retained_branch_carrier_charge(&mut work).unwrap();
         assert_eq!(after.bytes() - before.bytes(), additional_capacity as u64);
         assert_eq!(
             carrier
-                .retained_branch_carrier_charge(&mut Preparation::new(work.visits()))
+                .retained_branch_carrier_charge(&mut Preparation::new(Some(work.visits())))
                 .unwrap(),
             after
         );
         assert!(matches!(
-            carrier.retained_branch_carrier_charge(&mut Preparation::new(work.visits() - 1)),
+            carrier.retained_branch_carrier_charge(&mut Preparation::new(Some(work.visits() - 1))),
             Err(BranchCarrierChargeDenial::Storage(
                 RetainedStoragePreparationDenial::WorkExhausted { .. }
             ))
@@ -225,7 +225,7 @@ mod tests {
             .unwrap();
         assert!(!carrier.recent_history.is_empty());
         assert_eq!(
-            carrier.retained_branch_carrier_charge(&mut Preparation::new(1_000)),
+            carrier.retained_branch_carrier_charge(&mut Preparation::new(Some(1_000))),
             Err(BranchCarrierChargeDenial::NotBranchCarrier)
         );
         let mut carrier = source.fork_branch_carrier();
@@ -237,7 +237,7 @@ mod tests {
             performed_baseline: Default::default(),
         });
         assert_eq!(
-            carrier.retained_branch_carrier_charge(&mut Preparation::new(1_000)),
+            carrier.retained_branch_carrier_charge(&mut Preparation::new(Some(1_000))),
             Err(BranchCarrierChargeDenial::NotBranchCarrier)
         );
     }

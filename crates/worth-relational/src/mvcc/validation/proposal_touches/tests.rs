@@ -10,6 +10,9 @@ use crate::transactions::data::{
 
 use super::ValidatedMutationTouch;
 
+#[path = "tests/initialization.rs"]
+mod initialization;
+
 #[test]
 fn create_and_update_project_exact_entity_touch_loci() {
     let host_request = crate::test_execution_policy::serial_request();

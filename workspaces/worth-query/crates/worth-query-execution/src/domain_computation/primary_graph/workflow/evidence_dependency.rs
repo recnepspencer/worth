@@ -5,6 +5,8 @@ pub(in crate::domain_computation::primary_graph) enum WorkflowEvidenceDependency
     Entity,
     EntityKind,
     AspectRevision,
+    AspectPresent,
+    AspectAbsent,
     FieldRevision,
     AdjacencyRevision,
 }
@@ -15,6 +17,8 @@ impl WorkflowEvidenceDependencyKind {
             Self::Entity => "entity",
             Self::EntityKind => "entity-kind",
             Self::AspectRevision => "aspect-revision",
+            Self::AspectPresent => "aspect-present",
+            Self::AspectAbsent => "aspect-absent",
             Self::FieldRevision => "field-revision",
             Self::AdjacencyRevision => "adjacency-revision",
         }
@@ -25,6 +29,8 @@ impl WorkflowEvidenceDependencyKind {
             "entity" => Some(Self::Entity),
             "entity-kind" => Some(Self::EntityKind),
             "aspect-revision" => Some(Self::AspectRevision),
+            "aspect-present" => Some(Self::AspectPresent),
+            "aspect-absent" => Some(Self::AspectAbsent),
             "field-revision" => Some(Self::FieldRevision),
             "adjacency-revision" => Some(Self::AdjacencyRevision),
             _ => None,

@@ -37,10 +37,19 @@ pub(super) fn request(
         Request::Stopped(MapKernelStop::DeadlineElapsed) => {
             super::mutation_application::pending_execution_stop(Err(Control::TimedOut))
         }
-        Request::Admission(LeaseDenial::MemoryExhausted(limit)) => match limit.level {
-            MemoryLimitLevel::Process => BankHttpDenial::new(Kind::Unavailable, Next::Retry),
-            MemoryLimitLevel::Policy { .. } | MemoryLimitLevel::Declared => {
-                BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest)
+        Request::Admission(LeaseDenial::MemoryExhausted(limit)) => match limit {
+            worth_query_host::facade::runtime::MemoryLimitDenial::CounterOverflow { .. } => {
+                operator_denial()
+            }
+            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity { level, .. } => {
+                match level {
+                    MemoryLimitLevel::Process => {
+                        BankHttpDenial::new(Kind::Unavailable, Next::Retry)
+                    }
+                    MemoryLimitLevel::Policy { .. } | MemoryLimitLevel::Declared => {
+                        BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest)
+                    }
+                }
             }
         },
         Request::Admission(

@@ -49,5 +49,9 @@ pub(crate) const UI_EXECUTION_POLICY: runtime::ExecutionRequestPolicy =
     runtime::ExecutionRequestPolicy::new(
         runtime::ExecutionPosture::Serial,
         runtime::DeterminismContract::CanonicalBitwise,
-        runtime::ExecutionBudget::new(std::num::NonZeroUsize::MIN, 128 * 1024 * 1024, 16_000_000),
+        runtime::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            128 * 1024 * 1024,
+            Some(16_000_000),
+        ),
     );

@@ -11,7 +11,11 @@ fn allocation_cause_keeps_its_error_source_type() {
             policy: worth_foundational::ExecutionRequestPolicy::new(
                 worth_foundational::ExecutionPosture::Serial,
                 worth_foundational::DeterminismContract::CanonicalBitwise,
-                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, 0, 1),
+                worth_foundational::ExecutionBudget::new(
+                    std::num::NonZeroUsize::MIN,
+                    Some(0),
+                    Some(1),
+                ),
             ),
             deadline: None,
             cancellation: worth_execution::CancellationToken::new(),
@@ -33,11 +37,13 @@ fn allocation_cause_keeps_its_error_source_type() {
     assert_eq!(
         source.kind(),
         worth_execution::ExecutionAllocationDenialKind::Lease(
-            worth_execution::LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial {
-                requested: std::mem::size_of::<u8>() as u64,
-                admitted: 0,
-                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
-            }),
+            worth_execution::LeaseDenial::MemoryExhausted(
+                worth_execution::MemoryLimitDenial::Capacity {
+                    requested: std::mem::size_of::<u8>() as u64,
+                    admitted: 0,
+                    level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
+                }
+            ),
         )
     );
 }

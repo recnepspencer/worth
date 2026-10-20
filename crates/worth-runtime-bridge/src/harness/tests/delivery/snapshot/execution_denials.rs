@@ -63,8 +63,8 @@ impl InvalidationSink for RefusingSink {
                                 determinism,
                                 ExecutionBudget::new(
                                     NonZeroUsize::new(workers).unwrap(),
-                                    memory,
-                                    work,
+                                    Some(memory),
+                                    Some(work),
                                 ),
                             ),
                             cancellation: CancellationToken::new(),
@@ -81,7 +81,7 @@ impl InvalidationSink for RefusingSink {
                     Refusal::Memory => refused_scan(Some(lease), 0, 4097),
                     Refusal::Overflow => refused_scan(Some(lease), u64::MAX, 0),
                     Refusal::Nested => {
-                        ExecutionWorkCeiling::new(10)
+                        ExecutionWorkCeiling::new(Some(10))
                             .run(lease, || refused_scan(None, 0, 0))
                             .unwrap()
                             .0
@@ -144,7 +144,13 @@ fn every_sink_resource_cause_survives_delivery_to_the_caller() {
             Refusal::MemoryLimit => assert_eq!(denial, Own::MemoryLimitExceedsParent),
             Refusal::Work => assert_eq!(denial, Own::WorkLimitExceedsParent),
             Refusal::Memory => {
-                assert!(matches!(denial, Own::MemoryExhausted(memory) if memory.admitted == 4096))
+                assert!(matches!(
+                    denial,
+                    Own::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
+                        admitted: 4096,
+                        ..
+                    })
+                ))
             }
             Refusal::Overflow => assert_eq!(denial, Own::ChargedBytesOverflow),
             Refusal::Nested => assert_eq!(denial, Own::UnrelatedNestedLease),
@@ -157,7 +163,7 @@ fn serial_request(memory: u64) -> worth_execution::SerialRequest {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, memory, 1_000),
+        ExecutionBudget::new(NonZeroUsize::MIN, Some(memory), Some(1_000)),
     );
     worth_execution::SerialRequest::from_memory(
         worth_execution::SerialMemoryBudget::from_policy(&policy),
@@ -197,10 +203,12 @@ fn serial_delivery_refuses_memory_before_sink_delivery() {
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
     let error = serial_delivery(&serial_request(1), resource_request);
-    assert!(
-        matches!(error.kind(), BridgeDeliveryErrorKind::ExecutionDenied(
-        BridgeExecutionDenial::MemoryExhausted(memory)) if memory.admitted == 1)
-    );
+    assert!(matches!(
+        error.kind(),
+        BridgeDeliveryErrorKind::ExecutionDenied(BridgeExecutionDenial::MemoryExhausted(
+            worth_execution::MemoryLimitDenial::Capacity { admitted: 1, .. }
+        ))
+    ));
 }
 
 #[test]

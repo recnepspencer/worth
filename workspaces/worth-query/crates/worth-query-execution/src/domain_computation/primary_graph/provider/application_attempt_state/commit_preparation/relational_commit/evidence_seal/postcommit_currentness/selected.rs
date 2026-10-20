@@ -137,14 +137,15 @@ impl SelectedRebase {
         snapshot: &SnapshotHandle,
         retired: &BTreeSet<EntityId>,
         producer: bool,
-        maximum: usize,
+        maximum: Option<usize>,
         admission: &mut InvalidationEditAdmission,
         control: StorageControl<'_, '_>,
     ) -> RebasedSourceFacts {
         let mut width = InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: u64::try_from(maximum).unwrap_or(u64::MAX),
-                maximum_preparation_bytes: 0,
+                maximum_work_visits: maximum
+                    .map(|maximum| u64::try_from(maximum).unwrap_or(u64::MAX)),
+                maximum_preparation_bytes: Some(0),
             },
         );
         let mut failure = None;

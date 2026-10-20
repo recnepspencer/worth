@@ -81,7 +81,7 @@ pub(super) struct SettlementMarks {
     /// Changes since retained computation, preserved by ordinary dirty clearing.
     pub(super) computation_frontier: Option<OrdSet<usize>>,
     pub(super) work_membership: Option<Arc<RequiredWorkMembership>>,
-    pub(super) _fact_capacity: Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>,
+    pub(super) _fact_capacity: super::fact_retention::RetainedFactCapacity,
     pub(super) posting_projection: Arc<super::settlement::PostingProjection>,
     pub(super) consumed_upstream: OrdSet<Arc<RecordedSettlementIdentity>>,
     pub(super) facts: super::super::RetainedSourceFacts,

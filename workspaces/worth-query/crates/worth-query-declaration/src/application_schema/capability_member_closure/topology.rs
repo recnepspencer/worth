@@ -20,7 +20,7 @@ pub(super) fn topology_is_valid(contract: &ErasedApplicationCapabilityContract) 
         && target.resource().from() == grant
         && currentness.active_status().field().entity() == grant
         && currentness.workflow().grant().entity() == grant
-        && currentness.workflow().resource().entity() == target.resource().to()
+        && currentness.workflow().resource().entity() == target.resource_path().scope_entity()
         && currentness.workflow().grant().value_type()
             == currentness.workflow().resource().value_type()
         && currentness.validity().not_before().entity() == grant

@@ -21,6 +21,7 @@ pub(super) fn canonicalize<Spec>(
     start: &str,
     mut nodes: Vec<ApplicationWorkflowNode>,
     mut connections: Vec<ApplicationWorkflowConnection>,
+    global_actions: &[super::ApplicationWorkflowGlobalAction],
 ) -> Result<
     (
         ApplicationWorkflowDefinitionContentIdentity,
@@ -63,6 +64,19 @@ where
             &connection_record(connection),
         )
     }));
+    // Absence adds no records, preserving every earlier content identity.
+    if !global_actions.is_empty() {
+        entries.push(unsigned_entry(
+            "global-action-count",
+            global_actions.len() as u128,
+        ));
+        entries.extend(global_actions.iter().enumerate().map(|(index, action)| {
+            text_entry(
+                &format!("global-action[{index}]"),
+                &global_action_record(action),
+            )
+        }));
+    }
     let basis = prepare_canonical_basis_sequence(
         CanonicalizationRuleVersion::new(RULE_VERSION)
             .expect("the workflow canonical rule version is valid"),
@@ -73,6 +87,7 @@ where
     .expect("workflow canonical loci are unique and the basis is nonempty");
     let maximum_entries = u32::from(limits.maximum_nodes())
         .saturating_add(u32::from(limits.maximum_connections()))
+        .saturating_add(u32::from(limits.maximum_effects()))
         .saturating_add(8);
     let budget =
         CanonicalDigestWorkBudget::new(maximum_entries, limits.maximum_canonical_bytes() as usize)
@@ -87,6 +102,29 @@ where
         nodes.into_boxed_slice(),
         connections.into_boxed_slice(),
     ))
+}
+
+pub(super) fn global_action_record(action: &super::ApplicationWorkflowGlobalAction) -> String {
+    let operation = action.operation();
+    let requirements = operation
+        .workflow_execution_requirements()
+        .persistence_identity();
+    match action {
+        super::ApplicationWorkflowGlobalAction::Terminate(_) => framed_record(
+            "termination-action-v1",
+            &[
+                operation.identifier(),
+                operation.input_type().as_str(),
+                operation.binding().map_or("", |binding| binding.0),
+                if operation.binding().is_some_and(|binding| binding.2) {
+                    "guarded"
+                } else {
+                    "unguarded"
+                },
+                &requirements,
+            ],
+        ),
+    }
 }
 
 fn limits_record(limits: ApplicationWorkflowDefinitionLimits) -> String {
@@ -251,6 +289,27 @@ fn assessment_applicability_record(
 
 fn connection_record(connection: &ApplicationWorkflowConnection) -> String {
     match connection.kind() {
+        ApplicationWorkflowConnectionKind::BackAction(operation) => {
+            let requirements = operation
+                .workflow_execution_requirements()
+                .persistence_identity();
+            framed_record(
+                "back-action-v1",
+                &[
+                    connection.source().as_str(),
+                    connection.target().as_str(),
+                    operation.identifier(),
+                    operation.input_type().as_str(),
+                    operation.binding().map_or("", |binding| binding.0),
+                    if operation.binding().is_some_and(|binding| binding.2) {
+                        "guarded"
+                    } else {
+                        "unguarded"
+                    },
+                    &requirements,
+                ],
+            )
+        }
         ApplicationWorkflowConnectionKind::Control(outcome) => framed_record(
             "control",
             &[
@@ -302,6 +361,8 @@ const fn control_tag(outcome: ApplicationWorkflowControlOutcome) -> u8 {
         ApplicationWorkflowControlOutcome::ConditionSatisfied => 6,
         ApplicationWorkflowControlOutcome::ConditionUnsatisfied => 7,
         ApplicationWorkflowControlOutcome::NavigatedBack => 8,
+        ApplicationWorkflowControlOutcome::Returned => 9,
+        ApplicationWorkflowControlOutcome::Terminated => 10,
     }
 }
 

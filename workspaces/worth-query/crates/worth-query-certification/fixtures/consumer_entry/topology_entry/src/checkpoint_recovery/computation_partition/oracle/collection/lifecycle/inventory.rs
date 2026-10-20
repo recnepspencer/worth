@@ -19,7 +19,10 @@ fn refusal<const MODE: u8>(target: &str) {
         support::try_install_program_with_limits::<OracleProgram<false, TOTALS_WORK, 1, MODE>>(
             None,
             Default::default(),
-            support::limits(32, support::invalidation(128 * 1024 * 1024, 1_000_000, 32)),
+            support::limits(
+                32,
+                support::invalidation(128 * 1024 * 1024, Some(1_000_000), 32),
+            ),
             |_| initialized.set(true),
         );
     assert!(

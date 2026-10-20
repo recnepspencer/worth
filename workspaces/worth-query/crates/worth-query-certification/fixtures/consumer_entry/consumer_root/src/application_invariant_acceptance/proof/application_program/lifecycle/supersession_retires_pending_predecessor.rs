@@ -67,15 +67,12 @@ pub(in super::super) fn supersession_retires_pending_predecessor(
         .execute()
         .expect("the successor output remains exactly readable");
     assert_eq!(exact.rows()[0].value, length(7));
-    let comparison_work = NonZeroUsize::new(
-        world
-            .application
-            .runtime()
-            .output_demand_resource_profile()
-            .limits()
-            .source_currentness_work(),
-    )
-    .expect("the installed profile admits positive source currentness work");
+    let comparison_work = world
+        .application
+        .runtime()
+        .output_demand_resource_profile()
+        .limits()
+        .source_currentness_work();
     let previous_basis = world
         .application
         .with_host_advancement(|host_phase| request.retain_read(&host_phase).unwrap())

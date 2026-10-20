@@ -56,13 +56,15 @@ impl InvalidationEditAdmission {
 
 impl IndexAdmission for InvalidationEditAdmission {
     fn work(&mut self, visits: u64) -> Result<(), CompanionPreflightStop> {
-        let maximum = self.budget.maximum_work_visits;
+        let maximum = self.maximum_work;
         self.with_totals_mut(|totals| {
             let required = totals
                 .work
                 .checked_add(visits)
                 .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-            if required > maximum {
+            if let Some(maximum) = maximum
+                && required > maximum
+            {
                 return Err(CompanionPreflightStop::WorkExhausted { required, maximum });
             }
             totals.work = required;
@@ -75,13 +77,15 @@ impl IndexAdmission for InvalidationEditAdmission {
     }
 
     fn bytes(&mut self, bytes: u64) -> Result<(), CompanionPreflightStop> {
-        let maximum = self.budget.maximum_preparation_bytes;
+        let maximum = self.maximum_preparation_bytes;
         self.with_totals_mut(|totals| {
             let required = totals
                 .bytes
                 .checked_add(bytes)
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-            if required > maximum {
+            if let Some(maximum) = maximum
+                && required > maximum
+            {
                 return Err(CompanionPreflightStop::PreparationMemoryExhausted {
                     required,
                     maximum,

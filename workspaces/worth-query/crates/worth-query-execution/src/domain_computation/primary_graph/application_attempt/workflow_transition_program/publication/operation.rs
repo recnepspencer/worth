@@ -49,7 +49,7 @@ pub struct RequiredWorkflowOperation {
     pub(super) instance: worth_relational::facade::identity::EntityId,
     original_instance: super::super::super::PublishedWorkflowInstanceRef,
     original_runtime: u64,
-    original_sources: super::super::actor_context::OriginalActorSources,
+    original_sources: Option<super::super::actor_context::OriginalActorSources>,
     pub(super) node_path: String,
     pub(super) transition_identity: String,
     pub(super) transition_identity_bytes: [u8; 32],
@@ -127,8 +127,8 @@ impl WorkflowOperationAuthoritySlot {
 impl RequiredWorkflowOperation {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn original_sources(
         &self,
-    ) -> &super::super::actor_context::OriginalActorSources {
-        &self.original_sources
+    ) -> Option<&super::super::actor_context::OriginalActorSources> {
+        self.original_sources.as_ref()
     }
 
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn original_runtime(
@@ -149,7 +149,7 @@ impl RequiredWorkflowOperation {
         branch: crate::basis::WorthQueryProductBranch,
         original_runtime: u64,
         original_instance: super::super::super::PublishedWorkflowInstanceRef,
-        original_sources: super::super::actor_context::OriginalActorSources,
+        original_sources: Option<super::super::actor_context::OriginalActorSources>,
         node_path: String,
         transition_identity: String,
         transition_identity_bytes: [u8; 32],

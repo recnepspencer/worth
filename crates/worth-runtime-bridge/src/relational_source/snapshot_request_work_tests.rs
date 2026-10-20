@@ -31,8 +31,8 @@ fn bridge_snapshot_custody_adds_no_work_to_the_direct_native_read() {
                     DeterminismContract::CanonicalBitwise,
                     ExecutionBudget::new(
                         std::num::NonZeroUsize::new(workers).unwrap(),
-                        64 * 1024 * 1024,
-                        100_000,
+                        None,
+                        Some(100_000),
                     ),
                 ),
                 worth_execution::CancellationToken::new(),
@@ -40,12 +40,12 @@ fn bridge_snapshot_custody_adds_no_work_to_the_direct_native_read() {
         });
         let request = lease.as_ref().map_or(bootstrap, ExecutionRequest::leased);
         let (direct, direct_work) = request
-            .run(ExecutionWorkCeiling::new(100_000), |_| {
+            .run(ExecutionWorkCeiling::new(Some(100_000)), |_| {
                 reader.read_packet(&packet, request).unwrap()
             })
             .unwrap();
         let (through_bridge, bridged_work) = request
-            .run(ExecutionWorkCeiling::new(100_000), |_| {
+            .run(ExecutionWorkCeiling::new(Some(100_000)), |_| {
                 bridged.read_packet(&packet, request).unwrap()
             })
             .unwrap();

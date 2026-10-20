@@ -69,11 +69,9 @@ impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
                 KindId,
                 &crate::symbols::data::ClientKey,
             )>() as u64);
-            let room = self
-                .budget
-                .map_or(u64::MAX, InvariantBudget::remaining_scratch);
+            let room = self.budget.and_then(InvariantBudget::remaining_scratch);
             self.created_lookup_profitable =
-                count > 32 && new_maximum <= old_minimum && bytes <= room;
+                count > 32 && new_maximum <= old_minimum && room.is_none_or(|room| bytes <= room);
         }
         self
     }

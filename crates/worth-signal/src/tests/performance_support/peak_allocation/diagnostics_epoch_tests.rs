@@ -71,7 +71,7 @@ fn assert_epoch_fits_forecast(
     let provenance = ProvenanceFact::from_explanation(&graph.observe().explain(target).unwrap());
     let sequence = state.allocate_lineage_sequence();
     let lineage = record(target, artifact, sequence);
-    let mut measurement = Work::new(usize::MAX);
+    let mut measurement = Work::new(None);
     let lineage_payload = lineage
         .retained_heap_charge(&mut measurement)
         .unwrap()
@@ -102,14 +102,14 @@ fn assert_epoch_fits_forecast(
         SignalConditionalEvaluationBudget {
             maximum_retained_slots: 2,
             maximum_retained_bytes: 512 * 1024 * 1024,
-            maximum_attempt_visits: usize::MAX,
+            maximum_attempt_visits: None,
         },
         SignalRuntimePolicy::development().conditional_temporal_budget,
     );
     let (_, peak) = measure(|| {
         // This witness isolates allocation; separate tests enforce visit denials.
-        let mut work = Work::new(usize::MAX);
-        let mut request = SignalPreparationBudget::new(forecast);
+        let mut work = Work::new(None);
+        let mut request = SignalPreparationBudget::new(Some(forecast));
         let mut draft = state
             .prepare_epoch_diagnostics(&mut work, Some(&mut request), Some(&ledger), 1)
             .unwrap();

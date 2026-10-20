@@ -54,8 +54,8 @@ impl OperationHandler<BankSchema, GrantAccountAccessMutationBinding> for GrantAc
         _: &bank_domain::proposals::BankInvariantApprovedProposal,
     ) -> ApplicationCandidateRequirements {
         GrantAccountAccessMutationBinding::CANDIDATES
-            .fixed_requirements()
-            .expect("fixed candidate contract")
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(
@@ -107,8 +107,8 @@ impl OperationHandler<BankSchema, RevokeAccountAccessMutationBinding>
         _: &bank_domain::proposals::BankInvariantApprovedProposal,
     ) -> ApplicationCandidateRequirements {
         RevokeAccountAccessMutationBinding::CANDIDATES
-            .fixed_requirements()
-            .expect("fixed candidate contract")
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

@@ -2,7 +2,7 @@
 use super::*;
 use crate::source_only::{
     host,
-    retained::{bound, operation, RetainedProgram},
+    retained::{operation, RetainedProgram},
 };
 use std::time::Duration;
 use worth_query_host::facade::primary_graph::{
@@ -64,7 +64,7 @@ fn managed_no_effect_capacity_retains_actual_cleanup_failure() {
                 released.recv().unwrap();
                 drop(reads);
             });
-            let terminal = match original.advance(&request, bound()) {
+            let terminal = match original.advance(&request, None) {
                 WorthQuerySourceOnlyAdvance::Terminal(terminal) => terminal,
                 _ => panic!("actual World no-effect retains real managed failure"),
             };
@@ -90,7 +90,7 @@ fn managed_no_effect_capacity_retains_actual_cleanup_failure() {
         );
         assert!(host
             .runtime()
-            .product_publication_recovery_page(None, bound())
+            .product_publication_recovery_page(None, NonZeroUsize::MIN)
             .unwrap()
             .rows()
             .is_empty());

@@ -7,8 +7,8 @@ use super::*;
 
 fn admission() -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 1_000_000,
-        maximum_preparation_bytes: 64 * 1024 * 1024,
+        maximum_work_visits: Some(1_000_000),
+        maximum_preparation_bytes: Some(64 * 1024 * 1024),
     })
 }
 fn projection(
@@ -136,8 +136,8 @@ fn logical_delivery_orders_exact_settlements_and_duplicate_ordinals_not_projecti
         .unwrap()
         .unwrap();
     let mut stopped = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 0,
-        maximum_preparation_bytes: 0,
+        maximum_work_visits: Some(0),
+        maximum_preparation_bytes: Some(0),
     });
     assert!(cursor
         .next(&state, &key, &mut stopped, &mut counts)
@@ -162,8 +162,8 @@ fn a_refused_successor_binding_leaves_the_original_image_usable() {
     posting_bindings::bind(&mut original, &projection, &first, &mut admission).unwrap();
     let mut candidate = original.clone();
     let mut stopped = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 0,
-        maximum_preparation_bytes: 0,
+        maximum_work_visits: Some(0),
+        maximum_preparation_bytes: Some(0),
     });
     assert!(posting_bindings::bind(&mut candidate, &projection, &second, &mut stopped).is_err());
     drop(candidate);

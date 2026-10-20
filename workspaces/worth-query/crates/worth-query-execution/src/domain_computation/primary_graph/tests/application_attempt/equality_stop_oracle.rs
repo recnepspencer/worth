@@ -71,8 +71,8 @@ fn run(
         .unwrap();
     let _policy = Policy(
         place(Placement::Leased(std::num::NonZeroUsize::MIN)),
-        bound(work.map(|work| {
-            worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, 64 << 20, work)
+        bound(work.or_else(|| work_at.map(|_| u64::MAX - 1)).map(|work| {
+            worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(work))
         })),
     );
     let probe = match work_at {
@@ -83,7 +83,11 @@ fn run(
                 // Exhaust the existing caller meter inside this actual read.
                 // Free consultations do not acquire a production unit price.
                 let context = context.expect("the admitted caller meter");
-                let attempted = context.remaining_work().checked_add(1).unwrap();
+                let attempted = context
+                    .remaining_work()
+                    .expect("this adversarial scope selected a finite ceiling")
+                    .checked_add(1)
+                    .unwrap();
                 assert_eq!(
                     context.checkpoint(attempted),
                     Err(worth_execution::MapKernelStop::WorkCeiling)

@@ -12,7 +12,7 @@ fn serial(bytes: u64) -> SerialRequest {
         &ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, bytes, 10_000),
+            ExecutionBudget::new(NonZeroUsize::MIN, Some(bytes), Some(10_000)),
         ),
         CancellationToken::new(),
         None,
@@ -34,7 +34,7 @@ fn nested_serial_scope_cannot_replace_parent_memory() {
                         ExecutionMemoryReservation::reserve_in_scope(lease, 4_096).unwrap_err();
                     assert!(matches!(
                         denial,
-                        LeaseDenial::MemoryExhausted(MemoryLimitDenial {
+                        LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
                             level: MemoryLimitLevel::Policy { ancestor: 1 },
                             ..
                         })
@@ -60,7 +60,7 @@ fn nested_serial_scope_keeps_the_child_limit() {
                 .in_scope(|lease| {
                     assert!(matches!(
                         ExecutionMemoryReservation::reserve_in_scope(lease, 1_024),
-                        Err(LeaseDenial::MemoryExhausted(MemoryLimitDenial {
+                        Err(LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
                             level: MemoryLimitLevel::Policy { ancestor: 0 },
                             ..
                         }))

@@ -72,8 +72,8 @@ macro_rules! binding {
             const IDENTITY: &'static str = $identity;
             const HANDLER_IDENTITY: &'static str = Self::IDENTITY;
             const IDEMPOTENCY_IDENTITY: &'static str = Self::IDENTITY;
-            const CANDIDATES: ApplicationCandidateContract =
-                ApplicationCandidateContract::FixedShape(requirements(
+            const CANDIDATES: ApplicationCandidatePolicy =
+                ApplicationCandidatePolicy::finite(requirements(
                     4,
                     1,
                     0,
@@ -170,7 +170,7 @@ impl<Schema: BirthSchema> OperationHandler<Schema, Binding<Schema, true>> for Ha
         _: &Decision<Schema>,
     ) -> ApplicationCandidateRequirements {
         Binding::<Schema, true>::CANDIDATES
-            .fixed_requirements()
+            .finite_requirements()
             .unwrap()
     }
     fn build_candidate(

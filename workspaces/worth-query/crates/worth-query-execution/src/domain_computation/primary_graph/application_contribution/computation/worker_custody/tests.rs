@@ -29,12 +29,12 @@ fn author_held_application_and_product_handles_receive_nested_opening() {
             if workers == 0 {
                 worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
                     NonZeroUsize::MIN,
-                    1 << 24,
+                    None,
                 ))
             } else {
                 worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
                     authority: test_authority(),
-                    policy: test_policy(NonZeroUsize::new(workers).unwrap(), 1 << 24),
+                    policy: test_policy(NonZeroUsize::new(workers).unwrap(), None),
                 }
             },
             &scope,
@@ -69,7 +69,7 @@ fn author_held_application_and_product_handles_receive_nested_opening() {
         let (settled, _) = root
             .execution_request()
             .unwrap()
-            .run(worth_execution::ExecutionWorkCeiling::new(u64::MAX), |_| {
+            .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
                 wave_dispatch::dispatch(&root, members)
             })
             .unwrap();

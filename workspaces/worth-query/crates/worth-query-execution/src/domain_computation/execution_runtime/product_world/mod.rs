@@ -50,7 +50,9 @@ pub(crate) use request_control::{
     WorthQueryPreparedProductPublication,
 };
 #[cfg(test)]
-pub(in crate::domain_computation) use resources::test_product_world_resources;
+pub(in crate::domain_computation) use resources::{
+    test_product_world_resources, test_product_world_resources_with_retained_capacity_for_test,
+};
 pub(crate) use resources::test_product_world_resources_with_history_limit_for_test;
 pub use resources::WorthQueryProductWorldResources;
 pub use runtime::WorthQueryProductRuntime;

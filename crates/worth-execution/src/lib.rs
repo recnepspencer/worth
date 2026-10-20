@@ -24,8 +24,9 @@ pub use authority::{
     ExecutionAllocationPolicy, ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter,
     ExecutionAuthority, ExecutionAuthorityConfig, ExecutionByteBuffer, ExecutionImmutableBytes,
     ExecutionLeaseStatus, ExecutionMemoryReservation, ExecutionPhysicalAllocationDenialKind,
-    ExecutionPolicyDenial, ExecutionRequest, ExecutionResourceLease, LeaseDenial, LeaseRequest,
-    MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget, SerialRequest,
+    ExecutionPolicyDenial, ExecutionRequest, ExecutionResourceLease, ExecutionResultMemory,
+    LeaseDenial, LeaseRequest, MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget,
+    SerialRequest,
 };
 pub use oracle::{compare_canonical_values, CanonicalBits};
 
@@ -33,7 +34,7 @@ pub use oracle::{compare_canonical_values, CanonicalBits};
 mod tests;
 pub use backend::{
     ExecutionKernelReceipt, ExecutionKernelReceiptStorage, ExecutionOwnerContext,
-    ExecutionRetainedResult, NestedComputationStop,
+    ExecutionRetainedResult, NestedComputationStop, ScopeOutcome, ScopeStop,
 };
 pub use partition::{
     Bisection, BisectionDenial, BisectionQuality, ComponentDenial, ComponentPartitioner,

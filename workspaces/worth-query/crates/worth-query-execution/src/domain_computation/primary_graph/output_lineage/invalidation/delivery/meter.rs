@@ -69,11 +69,10 @@ impl IndexAdmission for MarkingMeter<'_, '_> {
             .work
             .checked_add(visits)
             .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        if required > self.budget.maximum_work_visits {
-            return Err(CompanionPreflightStop::WorkExhausted {
-                required,
-                maximum: self.budget.maximum_work_visits,
-            });
+        if let Some(maximum) = self.budget.maximum_work_visits
+            && required > maximum
+        {
+            return Err(CompanionPreflightStop::WorkExhausted { required, maximum });
         }
         self.work = required;
         Ok(())
@@ -85,11 +84,10 @@ impl IndexAdmission for MarkingMeter<'_, '_> {
             .bytes
             .checked_add(bytes)
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        if required > self.budget.maximum_preparation_bytes {
-            return Err(CompanionPreflightStop::PreparationMemoryExhausted {
-                required,
-                maximum: self.budget.maximum_preparation_bytes,
-            });
+        if let Some(maximum) = self.budget.maximum_preparation_bytes
+            && required > maximum
+        {
+            return Err(CompanionPreflightStop::PreparationMemoryExhausted { required, maximum });
         }
         self.bytes = required;
         Ok(())
@@ -117,6 +115,7 @@ pub(super) const fn degrades_delivery(stop: &CompanionPreflightStop) -> bool {
         | CompanionPreflightStop::ForeignCell
         | CompanionPreflightStop::RegistrationChanged
         | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }
+        | CompanionPreflightStop::RetainedCompanionCounterOverflow { .. }
         | CompanionPreflightStop::Interrupted(_)
         | CompanionPreflightStop::Execution(_) => false,
     }

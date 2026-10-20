@@ -44,8 +44,8 @@ fn preflight_counter_overflow_denies_without_moving_the_native_head() {
             .activate(
                 Arc::new(OverflowCompanion(meter)),
                 CompanionPreflightBudget {
-                    maximum_work_visits: u64::MAX,
-                    maximum_preparation_bytes: u64::MAX,
+                    maximum_work_visits: None,
+                    maximum_preparation_bytes: None,
                 },
             )
             .expect("overflow fixture is active");

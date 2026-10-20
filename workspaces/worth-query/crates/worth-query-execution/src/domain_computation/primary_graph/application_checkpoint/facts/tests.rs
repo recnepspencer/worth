@@ -9,6 +9,14 @@ fn complete_comparable_fact_kinds_round_trip_without_losing_absence_or_sets() {
         CanonicalFieldPath::single(FieldKey::new("optional").unwrap()),
     );
     let facts = vec![
+        Fact::AspectPresence {
+            entity_id: entity, kind: KindId(14),
+            aspect: AspectKey::new("test.absent-aspect").unwrap(), present: false,
+        },
+        Fact::AspectPresence {
+            entity_id: entity, kind: KindId(14),
+            aspect: AspectKey::new("test.present-empty-aspect").unwrap(), present: true,
+        },
         Fact::SourceEntity { entity_id: entity },
         Fact::SourceAspectRevision {
             entity_id: entity,
@@ -201,7 +209,7 @@ fn optional_absence_is_exact_and_an_older_wire_version_is_never_read() {
         .collect::<Vec<_>>(),
         &[fact]
     );
-    for older in [5, 6, 7, 8, 9, 10] {
+    for older in [5, 6, 7, 8, 9, 10, 11] {
         assert!(decode_for_wire_version(
             &bytes,
             older,

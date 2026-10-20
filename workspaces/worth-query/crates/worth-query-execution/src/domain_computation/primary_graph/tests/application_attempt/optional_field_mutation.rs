@@ -122,10 +122,10 @@ fn ordinary_and_optional_writes_to_one_entity_commit_as_one_native_patch() {
         super::idempotency(75, 75),
         crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
     );
-    assert!(matches!(
-        outcome,
-        WorthQueryApplicationCommitOutcome::Committed(_)
-    ));
+    assert!(
+        matches!(outcome, WorthQueryApplicationCommitOutcome::Committed(_)),
+        "optional-field commit refused: {outcome:?}"
+    );
     let result = world
         .application
         .with_host_advancement(|phase| {
@@ -327,7 +327,7 @@ fn query(
             ApplicationQueryParameterSet::<OptionalAccountFieldQuery>::new(),
             crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 NonZeroUsize::new(1).unwrap(),
-                NonZeroUsize::new(256).unwrap(),
+                Some(NonZeroUsize::new(256).unwrap()),
                 request,
             ),
         )

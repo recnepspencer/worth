@@ -3,8 +3,9 @@ use std::any::Any;
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 use std::sync::Arc;
+mod operation_body;
 
-use worth_query_declaration::facade::application_operation::ApplicationCandidateContract;
+use worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationExecution, DeterminismContract,
@@ -32,7 +33,7 @@ struct PendingMutationHandler {
     decision_type: TypeId,
     denial_type: TypeId,
     value: Arc<dyn Any + Send + Sync>,
-    candidates: ApplicationCandidateContract,
+    candidates: ApplicationCandidatePolicy,
 }
 
 struct TypedHandlerSlot<Schema, Binding>
@@ -86,7 +87,8 @@ impl<Schema> PendingMutationHandlerRegistry<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph) fn register<Binding, Handler>(
+    /// Registers the handler against its installed application binding.
+    fn register_resolved<Binding, Handler>(
         &mut self,
         binding_identity: &ApplicationSchemaBindingIdentity,
         installed: &WorthQueryInstalledApplicationMutationBinding<Schema, Binding>,
@@ -132,7 +134,7 @@ where
                 value: Arc::new(TypedHandlerSlot::<Schema, Binding> {
                     handler: Arc::new(handler),
                 }),
-                candidates: installed.candidate_requirements(),
+                candidates: installed.candidate_policy(),
             },
         );
         Ok(())
@@ -180,6 +182,7 @@ where
                 ));
             }
         }
+        self.require_operation_body_coverage(installed_schema)?;
         Ok(InstalledMutationHandlerRegistry {
             entries: self.entries.clone(),
             _schema: PhantomData,
@@ -195,7 +198,7 @@ where
         &self,
     ) -> Option<(
         Arc<dyn OperationHandler<Schema, Binding>>,
-        ApplicationCandidateContract,
+        ApplicationCandidatePolicy,
     )>
     where
         Binding: ApplicationMutationBinding<Schema>,
@@ -227,7 +230,7 @@ where
     ) -> Result<
         (
             Arc<dyn OperationHandler<Schema, Binding>>,
-            ApplicationCandidateContract,
+            ApplicationCandidatePolicy,
         ),
         MutationHandlerExecutionDenial,
     >

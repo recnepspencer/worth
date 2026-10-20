@@ -70,7 +70,7 @@ fn held_v1_live_cause_uses_original_decoder_and_v2_live_uses_regenerated_output(
         .query(live_query::ReadLive {
             identity: "derived-report".into(),
         })
-        .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1, 65_536))
+        .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1, Some(65_536)))
         .unwrap();
     publish_old(&original, 180301);
     let target = journey::successor(host::capture(&original));

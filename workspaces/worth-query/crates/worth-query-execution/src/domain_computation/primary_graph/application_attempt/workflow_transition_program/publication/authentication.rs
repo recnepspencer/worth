@@ -19,6 +19,8 @@ use worth_query_admission::facade::{
 use super::{PreparedWorkflowAdvance, PreparedWorkflowTransitionReplays};
 
 struct ApprovalDescriptor {
+    principal:
+        Arc<worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity>,
     program_revision: ApplicationProgramRevision,
     transition_identity: String,
     transition_identity_bytes: [u8; 32],
@@ -64,8 +66,9 @@ impl<Schema> PreparedWorkflowApprovalAuthentication<Schema> {
         intent: WorthQueryAuthenticationEventIntent,
         basis: Arc<[WorthQueryApplicationObservedFact]>,
         prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-    ) -> Self {
+    ) -> Result<Self, WorthQueryAuthenticationEventDenial> {
         let PreparedWorkflowAdvance::Transition {
+            program,
             program_revision,
             transition_identity,
             transition_identity_bytes,
@@ -85,11 +88,17 @@ impl<Schema> PreparedWorkflowApprovalAuthentication<Schema> {
         else {
             unreachable!("Query only seals its materialized approval")
         };
-        Self {
+        let principal = program
+            .read_set
+            .admission
+            .workflow_approval_signing_principal()
+            .ok_or(WorthQueryAuthenticationEventDenial::PrincipalMismatch)?;
+        Ok(Self {
             owner,
             intent,
             basis: basis.into(),
             descriptor: ApprovalDescriptor {
+                principal: Arc::clone(principal),
                 program_revision: *program_revision,
                 transition_identity: transition_identity.clone(),
                 transition_identity_bytes: *transition_identity_bytes,
@@ -103,7 +112,7 @@ impl<Schema> PreparedWorkflowApprovalAuthentication<Schema> {
                 replays: None,
             },
             consumed: None,
-        }
+        })
     }
 
     pub(super) fn intent(&self) -> &WorthQueryAuthenticationEventIntent {
@@ -189,6 +198,9 @@ impl<Schema> PreparedWorkflowApprovalAuthentication<Schema> {
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         scope: &WorthQueryRequestScope,
     ) -> Result<Self, WorthQueryAuthenticationEventDenial> {
+        if principal.identity() != self.descriptor.principal.as_ref() {
+            return Err(WorthQueryAuthenticationEventDenial::PrincipalMismatch);
+        }
         self.consumed =
             Some(
                 self.owner
@@ -201,6 +213,9 @@ impl<Schema> PreparedWorkflowApprovalAuthentication<Schema> {
         let consumed = self
             .consumed
             .ok_or(WorthQueryAuthenticationEventDenial::MissingSigningProof)?;
+        if consumed.principal() != self.descriptor.principal.as_ref() {
+            return Err(WorthQueryAuthenticationEventDenial::PrincipalMismatch);
+        }
         self.owner.readmit_for_publication(consumed).map(|_| ())
     }
 }

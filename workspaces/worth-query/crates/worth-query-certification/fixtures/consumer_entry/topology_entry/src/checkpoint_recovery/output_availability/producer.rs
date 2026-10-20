@@ -58,9 +58,9 @@ macro_rules! producer {
             fn idempotency_key(&self, _: &PlanarReadResult, epoch: &[u8; 32]) -> u64 {
                 planar_source_key(epoch) ^ 0x91742700
             }
-            fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
-                WorthQueryProducerDemandResources::new(1_000_000, 4 * 1024 * 1024)
-            }
+            fn demand_resources(&self, _: &PlanarReadResult) -> Result<WorthQueryProducerDemandResources, worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial> { Ok({
+                WorthQueryProducerDemandResources::new(Some(1_000_000), 4 * 1024 * 1024)
+            }) }
         }
     };
 }

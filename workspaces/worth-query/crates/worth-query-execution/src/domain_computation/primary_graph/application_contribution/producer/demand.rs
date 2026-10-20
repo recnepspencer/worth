@@ -138,9 +138,8 @@ where
         self.checkpoint_readmission_charged_preparation_bytes
     }
 
-    fn currentness_work_limit(&self) -> std::num::NonZeroUsize {
-        std::num::NonZeroUsize::new(self.limits.source_currentness_work())
-            .expect("admitted output demand has nonzero source-currentness work")
+    fn currentness_work_limit(&self) -> Option<usize> {
+        self.limits.source_currentness_work()
     }
 
     pub fn observed_source(&self) -> &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>> {

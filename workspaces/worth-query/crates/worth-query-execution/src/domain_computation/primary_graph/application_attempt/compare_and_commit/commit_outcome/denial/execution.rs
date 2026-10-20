@@ -154,6 +154,11 @@ impl Denial {
                 }
             }
             Some(Cause::RequestAuthority(kind)) => authority_execution(*kind),
+            Some(Cause::SigningLifecycleAttempt(failure)) => {
+                if let crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind) = failure.kind() {
+                    Some(Ok(kind))
+                } else { allocation_control(failure.allocation_denial()) }
+            }
             Some(Cause::SourceRebase(_)) | None => None,
         }
     }

@@ -78,7 +78,7 @@ impl ApplicationDerivedArtifact<Schema, Feature> for Artifact {
     const DEPENDENCIES: &'static [ApplicationArtifactDependency] = &[];
     const REUSE_RULE: &'static str = "worth.query.tests.computation-reuse.v1";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(4, 64);
+        ApplicationArtifactResourceCeiling::new(Some(4), Some(64));
     const STOPPED_OUTCOME: &'static str = "worth.query.tests.computation-stopped.v1";
 }
 struct Input;
@@ -153,7 +153,7 @@ fn installed_owner_enforces_prepare_compute_complete_and_work_ceiling() {
             &QueryRequestExecution::open(
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
                 crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
-                    std::num::NonZeroUsize::MIN, 1 << 30,
+                    std::num::NonZeroUsize::MIN, None,
                 ),
             ), &request),
         ))
@@ -165,7 +165,7 @@ fn installed_owner_enforces_prepare_compute_complete_and_work_ceiling() {
         WorthQueryManagedComputationExecution::new(&QueryRequestExecution::open(
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
                 crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
-                    std::num::NonZeroUsize::MIN, 1 << 30,
+                    std::num::NonZeroUsize::MIN, None,
                 ),
             ),
             &request,
@@ -214,7 +214,7 @@ fn installed_owner_enforces_retention_and_real_request_interruption() {
                 &QueryRequestExecution::open(
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
                 crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
-                    std::num::NonZeroUsize::MIN, 1 << 30,
+                    std::num::NonZeroUsize::MIN, None,
                 ),
             ), &cancelled),
             )) {
@@ -241,7 +241,7 @@ fn installed_owner_enforces_retention_and_real_request_interruption() {
                 &QueryRequestExecution::open(
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
                 crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
-                    std::num::NonZeroUsize::MIN, 1 << 30,
+                    std::num::NonZeroUsize::MIN, None,
                 ),
             ), &expired),
             )) {

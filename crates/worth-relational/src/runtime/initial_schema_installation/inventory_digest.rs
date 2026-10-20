@@ -33,7 +33,10 @@ pub fn custom_invariant_inventory_digest(
         digest.update(display_name.as_bytes());
         digest.update(groups.to_le_bytes());
         digest.update([cost as u8, failure as u8]);
-        digest.update(work.get().to_le_bytes());
+        match work {
+            Some(work) => digest.update(work.get().to_le_bytes()),
+            None => digest.update(b"work-ceiling:absent"),
+        }
         for kinds in [
             &access.read_entity_kinds,
             &access.read_relation_kinds,

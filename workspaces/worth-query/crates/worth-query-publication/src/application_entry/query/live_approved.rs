@@ -81,13 +81,13 @@ where
         .map_err(WorthQueryApplicationLiveOpenRequestDenial::Controls)?;
         let maximum_results = NonZeroUsize::new(live_limits.maximum_results)
             .expect("validated live controls reject zero result limits");
-        let maximum_work = NonZeroUsize::new(live_limits.maximum_work)
-            .expect("validated live controls reject zero work limits");
+        let maximum_work = live_limits.maximum_work.map(|work| NonZeroUsize::new(work)
+            .expect("validated live controls reject zero work limits"));
         let binding_limits = match self.limits {
             Some((results, work)) => self
                 .application
                 .resolve_application_query_limits(binding.limits())
-                .narrow(results, work)
+                .narrow(results, Some(work))
                 .map_err(WorthQueryApplicationLiveOpenRequestDenial::Limit)?,
             None => self
                 .application

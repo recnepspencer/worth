@@ -1,7 +1,7 @@
 mod cardinality;
-mod contract;
+mod policy;
 mod resources;
 
 pub use cardinality::{ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements};
-pub use contract::ApplicationCandidateContract;
+pub use policy::ApplicationCandidatePolicy;
 pub use resources::ApplicationCandidateResourceCeiling;

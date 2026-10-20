@@ -36,6 +36,7 @@ pub use test_authority::query_test_execution_authority_for_test;
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 
+mod decision_stage;
 mod descendants;
 mod retained_dispatch;
 mod tree_charge;
@@ -52,7 +53,7 @@ pub use advancement::{
 pub(in crate::domain_computation::primary_graph) struct QueryRequestExecution<'a> {
     cancellation: worth_execution::CancellationToken,
     deadline: Option<std::time::Instant>,
-    declared_work: u64,
+    declared_work: Option<u64>,
     certified_seed: Option<u64>,
     form: Form<'a>,
 }
@@ -271,7 +272,7 @@ impl QueryDispatch<'_> {
         E: Send + ChargedBytes,
         Kernel: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
     {
-        let ceiling = ExecutionWorkCeiling::new(ceiling);
+        let ceiling = ExecutionWorkCeiling::new(Some(ceiling));
         let run = |lease: Option<&ExecutionResourceLease<'_>>| match inputs.held {
             Some(inputs) => map.run_taking(lease, inputs, kernel),
             None => map.run(lease, kernel),
@@ -314,7 +315,7 @@ impl QueryDispatch<'_> {
         let certification = self
             .certified_seed
             .map(|seed| (seed, diagnostic, identity.clone(), combine.clone()));
-        let ceiling = ExecutionWorkCeiling::new(ceiling);
+        let ceiling = ExecutionWorkCeiling::new(Some(ceiling));
         let held = tree.held.as_mut();
         let mapped = super::partitioned_computation::FullTreeMapWork::default();
         let run = |lease: Option<&ExecutionResourceLease<'_>>| {

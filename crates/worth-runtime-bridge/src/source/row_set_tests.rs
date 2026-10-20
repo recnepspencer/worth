@@ -109,7 +109,7 @@ fn bridge_row_set_preserves_multi_row_truth() {
 
     let row_set = execution
         .run(
-            worth_execution::ExecutionWorkCeiling::new(8_000_000),
+            worth_execution::ExecutionWorkCeiling::new(Some(8_000_000)),
             |_| materialize_bridge_row_set(&observation(), execution),
         )
         .expect("active leased scope")

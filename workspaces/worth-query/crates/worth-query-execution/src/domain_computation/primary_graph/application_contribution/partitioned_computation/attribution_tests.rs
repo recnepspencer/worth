@@ -78,7 +78,7 @@ impl ApplicationDerivedArtifact<Schema, Feature> for Artifact {
     const DEPENDENCIES: &'static [ApplicationArtifactDependency] = &[];
     const REUSE_RULE: &'static str = "worth.query.tests.attribution-reuse.v1";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(4, 64);
+        ApplicationArtifactResourceCeiling::new(Some(4), Some(64));
     const STOPPED_OUTCOME: &'static str = "worth.query.tests.attribution-stopped.v1";
 }
 pub(super) struct Input;

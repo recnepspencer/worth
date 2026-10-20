@@ -60,7 +60,7 @@ fn prepared_cache_matches_owner_rebuild_and_denies_short_work() {
             .to_vec();
         let dirty = graph.hot_ref(node).unwrap().dirty_aspects;
         let scoped = graph.hot_ref(node).unwrap().dirty_partition_scope_aspects;
-        let mut measured = Work::new(usize::MAX);
+        let mut measured = Work::new(None);
         let cache = PreparedInvalidationCache::from_causes(
             &causes,
             &mut EvaluationWork::Conditional(&mut measured),
@@ -70,7 +70,7 @@ fn prepared_cache_matches_owner_rebuild_and_denies_short_work() {
         assert_eq!(cache.dirty, dirty);
         assert_eq!(cache.scoped, scoped);
         let cost = measured.visits();
-        let mut exact = Work::new(cost + 7);
+        let mut exact = Work::new(Some(cost + 7));
         exact.reserve_visits(7).unwrap();
         PreparedInvalidationCache::from_causes(
             &causes,
@@ -79,7 +79,7 @@ fn prepared_cache_matches_owner_rebuild_and_denies_short_work() {
         .unwrap();
         assert_eq!(exact.visits(), cost + 7);
         if cost > 0 {
-            let mut short = Work::new(cost - 1);
+            let mut short = Work::new(Some(cost - 1));
             assert!(PreparedInvalidationCache::from_causes(
                 &causes,
                 &mut EvaluationWork::Conditional(&mut short)

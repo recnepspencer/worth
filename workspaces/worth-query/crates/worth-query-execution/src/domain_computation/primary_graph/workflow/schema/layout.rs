@@ -58,6 +58,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowLayoutFields {
     pub(in crate::domain_computation::primary_graph) instance_lineage_relation: KindId,
     pub(in crate::domain_computation::primary_graph) live_instance_lineage_relation: KindId,
     pub(in crate::domain_computation::primary_graph) instance_definition_relation: KindId,
+    pub(in crate::domain_computation::primary_graph) instance_subject_relation: KindId,
     pub(in crate::domain_computation::primary_graph) instance_transition_relation: KindId,
     pub(in crate::domain_computation::primary_graph) transition_node_relation: KindId,
     pub(in crate::domain_computation::primary_graph) transition_proposal_relation: KindId,
@@ -188,6 +189,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowDefinitionLayout
     pub(in crate::domain_computation::primary_graph) maximum_nodes: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_connections: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_effects: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) global_actions: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_component_occurrences:
         AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) maximum_component_depth: AspectFieldLocator,
@@ -242,6 +244,15 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowConnectionLayout
     pub(in crate::domain_computation::primary_graph) variant: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) retry_reason: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) retry_maximum_attempts: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) back_action: WorkflowBackActionLayout,
+}
+
+#[derive(Clone, Debug)]
+pub(in crate::domain_computation::primary_graph) struct WorkflowBackActionLayout {
+    pub(in crate::domain_computation::primary_graph) operation: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) input_type: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) binding: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) requirements: AspectFieldLocator,
 }
 
 #[derive(Clone, Debug)]

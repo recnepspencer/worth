@@ -53,7 +53,7 @@ pub(super) fn decode(
     ))
 }
 
-fn write_traversal(
+pub(super) fn write_traversal(
     output: &mut dyn BinaryEncodingSink,
     traversal: &ApplicationAuthorizationTraversal,
 ) -> Result<(), Denial> {
@@ -64,7 +64,7 @@ fn write_traversal(
     write_direction(output, parts.direction)
 }
 
-fn decode_traversal(
+pub(super) fn decode_traversal(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationAuthorizationTraversal, Denial> {
     Ok(ApplicationAuthorizationTraversal::from_untrusted_parts(

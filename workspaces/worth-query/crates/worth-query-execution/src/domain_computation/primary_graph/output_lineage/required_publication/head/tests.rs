@@ -8,8 +8,8 @@ fn restored_unattested_head_is_selectable_but_cannot_supply_a_cold_predecessor()
     assert!(head.warm_publication().is_none());
     let mut admission =
         InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget {
-            maximum_work_visits: 1_000,
-            maximum_preparation_bytes: 1_000,
+            maximum_work_visits: Some(1_000),
+            maximum_preparation_bytes: Some(1_000),
         });
     assert!(matches!(
         head.cold_predecessor(&mut admission),

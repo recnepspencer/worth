@@ -22,31 +22,59 @@ impl<Schema, Operation, Input, Scope>
     where
         Relation: OperationReads<Operation> + OperationUnlinks<Operation>,
     {
+        self.unlink_at_target(
+            &ApplicationOperationProgramTarget::Unlink {
+                relation: relation.name().to_owned(),
+                from: relation.from().to_owned(),
+                to: relation.to().to_owned(),
+            },
+            from,
+            to,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn unlink_at_target<From, To>(
+        &mut self,
+        target: &ApplicationOperationProgramTarget,
+        from: &WorthQueryApplicationEffectEntity<Schema, From>,
+        to: &WorthQueryApplicationEffectEntity<Schema, To>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let ApplicationOperationProgramTarget::Unlink {
+            relation,
+            from: source,
+            to: destination,
+        } = target
+        else {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
+                "relation unlink",
+            ));
+        };
         use worth_relational::facade::transactions::EntityReference;
-        self.validate_target(from, relation.from())?;
-        self.validate_target(to, relation.to())?;
+        self.validate_target(from, source)?;
+        self.validate_target(to, destination)?;
         let (EntityReference::Existing(from_id), EntityReference::Existing(to_id)) =
             (&from.reference, &to.reference)
         else {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                relation.name(),
+                relation,
             ));
         };
         let kind = self
             .layout
-            .relation(relation.name())
+            .relation(relation)
             .ok_or_else(|| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::UndeclaredDecisionRead,
-                    relation.name(),
+                    relation,
                 )
             })?
             .kind;
-        let observed =
+        let observed: WorthQueryObservedApplicationRelation<Schema, (), From, To> =
             self.read_set
-                .relation_observation(relation.name(), kind, *from_id, *to_id)?;
-        self.unlink(relation, observed)
+                .relation_observation(relation, kind, *from_id, *to_id)?;
+        self.unlink_at_observation(target, observed)
     }
 
     pub fn link<Relation, From, To>(
@@ -59,28 +87,55 @@ impl<Schema, Operation, Input, Scope>
     where
         Relation: OperationLinks<Operation>,
     {
-        self.validate_target(from, relation.from())?;
-        self.validate_target(to, relation.to())?;
-        self.admit_program_target(&ApplicationOperationProgramTarget::Link {
-            relation: relation.name().to_string(),
-            from: relation.from().to_string(),
-            to: relation.to().to_string(),
-        })?;
+        self.link_at_target(
+            &ApplicationOperationProgramTarget::Link {
+                relation: relation.name().to_string(),
+                from: relation.from().to_string(),
+                to: relation.to().to_string(),
+            },
+            key,
+            from,
+            to,
+        )
+    }
+
+    /// Typed writers and installed bodies share the same relation effect admission.
+    pub(in crate::domain_computation::primary_graph) fn link_at_target<From, To>(
+        &mut self,
+        target: &ApplicationOperationProgramTarget,
+        key: impl Into<String>,
+        from: &WorthQueryApplicationEffectEntity<Schema, From>,
+        to: &WorthQueryApplicationEffectEntity<Schema, To>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let ApplicationOperationProgramTarget::Link {
+            relation,
+            from: from_name,
+            to: to_name,
+        } = target
+        else {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
+                "relation link",
+            ));
+        };
+        self.validate_target(from, from_name)?;
+        self.validate_target(to, to_name)?;
+        self.admit_program_target(target)?;
         let kind = self
             .layout
-            .relation(relation.name())
+            .relation(relation)
             .map(|layout| layout.kind)
             .ok_or_else(|| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                    relation.name(),
+                    relation,
                 )
             })?;
-        let key = canonical_key(key.into(), relation.name())?;
+        let key = canonical_key(key.into(), relation)?;
         if self.keys.contains(&(kind, key.clone())) {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::DuplicateEffectKey,
-                relation.name(),
+                relation,
             ));
         }
         let retained_representation_bytes =
@@ -88,7 +143,7 @@ impl<Schema, Operation, Input, Scope>
                 .ok_or_else(|| {
                     denial(
                         WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-                        relation.name(),
+                        relation,
                     )
                 })?;
         self.charge_candidate_representation(
@@ -115,11 +170,21 @@ impl<Schema, Operation, Input, Scope>
     where
         Relation: OperationUnlinks<Operation>,
     {
-        self.admit_program_target(&ApplicationOperationProgramTarget::Unlink {
-            relation: relation.name().to_string(),
-            from: relation.from().to_string(),
-            to: relation.to().to_string(),
-        })?;
+        self.unlink_at_observation(
+            &ApplicationOperationProgramTarget::Unlink {
+                relation: relation.name().to_string(),
+                from: relation.from().to_string(),
+                to: relation.to().to_string(),
+            },
+            observed,
+        )
+    }
+    fn unlink_at_observation<Relation, From, To>(
+        &mut self,
+        target: &ApplicationOperationProgramTarget,
+        observed: WorthQueryObservedApplicationRelation<Schema, Relation, From, To>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.admit_program_target(target)?;
         self.charge_candidate_items(CandidateItemKind::Unlink, observed.matching_relations.len())?;
         self.effects
             .extend(observed.matching_relations.into_iter().map(|relation_id| {

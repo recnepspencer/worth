@@ -11,7 +11,7 @@ fn legacy_precompute_refuses_memory_after_request_admission() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 8192, 1000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(8192), Some(1000)),
     );
     let serial = SerialRequest::from_policy(&policy, CancellationToken::new(), None);
     let request = ExecutionRequest::serial(&serial);
@@ -25,15 +25,22 @@ fn legacy_precompute_refuses_memory_after_request_admission() {
                     let LeaseDenial::MemoryExhausted(refusal) =
                         ExecutionMemoryReservation::reserve_in_scope(
                             lease,
-                            policy.budget().charged_memory_bytes(),
+                            policy.budget().charged_memory_bytes().unwrap(),
                         )
                         .unwrap_err()
                     else {
                         panic!("admitted framework holds memory");
                     };
-                    let _held =
-                        ExecutionMemoryReservation::reserve_in_scope(lease, refusal.admitted)
-                            .unwrap();
+                    let _held = ExecutionMemoryReservation::reserve_in_scope(
+                        lease,
+                        match refusal {
+                            worth_execution::MemoryLimitDenial::Capacity { admitted, .. } => {
+                                admitted
+                            }
+                            other => panic!("capacity refusal required: {other:?}"),
+                        },
+                    )
+                    .unwrap();
                     allocate_legacy_values(1, preparation)
                 })
                 .map_err(SignalError::execution_scope_denied)?
@@ -52,8 +59,16 @@ fn legacy_precompute_refuses_memory_after_request_admission() {
     else {
         panic!("precompute memory cause required: {stop:?}");
     };
+    let worth_execution::MemoryLimitDenial::Capacity {
+        requested,
+        admitted,
+        ..
+    } = memory
+    else {
+        panic!("capacity refusal required")
+    };
     assert_eq!(
-        memory.requested - memory.admitted,
+        requested - admitted,
         std::mem::size_of::<PreparedEvaluation>() as u64
     );
 }

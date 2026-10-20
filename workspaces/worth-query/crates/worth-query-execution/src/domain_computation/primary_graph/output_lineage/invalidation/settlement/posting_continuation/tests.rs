@@ -9,8 +9,8 @@ use worth_relational::facade::{
 #[test]
 fn changed_addresses_and_unsupported_retirements_cannot_share_a_projection() {
     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: 100_000,
-        maximum_preparation_bytes: 1024 * 1024,
+        maximum_work_visits: Some(100_000),
+        maximum_preparation_bytes: Some(1024 * 1024),
     });
     let entity = EntityId::new(PartitionId::main(), 1, 1);
     let old = Fact::SourceEntity { entity_id: entity };

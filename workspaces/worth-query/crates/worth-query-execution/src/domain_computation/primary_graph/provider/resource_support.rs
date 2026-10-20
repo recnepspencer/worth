@@ -82,15 +82,21 @@ fn component_support(
         )
         .expect("static primary provider capacity is valid"),
     );
-    let scale = WorthQuerySemanticScaleRequest::selective()
-        .with(
-            WorthQuerySemanticScaleAxis::CandidateItems,
-            candidate_resources.maximum_items(),
-        )
-        .with(
-            WorthQuerySemanticScaleAxis::BatchWidth,
-            candidate_resources.maximum_operation_width(),
+    let mut scale = WorthQuerySemanticScaleRequest::selective().with(
+        WorthQuerySemanticScaleAxis::BatchWidth,
+        candidate_resources.maximum_operation_width(),
+    );
+    if let Some(items) = candidate_resources.maximum_items() {
+        scale = scale.with(WorthQuerySemanticScaleAxis::CandidateItems, items);
+    }
+    let mut resources = WorthQueryResourceLimitRequest::selective()
+        .with(WorthQueryResourceDimension::RetainedBytes, 262_144);
+    if let Some(bytes) = candidate_resources.maximum_retained_representation_bytes() {
+        resources = resources.with(
+            WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
+            bytes,
         );
+    }
 
     let support = WorthQueryExecutionResourceSupport::new(
         WorthQueryExecutionProviderFamily::new(APPLICATION_EXECUTION_PROVIDER_FAMILY)
@@ -101,12 +107,7 @@ fn component_support(
             .expect("static allocator family is canonical"),
         WorthQueryExecutionResourceEnvelope::atomic(
             scale,
-            WorthQueryResourceLimitRequest::selective()
-                .with(
-                    WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
-                    candidate_resources.maximum_retained_representation_bytes(),
-                )
-                .with(WorthQueryResourceDimension::RetainedBytes, 262_144),
+            resources,
             WorthQueryCancellationSafePointFamily::new(APPLICATION_EXECUTION_SAFE_POINT_FAMILY)
                 .expect("static safe-point family is canonical"),
         ),

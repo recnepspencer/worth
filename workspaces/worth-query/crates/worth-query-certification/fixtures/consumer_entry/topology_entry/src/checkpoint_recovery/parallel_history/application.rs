@@ -87,7 +87,7 @@ impl ApplicationDerivedArtifact<Schema, Feature> for Artifact {
     const DEPENDENCIES: &'static [ApplicationArtifactDependency] = &[];
     const REUSE_RULE: &'static str = "exact-input";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(8192, 16384);
+        ApplicationArtifactResourceCeiling::new(Some(8192), Some(16384));
     const STOPPED_OUTCOME: &'static str = "refused";
 }
 pub struct Program;

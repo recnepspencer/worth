@@ -151,8 +151,8 @@ impl RealReferenceFixture {
                 worth_foundational::DeterminismContract::CanonicalBitwise,
                 worth_foundational::ExecutionBudget::new(
                     std::num::NonZeroUsize::MIN,
-                    1 << 20,
-                    10_000,
+                    None,
+                    Some(10_000),
                 ),
             ),
         )

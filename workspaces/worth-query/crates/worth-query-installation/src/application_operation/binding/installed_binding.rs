@@ -1,6 +1,6 @@
 use worth_query_declaration::facade::{
     application_operation::{
-        ApplicationCandidateContract, ApplicationMutationBinding,
+        ApplicationCandidatePolicy, ApplicationMutationBinding,
         ApplicationMutationBindingDescriptor, ApplicationMutationScopeContract,
     },
     application_schema::{ApplicationOperationRef, ApplicationSchema},
@@ -87,7 +87,7 @@ where
         self.meaning.scope()
     }
 
-    pub fn candidate_requirements(&self) -> ApplicationCandidateContract {
+    pub fn candidate_policy(&self) -> ApplicationCandidatePolicy {
         self.meaning.candidates()
     }
 

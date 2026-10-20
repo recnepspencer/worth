@@ -34,7 +34,7 @@ fn budget(bytes: u64, visits: usize) -> SignalConditionalEvaluationBudget {
     SignalConditionalEvaluationBudget {
         maximum_retained_slots: 2,
         maximum_retained_bytes: bytes,
-        maximum_attempt_visits: visits,
+        maximum_attempt_visits: Some(visits),
     }
 }
 
@@ -43,7 +43,7 @@ fn conditional_capture_reserves_before_conversion_and_releases_last_backing_cust
     let claimant = SignalAspectLoweringOwner::fresh();
     let mut sample = graph(&claimant);
     let prepared =
-        SignalExecutionBasis::prepare_capture(&mut sample, &mut Work::new(100_000)).unwrap();
+        SignalExecutionBasis::prepare_capture(&mut sample, &mut Work::new(Some(100_000))).unwrap();
     let charges = prepared.charges();
     let handles = 2 * std::mem::size_of::<SignalConditionalRetentionReservation>() as u64;
     let exact = charges.retained.bytes() + charges.source_growth.bytes() + handles;

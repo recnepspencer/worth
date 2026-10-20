@@ -168,7 +168,7 @@ fn only_a_strictly_narrower_declared_ceiling_can_be_taken() {
                 &batch(&[1], 0),
                 placement(width),
                 &|_, context| {
-                    let (nested, _) = ExecutionWorkCeiling::new(1)
+                    let (nested, _) = ExecutionWorkCeiling::new(Some(1))
                         .run(&child, || {
                             run_checked_batch(
                                 Some(&child),

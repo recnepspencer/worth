@@ -115,7 +115,10 @@ impl InstalledProducerExecutor<Schema> for LifetimeOnly {
     fn resources(
         &self,
         _source: &dyn Any,
-    ) -> Option<crate::domain_computation::primary_graph::WorthQueryProducerDemandResources> {
+    ) -> Result<
+        Option<crate::domain_computation::primary_graph::WorthQueryProducerDemandResources>,
+        super::super::WorthQueryProducerResourceQuoteDenial,
+    > {
         panic!("lifetime fixture never executes a producer")
     }
 

@@ -182,16 +182,16 @@ fn application<const FRESH: bool>(
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program<FRESH>>
 {
     let candidates =
-        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-            8192,
-            1024 * 1024,
+        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::policy(
+            Some(8192),
+            Some(1024 * 1024),
         )
         .unwrap();
     let limits = support::limits_with_room(
         32,
         16,
         64,
-        support::invalidation(128 * 1024 * 1024, 1_000_000, 4),
+        support::invalidation(128 * 1024 * 1024, Some(1_000_000), 4),
         candidates,
     );
     support::install_program_with_limits::<Program<FRESH>>(

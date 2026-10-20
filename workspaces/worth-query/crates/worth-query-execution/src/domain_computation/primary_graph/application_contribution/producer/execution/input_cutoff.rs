@@ -124,6 +124,7 @@ where
                 observation,
                 source.partition_identity(),
                 edition,
+                &execution,
                 admission,
             )
             .map_err(cutoff_admission_denial)?;
@@ -172,6 +173,7 @@ where
             scope,
             observation,
             source.partition_identity(),
+            &execution,
             admission,
         )
         .map_err(cutoff_admission_denial)?;

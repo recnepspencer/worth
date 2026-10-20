@@ -73,8 +73,8 @@ pub(super) fn decode(
         6 => ApplicationSchemaMember::ApplicationQuery {
             definition: application_query::decode(input, budget)?,
         },
-        7 => ApplicationSchemaMember::ApplicationCapability {
-            contract: application_capability::decode(input, budget)?,
+        7 | 33 => ApplicationSchemaMember::ApplicationCapability {
+            contract: application_capability::decode(input, budget, tag == 33)?,
         },
         8 => ApplicationSchemaMember::ApplicationCapabilityContext {
             context: input.text()?.to_owned(),

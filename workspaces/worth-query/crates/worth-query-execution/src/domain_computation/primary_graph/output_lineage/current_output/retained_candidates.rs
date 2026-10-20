@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 /// The latest output one binding recorded for a source, with everything
 /// selection compares before it reuses that output.
@@ -42,11 +43,11 @@ impl WorthQueryApplicationOutputLineage {
         output_bindings: &[TypeId],
         source_partition_identity: [u8; 32],
         maximum_work: usize,
-    ) -> Result<(Vec<WorthQueryRetainedOutputCandidate>, usize), ()> {
+    ) -> Result<(Vec<WorthQueryRetainedOutputCandidate>, usize), CompanionPreflightStop> {
         let mut admission = InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: maximum_work as u64,
-                maximum_preparation_bytes: 0,
+                maximum_work_visits: Some(maximum_work as u64),
+                maximum_preparation_bytes: None,
             },
         );
         let candidates = self.retained_output_candidates_metered(
@@ -57,6 +58,9 @@ impl WorthQueryApplicationOutputLineage {
             generation,
             output_bindings,
             source_partition_identity,
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_request_policy::serial_request(),
+            ),
             &mut admission,
         )?;
         Ok((candidates, admission.charged_work() as usize))
@@ -74,8 +78,9 @@ impl WorthQueryApplicationOutputLineage {
         generation: u64,
         output_bindings: &[TypeId],
         source_partition_identity: [u8; 32],
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<Vec<WorthQueryRetainedOutputCandidate>, ()> {
+    ) -> Result<Vec<WorthQueryRetainedOutputCandidate>, CompanionPreflightStop> {
         let mut candidates = Vec::new();
         for output_binding in output_bindings {
             let source = SemanticSource {
@@ -87,7 +92,7 @@ impl WorthQueryApplicationOutputLineage {
                     .expect("output family binding is installed"),
             };
             if !self.by_source.contains_key(&source) {
-                admission.charge_external_work(1).map_err(|_| ())?;
+                admission.charge_external_work(1)?;
                 continue;
             }
             let mut coordinate = ProductCoordinate {
@@ -95,18 +100,27 @@ impl WorthQueryApplicationOutputLineage {
                 generation,
             };
             loop {
-                // The lookup returns only budget exhaustion; its scan spent
-                // the whole reservation before stopping.
-                let recorded = admission
-                    .reserved_read(|maximum_work| {
-                        self.latest_output_in_partition_budgeted(
+                execution
+                    .consult()
+                    .map_err(|stop| CompanionPreflightStop::Execution(stop.into()))?;
+                let recorded = self
+                    .partition_index
+                    .latest_admitted(
+                        execution,
+                        &source,
+                        coordinate,
+                        source_partition_identity,
+                        admission,
+                    )?
+                    .map(|(generation, slot)| {
+                        self.recorded_at_partition_slot(
                             &source,
-                            coordinate,
-                            source_partition_identity,
-                            maximum_work,
+                            coordinate.occurrence,
+                            generation,
+                            Some(source_partition_identity),
+                            slot,
                         )
-                    })
-                    .map_err(|_| ())??;
+                    });
                 if let Some(recorded) = recorded {
                     candidates.push(WorthQueryRetainedOutputCandidate {
                         binding: *output_binding,

@@ -18,7 +18,9 @@ pub(super) fn denial(stop: Stop, subject: &str) -> WorthQueryEntityResolutionDen
             Kind::Stopped(Native::WorkExhausted)
         }
         Stop::WorkCounterOverflow => Kind::Stopped(Native::WorkCounterOverflow),
-        Stop::PreparationMemoryCounterOverflow => Kind::Stopped(Native::ChargedBytesOverflow),
+        Stop::PreparationMemoryCounterOverflow | Stop::RetainedCompanionCounterOverflow { .. } => {
+            Kind::Stopped(Native::ChargedBytesOverflow)
+        }
         Stop::PreparationMemoryExhausted { required, maximum } => {
             Kind::Stopped(Native::DeclaredMemoryExhausted {
                 requested: required,
@@ -44,4 +46,39 @@ pub(super) fn denial(stop: Stop, subject: &str) -> WorthQueryEntityResolutionDen
         }
     };
     entity_denial(kind, subject)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn retained_counter_overflow_stays_distinct_from_a_finite_resolution_ceiling() {
+        let subject = "original selected identity field";
+        let overflow = denial(
+            Stop::RetainedCompanionCounterOverflow {
+                requested: 1,
+                retained: u64::MAX,
+            },
+            subject,
+        );
+        assert_eq!(overflow.kind(), Kind::Stopped(Native::ChargedBytesOverflow));
+        assert_eq!(overflow.subject(), subject);
+        let finite = denial(
+            Stop::RetainedCompanionCapacityExhausted {
+                requested: 3,
+                retained: 1,
+                maximum: 2,
+            },
+            subject,
+        );
+        assert_eq!(
+            finite.kind(),
+            Kind::Stopped(Native::DeclaredMemoryExhausted {
+                requested: 4,
+                admitted: 2,
+            })
+        );
+        assert_eq!(finite.subject(), subject);
+    }
 }

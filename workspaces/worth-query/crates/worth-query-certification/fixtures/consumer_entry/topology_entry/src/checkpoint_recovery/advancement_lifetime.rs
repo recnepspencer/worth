@@ -8,16 +8,6 @@ fn a_leased_output_demand_shares_one_request_with_signal_and_native_reads() {
     let controls = WorthQueryOutputDemandControls::new(
         NonZeroUsize::new(4_096).unwrap(),
         NonZeroUsize::new(8_192).unwrap(),
-    )
-    .source_currentness_work(
-        NonZeroUsize::new(
-            application
-                .runtime()
-                .output_demand_resource_profile()
-                .limits()
-                .source_currentness_work(),
-        )
-        .unwrap(),
     );
     let mut output = request
         .advanced()
@@ -69,6 +59,7 @@ fn a_leased_output_demand_shares_one_request_with_signal_and_native_reads() {
             <= super::support::observation::CHECKPOINT_EXECUTION_POLICY
                 .budget()
                 .work_ceiling()
+                .expect("checkpoint fixture explicitly chooses a finite request")
     );
     let signal_units: u64 = signal_charges().into_iter().sum();
     assert!(
@@ -251,16 +242,6 @@ fn signal_reservation_uses_the_advancement_work_ceiling() {
     let controls = WorthQueryOutputDemandControls::new(
         NonZeroUsize::new(4_096).unwrap(),
         NonZeroUsize::new(handler_allowance).unwrap(),
-    )
-    .source_currentness_work(
-        NonZeroUsize::new(
-            application
-                .runtime()
-                .output_demand_resource_profile()
-                .limits()
-                .source_currentness_work(),
-        )
-        .unwrap(),
     );
     let mut output = request
         .advanced()
@@ -290,7 +271,7 @@ fn signal_reservation_uses_the_advancement_work_ceiling() {
             super::support::observation::CHECKPOINT_EXECUTION_POLICY
                 .budget()
                 .charged_memory_bytes(),
-            handler_allowance as u64,
+            Some(handler_allowance as u64),
         ))),
     );
     reports();

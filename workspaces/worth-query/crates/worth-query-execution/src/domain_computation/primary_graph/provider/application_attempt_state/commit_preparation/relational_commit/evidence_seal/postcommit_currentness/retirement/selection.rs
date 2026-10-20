@@ -144,7 +144,7 @@ fn restored_role(
         }],
         |_| Some(TypeId::of::<Account>()),
         &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::SerialMemoryBudget::new(None),
             worth_execution::CancellationToken::new(),
             None,
         )),
@@ -184,7 +184,7 @@ fn sealed_rebase(
                 correspondence,
                 changed,
                 true,
-                64,
+                Some(64),
                 &mut admission(),
                 crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), None),
             ))

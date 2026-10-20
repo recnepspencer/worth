@@ -10,7 +10,7 @@ impl DiagnosticsState {
     /// Reconstitute charge facts here, before any ordinary or leased writer
     /// can append to those roots. This scan runs once per restoration.
     pub(crate) fn reconstitute_selected_epoch_charge(&mut self) {
-        let mut work = Work::new(usize::MAX);
+        let mut work = Work::new(None);
         self.lineage_records
             .prepare_retained_charge(&mut work)
             .expect("restored lineage charge overflow");

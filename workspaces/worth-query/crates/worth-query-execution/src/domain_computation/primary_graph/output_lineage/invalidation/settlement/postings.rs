@@ -60,6 +60,7 @@ fn maximum_keys(
         }
         Fact::SourceEntity { .. } | Fact::Entity { .. } => Some(1),
         Fact::SourceAspectRevision { .. }
+        | Fact::AspectPresence { .. }
         | Fact::SourceFieldRevision { .. }
         | Fact::Field { .. }
         | Fact::AbsentField { .. }

@@ -38,10 +38,10 @@ pub(super) fn append(
             ApplicationInvariantExecutionPoint::SnapshotPublication => "snapshot-publication",
         },
     );
-    basis.u64(
-        format!("{prefix}.maximum-work-units"),
-        maximum_work_units.get(),
-    );
+    match maximum_work_units {
+        Some(maximum) => basis.u64(format!("{prefix}.maximum-work-units"), maximum.get()),
+        None => basis.text(format!("{prefix}.work-ceiling"), "absent"),
+    }
     basis.text(
         format!("{prefix}.enforcement"),
         enforcement_name(*enforcement),

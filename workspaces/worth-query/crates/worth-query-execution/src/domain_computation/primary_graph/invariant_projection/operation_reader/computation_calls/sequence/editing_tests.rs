@@ -12,7 +12,7 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
     let execution = QueryRequestExecution::open(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
             std::num::NonZeroUsize::MIN,
-            1 << 24,
+            Some(1 << 24),
         )),
         &request,
     );
@@ -97,7 +97,7 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
         let mut full = Budget::bounded(remaining);
         let expected = truth.iter().position(|(_, (charge, _))| {
             if full.can_afford(charge.demand) {
-                full.consume(charge.consumed);
+                assert!(full.consume(charge.consumed));
                 false
             } else {
                 true
@@ -115,7 +115,7 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
                         if !ranged.can_afford(charge.demand) {
                             return Err(at);
                         }
-                        ranged.consume(charge.consumed);
+                        assert!(ranged.consume(charge.consumed));
                         Ok(true)
                     }
                 }
@@ -154,7 +154,7 @@ fn refused_shape_edit_leaves_original_and_shape_views_usable() {
     let execution = QueryRequestExecution::open(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
             std::num::NonZeroUsize::MIN,
-            1 << 24,
+            Some(1 << 24),
         )),
         &request,
     );
@@ -172,7 +172,7 @@ fn refused_shape_edit_leaves_original_and_shape_views_usable() {
     let narrow = QueryRequestExecution::open(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(test_policy(
             std::num::NonZeroUsize::MIN,
-            1,
+            Some(1),
         )),
         &request,
     );

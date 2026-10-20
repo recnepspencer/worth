@@ -71,7 +71,7 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
         }
     }
 
-    pub fn memory_limit(self) -> u64 {
+    pub fn memory_limit(self) -> Option<u64> {
         match self.form {
             RequestBacking::Leased(lease) => lease.policy().budget().charged_memory_bytes(),
             RequestBacking::Serial(request) => request.memory.limit(),
@@ -79,12 +79,12 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
     }
 
     /// The request-level ceiling used to narrow a computation's declared work.
-    /// Serial requests bound memory only, so `u64::MAX` leaves that declaration unchanged.
+    /// Absence preserves the computation declaration without adding a request ceiling.
     /// Charged work is still metered and counter overflow remains a typed stop.
-    pub fn work_ceiling(self) -> u64 {
+    pub fn work_ceiling(self) -> Option<u64> {
         match self.form {
             RequestBacking::Leased(lease) => lease.policy().budget().work_ceiling(),
-            RequestBacking::Serial(_) => u64::MAX,
+            RequestBacking::Serial(request) => request.work_ceiling,
         }
     }
 
@@ -125,7 +125,7 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
         })
     }
 
-    /// Adapt only within an active bounded scope. Leased carriage adds no scope.
+    /// Adapt only within an active accounted scope. Leased carriage adds no scope.
     pub fn in_scope<R>(
         self,
         operation: impl for<'scope> FnOnce(Option<&'scope ExecutionResourceLease<'authority>>) -> R,
@@ -141,7 +141,45 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
         }
     }
 
-    /// Projects the optional lease only while its bounded execution scope is active.
+    /// Runs an opaque-result stage with the original request and retained reservation.
+    /// Known input/framework memory is admitted before invocation. Actual result or
+    /// domain-error heap is admitted before framework retention, then remains on `memory`.
+    /// This is post-materialization admission; callbacks needing pre-allocation
+    /// admission must reserve their original backing before allocation themselves.
+    pub fn run_measured_result<R: crate::ChargedBytes, E: crate::ChargedBytes>(
+        self,
+        ceiling: ExecutionWorkCeiling,
+        retained_bytes: u64,
+        memory: &mut super::ExecutionMemoryReservation,
+        kernel: impl FnOnce(
+            &mut crate::MapKernelContext<'_, '_>,
+            &mut crate::ExecutionResultMemory<'_>,
+        ) -> Result<R, crate::MapKernelFailure<E>>,
+    ) -> crate::ScopeOutcome<R, E> {
+        match self.form {
+            RequestBacking::Leased(lease) => {
+                let active = lease.current_descendant();
+                crate::backend::run_scope_measured(
+                    Some(active.as_ref().unwrap_or(lease)),
+                    None,
+                    ceiling.work_units(),
+                    retained_bytes,
+                    memory,
+                    kernel,
+                )
+            }
+            RequestBacking::Serial(serial) => crate::backend::run_scope_measured(
+                None,
+                Some(serial),
+                ceiling.work_units(),
+                retained_bytes,
+                memory,
+                kernel,
+            ),
+        }
+    }
+
+    /// Projects the optional lease only while its original execution scope is active.
     pub fn run<R>(
         self,
         ceiling: ExecutionWorkCeiling,

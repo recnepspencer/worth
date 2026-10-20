@@ -135,10 +135,7 @@ where
         let owner = &self.primary_provider.graph.source_owner.invalidation_owner;
         // The selection and its verification share one meter, no larger than
         // the demand's declared source-currentness work.
-        let mut remaining = owner.edit_admission_within(
-            std::num::NonZeroUsize::new(limits.source_currentness_work())
-                .ok_or_else(|| retry(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))?,
-        );
+        let mut remaining = owner.edit_admission_with_work_limit(limits.source_currentness_work());
         let observation = at.product().observation();
         let outputs = self
             .primary_provider
@@ -153,9 +150,15 @@ where
                 observation,
                 &self.installed_producers.family_output_bindings::<Family>(),
                 observed_source.partition_identity(),
+                execution,
                 &mut remaining,
             )
-            .map_err(|()| retry(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))?;
+            .map_err(|stop| {
+                crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
+                    crate::domain_computation::primary_graph::output_reuse::preflight_stop(stop),
+                    "native retained output selection unavailable",
+                )
+            })?;
         let snapshot = at.application_basis().snapshot_handle();
         let mut current = None;
         for output in outputs {

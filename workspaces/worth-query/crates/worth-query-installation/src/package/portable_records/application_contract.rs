@@ -16,7 +16,10 @@ use super::application_contract_parts::{
 };
 use super::WorthQueryPortableInstalledReconciliationProcedureRecord;
 
+mod operation;
+mod operation_body;
 mod reconstruction_work;
+pub use operation::WorthQueryPortableApplicationOperationContractRecord;
 
 /// Runtime-neutral native aspect contract retained by package validation.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -302,96 +305,5 @@ impl WorthQueryPortableExternalEffectContractRecord {
 
     pub const fn maximum_payload_bytes(&self) -> u64 {
         self.maximum_payload_bytes
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryPortableApplicationOperationContractRecord {
-    schema: String,
-    operation: String,
-    input_type: WorthQueryPortableTypeIdentity,
-    graph_reads: Vec<WorthQueryPortableOperationGraphReadScope>,
-    touches: Vec<WorthQueryPortableOperationTouchScope>,
-    emissions: Vec<String>,
-    external_effect: Option<WorthQueryPortableExternalEffectContractRecord>,
-    reconciliation: Option<WorthQueryPortableInstalledReconciliationProcedureRecord>,
-}
-
-impl WorthQueryPortableApplicationOperationContractRecord {
-    pub fn from_untrusted_parts(
-        parts: WorthQueryPortableApplicationOperationContractParts,
-    ) -> Self {
-        Self {
-            schema: parts.schema,
-            operation: parts.operation,
-            input_type: parts.input_type,
-            graph_reads: parts.graph_reads,
-            touches: parts.touches,
-            emissions: parts.emissions,
-            external_effect: parts.external_effect,
-            reconciliation: parts.reconciliation,
-        }
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new(
-        schema: String,
-        operation: String,
-        input_type: WorthQueryPortableTypeIdentity,
-        graph_reads: Vec<WorthQueryPortableOperationGraphReadScope>,
-        touches: Vec<WorthQueryPortableOperationTouchScope>,
-        emissions: Vec<String>,
-        external_effect: Option<WorthQueryPortableExternalEffectContractRecord>,
-        reconciliation: Option<WorthQueryPortableInstalledReconciliationProcedureRecord>,
-    ) -> Self {
-        Self {
-            schema,
-            operation,
-            input_type,
-            graph_reads,
-            touches,
-            emissions,
-            external_effect,
-            reconciliation,
-        }
-    }
-
-    pub fn schema(&self) -> &str {
-        &self.schema
-    }
-
-    pub fn operation(&self) -> &str {
-        &self.operation
-    }
-
-    #[cfg(test)]
-    pub(crate) fn replace_operation_for_test(&mut self, operation: impl Into<String>) {
-        self.operation = operation.into();
-    }
-
-    pub const fn input_type(&self) -> &WorthQueryPortableTypeIdentity {
-        &self.input_type
-    }
-
-    pub fn graph_reads(&self) -> &[WorthQueryPortableOperationGraphReadScope] {
-        &self.graph_reads
-    }
-
-    pub fn touches(&self) -> &[WorthQueryPortableOperationTouchScope] {
-        &self.touches
-    }
-
-    pub fn emissions(&self) -> &[String] {
-        &self.emissions
-    }
-
-    pub const fn external_effect(&self) -> Option<&WorthQueryPortableExternalEffectContractRecord> {
-        self.external_effect.as_ref()
-    }
-
-    pub const fn reconciliation(
-        &self,
-    ) -> Option<&WorthQueryPortableInstalledReconciliationProcedureRecord> {
-        self.reconciliation.as_ref()
     }
 }

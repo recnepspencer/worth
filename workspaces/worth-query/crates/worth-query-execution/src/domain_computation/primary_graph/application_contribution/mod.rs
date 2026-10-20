@@ -77,8 +77,9 @@ pub use producer::{
     WorthQueryOutputReadCloseDenial, WorthQueryProducerApplicability,
     WorthQueryProducerDemandResources, WorthQueryProducerInputReuseContract,
     WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily, WorthQuerySelectedApplicationProducer,
-    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
+    WorthQueryProducerOutputFamily, WorthQueryProducerResourceQuoteDenial,
+    WorthQuerySelectedApplicationProducer, WorthQueryWorkflowAssessmentOutputFamily,
+    WorthQueryWorkflowAssessmentPosture,
 };
 pub use request_execution::query_test_execution_authority_for_test;
 pub use request_execution::{

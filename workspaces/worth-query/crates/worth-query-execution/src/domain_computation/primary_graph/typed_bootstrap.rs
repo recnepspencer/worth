@@ -147,6 +147,13 @@ where
             .entity_kind(seed.entity)
             .ok_or_else(|| invalid_seed(seed.entity))?;
         let key = seed.key.into_string();
+        if self.graph.layout.is_signed_entity_kind(kind)
+            || self.graph.layout.signing_lifecycle.is_record(kind)
+        {
+            return Err(invalid_seed(
+                "signed entities require native authenticated publication",
+            ));
+        }
         if !self.entity_keys.insert((kind, key.clone())) {
             return Err(invalid_seed("duplicate application entity key"));
         }

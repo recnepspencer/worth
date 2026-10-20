@@ -17,7 +17,7 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_ids: &BTreeSet<EntityId>,
         kind_id: KindId,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
     ) -> Result<
         Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
@@ -37,7 +37,7 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_ids: &BTreeSet<EntityId>,
         kind_id: KindId,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
     ) -> Result<
         Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
@@ -60,7 +60,7 @@ impl VisibilityProjectionView {
         entity_ids: &BTreeSet<EntityId>,
         kind_id: KindId,
         outgoing: bool,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
     ) -> Result<
         Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
@@ -85,7 +85,7 @@ impl VisibilityProjectionView {
         entity_ids: &BTreeSet<EntityId>,
         kind_id: KindId,
         direction: AdjacencyDirection,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
         include_audit: bool,
     ) -> Result<
         Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
@@ -165,12 +165,14 @@ impl VisibilityProjectionView {
 }
 
 fn charge(
-    maximum: usize,
+    maximum: Option<usize>,
     lists: usize,
     examined: usize,
     endpoints: usize,
 ) -> Result<(), FrontierAdjacencyTruthReadLimitExceeded> {
-    if lists.saturating_add(examined).saturating_add(endpoints) >= maximum {
+    if maximum
+        .is_some_and(|maximum| lists.saturating_add(examined).saturating_add(endpoints) >= maximum)
+    {
         Err(FrontierAdjacencyTruthReadLimitExceeded::new(
             lists, examined, endpoints,
         ))

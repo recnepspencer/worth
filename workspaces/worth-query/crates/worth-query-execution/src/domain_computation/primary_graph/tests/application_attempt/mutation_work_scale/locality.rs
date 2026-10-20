@@ -83,8 +83,8 @@ fn run_locality(count: usize) -> LocalityRun {
             place(Placement::Serial),
             bound(Some(worth_foundational::ExecutionBudget::new(
                 NonZeroUsize::MIN,
-                64 * 1024 * 1024,
-                u64::MAX,
+                None,
+                None,
             ))),
         );
         world
@@ -193,7 +193,7 @@ fn source_query_work(
                 .expect("the source parameter is canonical"),
             WorthQueryProductQueryControls::new(
                 NonZeroUsize::new(10).unwrap(),
-                NonZeroUsize::new(10_000).unwrap(),
+                Some(NonZeroUsize::new(10_000).unwrap()),
                 request,
             ),
         )

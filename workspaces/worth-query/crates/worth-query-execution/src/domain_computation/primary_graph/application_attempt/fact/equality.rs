@@ -22,7 +22,7 @@ impl WorthQueryApplicationObservedFact {
         };
         check_request()?;
         let equal = match self {
-            Self::SourcePublication { observation } => observation.remains_equal(runtime, execution, snapshot, usize::MAX)
+            Self::SourcePublication { observation } => observation.remains_equal(runtime, execution, snapshot, None)
                 .map_err(|cause| match cause {
                     super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),
                     super::WorthQuerySourceCurrentnessFailure::Execution(cause) => SelfDenial::relational_read_stopped(cause, "source publication comparison"),
@@ -106,6 +106,11 @@ impl WorthQueryApplicationObservedFact {
                 runtime, execution, snapshot, *entity_id, *kind, locator,
             )?
             .is_some_and(|current| current == *value),
+            Self::AspectPresence { entity_id, kind, aspect, present } => {
+                super::super::observation::observe_aspect_presence(
+                    runtime, execution, snapshot, *entity_id, *kind, aspect,
+                )? == Some(*present)
+            }
             Self::AbsentField {
                 entity_id,
                 kind,

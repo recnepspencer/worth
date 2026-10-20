@@ -9,7 +9,7 @@ pub(super) fn append_index(
     field: &worth_foundational::facade::FieldKey,
     definition: &crate::indexes::data::DerivedIndexDefinition,
     touches: &mut Vec<Touch>,
-    budget: &mut TouchBudget<'_, '_, '_, '_>,
+    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<(), Failure> {
     let locator = match (&delta.target, &definition.kind) {
         (RecordRef::Entity(_), DerivedIndexKind::EntityField { field_locator })
@@ -55,7 +55,7 @@ pub(super) struct IndexTouchInput<'a> {
 pub(super) fn append_index_for_field(
     input: IndexTouchInput<'_>,
     touches: &mut Vec<Touch>,
-    budget: &mut TouchBudget<'_, '_, '_, '_>,
+    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<(), Failure> {
     let IndexTouchInput {
         selected,

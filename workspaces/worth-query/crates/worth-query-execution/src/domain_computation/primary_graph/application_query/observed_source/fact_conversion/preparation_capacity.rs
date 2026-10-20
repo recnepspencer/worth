@@ -17,8 +17,8 @@ impl<Query> WorthQueryObservedSource<Query> {
     ) {
         use worth_relational::facade::mvcc::CompanionPreflightBudget;
         let mut funded = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: u64::MAX,
-            maximum_preparation_bytes: u64::MAX,
+            maximum_work_visits: None,
+            maximum_preparation_bytes: None,
         });
         drop(
             self.admit_fact_materialization(layout, &mut funded, "cross-root source")
@@ -30,15 +30,15 @@ impl<Query> WorthQueryObservedSource<Query> {
         for (budget, expected) in [
             (
                 CompanionPreflightBudget {
-                    maximum_work_visits: work - 1,
-                    maximum_preparation_bytes: bytes,
+                    maximum_work_visits: Some(work - 1),
+                    maximum_preparation_bytes: Some(bytes),
                 },
                 Kind::WorkBudgetExceeded,
             ),
             (
                 CompanionPreflightBudget {
-                    maximum_work_visits: work,
-                    maximum_preparation_bytes: bytes - 1,
+                    maximum_work_visits: Some(work),
+                    maximum_preparation_bytes: Some(bytes - 1),
                 },
                 Kind::PreparationMemoryExceeded,
             ),

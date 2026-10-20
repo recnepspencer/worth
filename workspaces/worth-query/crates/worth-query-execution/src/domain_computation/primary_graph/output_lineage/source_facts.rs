@@ -48,9 +48,6 @@ impl RetainedSourceFacts {
         self.payload_bytes = bytes;
         self
     }
-    pub(super) fn cached_payload_bytes(&self) -> Option<u64> {
-        self.payload_bytes
-    }
     pub(in crate::domain_computation::primary_graph) fn for_comparison(
         &self,
     ) -> Option<ComparableSourceFacts> {
@@ -108,9 +105,7 @@ impl FactSequence for ComparableSourceFacts {
     fn len(&self) -> usize {
         self.facts().len()
     }
-    fn retained_storage_bytes(&self) -> Option<u64> {
-        self.facts().retained_storage_bytes()
-    }
+
     fn iter(&self) -> impl DoubleEndedIterator<Item = &Fact> + ExactSizeIterator + Clone {
         self.facts().iter()
     }

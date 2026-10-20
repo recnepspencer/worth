@@ -51,7 +51,7 @@ fn failed_final_query_release_reclaims_only_touched_buckets_and_keeps_grants() {
                 let projection_grant = Arc::downgrade(&abandoned.projection._capacity);
                 let identity_grant = Arc::downgrade(&abandoned._capacity);
                 let resources = owner.resources.clone();
-                let maximum = resources.installation().maximum_retained_bytes;
+                let maximum = resources.installation().maximum_retained_bytes.expect("this court installs a finite retained ceiling");
                 let held = resources.reserve_retained_capacity(maximum - resources.retained_capacity_bytes()).unwrap();
                 assert_eq!(resources.retained_capacity_bytes(), maximum);
                 drop(abandoned); // The REAL final Drop cannot fund its native CAS.

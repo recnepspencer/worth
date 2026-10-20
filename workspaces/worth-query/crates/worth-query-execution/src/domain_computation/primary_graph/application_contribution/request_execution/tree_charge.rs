@@ -7,7 +7,7 @@ impl QueryDispatch<'_> {
         ceiling: u64,
         stage: impl FnOnce(&mut MapKernelContext<'_, '_>) -> R,
     ) -> Result<(R, ExecutionReport), WorkCeilingDenial> {
-        let ceiling = ExecutionWorkCeiling::new(ceiling);
+        let ceiling = ExecutionWorkCeiling::new(Some(ceiling));
         match &self.form {
             DispatchForm::Leased(lease) => ceiling.run_with_checkpoint(Some(lease), None, stage),
         }

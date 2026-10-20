@@ -38,6 +38,7 @@ pub(crate) mod mixed_retirement;
 mod parallel_history;
 mod producer_domain_denial;
 pub(crate) mod required_chain;
+pub(crate) mod resource_quote;
 mod reuse_opt_out;
 mod root_delivery;
 mod stable_refresh;
@@ -57,6 +58,8 @@ worth_query_application! {
 }
 
 impl TopologySchemaBinding for CheckpointSchema {
+    const PLANAR_EDIT_PROJECTION_WORK: Option<usize> = None;
+
     // Keep the planar allowance, plus the bootstrap's LARGEST_SET entries,
     // LARGEST_SET sets and 2 * LARGEST_SET membership edges in total: the
     // large-entry rows use two sets; the high-fanout rows use one entry.
@@ -290,19 +293,6 @@ fn settle_for<'application, 'principal, 'scope>(
     let controls = WorthQueryOutputDemandControls::new(
         NonZeroUsize::new(4_096).unwrap(),
         NonZeroUsize::new(8_192).unwrap(),
-    )
-    // These recovery tests constrain the producer's persisted estimate. Source
-    // verification includes fresh authorization and native witness preparation
-    // and uses this installation's separate finite currentness allowance.
-    .source_currentness_work(
-        NonZeroUsize::new(
-            application
-                .runtime()
-                .output_demand_resource_profile()
-                .limits()
-                .source_currentness_work(),
-        )
-        .unwrap(),
     );
     let mut output = request
         .advanced()

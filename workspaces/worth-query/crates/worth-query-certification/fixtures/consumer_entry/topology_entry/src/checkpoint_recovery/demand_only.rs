@@ -10,6 +10,7 @@ use worth_query_host::facade::{
     },
     runtime::ExecutionAllocationPolicy,
 };
+mod conditional_binding;
 mod program;
 use program::{DemandProgram, DemandRoot, RequiredProgram, UngovernedProgram};
 
@@ -179,7 +180,7 @@ fn demand_only_source_saves_and_reopens_before_explicit_assessment() {
     let current = request.retain_current_read().unwrap();
     request
         .at(&current)
-        .require_current_program_output(&settled, support::currentness_work_limit())
+        .require_current_program_output(&settled, Some((support::currentness_work_limit()).get()))
         .unwrap();
     let mut repeated = request
         .advanced()

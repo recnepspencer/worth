@@ -99,11 +99,21 @@ impl WorthQueryProviderAttemptPreparation {
         for effect in &settlement_effects {
             demand.observe(effect)?;
         }
+        let sidecar = demand.requirements();
         admit_workflow_settlement_effects(admission, demand)?.materialize(&settlement_effects)?;
-        self.effects.extend(settlement_effects);
+        let combined_requirements = crate::domain_computation::primary_graph::application_attempt::effect_program::validate_candidate_extension(admission, self.candidate_requirements, sidecar)?;
+        crate::domain_computation::primary_graph::application_attempt::effect_program::candidate_backing::extend(
+            &mut self.effects, &mut self.effect_backing_memory, settlement_effects, admission.publication_request(),
+        )?;
+        self.candidate_requirements = combined_requirements;
         self.effect_posture =
             crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;
         if external {
+            return Ok((self, None));
+        }
+        // An ending has no successor. Its transition-membership revision
+        // invalidates retained progress; fresh admission names the ended state.
+        if binding.settlement_basis.outcome() == worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Terminated {
             return Ok((self, None));
         }
         let progress_update = binding

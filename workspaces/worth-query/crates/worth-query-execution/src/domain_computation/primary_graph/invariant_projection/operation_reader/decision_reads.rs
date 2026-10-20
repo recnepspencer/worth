@@ -2,6 +2,7 @@
 //! partitioned computation read in which owner call.
 
 use std::collections::BTreeSet;
+mod aspect_presence;
 mod computation_inputs;
 mod expected_keys;
 mod source_publications;
@@ -25,6 +26,7 @@ use crate::domain_computation::primary_graph::application_contribution::{
 pub(in crate::domain_computation::primary_graph) struct DecisionReads {
     handler: BTreeSet<WorthQueryApplicationFactKey>,
     source_publications: Option<std::sync::Arc<source_publications::IssuedSourcePublicationValues>>,
+    aspect_presence: aspect_presence::PresenceKeys,
     /// The first read that failed. Its outcome depends on what its fact does
     /// not hold, so a handler or owner call that swallowed the failure has an
     /// outcome nothing retained, and the projection seals nothing.
@@ -107,6 +109,7 @@ impl DecisionReads {
         key: WorthQueryApplicationFactKey,
         outcome: DecisionReadOutcome,
     ) {
+        let key = self.aspect_presence.canonical_key(key);
         if outcome == DecisionReadOutcome::Failed && self.failed.is_none() {
             self.failed = Some(key.clone());
         }

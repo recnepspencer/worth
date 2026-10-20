@@ -2,6 +2,7 @@
 //! Its dependent advances through source rebuilding and ordinary input cutoff.
 use super::*;
 use worth_query_decl::facade::application_operation::ApplicationMutationBinding;
+use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, PositiveLength};
 use worth_query_host::facade::application_contribution::*;
@@ -83,8 +84,8 @@ impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
     fn demand_resources(
         &self,
         _: &source::SuccessorReadResult,
-    ) -> WorthQueryProducerDemandResources {
-        planar_producer_resources()
+    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
+        Ok(planar_producer_resources())
     }
 }
 

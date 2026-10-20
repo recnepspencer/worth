@@ -54,6 +54,7 @@ pub enum WorthQueryWorkflowObservedState {
     Completed,
     Cancelled,
     Migrated,
+    Terminated,
 }
 /// Why the discovered record is descriptive history rather than a live reference.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

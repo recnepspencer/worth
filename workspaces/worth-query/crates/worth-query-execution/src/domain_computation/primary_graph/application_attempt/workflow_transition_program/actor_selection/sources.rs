@@ -105,9 +105,14 @@ impl WorthQueryWorkflowActorContext {
                 {
                     return Err(affinity("workflow operation actor context changed"));
                 }
+                // Local Back/termination bodies have no proposal or performed
+                // source. Positive recorded-actor requirements must fail on
+                // that absence, never inherit a convenient unrelated record.
+                let Some(originals) = &required.original_sources else {
+                    return Ok((None, None, None));
+                };
                 let node = unique(compiled.nodes_with_path(&required.node_path).iter())?;
                 let source = unique(compiled.operation_input_sources(node.entity()))?;
-                let originals = &required.original_sources;
                 let (transition, identity, parent) = handle.with_runtime(execution, |runtime| {
                     let (transition, identity) = native::original_transition(
                         execution,

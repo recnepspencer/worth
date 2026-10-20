@@ -78,7 +78,9 @@ impl DurabilityRecoveryAuthority<'_> {
         if !index_ids.is_empty() {
             // Codec changes invalidate representation-sensitive postings. Build
             // from the already fenced target root, never old index equality.
-            let maximum = usize::try_from(execution.work_ceiling()).unwrap_or(usize::MAX);
+            let maximum = execution
+                .work_ceiling()
+                .map(|maximum| usize::try_from(maximum).unwrap_or(usize::MAX));
             self.runtime
                 .index_authority()
                 .prepare_for_candidate(

@@ -42,8 +42,12 @@ where
             .output_demand_resource_profile()
             .limits()
             .source_currentness_work();
-        let work = std::num::NonZeroUsize::new(policy.currentness_work.get().min(installed))
-            .expect("installed finite positive currentness policy");
+        let work = policy
+            .currentness_work
+            .map(std::num::NonZeroUsize::get)
+            .into_iter()
+            .chain(installed)
+            .min();
         request.at(&observation).require_current_discovered_program_outputs_in_advancement(phase, &self.settlement, work).map_err(|denial| match denial {
             WorthQueryOutputCurrentnessDenial::Output(output) if matches!(output.kind(), worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded) => Denial::Stale(output),
             other => Denial::Currentness(other),

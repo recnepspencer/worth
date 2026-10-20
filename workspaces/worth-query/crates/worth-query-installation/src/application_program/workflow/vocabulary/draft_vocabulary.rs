@@ -14,30 +14,9 @@ use worth_query_declaration::facade::{
 };
 
 use super::{
-    InstalledWorkflowAssessment, InstalledWorkflowCondition, InstalledWorkflowOperation,
+    InstalledWorkflowAssessment, InstalledWorkflowCondition,
     WorthQueryInstalledApplicationWorkflowSpec,
 };
-
-impl InstalledWorkflowOperation {
-    pub(super) fn declared<Spec, Binding>() -> Self
-    where
-        Spec: ApplicationWorkflowSpec,
-        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Spec::Schema>,
-    {
-        let reference = ApplicationWorkflowOperationRef::declared_binding::<Spec, Binding>();
-        Self {
-            marker: reference.operation_type(),
-            identifier: reference.identifier(),
-            input_type: reference.input_type().clone(),
-            binding_type: std::any::TypeId::of::<Binding>(),
-            binding_identity: Binding::IDENTITY,
-            requires_workflow_authority: Binding::REQUIRES_WORKFLOW_AUTHORITY,
-            capability: <Binding::Admission as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionMode>::capability_identity(),
-            reference,
-            inbound_ref: None,
-        }
-    }
-}
 
 impl InstalledWorkflowAssessment {
     pub(super) fn declared<Spec, Binding>() -> Self

@@ -29,6 +29,7 @@ pub(super) struct PreparedCandidate<
     pub(super) program: CandidateProgram<Schema, Binding>,
     pub(super) result: Binding::Result,
     pub(super) identities: ApplicationMutationIdentities<'request, Schema, Binding>,
+    pub(super) principal: &'request worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub(super) extension: WorthQueryCommitExtension,
     pub(super) decision_work:
         worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
@@ -145,6 +146,18 @@ where
                 }
             };
         let (mut program, result) = completed.into_parts();
+        if self.workflow_birth_identity.is_some() {
+            let authority = self
+                .workflow_birth_authority
+                .as_ref()
+                .and_then(|slot| slot.take())
+                .ok_or(WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent)?;
+            program = program
+                .bind_workflow_birth_authority(phase, authority, allocation_policy)
+                .map_err(
+                    WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
+                )?;
+        }
         if let Some(authority) = workflow_authority.as_ref() {
             program = program
                 .bind_workflow_operation_authority(phase, authority, allocation_policy)
@@ -152,10 +165,14 @@ where
                     WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
                 )?;
         }
+        let program = worth_query_execution::publication_boundary::signed_creation::WorthQuerySignedCreationAdapter::prepare::<Schema, Intent::Binding>(
+            &worth_query_execution::publication_boundary::program_publication_access(), phase, self.request.application, program, &identities,
+        ).map_err(WorthQueryApplicationRequestMutationDenial::SignedCreation)?;
         Ok(CandidatePreparation::Prepared(PreparedCandidate {
             program,
             result,
             identities,
+            principal: self.request.principal,
             extension: prepared.extension,
             decision_work: work,
         }))

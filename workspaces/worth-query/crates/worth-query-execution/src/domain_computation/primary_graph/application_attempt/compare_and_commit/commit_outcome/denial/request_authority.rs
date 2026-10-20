@@ -18,10 +18,27 @@ impl WorthQueryApplicationCommitDenial {
         if failure.allocation_denial().is_some() {
             self.detail = Some(failure.detail().into());
         }
-        if failure.allocation_denial().is_some() || failure.native_preparation_error().is_some() {
+        if failure.allocation_denial().is_some()
+            || failure.native_preparation_error().is_some()
+            || failure.output_verification_capacity_stop().is_some()
+        {
             self.cause = Some(Box::new(DenialCause::ProviderSession(failure)));
         }
         self
+    }
+
+    /// Original capacity refusal from pre-publication consumed-output
+    /// verification. This is not a native transaction-preparation stop, and
+    /// it grants no retry, capacity increase or cleanup authority.
+    pub fn output_verification_capacity_stop(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::VerificationCapacityStop> {
+        match self.cause.as_deref() {
+            Some(DenialCause::ProviderSession(failure)) => {
+                failure.output_verification_capacity_stop()
+            }
+            _ => None,
+        }
     }
 
     /// Complete native diagnostics for a refusal proven to precede publication.
@@ -48,10 +65,9 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    /// Why the request was refused authorization, when that refused the commit.
-    pub(in crate::domain_computation::primary_graph) fn request_authority(
-        &self,
-    ) -> Option<WorthQueryOperationAuthorizationDenialKind> {
+    /// Descriptive retained authorization cause, not access or retry authority.
+    /// `None` means this denial carries no request-authorization cause.
+    pub fn authorization_denial_kind(&self) -> Option<WorthQueryOperationAuthorizationDenialKind> {
         match self.cause.as_deref() {
             Some(DenialCause::RequestAuthority(kind)) => Some(*kind),
             _ => None,

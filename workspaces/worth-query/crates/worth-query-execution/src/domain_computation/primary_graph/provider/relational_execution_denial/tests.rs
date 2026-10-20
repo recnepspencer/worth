@@ -61,3 +61,17 @@ fn memory_causes_keep_their_capacity_and_owner_instead_of_becoming_work() {
         })
     ));
 }
+
+#[test]
+fn native_allocator_refusal_is_neither_a_worker_panic_nor_a_policy_ceiling() {
+    assert_eq!(
+        relational_execution_kind(Cause::AllocationFailed, Some(23)),
+        Ok(Kind::AllocationDenied)
+    );
+    assert_eq!(
+        relational_execution_kind(Cause::WorkerFailed, Some(23)),
+        Ok(Kind::ExecutionWorkerPanicked {
+            partition_identity: Some(23)
+        })
+    );
+}

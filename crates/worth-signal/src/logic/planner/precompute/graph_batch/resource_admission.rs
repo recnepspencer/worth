@@ -30,7 +30,7 @@ pub(in crate::logic::planner) use grant::{CheckedApplyCapacity, CheckedEpochAdmi
 use units::{bytes, overflow};
 
 pub(super) struct ResourceAdmission<'lease, 'authority> {
-    available: u64,
+    available: Option<u64>,
     fixed: u64,
     copies: u64,
     selected: BTreeSet<NodeId>,
@@ -43,7 +43,7 @@ pub(super) struct ResourceAdmission<'lease, 'authority> {
     node_root_growth: u64,
     cause_transition_count: usize,
     width: usize,
-    result_grant_bytes: u64,
+    result_grant_bytes: Option<u64>,
     declared_result_minimum: u64,
     lease: worth_execution::ExecutionRequest<'lease, 'authority>,
     candidate_lease: Option<ExecutionResourceLease<'authority>>,
@@ -170,7 +170,7 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
             task.node,
             graph.node_eval_config(task.node)?.comparator.as_ref(),
         );
-        let mut measurement = Measurement::new(usize::MAX);
+        let mut measurement = Measurement::new(None);
         let mut checkpoint = |visits: usize| {
             if let Some(request) = request.as_deref_mut() {
                 request

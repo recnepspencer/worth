@@ -26,7 +26,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     >,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    indexed_rebase_work_budget: usize,
+    indexed_rebase_work_budget: Option<usize>,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:

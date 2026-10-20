@@ -156,6 +156,8 @@ where
         reservation.materialize(&effects)?;
         let program = WorthQueryApplicationEffectProgram {
             candidate_funding: None,
+            candidate_requirements: None,
+            effect_backing_memory: None,
             read_set: self,
             effects,
             emission_retained_bytes: 0,

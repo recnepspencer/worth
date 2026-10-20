@@ -58,16 +58,22 @@ impl<'a, R> RetainedSettlement<'a, R> {
             }
             match range {
                 RunRange::Summary(s) => {
-                    if prefix.stop.is_some() && s.maximum_slot_work <= limits.ceiling() {
+                    if prefix.stop.is_some()
+                        && limits
+                            .ceiling()
+                            .is_none_or(|ceiling| s.maximum_slot_work <= ceiling)
+                    {
                         prefix.discarded = prefix.discarded.saturating_add(s.work);
                         return true;
                     }
                     if prefix.stop.is_some()
-                        || s.maximum_slot_work > limits.ceiling()
+                        || limits
+                            .ceiling()
+                            .is_some_and(|ceiling| s.maximum_slot_work > ceiling)
                         || prefix
                             .work
                             .checked_add(s.work)
-                            .is_none_or(|w| w > limits.ceiling())
+                            .is_none_or(|w| limits.ceiling().is_some_and(|ceiling| w > ceiling))
                     {
                         return false;
                     }
@@ -77,7 +83,10 @@ impl<'a, R> RetainedSettlement<'a, R> {
                     self.metrics.carried_slots += s.count as u64;
                 }
                 RunRange::Slot(slot) => {
-                    if slot.charged_work() <= limits.ceiling() {
+                    if limits
+                        .ceiling()
+                        .is_none_or(|ceiling| slot.charged_work() <= ceiling)
+                    {
                         if prefix.stop.is_some() {
                             prefix.discarded = prefix.discarded.saturating_add(slot.charged_work());
                             return true;
@@ -85,7 +94,7 @@ impl<'a, R> RetainedSettlement<'a, R> {
                         if prefix
                             .work
                             .checked_add(slot.charged_work())
-                            .is_some_and(|w| w <= limits.ceiling())
+                            .is_some_and(|w| limits.ceiling().is_none_or(|ceiling| w <= ceiling))
                         {
                             prefix.work += slot.charged_work();
                             prefix.span = prefix.span.max(slot.charged_span());

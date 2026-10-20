@@ -331,7 +331,7 @@ fn resume_controls<'a>(
 ) -> Option<WorthQueryApplicationQueryResumeControls<'a>> {
     Some(WorthQueryApplicationQueryResumeControls::new(
         NonZeroUsize::new(controls.maximum_results)?,
-        NonZeroUsize::new(controls.maximum_work)?,
+        Some(NonZeroUsize::new(controls.maximum_work)?),
         scope,
     ))
 }

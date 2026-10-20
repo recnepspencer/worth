@@ -36,6 +36,20 @@ where
         Ok(self)
     }
 
+    pub fn back_action<Binding, Source, Target>(
+        &mut self,
+        source: &ApplicationWorkflowComponentNodeRef<Source>,
+        target: &ApplicationWorkflowComponentNodeRef<Target>,
+    ) -> Result<&mut Self, ApplicationWorkflowAuthoringDenial>
+    where
+        Binding: crate::application_operation::ApplicationMutationBinding<Spec::Schema>,
+    {
+        self.require_connection(source, target)?;
+        self.graph
+            .back_action::<Binding, _, _>(&source.inner, &target.inner);
+        Ok(self)
+    }
+
     pub fn proposal_for_assessment(
         &mut self,
         source: &ApplicationWorkflowComponentNodeRef<ApplicationWorkflowOperationNode>,

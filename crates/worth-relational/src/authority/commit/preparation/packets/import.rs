@@ -71,3 +71,19 @@ pub(crate) struct ImportStagingPacket {
     pub(crate) header: ImportStagingHeader,
     pub(crate) rows: Vec<ImportStagedRow>,
 }
+
+/// The retained stream clones one owned row per input and carries its reduction key.
+pub(crate) fn import_result_capacity_bytes(
+    nested_row_bytes: impl IntoIterator<Item = u64>,
+) -> Option<u64> {
+    nested_row_bytes
+        .into_iter()
+        .try_fold(0_u64, |total, nested| {
+            total
+                .checked_add(std::mem::size_of::<(
+                    crate::authority::commit::preparation::reduction::keys::ImportReductionKey,
+                    ImportStagedRow,
+                )>() as u64)?
+                .checked_add(nested)
+        })
+}

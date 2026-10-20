@@ -3,7 +3,7 @@ use super::*;
 fn limits(work: usize, bytes: usize) -> WorthQueryApplicationQueryBatchLimits {
     WorthQueryApplicationQueryBatchLimits::new(
         NonZeroUsize::new(8).unwrap(),
-        NonZeroUsize::new(work).unwrap(),
+        Some(NonZeroUsize::new(work).unwrap()),
         NonZeroUsize::new(bytes).unwrap(),
         NonZeroUsize::new(2048).unwrap(),
     )
@@ -12,18 +12,18 @@ fn limits(work: usize, bytes: usize) -> WorthQueryApplicationQueryBatchLimits {
 #[test]
 fn repeated_reads_spend_one_loan_and_refund_only_their_unused_share() {
     let batch = WorthQueryApplicationQueryBatchAdmission::new(limits(10, 32));
-    let first = batch.reserve_read(8).unwrap();
-    assert_eq!(first.maximum(), 8);
+    let first = batch.reserve_read(Some(8)).unwrap();
+    assert_eq!(first.maximum(), Some(8));
     first.settle(4).unwrap();
-    let second = batch.reserve_read(8).unwrap();
+    let second = batch.reserve_read(Some(8)).unwrap();
     assert_eq!(
         second.maximum(),
-        6,
+        Some(6),
         "a second read cannot renew the original ten units"
     );
     second.settle(6).unwrap();
     assert!(matches!(
-        batch.reserve_read(1),
+        batch.reserve_read(Some(1)),
         Err(WorthQueryApplicationQueryBatchResourceDenial::WorkLimit { maximum: 10, .. })
     ));
     assert_eq!(batch.observe().read_work_units(), 10);
@@ -32,7 +32,7 @@ fn repeated_reads_spend_one_loan_and_refund_only_their_unused_share() {
 #[test]
 fn failed_settlement_and_overflow_leave_existing_reservations_charged() {
     let batch = WorthQueryApplicationQueryBatchAdmission::new(limits(10, usize::MAX));
-    let reserved = batch.reserve_read(6).unwrap();
+    let reserved = batch.reserve_read(Some(6)).unwrap();
     assert_eq!(
         reserved.settle(7),
         Err(WorthQueryApplicationQueryBatchResourceDenial::WorkAccountingMismatch)

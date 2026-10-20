@@ -70,11 +70,13 @@ pub(super) enum WorkflowConnectionTag {
     Control(ApplicationWorkflowControlOutcome),
     Data(ApplicationWorkflowDataFlow),
     Retry(ApplicationWorkflowControlOutcome),
+    BackAction,
 }
 
 impl WorkflowConnectionTag {
     pub(super) fn from_declared(kind: ApplicationWorkflowConnectionKind) -> Self {
         match kind {
+            ApplicationWorkflowConnectionKind::BackAction(_) => Self::BackAction,
             ApplicationWorkflowConnectionKind::Control(outcome) => Self::Control(outcome),
             ApplicationWorkflowConnectionKind::Data(flow) => Self::Data(flow),
             ApplicationWorkflowConnectionKind::Retry(retry) => Self::Retry(retry.trigger()),
@@ -120,6 +122,7 @@ impl WorkflowConnectionTag {
             (1, 5) => Some(Self::Data(ApplicationWorkflowDataFlow::OperationInput)),
             (1, 6) => Some(Self::Data(ApplicationWorkflowDataFlow::ConditionSubject)),
             (2, variant) => decode_control(variant).map(Self::Retry),
+            (3, 0) => Some(Self::BackAction),
             _ => None,
         }
     }
@@ -129,11 +132,13 @@ impl WorkflowConnectionTag {
             Self::Control(_) => 0,
             Self::Data(_) => 1,
             Self::Retry(_) => 2,
+            Self::BackAction => 3,
         }
     }
 
     pub(super) const fn variant(self) -> u64 {
         match self {
+            Self::BackAction => 0,
             Self::Control(ApplicationWorkflowControlOutcome::Completed)
             | Self::Data(ApplicationWorkflowDataFlow::ProposalSubject) => 0,
             Self::Control(ApplicationWorkflowControlOutcome::Approved)
@@ -149,6 +154,8 @@ impl WorkflowConnectionTag {
             Self::Control(ApplicationWorkflowControlOutcome::ConditionSatisfied) => 6,
             Self::Control(ApplicationWorkflowControlOutcome::ConditionUnsatisfied) => 7,
             Self::Control(ApplicationWorkflowControlOutcome::NavigatedBack) => 8,
+            Self::Control(ApplicationWorkflowControlOutcome::Returned) => 9,
+            Self::Control(ApplicationWorkflowControlOutcome::Terminated) => 10,
             Self::Data(ApplicationWorkflowDataFlow::ConditionSubject) => 6,
             Self::Retry(outcome) => control_variant(outcome),
         }
@@ -156,6 +163,7 @@ impl WorkflowConnectionTag {
 
     pub(super) const fn identity(self) -> &'static str {
         match self {
+            Self::BackAction => "back-action-v1",
             Self::Control(ApplicationWorkflowControlOutcome::Completed) => "control-completed",
             Self::Control(ApplicationWorkflowControlOutcome::Approved) => "control-approved",
             Self::Control(ApplicationWorkflowControlOutcome::Rejected) => "control-rejected",
@@ -177,6 +185,8 @@ impl WorkflowConnectionTag {
             Self::Control(ApplicationWorkflowControlOutcome::NavigatedBack) => {
                 "control-navigated-back"
             }
+            Self::Control(ApplicationWorkflowControlOutcome::Returned) => "control-returned",
+            Self::Control(ApplicationWorkflowControlOutcome::Terminated) => "control-terminated",
             Self::Data(ApplicationWorkflowDataFlow::ProposalSubject) => "data-proposal-subject",
             Self::Data(ApplicationWorkflowDataFlow::AssessmentSubject) => "data-assessment-subject",
             Self::Data(ApplicationWorkflowDataFlow::AssessmentEvidence) => {
@@ -202,6 +212,8 @@ const fn control_variant(outcome: ApplicationWorkflowControlOutcome) -> u64 {
         ApplicationWorkflowControlOutcome::ConditionSatisfied => 6,
         ApplicationWorkflowControlOutcome::ConditionUnsatisfied => 7,
         ApplicationWorkflowControlOutcome::NavigatedBack => 8,
+        ApplicationWorkflowControlOutcome::Returned => 9,
+        ApplicationWorkflowControlOutcome::Terminated => 10,
     }
 }
 

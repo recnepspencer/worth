@@ -56,7 +56,7 @@ pub(in crate::domain_computation::primary_graph) struct SettlementRegistration {
 
 pub(super) struct AdmittedSettlementRegistration {
     pub(super) input: SettlementRegistration,
-    pub(super) fact_capacity: Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>,
+    pub(super) fact_capacity: super::fact_retention::RetainedFactCapacity,
 }
 
 /// Install exact consumed facts into the selected live reverse index. The

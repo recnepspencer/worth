@@ -17,8 +17,10 @@ pub use output_source::{
 mod program_owner;
 mod program_runtime;
 mod roster_authoring;
+mod signing;
 mod specialized_action;
 mod speculation;
+pub use signing::WorthQuerySigningOwnerInstallationDenial;
 mod supported_program;
 pub use checkpoint::{
     in_memory_program_from_checkpoint, in_memory_rostered_program_from_checkpoint,

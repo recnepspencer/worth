@@ -49,7 +49,7 @@ impl<Schema, Operation, Input, Scope>
         for k in 1..=count {
             let cancel = CancellationSource::new();
             let serial = worth_execution::SerialRequest::from_memory(
-                worth_execution::SerialMemoryBudget::new(64 << 20),
+                worth_execution::SerialMemoryBudget::new(None),
                 cancel.token(),
                 None,
             );
@@ -63,7 +63,7 @@ impl<Schema, Operation, Input, Scope>
             assert!(probe.consults() >= k);
             drop(probe);
             let serial = worth_execution::SerialRequest::from_memory(
-                worth_execution::SerialMemoryBudget::new(64 << 20),
+                worth_execution::SerialMemoryBudget::new(None),
                 worth_execution::CancellationToken::new(),
                 None,
             );
@@ -75,7 +75,12 @@ impl<Schema, Operation, Input, Scope>
                     assert_eq!(
                         {
                             let context = context.expect("the caller's active scope");
-                            context.checkpoint(context.remaining_work() + 1)
+                            context.checkpoint(
+                                context
+                                    .remaining_work()
+                                    .expect("this adversarial scope selected a finite ceiling")
+                                    + 1,
+                            )
                         },
                         Err(worth_execution::MapKernelStop::WorkCeiling)
                     );
@@ -83,7 +88,7 @@ impl<Schema, Operation, Input, Scope>
             );
             let (answer, _) = request
                 .run(
-                    worth_execution::ExecutionWorkCeiling::new(u64::MAX - 1),
+                    worth_execution::ExecutionWorkCeiling::new(Some(u64::MAX - 1)),
                     |_| read(&request),
                 )
                 .unwrap();

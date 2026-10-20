@@ -1,10 +1,10 @@
 //! The guide's declaration-only contract and finite prepared footprint through public facades.
 // compiled-example: begin
 use worth_query_decl::facade::application_operation::{
-    ApplicationCandidateCardinalityCeiling, ApplicationCandidateContract,
+    ApplicationCandidateCardinalityCeiling, ApplicationCandidatePolicy,
     ApplicationCandidateRequirements, ApplicationCandidateResourceCeiling,
 };
-const CANDIDATES: ApplicationCandidateContract = ApplicationCandidateContract::prepared();
+const CANDIDATES: ApplicationCandidatePolicy = ApplicationCandidatePolicy::new(None, None);
 fn prepared_footprint(
     creates: usize,
     writes: usize,
@@ -21,9 +21,6 @@ pub fn declaration_and_footprint(
     creates: usize,
     writes: usize,
     owned_bytes: usize,
-) -> (
-    ApplicationCandidateContract,
-    ApplicationCandidateRequirements,
-) {
+) -> (ApplicationCandidatePolicy, ApplicationCandidateRequirements) {
     (CANDIDATES, prepared_footprint(creates, writes, owned_bytes))
 }

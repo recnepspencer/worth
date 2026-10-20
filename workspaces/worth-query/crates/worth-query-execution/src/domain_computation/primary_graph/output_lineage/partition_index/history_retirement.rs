@@ -224,8 +224,8 @@ mod window_work {
                 + 1;
         let mut admission = InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: visits,
-                maximum_preparation_bytes: 0,
+                maximum_work_visits: Some(visits),
+                maximum_preparation_bytes: None,
             },
         );
         charge_history_window(&mut admission, visits as usize).unwrap();

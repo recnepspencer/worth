@@ -15,7 +15,7 @@ pub(in crate::domain_computation::primary_graph) struct SourceQueryReadClosure {
     authorization: WorthQueryRetainedAuthorizationDecisionFacts,
     registry: Arc<WorthQueryInstalledAuthorizationRegistry>,
     principal_facts: Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>,
-    facts: Arc<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>,
+    facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     _capacity: crate::domain_computation::primary_graph::output_lineage::invalidation::RetainedConsumedOutputCapacity,
 }
 
@@ -66,6 +66,7 @@ impl SourceQueryReadClosure {
         // Conservative custody: retain every byte admitted by this source read,
         // including temporary scratch. The receipt and permission cannot outlive
         // the owner funding that admitted their complete preparation.
+        let facts = crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::from(Arc::<[Fact]>::from(facts));
         let capacity = owner.retain_consumed_output(&facts, selected, bytes, admission)?;
         Ok(Arc::new(Self {
             control: application
@@ -75,7 +76,7 @@ impl SourceQueryReadClosure {
             receipt,
             principal_facts: principal_facts.into(),
             authorization,
-            facts: facts.into(),
+            facts,
             registry: Arc::clone(&application.authorization),
             _capacity: capacity,
         }))
@@ -95,7 +96,7 @@ impl SourceQueryReadClosure {
 
     pub(in crate::domain_computation::primary_graph) fn facts(
         &self,
-    ) -> &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact] {
+    ) -> &crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload {
         &self.facts
     }
 

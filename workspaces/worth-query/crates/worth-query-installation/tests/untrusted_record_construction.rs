@@ -160,6 +160,7 @@ fn downstream_code_constructs_untrusted_cross_reference_and_derived_records() {
             emissions: Vec::new(),
             external_effect: None,
             reconciliation: None,
+            body: None,
         },
     );
 

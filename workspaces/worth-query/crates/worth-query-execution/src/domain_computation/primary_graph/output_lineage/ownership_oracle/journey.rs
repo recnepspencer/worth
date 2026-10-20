@@ -58,7 +58,7 @@ pub(super) fn complete(runtime: &Application) -> Arc<WorthQueryOutputDemandSettl
                         ApplicationQueryParameterSet::new(),
                         WorthQueryProductQueryControls::new(
                             NonZeroUsize::new(1).unwrap(),
-                            NonZeroUsize::new(100_000).unwrap(),
+                            Some(NonZeroUsize::new(100_000).unwrap()),
                             &scope,
                         ),
                     )

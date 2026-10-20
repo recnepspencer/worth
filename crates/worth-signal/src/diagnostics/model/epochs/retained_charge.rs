@@ -94,7 +94,7 @@ mod tests {
         };
         assert_eq!(
             epoch
-                .retained_heap_charge(&mut Work::new(100))
+                .retained_heap_charge(&mut Work::new(Some(100)))
                 .unwrap()
                 .bytes(),
             expected as u64

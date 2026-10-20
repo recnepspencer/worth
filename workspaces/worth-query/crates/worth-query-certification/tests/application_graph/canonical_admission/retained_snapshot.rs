@@ -57,7 +57,7 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
                                 policy: ExecutionRequestPolicy::new(
                                     parent.policy().posture(),
                                     parent.policy().determinism(),
-                                    ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, work),
+                                    ExecutionBudget::new(NonZeroUsize::MIN, Some(64 * 1024 * 1024), Some(work)),
                                 ),
                                 cancellation: cancellation.token(),
                                 deadline: scope.deadline(),
@@ -67,7 +67,7 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
                     .unwrap();
                 let request = ExecutionRequest::leased(&lease);
                 let (result, report) = request
-                    .run(ExecutionWorkCeiling::new(work), |_| {
+                    .run(ExecutionWorkCeiling::new(Some(work)), |_| {
                         snapshot.read_fields(&request, |reader| {
                             let first = reader
                                 .field(&identities[0], DocumentValueField::reference())

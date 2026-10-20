@@ -13,6 +13,7 @@ const TERMINAL: EntityId = EntityId::new(PartitionId(0), 3, 0);
 fn approval_gated() -> WorkflowDefinitionDependencies {
     WorkflowDefinitionDependencies {
         spec: "spec".to_owned(),
+        global_actions: Box::new([]),
         nodes: vec![
             WorkflowRetainedNode {
                 entity: APPROVAL,

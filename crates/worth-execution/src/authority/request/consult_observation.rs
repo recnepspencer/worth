@@ -108,23 +108,32 @@ mod tests {
     #[test]
     fn latched_stop_keeps_its_origin_and_a_late_observer_reports_unknown() {
         let serial = crate::SerialRequest::from_memory(
-            crate::SerialMemoryBudget::new(64 * 1024),
+            crate::SerialMemoryBudget::new(None),
             crate::CancellationToken::new(),
             None,
         );
-        crate::backend::run_scope_within::<(), (), _>(None, 0, 0, true, 1, Some(&serial), |work| {
-            let observer =
-                RequestConsultObservationForTest::install_on_this_thread_for_test(|_| {});
-            assert_eq!(work.checkpoint(2), Err(crate::MapKernelStop::WorkCeiling));
-            assert_eq!(work.checkpoint(0), Err(crate::MapKernelStop::WorkCeiling));
-            assert_eq!(observer.stop_origins_for_test(), vec![(1, 1), (2, 1)]);
-            assert_eq!(observer.charged_prefixes_for_test(), vec![(1, 2)]);
-            drop(observer);
-            let late = RequestConsultObservationForTest::install_on_this_thread_for_test(|_| {});
-            assert_eq!(work.checkpoint(0), Err(crate::MapKernelStop::WorkCeiling));
-            assert_eq!(late.stop_origins_for_test(), vec![(1, 0)]);
-            Ok(())
-        });
+        crate::backend::run_scope_within::<(), (), _>(
+            None,
+            0,
+            0,
+            true,
+            Some(1),
+            Some(&serial),
+            |work| {
+                let observer =
+                    RequestConsultObservationForTest::install_on_this_thread_for_test(|_| {});
+                assert_eq!(work.checkpoint(2), Err(crate::MapKernelStop::WorkCeiling));
+                assert_eq!(work.checkpoint(0), Err(crate::MapKernelStop::WorkCeiling));
+                assert_eq!(observer.stop_origins_for_test(), vec![(1, 1), (2, 1)]);
+                assert_eq!(observer.charged_prefixes_for_test(), vec![(1, 2)]);
+                drop(observer);
+                let late =
+                    RequestConsultObservationForTest::install_on_this_thread_for_test(|_| {});
+                assert_eq!(work.checkpoint(0), Err(crate::MapKernelStop::WorkCeiling));
+                assert_eq!(late.stop_origins_for_test(), vec![(1, 0)]);
+                Ok(())
+            },
+        );
     }
     #[test]
     fn consult_observation_restores_the_outer_count() {

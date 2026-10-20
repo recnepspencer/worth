@@ -52,9 +52,10 @@ pub use aggregate::{
     WorthQueryInvariantAggregate, WorthQueryInvariantAggregateDenial,
     WorthQueryInvariantAggregateDenialKind,
 };
+pub use consumed_output::VerificationCapacityStop;
 pub(in crate::domain_computation::primary_graph) use consumed_output::{
     ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
-    PublicationRecoveryStop, SelectedPendingConsumedOutput, VerificationCapacityStop,
+    PublicationRecoveryStop, SelectedPendingConsumedOutput,
 };
 pub use field_projection::WorthQueryRetainedSnapshotRead;
 pub use locked_reader::{
@@ -98,6 +99,7 @@ pub struct WorthQueryApplicationInvariantProjectionAuthority<Schema> {
     authority_identity: u64,
     value_bindings:
         worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
+    program_activation: Option<super::program_occurrence::WorthQueryProgramActivationCell>,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -176,6 +178,7 @@ where
             runtime_authority: self.runtime_authority,
             binding_identity: self.graph.binding_identity().clone(),
             entity_resolution: self.graph.retain_entity_resolution_context(),
+            program_activation: self.program_activation.clone(),
             authority_identity: NEXT_INVARIANT_PROJECTION_AUTHORITY
                 .fetch_add(1, std::sync::atomic::Ordering::Relaxed),
             _schema: PhantomData,

@@ -12,6 +12,7 @@ fn run(
     scratch: u64,
     work: u64,
 ) -> (Result<(), PacketExecutionStop>, u64) {
+    let lease = request(1024 * 1024, work, CancellationToken::new(), None);
     let plan = fixture.merged_plan(fixture.chain_batch(forward_edges));
     let runtime = &fixture.runtime;
     let request_view = InvariantExecutionRequest::from_profile_with_contract(
@@ -23,8 +24,12 @@ fn run(
         Some(crate::validation::data::InvariantPlanContract::from_merged_plan(&plan)),
     );
     let view = InvariantRuntimeView::from_runtime(runtime);
-    let prepared =
-        crate::validation::execution::plan_invariant_execution(&view, &request_view, None);
+    let prepared = crate::validation::execution::plan_invariant_execution(
+        &view,
+        worth_execution::ExecutionRequest::leased(&lease),
+        &request_view,
+        None,
+    );
     let packets = prepared.packets.into_iter().map(|packet| {
         assert!(matches!(&packet.registration,
             crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::Native(
@@ -35,17 +40,25 @@ fn run(
         ), "the actual installed rule must be acyclicity");
         ReadOnlyPacket {
             identity: PartitionIdentity::new(packet.packet_index as u64), value: packet,
-            input_bytes: 0, kernel_scratch_bytes: scratch, max_result_bytes: 16 * 1024,
+            input_bytes: 0, memory: crate::execution::PacketMemory::Declared { scratch: scratch, result: 16 * 1024 },
         }
     }).collect();
-    let lease = request(1024 * 1024, work, CancellationToken::new(), None);
-    let (outcome, charges) =
-        crate::execution::work_observation::capture(|| {
-            execute_read_only_packets(packets, &lease, |packet, context| {
-            crate::validation::execution::evaluate_invariant_packet_checked(
-                &view, packet, context, lease.status())
-        }, crate::validation::execution::InvariantWorkerEnvelope::owned_allocation_capacity_bytes)
-        });
+    let (outcome, charges) = crate::execution::work_observation::capture(|| {
+        execute_read_only_packets(
+            packets,
+            &lease,
+            |packet, context| {
+                crate::validation::execution::evaluate_invariant_packet_checked(
+                    &view,
+                    worth_execution::ExecutionRequest::leased(&lease),
+                    packet,
+                    context,
+                    lease.status(),
+                )
+            },
+            crate::validation::execution::InvariantWorkerEnvelope::owned_allocation_capacity_bytes,
+        )
+    });
     let outcome = outcome.map(|envelopes| {
         assert!(!envelopes.is_empty(), "the genuine rule must execute");
         assert!(envelopes

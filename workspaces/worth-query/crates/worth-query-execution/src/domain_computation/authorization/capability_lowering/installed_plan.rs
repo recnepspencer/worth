@@ -133,7 +133,7 @@ where
     let contract = source.contract();
     let principal_kind = kind(layout, capability_principal(contract)?)?;
     let grant_kind = kind(layout, contract.grant_entity())?;
-    let scope_entity = contract.target().resource().to();
+    let scope_entity = contract.target().resource_path().scope_entity();
     let scope_kind = kind(layout, scope_entity)?;
     let grant_join_index_id = layout
         .capability_grant_join_index_id(

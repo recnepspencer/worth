@@ -76,11 +76,11 @@ fn recorded_state() -> DiagnosticsState {
 fn empty_aggregate_matches_the_immutable_carrier_heap_contract() {
     let mut state = DiagnosticsState::default();
     let carrier = state
-        .retained_branch_carrier_charge(&mut Work::new(10000))
+        .retained_branch_carrier_charge(&mut Work::new(Some(10000)))
         .unwrap();
     assert_eq!(
         state
-            .prepare_retained_heap_charge(&mut Work::new(10000))
+            .prepare_retained_heap_charge(&mut Work::new(Some(10000)))
             .unwrap(),
         carrier
     );
@@ -91,27 +91,27 @@ fn cold_diagnostic_preparation_denial_preserves_semantics_and_allows_retry() {
     let mut state = recorded_state();
     let mut short = state.clone();
     let wire = serde_json::to_value(&state).unwrap();
-    let mut work = Work::new(100000);
+    let mut work = Work::new(Some(100000));
     let charge = state.prepare_retained_heap_charge(&mut work).unwrap();
     assert!(charge.bytes() > 0);
     assert_eq!(serde_json::to_value(&state).unwrap(), wire);
     let limit = work.visits() - 1;
     assert_eq!(
-        short.prepare_retained_heap_charge(&mut Work::new(limit)),
+        short.prepare_retained_heap_charge(&mut Work::new(Some(limit))),
         Err(Denial::WorkExhausted {
             maximum_visits: limit
         })
     );
     assert_eq!(serde_json::to_value(&short).unwrap(), wire);
     short
-        .prepare_retained_heap_charge(&mut Work::new(100000))
+        .prepare_retained_heap_charge(&mut Work::new(Some(100000)))
         .unwrap();
     assert_eq!(serde_json::to_value(&short).unwrap(), wire);
     let mut restored: DiagnosticsState =
         serde_json::from_str(&serde_json::to_string(&state).unwrap()).unwrap();
     restored.rebuild_indexes();
     restored
-        .prepare_retained_heap_charge(&mut Work::new(100000))
+        .prepare_retained_heap_charge(&mut Work::new(Some(100000)))
         .unwrap();
     assert_eq!(serde_json::to_value(&restored).unwrap(), wire);
 }
@@ -120,7 +120,7 @@ fn cold_diagnostic_preparation_denial_preserves_semantics_and_allows_retry() {
 fn prepared_diagnostic_children_keep_custody_and_accounting_across_full_fork() {
     let mut state = recorded_state();
     state
-        .prepare_retained_heap_charge(&mut Work::new(100000))
+        .prepare_retained_heap_charge(&mut Work::new(Some(100000)))
         .unwrap();
     let wire = serde_json::to_value(&state).unwrap();
     let mut fork = state.fork_persistent();
@@ -133,15 +133,15 @@ fn prepared_diagnostic_children_keep_custody_and_accounting_across_full_fork() {
         fork.recent_history.prepared_retained_charge().unwrap()
     );
     let before = fork
-        .prepare_retained_heap_charge(&mut Work::new(100000))
+        .prepare_retained_heap_charge(&mut Work::new(Some(100000)))
         .unwrap();
     let observation = fork.latest_observation.as_ref().unwrap();
     let observation_charge = observation
-        .retained_heap_charge(&mut Work::new(10000))
+        .retained_heap_charge(&mut Work::new(Some(10000)))
         .unwrap();
     fork.latest_observation = None;
     let after = fork
-        .prepare_retained_heap_charge(&mut Work::new(100000))
+        .prepare_retained_heap_charge(&mut Work::new(Some(100000)))
         .unwrap();
     // The flow still owns the same observation Arc; only this root's charge is removed.
     assert_eq!(before.bytes() - after.bytes(), observation_charge.bytes());
@@ -173,7 +173,7 @@ fn aggregate_cold_preparation_prepares_all_effective_native_history_indexes_in_p
     let sibling = state.fork_persistent();
     let wire = serde_json::to_value(&state).unwrap();
     state
-        .prepare_retained_heap_charge(&mut Work::new(100_000))
+        .prepare_retained_heap_charge(&mut Work::new(Some(100_000)))
         .unwrap();
     assert_prepared_index(
         &state.replay_events_by_branch,

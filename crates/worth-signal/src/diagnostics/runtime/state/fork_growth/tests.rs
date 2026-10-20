@@ -38,7 +38,7 @@ fn ledger(bytes: u64) -> std::sync::Arc<Ledger> {
         SignalConditionalEvaluationBudget {
             maximum_retained_slots: 1,
             maximum_retained_bytes: bytes,
-            maximum_attempt_visits: 1_000_000,
+            maximum_attempt_visits: Some(1_000_000),
         },
         crate::runtime_policy::SignalConditionalTemporalBudget {
             maximum_live_partitions: 1,
@@ -48,7 +48,7 @@ fn ledger(bytes: u64) -> std::sync::Arc<Ledger> {
 }
 fn cold(state: &mut DiagnosticsState) {
     state
-        .prepare_retained_heap_charge(&mut Work::new(1_000_000))
+        .prepare_retained_heap_charge(&mut Work::new(Some(1_000_000)))
         .unwrap();
 }
 
@@ -57,14 +57,14 @@ fn diagnostic_fork_growth_requires_cold_facts_and_denies_without_conversion() {
     let mut state = fixture(8, 128);
     let wire = serde_json::to_value(&state).unwrap();
     assert_eq!(
-        state.prepare_fork_growth(&mut Work::new(100_000)),
+        state.prepare_fork_growth(&mut Work::new(Some(100_000))),
         Err(DiagnosticForkGrowthDenial::PreparationRequired)
     );
     cold(&mut state);
-    let mut measured = Work::new(100_000);
+    let mut measured = Work::new(Some(100_000));
     let growth = state.prepare_fork_growth(&mut measured).unwrap();
     assert!(matches!(
-        state.prepare_fork_growth(&mut Work::new(measured.visits() - 1)),
+        state.prepare_fork_growth(&mut Work::new(Some(measured.visits() - 1))),
         Err(DiagnosticForkGrowthDenial::Accounting(
             RetainedStoragePreparationDenial::WorkExhausted { .. }
         ))
@@ -73,7 +73,9 @@ fn diagnostic_fork_growth_requires_cold_facts_and_denies_without_conversion() {
     assert!(denied.reserve(0, growth).is_err());
     assert_eq!(denied.usage(), (0, 0));
     assert_eq!(
-        state.prepare_fork_growth(&mut Work::new(100_000)).unwrap(),
+        state
+            .prepare_fork_growth(&mut Work::new(Some(100_000)))
+            .unwrap(),
         growth
     );
     assert_eq!(serde_json::to_value(&state).unwrap(), wire);
@@ -85,7 +87,9 @@ fn diagnostic_fork_conversion_custody_survives_either_root_drop_order() {
         let mut state = fixture(8, 128);
         cold(&mut state);
         let wire = serde_json::to_value(&state).unwrap();
-        let growth = state.prepare_fork_growth(&mut Work::new(100_000)).unwrap();
+        let growth = state
+            .prepare_fork_growth(&mut Work::new(Some(100_000)))
+            .unwrap();
         let ledger = ledger(growth.bytes() + std::mem::size_of::<Reservation>() as u64);
         let mut resources = ledger.reserve(0, growth).unwrap();
         let mut candidate = state.fork_reserved(&mut resources);
@@ -95,7 +99,7 @@ fn diagnostic_fork_conversion_custody_survives_either_root_drop_order() {
         assert!(state.branch_catalog.ptr_eq(&candidate.branch_catalog));
         assert_eq!(
             candidate
-                .prepare_fork_growth(&mut Work::new(100_000))
+                .prepare_fork_growth(&mut Work::new(Some(100_000)))
                 .unwrap(),
             Charge::ZERO
         );
@@ -124,7 +128,7 @@ fn prepared_diagnostic_fork_work_does_not_walk_catalog_or_payloads() {
             population
         );
         cold(&mut state);
-        let mut work = Work::new(100_000);
+        let mut work = Work::new(Some(100_000));
         let growth = state.prepare_fork_growth(&mut work).unwrap();
         observed.push((growth, work.visits()));
     }

@@ -3,7 +3,6 @@ use std::cell::RefCell;
 use worth_execution::{ExecutionLeaseStatus, MapKernelFailure};
 
 use crate::execution::{PacketBudgetDenial, PacketKernelContext};
-use crate::validation::custom_rule::{CustomPreparationBudget, CustomPreparationStop};
 
 pub(crate) type InvariantBudgetStop = MapKernelFailure<PacketBudgetDenial>;
 
@@ -13,14 +12,19 @@ pub(crate) trait InvariantBudget {
     fn checkpoint(&self, units: u64) -> bool;
     fn claim_result(&self, bytes: u64) -> bool;
     fn claim_scratch(&self, bytes: u64) -> bool;
-    fn remaining_scratch(&self) -> u64;
     fn check_scratch_peak(&self, bytes: u64) -> bool;
     fn ensure_result_total(&self, bytes: u64) -> bool;
     fn check_result_peak(&self, bytes: u64) -> bool;
     fn custom_meter(&self) -> &dyn crate::validation::data::CustomInvariantLeaseBudget;
     fn deny_unchecked_custom(&self);
-    fn custom_structural_budget(&self) -> CustomPreparationBudget;
-    fn settle_custom_structural(&self, budget: &CustomPreparationBudget) -> bool;
+    fn remaining_scratch(&self) -> Option<u64>;
+    fn custom_structural_budget(
+        &self,
+    ) -> Option<crate::validation::custom_rule::CustomPreparationBudget>;
+    fn settle_custom_structural(
+        &self,
+        budget: &crate::validation::custom_rule::CustomPreparationBudget,
+    ) -> bool;
 }
 
 pub(crate) struct LeasedInvariantBudget<'a, 'b, 'c, 'd> {
@@ -63,9 +67,54 @@ impl<'a, 'b, 'c, 'd> LeasedInvariantBudget<'a, 'b, 'c, 'd> {
 }
 
 impl InvariantBudget for LeasedInvariantBudget<'_, '_, '_, '_> {
-    fn remaining_scratch(&self) -> u64 {
+    fn remaining_scratch(&self) -> Option<u64> {
         self.context.borrow().remaining_scratch()
     }
+    fn custom_structural_budget(
+        &self,
+    ) -> Option<crate::validation::custom_rule::CustomPreparationBudget> {
+        use crate::validation::custom_rule::CustomPreparationBudget;
+        let context = self.context.borrow();
+        let result = match context.structural_memory() {
+            Some(payer) => CustomPreparationBudget::packet_tracked(
+                self.status.clone(),
+                context.remaining_work(),
+                payer,
+            ),
+            None => Ok(CustomPreparationBudget::new(
+                self.status.clone(),
+                context.remaining_work(),
+                context.remaining_scratch(),
+            )),
+        };
+        match result {
+            Ok(budget) => Some(budget),
+            Err(denial) => {
+                *self.failure.borrow_mut() = Some(MapKernelFailure::Domain(
+                    PacketBudgetDenial::ReadRequest(crate::execution::denial::lease_denial(
+                        worth_execution::LeaseDenial::MemoryExhausted(denial),
+                    )),
+                ));
+                None
+            }
+        }
+    }
+    fn settle_custom_structural(
+        &self,
+        budget: &crate::validation::custom_rule::CustomPreparationBudget,
+    ) -> bool {
+        self.attempt(|context| {
+            context.account_completed_work(budget.charged_work())?;
+            if let Some(stop) = budget.stop() {
+                return Err(structural_stop(stop));
+            }
+            if context.structural_memory().is_none() {
+                context.claim_scratch(budget.claimed_memory())?;
+            }
+            Ok(())
+        })
+    }
+
     fn checkpoint(&self, units: u64) -> bool {
         self.attempt(|context| context.checkpoint(units))
     }
@@ -97,49 +146,6 @@ impl InvariantBudget for LeasedInvariantBudget<'_, '_, '_, '_> {
             PacketBudgetDenial::UncheckedCustomKernel,
         ));
     }
-
-    fn custom_structural_budget(&self) -> CustomPreparationBudget {
-        let context = self.context.borrow();
-        CustomPreparationBudget::new(
-            self.status.clone(),
-            Some(context.remaining_work()),
-            Some(context.remaining_scratch()),
-        )
-    }
-
-    fn settle_custom_structural(&self, budget: &CustomPreparationBudget) -> bool {
-        let mut context = self.context.borrow_mut();
-        // Flush measured view work even when the view observed cancellation.
-        let work_result = context.account_completed_work(budget.charged_work());
-        let memory_result = context.claim_scratch(budget.claimed_memory());
-        let stop = budget.stop();
-        let mut failure = self.failure.borrow_mut();
-        if failure.is_none() {
-            *failure = work_result
-                .err()
-                .or_else(|| memory_result.err())
-                .or_else(|| {
-                    stop.map(|stop| match stop {
-                        CustomPreparationStop::Cancelled => {
-                            MapKernelFailure::Stop(worth_execution::MapKernelStop::Cancelled)
-                        }
-                        CustomPreparationStop::DeadlineElapsed => {
-                            MapKernelFailure::Stop(worth_execution::MapKernelStop::DeadlineElapsed)
-                        }
-                        CustomPreparationStop::WorkExhausted => {
-                            MapKernelFailure::Stop(worth_execution::MapKernelStop::WorkCeiling)
-                        }
-                        CustomPreparationStop::MemoryExhausted => {
-                            MapKernelFailure::Domain(PacketBudgetDenial::ScratchCapacityExceeded)
-                        }
-                        CustomPreparationStop::UncheckedCustomKernel => {
-                            MapKernelFailure::Domain(PacketBudgetDenial::UncheckedCustomKernel)
-                        }
-                    })
-                });
-        }
-        failure.is_none()
-    }
 }
 
 impl crate::validation::data::CustomInvariantLeaseBudget for LeasedInvariantBudget<'_, '_, '_, '_> {
@@ -154,5 +160,28 @@ impl crate::validation::data::CustomInvariantLeaseBudget for LeasedInvariantBudg
     }
     fn check_scratch_peak(&self, bytes: u64) -> bool {
         InvariantBudget::check_scratch_peak(self, bytes)
+    }
+}
+
+fn structural_stop(
+    stop: crate::validation::custom_rule::CustomPreparationStop,
+) -> InvariantBudgetStop {
+    use crate::validation::custom_rule::CustomPreparationStop as Stop;
+    use worth_execution::MapKernelStop;
+    match stop {
+        Stop::Cancelled => MapKernelFailure::Stop(MapKernelStop::Cancelled),
+        Stop::DeadlineElapsed => MapKernelFailure::Stop(MapKernelStop::DeadlineElapsed),
+        Stop::WorkExhausted => MapKernelFailure::Stop(MapKernelStop::WorkCeiling),
+        Stop::MemoryExhausted => {
+            MapKernelFailure::Domain(PacketBudgetDenial::ScratchCapacityExceeded)
+        }
+        Stop::UncheckedCustomKernel => {
+            MapKernelFailure::Domain(PacketBudgetDenial::UncheckedCustomKernel)
+        }
+        Stop::MemoryAdmission(denial) => MapKernelFailure::Domain(PacketBudgetDenial::ReadRequest(
+            crate::execution::denial::lease_denial(worth_execution::LeaseDenial::MemoryExhausted(
+                denial,
+            )),
+        )),
     }
 }

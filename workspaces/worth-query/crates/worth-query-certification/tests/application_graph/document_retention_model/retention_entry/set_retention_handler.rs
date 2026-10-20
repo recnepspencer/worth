@@ -39,8 +39,8 @@ impl OperationHandler<DocumentRetentionSchema, SetRetentionBinding> for SetReten
         _: &WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
     ) -> ApplicationCandidateRequirements {
         SetRetentionBinding::CANDIDATES
-            .fixed_requirements()
-            .expect("fixed candidate contract")
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

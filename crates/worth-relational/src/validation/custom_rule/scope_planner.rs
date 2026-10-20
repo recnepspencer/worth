@@ -208,6 +208,7 @@ impl PreparedCustomInvariantScope {
 }
 
 pub struct CustomInvariantScopePlanner<'runtime> {
+    execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
     observation_kind: InvariantObservationKind,
     version_id: VersionId,
     current_version_id: VersionId,
@@ -225,6 +226,7 @@ pub struct CustomInvariantScopePlanner<'runtime> {
 impl<'runtime> CustomInvariantScopePlanner<'runtime> {
     pub(crate) fn new_at_current_version(
         runtime: &InvariantRuntimeView<'runtime>,
+        execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
         observation: &'runtime InvariantObservation<'runtime>,
         version_id: VersionId,
         current_version_id: VersionId,
@@ -263,6 +265,7 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
             work.clone(),
         );
         Self {
+            execution,
             observation_kind: observation.kind(),
             version_id,
             current_version_id,
@@ -280,6 +283,11 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
             work,
             proposal_identity: observation.proposal_identity().cloned(),
         }
+    }
+
+    /// Checks the original request without charging work or opening a scope.
+    pub fn check_live(&self) -> Result<(), super::CustomInvariantInterruption> {
+        super::interruption::check_live(self.execution)
     }
 
     pub fn observation_kind(&self) -> InvariantObservationKind {

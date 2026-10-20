@@ -8,14 +8,20 @@ impl RelationalPinnedRead {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> QueryReadResult {
         let basis = &self.basis;
-        let (packets, preparation) = prepare_query_packets(execution, lease, |budget| {
-            let (entities, relations) = if query_has_explicit_partition_scope(&plan.packet.scope) {
-                (Vec::new(), Vec::new())
-            } else {
-                leased_scan_partitions(basis.root(), budget)?
-            };
-            prepare_scan_packets(&plan.packet, &entities, &relations, budget)
-        })?;
+        let declared_bytes = super::super::query_preparation_extent::declared_bytes(
+            &plan.packet,
+            basis.root().region_count(),
+        )?;
+        let (packets, preparation) =
+            prepare_query_packets(execution, lease, declared_bytes, |budget| {
+                let (entities, relations) =
+                    if query_has_explicit_partition_scope(&plan.packet.scope) {
+                        (Vec::new(), Vec::new())
+                    } else {
+                        leased_scan_partitions(basis.root(), budget)?
+                    };
+                prepare_scan_packets(&plan.packet, &entities, &relations, budget)
+            })?;
         let metrics = PacketizedQueryMetrics::from_packets(&packets);
         record_query_packet_metrics(&self.performance_access(), &plan, &metrics);
         let remaining = lease

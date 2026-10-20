@@ -21,6 +21,7 @@ pub(super) fn evaluate(fact: &WorthQueryApplicationObservedFact, candidate: Enti
             anchor, endpoints, ..
         } => *anchor == candidate || endpoints.contains(&candidate),
         WorthQueryApplicationObservedFact::Entity { entity_id, .. }
+        | WorthQueryApplicationObservedFact::AspectPresence { entity_id, .. }
         | WorthQueryApplicationObservedFact::Field { entity_id, .. }
         | WorthQueryApplicationObservedFact::AbsentField { entity_id, .. }
         | WorthQueryApplicationObservedFact::OptionalAspectAbsent { entity_id, .. } => {

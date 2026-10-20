@@ -79,8 +79,8 @@ impl CompletedOriginalRead {
             .ok_or(StoreDenial::Representability)?;
         let bytes = width.checked_mul(4).ok_or(StoreDenial::Representability)?;
         let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: bytes.checked_add(20).ok_or(StoreDenial::Representability)?,
-            maximum_preparation_bytes: bytes,
+            maximum_work_visits: Some(bytes.checked_add(20).ok_or(StoreDenial::Representability)?),
+            maximum_preparation_bytes: Some(bytes),
         });
         // Native resolves each pin with two admissions. Hold each admitted
         // copy's grant until BOTH positioned observations have been consumed.

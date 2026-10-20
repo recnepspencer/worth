@@ -110,7 +110,7 @@ fn demand_expected<Schema: BirthSchema>(
                         ApplicationQueryParameterSet::new(),
                         WorthQueryProductQueryControls::new(
                             NonZeroUsize::new(1).unwrap(),
-                            NonZeroUsize::new(100_000).unwrap(),
+                            Some(NonZeroUsize::new(100_000).unwrap()),
                             &scope,
                         ),
                     )

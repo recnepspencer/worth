@@ -39,9 +39,16 @@ impl WorthQueryExternalPrincipalIdentity {
     ) -> Result<Self, WorthQueryExternalPrincipalIdentityDenial> {
         let issuer = issuer.into();
         let subject = subject.into();
-        validate_component("issuer", &issuer, MAX_ISSUER_BYTES)?;
-        validate_component("subject", &subject, MAX_SUBJECT_BYTES)?;
+        Self::validate_components(&issuer, &subject)?;
         Ok(Self { issuer, subject })
+    }
+
+    pub fn validate_components(
+        issuer: &str,
+        subject: &str,
+    ) -> Result<(), WorthQueryExternalPrincipalIdentityDenial> {
+        validate_component("issuer", issuer, MAX_ISSUER_BYTES)?;
+        validate_component("subject", subject, MAX_SUBJECT_BYTES)
     }
 
     pub fn issuer(&self) -> &str {

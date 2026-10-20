@@ -155,7 +155,7 @@ where
             };
             let installation_work = storage.reserve_one(&runtime.output_demands, admission)?;
             let mut installation = admission
-                .reserve_external_work(installation_work)
+                .reserve_external_work(Some(installation_work))
                 .map_err(admission_denial)?;
             let view = resolved.view_two(caller_storage.entries(), queue_storage.entries());
             let permission = super::super::super::refresh::permit_refresh(

@@ -57,7 +57,10 @@ fn denial_clones_share_payload_and_keep_its_reservation_until_last_drop() {
         + 2 * std::mem::size_of::<usize>()
         + "query".len()
         + "subject".len()) as u64;
-    let budget = worth_execution::SerialMemoryBudget::new(1 << 20);
+    let budget = worth_execution::SerialMemoryBudget::new(Some(1 << 20));
+    let limit = budget
+        .limit()
+        .expect("the custody proof declares a finite limit");
     let request = worth_execution::SerialRequest::from_memory(
         budget.clone(),
         worth_execution::CancellationToken::new(),
@@ -68,7 +71,7 @@ fn denial_clones_share_payload_and_keep_its_reservation_until_last_drop() {
         1,
         1,
     );
-    let (result, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX)
+    let (result, _) = worth_execution::ExecutionWorkCeiling::new(None)
         .run_serial(&request, || {
             let identity = worth_foundational::PartitionIdentity::new(1);
             let map = ExecutionMap::<_, u64>::try_from_declared_partitions(
@@ -110,14 +113,22 @@ fn denial_clones_share_payload_and_keep_its_reservation_until_last_drop() {
     let error = result.unwrap_err();
     let clone = error.clone();
     assert_eq!(
-        budget.reserve(budget.limit()).unwrap_err().admitted,
-        budget.limit() - bytes
+        budget.reserve(limit).unwrap_err(),
+        worth_execution::MemoryLimitDenial::Capacity {
+            requested: limit,
+            admitted: limit - bytes,
+            level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
+        }
     );
     drop(error);
     assert_eq!(
-        budget.reserve(budget.limit()).unwrap_err().admitted,
-        budget.limit() - bytes
+        budget.reserve(limit).unwrap_err(),
+        worth_execution::MemoryLimitDenial::Capacity {
+            requested: limit,
+            admitted: limit - bytes,
+            level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
+        }
     );
     drop(clone);
-    assert!(budget.reserve(budget.limit()).is_ok());
+    assert!(budget.reserve(limit).is_ok());
 }

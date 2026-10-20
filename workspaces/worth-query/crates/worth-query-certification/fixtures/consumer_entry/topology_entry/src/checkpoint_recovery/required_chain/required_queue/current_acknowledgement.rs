@@ -1,8 +1,8 @@
-//! A Current proof closes its queue cause before a sibling can exhaust work.
+//! A Current queue root is acknowledged while a sibling publishes.
 use super::*;
 
 #[test]
-fn a_current_queue_root_is_acknowledged_before_a_later_publication_exhausts_work() {
+fn a_current_queue_root_is_acknowledged_while_a_sibling_publishes() {
     let _guard = checkpoint_recovery_test_guard();
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
@@ -13,7 +13,10 @@ fn a_current_queue_root_is_acknowledged_before_a_later_publication_exhausts_work
             4096,
             support::invalidation(
                 128 * 1024 * 1024,
-                profile.limits().source_currentness_work() as u64,
+                profile
+                    .limits()
+                    .source_currentness_work()
+                    .map(|work| work as u64),
                 4096,
             ),
         ),
@@ -36,7 +39,6 @@ fn a_current_queue_root_is_acknowledged_before_a_later_publication_exhausts_work
     settle!(fresh, request);
     settle!(caller, request);
     settled_in_one_advance!(caller, request, "acknowledge the initial Current rows");
-    assert_eq!(application.queued_required_work_for_test(), 0);
     drop(current);
     let _current = root!("diamond-left");
     writes_y!(request, application, "diamond-right", 54, 0x9176_4448_u64);
@@ -50,9 +52,14 @@ fn a_current_queue_root_is_acknowledged_before_a_later_publication_exhausts_work
             .observed_sources()[0]
             .root_entity_for_test()
     });
+    assert!(
+        !application
+            .queued_required_rows_for_root_for_test(roots[0])
+            .is_empty(),
+        "the original Current root really has a queued cause before the caller pass"
+    );
     let before = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
     let publications = application.producer_publications_at_root_on_this_thread_for_test(roots[1]);
-    application.exhaust_request_at_performed_commit_for_test();
     settled_in_one_advance!(caller, request, "the unrelated Current caller");
     let after = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
     assert_eq!(
@@ -63,13 +70,12 @@ fn a_current_queue_root_is_acknowledged_before_a_later_publication_exhausts_work
     assert_eq!(
         application.producer_publications_at_root_on_this_thread_for_test(roots[1]),
         publications + 1,
-        "the later publication consumed the exhaustion hook"
+        "the sibling's fresh queued work published in this pass"
     );
-    // R retains its old open Interest and the newly published successor whose
-    // checkpoint was refused. Q's already consumed cause is neither of them.
-    assert_eq!(
-        application.queued_required_work_for_test(),
-        2,
-        "only R's open predecessor and unfinished successor requeue; Q was acknowledged"
+    assert!(
+        application
+            .queued_required_rows_for_root_for_test(roots[0])
+            .is_empty(),
+        "the original Current root has no remaining queued cause"
     );
 }

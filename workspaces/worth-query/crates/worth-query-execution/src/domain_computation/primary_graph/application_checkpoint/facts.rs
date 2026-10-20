@@ -15,15 +15,20 @@ use super::CheckpointCursor;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 mod fact_decode_denial;
 pub(in crate::domain_computation::primary_graph) use fact_decode_denial::FactDecodeDenial;
+mod aspect_presence;
 mod encoding;
 mod indexed_selection;
 pub(in crate::domain_computation::primary_graph) use encoding::encode_funded;
 use encoding::FactBytes;
 mod payload;
 mod record;
+mod retention;
 pub(in crate::domain_computation::primary_graph) use payload::{
     CodecPayloadReservation, FactPayload, FactSequence, NativeFactPatchBuilder,
     NativeFactPayloadBuilder,
+};
+pub(in crate::domain_computation::primary_graph) use retention::{
+    FactRetentionAllocation, FactRetentionStorage,
 };
 mod stream;
 pub(in crate::domain_computation::primary_graph) use stream::FactDecoder;
@@ -34,8 +39,10 @@ pub(in crate::domain_computation::primary_graph) use stream::FactDecoder;
 /// Version 10 additionally carries exact native Field/AbsentField evidence;
 /// these are not relabelled as query source revisions.
 /// Version 11 distinguishes lawful Optional whole-aspect absence from a
-/// missing field within a present aspect. Displaced version10 is unsupported.
-pub(in crate::domain_computation::primary_graph) const WIRE_VERSION: u16 = 11;
+/// missing field within a present aspect. Version12 joins that meaning with
+/// the independently tracked aspect-presence predicate at distinct tag11.
+/// Displaced inner versions10/11 are unsupported.
+pub(in crate::domain_computation::primary_graph) const WIRE_VERSION: u16 = 12;
 pub(super) const MAXIMUM_FACT_BYTES: usize = 16 * 1024 * 1024;
 // SourceEntity is the smallest current fact: one tag and a 16-byte EntityId.
 const MINIMUM_FACT_WIRE_BYTES: usize = 17;
@@ -67,6 +74,10 @@ fn write_facts(facts: &(impl FactSequence + ?Sized), bytes: &mut impl FactBytes)
     put_u32(bytes, u32::try_from(facts.len()).ok()?);
     for fact in facts.iter() {
         match fact {
+            Fact::AspectPresence { .. } => {
+                bytes.push(11);
+                aspect_presence::encode(bytes, fact)?;
+            }
             Fact::RetiredOutputEntity {
                 entity_id,
                 kind,

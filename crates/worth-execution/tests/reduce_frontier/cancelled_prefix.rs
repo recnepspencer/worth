@@ -28,7 +28,7 @@ fn a_wide_cancelled_frontier_settles_every_earlier_canonical_join() {
                     ExecutionPosture::Automatic
                 },
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), 8 << 20, 10_000),
+                ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), None, Some(10_000)),
             ),
             deadline: None,
             cancellation: cancellation.token(),
@@ -38,11 +38,8 @@ fn a_wide_cancelled_frontier_settles_every_earlier_canonical_join() {
             1 => Some(ExecutionResourceLease::serial(policy).unwrap()),
             _ => Some(authority().request_lease(policy).unwrap()),
         };
-        let serial = SerialRequest::from_memory(
-            SerialMemoryBudget::new(8 << 20),
-            cancellation.token(),
-            None,
-        );
+        let serial =
+            SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
         let input = map(9);
         let first = (Mutex::new(false), std::sync::Condvar::new());
         let run = || {
@@ -79,7 +76,7 @@ fn a_wide_cancelled_frontier_settles_every_earlier_canonical_join() {
             )
         };
         let stopped = if lease.is_none() {
-            ExecutionWorkCeiling::new(10_000)
+            ExecutionWorkCeiling::new(Some(10_000))
                 .run_serial(&serial, run)
                 .unwrap()
                 .0

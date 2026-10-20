@@ -41,7 +41,7 @@ impl ApplicationDerivedArtifact<CheckpointSchema, PlanarOutputFeature> for Optio
         )];
     const REUSE_RULE: &'static str = "exact-source";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(4096, 8192);
+        ApplicationArtifactResourceCeiling::new(Some(4096), Some(8192));
     const STOPPED_OUTCOME: &'static str = "optional-planar-result-stopped";
 }
 impl ApplicationProgramDefinition<CheckpointSchema> for DemandProgram {

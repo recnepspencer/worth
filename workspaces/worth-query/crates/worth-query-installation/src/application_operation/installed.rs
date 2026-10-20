@@ -245,7 +245,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
                 ability_requirements: contracts.ability_requirements(),
                 capability_requirements: &capability_requirements,
                 graph_reads: contracts.graph_reads(),
-                touches: contracts.touches(),
+                touches: contracts.publication_touches(),
                 effects: contracts.effects(),
                 invariants: contracts.invariants(),
                 invariant_execution: contracts.invariant_execution(),
@@ -297,6 +297,13 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
 
     pub fn contracts(&self) -> &WorthQueryCompiledApplicationOperationContracts {
         &self.contracts
+    }
+
+    pub fn body(
+        &self,
+    ) -> Option<&worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram>
+    {
+        self.contracts.body()
     }
 
     /// Retains the one cold-compiled immutable contract object for an admitted

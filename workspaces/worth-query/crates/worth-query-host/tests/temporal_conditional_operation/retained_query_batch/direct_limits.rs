@@ -14,7 +14,7 @@ use worth_query_host::facade::{
 fn batch(inline: usize) -> Batch {
     Batch::new(Limits::new(
         NonZeroUsize::new(1).unwrap(),
-        NonZeroUsize::new(1024).unwrap(),
+        None,
         NonZeroUsize::new(128 * 1024).unwrap(),
         NonZeroUsize::new(inline).unwrap(),
     ))

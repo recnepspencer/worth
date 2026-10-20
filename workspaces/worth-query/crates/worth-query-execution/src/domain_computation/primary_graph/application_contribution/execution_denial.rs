@@ -40,13 +40,20 @@ pub(in crate::domain_computation) const fn lease_denial(denial: LeaseDenial) -> 
 /// refused and the room it left. A run's refusal and a reservation's have
 /// this one spelling.
 pub(super) const fn memory_denial(denial: MemoryLimitDenial) -> Resource {
-    Resource::MemoryLimit {
-        requested: denial.requested,
-        admitted: denial.admitted,
-        level: match denial.level {
-            MemoryLimitLevel::Policy { .. } => WorthQueryMemoryLimitLevel::Policy,
-            MemoryLimitLevel::Process => WorthQueryMemoryLimitLevel::Process,
-            MemoryLimitLevel::Declared => WorthQueryMemoryLimitLevel::Declared,
+    match denial {
+        MemoryLimitDenial::CounterOverflow { .. } => Resource::ChargedBytesOverflow,
+        MemoryLimitDenial::Capacity {
+            requested,
+            admitted,
+            level,
+        } => Resource::MemoryLimit {
+            requested,
+            admitted,
+            level: match level {
+                MemoryLimitLevel::Policy { .. } => WorthQueryMemoryLimitLevel::Policy,
+                MemoryLimitLevel::Process => WorthQueryMemoryLimitLevel::Process,
+                MemoryLimitLevel::Declared => WorthQueryMemoryLimitLevel::Declared,
+            },
         },
     }
 }

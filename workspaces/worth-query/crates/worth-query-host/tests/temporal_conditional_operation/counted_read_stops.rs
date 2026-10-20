@@ -80,15 +80,16 @@ fn conditional_operation_work_stop_terminal_matches_its_typed_cause() {
         let observer = super::test_read_stops::observe_consults_for_test(|_| {});
         let source = worth_execution::CancellationSource::new();
         let host = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+            worth_execution::SerialMemoryBudget::new(None),
             source.token(),
             None,
         );
         let request = worth_execution::ExecutionRequest::serial(&host);
         let (answer, _) = request
-            .run(worth_execution::ExecutionWorkCeiling::new(ceiling), |_| {
-                port.observe(&request)
-            })
+            .run(
+                worth_execution::ExecutionWorkCeiling::new(Some(ceiling)),
+                |_| port.observe(&request),
+            )
             .unwrap();
         let graph::WorthQueryConditionalClockObservationOutcome::Accepted(receipt) = answer else {
             panic!("clock answer")

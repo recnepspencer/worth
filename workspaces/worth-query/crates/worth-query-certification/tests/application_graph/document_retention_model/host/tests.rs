@@ -1,4 +1,6 @@
 use super::*;
+#[path = "tests/workflow_registration.rs"]
+mod workflow_registration;
 use declaration::application_operation::ApplicationMutationBinding;
 
 use super::super::retention_entry::DOCUMENT_IDENTITY;
@@ -54,8 +56,8 @@ impl primary_graph::OperationHandler<DocumentRetentionSchema, WorkflowAdvanceBin
         _: &primary_graph::WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
     ) -> declaration::application_operation::ApplicationCandidateRequirements {
         WorkflowAdvanceBinding::CANDIDATES
-            .fixed_requirements()
-            .expect("fixed candidate contract")
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

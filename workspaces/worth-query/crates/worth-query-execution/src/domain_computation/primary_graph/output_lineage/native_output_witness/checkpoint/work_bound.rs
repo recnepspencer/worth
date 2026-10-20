@@ -70,7 +70,7 @@ impl SealedNativeOutputWitness {
             // The fact's currentness probe, plus its entity lookup when it
             // carries an original output expectation.
             let work = match fact {
-                Fact::SourceEntity { .. } => 2,
+                Fact::SourceEntity { .. } | Fact::AspectPresence { .. } => 2,
                 Fact::Entity { .. } => {
                     add(add(2, lookup_descent)?, multiply(fan_out, kind_match)?)?
                 }

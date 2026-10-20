@@ -93,7 +93,10 @@ fn collection_installation_refuses_missing_or_misbound_owner_before_initial_effe
             support::try_install_program_with_limits::<OracleProgram<false, TOTALS_WORK, 1, MODE>>(
                 None,
                 Default::default(),
-                support::limits(32, support::invalidation(128 * 1024 * 1024, 1_000_000, 32)),
+                support::limits(
+                    32,
+                    support::invalidation(128 * 1024 * 1024, Some(1_000_000), 32),
+                ),
                 |graph| {
                     reached.set(true);
                     support::seed_cycle(graph);

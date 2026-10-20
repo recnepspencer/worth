@@ -47,7 +47,7 @@ fn payload_admission_precedes_growth_and_charges_process_and_ancestors() {
     assert_eq!(held.ticket.bytes(), 64);
     assert!(matches!(
         payload(&sibling, 65, &allocations),
-        Err(MemoryLimitDenial {
+        Err(MemoryLimitDenial::Capacity {
             requested: 65,
             admitted: 64,
             level: MemoryLimitLevel::Policy { ancestor: 1 }
@@ -58,7 +58,7 @@ fn payload_admission_precedes_growth_and_charges_process_and_ancestors() {
     let other = payload(&sibling, 64, &allocations).unwrap();
     assert!(matches!(
         parent.reserve_memory(1),
-        Err(MemoryLimitDenial {
+        Err(MemoryLimitDenial::Capacity {
             requested: 1,
             admitted: 0,
             level: MemoryLimitLevel::Policy { ancestor: 0 }
@@ -73,7 +73,7 @@ fn payload_admission_precedes_growth_and_charges_process_and_ancestors() {
     let process_probe = authority.request_lease(request(1_024)).unwrap();
     assert!(matches!(
         process_probe.reserve_memory(897),
-        Err(MemoryLimitDenial {
+        Err(MemoryLimitDenial::Capacity {
             requested: 897,
             admitted: 896,
             level: MemoryLimitLevel::Process
@@ -103,7 +103,7 @@ fn replacement_backings_coexist_and_custody_outlives_the_lease() {
         assert_eq!(replacement.backing.len(), 80);
         assert!(matches!(
             lease.reserve_memory(1),
-            Err(MemoryLimitDenial {
+            Err(MemoryLimitDenial::Capacity {
                 requested: 1,
                 admitted: 0,
                 level: MemoryLimitLevel::Policy { ancestor: 0 }
@@ -116,7 +116,7 @@ fn replacement_backings_coexist_and_custody_outlives_the_lease() {
     let process_probe = authority.request_lease(request(PROCESS_BYTES)).unwrap();
     assert!(matches!(
         process_probe.reserve_memory(PROCESS_BYTES - 79),
-        Err(MemoryLimitDenial { requested, admitted, level: MemoryLimitLevel::Process }) if requested == PROCESS_BYTES - 79 && admitted == PROCESS_BYTES - 80
+        Err(MemoryLimitDenial::Capacity { requested, admitted, level: MemoryLimitLevel::Process }) if requested == PROCESS_BYTES - 79 && admitted == PROCESS_BYTES - 80
     ));
     assert_eq!(retained.backing, vec![7; 80]);
     drop(retained);
@@ -137,7 +137,7 @@ fn same_byte_transfer_is_atomic_and_releases_only_the_old_lineage() {
     let blocker = target.reserve_memory(1).unwrap();
     assert_eq!(
         target.transfer_memory(&mut retained.ticket),
-        Err(LeaseDenial::MemoryExhausted(MemoryLimitDenial {
+        Err(LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
             requested: 64,
             admitted: 63,
             level: MemoryLimitLevel::Policy { ancestor: 0 }
@@ -146,7 +146,7 @@ fn same_byte_transfer_is_atomic_and_releases_only_the_old_lineage() {
     assert_eq!(retained.ticket.bytes(), 64);
     assert!(matches!(
         source.reserve_memory(1),
-        Err(MemoryLimitDenial {
+        Err(MemoryLimitDenial::Capacity {
             requested: 1,
             admitted: 0,
             level: MemoryLimitLevel::Policy { ancestor: 0 }
@@ -159,7 +159,7 @@ fn same_byte_transfer_is_atomic_and_releases_only_the_old_lineage() {
     assert_eq!(source.reserve_memory(64).unwrap().bytes(), 64);
     assert!(matches!(
         target.reserve_memory(1),
-        Err(MemoryLimitDenial {
+        Err(MemoryLimitDenial::Capacity {
             requested: 1,
             admitted: 0,
             level: MemoryLimitLevel::Policy { ancestor: 0 }

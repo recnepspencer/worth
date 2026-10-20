@@ -12,7 +12,7 @@ impl CustomInvariantRule for InstalledRequiresOutgoingRelationsRule {
             },
             display_name: self.display_name.clone(),
             operational: CustomInvariantOperationalMetadata {
-                maximum_work_units: self.maximum_work_units,
+                maximum_work_units: Some(self.maximum_work_units),
                 access: worth_relational::facade::runtime::CustomInvariantAccessContract {
                     read_entity_kinds: self.relevant_entity_kinds.clone(),
                     read_relation_kinds: self.required_relation_kinds.clone(),

@@ -26,9 +26,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         handle: &SnapshotHandle,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<RelationalReadView>, crate::execution::RelationalExecutionDenialCause> {
-        super::super::read_work::metered(
+        super::super::read_work::metered_with_memory(
             execution,
-            |context| {
+            |context, memory| {
                 let Some(resolved) = resolve_snapshot_state(self.runtime, handle) else {
                     return Ok(None);
                 };
@@ -45,6 +45,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                     &resolved.state,
                     &resolved.handle,
                     &mut |units| context.checkpoint(units),
+                    memory,
                 )
                 .map(Some)
             },
@@ -56,7 +57,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                     .map_or(0, read_view_bytes)
             },
         )?
-        .map_err(crate::execution::denial::kernel_stop)
     }
 
     pub(crate) fn read_version(
@@ -81,16 +81,19 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         let Some(state) = state else {
             return Ok(Err(crate::visibility::cache_state::historical_basis_for_retained_version(self.runtime, version_id).err().unwrap_or(crate::visibility::snapshot_states::HistoricalVisibilityDenial::CertificationReconstructionRequired)));
         };
-        let view = super::super::read_work::metered(
+        let view = super::super::read_work::metered_with_memory(
             execution,
-            |context| {
-                read_view_from_snapshot_state(self.runtime, &state, &state.handle, &mut |units| {
-                    context.checkpoint(units)
-                })
+            |context, memory| {
+                read_view_from_snapshot_state(
+                    self.runtime,
+                    &state,
+                    &state.handle,
+                    &mut |units| context.checkpoint(units),
+                    memory,
+                )
             },
             |answer| answer.as_ref().map_or(0, read_view_bytes),
-        )?
-        .map_err(crate::execution::denial::kernel_stop)?;
+        )??;
         Ok(Ok(view))
     }
 
@@ -142,16 +145,19 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             crate::snapshots::data::SnapshotId(0),
             SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
         );
-        let view = super::super::read_work::metered(
+        let view = super::super::read_work::metered_with_memory(
             execution,
-            |context| {
-                read_view_from_snapshot_state(self.runtime, &state, &state.handle, &mut |units| {
-                    context.checkpoint(units)
-                })
+            |context, memory| {
+                read_view_from_snapshot_state(
+                    self.runtime,
+                    &state,
+                    &state.handle,
+                    &mut |units| context.checkpoint(units),
+                    memory,
+                )
             },
             |answer| answer.as_ref().map_or(0, read_view_bytes),
-        )?
-        .map_err(crate::execution::denial::kernel_stop)?;
+        )??;
         Ok(Ok(view))
     }
 
@@ -223,4 +229,5 @@ pub(super) fn query_schema_context_for_root(
 fn read_view_bytes(view: &RelationalReadView) -> u64 {
     super::super::read_footprint::entities(&view.entities)
         .saturating_add(super::super::read_footprint::relations(&view.relations))
+        .saturating_add(view.snapshot.branch_id.0.capacity() as u64)
 }

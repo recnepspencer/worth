@@ -38,6 +38,7 @@ mod await_inbound;
 mod condition;
 mod condition_materialization;
 mod evidence_join;
+mod local_actions;
 mod navigation;
 mod operation;
 pub(in crate::domain_computation::primary_graph) use operation::ValidatedWorkflowOperationReceipt;
@@ -48,7 +49,7 @@ pub(super) use publication::transition_entity_in_receipt;
 mod terminal;
 
 pub use preparation::{
-    WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+    WorkflowLocalActionKind, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
     WorthQueryWorkflowAdvanceAdapter,
 };
 pub use publication::{
@@ -64,7 +65,15 @@ pub use publication::{
 pub(in crate::domain_computation::primary_graph) enum WorkflowTransitionRequestKind {
     Advance,
     NavigateBack,
-    CollectAssessment { node_path: String },
+    LocalAction {
+        kind: WorkflowLocalActionKind,
+        requested:
+            crate::domain_computation::primary_graph::workflow::instance::SelectedWorkflowOperation,
+        input_identity: [u8; 32],
+    },
+    CollectAssessment {
+        node_path: String,
+    },
 }
 
 fn denial(

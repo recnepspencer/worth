@@ -47,7 +47,7 @@ fn touch_projection_preserves_request_stops_and_committed_truth() {
         );
         let host = crate::test_request_policy::serial_request();
         let original = ExecutionRequest::serial(&host);
-        let (stopped, _) = worth_execution::ExecutionWorkCeiling::new(1)
+        let (stopped, _) = worth_execution::ExecutionWorkCeiling::new(Some(1))
             .run_serial(&host, || world.admit(&original, &candidate, true))
             .expect("the original request enters its deliberately narrow work scope");
         let stopped = stopped.unwrap_err().into_invariant_failure();
@@ -79,7 +79,7 @@ fn touch_projection_preserves_memory_refusal_and_committed_truth() {
         // Zero admitted memory is an intentional caller refusal, not a new
         // production quota. No projection backing or effects may escape it.
         let host = SerialRequest::from_memory(
-            SerialMemoryBudget::new(0),
+            SerialMemoryBudget::new(Some(0)),
             CancellationSource::new().token(),
             None,
         );

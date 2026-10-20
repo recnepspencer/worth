@@ -22,7 +22,7 @@ fn assert_one_consult_per_stage(batches: usize, split: bool, strategy: bool) {
             .unwrap();
     }
     let backing = SerialRequest::from_memory(
-        SerialMemoryBudget::new(64 * 1024 * 1024),
+        SerialMemoryBudget::new(None),
         CancellationSource::new().token(),
         None,
     );

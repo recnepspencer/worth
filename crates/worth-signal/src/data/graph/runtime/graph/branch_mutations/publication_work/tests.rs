@@ -55,7 +55,7 @@ fn producer_branch_records_admit_payload_copies_before_publication() {
     let _retained = SignalEvaluationPartition::retain_basis_storage(&mut graph);
     let prior_view = graph.observation.branch_mutation_view.fork_persistent();
     let prior_pending = graph.observation.branch_mutation_records.fork_persistent();
-    let mut measured = Work::new(100_000_000);
+    let mut measured = Work::new(Some(100_000_000));
     graph
         .admit_effect_branch_record_work(
             node,
@@ -66,7 +66,7 @@ fn producer_branch_records_admit_payload_copies_before_publication() {
     let cost = measured.visits();
     assert!(cost >= 5_000 * 20);
     for available in [cost - 1, cost] {
-        let mut work = Work::new(cost + 29);
+        let mut work = Work::new(Some(cost + 29));
         work.reserve_visits(cost + 29 - available).unwrap();
         let result = graph.admit_effect_branch_record_work(
             node,
@@ -134,7 +134,7 @@ fn producer_branch_records_admit_payload_copies_before_publication() {
 #[test]
 fn producer_branch_record_work_depends_on_stored_payload_bytes() {
     let (short, node, basis) = fixture("x");
-    let mut measured = Work::new(100_000_000);
+    let mut measured = Work::new(Some(100_000_000));
     short
         .admit_effect_branch_record_work(
             node,
@@ -148,7 +148,7 @@ fn producer_branch_record_work_depends_on_stored_payload_bytes() {
         long.admit_effect_branch_record_work(
             node,
             None,
-            &mut EvaluationWork::Conditional(&mut Work::new(measured.visits()))
+            &mut EvaluationWork::Conditional(&mut Work::new(Some(measured.visits())))
         ),
         Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
     ));

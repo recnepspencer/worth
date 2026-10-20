@@ -179,17 +179,17 @@ fn conditional_refresh_still_removes_retired_edges_before_application() {
                 selected
                     .arena
                     .hot
-                    .retained_heap_charge(&mut RetainedStoragePreparation::new(100_000))
+                    .retained_heap_charge(&mut RetainedStoragePreparation::new(Some(100_000)))
                     .unwrap(),
                 selected
                     .arena
                     .warm
-                    .retained_heap_charge(&mut RetainedStoragePreparation::new(100_000))
+                    .retained_heap_charge(&mut RetainedStoragePreparation::new(Some(100_000)))
                     .unwrap(),
                 selected
                     .arena
                     .cold
-                    .retained_heap_charge(&mut RetainedStoragePreparation::new(100_000))
+                    .retained_heap_charge(&mut RetainedStoragePreparation::new(Some(100_000)))
                     .unwrap(),
             ];
             assert_eq!(carried, measured.map(Ok));

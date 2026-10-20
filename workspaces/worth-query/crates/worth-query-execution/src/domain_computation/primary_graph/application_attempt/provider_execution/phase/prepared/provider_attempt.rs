@@ -10,6 +10,8 @@ pub(super) fn prepare_application_provider_attempt(
     preparation: WorthQueryProviderAttemptPreparation,
     mutation_partition: worth_relational::facade::identity::PartitionId,
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, WorthQueryApplicationAttemptDenial> {
+    // Hold the original ticket until lowering has consumed the original Vec.
+    let _effect_backing_memory = preparation.effect_backing_memory;
     prepare_provider_attempt(
         lease.layout.unique_fields(),
         &|entity, aspect| lease.layout.aspect_contract(entity, aspect),

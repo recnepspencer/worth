@@ -51,14 +51,8 @@ impl<'tasks, 'request, 'authority> CheckedAdmittedEpoch<'tasks, 'request, 'autho
         self.selection.task_offset()
     }
 
-    pub(crate) fn result_grant_bytes(&self) -> u64 {
+    pub(crate) fn result_grant_bytes(&self) -> Option<u64> {
         self.selection.result_grant_bytes()
-    }
-
-    pub(in crate::logic::planner) fn apply_capacity(
-        &self,
-    ) -> &crate::logic::planner::precompute::graph_batch::CheckedApplyCapacity {
-        self.selection.apply_capacity()
     }
 
     pub(crate) fn request(&self) -> worth_execution::ExecutionRequest<'request, 'authority> {
@@ -67,20 +61,24 @@ impl<'tasks, 'request, 'authority> CheckedAdmittedEpoch<'tasks, 'request, 'autho
 
     pub(crate) fn into_prepared_parts(
         self,
-    ) -> (
-        EpochMetadata<'tasks>,
-        worth_execution::ExecutionRequest<'request, 'authority>,
-        crate::logic::planner::precompute::graph_batch::CheckedApplyCapacity,
-    ) {
-        let (tasks, apply) = self.selection.into_parts();
+        measured_result_bytes: u64,
+    ) -> Result<
         (
+            EpochMetadata<'tasks>,
+            worth_execution::ExecutionRequest<'request, 'authority>,
+            crate::logic::planner::precompute::graph_batch::CheckedApplyCapacity,
+        ),
+        SignalError,
+    > {
+        let (tasks, apply) = self.selection.into_parts(measured_result_bytes)?;
+        Ok((
             EpochMetadata {
                 stage_index: self.stage_index,
                 tasks,
             },
             self.request,
             apply,
-        )
+        ))
     }
 }
 

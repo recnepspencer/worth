@@ -1,5 +1,6 @@
 //! Bank-owned description of a Query commit denial.
 
+use worth_query_host::facade::admission::authentication_event::WorthQueryAuthenticationEventDenial;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
     WorthQueryApplicationCommitDenialStage, WorthQueryRecoveryHandleDenialKind,
@@ -40,6 +41,20 @@ pub enum BankCommitDenialKind {
     IdempotencyIntentUnverifiable,
     MutationBindingMismatch,
     MutationInputMismatch,
+    OperationBodyExecutionRequired,
+    SignedCreationAuthentication {
+        kind: WorthQueryAuthenticationEventDenial,
+    },
+    SignedEntityImmutable,
+    SigningLifecycleForgery,
+    SigningLifecycleUnavailable,
+    SigningLifecycleEvidenceCapacity {
+        maximum_evidence: usize,
+    },
+    SigningLifecycleRepresentationCapacity,
+    SigningLifecycleObservation {
+        kind: WorthQueryApplicationAttemptDenialKind,
+    },
     RecoveryHandoffMismatch {
         kind: WorthQueryRecoveryHandleDenialKind,
     },
@@ -127,6 +142,24 @@ pub(crate) const fn denial_kind(
         Query::IdempotencyIntentUnverifiable => BankCommitDenialKind::IdempotencyIntentUnverifiable,
         Query::MutationBindingMismatch => BankCommitDenialKind::MutationBindingMismatch,
         Query::MutationInputMismatch => BankCommitDenialKind::MutationInputMismatch,
+        Query::OperationBodyExecutionRequired => {
+            BankCommitDenialKind::OperationBodyExecutionRequired
+        }
+        Query::SignedCreationAuthentication { kind } => {
+            BankCommitDenialKind::SignedCreationAuthentication { kind }
+        }
+        Query::SignedEntityImmutable => BankCommitDenialKind::SignedEntityImmutable,
+        Query::SigningLifecycleForgery => BankCommitDenialKind::SigningLifecycleForgery,
+        Query::SigningLifecycleUnavailable => BankCommitDenialKind::SigningLifecycleUnavailable,
+        Query::SigningLifecycleEvidenceCapacity { maximum_evidence } => {
+            BankCommitDenialKind::SigningLifecycleEvidenceCapacity { maximum_evidence }
+        }
+        Query::SigningLifecycleRepresentationCapacity => {
+            BankCommitDenialKind::SigningLifecycleRepresentationCapacity
+        }
+        Query::SigningLifecycleObservation { kind } => {
+            BankCommitDenialKind::SigningLifecycleObservation { kind }
+        }
         Query::RecoveryHandoffMismatch { kind } => {
             BankCommitDenialKind::RecoveryHandoffMismatch { kind }
         }

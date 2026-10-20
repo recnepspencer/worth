@@ -194,7 +194,7 @@ fn open(host: &host::Host) -> Subscription<'_> {
         .query(query::ReadLive {
             identity: "root".to_owned(),
         })
-        .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1, 5_120))
+        .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1, Some(5_120)))
         .expect("ordinary installed nested live query opens without projecting a value")
 }
 

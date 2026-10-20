@@ -76,7 +76,7 @@ fn late_swallowed_pair_decode_refusal_keeps_the_view_cold_and_fresh_retry_recons
             let controls = || {
                 WorthQueryProductQueryControls::new(
                     NonZeroUsize::new(2).unwrap(),
-                    NonZeroUsize::new(5_120).unwrap(),
+                    Some(NonZeroUsize::new(5_120).unwrap()),
                     &scope,
                 )
             };
@@ -131,7 +131,7 @@ fn late_swallowed_pair_decode_refusal_keeps_the_view_cold_and_fresh_retry_recons
                                 policy: ExecutionRequestPolicy::new(
                                     parent.policy().posture(),
                                     parent.policy().determinism(),
-                                    ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, work),
+                                    ExecutionBudget::new(NonZeroUsize::MIN, Some(64 * 1024 * 1024), Some(work)),
                                 ),
                                 cancellation: cancellation.token(),
                                 deadline: scope.deadline(),
@@ -142,7 +142,7 @@ fn late_swallowed_pair_decode_refusal_keeps_the_view_cold_and_fresh_retry_recons
                 let request = ExecutionRequest::leased(&lease);
                 let mut projected = 0;
                 let (result, report) = request
-                    .run(ExecutionWorkCeiling::new(work), |_| {
+                    .run(ExecutionWorkCeiling::new(Some(work)), |_| {
                         runtime.reconstruct_managed_derived_collection_pair(
                             request,
                             &view,

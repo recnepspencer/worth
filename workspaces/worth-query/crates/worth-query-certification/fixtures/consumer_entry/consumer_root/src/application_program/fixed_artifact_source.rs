@@ -24,7 +24,7 @@ impl ApplicationDerivedArtifact<ConsumerSchema, PlanarOutputFeature> for Governe
         )];
     const REUSE_RULE: &'static str = "exact-source";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(4_096, 8_192);
+        ApplicationArtifactResourceCeiling::new(Some(4_096), Some(8_192));
     const STOPPED_OUTCOME: &'static str = "governed-planar-resource-denied";
 }
 impl ApplicationProgramDefinition<ConsumerSchema> for MissingLocalityProgram {

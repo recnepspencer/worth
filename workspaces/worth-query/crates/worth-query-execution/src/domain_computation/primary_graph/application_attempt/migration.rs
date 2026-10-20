@@ -33,8 +33,42 @@ where
     ) {
         return Err(WorthQueryProgramMigrationPreparationDenial::ForeignCandidate);
     }
+    // Adoption lowers effects without ordinary signing publication. A signed
+    // body must never lose its deferred slot/proof by entering that lane.
+    if program.read_set.signed_creation.is_some() {
+        return Err(
+            WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
+                "program migration cannot publish signed creations",
+            ),
+        );
+    }
+    if program.read_set.workflow_birth_binding.is_some()
+        || program
+            .read_set
+            .admission
+            .allowed_graph_contract()
+            .body()
+            .and_then(|body| body.creation())
+            .and_then(|creation| creation.enrollment())
+            .is_some()
+    {
+        return Err(
+            WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
+                "program migration cannot publish workflow births",
+            ),
+        );
+    }
+    if !program.read_set.lease.layout.signing_lifecycle.is_empty() && !program.effects.is_empty() {
+        return Err(
+            WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
+                "program migration cannot bypass signing lifecycle consequences",
+            ),
+        );
+    }
     let WorthQueryApplicationEffectProgram {
         candidate_funding,
+        candidate_requirements: _candidate_requirements,
+        effect_backing_memory: _effect_backing_memory,
         read_set,
         effects,
         emission_retained_bytes,

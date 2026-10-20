@@ -6,7 +6,8 @@ use crate::domain_computation::primary_graph::{
     },
     program_occurrence::WorthQueryInstalledProgramSupport,
     workflow::schema::{
-        version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION, WorthQueryWorkflowLayout,
+        version::{WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION, WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION},
+        WorthQueryWorkflowLayout,
     },
 };
 use worth_execution::{ExecutionByteBuffer, ExecutionRequest};
@@ -87,7 +88,10 @@ pub(in crate::domain_computation::primary_graph) fn read<Schema>(
     .map_err(Denial::Execution)?
     .flatten()
     .ok_or(Denial::Corrupt)?;
-    if version != WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION {
+    if !matches!(
+        version,
+        WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION | WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION
+    ) {
         return Err(Denial::UnsupportedProtocol(version));
     }
     let symbol = observe_field_value_borrowed(

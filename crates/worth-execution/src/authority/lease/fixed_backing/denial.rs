@@ -89,8 +89,24 @@ impl From<crate::MemoryLimitDenial> for ExecutionAllocationDenial {
     fn from(cause: crate::MemoryLimitDenial) -> Self {
         Self::new(
             ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(cause)),
-            Some(cause.requested),
+            Some(match cause {
+                crate::MemoryLimitDenial::Capacity { requested, .. }
+                | crate::MemoryLimitDenial::CounterOverflow { requested, .. } => requested,
+            }),
         )
+    }
+}
+
+impl crate::ChargedBytes for ExecutionAllocationDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        let Self {
+            kind,
+            requested_payload_bytes,
+        } = self;
+        fn inline<T: Copy>(_: &T) {}
+        inline(kind);
+        inline(requested_payload_bytes);
+        0
     }
 }
 

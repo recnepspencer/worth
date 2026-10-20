@@ -181,6 +181,8 @@ impl<Schema, Operation, Input, Scope, Phase>
             mutation_handler_binding: None,
             workflow_deadline: None,
             new_commit_refusal: None,
+            signed_creation: None,
+            workflow_birth_binding: None,
             _phase: PhantomData,
         })
     }

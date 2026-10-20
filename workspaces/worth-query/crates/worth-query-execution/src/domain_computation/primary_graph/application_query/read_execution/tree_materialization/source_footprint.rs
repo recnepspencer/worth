@@ -249,7 +249,7 @@ fn collect_node(
                 node.entity_id(),
                 layout.kind,
                 direction,
-                work.remaining_work(),
+                work.remaining_work().map_or(1, |remaining| remaining.min(1)),
             )
             .map_err(|unavailable| match unavailable {
                 AdjacencyStructuralRevisionDenial::Execution(cause) => super::super::denial::relational_read_denial(cause, relation.result_path()),

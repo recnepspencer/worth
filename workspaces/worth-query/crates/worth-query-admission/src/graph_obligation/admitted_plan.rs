@@ -140,6 +140,18 @@ impl WorthQueryAdmittedGraphWorkPlan {
     }
 
     #[doc(hidden)]
+    pub fn operation_resources(
+        &self,
+    ) -> Option<&crate::domain_computation::execution_resource_admission::WorthQueryAdmittedExecutionResourcePlan>{
+        match &self.mechanics {
+            WorthQueryGraphWorkAdmissionMechanics::ApplicationOperation { capacity } => capacity
+                .as_ref()
+                .map(WorthQueryCapacityReservedExecutionResourcePlan::resources),
+            _ => None,
+        }
+    }
+
+    #[doc(hidden)]
     pub fn take_operation_capacity(
         &mut self,
     ) -> Option<WorthQueryCapacityReservedExecutionResourcePlan> {

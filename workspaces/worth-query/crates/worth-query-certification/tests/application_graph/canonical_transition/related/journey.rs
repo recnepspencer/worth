@@ -63,7 +63,7 @@ pub(super) fn page(host: &host::Host) -> Page {
         })
         .page(
             std::num::NonZeroUsize::MIN,
-            std::num::NonZeroUsize::new(65_536).unwrap(),
+            Some(std::num::NonZeroUsize::new(65_536).unwrap()),
         )
         .unwrap()
 }
@@ -94,7 +94,7 @@ pub(super) fn assert_target_pages(host: &successor::host::Host, edited: bool) {
         })
         .page(
             std::num::NonZeroUsize::MIN,
-            std::num::NonZeroUsize::new(65_536).unwrap(),
+            Some(std::num::NonZeroUsize::new(65_536).unwrap()),
         )
         .unwrap();
     let generation = first
@@ -136,7 +136,7 @@ pub(super) fn assert_target_pages(host: &successor::host::Host, edited: bool) {
         .resume(
             token,
             std::num::NonZeroUsize::MIN,
-            std::num::NonZeroUsize::new(65_536).unwrap(),
+            Some(std::num::NonZeroUsize::new(65_536).unwrap()),
         )
         .unwrap();
     assert_eq!(
@@ -169,7 +169,7 @@ pub(super) fn assert_original_current(host: &host::Host) {
         .resume(
             token,
             std::num::NonZeroUsize::MIN,
-            std::num::NonZeroUsize::new(65_536).unwrap(),
+            Some(std::num::NonZeroUsize::new(65_536).unwrap()),
         )
         .unwrap();
     assert_eq!(second.rows()[0].children[0].0, "derived-right");

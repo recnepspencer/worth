@@ -14,6 +14,7 @@ mod layout;
 mod proposal;
 mod proposal_coverage;
 mod relations;
+mod subject;
 mod transition;
 pub(in crate::domain_computation::primary_graph) mod version;
 
@@ -54,6 +55,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
     schema_version_id: SchemaVersionId,
     first_kind: KindId,
     identities: [AspectIdentity; 11],
+    subject_kinds: Vec<KindId>,
 ) -> Result<
     (RelationalSchemaRegistry, WorthQueryWorkflowLayout),
     WorthQueryPrimaryGraphInstallationDenial,
@@ -344,6 +346,14 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[14],
         relations::prior_effect_integrity(),
     )?;
+    let (registry, subject_relation) = subject::register(
+        registry,
+        schema_id,
+        schema_version_id,
+        first_kind,
+        kinds[4],
+        subject_kinds,
+    )?;
     Ok((
         registry,
         WorthQueryWorkflowLayout::new(WorkflowLayoutFields {
@@ -379,6 +389,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
             evidence_dependency_relation: kinds[27],
             instance_migrated_from_relation: kinds[30],
             instance_prior_effect_relation: kinds[31],
+            instance_subject_relation: subject_relation,
         }),
     ))
 }

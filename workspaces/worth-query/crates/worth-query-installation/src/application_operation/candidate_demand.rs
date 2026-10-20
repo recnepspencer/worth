@@ -1,16 +1,15 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationCandidateCardinalityCeiling, ApplicationCandidateContract,
+    ApplicationCandidateCardinalityCeiling, ApplicationCandidatePolicy,
     ApplicationCandidateRequirements, ApplicationCandidateResourceCeiling,
     ApplicationMutationBindingDescriptor,
 };
 
-/// Largest installed operation demand, including Query's bounded settlement
-/// sidecar only for bindings that require workflow authority.
+/// Installed policy quote, separate from a handler's concrete actual demand.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::application_operation) struct WorthQueryApplicationCandidateDemand {
     candidate_items: Option<u64>,
     retained_representation_bytes: Option<u64>,
-    candidate_ceiling: Option<ApplicationCandidateContract>,
+    candidate_ceiling: Option<ApplicationCandidatePolicy>,
     workflow_settlement_ceiling: Option<ApplicationCandidateRequirements>,
 }
 
@@ -25,15 +24,11 @@ impl Default for WorthQueryApplicationCandidateDemand {
     }
 }
 
-// Query owns this sidecar capacity. It does not enlarge a product handler's
-// declared writer reservation; it bounds one local workflow settlement.
 const WORKFLOW_SETTLEMENT_RETAINED_BYTES: u64 = 65_536;
 
 fn workflow_settlement_ceiling() -> ApplicationCandidateRequirements {
     ApplicationCandidateRequirements::fixed_shape(
-        // transition: seven structural fields, advancer/executor triplets,
-        // receipt identity; instance: one Ready-state write. The producer is
-        // workflow/instance/transition/settlement::visit_transition_facts_from_basis.
+        // transition identity, actor/executor triplets and Ready-state write.
         ApplicationCandidateCardinalityCeiling::fixed(1, 0, 2, 1, 7 + 3 + 3 + 1 + 1, 0),
         ApplicationCandidateResourceCeiling::representation_bytes(
             WORKFLOW_SETTLEMENT_RETAINED_BYTES as usize,
@@ -42,22 +37,52 @@ fn workflow_settlement_ceiling() -> ApplicationCandidateRequirements {
 }
 
 impl WorthQueryApplicationCandidateDemand {
+    pub(in crate::application_operation) fn with_workflow_birth(
+        mut self,
+        enrolled: bool,
+    ) -> Result<Self, ()> {
+        if enrolled {
+            if self.workflow_settlement_ceiling.is_some() {
+                return Err(());
+            }
+            self.workflow_settlement_ceiling = Some(ApplicationCandidateRequirements::fixed_shape(
+                ApplicationCandidateCardinalityCeiling::fixed(1, 0, 4, 0, 11, 0),
+                ApplicationCandidateResourceCeiling::representation_bytes(65_536),
+            ));
+            self.include_platform_ceiling()?;
+        }
+        Ok(self)
+    }
+
+    pub(in crate::application_operation) fn with_signing_lifecycle(
+        mut self,
+        ceiling: Option<ApplicationCandidateRequirements>,
+    ) -> Result<Self, ()> {
+        if let Some(ceiling) = ceiling {
+            self.candidate_items = add_optional(
+                self.candidate_items,
+                cardinality_items(ceiling.cardinality())?,
+            )?;
+            self.retained_representation_bytes =
+                add_optional(self.retained_representation_bytes, retained_bytes(ceiling)?)?;
+        }
+        Ok(self)
+    }
+
     pub(in crate::application_operation) fn derive(
         bindings: &[ApplicationMutationBindingDescriptor],
         operation: &str,
         input_type: &str,
     ) -> Result<Self, ()> {
-        let mut demand = Self {
-            candidate_items: Some(0),
-            retained_representation_bytes: Some(0),
-            ..Self::default()
-        };
+        let mut demand = Self::default();
         for binding in bindings.iter().filter(|binding| {
             binding.operation_name() == operation && binding.input_identity().as_str() == input_type
         }) {
+            let policy = binding.candidates();
+            // An absent policy is absorbing in the union, independently per dimension.
             demand.candidate_ceiling = Some(match demand.candidate_ceiling {
-                Some(prior) => maximum_contract(prior, binding.candidates()),
-                None => binding.candidates(),
+                None => policy,
+                Some(previous) => maximum_policy(previous, policy),
             });
             if binding.requires_workflow_authority() {
                 demand.workflow_settlement_ceiling = Some(workflow_settlement_ceiling());
@@ -68,35 +93,40 @@ impl WorthQueryApplicationCandidateDemand {
     }
 
     fn include_platform_ceiling(&mut self) -> Result<(), ()> {
-        let Some(contract) = self.candidate_ceiling else {
-            return Ok(());
-        };
-        let sidecar = self.workflow_settlement_ceiling;
-        let items = contract
-            .cardinality()
-            .map(cardinality_items)
-            .transpose()?
-            .map(|n| {
-                n.checked_add(sidecar.map_or(Ok(0), |s| cardinality_items(s.cardinality()))?)
-                    .ok_or(())
-            })
-            .transpose()?;
-        let bytes = contract
-            .fixed_requirements()
-            .map(retained_bytes)
-            .transpose()?
-            .map(|n| {
-                n.checked_add(sidecar.map_or(Ok(0), retained_bytes)?)
-                    .ok_or(())
-            })
-            .transpose()?;
-        self.candidate_items = items;
-        self.retained_representation_bytes = bytes;
+        if let Some(policy) = self.candidate_ceiling {
+            let sidecar = self.workflow_settlement_ceiling;
+            let items = policy.cardinality().map(cardinality_items).transpose()?;
+            let bytes = policy
+                .resources()
+                .map(|resources| {
+                    u64::try_from(resources.maximum_retained_representation_bytes()).map_err(|_| ())
+                })
+                .transpose()?;
+            let items = add_optional(
+                items,
+                sidecar.map_or(Ok(0), |s| cardinality_items(s.cardinality()))?,
+            )?;
+            let bytes = add_optional(bytes, sidecar.map_or(Ok(0), retained_bytes)?)?;
+            self.candidate_items = maximum_optional(self.candidate_items, items);
+            self.retained_representation_bytes =
+                maximum_optional(self.retained_representation_bytes, bytes);
+        } else if let Some(sidecar) = self.workflow_settlement_ceiling {
+            self.candidate_items = maximum_optional(
+                self.candidate_items,
+                Some(cardinality_items(sidecar.cardinality())?),
+            );
+            self.retained_representation_bytes = maximum_optional(
+                self.retained_representation_bytes,
+                Some(retained_bytes(sidecar)?),
+            );
+        }
         Ok(())
     }
+
     pub(in crate::application_operation) const fn candidate_items(self) -> Option<u64> {
         self.candidate_items
     }
+
     pub(in crate::application_operation) const fn retained_representation_bytes(
         self,
     ) -> Option<u64> {
@@ -104,7 +134,7 @@ impl WorthQueryApplicationCandidateDemand {
     }
     pub(in crate::application_operation) const fn candidate_ceiling(
         self,
-    ) -> Option<ApplicationCandidateContract> {
+    ) -> Option<ApplicationCandidatePolicy> {
         self.candidate_ceiling
     }
     pub(in crate::application_operation) const fn workflow_settlement_ceiling(
@@ -114,23 +144,31 @@ impl WorthQueryApplicationCandidateDemand {
     }
 }
 
-fn maximum_contract(
-    left: ApplicationCandidateContract,
-    right: ApplicationCandidateContract,
-) -> ApplicationCandidateContract {
-    match (left, right) {
-        (ApplicationCandidateContract::Prepared, _)
-        | (_, ApplicationCandidateContract::Prepared) => ApplicationCandidateContract::Prepared,
-        (
-            ApplicationCandidateContract::FixedShape(left),
-            ApplicationCandidateContract::FixedShape(right),
-        ) => ApplicationCandidateContract::FixedShape(maximum_requirements(left, right)),
-        (left, right) => ApplicationCandidateContract::FixedCardinality(maximum_cardinality(
-            left.cardinality().expect("fixed count contract"),
-            right.cardinality().expect("fixed count contract"),
-        )),
-    }
+fn maximum_optional(left: Option<u64>, right: Option<u64>) -> Option<u64> {
+    Some(left?.max(right?))
 }
+
+fn add_optional(value: Option<u64>, added: u64) -> Result<Option<u64>, ()> {
+    value
+        .map(|value| value.checked_add(added).ok_or(()))
+        .transpose()
+}
+
+fn maximum_policy(
+    left: ApplicationCandidatePolicy,
+    right: ApplicationCandidatePolicy,
+) -> ApplicationCandidatePolicy {
+    let cardinality = left
+        .cardinality()
+        .zip(right.cardinality())
+        .map(|(left, right)| maximum_cardinality(left, right));
+    let resources = left
+        .resources()
+        .zip(right.resources())
+        .map(|(left, right)| maximum_resources(left, right));
+    ApplicationCandidatePolicy::new(cardinality, resources)
+}
+
 fn retained_bytes(requirements: ApplicationCandidateRequirements) -> Result<u64, ()> {
     u64::try_from(
         requirements
@@ -157,6 +195,7 @@ fn cardinality_items(cardinality: ApplicationCandidateCardinalityCeiling) -> Res
     })
 }
 
+#[cfg(test)]
 fn maximum_requirements(
     left: ApplicationCandidateRequirements,
     right: ApplicationCandidateRequirements,
@@ -168,24 +207,16 @@ fn maximum_requirements(
 }
 
 fn maximum_cardinality(
-    left_kinds: ApplicationCandidateCardinalityCeiling,
-    right_kinds: ApplicationCandidateCardinalityCeiling,
+    left: ApplicationCandidateCardinalityCeiling,
+    right: ApplicationCandidateCardinalityCeiling,
 ) -> ApplicationCandidateCardinalityCeiling {
     ApplicationCandidateCardinalityCeiling::fixed(
-        left_kinds
-            .maximum_creates()
-            .max(right_kinds.maximum_creates()),
-        left_kinds
-            .maximum_deletes()
-            .max(right_kinds.maximum_deletes()),
-        left_kinds.maximum_links().max(right_kinds.maximum_links()),
-        left_kinds
-            .maximum_unlinks()
-            .max(right_kinds.maximum_unlinks()),
-        left_kinds
-            .maximum_writes()
-            .max(right_kinds.maximum_writes()),
-        left_kinds.maximum_emits().max(right_kinds.maximum_emits()),
+        left.maximum_creates().max(right.maximum_creates()),
+        left.maximum_deletes().max(right.maximum_deletes()),
+        left.maximum_links().max(right.maximum_links()),
+        left.maximum_unlinks().max(right.maximum_unlinks()),
+        left.maximum_writes().max(right.maximum_writes()),
+        left.maximum_emits().max(right.maximum_emits()),
     )
 }
 
@@ -200,90 +231,4 @@ fn maximum_resources(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn complementary_platform_ceilings_quote_all_permitted_items() {
-        let first = ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(7, 0, 0, 0, 0, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(32),
-        );
-        let second = ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 11, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(64),
-        );
-        for ceiling in [
-            maximum_requirements(first, second),
-            maximum_requirements(second, first),
-        ] {
-            assert_eq!(ceiling.cardinality().maximum_creates(), 7);
-            assert_eq!(ceiling.cardinality().maximum_writes(), 11);
-            let mut demand = WorthQueryApplicationCandidateDemand {
-                candidate_items: Some(11),
-                candidate_ceiling: Some(ApplicationCandidateContract::FixedShape(ceiling)),
-                ..WorthQueryApplicationCandidateDemand::default()
-            };
-            demand.include_platform_ceiling().unwrap();
-            assert_eq!(demand.candidate_items(), Some(18));
-        }
-        let overflowing = ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(usize::MAX, 0, 0, 0, 1, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(64),
-        );
-        #[cfg(target_pointer_width = "64")]
-        {
-            let mut demand = WorthQueryApplicationCandidateDemand {
-                candidate_ceiling: Some(ApplicationCandidateContract::FixedShape(overflowing)),
-                ..WorthQueryApplicationCandidateDemand::default()
-            };
-            assert_eq!(demand.include_platform_ceiling(), Err(()));
-            assert_eq!(demand.candidate_items(), Some(0));
-        }
-        #[cfg(not(target_pointer_width = "64"))]
-        assert_eq!(
-            cardinality_items(overflowing.cardinality()),
-            Ok(usize::MAX as u64 + 1)
-        );
-    }
-
-    #[test]
-    fn complementary_workflow_quote_covers_both_admitted_ceilings() {
-        let first = ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(7, 0, 0, 0, 0, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(32),
-        );
-        let second = ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 11, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(64),
-        );
-        for ceiling in [
-            maximum_requirements(first, second),
-            maximum_requirements(second, first),
-        ] {
-            let mut demand = WorthQueryApplicationCandidateDemand {
-                candidate_items: Some(20),
-                retained_representation_bytes: Some(65_568),
-                candidate_ceiling: Some(ApplicationCandidateContract::FixedShape(ceiling)),
-                workflow_settlement_ceiling: Some(workflow_settlement_ceiling()),
-            };
-            demand.include_platform_ceiling().unwrap();
-            assert_eq!(demand.candidate_items(), Some(37));
-            assert_eq!(demand.retained_representation_bytes(), Some(65_600));
-        }
-        #[cfg(target_pointer_width = "64")]
-        {
-            let mut demand = WorthQueryApplicationCandidateDemand {
-                candidate_ceiling: Some(ApplicationCandidateContract::fixed_shape(
-                    ApplicationCandidateCardinalityCeiling::fixed(usize::MAX, 0, 0, 0, 0, 0),
-                    ApplicationCandidateResourceCeiling::representation_bytes(64),
-                )),
-                workflow_settlement_ceiling: Some(workflow_settlement_ceiling()),
-                ..WorthQueryApplicationCandidateDemand::default()
-            };
-            let before = demand;
-            assert_eq!(demand.include_platform_ceiling(), Err(()));
-            assert_eq!(demand, before);
-        }
-    }
-}
+mod tests;

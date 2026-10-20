@@ -11,12 +11,13 @@ use crate::domain_computation::primary_graph::workflow::instance::progression::{
 
 mod selection;
 pub(in crate::domain_computation::primary_graph) use selection::{
-    select_assessment_collection, select_current_proposal_need, select_current_transition,
-    select_navigation_back_transition, select_proposal_replay_transition,
-    select_proposal_transition, select_settled_replay_transition, select_terminal_transition,
-    SelectedWorkflowApproval, SelectedWorkflowAssessment, SelectedWorkflowCondition,
-    SelectedWorkflowInbound, SelectedWorkflowOperation, SelectedWorkflowProposal,
-    SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
+    select_assessment_collection, select_back_action_transition, select_current_proposal_need,
+    select_current_transition, select_navigation_back_transition,
+    select_proposal_replay_transition, select_proposal_transition,
+    select_settled_replay_transition, select_terminal_transition,
+    select_termination_action_transition, SelectedWorkflowApproval, SelectedWorkflowAssessment,
+    SelectedWorkflowCondition, SelectedWorkflowInbound, SelectedWorkflowOperation,
+    SelectedWorkflowProposal, SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
 };
 
 pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransition<
@@ -51,6 +52,7 @@ pub(in crate::domain_computation::primary_graph) struct AdmittedWorkflowTransiti
 /// the admitted transition's observed facts still fence the joint candidate.
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowOperationSettlementBasis {
+    outcome: ApplicationWorkflowControlOutcome,
     pub(super) advancer:
         crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor,
     pub(super) instance: EntityId,
@@ -65,6 +67,25 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowOperationSettlem
 }
 
 impl WorkflowOperationSettlementBasis {
+    pub(in crate::domain_computation::primary_graph) const fn outcome(
+        &self,
+    ) -> ApplicationWorkflowControlOutcome {
+        self.outcome
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn for_business_return(
+        mut self,
+    ) -> Self {
+        self.outcome = ApplicationWorkflowControlOutcome::Returned;
+        self
+    }
+    pub(in crate::domain_computation::primary_graph) const fn for_business_termination(
+        mut self,
+    ) -> Self {
+        self.outcome = ApplicationWorkflowControlOutcome::Terminated;
+        self.retire_live_membership = true;
+        self
+    }
     pub(in crate::domain_computation::primary_graph) const fn instance(&self) -> EntityId {
         self.instance
     }
@@ -85,7 +106,7 @@ impl WorkflowOperationSettlementBasis {
         })?.prepare(
             self.node,
             self.occurrence,
-            ApplicationWorkflowControlOutcome::Completed,
+            self.outcome,
             Some(operation_receipt_identity),
             self.identity.clone(),
             self.identity_bytes,
@@ -99,6 +120,7 @@ impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operati
         &self,
     ) -> WorkflowOperationSettlementBasis {
         WorkflowOperationSettlementBasis {
+            outcome: ApplicationWorkflowControlOutcome::Completed,
             advancer: self.advancer,
             instance: self.instance,
             node: self.node,

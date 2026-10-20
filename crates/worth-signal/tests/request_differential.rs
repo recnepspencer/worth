@@ -82,7 +82,7 @@ fn checked_request(
                         ExecutionPosture::Automatic
                     },
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), 64 << 20, work),
+                    ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), None, Some(work)),
                 ),
                 cancellation: CancellationToken::new(),
                 deadline: None,
@@ -90,7 +90,7 @@ fn checked_request(
             .unwrap()
     });
     let serial = SerialRequest::from_memory(
-        SerialMemoryBudget::new(64 << 20),
+        SerialMemoryBudget::new(None),
         CancellationToken::new(),
         None,
     );
@@ -140,7 +140,7 @@ fn checked_request(
         )
     };
     let report = if workers == 0 {
-        worth_execution::ExecutionWorkCeiling::new(work)
+        worth_execution::ExecutionWorkCeiling::new(Some(work))
             .run_serial(&serial, evaluate)
             .map_err(SignalError::execution_scope_denied)?
             .0?

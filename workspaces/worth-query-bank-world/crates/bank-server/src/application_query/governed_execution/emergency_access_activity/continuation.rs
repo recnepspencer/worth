@@ -182,7 +182,7 @@ impl BankEstateEmergencyAccessActivityAdmission<'_, '_, '_, '_> {
                 ViewRestrictedEstateOperation::reference(),
                 capability_input,
                 self.controls.maximum_result_count(),
-                self.controls.maximum_work(),
+                Some(self.controls.maximum_work()),
             )
             .map_err(BankApplicationQueryDenial::from_request_query)?;
         Ok(publish_page(page))

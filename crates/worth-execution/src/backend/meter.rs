@@ -105,7 +105,7 @@ impl<E> From<KernelStop> for KernelFailure<E> {
 pub(crate) struct RunLimits {
     tokens: Vec<CancellationToken>,
     deadline: Option<Instant>,
-    ceiling: u64,
+    ceiling: Option<u64>,
     ceiling_owner: NestedStopOwner,
     worker_activity: Arc<WorkerActivity>,
     physical_activity: Arc<PhysicalActivity>,
@@ -123,14 +123,45 @@ struct WorkerActivity {
     peak: AtomicUsize,
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct PhysicalActivity {
     current_memory: AtomicU64,
     peak_memory: AtomicU64,
     discarded_work: AtomicU64,
 }
 
+#[derive(Debug)]
 pub(crate) struct MemoryActivityGuard(Arc<PhysicalActivity>, u64);
+
+impl MemoryActivityGuard {
+    pub(crate) fn resize(&mut self, bytes: u64) -> Result<(), crate::MemoryLimitDenial> {
+        if bytes >= self.1 {
+            let added = bytes - self.1;
+            let previous = self
+                .0
+                .current_memory
+                .fetch_update(Ordering::AcqRel, Ordering::Acquire, |held| {
+                    held.checked_add(added)
+                })
+                .map_err(|charged| {
+                    crate::MemoryLimitDenial::overflow(
+                        added,
+                        charged,
+                        crate::MemoryLimitLevel::Process,
+                    )
+                })?;
+            self.0
+                .peak_memory
+                .fetch_max(previous + added, Ordering::AcqRel);
+        } else {
+            self.0
+                .current_memory
+                .fetch_sub(self.1 - bytes, Ordering::AcqRel);
+        }
+        self.1 = bytes;
+        Ok(())
+    }
+}
 
 impl Drop for MemoryActivityGuard {
     fn drop(&mut self) {
@@ -181,7 +212,7 @@ impl RunLimits {
         Ok(())
     }
 
-    pub(crate) fn ceiling(&self) -> u64 {
+    pub(crate) fn ceiling(&self) -> Option<u64> {
         self.ceiling
     }
 
@@ -295,60 +326,6 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
 
     pub(crate) fn checkpoint_stop(&self) -> Option<KernelStop> {
         self.meter.borrow().checkpoint_stop
-    }
-
-    /// Account work completed by a domain-local checked meter after it stops.
-    /// This does not authorize new work or clear the original stop; it keeps
-    /// cancellation/deadline reports faithful to work already performed.
-    pub fn account_completed_work(&mut self, units: u64) -> Result<(), KernelStop> {
-        if let Some(capture) = &mut self.meter.borrow_mut().capture {
-            capture.invalidate();
-        }
-        if units > 0 {
-            crate::authority::consult_observation::charged_prefix(|| {
-                ACTIVE_METER.with(|active| {
-                    active
-                        .borrow()
-                        .iter()
-                        .try_fold(units, |sum, meter| sum.checked_add(meter.borrow().work))
-                        .unwrap_or(u64::MAX)
-                })
-            });
-        }
-        let mut meter = self.meter.borrow_mut();
-        let result = (|| {
-            let next = meter
-                .work
-                .checked_add(units)
-                .ok_or(KernelStop::WorkCounterOverflow)?;
-            let span = meter
-                .span
-                .checked_add(units)
-                .ok_or(KernelStop::WorkCounterOverflow)?;
-            if next > meter.limits.ceiling {
-                return Err(KernelStop::WorkCeiling);
-            }
-            meter.work = next;
-            meter.span = span;
-            Ok(())
-        })();
-        if let Err(stop) = result {
-            meter.checkpoint_stop.get_or_insert(stop);
-            if stop == KernelStop::WorkCounterOverflow
-                || meter.limits.ceiling_owner == NestedStopOwner::Request
-            {
-                meter.nested_stop.record(NestedStopOwner::Request);
-            }
-        }
-        result
-    }
-
-    pub fn remaining_work(&self) -> u64 {
-        let mut meter = self.meter.borrow_mut();
-        if let Some(capture) = &mut meter.capture {
-            capture.invalidate();
-        }
-        meter.limits.ceiling.saturating_sub(meter.work)
     }
 }
 

@@ -27,8 +27,7 @@ impl SourceInvalidationOwner {
                 FullVerificationReason::BeforeReadBasis,
             ));
         }
-        let capacity = self.retain_consumed_output(
-            &[],
+        let capacity = self.retain_requested_output(
             selected,
             std::mem::size_of::<ObservedSourcePublication>() as u64,
             admission,

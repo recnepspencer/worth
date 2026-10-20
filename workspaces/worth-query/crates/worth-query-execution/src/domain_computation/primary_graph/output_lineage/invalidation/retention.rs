@@ -47,7 +47,14 @@ pub(super) fn reserve(
                 retained,
                 maximum,
             },
-            _ => unreachable!("installed resources have positive capacities"),
+            WorthQueryInvalidationResourceDenial::RetentionCounterOverflow {
+                requested,
+                retained,
+            } => CompanionPreflightStop::RetainedCompanionCounterOverflow {
+                requested,
+                retained,
+            },
+            _ => unreachable!("installation denials cannot arise from an installed ledger"),
         })?;
     let capacity = Arc::new(capacity);
     capacity.observe_custody(std::panic::Location::caller());

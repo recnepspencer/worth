@@ -68,11 +68,12 @@ impl ApplicationMutationBinding<AdmissionSchema> for AdvanceBinding {
     const IDENTITY: &'static str = "canonical-admission.advance-binding.v1";
     const HANDLER_IDENTITY: &'static str = "canonical-admission.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "canonical-admission.command.v1";
-    const CANDIDATES:
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(1024),
+    const CANDIDATES: worth_query_decl::facade::application_operation::ApplicationCandidatePolicy =
+        worth_query_decl::facade::application_operation::ApplicationCandidatePolicy::finite(
+            ApplicationCandidateRequirements::fixed_shape(
+                ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 0),
+                ApplicationCandidateResourceCeiling::representation_bytes(1024),
+            ),
         );
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
@@ -190,7 +191,7 @@ impl OperationHandler<AdmissionSchema, AdvanceBinding> for Handler {
     }
     fn candidate_requirements(&self, _: &Input, _: &Decision) -> ApplicationCandidateRequirements {
         AdvanceBinding::CANDIDATES
-            .fixed_requirements()
+            .finite_requirements()
             .expect("fixed candidate contract")
     }
     fn build_candidate(

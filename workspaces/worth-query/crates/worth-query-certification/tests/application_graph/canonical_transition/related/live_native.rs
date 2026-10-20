@@ -65,7 +65,7 @@ pub fn open(host: &host::Host) -> Lease<'_> {
         >(
             &phase, binding.into_query(), &principal, root,
             ApplicationQueryParameterSet::new(),
-            WorthQueryApplicationLiveControls::bounded(scope.clone(), 4, 1, 65_536).unwrap(),
+            WorthQueryApplicationLiveControls::bounded(scope.clone(), 4, 1, Some(65_536)).unwrap(),
         ).unwrap()
         })
         .unwrap()
@@ -109,7 +109,11 @@ pub fn next(
                             policy: ExecutionRequestPolicy::new(
                                 parent.policy().posture(),
                                 parent.policy().determinism(),
-                                ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, work),
+                                ExecutionBudget::new(
+                                    NonZeroUsize::MIN,
+                                    Some(64 * 1024 * 1024),
+                                    Some(work),
+                                ),
                             ),
                             cancellation: scope.cancellation().execution_token(),
                             deadline: scope.deadline(),
@@ -120,7 +124,7 @@ pub fn next(
             // The unchanged native phase lends the original request; decode's
             // existing in_scope contract selects this active admitted descendant.
             ExecutionRequest::leased(&child)
-                .run(ExecutionWorkCeiling::new(work), |_| {
+                .run(ExecutionWorkCeiling::new(Some(work)), |_| {
                     live.next(&phase, &principal, scope)
                 })
                 .expect("the actual live owner returns its typed first refusal")

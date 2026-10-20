@@ -1,5 +1,6 @@
 //! The guarded counterpart of the ordinary retention write used by workflow courts.
 
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_host::facade::{
     declaration::{
         application_operation::{
@@ -66,9 +67,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ReviewedSetRetentio
         worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::requiring_approval::<super::super::workflow::WorkflowApprovalCapability>()
     }
 
-    const CANDIDATES:
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
-        SetRetentionBinding::CANDIDATES;
+    const CANDIDATES: ApplicationCandidatePolicy = SetRetentionBinding::CANDIDATES;
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -156,8 +155,8 @@ where
         _: &WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
     ) -> ApplicationCandidateRequirements {
         Binding::CANDIDATES
-            .fixed_requirements()
-            .expect("fixed candidate contract")
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

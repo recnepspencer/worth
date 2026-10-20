@@ -14,7 +14,10 @@ fn measured_call_shape_view_keeps_its_own_grant_after_the_sequence_drops() {
         .unwrap();
     let request = live_scope();
     let execution = QueryRequestExecution::open(
-        RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, 1 << 30)),
+        RuntimeWorldExecutionPlacement::Serial(test_policy(
+            std::num::NonZeroUsize::MIN,
+            Some(1 << 30),
+        )),
         &request,
     );
     let sequence=crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence::build(||std::iter::once((ComputationRead::Membership,&prior.membership.charge,prior.membership.declared_units))
@@ -50,7 +53,7 @@ fn measured_call_sequence_refuses_before_copy_and_holds_its_view_until_final_dro
     let change = || std::iter::once((ComputationRead::Partition(*identity), &partition.gather, 0));
     let request = live_scope();
     let narrow = QueryRequestExecution::open(
-        RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, 1)),
+        RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, Some(1))),
         &request,
     );
     assert!(matches!(
@@ -59,7 +62,10 @@ fn measured_call_sequence_refuses_before_copy_and_holds_its_view_until_final_dro
     ));
     assert_eq!(sequence.bytes(), before);
     let fresh = QueryRequestExecution::open(
-        RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, 1 << 30)),
+        RuntimeWorldExecutionPlacement::Serial(test_policy(
+            std::num::NonZeroUsize::MIN,
+            Some(1 << 30),
+        )),
         &request,
     );
     let view = sequence.patched(change(), &fresh).unwrap();

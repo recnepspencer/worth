@@ -24,11 +24,15 @@ impl OutputPartitionIndex {
     /// visited generation is charged before the corresponding read.
     pub(in crate::domain_computation::primary_graph::output_lineage) fn latest_admitted(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &SemanticSource,
         coordinate: ProductCoordinate,
         partition: [u8; 32],
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<(u64, usize)>, CompanionPreflightStop> {
+        execution
+            .consult()
+            .map_err(|stop| CompanionPreflightStop::Execution(stop.into()))?;
         charge_tree::<SemanticSource>(admission, self.slots.len())?;
         let Some(occurrences) = self.slots.get(source) else {
             return Ok(None);
@@ -43,6 +47,9 @@ impl OutputPartitionIndex {
         };
         charge_tree::<u64>(admission, generations.len())?;
         for (generation, slot) in generations.range(..=coordinate.generation).rev() {
+            execution
+                .consult()
+                .map_err(|stop| CompanionPreflightStop::Execution(stop.into()))?;
             admission.charge_external_work(1)?;
             if let Some(slot) = slot.get() {
                 return Ok(Some((*generation, *slot)));

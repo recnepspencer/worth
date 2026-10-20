@@ -14,6 +14,18 @@ impl PartitionAccess for RelationalBranchRootState {
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         Box::new(self.root.partition_ids_iter())
     }
+
+    fn partition_ids_with_memory(
+        &self,
+        memory: &mut dyn crate::storage::overlay::PartitionIdMemory,
+    ) -> Result<Vec<PartitionId>, crate::storage::overlay::PartitionIdsDenial> {
+        use crate::storage::overlay::collect_partition_ids;
+        collect_partition_ids(
+            self.root.region_count(),
+            self.root.partition_ids_iter(),
+            memory,
+        )
+    }
 }
 
 impl PartitionAccess for RelationalBranchRoot {
@@ -27,5 +39,17 @@ impl PartitionAccess for RelationalBranchRoot {
 
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         Box::new(RelationalBranchRoot::partition_ids_iter(self))
+    }
+
+    fn partition_ids_with_memory(
+        &self,
+        memory: &mut dyn crate::storage::overlay::PartitionIdMemory,
+    ) -> Result<Vec<PartitionId>, crate::storage::overlay::PartitionIdsDenial> {
+        use crate::storage::overlay::collect_partition_ids;
+        collect_partition_ids(
+            self.region_count(),
+            RelationalBranchRoot::partition_ids_iter(self),
+            memory,
+        )
     }
 }

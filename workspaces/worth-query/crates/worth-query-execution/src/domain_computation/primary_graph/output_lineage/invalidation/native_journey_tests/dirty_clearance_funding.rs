@@ -24,13 +24,13 @@ pub(super) fn assert_carriage_funding(
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, bytes, 1_000_000),
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, bytes, Some(1_000_000)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
     };
     let fresh = OrdSet::unit(0);
-    let zero = authority.request_lease(ask(0)).unwrap();
+    let zero = authority.request_lease(ask(Some(0))).unwrap();
     let control = StorageControl::new(ExecutionAllocationPolicy::Execution(&zero), None);
     assert!(
         changes
@@ -38,7 +38,7 @@ pub(super) fn assert_carriage_funding(
             .is_err(),
         "zero payer refuses fresh metadata before transfer"
     );
-    let lease = authority.request_lease(ask(8)).unwrap();
+    let lease = authority.request_lease(ask(Some(8))).unwrap();
     let control = StorageControl::new(ExecutionAllocationPolicy::Execution(&lease), None);
     let baseline = lease.charged_memory_bytes();
     let carry = changes
@@ -103,9 +103,8 @@ pub(super) fn assert_carriage_funding(
         "the oracle contains an actual owned locator payload"
     );
     let mut cached_work = owner.edit_admission();
-    let cached = super::super::super::fact_retention::reserve_with_payload(
+    let cached = super::super::super::fact_retention::reserve(
         &facts,
-        Some(payload),
         basis,
         &owner.resources,
         &mut cached_work,

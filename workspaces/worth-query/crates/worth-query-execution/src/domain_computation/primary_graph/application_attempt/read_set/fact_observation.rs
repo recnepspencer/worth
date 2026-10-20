@@ -23,7 +23,8 @@ pub(super) fn observation_work_bound(key: &WorthQueryApplicationFactKey) -> Opti
     match key {
         WorthQueryApplicationFactKey::SourcePublication(_) => None,
         WorthQueryApplicationFactKey::Entity { .. }
-        | WorthQueryApplicationFactKey::Field { .. } => Some(1),
+        | WorthQueryApplicationFactKey::Field { .. }
+        | WorthQueryApplicationFactKey::AspectPresence { .. } => Some(1),
         WorthQueryApplicationFactKey::Relation { .. } => None,
         WorthQueryApplicationFactKey::Adjacency {
             maximum_work_units, ..
@@ -120,6 +121,37 @@ fn observe_fact_inner(
             Ok(WorthQueryApplicationObservedFact::Entity {
                 entity_id: *entity_id,
                 kind,
+            })
+        }
+        WorthQueryApplicationFactKey::AspectPresence {
+            entity,
+            entity_id,
+            locator,
+        } => {
+            let aspect = locator.aspect().aspect_key();
+            let kind = layout.entity_kind(entity).ok_or_else(|| {
+                denial(
+                    WorthQueryApplicationAttemptDenialKind::UndeclaredDecisionRead,
+                    entity,
+                )
+            })?;
+            let present = super::super::observation::observe_aspect_presence(
+                runtime, execution, snapshot, *entity_id, kind, aspect,
+            )
+            .map_err(|cause| {
+                WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, entity)
+            })?
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
+                    entity,
+                )
+            })?;
+            Ok(WorthQueryApplicationObservedFact::AspectPresence {
+                entity_id: *entity_id,
+                kind,
+                aspect: aspect.clone(),
+                present,
             })
         }
         WorthQueryApplicationFactKey::Field {

@@ -219,7 +219,7 @@ pub(super) fn rebase_output(
     correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     changed_records: &[worth_relational::facade::transactions::RecordRef],
     producer_output: bool,
-    maximum_indexed_rebase_work: usize,
+    maximum_indexed_rebase_work: Option<usize>,
     admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
 ) -> RebasedSourceFacts {
@@ -256,7 +256,7 @@ fn rebase(
     prepared: PreparedSourceFactRebase,
     retired: &BTreeSet<EntityId>,
     producer: bool,
-    maximum: usize,
+    maximum: Option<usize>,
     admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> RebasedSourceFacts {
     preparation::rebase(execution, runtime, snapshot, prepared, retired, producer, maximum, admission,

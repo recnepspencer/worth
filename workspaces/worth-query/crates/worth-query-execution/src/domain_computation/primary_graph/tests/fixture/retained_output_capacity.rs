@@ -14,8 +14,8 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::BTreeMap;
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 
-// This operation isolates the retained-capacity boundary. Its work budget is
-// the installed owner's standard marking ceiling, independent of retained bytes.
+// This operation isolates retained capacity. Work remains absent at both the
+// installed operation and native marking owner, independently of retained bytes.
 worth_query_operation!(pub(in crate::domain_computation::primary_graph) ReadRetainedAccount for IdentityExecutionSchema, input TouchAccountInputBinding);
 worth_query_operation_reads!(ReadRetainedAccount => [Account]);
 worth_query_operation_requires!(ReadRetainedAccount => [ViewAccount]);
@@ -26,11 +26,6 @@ pub(super) fn declare(
     IdentityExecutionSchema,
 > {
     let operation = ReadRetainedAccount::reference();
-    let work =
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources()
-            .invalidation_resources()
-            .installation()
-            .maximum_marking_work;
     schema
         .operation(
             operation
@@ -39,7 +34,6 @@ pub(super) fn declare(
                 .no_aftermath()
                 .finish(),
         )
-        .operation_projection_work_budget(operation, usize::try_from(work).unwrap())
         .operation_read_entity(operation, Account::reference())
         .operation_requires_ability(operation, ViewAccount::reference())
 }
@@ -60,7 +54,7 @@ pub(in crate::domain_computation::primary_graph) fn project_at_full_ledger() -> 
     WorthQueryOperationProjectionDenial,
 ) {
     let product_resources =
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources();
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources_with_retained_capacity_for_test(128 * 1024 * 1024);
     let resources = product_resources.invalidation_resources();
     let world = installed_authorization_world_with_product_resources(product_resources);
     let request = live_scope();
@@ -133,7 +127,7 @@ pub(in crate::domain_computation::primary_graph) fn project_at_full_ledger() -> 
                     &request,
                 )
                 .unwrap();
-            let maximum = resources.installation().maximum_retained_bytes;
+            let maximum = resources.installation().maximum_retained_bytes.expect("this court installs a finite retained ceiling");
             let held = resources
                 .reserve_retained_capacity(maximum - resources.retained_capacity_bytes())
                 .unwrap();

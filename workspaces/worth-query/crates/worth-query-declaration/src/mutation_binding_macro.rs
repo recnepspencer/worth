@@ -1,8 +1,21 @@
-/// Associates a domain input with one installed, fixed-shape mutation binding.
+/// Associates a domain input with one installed mutation binding and explicit candidate policy.
 #[macro_export]
 macro_rules! worth_query_mutation_binding {
-    (@candidate_resources $bytes:expr_2021) => {
-        $crate::facade::application_operation::ApplicationCandidateResourceCeiling::representation_bytes($bytes)
+    (@candidate_policy policy $policy:expr_2021) => { $policy };
+    (@candidate_policy
+        creates $creates:expr_2021, deletes $deletes:expr_2021,
+        links $links:expr_2021, unlinks $unlinks:expr_2021,
+        writes $writes:expr_2021, emits $emits:expr_2021,
+        resources retained_representation_bytes $bytes:expr_2021
+    ) => {
+        $crate::facade::application_operation::ApplicationCandidatePolicy::finite(
+            $crate::facade::application_operation::ApplicationCandidateRequirements::fixed_shape(
+                $crate::facade::application_operation::ApplicationCandidateCardinalityCeiling::fixed(
+                    $creates, $deletes, $links, $unlinks, $writes, $emits,
+                ),
+                $crate::facade::application_operation::ApplicationCandidateResourceCeiling::representation_bytes($bytes),
+            ),
+        )
     };
     (
         $vis:vis $Binding:ident for $Input:ty, schema generic $Schema:ident: $SchemaBound:path,
@@ -26,10 +39,7 @@ macro_rules! worth_query_mutation_binding {
         scope $Scope:ty, $Aspect:ty, $Field:ty, $Value:ty, $Write:ty, $Unit:ty,
         field $scope_field:expr_2021,
         value_field $scope_value:ident,
-        candidates creates $maximum_creates:expr_2021, deletes $maximum_deletes:expr_2021,
-            links $maximum_links:expr_2021, unlinks $maximum_unlinks:expr_2021, writes $maximum_writes:expr_2021,
-            emits $maximum_emits:expr_2021,
-        resources retained_representation_bytes $maximum_retained_representation_bytes:expr_2021
+        candidates $($candidate_policy:tt)+
     ) => {
         $vis struct $Binding<$Schema>(::std::marker::PhantomData<fn() -> $Schema>);
         impl<$Schema: $SchemaBound> $crate::facade::application_operation::ApplicationMutationAdmissionBinding<$Schema> for $Binding<$Schema> {
@@ -71,16 +81,8 @@ macro_rules! worth_query_mutation_binding {
             fn workflow_execution_requirements() -> $crate::facade::application_operation::ApplicationWorkflowExecutionRequirements {
                 $crate::worth_query_mutation_binding!(@workflow_requirements [$($workflow_authority)?] [$($workflow_requirements)?])
             }
-            const CANDIDATES: $crate::facade::application_operation::ApplicationCandidateContract =
-                $crate::facade::application_operation::ApplicationCandidateContract::fixed_shape(
-                    $crate::facade::application_operation::ApplicationCandidateCardinalityCeiling::fixed(
-                        $maximum_creates, $maximum_deletes, $maximum_links, $maximum_unlinks,
-                        $maximum_writes, $maximum_emits,
-                    ),
-                    $crate::worth_query_mutation_binding!(@candidate_resources
-                        $maximum_retained_representation_bytes
-                    ),
-                );
+            const CANDIDATES: $crate::facade::application_operation::ApplicationCandidatePolicy =
+                $crate::worth_query_mutation_binding!(@candidate_policy $($candidate_policy)+);
 
             fn scope_field() -> $crate::facade::application_schema::ApplicationFieldRef<
                 $Schema, $Scope, $Aspect, $Field, $Value, $Write,
@@ -133,10 +135,7 @@ macro_rules! worth_query_mutation_binding {
         scope $Scope:ty, $Aspect:ty, $Field:ty, $Value:ty, $Write:ty, $Unit:ty,
         field $scope_field:expr_2021,
         value $scope_value:path,
-        candidates creates $maximum_creates:expr_2021, deletes $maximum_deletes:expr_2021,
-            links $maximum_links:expr_2021, unlinks $maximum_unlinks:expr_2021, writes $maximum_writes:expr_2021,
-            emits $maximum_emits:expr_2021,
-        resources retained_representation_bytes $maximum_retained_representation_bytes:expr_2021
+        candidates $($candidate_policy:tt)+
     ) => {
         $crate::worth_query_mutation_binding!(@binding
             $vis $Binding for $Input, schema $Schema,
@@ -155,10 +154,7 @@ macro_rules! worth_query_mutation_binding {
             >,
             scope_field_type $Scope, $Aspect, $Field, $Value, $Write, $Unit,
             scope_field $scope_field,
-            candidates creates $maximum_creates, deletes $maximum_deletes,
-                links $maximum_links, unlinks $maximum_unlinks, writes $maximum_writes,
-                emits $maximum_emits,
-            resources retained_representation_bytes $maximum_retained_representation_bytes
+            candidates $($candidate_policy)+
         );
 
         impl $crate::facade::application_operation::ApplicationMutationIntent<$Schema> for $Input {
@@ -196,10 +192,7 @@ macro_rules! worth_query_mutation_binding {
             principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
         scope $Scope:ty, $Aspect:ty, $Field:ty, $Value:ty, $Write:ty, $Unit:ty,
         principal_field $scope_field:expr_2021,
-        candidates creates $maximum_creates:expr_2021, deletes $maximum_deletes:expr_2021,
-            links $maximum_links:expr_2021, unlinks $maximum_unlinks:expr_2021, writes $maximum_writes:expr_2021,
-            emits $maximum_emits:expr_2021,
-        resources retained_representation_bytes $maximum_retained_representation_bytes:expr_2021
+        candidates $($candidate_policy:tt)+
     ) => {
         $crate::worth_query_mutation_binding!(@binding
             $vis $Binding for $Input, schema $Schema,
@@ -218,10 +211,7 @@ macro_rules! worth_query_mutation_binding {
             >,
             scope_field_type $Scope, $Aspect, $Field, $Value, $Write, $Unit,
             scope_field $scope_field,
-            candidates creates $maximum_creates, deletes $maximum_deletes,
-                links $maximum_links, unlinks $maximum_unlinks, writes $maximum_writes,
-                emits $maximum_emits,
-            resources retained_representation_bytes $maximum_retained_representation_bytes
+            candidates $($candidate_policy)+
         );
 
         impl $crate::facade::application_operation::ApplicationMutationIntent<$Schema> for $Input {
@@ -256,10 +246,7 @@ macro_rules! worth_query_mutation_binding {
         scope_binding $ScopeBinding:ty,
         scope_field_type $Scope:ty, $Aspect:ty, $Field:ty, $Value:ty, $Write:ty, $Unit:ty,
         scope_field $scope_field:expr_2021,
-        candidates creates $maximum_creates:expr_2021, deletes $maximum_deletes:expr_2021,
-            links $maximum_links:expr_2021, unlinks $maximum_unlinks:expr_2021, writes $maximum_writes:expr_2021,
-            emits $maximum_emits:expr_2021,
-        resources retained_representation_bytes $maximum_retained_representation_bytes:expr_2021
+        candidates $($candidate_policy:tt)+
     ) => {
         $vis struct $Binding;
 
@@ -297,20 +284,8 @@ macro_rules! worth_query_mutation_binding {
             fn workflow_execution_requirements() -> $crate::facade::application_operation::ApplicationWorkflowExecutionRequirements {
                 $crate::worth_query_mutation_binding!(@workflow_requirements [$($workflow_authority)?] [$($workflow_requirements)?])
             }
-            const CANDIDATES: $crate::facade::application_operation::ApplicationCandidateContract =
-                $crate::facade::application_operation::ApplicationCandidateContract::fixed_shape(
-                    $crate::facade::application_operation::ApplicationCandidateCardinalityCeiling::fixed(
-                        $maximum_creates,
-                        $maximum_deletes,
-                        $maximum_links,
-                        $maximum_unlinks,
-                        $maximum_writes,
-                        $maximum_emits,
-                    ),
-                    $crate::worth_query_mutation_binding!(@candidate_resources
-                        $maximum_retained_representation_bytes
-                    ),
-                );
+            const CANDIDATES: $crate::facade::application_operation::ApplicationCandidatePolicy =
+                $crate::worth_query_mutation_binding!(@candidate_policy $($candidate_policy)+);
 
             fn scope_field() -> $crate::facade::application_schema::ApplicationFieldRef<
                 $Schema, $Scope, $Aspect, $Field, $Value, $Write,

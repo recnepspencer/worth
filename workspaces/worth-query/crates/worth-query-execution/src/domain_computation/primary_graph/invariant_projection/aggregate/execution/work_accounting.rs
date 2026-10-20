@@ -44,7 +44,7 @@ impl<'work> AggregateWorkAccounting<'work> {
         self.work.record_aggregate_lookup(false, rebuild_rows);
     }
 
-    pub(in super::super) const fn remaining(&self) -> usize {
+    pub(in super::super) const fn remaining(&self) -> Option<usize> {
         self.budget.remaining()
     }
 
@@ -53,8 +53,18 @@ impl<'work> AggregateWorkAccounting<'work> {
         limit: worth_relational::facade::runtime::AdjacencyTruthReadLimitExceeded,
         member: &str,
     ) -> WorthQueryInvariantAggregateDenial {
-        self.record_cold_lookup(limit.relation_records_examined());
-        self.reject_bounded_adjacency(limit, member)
+        if self.budget.consume(limit.consumed_work_units()) {
+            self.record_cold_lookup(limit.relation_records_examined());
+            self.work.record_adjacency(
+                limit.relation_records_examined(),
+                limit.endpoint_records_reserved(),
+            );
+        }
+        self.budget.mark_exceeded();
+        denial(
+            WorthQueryInvariantAggregateDenialKind::WorkBudgetExceeded,
+            member,
+        )
     }
 
     pub(in super::super) fn reject_bounded_adjacency(
@@ -62,11 +72,12 @@ impl<'work> AggregateWorkAccounting<'work> {
         limit: worth_relational::facade::runtime::AdjacencyTruthReadLimitExceeded,
         member: &str,
     ) -> WorthQueryInvariantAggregateDenial {
-        self.budget.consume(limit.consumed_work_units());
-        self.work.record_adjacency(
-            limit.relation_records_examined(),
-            limit.endpoint_records_reserved(),
-        );
+        if self.budget.consume(limit.consumed_work_units()) {
+            self.work.record_adjacency(
+                limit.relation_records_examined(),
+                limit.endpoint_records_reserved(),
+            );
+        }
         self.budget.mark_exceeded();
         denial(
             WorthQueryInvariantAggregateDenialKind::WorkBudgetExceeded,
@@ -79,9 +90,16 @@ impl<'work> AggregateWorkAccounting<'work> {
         consumed: usize,
         examined: usize,
         endpoints: usize,
-    ) {
-        self.budget.consume(consumed);
+        member: &str,
+    ) -> Result<(), WorthQueryInvariantAggregateDenial> {
+        if !self.budget.consume(consumed) {
+            return Err(denial(
+                WorthQueryInvariantAggregateDenialKind::WorkBudgetExceeded,
+                member,
+            ));
+        }
         self.work.record_adjacency(examined, endpoints);
+        Ok(())
     }
 
     pub(in super::super) fn admit_source_field(
@@ -104,7 +122,7 @@ impl<'work> AggregateWorkAccounting<'work> {
                 member,
             ));
         }
-        self.budget.consume(amount);
+        assert!(self.budget.consume(amount), "projection work was admitted");
         Ok(())
     }
 }

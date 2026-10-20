@@ -34,5 +34,5 @@ pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) s
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) projection:
         Arc<PostingProjection>,
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) _fact_capacity:
-        Arc<RetainedInvalidationCapacity>,
+        super::super::fact_retention::RetainedFactCapacity,
 }

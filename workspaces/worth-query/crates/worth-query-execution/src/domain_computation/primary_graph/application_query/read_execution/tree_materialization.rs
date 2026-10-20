@@ -63,7 +63,7 @@ pub(super) fn materialize_result_tree(
     root_ids: &[EntityId],
     selected_predicate_source: Option<&crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedFieldRevision>,
     root_path_source: Option<&BTreeMap<EntityId, Arc<crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection>>>,
-    maximum_work: usize,
+    maximum_work: Option<usize>,
     collection_selection: ResultTreeCollectionSelection,
     interruption: super::ReadInterruption<'_>,
     result_buffer: &mut WorthQueryApplicationResultBufferReservation,

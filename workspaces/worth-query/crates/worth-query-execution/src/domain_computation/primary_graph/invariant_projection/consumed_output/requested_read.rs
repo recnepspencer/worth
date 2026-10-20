@@ -19,7 +19,7 @@ impl ConsumedOutputEvidence {
         let selected = self.selected_native_root.as_ref();
         let bytes = std::mem::size_of::<RequestedOutputRead>() as u64;
         admission.charge_external_work(bytes + selected.branch_id().0.len() as u64)?;
-        let capacity = owner.retain_consumed_output(&[], selected, bytes, admission)?;
+        let capacity = owner.retain_requested_output(selected, bytes, admission)?;
         Ok(RequestedOutputRead::new(
             Arc::clone(&self.identity),
             selected.clone(),

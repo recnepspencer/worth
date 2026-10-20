@@ -1,10 +1,12 @@
 mod connections;
+mod feature_outputs;
 use super::super::semantic_encoding::{framed_fields, framed_parts};
 use super::super::{
     ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
     ApplicationProgramRevision, ApplicationProgramRuleDeclaration,
 };
 use connections::append_connections;
+use feature_outputs::append_feature_outputs;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ApplicationSemanticFamily {
@@ -158,124 +160,6 @@ fn append_features(
     }
 }
 
-fn append_feature_outputs(
-    facts: &mut Vec<ApplicationSemanticFact>,
-    feature: &ApplicationFeatureDeclaration,
-) {
-    let owner = feature.composition_instance();
-    let feature_identity = feature.identity();
-    for artifact in feature.derived_artifacts() {
-        let subject = framed_parts(&[owner, feature_identity, "artifact", artifact.identity()]);
-        let mut dependencies = artifact
-            .dependencies()
-            .iter()
-            .map(|dependency| dependency.identity())
-            .collect::<Vec<_>>();
-        dependencies.sort_unstable();
-        facts.push(fact(
-            ApplicationSemanticFamily::Outputs,
-            &subject,
-            framed_fields(
-                [
-                    ("output", artifact.output().to_owned()),
-                    ("locality", artifact.locality().identity().to_owned()),
-                    (
-                        "granule",
-                        artifact.locality().granule().canonical_token().to_owned(),
-                    ),
-                    (
-                        "retention",
-                        artifact.retention().canonical_token().to_owned(),
-                    ),
-                    (
-                        "succession",
-                        artifact.succession().canonical_token().to_owned(),
-                    ),
-                    ("required", artifact.required().to_string()),
-                    ("producer", artifact.producer_family().to_owned()),
-                ]
-                .into_iter()
-                .chain(
-                    dependencies
-                        .into_iter()
-                        .map(|dependency| ("dependency", dependency.to_owned())),
-                )
-                .chain([
-                    ("reuse", artifact.reuse_rule().to_owned()),
-                    ("stopped", artifact.stopped_outcome().to_owned()),
-                ]),
-            ),
-        ));
-        let resources = artifact.resource_ceiling();
-        facts.push(fact(
-            ApplicationSemanticFamily::Resources,
-            subject,
-            framed_fields([
-                ("work", resources.maximum_work().to_string()),
-                ("bytes", resources.maximum_retained_bytes().to_string()),
-            ]),
-        ));
-    }
-    for collection in feature.derived_collections() {
-        facts.push(fact(
-            ApplicationSemanticFamily::Outputs,
-            framed_parts(&[owner, feature_identity, "collection", collection.identity()]),
-            framed_fields([
-                ("computation", collection.computation().to_owned()),
-                ("completeness", collection.completeness().to_owned()),
-                ("contributor", collection.contributor().to_owned()),
-                ("grouping", collection.grouping().to_owned()),
-                ("measures", collection.measures().to_owned()),
-                ("lineage", collection.lineage().to_owned()),
-                ("applicability", collection.applicability().to_owned()),
-                (
-                    "incomplete",
-                    collection.incomplete().canonical_token().to_owned(),
-                ),
-                ("incremental", collection.incremental_update().to_owned()),
-            ]),
-        ));
-    }
-    for computation in feature.managed_computations() {
-        let subject = framed_parts(&[
-            owner,
-            feature_identity,
-            "computation",
-            computation.identity(),
-        ]);
-        facts.push(fact(
-            ApplicationSemanticFamily::Outputs,
-            &subject,
-            framed_fields([
-                ("input", computation.input().to_owned()),
-                ("output", computation.output_artifact().to_owned()),
-                ("partition", computation.partition().to_owned()),
-                ("reuse", computation.reuse().to_owned()),
-                ("stopped", computation.stopped().to_owned()),
-                (
-                    "execution",
-                    computation.execution().canonical_token().to_owned(),
-                ),
-                (
-                    "determinism",
-                    super::super::managed_computation::determinism_canonical_token(
-                        computation.determinism(),
-                    ),
-                ),
-            ]),
-        ));
-        let resources = computation.resources();
-        facts.push(fact(
-            ApplicationSemanticFamily::Resources,
-            subject,
-            framed_fields([
-                ("work", resources.maximum_work().to_string()),
-                ("bytes", resources.maximum_retained_bytes().to_string()),
-            ]),
-        ));
-    }
-}
-
 fn append_actions(
     facts: &mut Vec<ApplicationSemanticFact>,
     actions: &[ApplicationActionDeclaration],
@@ -343,6 +227,9 @@ fn append_actions(
                     .to_owned(),
             ),
         ];
+        if let Some(binding) = action.conditional_mutation_identity() {
+            fields.push(("conditional-mutation-binding", binding.to_owned()));
+        }
         {
             let requirements = action.workflow_execution_requirements();
             fields.push((
@@ -355,6 +242,13 @@ fn append_actions(
             &subject,
             framed_fields(fields),
         ));
+        if let Some(body) = action.operation_body() {
+            facts.push(fact(
+                ApplicationSemanticFamily::Operations,
+                format!("{subject}/body"),
+                crate::application_program::operation_body_encoding::operation_body_record(body),
+            ));
+        }
         if let Some(effect) = action.external_input() {
             facts.push(fact(
                 ApplicationSemanticFamily::ExternalInputs,

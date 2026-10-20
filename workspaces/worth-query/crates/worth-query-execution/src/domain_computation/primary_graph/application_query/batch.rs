@@ -22,7 +22,7 @@ pub(in crate::domain_computation::primary_graph::application_query) use work::Ba
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationQueryBatchLimits {
     maximum_items: NonZeroUsize,
-    maximum_read_work: NonZeroUsize,
+    maximum_read_work: Option<NonZeroUsize>,
     maximum_retained_bytes: NonZeroUsize,
     maximum_result_bytes_per_item: NonZeroUsize,
 }
@@ -30,7 +30,7 @@ pub struct WorthQueryApplicationQueryBatchLimits {
 impl WorthQueryApplicationQueryBatchLimits {
     pub const fn new(
         maximum_items: NonZeroUsize,
-        maximum_read_work: NonZeroUsize,
+        maximum_read_work: Option<NonZeroUsize>,
         maximum_retained_bytes: NonZeroUsize,
         maximum_result_bytes_per_item: NonZeroUsize,
     ) -> Self {
@@ -45,8 +45,8 @@ impl WorthQueryApplicationQueryBatchLimits {
     pub const fn maximum_items(self) -> usize {
         self.maximum_items.get()
     }
-    pub const fn maximum_read_work(self) -> usize {
-        self.maximum_read_work.get()
+    pub fn maximum_read_work(self) -> Option<usize> {
+        self.maximum_read_work.map(NonZeroUsize::get)
     }
     pub const fn maximum_retained_bytes(self) -> usize {
         self.maximum_retained_bytes.get()
@@ -73,6 +73,10 @@ pub enum WorthQueryApplicationQueryBatchResourceDenial {
     },
     CounterOverflow,
     WorkAccountingMismatch,
+    /// An unbounded read cannot widen a finite installed schedule slot.
+    WorkLimitWidening {
+        maximum: usize,
+    },
     /// The schedule or admitted slot belongs to another installed runtime.
     ForeignPlan,
     /// This installed query has no remaining registered read slot.
@@ -125,7 +129,7 @@ enum BatchPolicy {
 }
 
 impl BatchPolicy {
-    fn maximum_work(&self) -> usize {
+    fn maximum_work(&self) -> Option<usize> {
         match self {
             Self::Bounded(limits) => limits.maximum_read_work(),
             Self::Installed(plan) => {

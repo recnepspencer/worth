@@ -48,9 +48,9 @@ impl AggregateWorld {
             },
         );
         self.authority
-            .project_bounded(
+            .project_with_work_limit(
                 &phase_custody.borrowed_request_for_test(),
-                10_000,
+                Some(10_000),
                 basis,
                 |reader| {
                     let result = reader.summarize_exclusive_incoming(

@@ -13,10 +13,10 @@ impl WorthQueryApplicationOutputLineage {
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,
         source_partition_identity: [u8; 32],
-        maximum_source_lookups: usize,
+        maximum_source_lookups: Option<usize>,
     ) -> Result<WorthQueryPriorOutputBindingResolution, ()> {
         let Some(output_binding) = self.binding_identity(TypeId::of::<Binding>()) else {
-            return (maximum_source_lookups > 0)
+            return (maximum_source_lookups != Some(0))
                 .then_some(WorthQueryPriorOutputBindingResolution {
                     correspondence: None,
                     source_lookups: 1,
@@ -30,7 +30,7 @@ impl WorthQueryApplicationOutputLineage {
             output_binding,
         };
         if !self.by_source.contains_key(&source) {
-            return (maximum_source_lookups > 0)
+            return (maximum_source_lookups != Some(0))
                 .then_some(WorthQueryPriorOutputBindingResolution {
                     correspondence: None,
                     source_lookups: 1,
@@ -47,10 +47,10 @@ impl WorthQueryApplicationOutputLineage {
                 &source,
                 coordinate,
                 source_partition_identity,
-                maximum_source_lookups.saturating_sub(source_lookups),
+                maximum_source_lookups.map(|maximum| maximum.saturating_sub(source_lookups)),
             )?;
             source_lookups = source_lookups.checked_add(work).ok_or(())?;
-            if source_lookups > maximum_source_lookups {
+            if maximum_source_lookups.is_some_and(|maximum| source_lookups > maximum) {
                 return Err(());
             }
             if let Some(recorded) = recorded {

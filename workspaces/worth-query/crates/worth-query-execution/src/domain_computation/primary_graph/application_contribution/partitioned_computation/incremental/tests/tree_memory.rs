@@ -34,12 +34,12 @@ fn rebuilt_under(memory: Option<u64>, leased: bool) -> Vec<(Outcome, usize, u64)
         None => vec![Box::new(|| {
             RuntimeWorldExecutionPlacement::Serial(
         crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
-            std::num::NonZeroUsize::MIN, 1 << 30,
+            std::num::NonZeroUsize::MIN, None,
         ),
     )
         })],
         Some(memory) => {
-            let policy = move || test_policy(NonZeroUsize::new(2).unwrap(), memory);
+            let policy = move || test_policy(NonZeroUsize::new(2).unwrap(), Some(memory));
             if leased {
                 vec![Box::new(move || RuntimeWorldExecutionPlacement::Leased {
                     authority: query_test_execution_authority_for_test(),
@@ -193,7 +193,7 @@ fn incremental_retention_hold(first: &Attempt, work: u64) -> u64 {
         .find(|(_, part)| part.key.0 == 1)
         .unwrap()
         .0;
-    let memory = worth_execution::SerialMemoryBudget::new(1 << 30);
+    let memory = worth_execution::SerialMemoryBudget::new(Some(1 << 30));
     let request = worth_execution::SerialRequest::from_memory(
         memory.clone(),
         worth_execution::CancellationToken::new(),
@@ -203,7 +203,7 @@ fn incremental_retention_hold(first: &Attempt, work: u64) -> u64 {
         .native_run
         .advance(
             worth_execution::ExecutionRequest::serial(&request),
-            worth_execution::ExecutionWorkCeiling::new(u64::MAX),
+            worth_execution::ExecutionWorkCeiling::new(None),
             std::collections::BTreeMap::from([(
                 identity,
                 worth_execution::KeylessPartition {

@@ -2,8 +2,9 @@ use crate::domain_computation::primary_graph::application_checkpoint::facts::Fac
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::{
-    AspectFieldLocator, AspectKey, FieldKey, PortableAspectContractBasis, PortableAspectFieldSet,
-    PortableAspectPatchOperation, PortableRecordAspectPatch,
+    AspectFieldLocator, AspectKey, ContractValidationInput, FieldKey, PortableAspectContractBasis,
+    PortableAspectFieldSet, PortableAspectPatchOperation, PortableRecordAspectPatch,
+    StructAspectValue,
 };
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::transactions::{
@@ -20,9 +21,12 @@ use crate::domain_computation::WorthQueryProvisionalEffectAction;
 struct AspectFieldPatch {
     basis: PortableAspectContractBasis,
     selected_fields: Vec<FieldKey>,
-    field_sets: Vec<PortableAspectFieldSet>,
+    field_sets: BTreeMap<FieldKey, worth_foundational::facade::AspectValue>,
     field_clears: Vec<FieldKey>,
 }
+
+#[cfg(test)]
+mod tests;
 
 pub(super) fn lower(
     facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
@@ -50,7 +54,7 @@ pub(super) fn lower(
             effect_step(action)
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let aspect_patch = portable_patch(fields);
+    let aspect_patch = portable_patch(facts, entity_id, fields)?;
     mutation(
         steps,
         MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(
@@ -63,8 +67,10 @@ pub(super) fn lower(
 }
 
 fn portable_patch(
+    facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
+    entity: EntityId,
     fields: BTreeMap<AspectFieldLocator, WorthQueryApplicationOptionalFieldWrite>,
-) -> PortableRecordAspectPatch {
+) -> Result<PortableRecordAspectPatch, WorthQueryApplicationAttemptDenial> {
     let mut aspects = BTreeMap::<AspectKey, AspectFieldPatch>::new();
     for (locator, write) in fields {
         let field = locator
@@ -78,23 +84,38 @@ fn portable_patch(
             .or_insert_with(|| AspectFieldPatch {
                 basis: write.contract.clone(),
                 selected_fields: Vec::new(),
-                field_sets: Vec::new(),
+                field_sets: BTreeMap::new(),
                 field_clears: Vec::new(),
             });
         patch.selected_fields.push(field.clone());
         match write.value {
-            Some(value) => patch
-                .field_sets
-                .push(PortableAspectFieldSet::new(field, value)),
+            Some(value) => {
+                patch.field_sets.insert(field, value);
+            }
             None => patch.field_clears.push(field),
         }
     }
-    PortableRecordAspectPatch::new(aspects.into_values().map(|patch| {
-        PortableAspectPatchOperation::PatchFields {
-            basis: patch.basis,
-            selected_fields: patch.selected_fields,
-            field_sets: patch.field_sets,
-            field_clears: patch.field_clears,
+    let mut operations = Vec::new();
+    for (aspect, patch) in aspects {
+        if facts.aspect_presence(entity, &aspect)? {
+            operations.push(PortableAspectPatchOperation::PatchFields {
+                basis: patch.basis,
+                selected_fields: patch.selected_fields,
+                field_sets: patch
+                    .field_sets
+                    .into_iter()
+                    .map(|(field, value)| PortableAspectFieldSet::new(field, value))
+                    .collect(),
+                field_clears: patch.field_clears,
+            });
+        } else if !patch.field_sets.is_empty() {
+            let value = StructAspectValue::new(patch.field_sets)
+                .map_err(|_| super::super::progression_denial())?;
+            operations.push(PortableAspectPatchOperation::SetWhole {
+                basis: patch.basis,
+                value: ContractValidationInput::Struct(value),
+            });
         }
-    }))
+    }
+    Ok(PortableRecordAspectPatch::new(operations))
 }

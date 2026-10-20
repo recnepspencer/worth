@@ -29,6 +29,7 @@ fn touched_scope_tracks_planned_entity_deletes() {
     );
     let planner = test_scope_planner(
         &runtime,
+        *execution,
         &observation,
         runtime.current_version_id(),
         &prepared_scope,

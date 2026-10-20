@@ -139,6 +139,7 @@ fn publication_stop(stop: PrecommitOutputStop) -> WorthQueryProviderSessionCommi
                     ),
                 }
             }
+            PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::CapacityExhausted(stop)) => capacity_denied(stop),
             other => {
                 let detail = match other {
                     PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Execution(_)) => unreachable!("request execution routed above"),
@@ -149,7 +150,7 @@ fn publication_stop(stop: PrecommitOutputStop) -> WorthQueryProviderSessionCommi
                     PrecommitOutputStop::Verification(
                         ConsumedOutputVerificationStop::WorkExhausted,
                     ) => "consumed output currentness exceeded publication work",
-                    PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::CapacityExhausted(_)) => "consumed output currentness exceeded publication capacity",
+                    PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::CapacityExhausted(_)) => unreachable!("capacity evidence retained above"),
                     PrecommitOutputStop::Verification(
                         ConsumedOutputVerificationStop::PendingUpstream,
                     ) => "consumed output has pending upstream source",
@@ -173,3 +174,18 @@ fn publication_stop(stop: PrecommitOutputStop) -> WorthQueryProviderSessionCommi
             }
     }
 }
+
+fn capacity_denied(
+    stop: crate::domain_computation::primary_graph::VerificationCapacityStop,
+) -> WorthQueryProviderSessionCommitStop {
+    WorthQueryProviderSessionCommitStop::PreEffectDenied(
+        provider_failure(
+            WorthQueryProviderSessionProtocolStage::Commit,
+            "consumed output currentness exceeded publication capacity",
+        )
+        .with_output_verification_capacity_stop(stop),
+    )
+}
+
+#[cfg(test)]
+mod capacity_tests;

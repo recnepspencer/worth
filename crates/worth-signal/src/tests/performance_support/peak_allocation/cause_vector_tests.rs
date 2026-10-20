@@ -24,17 +24,17 @@ fn measured_distinct_pages(page_count: usize) {
         })
         .collect();
     source
-        .prepare_retained_charge(&mut Work::new(usize::MAX))
+        .prepare_retained_charge(&mut Work::new(None))
         .unwrap();
     let mut fork = source.fork_persistent();
     let selected: Vec<_> = (0..page_count).map(|page| page * PAGE_LEN).collect();
     let forecast = fork
-        .selected_batch_request_growth_bound(&selected, false, &mut Work::new(usize::MAX))
+        .selected_batch_request_growth_bound(&selected, false, &mut Work::new(None))
         .unwrap()
         .bytes();
     let (draft, peak) = measure(|| {
         let mut draft = fork.fork_persistent();
-        let mut work = Work::new(usize::MAX);
+        let mut work = Work::new(None);
         for &index in &selected {
             draft
                 .edit_with_retained_charge(index, &mut work, |value| value[0] ^= 1)
@@ -57,11 +57,11 @@ fn measured_selected_edits(
     let mut source: PersistentVector<Vec<u8>> =
         (0..base_len).map(|_| vec![7_u8; payload_bytes]).collect();
     source
-        .prepare_retained_charge(&mut Work::new(usize::MAX))
+        .prepare_retained_charge(&mut Work::new(None))
         .unwrap();
     let mut first = source.fork_persistent();
     let edited = first
-        .edit_with_retained_charge(0, &mut Work::new(usize::MAX), |value| value[0] = 9)
+        .edit_with_retained_charge(0, &mut Work::new(None), |value| value[0] = 9)
         .unwrap();
     assert!(matches!(
         edited,
@@ -72,7 +72,7 @@ fn measured_selected_edits(
         .chain(base_len..base_len + appended)
         .collect();
     let forecast = first
-        .selected_batch_request_growth_bound(&selected, true, &mut Work::new(usize::MAX))
+        .selected_batch_request_growth_bound(&selected, true, &mut Work::new(None))
         .unwrap()
         .bytes();
     let before = first.page_identities();
@@ -81,7 +81,7 @@ fn measured_selected_edits(
         .collect::<Vec<_>>();
     let (draft, peak) = measure(|| {
         let mut draft = first.fork_persistent();
-        let mut work = Work::new(usize::MAX);
+        let mut work = Work::new(None);
         for index in 0..selected_existing {
             let outcome = draft
                 .edit_with_retained_charge(index, &mut work, |value| value[0] ^= 1)

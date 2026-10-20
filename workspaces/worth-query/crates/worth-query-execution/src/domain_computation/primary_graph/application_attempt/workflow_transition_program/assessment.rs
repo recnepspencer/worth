@@ -50,6 +50,7 @@ where
                 crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::Entity { .. }
                     | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceEntity { .. }
                     | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceAspectRevision { .. }
+                    | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::AspectPresence { .. }
                     | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceFieldRevision { .. }
                     | crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceAdjacencyRevision { .. }
                 )
@@ -113,6 +114,8 @@ where
         bind_currentness_facts(execution, &mut read_set, &currentness_facts, &node_path)?;
         let program = WorthQueryApplicationEffectProgram {
             candidate_funding: None,
+            candidate_requirements: None,
+            effect_backing_memory: None,
             read_set,
             effects,
             emission_retained_bytes: 0,

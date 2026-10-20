@@ -15,6 +15,8 @@ pub(super) struct ColdCompiledWorkflowDefinition {
     pub(super) start_node: EntityId,
     pub(super) nodes: Box<[CompiledWorkflowNode]>,
     pub(super) connections: Box<[CompiledWorkflowConnection]>,
+    pub(super) global_actions:
+        Box<[worth_query_installation::facade::WorthQueryWorkflowGlobalActionDependency]>,
     pub(super) revisions: WorkflowDefinitionPublicationRevisions,
 }
 
@@ -130,6 +132,7 @@ impl WorkflowDefinitionPublicationBinding {
             start: semantic.start,
             nodes,
             connections,
+            global_actions: Arc::clone(&semantic.global_actions),
             node_ordinals: Arc::clone(&self.node_ordinals),
             dispatch: Arc::clone(&semantic.dispatch),
         }
@@ -243,11 +246,20 @@ pub(super) fn separate_compiled_definition(
         semantic_nodes.len(),
         &semantic_connections,
     ));
-    let retained_bytes = semantic_retained_bytes(&semantic_nodes, &semantic_connections, &dispatch);
+    let retained_bytes = semantic_retained_bytes(&semantic_nodes, &semantic_connections, &dispatch)
+        .saturating_add(std::mem::size_of_val(compiled.global_actions.as_ref()))
+        .saturating_add(
+            compiled
+                .global_actions
+                .iter()
+                .map(|action| action.retained_string_bytes())
+                .sum::<usize>(),
+        );
     let semantic = Arc::new(CompiledWorkflowSemanticPlan {
         start,
         nodes: semantic_nodes,
         connections: semantic_connections,
+        global_actions: Arc::from(compiled.global_actions),
         dispatch,
         retained_bytes,
     });

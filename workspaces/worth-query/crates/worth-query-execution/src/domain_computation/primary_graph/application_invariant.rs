@@ -8,6 +8,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 pub use worth_relational::facade::runtime::{
     CustomInvariantExecutionError as WorthQueryApplicationInvariantExecutionError,
+    CustomInvariantInterruption,
     CustomInvariantPreparationError as WorthQueryApplicationInvariantPreparationError,
     CustomInvariantVerdict as WorthQueryApplicationInvariantVerdict,
 };

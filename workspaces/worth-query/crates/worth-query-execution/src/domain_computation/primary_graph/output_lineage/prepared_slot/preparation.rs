@@ -169,6 +169,8 @@ pub(in crate::domain_computation::primary_graph) fn prepare(
     }
     // Every retained row pays an unconditional source and occurrence path.
     // Its token remains sound if an earlier row of the same source retires.
+    bytes = bytes.checked_add(crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::retention_storage_bytes().ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?)
+        .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
     let retained_bytes = bytes
         .checked_add(
             tree_insert_bytes::<

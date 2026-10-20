@@ -24,11 +24,19 @@ impl<'work, 'payer, 'run, 'lease> ComparisonPayment<'work, 'payer, 'run, 'lease>
     pub(in crate::indexes::authority::maintenance) fn comparison(&mut self) -> Result<(), Denial> {
         match &mut self.prepaid {
             Some(credit) => {
-                if *credit == 0 || self.work.native_remaining() == 0 {
+                if *credit == 0 || self.work.native_remaining() == Some(0) {
                     return Err(Denial::WorkBudgetExceeded);
                 }
+                let next = self
+                    .work
+                    .counts
+                    .work_units
+                    .checked_add(1)
+                    .ok_or(Denial::Execution(
+                        crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                    ))?;
                 *credit -= 1;
-                self.work.counts.work_units += 1;
+                self.work.counts.work_units = next;
                 Ok(())
             }
             None => self.work.charge(1),

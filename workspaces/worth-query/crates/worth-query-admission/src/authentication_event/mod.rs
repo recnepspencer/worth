@@ -10,9 +10,9 @@ pub use intent::{
 pub use issuance::{
     install_authentication_event_owner, WorthQueryAuthenticationEvent,
     WorthQueryAuthenticationEventDenial, WorthQueryAuthenticationEventFuture,
-    WorthQueryAuthenticationEventSigningOwner, WorthQueryAuthenticationEventVerifier,
-    WorthQueryAuthenticationEventVerifierFailure, WorthQueryConsumedAuthenticationEvent,
-    WorthQueryInstalledAuthenticationEventOwner,
+    WorthQueryAuthenticationEventOwnerMetadata, WorthQueryAuthenticationEventSigningOwner,
+    WorthQueryAuthenticationEventVerifier, WorthQueryAuthenticationEventVerifierFailure,
+    WorthQueryConsumedAuthenticationEvent, WorthQueryInstalledAuthenticationEventOwner,
 };
 
 #[cfg(test)]

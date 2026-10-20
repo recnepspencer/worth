@@ -56,8 +56,8 @@ macro_rules! institution_movement_handler {
                 _: &BankInvariantApprovedProposal,
             ) -> ApplicationCandidateRequirements {
                 <$Binding>::CANDIDATES
-                    .fixed_requirements()
-                    .expect("fixed candidate contract")
+                    .finite_requirements()
+                    .expect("fixed-shape handler declares finite candidate policy")
             }
 
             fn build_candidate(

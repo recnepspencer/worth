@@ -129,7 +129,7 @@ pub(super) fn rebase(
     prepared: PreparedSourceFactRebase,
     retired: &BTreeSet<EntityId>,
     producer: bool,
-    maximum: usize,
+    maximum: Option<usize>,
     admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     control: StorageControl<'_, '_>,
 ) -> RebasedSourceFacts {

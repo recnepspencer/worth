@@ -108,7 +108,7 @@ impl WorthQueryPrimaryGraphProvider {
         );
         let source = worth_execution::CancellationSource::new();
         let host = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::SerialMemoryBudget::new(None),
             source.token(),
             None,
         );
@@ -127,7 +127,7 @@ impl WorthQueryPrimaryGraphProvider {
         };
         let source = worth_execution::CancellationSource::new();
         let host = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::SerialMemoryBudget::new(None),
             source.token(),
             None,
         );

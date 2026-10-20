@@ -25,7 +25,7 @@ pub(super) fn install<const MODE: u8>() -> Result<
         },),
         support::limits(
             32,
-            support::invalidation(128 * 1_024 * 1_024, 1_000_000, 32),
+            support::invalidation(128 * 1_024 * 1_024, Some(1_000_000), 32),
         ),
         |_phase, graph, installed| support::bind_model_owner(graph, installed),
     )

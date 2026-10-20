@@ -50,7 +50,7 @@ where
     let action_bindings = installed
         .actions()
         .iter()
-        .filter_map(|action| action.mutation_binding_type())
+        .filter_map(|action| action.ordinary_mutation_binding_type())
         .map(TypeId::from)
         .filter(|binding| seen_action_bindings.insert(*binding))
         .collect::<Vec<_>>();
@@ -171,9 +171,7 @@ where
             runtime
                 .installed_schema()
                 .installed_mutation_binding_inventory()
-                .filter(|binding| {
-                    support.acts_through_mutation_binding(binding.binding_type().into())
-                })
+                .filter(|binding| support.declares_mutation_binding(binding.binding_type().into()))
                 .map(|binding| binding.binding_type()),
         );
     }

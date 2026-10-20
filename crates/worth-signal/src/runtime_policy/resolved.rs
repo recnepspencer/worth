@@ -5,8 +5,8 @@ use super::definition::SignalRuntimePolicy;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ResolvedSignalRuntimePolicy {
-    pub(super) maximum_waiter_resolution_visits: usize,
-    pub(super) maximum_upstream_dependency_visits: usize,
+    pub(super) maximum_waiter_resolution_visits: Option<usize>,
+    pub(super) maximum_upstream_dependency_visits: Option<usize>,
     pub(super) conditional_evaluation_budget: super::SignalConditionalEvaluationBudget,
     pub(super) conditional_temporal_budget: super::SignalConditionalTemporalBudget,
     pub(super) execution_objective: worth_foundational::ExecutionObjectiveProfile,

@@ -11,7 +11,7 @@ pub(super) fn append_aspect(
     symbol: Symbol,
     record: &RecordRef,
     touches: &mut Vec<Touch>,
-    budget: &mut TouchBudget<'_, '_, '_, '_>,
+    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<bool, Failure> {
     let Some(aspect) = resolve_aspect(runtime, symbol, budget)? else {
         return Ok(false);
@@ -43,7 +43,7 @@ pub(super) fn append_field(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     difference: FieldDifference<'_>,
     touches: &mut Vec<Touch>,
-    budget: &mut TouchBudget<'_, '_, '_, '_>,
+    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<bool, Failure> {
     let FieldDifference {
         selected,
@@ -135,7 +135,7 @@ pub(super) fn append_field(
 fn resolve_aspect(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     symbol: Symbol,
-    budget: &mut TouchBudget<'_, '_, '_, '_>,
+    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<Option<AspectKey>, Failure> {
     budget.checkpoint(1)?;
     runtime.services.symbols.with_read(|symbols| {
@@ -151,7 +151,7 @@ fn resolve_aspect(
 fn resolve_field(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     symbol: Symbol,
-    budget: &mut TouchBudget<'_, '_, '_, '_>,
+    budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<Option<FieldKey>, Failure> {
     budget.checkpoint(1)?;
     runtime.services.symbols.with_read(|symbols| {

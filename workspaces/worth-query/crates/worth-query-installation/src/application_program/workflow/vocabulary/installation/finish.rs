@@ -39,7 +39,12 @@ where
                 Spec::IDENTITY.as_str(),
             )
         })?;
-        if self.operations.is_empty() || self.assessments.is_empty() || self.approvals.is_empty() {
+        if self.operations.is_empty()
+            && self.births.is_empty()
+            && self.assessments.is_empty()
+            && self.conditions.is_empty()
+            && self.approvals.is_empty()
+        {
             return Err(denial(
                 WorthQueryApplicationWorkflowInstallationDenialKind::EmptyVocabulary,
                 Spec::IDENTITY.as_str(),
@@ -54,6 +59,7 @@ where
             &instance_start_capability,
             &advance_capability,
             &self.operations,
+            &self.births,
             &self.assessments,
             &self.conditions,
             &self.approvals,
@@ -69,6 +75,7 @@ where
             instance_start_capability,
             advance_capability,
             operations: self.operations.into_boxed_slice(),
+            births: self.births.into_boxed_slice(),
             assessments: self.assessments.into_boxed_slice(),
             conditions: self.conditions.into_boxed_slice(),
             approvals: self.approvals.into_boxed_slice(),

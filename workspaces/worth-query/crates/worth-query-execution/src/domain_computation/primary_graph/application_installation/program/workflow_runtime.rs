@@ -9,6 +9,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec
 use super::WorthQueryProgramApplicationRuntime;
 
 mod authentication;
+mod registration;
 mod support;
 mod vocabulary;
 pub(crate) use authentication::workflow_approval_authentication_intent;
@@ -61,14 +62,7 @@ where
             if workflow.program_revision() != self.backing.program.revision() {
                 return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
             }
-            std::sync::Arc::get_mut(&mut self.backing)
-                .ok_or(WorthQueryWorkflowRuntimeBindingDenial::RuntimeKeepaliveRetained)?
-                .runtime
-                .workflow_coverage
-                .register(workflow.adoption_coverage())
-                .map_err(|_| {
-                    WorthQueryWorkflowRuntimeBindingDenial::ConflictingVocabularyCoverage
-                })?;
+            self.install_workflow_registration(&workflow, &authentication)?;
             Ok(())
         })();
         if let Err(denial) = binding {
@@ -215,6 +209,7 @@ where
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowRuntimeBindingDenial {
+    SigningOwner(super::WorthQuerySigningOwnerInstallationDenial),
     ForeignSchema,
     /// Installed runtime meaning cannot grow while dependent handles retain it.
     RuntimeKeepaliveRetained,

@@ -82,6 +82,10 @@ worth_query_application_contribution! {
             let schema = source_adjustment::declare_planar_source_adjustment(schema);
             let schema = initial_adjustment::declare_initial_adjustment(schema);
             let schema = final_output::declare_final_output(schema);
+            let schema = match Schema::PLANAR_EDIT_PROJECTION_WORK {
+                Some(work) => schema.operation_projection_work_budget(EditPlanar::reference::<Schema>(), work),
+                None => schema,
+            };
             base_model::declare(schema)
                 .operation(MutatePlanar::reference::<Schema>().definition().no_external_effect().no_aftermath().finish())
 
@@ -102,7 +106,6 @@ worth_query_application_contribution! {
                 .application_mutation_binding::<PlanarMutationBinding<Schema>>()
                 .operation(EditPlanar::reference::<Schema>().definition().no_external_effect().no_aftermath().finish())
 
-                .operation_projection_work_budget(EditPlanar::reference::<Schema>(), 8_192)
                 .operation_read_entity(EditPlanar::reference::<Schema>(), Body::reference::<Schema>())
                 .operation_read_field(EditPlanar::reference::<Schema>(), BodyKey::reference::<Schema>())
                 .operation_read_field(EditPlanar::reference::<Schema>(), PositionX::reference::<Schema>())

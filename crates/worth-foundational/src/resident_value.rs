@@ -97,3 +97,9 @@ impl<T: ChargedBytes> ChargedBytes for Box<T> {
             .saturating_add((**self).additional_charged_bytes())
     }
 }
+
+impl ChargedBytes for std::convert::Infallible {
+    fn additional_charged_bytes(&self) -> u64 {
+        match *self {}
+    }
+}

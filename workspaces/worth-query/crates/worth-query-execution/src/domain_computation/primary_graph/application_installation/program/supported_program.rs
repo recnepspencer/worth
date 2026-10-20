@@ -50,7 +50,7 @@ impl WorthQuerySupportedProgramRecord {
             action_bindings: installed
                 .actions()
                 .iter()
-                .filter_map(|action| action.mutation_binding_type())
+                .filter_map(|action| action.ordinary_mutation_binding_type())
                 .map(TypeId::from)
                 .collect(),
             output_source_bindings: output_source_bindings.into(),

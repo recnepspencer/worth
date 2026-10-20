@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_declaration::facade::application_operation::NoApplicationMutationOutputs;
 use worth_query_declaration::facade::application_operation::{
     ApplicationCandidateRequirements, ApplicationMutationBinding,
@@ -109,8 +110,8 @@ impl
         _: &ProgramRequiredInput,
     ) -> ApplicationCandidateRequirements {
         ProgramRequiredMutationBinding::CANDIDATES
-            .fixed_requirements()
-            .expect("fixed candidate contract")
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(
@@ -193,8 +194,7 @@ impl ApplicationMutationBinding<IdentityExecutionSchema> for ProgramRequiredSibl
     const HANDLER_IDENTITY: &'static str = "worth.query.test.program-required-sibling-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::IDEMPOTENCY_IDENTITY;
-    const CANDIDATES:
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+    const CANDIDATES: ApplicationCandidatePolicy =
         <Sibling as ApplicationMutationBinding<IdentityExecutionSchema>>::CANDIDATES;
 
     fn scope_field() -> worth_query_declaration::facade::application_schema::ApplicationFieldRef<

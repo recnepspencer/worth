@@ -22,7 +22,7 @@ pub(crate) fn status_integrity_invariant(
     ApplicationInvariantDefinition::new(
         WorthUiStatusIntegrity::reference(),
         ApplicationInvariantExecutionPoint::CommitBoundary,
-        RelationalInvariantWorkBudget::new(NonZeroU64::new(64).expect("non-zero UI work budget")),
+        RelationalInvariantWorkBudget::new(NonZeroU64::new(64)),
         ApplicationInvariantOperationalContract::new(
             ApplicationInvariantEnforcement::BlockCommit,
             [ApplicationInvariantGroup::SchemaCompliance],

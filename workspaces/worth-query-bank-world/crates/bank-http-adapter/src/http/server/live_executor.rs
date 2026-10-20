@@ -274,7 +274,7 @@ where
         scope,
         request.source_buffer_capacity,
         request.controls.maximum_results,
-        request.controls.maximum_work,
+        Some(request.controls.maximum_work),
     ) {
         Ok(controls) => controls,
         Err(_) => {

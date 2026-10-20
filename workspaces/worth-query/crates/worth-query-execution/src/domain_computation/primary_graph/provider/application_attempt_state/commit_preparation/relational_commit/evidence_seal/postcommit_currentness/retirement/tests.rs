@@ -285,7 +285,7 @@ fn normal_rebase(
                 super::super::PreparedSourceFactRebase::admit(facts, [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(),
                 &BTreeSet::new(),
                 true,
-                64,
+                Some(64),
                 &mut admission(),
             ))
         })
@@ -305,8 +305,8 @@ fn admission(
 {
     crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(
         worth_relational::facade::mvcc::CompanionPreflightBudget {
-            maximum_work_visits: 64,
-            maximum_preparation_bytes: 1024 * 1024,
+            maximum_work_visits: Some(64),
+            maximum_preparation_bytes: None,
         },
     )
 }
@@ -338,7 +338,7 @@ fn selection(
                         .graph
                         .source_owner
                         .invalidation_owner
-                        .edit_admission_within(std::num::NonZeroUsize::new(64).unwrap()),
+                        .edit_admission_with_work_limit(Some(64)),
                 )
                 .unwrap(),
                 OutputDependencySelection::Reuse

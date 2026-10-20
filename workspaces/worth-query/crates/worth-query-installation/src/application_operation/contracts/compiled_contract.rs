@@ -1,7 +1,8 @@
 use worth_foundational::facade::CanonicalDigestWorkBudget;
 use worth_query_declaration::facade::application_operation::{
-    ApplicationCandidateContract, ApplicationCandidateRequirements,
+    ApplicationCandidatePolicy, ApplicationCandidateRequirements,
 };
+use worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram;
 
 use crate::application_aftermath::{
     InstalledExternalEffectContract, WorthQueryInstalledAftermathContract,
@@ -24,6 +25,8 @@ use crate::domain_operation::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryCompiledApplicationOperationContracts {
+    pub(super) signing_lifecycle: super::SigningLifecycleClosure,
+    pub(super) body: Option<ApplicationOperationBodyProgram>,
     pub(super) authorization: WorthQueryInstalledApplicationOperationAuthorization,
     pub(super) ability_requirements: Vec<WorthQueryInstalledAbilityRequirement>,
     pub(super) graph_reads: WorthQueryOperationGraphReadContract,
@@ -34,21 +37,36 @@ pub struct WorthQueryCompiledApplicationOperationContracts {
     pub(super) decision_facts: WorthQueryOperationDecisionFactContract,
     pub(super) invariant_execution: WorthQueryInvariantExecutionContract,
     pub(super) resources: WorthQueryExecutionResourceContract,
-    pub(super) projection_work_budget: usize,
+    pub(super) projection_work_budget: Option<usize>,
     pub(super) additional_authorization_fact_count: usize,
     pub(super) mutation_preconditions: Vec<WorthQueryInstalledMutationPrecondition>,
     pub(super) execution_posture: WorthQueryInstalledApplicationOperationExecutionPosture,
     pub(super) external_effect: InstalledExternalEffectContract,
     pub(super) aftermath: Option<WorthQueryInstalledAftermathContract>,
     pub(super) overlap_index: WorthQueryOperationReadTouchOverlapIndex,
-    pub(super) platform_candidate_ceiling: Option<ApplicationCandidateContract>,
+    pub(super) platform_candidate_ceiling: Option<ApplicationCandidatePolicy>,
     pub(super) workflow_settlement_ceiling: Option<ApplicationCandidateRequirements>,
 }
 
 impl WorthQueryCompiledApplicationOperationContracts {
+    /// Native publication closure; it does not enlarge a product handler's writer contract.
+    pub fn publication_touches(&self) -> &WorthQueryOperationTouchContract {
+        &self.signing_lifecycle.publication_touches
+    }
+    pub fn signing_lifecycle_rules(&self) -> &[super::WorthQueryInstalledSigningLifecycleRule] {
+        &self.signing_lifecycle.rules
+    }
+    pub fn signing_lifecycle_ceiling(&self) -> Option<ApplicationCandidateRequirements> {
+        self.signing_lifecycle.ceiling
+    }
+    /// Installed executable meaning; advanced callers cannot replace this body.
+    pub const fn body(&self) -> Option<&ApplicationOperationBodyProgram> {
+        self.body.as_ref()
+    }
+
     /// The componentwise maximum declared by installed mutation bindings for
     /// this operation. Query-owned platform effects cannot exceed these kinds.
-    pub const fn platform_candidate_ceiling(&self) -> Option<ApplicationCandidateContract> {
+    pub const fn platform_candidate_ceiling(&self) -> Option<ApplicationCandidatePolicy> {
         self.platform_candidate_ceiling
     }
 
@@ -157,7 +175,7 @@ impl WorthQueryCompiledApplicationOperationContracts {
         Some(strategy)
     }
 
-    pub const fn projection_work_budget(&self) -> usize {
+    pub const fn projection_work_budget(&self) -> Option<usize> {
         self.projection_work_budget
     }
 

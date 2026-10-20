@@ -10,6 +10,7 @@ use super::{
 };
 
 mod portable_parts;
+mod target;
 pub use portable_parts::{
     WorthQueryPortableApplicationCapabilityConstraintParts,
     WorthQueryPortableApplicationCapabilityDelegationParts,
@@ -17,6 +18,7 @@ pub use portable_parts::{
     WorthQueryPortableApplicationCapabilityRelationBindingParts,
     WorthQueryPortableApplicationCapabilityValueBindingParts,
 };
+pub use target::ApplicationCapabilityTargetDefinition;
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationCapabilityFieldBinding {
@@ -178,53 +180,6 @@ pub enum ApplicationCapabilityCardinalityDimension {
     One,
     Many,
     Bounded(u32),
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub struct ApplicationCapabilityTargetDefinition {
-    action: ApplicationCapabilityValueBinding,
-    resource: ApplicationCapabilityRelationBinding,
-    relation: ApplicationCapabilityRelationDimension,
-    field: ApplicationCapabilityFieldDimension,
-    purpose: ApplicationCapabilityValueBinding,
-}
-
-impl ApplicationCapabilityTargetDefinition {
-    pub fn new(
-        action: ApplicationCapabilityValueBinding,
-        resource: ApplicationCapabilityRelationBinding,
-        relation: ApplicationCapabilityRelationDimension,
-        field: ApplicationCapabilityFieldDimension,
-        purpose: ApplicationCapabilityValueBinding,
-    ) -> Self {
-        Self {
-            action,
-            resource,
-            relation,
-            field,
-            purpose,
-        }
-    }
-
-    pub fn action(&self) -> &ApplicationCapabilityValueBinding {
-        &self.action
-    }
-
-    pub fn resource(&self) -> &ApplicationCapabilityRelationBinding {
-        &self.resource
-    }
-
-    pub const fn relation(&self) -> &ApplicationCapabilityRelationDimension {
-        &self.relation
-    }
-
-    pub const fn field(&self) -> &ApplicationCapabilityFieldDimension {
-        &self.field
-    }
-
-    pub fn purpose(&self) -> &ApplicationCapabilityValueBinding {
-        &self.purpose
-    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]

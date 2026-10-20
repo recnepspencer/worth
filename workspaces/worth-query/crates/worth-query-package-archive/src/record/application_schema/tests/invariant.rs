@@ -44,10 +44,34 @@ fn invariant_archive_preserves_every_operational_axis_and_canonical_identity() {
         else {
             unreachable!()
         };
-        *maximum_work_units = NonZeroU64::new(8193).unwrap();
+        *maximum_work_units = Some(NonZeroU64::new(8193).unwrap());
         let changed = validate_portable_application_schema_freshly(schema(changed)).unwrap();
         assert_ne!(expected.identity(), changed.identity());
     }
+}
+
+#[test]
+fn invariant_archive_preserves_absent_work_ceiling_without_reinterpreting_finite_tag() {
+    let finite = invariant(
+        Point::CommitBoundary,
+        Enforcement::BlockCommit,
+        Cost::Touched,
+    );
+    let mut unlimited = finite.clone();
+    let ApplicationSchemaMember::ApplicationInvariant {
+        maximum_work_units, ..
+    } = &mut unlimited
+    else {
+        unreachable!()
+    };
+    *maximum_work_units = None;
+    let bytes = encode_member(&unlimited);
+    assert_eq!(&bytes[..2], &34_u16.to_be_bytes());
+    assert_eq!(decode_member(&bytes), unlimited);
+    assert_eq!(encode_member(&decode_member(&bytes)), bytes);
+    let finite = validate_portable_application_schema_freshly(schema(finite)).unwrap();
+    let unlimited = validate_portable_application_schema_freshly(schema(unlimited)).unwrap();
+    assert_ne!(finite.identity(), unlimited.identity());
 }
 
 #[test]
@@ -97,7 +121,7 @@ fn invariant(
         major: 7,
         minor: 3,
         execution_point: point,
-        maximum_work_units: NonZeroU64::new(8192).unwrap(),
+        maximum_work_units: Some(NonZeroU64::new(8192).unwrap()),
         enforcement,
         required_groups: vec![
             Group::StorageCoherence,

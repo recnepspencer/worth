@@ -58,11 +58,12 @@ impl ApplicationMutationBinding<CanonicalSchema> for ProduceBinding {
     const IDENTITY: &'static str = "canonical-transition.produce.binding.v1";
     const HANDLER_IDENTITY: &'static str = super::output::HANDLER_IDENTITY;
     const IDEMPOTENCY_IDENTITY: &'static str = "canonical-transition.produce.command.v1";
-    const CANDIDATES:
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(3, 0, 2, 0, 6, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(65_536),
+    const CANDIDATES: worth_query_decl::facade::application_operation::ApplicationCandidatePolicy =
+        worth_query_decl::facade::application_operation::ApplicationCandidatePolicy::finite(
+            ApplicationCandidateRequirements::fixed_shape(
+                ApplicationCandidateCardinalityCeiling::fixed(3, 0, 2, 0, 6, 0),
+                ApplicationCandidateResourceCeiling::representation_bytes(65_536),
+            ),
         );
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
@@ -124,7 +125,7 @@ impl OperationHandler<CanonicalSchema, ProduceBinding> for Handler {
         _: &NestedValue,
     ) -> ApplicationCandidateRequirements {
         ProduceBinding::CANDIDATES
-            .fixed_requirements()
+            .finite_requirements()
             .expect("fixed candidate contract")
     }
     fn build_candidate(
@@ -222,7 +223,13 @@ impl WorthQueryApplicationProducerProvider<CanonicalSchema, Producer> for Provid
     fn idempotency_key(&self, _: &NestedValue, identity: &[u8; 32]) -> u64 {
         u64::from_le_bytes(identity[..8].try_into().unwrap())
     }
-    fn demand_resources(&self, _: &NestedValue) -> WorthQueryProducerDemandResources {
-        WorthQueryProducerDemandResources::new(4096, 65_536)
+    fn demand_resources(
+        &self,
+        _: &NestedValue,
+    ) -> Result<
+        WorthQueryProducerDemandResources,
+        worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial,
+    > {
+        Ok(WorthQueryProducerDemandResources::new(Some(4096), 65_536))
     }
 }

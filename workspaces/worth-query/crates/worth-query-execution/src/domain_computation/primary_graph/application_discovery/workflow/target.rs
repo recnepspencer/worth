@@ -5,13 +5,10 @@ use super::{
     view::WorthQueryWorkflowReadBasis,
 };
 use crate::domain_computation::primary_graph::{
-    application_attempt::{
-        observe_adjacency, observe_field_value_borrowed, WorthQueryApplicationAdjacencyDirection,
-    },
+    application_attempt::{observe_adjacency, WorthQueryApplicationAdjacencyDirection},
     output_lineage::invalidation::InvalidationEditAdmission,
     WorthQueryAdvancementPhase, WorthQuerySelectedProductOperation,
 };
-use worth_foundational::facade::AspectValue;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
@@ -116,35 +113,10 @@ impl WorthQueryWorkflowReadTarget {
             .with_runtime(&execution, |runtime| {
                 let layout = graph.layout().workflow();
                 let snapshot = data.application_basis().snapshot_handle();
-                for (field, value) in [
-                    (
-                        &layout.instance.subject_partition,
-                        self.subject.partition_value_u64(),
-                    ),
-                    (
-                        &layout.instance.subject_slot,
-                        self.subject.local_slot_value(),
-                    ),
-                    (
-                        &layout.instance.subject_generation,
-                        u64::from(self.subject.generation_value()),
-                    ),
-                ] {
-                    if observe_field_value_borrowed(
-                        runtime,
-                        &execution,
-                        snapshot,
-                        self.instance,
-                        layout.instance.entity_kind,
-                        field,
-                        |v| v == Some(&AspectValue::UInt64(value)),
-                    )
-                    .map_err(Denial::Relational)?
-                        != Some(true)
-                    {
-                        return Err(Denial::Corrupt);
-                    }
-                }
+                let mut facts = Vec::new();
+                crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::observe_subject(
+                    &execution, runtime, snapshot, layout, self.instance, self.subject, &mut facts,
+                ).map_err(Denial::Execution)?;
                 let relations = observe_adjacency(
                     runtime,
                     &execution,

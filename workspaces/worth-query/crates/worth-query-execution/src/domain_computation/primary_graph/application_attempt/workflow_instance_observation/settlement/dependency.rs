@@ -7,6 +7,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_relational::facade::identity::{EntityId, KindId, PartitionId, VersionId};
 
 use super::{denial, observed_text, observed_u64};
+mod aspect_presence;
 mod traversal;
 use crate::domain_computation::primary_graph::application_attempt::{
     observation::{observe_field, WorthQueryApplicationFieldObservation},
@@ -200,6 +201,23 @@ fn observe_dependency(
                 entity_id: entity,
                 kind,
             })
+        }
+        Some(
+            presence @ (WorkflowEvidenceDependencyKind::AspectPresent
+            | WorkflowEvidenceDependencyKind::AspectAbsent),
+        ) if field.is_none()
+            && field_presence.is_none()
+            && relation_kind.is_none()
+            && direction.is_none()
+            && native_revision.is_none()
+            && comparison_work_limit.is_none() =>
+        {
+            aspect_presence::decode(
+                entity,
+                aspect,
+                native_entity_kind,
+                matches!(presence, WorkflowEvidenceDependencyKind::AspectPresent),
+            )
         }
         Some(WorkflowEvidenceDependencyKind::AspectRevision)
             if native_entity_kind.is_none()

@@ -2,24 +2,25 @@ use super::callback::SignalPrecompute;
 use super::eligibility::{prevalidate_stage_tasks, PrevalidatedTask};
 use super::TemporalLoweringContext;
 use crate::data::comparator::ComparatorPolicyResolver;
-use crate::data::error::{SignalError, SignalExecutionStop, SignalPublicationDisposition};
+use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
 use crate::data::proof::invalidation::progression::DisjointGraphBatch;
 use crate::data::request_preparation::{self as preparation_budget, SignalPreparationBudget};
 use crate::logic::planner::execution::{AdmittedEpoch, EpochMetadata};
 use crate::logic::planner::types::{EligibleTask, ResolvedSignalPlannerPolicy};
 use crate::logic::prepared::{ExecutionSnapshot, PreparedEvaluation};
-use worth_execution::{MapKernelContext, MapKernelFailure, MapOutcome};
+use worth_execution::MapKernelContext;
 
 mod capacity;
 mod map_declaration;
 pub(super) use capacity::{checked_map_memory_requirement, PrecomputeMapBasis};
-use map_declaration::lower_checked_map;
+mod result_custody;
 
 pub(super) enum PreparedEpoch<'tasks, 'request, 'authority> {
     Checked {
         metadata: EpochMetadata<'tasks>,
         values: Vec<PreparedEvaluation>,
+        result_memory: Vec<worth_execution::ExecutionMemoryReservation>,
         batch: DisjointGraphBatch,
         request: worth_execution::ExecutionRequest<'request, 'authority>,
         apply: super::graph_batch::CheckedApplyCapacity,
@@ -73,7 +74,6 @@ pub(super) fn prepare_epoch<'tasks, 'request, 'authority>(
             );
         }
     };
-    let request = checked.request();
     let batch = super::graph_batch::admit(
         graph,
         checked.tasks(),
@@ -82,84 +82,63 @@ pub(super) fn prepare_epoch<'tasks, 'request, 'authority>(
         request_work.as_deref_mut(),
         preparation.as_deref_mut(),
     )?;
-    let prepared_map = crate::logic::planner::apply::stage::prepare_checked_apply_map(
-        checked.tasks(),
-        &batch,
-        checked.apply_capacity(),
-        checked.request(),
-        policy,
-        request_work.as_deref_mut(),
-        preparation.as_deref_mut(),
-    )?;
-    let candidates = graph.prepare_candidate_epoch(
-        checked.tasks().iter().map(|task| task.node),
-        checked.result_grant_bytes(),
-        if checked.tasks().len() < policy.full_parallel_min_tasks() {
-            worth_foundational::ExecutionPosture::Serial
-        } else {
-            request.resolved_posture()
-        },
-        request,
-        request_work
-            .as_deref_mut()
-            .expect("checked request has work"),
-        preparation
-            .as_deref_mut()
-            .expect("checked request has preparation"),
-    )?;
-    let map = lower_checked_map(
+    let (computed, execution) = result_custody::compute(
         graph,
         &validated,
         &batch,
         &checked,
+        precompute,
+        policy,
         request_work.as_deref_mut(),
-        preparation.as_deref_mut(),
+        preparation
+            .as_deref_mut()
+            .expect("checked preparation owner"),
     )?;
-    let snapshot = ExecutionSnapshot::new(graph);
-    let posture = if map.partition_count() < policy.parallel_min_tasks() {
-        worth_foundational::ExecutionPosture::Serial
-    } else {
-        request.resolved_posture()
-    };
-    let map =
-        crate::data::prepared_request_map::PreparedRequestMap::prepare(map, request, posture)?;
-    let outcome = map.run(|item, work| {
-        let task = &checked.tasks()[item.task_index];
-        work.checkpoint(1).map_err(MapKernelFailure::Stop)?;
-        let view = snapshot.read_view(task.node);
-        precompute
-            .prepare(task.node, &view, work, Some(item.capacity))
-            .map_err(MapKernelFailure::Domain)
-    });
-    let (computed, execution) = match outcome {
-        MapOutcome::Complete { values, report } => (values, report),
-        MapOutcome::Stopped {
-            boundary,
-            reason,
-            report,
-            ..
-        } => {
-            return Err(SignalError::execution_stopped(SignalExecutionStop::new(
-                reason.into(),
-                boundary,
-                SignalPublicationDisposition::WorkerLocal,
-                report,
-            )));
-        }
-    };
+    let result_custody::ComputedValues {
+        values: computed,
+        memory: result_memory,
+    } = computed;
     let values = reconcile_prepared_values(
         graph,
         checked.tasks(),
         validated,
         computed,
-        request_work,
+        request_work.as_deref_mut(),
         preparation.as_deref_mut(),
     )?;
+    let measured_result_bytes = result_custody::measure_result_maximum(
+        &values,
+        request_work.as_deref_mut().expect("checked request work"),
+    )?;
+    let (metadata, request, apply) = checked.into_prepared_parts(measured_result_bytes)?;
+    let prepared_map = crate::logic::planner::apply::stage::prepare_checked_apply_map(
+        metadata.tasks(),
+        &batch,
+        &apply,
+        request,
+        policy,
+        request_work.as_deref_mut(),
+        preparation.as_deref_mut(),
+    )?;
+    let candidates = graph.prepare_candidate_epoch(
+        metadata.tasks().iter().map(|task| task.node),
+        measured_result_bytes,
+        if metadata.tasks().len() < policy.full_parallel_min_tasks() {
+            worth_foundational::ExecutionPosture::Serial
+        } else {
+            request.resolved_posture()
+        },
+        request,
+        request_work.expect("checked request work"),
+        preparation
+            .as_deref_mut()
+            .expect("checked preparation owner"),
+    )?;
     preparation_budget::claim_vec::<worth_foundational::ExecutionReport>(preparation, 1)?;
-    let (metadata, request, apply) = checked.into_prepared_parts();
     Ok(PreparedEpoch::Checked {
         metadata,
         values,
+        result_memory,
         batch,
         request,
         apply,

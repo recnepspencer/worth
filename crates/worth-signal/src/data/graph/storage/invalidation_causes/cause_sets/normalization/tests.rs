@@ -36,7 +36,7 @@ fn normalization_preserves_first_duplicate_and_shared_work() {
                 .or_insert_with(|| cause.clone());
         }
         let expected: Vec<_> = oracle.into_values().collect();
-        let mut measured = Work::new(usize::MAX);
+        let mut measured = Work::new(None);
         let actual = NormalizedCauseSet::prepare(
             input.clone(),
             &mut EvaluationWork::Conditional(&mut measured),
@@ -45,7 +45,7 @@ fn normalization_preserves_first_duplicate_and_shared_work() {
         assert_eq!(&*actual, expected.as_slice());
         let cost = measured.visits();
         for available in [cost - 1, cost] {
-            let mut work = Work::new(cost + 9);
+            let mut work = Work::new(Some(cost + 9));
             work.reserve_visits(cost + 9 - available).unwrap();
             let result = NormalizedCauseSet::prepare(
                 input.clone(),

@@ -131,11 +131,11 @@ pub(super) fn result_copies(fanout: usize) -> Result<u64, SignalError> {
 
 pub(super) struct CapacityDenial {
     pub required: u64,
-    pub reserved: u64,
+    pub reserved: Option<u64>,
 }
 
 pub(super) fn choose_grant(
-    available: u64,
+    available: Option<u64>,
     fixed: u64,
     copies: u64,
     width: usize,
@@ -149,7 +149,10 @@ pub(super) fn choose_grant(
     precompute_bases: &[PrecomputeMapBasis],
     precompute_basis: &PrecomputeMapBasis,
     mut request: Option<&mut MapKernelContext<'_, '_>>,
-) -> Result<Result<u64, CapacityDenial>, SignalError> {
+) -> Result<Result<Option<u64>, CapacityDenial>, SignalError> {
+    let Some(available) = available else {
+        return Ok(Ok(None));
+    };
     let minimum = combined_map_requirement(
         bases,
         basis,
@@ -163,7 +166,7 @@ pub(super) fn choose_grant(
     )
     .ok_or_else(overflow)?;
     let lease_bytes = lease.memory_limit();
-    if minimum > lease_bytes {
+    if lease_bytes.is_some_and(|bytes| minimum > bytes) {
         return Ok(Err(CapacityDenial {
             required: minimum,
             reserved: lease_bytes,
@@ -172,7 +175,7 @@ pub(super) fn choose_grant(
     if fixed > available {
         return Ok(Err(CapacityDenial {
             required: fixed.max(available.saturating_add(1)),
-            reserved: available,
+            reserved: Some(available),
         }));
     }
     let mut lower = 0_u64;
@@ -203,7 +206,7 @@ pub(super) fn choose_grant(
                         lease,
                         candidate_lease,
                     )
-                    .is_some_and(|bytes| bytes <= lease_bytes)
+                    .is_some_and(|bytes| lease_bytes.is_none_or(|limit| bytes <= limit))
             });
         if fits {
             lower = middle;
@@ -226,7 +229,7 @@ pub(super) fn choose_grant(
                         })
                         .and_then(|variable| fixed.checked_add(variable))
                 })
-                .unwrap_or(u64::MAX);
+                .ok_or_else(overflow)?;
         let map_required = combined_map_requirement(
             bases,
             basis,
@@ -238,15 +241,15 @@ pub(super) fn choose_grant(
             lease,
             candidate_lease,
         )
-        .unwrap_or(u64::MAX);
+        .ok_or_else(overflow)?;
         let (required, reserved) = if preparation_required > available {
-            (preparation_required, available)
+            (preparation_required, Some(available))
         } else {
             (map_required, lease_bytes)
         };
         return Ok(Err(CapacityDenial { required, reserved }));
     }
-    Ok(Ok(lower))
+    Ok(Ok(Some(lower)))
 }
 
 fn combined_map_requirement(
@@ -266,13 +269,8 @@ fn combined_map_requirement(
         candidate_map_memory_requirement(candidate_bases, candidate_basis, grant, child_lease)?;
     let precompute =
         checked_map_memory_requirement(precompute_bases, precompute_basis, grant, child_lease)?;
-    // The enclosing Signal scan holds both declared memory allowances while
-    // these two prepared tickets coexist. Its generic framework context is
-    // checked again by the authoritative pre-callback prepare_run calls.
-    let request_memory = request_lease.memory_limit();
-    let held_request = request_memory / 8 + request_memory / 8;
-    held_request
-        .checked_add(apply)?
-        .checked_add(candidates)?
-        .checked_add(precompute)
+    // The request scan returns unit. Its actual preparation is held by the
+    // request reservation, independently of these finite operation shapes.
+    let _ = request_lease;
+    apply.checked_add(candidates)?.checked_add(precompute)
 }

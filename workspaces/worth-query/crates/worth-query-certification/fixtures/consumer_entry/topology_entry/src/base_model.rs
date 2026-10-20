@@ -12,6 +12,7 @@ pub trait TopologySchemaBinding: ApplicationSchema {
     /// Isolated consumer variants can require the real planar producer binding
     /// to belong to their application program; existing schemas keep their policy.
     const PLANAR_REQUIRES_APPLICATION_PROGRAM: bool = false;
+    const PLANAR_EDIT_PROJECTION_WORK: Option<usize> = Some(8_192);
     fn planar_invariant_work() -> u64 {
         super::planar_topology::PLANAR_CHECKED_WORK
     }

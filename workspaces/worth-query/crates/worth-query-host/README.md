@@ -68,8 +68,7 @@ construction returns `WorthQueryProgramApplicationRuntime<Schema, Program>`.
 `WorthQueryInMemoryApplicationLimits::new` accepts World resources, an application
 candidate profile, an application query profile, and a conditional evaluation
 budget. Candidate cardinality and retained representation bytes remain distinct
-bounds; `WorthQueryApplicationCandidateResourceProfile::physical_resources(items,
-bytes)` configures those existing capacities. Installed handlers implement `decide`,
+bounds; `WorthQueryApplicationCandidateResourceProfile::policy(Some(items), Some(bytes))` configures those existing capacities. Installed handlers implement `decide`,
 `candidate_requirements`, and `build_candidate`: decision reads retain facts,
 reservation precedes candidate allocation, and the candidate is checked with its
 affected untouched neighbors before atomic publication. A request does not retain
@@ -568,6 +567,15 @@ Query and Execution owners. This cold serial journey does not establish parallel
 worker equivalence or replace warm reconciliation and entry refresh.
 
 ## Typed Handler And Invariant Access
+
+For literal guards and assignments on required scope fields, prefer an
+[executable scope-field body](../worth-query/docs/authoring/scope-field-operation-bodies.md).
+Attach its completed typed body to the operation definition, bind that schema
+into program authoring, and call `setup.operation_body::<Binding>()`. Query owns
+the installed values and native execution; ordinary handler registration cannot
+replace them. This bounded form does not yet cover creations, general expressions,
+audit construction, requirements or command composition. Advanced handlers remain
+honest advanced operations, not a way to claim those missing declarative joins.
 
 Installed mutation handlers use `DecisionReader` for tracked typed field and
 relation reads and `CandidateWriter` for the one reserved effect program. The

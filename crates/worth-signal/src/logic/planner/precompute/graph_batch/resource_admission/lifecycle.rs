@@ -9,7 +9,7 @@ use crate::data::error::SignalError;
 use crate::data::request_preparation::SignalPreparationBudget;
 
 use super::candidate_selection::CapacityDenial;
-use super::{CheckedApplyCapacity, CheckedEpochAdmissionGrant, ResourceAdmission};
+use super::{CheckedEpochAdmissionGrant, ResourceAdmission};
 
 impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
     pub(super) fn decline_capacity(&self, denial: CapacityDenial) -> Result<bool, SignalError> {
@@ -56,7 +56,7 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
             node_root_growth: 0,
             cause_transition_count: 0,
             width: 0,
-            result_grant_bytes: 0,
+            result_grant_bytes: None,
             declared_result_minimum: 0,
             lease,
             candidate_lease,
@@ -72,7 +72,7 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
         Ok(CheckedEpochAdmissionGrant::new(
             self.width,
             self.result_grant_bytes,
-            CheckedApplyCapacity::from_bases(self.apply_bases, self.result_grant_bytes)?,
+            self.apply_bases,
         ))
     }
 }

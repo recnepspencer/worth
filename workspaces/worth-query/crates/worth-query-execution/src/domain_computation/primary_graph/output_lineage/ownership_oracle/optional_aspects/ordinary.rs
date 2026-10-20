@@ -70,7 +70,7 @@ pub(super) fn commit<Schema: BirthSchema>(
                     ApplicationQueryParameterSet::new(),
                     WorthQueryProductQueryControls::new(
                         NonZeroUsize::new(1).unwrap(),
-                        NonZeroUsize::new(100_000).unwrap(),
+                        Some(NonZeroUsize::new(100_000).unwrap()),
                         &request,
                     ),
                 )
@@ -197,7 +197,7 @@ pub(super) fn required_read_refuses(
                     ApplicationQueryParameterSet::new(),
                     WorthQueryProductQueryControls::new(
                         NonZeroUsize::new(1).unwrap(),
-                        NonZeroUsize::new(100_000).unwrap(),
+                        Some(NonZeroUsize::new(100_000).unwrap()),
                         &request,
                     ),
                 )

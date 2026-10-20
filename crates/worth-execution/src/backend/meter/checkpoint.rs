@@ -1,6 +1,68 @@
 use super::{KernelContext, KernelMeter, KernelStop, NestedStopOwner};
 
 impl KernelContext<'_, '_> {
+    /// Account work completed by a domain-local checked meter after it stops.
+    /// This does not authorize new work or clear the original stop; it keeps
+    /// cancellation/deadline reports faithful to work already performed.
+    pub fn account_completed_work(&mut self, units: u64) -> Result<(), KernelStop> {
+        if let Some(capture) = &mut self.meter.borrow_mut().capture {
+            capture.invalidate();
+        }
+        if units > 0 {
+            crate::authority::consult_observation::charged_prefix(|| {
+                super::ACTIVE_METER.with(|active| {
+                    active
+                        .borrow()
+                        .iter()
+                        .try_fold(units, |sum, meter| sum.checked_add(meter.borrow().work))
+                        .unwrap_or(u64::MAX)
+                })
+            });
+        }
+        let mut meter = self.meter.borrow_mut();
+        let result = (|| {
+            let next = meter
+                .work
+                .checked_add(units)
+                .ok_or(KernelStop::WorkCounterOverflow)?;
+            let span = meter
+                .span
+                .checked_add(units)
+                .ok_or(KernelStop::WorkCounterOverflow)?;
+            if meter.limits.ceiling.is_some_and(|ceiling| next > ceiling) {
+                return Err(KernelStop::WorkCeiling);
+            }
+            meter.work = next;
+            meter.span = span;
+            Ok(())
+        })();
+        if let Err(stop) = result {
+            meter.checkpoint_stop.get_or_insert(stop);
+            if stop == KernelStop::WorkCounterOverflow
+                || meter.limits.ceiling_owner == NestedStopOwner::Request
+            {
+                meter.nested_stop.record(NestedStopOwner::Request);
+            }
+        }
+        result
+    }
+
+    /// Work units charged to this kernel's existing meter.
+    pub fn charged_work(&self) -> u64 {
+        self.meter.borrow().work
+    }
+
+    pub fn remaining_work(&self) -> Option<u64> {
+        let mut meter = self.meter.borrow_mut();
+        if let Some(capture) = &mut meter.capture {
+            capture.invalidate();
+        }
+        meter
+            .limits
+            .ceiling
+            .map(|ceiling| ceiling.saturating_sub(meter.work))
+    }
+
     /// Kernel checkpoint enforces the local remaining ceiling before work is
     /// done, while canonical settlement determines the accepted prefix.
     pub fn checkpoint(&mut self, units: u64) -> Result<(), KernelStop> {
@@ -64,7 +126,7 @@ impl KernelContext<'_, '_> {
                 .work
                 .checked_add(units)
                 .ok_or(KernelStop::WorkCounterOverflow)?;
-            if next > meter.limits.ceiling {
+            if meter.limits.ceiling.is_some_and(|ceiling| next > ceiling) {
                 return Err(KernelStop::WorkCeiling);
             }
             let span = meter

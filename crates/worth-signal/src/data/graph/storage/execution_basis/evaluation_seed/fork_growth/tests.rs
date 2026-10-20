@@ -31,7 +31,7 @@ fn ledger(bytes: u64) -> std::sync::Arc<Ledger> {
         SignalConditionalEvaluationBudget {
             maximum_retained_slots: 1,
             maximum_retained_bytes: bytes,
-            maximum_attempt_visits: 1_000_000,
+            maximum_attempt_visits: Some(1_000_000),
         },
         crate::runtime_policy::SignalConditionalTemporalBudget {
             maximum_live_partitions: 1,
@@ -47,25 +47,25 @@ fn topology_conversion_growth_is_bounded_and_matches_cold_storage_evidence() {
         let mut graph = graph(population);
         graph
             .topology
-            .prepare_fork_charge(&mut Work::new(1_000_000))
+            .prepare_fork_charge(&mut Work::new(Some(1_000_000)))
             .unwrap();
         let before = graph
             .topology
-            .retained_heap_charge(&mut Work::new(1_000_000))
+            .retained_heap_charge(&mut Work::new(Some(1_000_000)))
             .unwrap();
-        let mut work = Work::new(1_000_000);
+        let mut work = Work::new(Some(1_000_000));
         let growth = graph.topology.prepare_fork_growth(&mut work).unwrap();
         profiles.push((growth, work.visits()));
         assert!(graph
             .topology
-            .prepare_fork_growth(&mut Work::new(work.visits() - 1))
+            .prepare_fork_growth(&mut Work::new(Some(work.visits() - 1)))
             .is_err());
         let denied = ledger(growth.bytes() + std::mem::size_of::<Reservation>() as u64 - 1);
         assert!(denied.reserve(0, growth).is_err());
         assert_eq!(
             graph
                 .topology
-                .retained_heap_charge(&mut Work::new(1_000_000))
+                .retained_heap_charge(&mut Work::new(Some(1_000_000)))
                 .unwrap(),
             before
         );
@@ -75,14 +75,14 @@ fn topology_conversion_growth_is_bounded_and_matches_cold_storage_evidence() {
         drop(resources);
         let after = graph
             .topology
-            .retained_heap_charge(&mut Work::new(1_000_000))
+            .retained_heap_charge(&mut Work::new(Some(1_000_000)))
             .unwrap();
         assert_eq!(after.checked_sub(before).unwrap(), growth);
         assert_eq!(ledger.usage().1, growth.bytes());
         assert_eq!(
             graph
                 .topology
-                .prepare_fork_growth(&mut Work::new(100_000))
+                .prepare_fork_growth(&mut Work::new(Some(100_000)))
                 .unwrap(),
             Charge::ZERO
         );
@@ -99,16 +99,16 @@ fn evaluation_root_reserved_fork_preserves_payload_and_conversion_custody() {
     let mut graph = graph(8);
     let basis = crate::data::graph::storage::execution_basis::SignalExecutionBasis::capture(
         &mut graph,
-        &mut Work::new(1_000_000),
+        &mut Work::new(Some(1_000_000)),
     )
     .unwrap();
     let mut source = basis.evaluation;
     source
-        .prepare_mutable_heap_charge(&mut Work::new(1_000_000))
+        .prepare_mutable_heap_charge(&mut Work::new(Some(1_000_000)))
         .unwrap();
     let before = source.diagnostics_for_test();
     let growth = source
-        .prepare_fork_growth(&mut Work::new(1_000_000))
+        .prepare_fork_growth(&mut Work::new(Some(1_000_000)))
         .unwrap();
     let ledger = ledger(growth.bytes() + std::mem::size_of::<Reservation>() as u64);
     let mut resources = ledger.reserve(0, growth).unwrap();

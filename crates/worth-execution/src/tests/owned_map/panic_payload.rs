@@ -74,7 +74,13 @@ fn owned_destructor_contains_panicking_payload_on_every_cleanup_path() {
             assert_eq!(drops.load(Ordering::SeqCst), count);
             assert_eq!(payloads.load(Ordering::SeqCst), count);
             assert!(lease
-                .reserve_memory(lease.policy().budget().charged_memory_bytes())
+                .reserve_memory(
+                    lease
+                        .policy()
+                        .budget()
+                        .charged_memory_bytes()
+                        .expect("explicit finite payload court")
+                )
                 .is_ok());
         }
     }

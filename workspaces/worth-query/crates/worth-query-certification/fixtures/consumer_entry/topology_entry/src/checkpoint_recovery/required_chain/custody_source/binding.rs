@@ -64,9 +64,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
         "worth.query.certification.consumed-value-source-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.consumed-value-source-command.v1";
-    const CANDIDATES:
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract::FixedShape(
+    const CANDIDATES: worth_query_decl::facade::application_operation::ApplicationCandidatePolicy =
+        worth_query_decl::facade::application_operation::ApplicationCandidatePolicy::finite(
             requirements(0, 0, 0, 1, 8_192),
         );
     fn scope_field() -> ApplicationFieldRef<
@@ -127,7 +126,7 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, ValueSourceBinding<
         _: &(),
     ) -> ApplicationCandidateRequirements {
         ValueSourceBinding::<Schema>::CANDIDATES
-            .fixed_requirements()
+            .finite_requirements()
             .expect("fixed candidate contract")
     }
     fn build_candidate(

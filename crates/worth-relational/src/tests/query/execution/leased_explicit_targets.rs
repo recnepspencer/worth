@@ -34,7 +34,7 @@ fn lease_with_work(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(width).unwrap(), memory, work),
+                ExecutionBudget::new(NonZeroUsize::new(width).unwrap(), Some(memory), Some(work)),
             ),
             deadline: None,
             cancellation,

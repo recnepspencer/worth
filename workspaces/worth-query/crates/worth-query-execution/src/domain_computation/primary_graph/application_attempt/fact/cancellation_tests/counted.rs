@@ -24,7 +24,7 @@ fn fact_comparison_preserves_stops_at_every_consult() {
             .unwrap()
             .revision();
         let endpoints = view
-            .bounded_incoming_relations_of_kind(execution, entity, relation_kind, 32)
+            .bounded_incoming_relations_of_kind(execution, entity, relation_kind, Some(32))
             .unwrap()
             .unwrap()
             .into_records()

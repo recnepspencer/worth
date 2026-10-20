@@ -59,8 +59,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarInitialAdjust
         _: &WorthQueryInvariantMutationTarget<Schema, Body>,
     ) -> ApplicationCandidateRequirements {
         PlanarInitialAdjustmentBinding::<Schema>::CANDIDATES
-            .fixed_requirements()
-            .expect("fixed candidate contract")
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 }
 

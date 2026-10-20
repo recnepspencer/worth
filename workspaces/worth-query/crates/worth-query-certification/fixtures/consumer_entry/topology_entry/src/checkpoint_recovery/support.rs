@@ -46,7 +46,7 @@ pub(super) fn install_with_domain_denial(domain_denial: Arc<AtomicBool>) -> Appl
         None,
         Default::default(),
         // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.
-        limits(32, invalidation(128 * 1_024 * 1_024, 1_000_000, 32)),
+        limits(32, invalidation(128 * 1_024 * 1_024, None, 32)),
         seed_cycle,
         domain_denial,
     )
@@ -94,7 +94,7 @@ where
         profile,
         retained_composite_commits,
         retained_invalidation_bytes,
-        1_000_000,
+        None,
         seed_cycle,
     )
 }
@@ -104,7 +104,7 @@ pub(super) fn install_program_with_seed<Program>(
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     retained_composite_commits: u64,
     retained_invalidation_bytes: u64,
-    maximum_invalidation_work: u64,
+    maximum_invalidation_work: Option<u64>,
     seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
 where
@@ -230,18 +230,23 @@ pub(super) fn length(value: u64) -> PositiveLength {
 
 pub(super) fn invalidation(
     retained_invalidation_bytes: u64,
-    maximum_invalidation_work: u64,
+    maximum_invalidation_work: Option<u64>,
     retained_positions: usize,
 ) -> worth_query_host::facade::runtime::WorthQueryInvalidationResources {
-    worth_query_host::facade::runtime::WorthQueryInvalidationResources::install(
-        worth_query_host::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
-            maximum_invalidation_work,
+    use worth_query_host::facade::runtime::{
+        WorthQueryInvalidationResourceInstallation as Installation, WorthQueryInvalidationResources,
+    };
+    let installation = match maximum_invalidation_work {
+        Some(work) => Installation::bounded(
+            work,
             64 * 1_024 * 1_024,
             retained_invalidation_bytes,
             retained_positions,
         ),
-    )
-    .expect("the Query invalidation installation is valid")
+        None => Installation::new(None, Some(retained_invalidation_bytes), retained_positions),
+    };
+    WorthQueryInvalidationResources::install(installation)
+        .expect("the Query invalidation installation is valid")
 }
 
 pub(super) fn limits(
@@ -254,7 +259,7 @@ pub(super) fn limits(
 
 /// The candidate resources of a host whose widest operation is the default.
 pub(super) fn candidates() -> WorthQueryApplicationCandidateResourceProfile {
-    WorthQueryApplicationCandidateResourceProfile::physical_resources(4_096, 8_192).unwrap()
+    WorthQueryApplicationCandidateResourceProfile::policy(Some(4_096), Some(8_192)).unwrap()
 }
 
 /// A world with room for a long history under open demands. Rows settled at

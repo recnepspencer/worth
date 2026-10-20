@@ -39,8 +39,8 @@ fn check(entry: u8) {
         _ => panic!("entry"),
     };
     let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: own_price,
-        maximum_preparation_bytes: u64::MAX,
+        maximum_work_visits: Some(own_price),
+        maximum_preparation_bytes: None,
     });
     match entry {
         0 => world

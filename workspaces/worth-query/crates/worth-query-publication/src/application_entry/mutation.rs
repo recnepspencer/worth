@@ -15,6 +15,7 @@ mod program_output_settlement;
 mod program_output_work;
 mod recovery;
 pub(in crate::application_entry) mod request;
+mod requirement_assessment;
 pub(in crate::application_entry) mod retained;
 pub(in crate::application_entry) mod selected_program;
 mod staged;
@@ -57,6 +58,9 @@ pub use recovery::WorthQueryApplicationRecoveryRequestDenial;
 pub use request::{
     WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
     WorthQueryMutationSourcePrepared,
+};
+pub use requirement_assessment::{
+    WorthQueryCurrentBodyRequirementAssessment, WorthQueryCurrentBodyRequirementAssessmentDenial,
 };
 pub use retained::WorthQueryApplicationRetainedMutationOutcome;
 

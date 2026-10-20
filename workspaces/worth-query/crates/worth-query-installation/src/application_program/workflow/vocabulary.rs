@@ -13,12 +13,15 @@ use worth_query_declaration::facade::{
 
 mod adoption_coverage;
 mod approval_binding;
+mod birth;
 mod draft_vocabulary;
 mod installation;
+mod operation;
 mod read_binding;
 mod support_identity;
 pub use adoption_coverage::{
-    WorthQueryWorkflowNodeDependency, WorthQueryWorkflowVocabularyCoverage,
+    WorthQueryWorkflowGlobalActionDependency, WorthQueryWorkflowNodeDependency,
+    WorthQueryWorkflowVocabularyCoverage,
 };
 pub use installation::WorthQueryApplicationWorkflowSpecInstallation;
 pub use read_binding::WorthQueryInstalledWorkflowReadBinding;
@@ -32,6 +35,7 @@ pub use resource_ceiling::{
 pub enum WorthQueryApplicationWorkflowInstallationDenialKind {
     OperationNotInProgram,
     OperationNotInstalled,
+    BirthBindingNotInstalled,
     AssessmentNotInstalled,
     ApprovalNotInstalled,
     AuthoringCapabilityNotInstalled,
@@ -85,10 +89,21 @@ pub(super) struct InstalledWorkflowOperation {
     pub(super) binding_type: TypeId,
     pub(super) binding_identity: &'static str,
     pub(super) requires_workflow_authority: bool,
+    pub(super) supports_local_workflow_action: bool,
     pub(super) capability: Option<(&'static str, WorthQueryPortableTypeIdentity)>,
     pub(super) reference: ApplicationWorkflowOperationRef,
     pub(super) inbound_ref:
         Option<worth_query_declaration::facade::application_program::ApplicationWorkflowInboundRef>,
+}
+
+#[derive(Clone)]
+pub(super) struct InstalledWorkflowBirth {
+    binding_type: TypeId,
+    binding_identity: &'static str,
+    role_type: TypeId,
+    role_name: &'static str,
+    entity_name: &'static str,
+    capability: InstalledWorkflowCapabilityBinding,
 }
 
 #[derive(Clone)]
@@ -184,6 +199,7 @@ where
     pub(super) instance_start_capability: InstalledWorkflowInstanceStartCapability,
     pub(super) advance_capability: InstalledWorkflowAdvanceCapability,
     pub(super) operations: Box<[InstalledWorkflowOperation]>,
+    pub(super) births: Box<[InstalledWorkflowBirth]>,
     pub(super) assessments: Box<[InstalledWorkflowAssessment]>,
     pub(super) conditions: Box<[InstalledWorkflowCondition]>,
     pub(super) approvals: Box<[InstalledWorkflowApproval]>,

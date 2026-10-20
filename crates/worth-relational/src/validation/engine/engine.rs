@@ -38,20 +38,19 @@ impl<'runtime> InvariantEngine<'runtime> {
     where
         'runtime: 'state,
     {
-        self.execute_inner(
-            request,
-            crate::authority::commit::pipeline::request_lease(execution),
-        )
+        self.execute_inner(*execution, request)
     }
 
     fn execute_inner<'state>(
         &self,
+        execution: worth_execution::ExecutionRequest<'state, 'state>,
         request: InvariantExecutionRequest<'state>,
-        lease: Option<&ExecutionResourceLease<'_>>,
     ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError>
     where
         'runtime: 'state,
     {
+        check_live(execution)?;
+        let lease = crate::authority::commit::pipeline::request_lease(&execution);
         if lease.is_some_and(|lease| {
             lease.resolved_posture() == worth_foundational::ExecutionPosture::Automatic
         }) && self
@@ -79,14 +78,19 @@ impl<'runtime> InvariantEngine<'runtime> {
             ExecutionResourceLease::resolved_posture,
         );
         let (planned, retained_bytes) = if let Some(lease) = lease {
-            let (planned, retained_bytes, _) =
-                crate::validation::execution::plan_checked_invariant_preparation(
-                    &runtime, &request, lease,
-                )?;
+            let preparation = crate::validation::execution::plan_checked_invariant_preparation(
+                &runtime, execution, &request, lease,
+            );
+            check_live(execution)?;
+            let (planned, retained_bytes, _) = preparation?;
             (planned, retained_bytes)
         } else {
-            (plan_invariant_execution(&runtime, &request, None), 0)
+            (
+                plan_invariant_execution(&runtime, execution, &request, None),
+                0,
+            )
         };
+        check_live(execution)?;
         let strategy = planned.strategy;
         let (proof_boundary, packets) = if let Some(lease) = lease {
             let counters = crate::validation::execution::planned_packet_counters(&planned);
@@ -95,7 +99,9 @@ impl<'runtime> InvariantEngine<'runtime> {
                 lease,
                 runtime.commit_work_budget.as_ref(),
                 retained_bytes,
-            )?;
+            );
+            check_live(execution)?;
+            let checked = checked?;
             self.record_preparation_shape(counters.packet_count, checked.scope_units, strategy);
             (checked.proof_boundary, checked.packets)
         } else {
@@ -113,8 +119,7 @@ impl<'runtime> InvariantEngine<'runtime> {
                     input_bytes: scope_bytes
                         .saturating_add((packet.reduction_key.partition_scope.len() as u64)
                             .saturating_mul(std::mem::size_of::<crate::identity::data::PartitionId>() as u64)),
-                    kernel_scratch_bytes: 0,
-                    max_result_bytes: 0,
+                    memory: crate::execution::PacketMemory::Declared { scratch: 0, result: 0 },
                     value: packet,
                 }
             }).collect();
@@ -126,25 +131,36 @@ impl<'runtime> InvariantEngine<'runtime> {
             crate::execution::execute_read_only_packets_with_budget(
                 packets,lease,runtime.commit_work_budget.as_ref(),
                 |packet,context|crate::validation::execution::evaluate_invariant_packet_checked(
-                    &runtime,packet,context,lease.status(),
+                    &runtime,execution,packet,context,lease.status(),
                 ),
                 crate::validation::execution::InvariantWorkerEnvelope::owned_allocation_capacity_bytes,
-            )?
+            )
         } else {
             crate::execution::execute_unleased_read_only_packets(&packets, |packet| {
-                Ok(evaluate_invariant_packet(&runtime, packet))
+                execution
+                    .check_live()
+                    .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+                let envelope = evaluate_invariant_packet(&runtime, execution, packet);
+                execution
+                    .check_live()
+                    .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+                Ok(envelope)
             })
-            .map_err(crate::execution::PacketExecutionStop::from)?
+            .map_err(crate::execution::PacketExecutionStop::from)
         };
+        check_live(execution)?;
+        let envelopes = envelopes?;
         let (result, _, reducer_conflicts) = if let Some(lease) = lease {
-            reduce_invariant_execution_checked(
+            let reduction = reduce_invariant_execution_checked(
                 &request,
                 strategy,
                 proof_boundary,
                 envelopes,
                 lease,
                 runtime.commit_work_budget.as_ref(),
-            )?
+            );
+            check_live(execution)?;
+            reduction?
         } else {
             reduce_invariant_execution(&request, strategy, proof_boundary, envelopes)
         };
@@ -158,6 +174,7 @@ impl<'runtime> InvariantEngine<'runtime> {
                 .performance_access()
                 .count_preparation_reducer_conflicts(reducer_conflicts.len());
         }
+        check_live(execution)?;
         Ok(result)
     }
 }
@@ -228,4 +245,17 @@ impl InvariantEngine<'_> {
             }
         }
     }
+}
+
+fn check_live(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<(), crate::transactions::data::TransactionCommitError> {
+    execution.check_live().map_err(|stop| {
+        crate::transactions::data::TransactionCommitError::execution(
+            crate::transactions::data::CommitExecutionDenial {
+                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(stop.into()),
+                partition_identity: None,
+            },
+        )
+    })
 }

@@ -115,7 +115,11 @@ fn evaluate(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(std::num::NonZeroUsize::MIN, REQUEST_MEMORY, 10_000),
+                ExecutionBudget::new(
+                    std::num::NonZeroUsize::MIN,
+                    Some(REQUEST_MEMORY),
+                    Some(10_000),
+                ),
             ),
             cancellation: CancellationToken::new(),
             deadline: None,

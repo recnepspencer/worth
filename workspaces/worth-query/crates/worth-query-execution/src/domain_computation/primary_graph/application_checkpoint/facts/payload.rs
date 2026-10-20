@@ -1,4 +1,6 @@
-//! Decoded native facts retain their deep parse admission through every clone.
+//! One original fact backing carries codec admission and shared custody discovery.
+//! Clones preserve the allocation; custody never certifies source currentness.
+use super::retention::FactRetentionSlot;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionMemoryReservation, MemoryLimitLevel};
@@ -9,6 +11,7 @@ mod iteration;
 mod native;
 mod patch;
 pub(in crate::domain_computation::primary_graph) use patch::NativeFactPatchBuilder;
+mod retention;
 mod sequence;
 #[cfg(test)]
 mod tests;
@@ -32,10 +35,13 @@ impl CodecPayloadReservation {
             ExecutionAllocationPolicy::SystemAllocation => None,
             ExecutionAllocationPolicy::Execution(lease) => Some(lease.reserve_memory(quote).map_err(|cause| {
                 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
-                FactDecodeDenial::Execution(match cause.level {
-                    MemoryLimitLevel::Policy { ancestor } => Native::PolicyMemoryExhausted { requested: cause.requested, admitted: cause.admitted, ancestor },
-                    MemoryLimitLevel::Process => Native::ProcessMemoryExhausted { requested: cause.requested, admitted: cause.admitted },
-                    MemoryLimitLevel::Declared => Native::DeclaredMemoryExhausted { requested: cause.requested, admitted: cause.admitted },
+                FactDecodeDenial::Execution(match cause {
+                    worth_execution::MemoryLimitDenial::CounterOverflow { .. } => Native::ChargedBytesOverflow,
+                    worth_execution::MemoryLimitDenial::Capacity { requested, admitted, level } => match level {
+                        MemoryLimitLevel::Policy { ancestor } => Native::PolicyMemoryExhausted { requested, admitted, ancestor },
+                        MemoryLimitLevel::Process => Native::ProcessMemoryExhausted { requested, admitted },
+                        MemoryLimitLevel::Declared => Native::DeclaredMemoryExhausted { requested, admitted },
+                    },
                 })
             })?),
         };
@@ -51,6 +57,7 @@ pub(in crate::domain_computation::primary_graph) struct FactPayload {
     storage_bytes: Option<u64>,
     resident_bytes: Option<u64>,
     height: usize,
+    retention: FactRetentionStorage,
 }
 #[derive(Clone, Debug)]
 enum FactStorage {
@@ -64,6 +71,7 @@ enum FactStorage {
         children: Arc<worth_execution::ExecutionArray<FactPayload>>,
     },
 }
+
 impl FactPayload {
     pub(super) fn decoded(facts: Vec<Fact>, funding: Arc<CodecPayloadReservation>) -> Self {
         let length = facts.len();
@@ -85,6 +93,7 @@ impl FactPayload {
             start: 0,
             length,
             height: 0,
+            retention: FactRetentionStorage::default(),
         }
     }
     pub(in crate::domain_computation::primary_graph) fn same_backing(&self, other: &Self) -> bool {
@@ -154,6 +163,7 @@ impl FactPayload {
             start: self.start + range.start,
             length: range.len(),
             height: self.height,
+            retention: self.retention.clone(),
         }
     }
     pub(in crate::domain_computation::primary_graph) fn native(
@@ -188,6 +198,7 @@ impl FactPayload {
             start: 0,
             length,
             height,
+            retention: FactRetentionStorage::default(),
         }
     }
     fn chunk_at(&self, ordinal: usize) -> (usize, &[Fact]) {
@@ -211,6 +222,21 @@ impl FactPayload {
         let end = (base + chunk.len()).min(self.start + self.length);
         (begin - self.start, &chunk[begin - base..end - base])
     }
+    pub(in crate::domain_computation::primary_graph) fn lock_retention(
+        &self,
+    ) -> std::sync::MutexGuard<'_, FactRetentionSlot> {
+        self.retention.lock()
+    }
+    pub(in crate::domain_computation::primary_graph) fn retention_storage(
+        &self,
+    ) -> &FactRetentionStorage {
+        &self.retention
+    }
+    /// The shared allocation and its weak lookup are funded while external
+    /// custody exists; original payload metadata has its native/codec owner.
+    pub(in crate::domain_computation::primary_graph) fn retention_storage_bytes() -> Option<u64> {
+        FactRetentionStorage::bytes()
+    }
 }
 // Native execution already owns its original fact admission; this entry does
 // not accept decoded values or retrospectively fund an external allocation.
@@ -226,6 +252,7 @@ impl From<Arc<[Fact]>> for FactPayload {
             start: 0,
             length,
             height: 0,
+            retention: FactRetentionStorage::default(),
         }
     }
 }
@@ -261,6 +288,9 @@ pub(super) fn parse_quote(length: usize, count: usize) -> Option<usize> {
         .checked_add((length / 9).checked_mul(2 * std::mem::size_of::<FieldKey>())?)?
         .checked_add((length / 16).checked_mul(std::mem::size_of::<EntityId>())?)?
         .checked_add(count.checked_mul(2 * std::mem::size_of::<Fact>())?)
+        .and_then(|bytes| {
+            bytes.checked_add(usize::try_from(FactPayload::retention_storage_bytes()?).ok()?)
+        })
 }
 
 fn original_storage_bytes(count: usize) -> Option<u64> {

@@ -21,7 +21,7 @@ fn edit_capacity_overflow_rebuilds_and_matches_reuse_off() {
     const DECLARED: u64 = u64::MAX / 1024;
     let request = live_scope();
     let execution = QueryRequestExecution::open(
-        RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, u64::MAX)),
+        RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, None)),
         &request,
     );
     let reducer = WorthQueryDeterministicReducer::canonical(|| 0, counted);
@@ -115,7 +115,7 @@ fn edit_encoding_and_result_capacity_denials_rebuild_and_match_reuse_off() {
     let source = template();
     let keys: Vec<_> = (0..8).map(Id::new).collect();
     let prior = retained(&source, &keys);
-    let native_policy = test_policy(std::num::NonZeroUsize::MIN, 1 << 30);
+    let native_policy = test_policy(std::num::NonZeroUsize::MIN, Some(1 << 30));
     let native = worth_execution::SerialRequest::from_policy(
         &native_policy,
         worth_execution::CancellationToken::new(),
@@ -141,7 +141,7 @@ fn edit_encoding_and_result_capacity_denials_rebuild_and_match_reuse_off() {
     } = map
         .run_retained_run(
             worth_execution::ExecutionRequest::serial(&native),
-            worth_execution::ExecutionWorkCeiling::new(u64::MAX),
+            worth_execution::ExecutionWorkCeiling::new(None),
             |_, context| {
                 context.checkpoint(1)?;
                 Ok::<_, worth_execution::MapKernelFailure<()>>(value(1))

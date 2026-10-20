@@ -86,7 +86,7 @@ fn native_chunks_keep_real_execution_funding_and_refuse_before_construction() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 20, 1_000_000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(1 << 20), Some(1_000_000)),
     );
     with_bootstrap_advancement(policy, |phase| {
         let execution = phase.execution_request();
@@ -125,7 +125,11 @@ fn native_chunks_keep_real_execution_funding_and_refuse_before_construction() {
         drop(parsed_clone);
         assert_eq!(lease.charged_memory_bytes(), before);
         let held = lease
-            .reserve_memory(lease.available_memory_bytes())
+            .reserve_memory(
+                lease
+                    .available_memory_bytes()
+                    .expect("this fixture supplies a finite memory ceiling"),
+            )
             .unwrap();
         assert!(NativeFactPayloadBuilder::allocate(100, control).is_err());
         drop(held);
@@ -140,7 +144,7 @@ fn native_storage_returns_late_interruption_without_sealing_partial_evidence() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 20, 1_000_000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(1 << 20), Some(1_000_000)),
     );
     with_bootstrap_advancement(policy, |phase| {
         let execution = phase.execution_request();

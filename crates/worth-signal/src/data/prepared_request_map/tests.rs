@@ -15,7 +15,7 @@ fn serial_map_memory_overflow_keeps_its_typed_admission_cause() {
     )]))
     .unwrap();
     let serial = SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(1024 * 1024),
+        worth_execution::SerialMemoryBudget::new(Some(1024 * 1024)),
         CancellationToken::new(),
         None,
     );

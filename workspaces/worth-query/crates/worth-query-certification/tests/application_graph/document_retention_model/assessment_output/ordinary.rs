@@ -1,5 +1,8 @@
 //! Separate ordinary assessment action; the existing conditional operation stays exclusive.
 use super::*;
+use worth_query_decl::facade::application_operation::{
+    ApplicationCandidatePolicy, ApplicationCandidateRequirements,
+};
 
 worth_query_operation!(pub PublishOrdinaryRetentionAssessment for DocumentRetentionSchema, input RetentionAssessmentInputBinding);
 worth_query_operation_reads!(PublishOrdinaryRetentionAssessment => [Document, DocumentIdentityField, DocumentRetentionField]);
@@ -36,12 +39,11 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for OrdinaryRetentionAs
         "worth.query.certification.ordinary-retention-assessment.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.ordinary-retention-assessment.command.v1";
-    const CANDIDATES:
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(512),
-        );
+        ));
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -123,8 +125,8 @@ impl OperationHandler<DocumentRetentionSchema, OrdinaryRetentionAssessmentBindin
         _: &WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
     ) -> ApplicationCandidateRequirements {
         OrdinaryRetentionAssessmentBinding::CANDIDATES
-            .fixed_requirements()
-            .expect("fixed candidate contract")
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

@@ -25,7 +25,7 @@ impl QueryDispatch<'_> {
         let DispatchForm::Leased(lease) = &self.form;
         prior.advance(
             ExecutionRequest::leased(lease),
-            ExecutionWorkCeiling::new(ceiling),
+            ExecutionWorkCeiling::new(Some(ceiling)),
             changes,
             removed,
             kernel,
@@ -60,7 +60,7 @@ impl QueryDispatch<'_> {
         let DispatchForm::Leased(lease) = &self.form;
         let outcome = map.run_reduce_retained_holding(
             ExecutionRequest::leased(lease),
-            ExecutionWorkCeiling::new(ceiling),
+            ExecutionWorkCeiling::new(Some(ceiling)),
             inputs.held,
             tree.held.as_mut(),
             kernel,

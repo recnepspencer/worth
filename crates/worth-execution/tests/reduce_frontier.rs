@@ -48,7 +48,11 @@ fn lease_with_ceiling(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), 8 << 20, work_ceiling),
+                ExecutionBudget::new(
+                    NonZeroUsize::new(workers).unwrap(),
+                    None,
+                    Some(work_ceiling),
+                ),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),

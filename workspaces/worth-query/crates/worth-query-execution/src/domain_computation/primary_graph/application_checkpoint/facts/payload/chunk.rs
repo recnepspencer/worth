@@ -67,6 +67,7 @@ impl FactPayload {
             storage_bytes,
             resident_bytes,
             height: 0,
+            retention: super::FactRetentionStorage::default(),
         }
     }
 }
@@ -81,7 +82,9 @@ pub(super) fn deep_clone_bytes(fact: &Fact) -> Option<u64> {
     let size = |bytes| u64::try_from(bytes).ok();
     match fact {
         Fact::RetiredOutputEntity { read_locator, .. } => size(read_locator.capacity()),
-        Fact::SourceAspectRevision { aspect, .. } => size(aspect.owned_allocation_capacity_bytes()),
+        Fact::SourceAspectRevision { aspect, .. } | Fact::AspectPresence { aspect, .. } => {
+            size(aspect.owned_allocation_capacity_bytes())
+        }
         Fact::SourceFieldRevision { locator, .. }
         | Fact::AbsentField { locator, .. }
         | Fact::OptionalAspectAbsent { locator, .. } => {

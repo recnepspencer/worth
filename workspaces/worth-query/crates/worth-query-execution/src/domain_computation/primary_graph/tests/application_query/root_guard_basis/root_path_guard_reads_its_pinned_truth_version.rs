@@ -84,7 +84,7 @@ fn root_path_guard_reads_its_pinned_truth_version() {
                     ApplicationQueryParameterSet::new(),
                     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                         NonZeroUsize::new(10).unwrap(),
-                        NonZeroUsize::new(10_000).unwrap(),
+                        Some(NonZeroUsize::new(10_000).unwrap()),
                         &request,
                     ),
                 )

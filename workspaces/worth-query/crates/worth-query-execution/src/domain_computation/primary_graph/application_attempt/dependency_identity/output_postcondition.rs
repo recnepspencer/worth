@@ -132,6 +132,7 @@ pub(super) fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFac
             | WorthQueryApplicationObservedFact::Field { .. }
             | WorthQueryApplicationObservedFact::AbsentField { .. }
             | WorthQueryApplicationObservedFact::OptionalAspectAbsent { .. }
+            | WorthQueryApplicationObservedFact::AspectPresence { .. }
             | WorthQueryApplicationObservedFact::Relation { .. }
             | WorthQueryApplicationObservedFact::Adjacency { .. }
             | WorthQueryApplicationObservedFact::IndexedEntitySelection { .. }
@@ -146,6 +147,36 @@ pub(super) fn normalized_output_facts(
     facts
         .iter()
         .map(|fact| match fact {
+            WorthQueryApplicationObservedFact::AspectPresence {
+                entity_id,
+                kind,
+                aspect,
+                present,
+            } => {
+                let initialized = effects.iter().any(|effect| match effect {
+                    WorthQueryApplicationRealizedEffect::UpdateEntity {
+                        entity_id: target,
+                        fields,
+                        ..
+                    } if target == entity_id => fields
+                        .keys()
+                        .any(|locator| locator.aspect().aspect_key() == aspect),
+                    WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
+                        entity_id: target,
+                        fields,
+                        ..
+                    } if target == entity_id => fields.iter().any(|(locator, write)| {
+                        locator.aspect().aspect_key() == aspect && write.value.is_some()
+                    }),
+                    _ => false,
+                });
+                WorthQueryApplicationObservedFact::AspectPresence {
+                    entity_id: *entity_id,
+                    kind: *kind,
+                    aspect: aspect.clone(),
+                    present: *present || initialized,
+                }
+            }
             WorthQueryApplicationObservedFact::Field {
                 entity_id,
                 kind,

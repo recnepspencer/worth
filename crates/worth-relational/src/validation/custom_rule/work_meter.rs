@@ -2,6 +2,8 @@ use std::num::NonZeroU64;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use worth_execution::ExecutionLeaseStatus;
+mod memory;
+use memory::PreparationMemory;
 
 // Fixed-size ID, BTree node, and wrapper retention for materializing
 // structural visits. Borrowed reads and authored checkpoints charge work only;
@@ -14,6 +16,7 @@ pub(crate) enum CustomPreparationStop {
     DeadlineElapsed,
     WorkExhausted,
     MemoryExhausted,
+    MemoryAdmission(worth_execution::MemoryLimitDenial),
     UncheckedCustomKernel,
 }
 
@@ -23,7 +26,16 @@ struct LeasedCustomMeter {
     consumed_work: AtomicU64,
     memory_ceiling: Option<u64>,
     claimed_memory: AtomicU64,
+    memory: std::sync::Mutex<Option<PreparationMemory>>,
     stop: std::sync::Mutex<Option<CustomPreparationStop>>,
+}
+
+// The leased meter's Arc and the work meter's two Arc counters coexist during
+// a visit/evaluation. Their actual ArcInner layouts include alignment padding.
+fn meter_metadata_bytes() -> u64 {
+    (std::mem::size_of::<(usize, usize, LeasedCustomMeter)>()
+        + std::mem::size_of::<(usize, usize, AtomicU64)>()
+        + std::mem::size_of::<(usize, usize, AtomicBool)>()) as u64
 }
 
 #[derive(Clone)]
@@ -41,8 +53,41 @@ impl CustomPreparationBudget {
             consumed_work: AtomicU64::new(0),
             memory_ceiling,
             claimed_memory: AtomicU64::new(0),
+            memory: std::sync::Mutex::new(None),
             stop: std::sync::Mutex::new(None),
         }))
+    }
+
+    pub(crate) fn tracked(
+        lease: &worth_execution::ExecutionResourceLease<'_>,
+    ) -> Result<Self, worth_execution::MemoryLimitDenial> {
+        let base = meter_metadata_bytes();
+        let payer = lease.reserve_memory(base)?;
+        let budget = Self::new(lease.status(), lease.policy().budget().work_ceiling(), None);
+        *budget
+            .0
+            .memory
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) =
+            Some(PreparationMemory::Owned { payer, base });
+        Ok(budget)
+    }
+
+    pub(crate) fn packet_tracked(
+        status: ExecutionLeaseStatus,
+        work_ceiling: Option<u64>,
+        payer: crate::execution::SharedPacketScratch,
+    ) -> Result<Self, worth_execution::MemoryLimitDenial> {
+        let metadata = meter_metadata_bytes();
+        let base = payer.reserve_structural_base(metadata)?;
+        let budget = Self::new(status, work_ceiling, None);
+        *budget
+            .0
+            .memory
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) =
+            Some(PreparationMemory::Packet { payer, base });
+        Ok(budget)
     }
 
     pub(crate) fn charged_work(&self) -> u64 {
@@ -101,9 +146,9 @@ pub(crate) struct CustomInvariantWorkMeter {
 }
 
 impl CustomInvariantWorkMeter {
-    pub(crate) fn new(maximum: NonZeroU64) -> Self {
+    pub(crate) fn new(maximum: Option<NonZeroU64>) -> Self {
         Self {
-            maximum: Some(maximum),
+            maximum,
             consumed: Arc::new(AtomicU64::new(0)),
             exhausted: Arc::new(AtomicBool::new(false)),
             leased: None,
@@ -116,16 +161,18 @@ impl CustomInvariantWorkMeter {
     }
 
     pub(crate) fn for_evaluation(&self, budget: &CustomPreparationBudget) -> Self {
-        let remaining = self
-            .maximum
-            .expect("only installed invariant meters enter evaluation")
+        let Some(maximum) = self.maximum else {
+            return Self::new(None).with_lease(budget);
+        };
+        let remaining = maximum
             .get()
             .saturating_sub(self.consumed.load(Ordering::Relaxed));
-        let meter = Self::new(NonZeroU64::new(remaining.max(1)).unwrap()).with_lease(budget);
-        if remaining == 0 {
+        let Some(remaining) = NonZeroU64::new(remaining) else {
+            let meter = Self::new(Some(maximum)).with_lease(budget);
             meter.stop(CustomPreparationStop::WorkExhausted);
-        }
-        meter
+            return meter;
+        };
+        Self::new(Some(remaining)).with_lease(budget)
     }
 
     fn stop(&self, reason: CustomPreparationStop) {
@@ -146,40 +193,6 @@ impl CustomInvariantWorkMeter {
                 .lock()
                 .unwrap_or_else(|error| error.into_inner())
         })
-    }
-
-    pub(crate) fn try_claim_bytes(&self, bytes: u64) -> bool {
-        let Some(leased) = &self.leased else {
-            return true;
-        };
-        if !self.safe_point() {
-            return false;
-        }
-        if leased
-            .claimed_memory
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-                current
-                    .checked_add(bytes)
-                    .filter(|next| leased.memory_ceiling.is_none_or(|ceiling| *next <= ceiling))
-            })
-            .is_err()
-        {
-            self.stop(CustomPreparationStop::MemoryExhausted);
-            return false;
-        }
-        true
-    }
-
-    fn check_claim_peak(&self, bytes: u64) -> bool {
-        let Some(leased) = &self.leased else {
-            return true;
-        };
-        self.safe_point()
-            && leased
-                .claimed_memory
-                .load(Ordering::Relaxed)
-                .checked_add(bytes)
-                .is_some_and(|peak| leased.memory_ceiling.is_none_or(|ceiling| peak <= ceiling))
     }
 
     fn safe_point(&self) -> bool {

@@ -13,5 +13,9 @@ pub trait ApplicationStructuredValueBinding: 'static {
     const IDENTITY: WorthQueryPortableTypeIdentity =
         WorthQueryPortableTypeIdentity::declared(Self::IDENTITY_NAME);
 
+    /// Retain the input's canonical serialization from its one identity pass.
+    /// Native body input selectors require this capture; it grants no authority.
+    const RETAIN_CANONICAL_INPUT: bool = false;
+
     fn validate(value: &Self::Value) -> Result<(), ApplicationValueValidationDenial>;
 }

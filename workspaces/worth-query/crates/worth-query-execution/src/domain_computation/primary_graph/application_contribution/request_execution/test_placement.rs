@@ -5,8 +5,8 @@
 //!
 //! Every lease is drawn from the one authority a process may construct. It
 //! admits twice the machine's width, so a lease may ask for more workers than
-//! the machine has. Each policy carries its own budget, far under the
-//! authority's, so tests running at once never meet on its memory.
+//! the machine has. Memory proofs declare a finite request budget; ordinary
+//! test requests keep memory accounting without imposing a fixture cap.
 
 use super::test_authority::query_test_execution_authority_for_test;
 pub use super::test_authority::test_execution_workers_for_test;
@@ -76,14 +76,14 @@ pub fn place_managed_computations_on_this_thread_for_test(
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) fn test_policy(
     workers: NonZeroUsize,
-    memory: u64,
+    memory: Option<u64>,
 ) -> ExecutionRequestPolicy {
     ExecutionRequestPolicy::new(
         ExecutionPosture::Automatic,
         DeterminismContract::CanonicalBitwise,
         REQUEST_BUDGET
             .get()
-            .map_or(ExecutionBudget::new(workers, memory, u64::MAX), |budget| {
+            .map_or(ExecutionBudget::new(workers, memory, None), |budget| {
                 ExecutionBudget::new(
                     workers,
                     budget.charged_memory_bytes(),
@@ -172,7 +172,7 @@ where
             None
         }
     };
-    let (checked, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX).run_detached_for_test(
+    let (checked, _) = worth_execution::ExecutionWorkCeiling::new(None).run_detached_for_test(
         lease,
         |diagnostic| {
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {

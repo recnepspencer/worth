@@ -5,6 +5,7 @@ mod publication;
 mod reclamation;
 mod retention;
 
+pub(crate) use catalog::HistoryTraversalControl;
 pub(crate) use catalog::{
     CompositeHistoryCatalog, ReservedCompositeCommitCapacity, RuntimeWorldHistoryCatalogContract,
 };

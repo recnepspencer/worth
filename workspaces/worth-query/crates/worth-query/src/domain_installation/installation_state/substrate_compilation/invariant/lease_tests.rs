@@ -24,7 +24,6 @@ use worth_relational::facade::{
 const VERTEX: KindId = KindId::new(1);
 const EDGE: KindId = KindId::new(2);
 const ANCHOR: KindId = KindId::new(3);
-const MEMORY_BYTES: u64 = 64 * 1024 * 1024;
 const UNBOUNDED_WORK: u64 = 8_000_000;
 
 fn installed_rule_world() -> (RelationalRuntime, EntityId) {
@@ -104,7 +103,7 @@ fn installed_rule_world() -> (RelationalRuntime, EntityId) {
         )
         .unwrap();
     let serial = SerialRequest::from_memory(
-        SerialMemoryBudget::new(MEMORY_BYTES),
+        SerialMemoryBudget::new(None),
         CancellationSource::new().token(),
         None,
     );
@@ -149,24 +148,21 @@ fn commit(
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::MIN, MEMORY_BYTES, UNBOUNDED_WORK),
+                ExecutionBudget::new(NonZeroUsize::MIN, None, Some(UNBOUNDED_WORK)),
             ),
             deadline: None,
             cancellation: cancellation.token(),
         })
         .unwrap();
-    let serial = SerialRequest::from_memory(
-        SerialMemoryBudget::new(MEMORY_BYTES),
-        cancellation.token(),
-        None,
-    );
+    let serial =
+        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
     let request = if leased {
         ExecutionRequest::leased(&lease)
     } else {
         ExecutionRequest::serial(&serial)
     };
     let (result, report) = request
-        .run(ExecutionWorkCeiling::new(ceiling), |_| {
+        .run(ExecutionWorkCeiling::new(Some(ceiling)), |_| {
             if cancel {
                 cancellation.cancel();
             }

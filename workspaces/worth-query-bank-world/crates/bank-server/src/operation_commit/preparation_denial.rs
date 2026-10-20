@@ -73,6 +73,7 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowInstanceCapacityUnavailable,
     WorkflowLineageCapacityUnavailable,
     WorkflowInstanceCancelled,
+    WorkflowInstanceTerminated,
     WorkflowInstanceCompleted,
     WorkflowOperationInOwnerCustody,
     WorkflowInstanceHistoryUnavailable,
@@ -88,6 +89,7 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowTransitionOperationUnsettled,
     WorkflowTransitionIdentityUnavailable,
     WorkflowConditionExpressionDenied,
+    OperationBodyRequirementExpressionDenied,
     WorkflowAssessmentEvidenceIncomplete,
     WorkflowAssessmentEvidenceMismatch,
     WorkflowApprovalPrincipalStale,
@@ -280,6 +282,9 @@ const fn application_attempt_kind(
         Query::WorkflowInstanceCancelled => {
             BankApplicationAttemptDenialKind::WorkflowInstanceCancelled
         }
+        Query::WorkflowInstanceTerminated => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceTerminated
+        }
         Query::WorkflowInstanceCompleted => {
             BankApplicationAttemptDenialKind::WorkflowInstanceCompleted
         }
@@ -324,6 +329,9 @@ const fn application_attempt_kind(
         }
         Query::WorkflowConditionExpressionDenied => {
             BankApplicationAttemptDenialKind::WorkflowConditionExpressionDenied
+        }
+        Query::OperationBodyRequirementExpressionDenied => {
+            BankApplicationAttemptDenialKind::OperationBodyRequirementExpressionDenied
         }
         Query::WorkflowAssessmentEvidenceIncomplete => {
             BankApplicationAttemptDenialKind::WorkflowAssessmentEvidenceIncomplete

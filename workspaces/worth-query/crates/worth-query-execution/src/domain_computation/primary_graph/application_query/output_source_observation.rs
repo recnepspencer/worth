@@ -48,8 +48,8 @@ pub(in crate::domain_computation::primary_graph) enum SourceQueryObservationStop
     Preparation {
         phase: SourceQueryPreparationPhase,
         charged_work: u64,
-        remaining_work: usize,
-        query_maximum_work: usize,
+        remaining_work: Option<usize>,
+        query_maximum_work: Option<usize>,
         cause: WorthQueryApplicationQueryAdmissionDenial,
     },
     Read(WorthQueryAdmittedOneShotStop),
@@ -138,12 +138,17 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             WorthQueryApplicationQueryAccessContext::new(principal.principal(), scope.scope());
         let query = installed.query();
         let limits = application.resolve_application_query_limits(installed.limits());
-        let maximum = NonZeroUsize::new(admission.remaining_work()).ok_or_else(|| {
-            Stop::Admission(WorthQueryApplicationQueryAdmissionDenial::new(
-                WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
-                query.name(),
-            ))
-        })?;
+        let maximum = admission
+            .remaining_work()
+            .map(|work| {
+                NonZeroUsize::new(work).ok_or_else(|| {
+                    Stop::Admission(WorthQueryApplicationQueryAdmissionDenial::new(
+                        WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
+                        query.name(),
+                    ))
+                })
+            })
+            .transpose()?;
         let query_maximum = NonZeroUsize::new(query.read_graph().maximum_result_count())
             .unwrap_or(NonZeroUsize::MAX);
         let (product, basis) = application
@@ -153,7 +158,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
             product,
             basis,
             limits.maximum_results().min(query_maximum),
-            limits.maximum_work().min(maximum),
+            limits.maximum_work().into_iter().chain(maximum).min(),
             self.request,
             admission,
         )
@@ -166,7 +171,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 phase: SourceQueryPreparationPhase::Parameters,
                 charged_work: admission.charged_work(),
                 remaining_work: admission.remaining_work(),
-                query_maximum_work: limits.maximum_work().get(),
+                query_maximum_work: limits.maximum_work().map(NonZeroUsize::get),
                 cause,
             })?;
         let permission = application
@@ -188,7 +193,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 phase: SourceQueryPreparationPhase::Permission,
                 charged_work: admission.charged_work(),
                 remaining_work: admission.remaining_work(),
-                query_maximum_work: limits.maximum_work().get(),
+                query_maximum_work: limits.maximum_work().map(NonZeroUsize::get),
                 cause,
             })?;
         let plan = application
@@ -199,7 +204,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                 phase: SourceQueryPreparationPhase::Session,
                 charged_work: admission.charged_work(),
                 remaining_work: admission.remaining_work(),
-                query_maximum_work: limits.maximum_work().get(),
+                query_maximum_work: limits.maximum_work().map(NonZeroUsize::get),
                 cause,
             })?;
         let completed = application

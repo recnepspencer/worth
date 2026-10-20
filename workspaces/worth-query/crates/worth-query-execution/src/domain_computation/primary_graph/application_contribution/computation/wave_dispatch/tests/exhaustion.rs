@@ -10,7 +10,7 @@ fn request_exhaustion_reports_the_declared_prefix_at_every_width() {
                 Some(Instant::now() + Duration::from_secs(60)),
                 cancellation.token(),
             );
-            let policy = test_policy(NonZeroUsize::new(width.unwrap_or(1)).unwrap(), 1 << 24);
+            let policy = test_policy(NonZeroUsize::new(width.unwrap_or(1)).unwrap(), None);
             let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
                 RuntimeWorldExecutionPlacement::Leased {
                     authority: test_authority(),
@@ -37,9 +37,10 @@ fn request_exhaustion_reports_the_declared_prefix_at_every_width() {
             let (settled, report) = root
                 .execution_request()
                 .unwrap()
-                .run(worth_execution::ExecutionWorkCeiling::new(admitted), |_| {
-                    dispatch(&root, members)
-                })
+                .run(
+                    worth_execution::ExecutionWorkCeiling::new(Some(admitted)),
+                    |_| dispatch(&root, members),
+                )
                 .unwrap();
             assert_eq!(settled.len(), prefix + 1);
             assert!(matches!(&settled[prefix], Err(WorthQueryAdvancementDenial::Resource(

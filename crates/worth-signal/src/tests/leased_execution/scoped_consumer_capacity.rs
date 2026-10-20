@@ -33,7 +33,11 @@ fn admission(memory: u64) -> LeaseRequest {
     request.policy = ExecutionRequestPolicy::new(
         request.policy.posture(),
         request.policy.determinism(),
-        ExecutionBudget::new(request.policy.budget().max_workers(), memory, FUNDED_WORK),
+        ExecutionBudget::new(
+            request.policy.budget().max_workers(),
+            Some(memory),
+            Some(FUNDED_WORK),
+        ),
     );
     request
 }

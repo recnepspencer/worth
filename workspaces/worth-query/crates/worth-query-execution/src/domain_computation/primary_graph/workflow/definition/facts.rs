@@ -97,6 +97,12 @@ where
             AspectValue::UInt64(u64::from(limits.maximum_canonical_bytes())),
         ),
     ]);
+    if !definition.global_actions().is_empty() {
+        fields.insert(
+            layout.definition.global_actions.clone(),
+            text(super::global_actions::encode(definition.global_actions())),
+        );
+    }
     if let Some(deadline) = limits.total_deadline() {
         let milliseconds = u64::try_from(deadline.as_millis())
             .expect("a declared deadline is whole milliseconds that fit in u64");

@@ -41,10 +41,13 @@ fn serial_children_share_memory_and_interruption() {
     let child = lease.controlled_child(crate::CancellationToken::new(), None);
     let held = lease.reserve_memory(24).unwrap();
     let denial = child.reserve_memory(9).unwrap_err();
-    assert_eq!(denial.admitted, 8);
     assert_eq!(
-        denial.level,
-        crate::MemoryLimitLevel::Policy { ancestor: 1 }
+        denial,
+        crate::MemoryLimitDenial::Capacity {
+            requested: 9,
+            admitted: 8,
+            level: crate::MemoryLimitLevel::Policy { ancestor: 1 }
+        }
     );
     drop(held);
     let held = child.reserve_memory(32).unwrap();

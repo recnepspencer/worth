@@ -42,8 +42,8 @@ fn wake_pump_refuses_before_clock_truth_reads_or_operation_reentry() {
                 place(placement),
                 bound(Some(worth_foundational::ExecutionBudget::new(
                     NonZeroUsize::MIN,
-                    if zero_memory { 0 } else { 64 * 1_024 * 1_024 },
-                    if zero_memory { 8_000_000 } else { 0 },
+                    if zero_memory { Some(0) } else { None },
+                    Some(if zero_memory { 8_000_000 } else { 0 }),
                 ))),
             );
             let before = (

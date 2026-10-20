@@ -30,6 +30,7 @@ pub(in crate::domain_computation::primary_graph) fn map_admission_stop(
         }
         stop @ (CompanionPreflightStop::PreparationMemoryExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryCounterOverflow
+        | CompanionPreflightStop::RetainedCompanionCounterOverflow { .. }
         | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }) => {
             ConsumedOutputVerificationStop::CapacityExhausted(VerificationCapacityStop::Meter(stop))
         }
@@ -153,6 +154,10 @@ mod tests {
                 maximum: 1,
             },
             CompanionPreflightStop::PreparationMemoryCounterOverflow,
+            CompanionPreflightStop::RetainedCompanionCounterOverflow {
+                requested: 1,
+                retained: u64::MAX,
+            },
             CompanionPreflightStop::RetainedCompanionCapacityExhausted {
                 requested: 1,
                 retained: 1,
@@ -176,8 +181,8 @@ mod tests {
     fn worklist_growth_distinguishes_the_meter_from_an_unrepresentable_size() {
         let mut admission = InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: u64::MAX,
-                maximum_preparation_bytes: 8,
+                maximum_work_visits: None,
+                maximum_preparation_bytes: Some(8),
             },
         );
         let mut pending = Vec::<u64>::new();
@@ -214,8 +219,8 @@ mod tests {
         let slot = size_of::<u64>() as u64;
         let mut admission = InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: u64::MAX,
-                maximum_preparation_bytes: 4 * rows as u64 * slot,
+                maximum_work_visits: None,
+                maximum_preparation_bytes: Some(4 * rows as u64 * slot),
             },
         );
         let mut pending = Vec::<u64>::new();

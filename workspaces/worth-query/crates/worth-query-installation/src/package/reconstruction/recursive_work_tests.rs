@@ -80,6 +80,7 @@ fn application_projection_mask_paths_are_charged_before_retention() {
             emissions: operation.emissions().to_vec(),
             external_effect: operation.external_effect().cloned(),
             reconciliation: operation.reconciliation().cloned(),
+            body: operation.body().cloned(),
         },
     );
     assert_nested_growth_push_denial(

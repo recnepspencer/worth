@@ -15,8 +15,8 @@ use worth_relational::facade::mvcc::CompanionPreflightBudget;
 
 fn admission(work: u64, bytes: u64) -> InvalidationEditAdmission {
     InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: work,
-        maximum_preparation_bytes: bytes,
+        maximum_work_visits: Some(work),
+        maximum_preparation_bytes: Some(bytes),
     })
 }
 
@@ -52,7 +52,7 @@ fn court() -> Court {
             |_| Some(TypeId::of::<()>()),
             &worth_execution::ExecutionRequest::serial(
                 &worth_execution::SerialRequest::from_memory(
-                    worth_execution::SerialMemoryBudget::new(64 << 20),
+                    worth_execution::SerialMemoryBudget::new(None),
                     worth_execution::CancellationToken::new(),
                     None,
                 ),
@@ -104,6 +104,7 @@ fn select<'a>(
     court
         .lineage
         .checkpoint_prior_outputs(
+            &worth_execution::ExecutionRequest::serial(&court.request),
             court.source.runtime_authority,
             &court.source.schema,
             court.coordinate.occurrence,

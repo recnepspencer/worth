@@ -29,7 +29,7 @@ use crate::domain_computation::primary_graph::{
     },
     SourceInvalidationOwner,
 };
-pub(in crate::domain_computation::primary_graph) use capacity_stop::VerificationCapacityStop;
+pub use capacity_stop::VerificationCapacityStop;
 pub(in crate::domain_computation::primary_graph) use work_budget::reserve_pending;
 use work_budget::{charge_external, fact_is_current};
 pub(in crate::domain_computation::primary_graph) use work_budget::{

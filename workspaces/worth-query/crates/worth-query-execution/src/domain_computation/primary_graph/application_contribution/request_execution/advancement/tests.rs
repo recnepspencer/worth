@@ -17,7 +17,7 @@ impl Drop for Restore {
 }
 
 fn request() -> QueryRequestExecution<'static> {
-    let policy = super::super::test_placement::test_policy(NonZeroUsize::MIN, 1 << 20);
+    let policy = super::super::test_placement::test_policy(NonZeroUsize::MIN, None);
     QueryRequestExecution::open_control(
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy),
         worth_execution::CancellationToken::new(),
@@ -57,8 +57,8 @@ fn nested_execution_phases_share_one_work_ceiling() {
         place(Placement::Leased(NonZeroUsize::MIN)),
         bound(Some(ExecutionBudget::new(
             NonZeroUsize::MIN,
-            1 << 20,
-            2 * UNITS,
+            None,
+            Some(2 * UNITS),
         ))),
     );
     observation::advancement_requests_on_this_thread_for_test();
@@ -92,7 +92,7 @@ fn zero_work_refuses_before_the_advancement_body() {
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _restore = Restore(
         place(Placement::Leased(NonZeroUsize::MIN)),
-        bound(Some(ExecutionBudget::new(NonZeroUsize::MIN, 1 << 20, 0))),
+        bound(Some(ExecutionBudget::new(NonZeroUsize::MIN, None, Some(0)))),
     );
     let result = request().run_advancement(None, None, |_| {
         panic!("a refused request cannot reach its reader")
@@ -138,7 +138,7 @@ fn reentrant_host_open_is_typed_at_serial_and_leased_placements() {
                 ));
                 assert_eq!(
                     with_bootstrap_advancement(
-                        super::super::test_placement::test_policy(NonZeroUsize::MIN, 1 << 20),
+                        super::super::test_placement::test_policy(NonZeroUsize::MIN, None),
                         |_| ()
                     ),
                     Err(WorthQueryAdvancementDenial::NestedOpening)
@@ -162,7 +162,7 @@ fn reentrant_host_open_is_typed_at_serial_and_leased_placements() {
 fn unwinding_a_host_callback_releases_opening_custody() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let policy = super::super::test_placement::test_policy(NonZeroUsize::MIN, 1 << 20);
+    let policy = super::super::test_placement::test_policy(NonZeroUsize::MIN, None);
     assert!(std::panic::catch_unwind(|| {
         let _ = with_bootstrap_advancement(policy, |_| panic!("host callback"));
     })

@@ -1,12 +1,16 @@
-//! Which bounded resource refused consumed-output verification.
+//! Original capacity evidence from verification or producer readmission.
 
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 /// Each cause keeps its owner's typed evidence. A capacity stop is neither
 /// missing evidence nor exhausted work, and it never asks for a currentness
-/// retry.
+/// retry. Output verification (including the pre-publication consumed-edge
+/// check) and producer preparation/readmission retain these original causes.
+/// Readmission may expose the same meter stop through its admission diagnostics;
+/// those are overlapping observations, not independent resource owners.
+/// This evidence grants no execution, publication, retry or cleanup authority.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum VerificationCapacityStop {
+pub enum VerificationCapacityStop {
     /// The request meter's own stop: its preparation bytes, their counter, or
     /// retained companion capacity. No other meter stop is held here.
     Meter(CompanionPreflightStop),
@@ -24,6 +28,7 @@ impl VerificationCapacityStop {
         match stop {
             CompanionPreflightStop::PreparationMemoryExhausted { .. }
             | CompanionPreflightStop::PreparationMemoryCounterOverflow
+            | CompanionPreflightStop::RetainedCompanionCounterOverflow { .. }
             | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => {
                 Some(Self::Meter(stop))
             }

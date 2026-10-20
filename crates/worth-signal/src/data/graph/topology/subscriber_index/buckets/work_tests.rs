@@ -16,7 +16,7 @@ fn conditional_reverse_query_budget_preserves_sparse_retirement_and_source() {
         for n in 1..count {
             fork.replace_consumer(NodeId::new(n, 0), Vec::new());
         }
-        let mut work = Preparation::new(30_000);
+        let mut work = Preparation::new(Some(30_000));
         let expected = vec![NodeId::new(count, 0)];
         assert_eq!(
             fork.query_whole_aspect(
@@ -34,7 +34,7 @@ fn conditional_reverse_query_budget_preserves_sparse_retirement_and_source() {
             fork.query_whole_aspect(
                 producer,
                 aspect,
-                &mut EvaluationWork::Conditional(&mut Preparation::new(cost))
+                &mut EvaluationWork::Conditional(&mut Preparation::new(Some(cost)))
             )
             .unwrap()
             .candidates,
@@ -44,7 +44,7 @@ fn conditional_reverse_query_budget_preserves_sparse_retirement_and_source() {
             fork.query_whole_aspect(
                 producer,
                 aspect,
-                &mut EvaluationWork::Conditional(&mut Preparation::new(cost - 1))
+                &mut EvaluationWork::Conditional(&mut Preparation::new(Some(cost - 1)))
             ),
             Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
         ));
@@ -85,7 +85,7 @@ fn conditional_scoped_discovery_charges_query_bytes_and_preserves_exact_candidat
             "rates", "5y",
         )]),
     };
-    let mut work = Preparation::new(100_000);
+    let mut work = Preparation::new(Some(100_000));
     assert_eq!(
         graph
             .query_reverse_subscriptions(
@@ -105,7 +105,7 @@ fn conditional_scoped_discovery_charges_query_bytes_and_preserves_exact_candidat
                 producer,
                 &change,
                 ScopePrecision::ExactAspectScopes,
-                &mut EvaluationWork::Conditional(&mut Preparation::new(cost))
+                &mut EvaluationWork::Conditional(&mut Preparation::new(Some(cost)))
             )
             .unwrap()
             .candidates,
@@ -116,7 +116,7 @@ fn conditional_scoped_discovery_charges_query_bytes_and_preserves_exact_candidat
             producer,
             &change,
             ScopePrecision::ExactAspectScopes,
-            &mut EvaluationWork::Conditional(&mut Preparation::new(cost - 1))
+            &mut EvaluationWork::Conditional(&mut Preparation::new(Some(cost - 1)))
         ),
         Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
     ));
@@ -129,7 +129,7 @@ fn conditional_scoped_discovery_charges_query_bytes_and_preserves_exact_candidat
             producer,
             &change,
             ScopePrecision::ExactAspectScopes,
-            &mut EvaluationWork::Conditional(&mut Preparation::new(cost))
+            &mut EvaluationWork::Conditional(&mut Preparation::new(Some(cost)))
         ),
         Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
     ));

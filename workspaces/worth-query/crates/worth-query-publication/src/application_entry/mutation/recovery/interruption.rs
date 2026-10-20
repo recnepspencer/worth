@@ -17,6 +17,16 @@ use worth_query_execution::facade::{
 };
 pub(super) fn request_stop(denial: &Request) -> Option<Denial> {
     match denial {
+        Request::SignedCreation(worth_query_execution::facade::primary_graph::WorthQuerySignedCreationPreparationDenial::Execution(cause)) => Some(*cause),
+        Request::SignedCreation(worth_query_execution::facade::primary_graph::WorthQuerySignedCreationPreparationDenial::LifecycleObservation(outcome)) => {
+            use worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome as Outcome;
+            match outcome.as_ref() {
+                Outcome::Cancelled => Some(Denial::Interrupted(Interruption::Cancelled)),
+                Outcome::TimedOut => Some(Denial::Interrupted(Interruption::DeadlineExceeded)),
+                Outcome::Denied(cause) => cause.execution_denial_cause().and_then(execution_stop),
+                _ => None,
+            }
+        }
         Request::ExecutionRequest(cause) => Some(*cause),
         Request::Authorization(cause) => authorization_interruption(cause.kind()),
         Request::PrincipalResolution(cause) => match cause.kind() {
@@ -64,7 +74,29 @@ pub(super) fn request_stop(denial: &Request) -> Option<Denial> {
         | Request::RequiresWorkflowTransition
         | Request::WorkflowAuthoritySpent
         | Request::PreparationSpent
-        | Request::WorkflowTransitionCurrentness(..) => None,
+        | Request::WorkflowTransitionCurrentness(..)
+        | Request::SignedCreation(..) => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{request_stop, Denial, Interruption, Request};
+    use worth_query_execution::facade::primary_graph::{
+        WorthQueryApplicationCommitOutcome as Outcome,
+        WorthQuerySignedCreationPreparationDenial as Signing,
+    };
+    #[test]
+    fn signing_lifecycle_observation_does_not_hide_native_request_stops() {
+        for (outcome, expected) in [
+            (Outcome::Cancelled, Interruption::Cancelled),
+            (Outcome::TimedOut, Interruption::DeadlineExceeded),
+        ] {
+            let denial = Request::SignedCreation(Signing::LifecycleObservation(Box::new(outcome)));
+            assert!(
+                matches!(request_stop(&denial), Some(Denial::Interrupted(actual)) if actual == expected)
+            );
+        }
     }
 }
 pub(super) fn authorization_interruption(cause: Authorization) -> Option<Denial> {

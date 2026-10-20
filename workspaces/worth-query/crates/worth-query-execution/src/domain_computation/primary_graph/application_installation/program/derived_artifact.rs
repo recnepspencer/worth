@@ -91,7 +91,7 @@ where
             artifact.resource_ceiling().maximum_work(),
             artifact.resource_ceiling().maximum_retained_bytes(),
         );
-        let denied = if limits.producer_work() == 0 {
+        let denied = if limits.producer_work() == Some(0) {
             Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
         } else if limits.producer_retained_bytes() == 0 {
             Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)

@@ -15,6 +15,7 @@ fn debug_reports_inventory_sizes_without_type_identity() {
             BTreeSet::new(),
             HashSet::from(types),
             HashSet::from(types),
+            HashSet::new(),
             program.semantic_description().clone(),
             BTreeSet::new(),
             BTreeSet::new(),

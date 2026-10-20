@@ -13,11 +13,19 @@ fn check(cause: Cause) {
             let LeaseDenial::MemoryExhausted(memory) = raw else {
                 panic!("memory cause required");
             };
+            let worth_execution::MemoryLimitDenial::Capacity {
+                requested,
+                admitted,
+                level,
+            } = memory
+            else {
+                panic!("capacity refusal required");
+            };
             assert_eq!(
-                memory.level,
+                level,
                 worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
             );
-            assert!(memory.requested > memory.admitted);
+            assert!(requested > admitted);
             Own::MemoryExhausted(memory)
         }
         Cause::Overflow => Own::ChargedBytesOverflow,

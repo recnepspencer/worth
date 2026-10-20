@@ -9,7 +9,9 @@ use worth_relational::facade::storage::RecordLifecycleState;
 
 use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
 
+mod aspect_presence;
 mod predecode_admission;
+pub(in crate::domain_computation::primary_graph) use aspect_presence::observe_aspect_presence;
 #[cfg(test)]
 mod read_rendezvous;
 #[cfg(test)]

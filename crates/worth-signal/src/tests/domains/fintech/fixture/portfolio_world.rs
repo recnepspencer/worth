@@ -284,8 +284,8 @@ fn portfolio_lease(
         admission.policy.determinism(),
         worth_foundational::ExecutionBudget::new(
             admission.policy.budget().max_workers(),
-            64 * 1024 * 1024,
-            100_000_000,
+            None,
+            Some(100_000_000),
         ),
     );
     authority()

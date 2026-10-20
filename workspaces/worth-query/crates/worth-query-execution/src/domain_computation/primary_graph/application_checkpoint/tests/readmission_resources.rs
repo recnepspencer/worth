@@ -14,7 +14,7 @@ fn bootstrap_metadata_keeps_its_charge_and_refuses_an_unfunded_row() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 20, 1_000_000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(1 << 20), Some(1_000_000)),
     );
     with_bootstrap_advancement(policy, |phase| {
         let execution = phase.execution_request();
@@ -65,7 +65,7 @@ fn bootstrap_metadata_keeps_its_charge_and_refuses_an_unfunded_row() {
         assert_eq!(lease.charged_memory_bytes(), before);
 
         let held = lease
-            .reserve_memory(lease.available_memory_bytes())
+            .reserve_memory(lease.available_memory_bytes().expect("the proof declares a finite memory limit"))
             .unwrap();
         // Header/current framing already has a valid positive control above.
         // Enter the same current-body parser directly so scope-framework memory

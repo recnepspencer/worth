@@ -2,6 +2,8 @@ mod canonical_contract;
 mod fixture;
 mod invariant;
 mod mutation_description;
+mod operation_body;
+mod resource_path;
 mod retired_fact_budget;
 
 use worth_query_declaration::facade::application_schema::{
@@ -48,6 +50,40 @@ fn every_application_schema_member_family_round_trips_exact_owned_meaning() {
         &(0..13).collect::<Vec<_>>()
     );
     assert!(attempt.finish().nested_entries() > decoded.members().len() as u64);
+}
+
+#[test]
+fn omitted_operation_projection_budget_round_trips_as_absence() {
+    for projection_work in [None, Some(11)] {
+        let record = fixture::schema_record_with_projection_budget(projection_work);
+        let bytes = encode_payload(&record, WorthQueryPackageArchiveLimits::DEFAULT);
+        let frame = frame_payload(&bytes);
+        let mut decoder =
+            WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
+        let decoded_frame = decoder.decode_frame(&frame).unwrap();
+        let WorthQueryPortablePackageRecord::ApplicationSchema(decoded) = decoded_frame.record()
+        else {
+            panic!("application schema frame must retain its record family");
+        };
+        assert_eq!(decoded, &record);
+        let declared_budget = decoded.members().iter().find_map(|member| match member {
+            ApplicationSchemaMember::OperationProjectionWorkBudget {
+                operation,
+                maximum_work_units,
+            } if operation == "Apply" => Some(*maximum_work_units),
+            _ => None,
+        });
+        assert_eq!(declared_budget, projection_work);
+        let ordinals = decoded
+            .contributions()
+            .iter()
+            .flat_map(|contribution| contribution.member_ordinals().iter().copied())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            ordinals,
+            (0..decoded.members().len() as u32).collect::<Vec<_>>()
+        );
+    }
 }
 
 #[test]

@@ -42,8 +42,8 @@ fn query_refuses_zero_request_budgets_before_its_first_read() {
             .unwrap();
         assert!(reads() > before, "admitted query must contact its reader");
         for (memory, work) in [
-            (policy.charged_memory_bytes(), 0),
-            (0, policy.work_ceiling()),
+            (policy.charged_memory_bytes(), Some(0)),
+            (Some(0), policy.work_ceiling()),
         ] {
             bound(Some(worth_foundational::ExecutionBudget::new(
                 NonZeroUsize::MIN,
@@ -62,7 +62,7 @@ fn query_refuses_zero_request_budgets_before_its_first_read() {
             let WorthQueryApplicationRequestQueryDenial::ExecutionRequest(cause) = denial else {
                 panic!("request admission must precede query admission: {denial:?}");
             };
-            if work == 0 {
+            if work == Some(0) {
                 assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
             } else {
                 let Denial::Resource(Resource::MemoryLimit {
@@ -153,14 +153,14 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
                 bound(Some(worth_foundational::ExecutionBudget::new(
                     NonZeroUsize::MIN,
                     if zero_memory {
-                        0
+                        Some(0)
                     } else {
                         policy.charged_memory_bytes()
                     },
                     if zero_memory {
                         policy.work_ceiling()
                     } else {
-                        0
+                        Some(0)
                     },
                 ))),
             );

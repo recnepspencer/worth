@@ -233,7 +233,7 @@ fn runtime_derives_branch_comparison_candidates_from_branch_pair_reads() {
         .expect("branch comparison declaration should be admitted");
     let planned = resource_request
         .run(
-            worth_execution::ExecutionWorkCeiling::new(8_000_000),
+            worth_execution::ExecutionWorkCeiling::new(Some(8_000_000)),
             |_| {
                 runtime.plan_structural_branch_comparison_from_read_packet(
                     &contract,

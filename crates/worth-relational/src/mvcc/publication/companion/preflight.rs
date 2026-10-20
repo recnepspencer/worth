@@ -19,10 +19,21 @@ pub use observer::{CompanionPublicationCompletion, CompanionPublicationCompletio
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CompanionPreflightBudget {
-    pub maximum_work_visits: u64,
-    pub maximum_preparation_bytes: u64,
+    pub maximum_work_visits: Option<u64>,
+    pub maximum_preparation_bytes: Option<u64>,
 }
 
+/// The original reason native companion admission or preparation stopped.
+///
+/// Resource variants retain their supplied work amounts or byte capacities;
+/// counter overflow carries no inferred requirement. Structural variants name
+/// pending topology, a mismatched source or position, a foreign cell, or changed
+/// registration, without implying resource exhaustion. Execution and interruption
+/// variants retain the native cause and, when supplied, its boundary.
+///
+/// This is diagnostic data, not publication, currentness or cleanup authority.
+/// The receiving owner supplies the reporting stage and decides recovery;
+/// a stop alone neither identifies that stage nor promises a successful retry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CompanionPreflightStop {
     Execution(crate::execution::RelationalExecutionDenialCause),
@@ -51,6 +62,10 @@ pub enum CompanionPreflightStop {
         requested: u64,
         retained: u64,
         maximum: u64,
+    },
+    RetainedCompanionCounterOverflow {
+        requested: u64,
+        retained: u64,
     },
     Interrupted(RelationalInterruptionEvent),
 }
@@ -138,11 +153,10 @@ impl<'a> PublicationCompanionPreflight<'a> {
             .charged_work
             .checked_add(visits)
             .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        if required > self.budget.maximum_work_visits {
-            return Err(CompanionPreflightStop::WorkExhausted {
-                required,
-                maximum: self.budget.maximum_work_visits,
-            });
+        if let Some(maximum) = self.budget.maximum_work_visits
+            && required > maximum
+        {
+            return Err(CompanionPreflightStop::WorkExhausted { required, maximum });
         }
         self.charged_work = required;
         Ok(())
@@ -154,11 +168,10 @@ impl<'a> PublicationCompanionPreflight<'a> {
             .prepared_bytes
             .checked_add(bytes)
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        if required > self.budget.maximum_preparation_bytes {
-            return Err(CompanionPreflightStop::PreparationMemoryExhausted {
-                required,
-                maximum: self.budget.maximum_preparation_bytes,
-            });
+        if let Some(maximum) = self.budget.maximum_preparation_bytes
+            && required > maximum
+        {
+            return Err(CompanionPreflightStop::PreparationMemoryExhausted { required, maximum });
         }
         self.prepared_bytes = required;
         Ok(())

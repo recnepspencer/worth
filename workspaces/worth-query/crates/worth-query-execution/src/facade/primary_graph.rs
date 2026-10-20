@@ -1,4 +1,5 @@
 //! Primary Graph application contracts.
+pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
 
 pub use crate::domain_computation::primary_graph::WorthQueryExecutionLeaseDenial;
 pub use crate::domain_computation::primary_graph::WorthQueryRetainedSnapshotRead;
@@ -46,6 +47,7 @@ pub use crate::domain_computation::primary_graph::query_test_execution_authority
 pub use worth_relational::facade::{
     indexes::{DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest},
     lineage::{LineageEventKind, LineageEventRecord},
+    mvcc::CompanionPreflightStop,
     publication::RecordStructuralChange,
     transactions::RelationalExecutionDenialCause,
 };
@@ -80,7 +82,7 @@ pub use crate::domain_computation::primary_graph::output_lineage::{
 };
 pub use crate::domain_computation::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
-    MutationHandlerExecutionDenial, OperationHandler,
+    MutationHandlerExecutionDenial, OperationHandler, VerificationCapacityStop,
     WorthQueryAdmittedApplicationCapabilityAccess,
     WorthQueryAdmittedApplicationConditionalDefinition, WorthQueryAdmittedApplicationOperation,
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
@@ -177,18 +179,19 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryConditionalRuntimeLifecycleProbe,
     WorthQueryConditionalRuntimeReinstallationReceipt, WorthQueryConditionalSignalDecision,
-    WorthQueryCorrelatedInboundOccurrence, WorthQueryCurrentOutputDenial,
-    WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputSelection,
-    WorthQueryCustomInvariantDenial, WorthQueryDecisionPlan, WorthQueryDelegationActivationProgram,
-    WorthQueryElevationApprovalAuthorizationDenial, WorthQueryElevationApprovalOutcome,
-    WorthQueryElevationApprovalProgram, WorthQueryElevationCloseAuthorizationDenial,
-    WorthQueryElevationCloseOutcome, WorthQueryElevationCloseProgram,
-    WorthQueryElevationClosureKind, WorthQueryElevationRequestOutcome,
-    WorthQueryElevationRequestProgram, WorthQueryEntityResolutionDenial,
-    WorthQueryEntityResolutionDenialKind, WorthQueryEntityResolutionRefusalKind,
-    WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
-    WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
-    WorthQueryGeneratedEntity, WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    WorthQueryCorrelatedInboundOccurrence, WorthQueryCurrentBodyRequirementAssessment,
+    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
+    WorthQueryCurrentOutputSelection, WorthQueryCustomInvariantDenial, WorthQueryDecisionPlan,
+    WorthQueryDelegationActivationProgram, WorthQueryElevationApprovalAuthorizationDenial,
+    WorthQueryElevationApprovalOutcome, WorthQueryElevationApprovalProgram,
+    WorthQueryElevationCloseAuthorizationDenial, WorthQueryElevationCloseOutcome,
+    WorthQueryElevationCloseProgram, WorthQueryElevationClosureKind,
+    WorthQueryElevationRequestOutcome, WorthQueryElevationRequestProgram,
+    WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
+    WorthQueryEntityResolutionRefusalKind, WorthQueryExternalDispatchAttemptDenial,
+    WorthQueryExternalDispatchPreparationDenial, WorthQueryExternalRedispatchDenial,
+    WorthQueryExternalTransportInstallationDenial, WorthQueryGeneratedEntity,
+    WorthQueryGeneratedOutputInvariantAdmissionDenial,
     WorthQueryGeneratedOutputPublicationNoEffect,
     WorthQueryGeneratedOutputPublicationNoEffectCause, WorthQueryGeneratedOutputReconstruction,
     WorthQueryGeneratedOutputReconstructionDenial, WorthQueryGeneratedOutputReconstructionFailure,
@@ -232,6 +235,9 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryObservedOutputAvailability, WorthQueryObservedResultSet, WorthQueryObservedSource,
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialIdentity,
     WorthQueryOperationAuthorizationDenialKind, WorthQueryOperationAuthorizationRefusalKind,
+    WorthQueryOperationBodyAssessmentDenial, WorthQueryOperationBodyDecision,
+    WorthQueryOperationBodyDenial, WorthQueryOperationBodyRequirementFinding,
+    WorthQueryOperationBodyRequirementStatus, WorthQueryOperationBodyRequirementTarget,
     WorthQueryOperationProjectionDenial, WorthQueryOperationProjectionDenialKind,
     WorthQueryOperationScopeBinding, WorthQueryOperationScopeEntityBinding,
     WorthQueryOrderedProgramAdoptionCoverage, WorthQueryOrdinaryApplicationRead,

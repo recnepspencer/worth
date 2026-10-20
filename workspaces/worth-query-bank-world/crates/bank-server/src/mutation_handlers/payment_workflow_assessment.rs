@@ -51,8 +51,8 @@ impl OperationHandler<BankSchema, ApprovedPaymentAssessmentBinding>
         _: &WorthQueryInvariantMutationTarget<BankSchema, PaymentIntent>,
     ) -> ApplicationCandidateRequirements {
         ApprovedPaymentAssessmentBinding::CANDIDATES
-            .fixed_requirements()
-            .expect("fixed candidate contract")
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

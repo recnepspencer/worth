@@ -41,6 +41,7 @@ pub(in crate::domain_computation::primary_graph) mod prepared_plan;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use prepared_plan::canonical_apply;
 mod readiness;
 mod required_cue;
+mod resource_quote;
 mod selected;
 mod selected_public;
 mod source_readmission;
@@ -88,7 +89,13 @@ pub(super) trait InstalledProducerExecutor<Schema>:
         producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop>;
 
-    fn resources(&self, source: &dyn Any) -> Option<super::WorthQueryProducerDemandResources>;
+    fn resources(
+        &self,
+        source: &dyn Any,
+    ) -> Result<
+        Option<super::WorthQueryProducerDemandResources>,
+        super::WorthQueryProducerResourceQuoteDenial,
+    >;
 
     fn readiness_record(
         &self,
@@ -162,10 +169,16 @@ where
         )
     }
 
-    fn resources(&self, source: &dyn Any) -> Option<super::WorthQueryProducerDemandResources> {
-        source
-            .downcast_ref::<SourceValue<Schema, Binding>>()
-            .map(|source| self.provider.demand_resources(source))
+    fn resources(
+        &self,
+        source: &dyn Any,
+    ) -> Result<
+        Option<super::WorthQueryProducerDemandResources>,
+        super::WorthQueryProducerResourceQuoteDenial,
+    > {
+        resource_quote::from_source::<SourceValue<Schema, Binding>>(source, |source| {
+            self.provider.demand_resources(source)
+        })
     }
 
     fn execute(

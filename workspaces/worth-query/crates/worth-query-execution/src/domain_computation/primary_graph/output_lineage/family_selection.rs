@@ -13,6 +13,7 @@ pub(in crate::domain_computation::primary_graph) use checkpoint_priors::{
     CheckpointPriorSelectionDenial, CheckpointPriorStructure,
 };
 pub(super) use publication_heads::PublicationHeads;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn checkpoint_family_role(
@@ -54,30 +55,46 @@ impl WorthQueryApplicationOutputLineage {
 
     pub(in crate::domain_computation::primary_graph) fn resolve_current_family(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
         scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
         family: &str,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,
-        maximum_selection_work: usize,
-    ) -> Result<WorthQueryCurrentOutputFamilyResolution, ()> {
+        maximum_selection_work: Option<usize>,
+    ) -> Result<WorthQueryCurrentOutputFamilyResolution, CompanionPreflightStop> {
+        execution
+            .consult()
+            .map_err(|stop| CompanionPreflightStop::Execution(stop.into()))?;
         let Some(bindings) = self.output_families.get(family) else {
-            return (maximum_selection_work > 0)
+            return (maximum_selection_work != Some(0))
                 .then_some(WorthQueryCurrentOutputFamilyResolution {
                     family_installed: false,
                     ambiguous_publication: false,
                     candidates: Vec::new(),
                     selection_work: 1,
                 })
-                .ok_or(());
+                .ok_or(CompanionPreflightStop::WorkExhausted {
+                    required: 1,
+                    maximum: 0,
+                });
         };
         let mut publications = PublicationHeads::default();
         let mut selection_work = 0usize;
         for (output_binding, output_role) in bindings {
-            selection_work = selection_work.checked_add(1).ok_or(())?;
-            if selection_work > maximum_selection_work {
-                return Err(());
+            execution
+                .consult()
+                .map_err(|stop| CompanionPreflightStop::Execution(stop.into()))?;
+            selection_work = selection_work
+                .checked_add(1)
+                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
+            if maximum_selection_work.is_some_and(|maximum| selection_work > maximum) {
+                return Err(CompanionPreflightStop::WorkExhausted {
+                    required: selection_work as u64,
+                    maximum: maximum_selection_work.expect("the failed comparison has a ceiling")
+                        as u64,
+                });
             }
             let source = SemanticSource {
                 runtime_authority,
@@ -97,22 +114,33 @@ impl WorthQueryApplicationOutputLineage {
             let mut seen = BTreeSet::new();
             let mut ancestry_depth = 0usize;
             loop {
-                let (heads, work) = self
-                    .family_partition_heads_budgeted(
-                        &source,
-                        coordinate,
-                        maximum_selection_work.saturating_sub(selection_work),
-                    )
-                    .map_err(|_| ())?;
-                selection_work = selection_work.checked_add(work).ok_or(())?;
+                let (heads, work) = self.family_partition_heads_budgeted(
+                    execution,
+                    &source,
+                    coordinate,
+                    maximum_selection_work.map(|maximum| maximum.saturating_sub(selection_work)),
+                )?;
+                selection_work = selection_work
+                    .checked_add(work)
+                    .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
                 for (partition, publication) in heads {
+                    execution
+                        .consult()
+                        .map_err(|stop| CompanionPreflightStop::Execution(stop.into()))?;
                     if !seen.insert(partition) {
                         continue;
                     }
                     let work = publications.admission_work();
-                    selection_work = selection_work.checked_add(work).ok_or(())?;
-                    if selection_work > maximum_selection_work {
-                        return Err(());
+                    selection_work = selection_work
+                        .checked_add(work)
+                        .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
+                    if maximum_selection_work.is_some_and(|maximum| selection_work > maximum) {
+                        return Err(CompanionPreflightStop::WorkExhausted {
+                            required: selection_work as u64,
+                            maximum: maximum_selection_work
+                                .expect("the failed comparison has a ceiling")
+                                as u64,
+                        });
                     }
                     publications.insert(
                         partition,
@@ -126,7 +154,9 @@ impl WorthQueryApplicationOutputLineage {
                     break;
                 };
                 coordinate = parent;
-                ancestry_depth = ancestry_depth.checked_add(1).ok_or(())?;
+                ancestry_depth = ancestry_depth
+                    .checked_add(1)
+                    .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
             }
         }
         let (heads, ambiguous_publication) = publications.finish();

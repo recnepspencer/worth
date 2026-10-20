@@ -22,7 +22,7 @@ struct Reservation {
 #[derive(Debug, Default)]
 struct Records {
     reservations: BTreeMap<usize, Reservation>,
-    consumed: BTreeMap<u64, Vec<Weak<RetainedInvalidationCapacity>>>,
+    consumed: BTreeMap<u64, Vec<(Weak<RetainedInvalidationCapacity>, u64)>>,
 }
 #[derive(Debug, Default)]
 pub(super) struct NativeReservationRecorder {
@@ -168,7 +168,11 @@ impl NativeReservationRecorder {
             return;
         }
         if let Some(tickets) = records.consumed.get_mut(&runtime) {
-            tickets.push(Arc::downgrade(ticket));
+            tickets.retain(|(observed, _)| observed.strong_count() != 0);
+            let observed = Arc::downgrade(ticket);
+            if !tickets.iter().any(|(prior, _)| prior.ptr_eq(&observed)) {
+                tickets.push((observed, ticket.bytes()));
+            }
         }
     }
     pub(super) fn consumed(&self, runtime: u64) -> (usize, u64) {
@@ -181,13 +185,16 @@ impl NativeReservationRecorder {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let tickets = records.consumed.entry(runtime).or_default();
         let mut totals = (0, 0);
-        tickets.retain(|ticket| match ticket.upgrade() {
-            Some(ticket) => {
-                totals.0 += 1;
-                totals.1 += ticket.bytes();
-                true
+        // Never acquire custody under this mutex: a temporary final Arc would
+        // re-enter it through the capacity's Drop/release. Bytes are immutable;
+        // each weak record samples liveness without extending the allocation.
+        tickets.retain(|(ticket, bytes)| {
+            if ticket.strong_count() == 0 {
+                return false;
             }
-            None => false,
+            totals.0 += 1;
+            totals.1 += *bytes;
+            true
         });
         totals
     }
@@ -195,6 +202,28 @@ impl NativeReservationRecorder {
 #[cfg(test)]
 mod observation_tests {
     use super::*;
+    #[test]
+    fn repeated_consumers_observe_one_live_allocation_once() {
+        let recorder = NativeReservationRecorder::new();
+        recorder.install();
+        let ledger = Arc::new(super::super::retention::InvalidationRetentionLedger::new(
+            Some(100),
+        ));
+        assert_eq!(recorder.consumed(7), (0, 0));
+        let first = Arc::new(ledger.reserve(30).unwrap());
+        recorder.observe_consumed(7, &first);
+        recorder.observe_consumed(7, &Arc::clone(&first));
+        assert_eq!(recorder.consumed(7), (1, 30));
+        let independent = Arc::new(ledger.reserve(30).unwrap());
+        recorder.observe_consumed(7, &independent);
+        assert_eq!(recorder.consumed(7), (2, 60));
+        drop(first);
+        assert_eq!(recorder.consumed(7), (1, 30));
+        drop(independent);
+        assert_eq!(recorder.consumed(7), (0, 0));
+        assert_eq!(ledger.retained_bytes(), 0);
+    }
+
     #[test]
     fn capture_classifies_only_reservations_it_observed() {
         let recorder = NativeReservationRecorder::new();
@@ -227,7 +256,7 @@ mod observation_tests {
         let ledger = std::cell::RefCell::new(None);
         assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             let _guard = WorthQueryExecutionObservation::install_on_this_thread();
-            let captured = super::super::retention::InvalidationRetentionLedger::install(100);
+            let captured = super::super::retention::InvalidationRetentionLedger::install(Some(100));
             captured
                 .native
                 .observe(1, 7, std::panic::Location::caller());

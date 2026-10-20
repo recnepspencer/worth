@@ -33,7 +33,7 @@ pub(super) fn observe_one_shot(
             governed_live_account_parameters("account-1"),
             crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 one(),
-                buffer_limit(),
+                Some(buffer_limit()),
                 context.request,
             ),
         )
@@ -73,7 +73,7 @@ pub(super) fn observe_continuation(
             governed_live_account_parameters("account-1"),
             crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 one(),
-                buffer_limit(),
+                Some(buffer_limit()),
                 context.request,
             ),
         )
@@ -108,7 +108,11 @@ pub(super) fn observe_continuation(
             fresh,
             governed_live_account_parameters("account-1"),
             continuation,
-            WorthQueryApplicationQueryResumeControls::new(one(), buffer_limit(), context.request),
+            WorthQueryApplicationQueryResumeControls::new(
+                one(),
+                Some(buffer_limit()),
+                context.request,
+            ),
         )
         .unwrap();
     let page = context

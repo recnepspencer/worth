@@ -42,21 +42,18 @@ impl CheckedEpochAdmission<'_> {
         self.task_offset
     }
 
-    pub(crate) fn result_grant_bytes(&self) -> u64 {
+    pub(crate) fn result_grant_bytes(&self) -> Option<u64> {
         self.grant.result_grant_bytes()
-    }
-
-    pub(in crate::logic::planner) fn apply_capacity(&self) -> &CheckedApplyCapacity {
-        self.grant.apply_capacity()
     }
 }
 
 impl<'a> CheckedEpochAdmission<'a> {
     pub(in crate::logic::planner) fn into_parts(
         self,
-    ) -> (&'a [EligibleTask], CheckedApplyCapacity) {
-        let (_, _, apply) = self.grant.into_parts();
-        (self.tasks, apply)
+        measured_result_bytes: u64,
+    ) -> Result<(&'a [EligibleTask], CheckedApplyCapacity), SignalError> {
+        let (_, apply) = self.grant.into_parts(measured_result_bytes)?;
+        Ok((self.tasks, apply))
     }
 }
 

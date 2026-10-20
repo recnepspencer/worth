@@ -29,11 +29,15 @@ fn limit(memory: bool) {
     bound(Some(worth_foundational::ExecutionBudget::new(
         NonZeroUsize::MIN,
         if memory {
-            0
+            Some(0)
         } else {
             policy.charged_memory_bytes()
         },
-        if memory { policy.work_ceiling() } else { 0 },
+        if memory {
+            policy.work_ceiling()
+        } else {
+            Some(0)
+        },
     )));
 }
 fn assert_cause(cause: Denial, memory: bool) {

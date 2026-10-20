@@ -149,7 +149,7 @@ pub(super) fn observe_case(
         .map(|_| std::time::Instant::now() + Duration::from_secs(5));
     let lease = execution.in_scope(|parent| {
         { let parent = parent.expect("the active phase is leased"); parent.child(LeaseRequest {
-            policy: worth_foundational::ExecutionRequestPolicy::new(parent.policy().posture(), parent.policy().determinism(), worth_foundational::ExecutionBudget::new(NonZeroUsize::new(workers.unwrap_or(1)).unwrap(), 16 << 20, parent.policy().budget().work_ceiling())),
+            policy: worth_foundational::ExecutionRequestPolicy::new(parent.policy().posture(), parent.policy().determinism(), worth_foundational::ExecutionBudget::new(NonZeroUsize::new(workers.unwrap_or(1)).unwrap(), None, parent.policy().budget().work_ceiling())),
             cancellation: caller_cancel.token(),
             deadline,
         }).unwrap() }
@@ -215,7 +215,7 @@ pub(super) fn observe_case(
         projected.clear();
         prepared = 0;
         witness.reset();
-        let result = request.run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+        let result = request.run(ExecutionWorkCeiling::new(None), |_| {
             world
                 .application
                 .reconstruct_managed_derived_collection_pair(

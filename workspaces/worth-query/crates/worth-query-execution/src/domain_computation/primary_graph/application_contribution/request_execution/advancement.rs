@@ -122,7 +122,7 @@ impl QueryRequestExecution<'_> {
         let request = self
             .execution_request()
             .map_err(WorthQueryAdvancementDenial::Resource)?;
-        if self.declared_work == 0 {
+        if self.declared_work == Some(0) {
             return Err(WorthQueryAdvancementDenial::Resource(
                 Resource::WorkExhausted,
             ));

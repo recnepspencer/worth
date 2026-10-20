@@ -11,7 +11,7 @@ fn actual_content_controls_and_resource_stops_keep_their_own_native_disposition(
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 20, 1_000_000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(1 << 20), Some(1_000_000)),
     );
     with_bootstrap_advancement(policy, |phase| {
         let request = phase.execution_request();
@@ -45,7 +45,12 @@ fn actual_content_controls_and_resource_stops_keep_their_own_native_disposition(
             );
         }
         let blocked = lease
-            .reserve_memory(lease.available_memory_bytes() - 1)
+            .reserve_memory(
+                lease
+                    .available_memory_bytes()
+                    .expect("this fixture supplies a finite memory ceiling")
+                    - 1,
+            )
             .unwrap();
         let refused = request.allocation_policy().reserve_memory(2).unwrap_err();
         let stop = identity_failed(

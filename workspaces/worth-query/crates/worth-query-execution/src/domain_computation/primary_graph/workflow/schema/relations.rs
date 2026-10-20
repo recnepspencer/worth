@@ -79,6 +79,7 @@ pub(super) fn lower_definition(
     let maximum_nodes = planned_field_locator(DEFINITION_ASPECT, "maximum-nodes")?;
     let maximum_connections = planned_field_locator(DEFINITION_ASPECT, "maximum-connections")?;
     let maximum_effects = planned_field_locator(DEFINITION_ASPECT, "maximum-effects")?;
+    let global_actions = planned_field_locator(DEFINITION_ASPECT, "global-actions")?;
     let maximum_component_occurrences =
         planned_field_locator(DEFINITION_ASPECT, "maximum-component-occurrences")?;
     let maximum_component_depth =
@@ -101,6 +102,7 @@ pub(super) fn lower_definition(
         .required("maximum-nodes", ScalarAspectType::UInt64)
         .required("maximum-connections", ScalarAspectType::UInt64)
         .required("maximum-effects", ScalarAspectType::UInt64)
+        .optional("global-actions", ScalarAspectType::String)
         .required("maximum-component-occurrences", ScalarAspectType::UInt64)
         .required("maximum-component-depth", ScalarAspectType::UInt64)
         .required("maximum-node-provenance", ScalarAspectType::UInt64)
@@ -130,6 +132,7 @@ pub(super) fn lower_definition(
             maximum_nodes,
             maximum_connections,
             maximum_effects,
+            global_actions,
             maximum_component_occurrences,
             maximum_component_depth,
             maximum_node_provenance,
@@ -267,6 +270,10 @@ pub(super) fn lower_connection(
         .required("variant", ScalarAspectType::UInt64)
         .optional("retry-reason", ScalarAspectType::String)
         .optional("retry-maximum-attempts", ScalarAspectType::UInt64)
+        .optional("back-action-operation", ScalarAspectType::String)
+        .optional("back-action-input-type", ScalarAspectType::String)
+        .optional("back-action-binding", ScalarAspectType::String)
+        .optional("back-action-requirements", ScalarAspectType::String)
         .finish()
         .map_err(|_| invalid_member(CONNECTION_ASPECT))?;
     let registry = register_platform_entity(
@@ -287,6 +294,12 @@ pub(super) fn lower_connection(
             variant,
             retry_reason,
             retry_maximum_attempts,
+            back_action: super::layout::WorkflowBackActionLayout {
+                operation: planned_field_locator(CONNECTION_ASPECT, "back-action-operation")?,
+                input_type: planned_field_locator(CONNECTION_ASPECT, "back-action-input-type")?,
+                binding: planned_field_locator(CONNECTION_ASPECT, "back-action-binding")?,
+                requirements: planned_field_locator(CONNECTION_ASPECT, "back-action-requirements")?,
+            },
         },
     ))
 }
@@ -301,11 +314,27 @@ pub(super) fn register_platform_entity(
     identity: AspectIdentity,
     shape: StructAspectShape,
 ) -> Result<RelationalSchemaRegistry, WorthQueryPrimaryGraphInstallationDenial> {
+    register_platform_entity_at_revision(
+        registry, schema_id, version, name, kind, aspect, identity, shape, 1,
+    )
+}
+
+pub(super) fn register_platform_entity_at_revision(
+    registry: RelationalSchemaRegistry,
+    schema_id: &SchemaId,
+    version: SchemaVersionId,
+    name: &str,
+    kind: KindId,
+    aspect: &str,
+    identity: AspectIdentity,
+    shape: StructAspectShape,
+    revision: u64,
+) -> Result<RelationalSchemaRegistry, WorthQueryPrimaryGraphInstallationDenial> {
     let contract = aspects()
         .contract()
         .for_key(valid_aspect_key(aspect)?)
         .identified_by(identity)
-        .at_revision(aspects().vocabulary().revision(1))
+        .at_revision(aspects().vocabulary().revision(revision))
         .struct_aspect(shape);
     register_entity(
         registry,

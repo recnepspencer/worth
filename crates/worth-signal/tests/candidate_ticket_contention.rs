@@ -45,7 +45,11 @@ fn request(workers: usize, work: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), 32 * 1024 * 1024, work),
+            ExecutionBudget::new(
+                NonZeroUsize::new(workers).unwrap(),
+                Some(32 * 1024 * 1024),
+                Some(work),
+            ),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -59,8 +63,8 @@ fn competing_ticket(scratch_bytes: u64) -> Result<HostTicket, LeaseDenial> {
         host_request.policy.determinism(),
         ExecutionBudget::new(
             host_request.policy.budget().max_workers(),
-            HOST_MEMORY,
-            1_000_000,
+            Some(HOST_MEMORY),
+            Some(1_000_000),
         ),
     );
     let lease = authority().request_lease(host_request)?;

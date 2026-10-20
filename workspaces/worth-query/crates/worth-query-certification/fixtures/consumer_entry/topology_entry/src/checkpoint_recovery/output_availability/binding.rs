@@ -51,8 +51,10 @@ macro_rules! binding {
             const HANDLER_IDENTITY: &'static str = concat!("availability-handler-", $id);
             const IDEMPOTENCY_IDENTITY: &'static str = concat!("availability-command-", $id);
             const CANDIDATES:
-                worth_query_decl::facade::application_operation::ApplicationCandidateContract =
-                worth_query_decl::facade::application_operation::ApplicationCandidateContract::FixedShape(crate::mutation::requirements(1, 0, 0, 2, 16384));
+                worth_query_decl::facade::application_operation::ApplicationCandidatePolicy =
+                worth_query_decl::facade::application_operation::ApplicationCandidatePolicy::finite(
+                    crate::mutation::requirements(1, 0, 0, 2, 16384),
+                );
             fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
                 ApplicationWorkflowExecutionRequirements::not_applicable()
             }

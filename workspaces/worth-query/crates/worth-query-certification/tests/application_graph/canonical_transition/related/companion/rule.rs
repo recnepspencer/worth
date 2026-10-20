@@ -11,7 +11,7 @@ pub fn definition() -> ApplicationInvariantDefinition<CanonicalSchema, Companion
     ApplicationInvariantDefinition::new(
         CompanionRule::reference(),
         ApplicationInvariantExecutionPoint::CommitBoundary,
-        RelationalInvariantWorkBudget::new(std::num::NonZeroU64::new(4096).unwrap()),
+        RelationalInvariantWorkBudget::new(Some(std::num::NonZeroU64::new(4096).unwrap())),
         ApplicationInvariantOperationalContract::new(
             ApplicationInvariantEnforcement::BlockCommit,
             [ApplicationInvariantGroup::SchemaCompliance],

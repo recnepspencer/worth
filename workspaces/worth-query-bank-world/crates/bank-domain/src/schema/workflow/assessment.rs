@@ -1,6 +1,9 @@
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
+use worth_query_decl::facade::application_operation::ApplicationCandidateRequirements;
 use worth_query_decl::facade::{
     worth_query_operation, worth_query_operation_reads, worth_query_structured_value_binding,
 };
+use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 use worth_query_host::facade::{
     application_contribution::{
         WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
@@ -132,12 +135,11 @@ impl ApplicationMutationBinding<BankSchema> for ApprovedPaymentAssessmentBinding
     const IDENTITY: &'static str = "worth.bank.approved-payment-assessment.binding.v1";
     const HANDLER_IDENTITY: &'static str = "worth.bank.approved-payment-assessment.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.bank.approved-payment-assessment.command.v1";
-    const CANDIDATES:
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(1_024),
-        );
+        ));
 
     fn scope_field() -> ApplicationFieldRef<
         BankSchema,
@@ -260,8 +262,11 @@ impl WorthQueryApplicationProducerProvider<BankSchema, ApprovedPaymentAssessment
         BankIdempotencyKey::new(value).expect("assessment identity fits the bank key contract")
     }
 
-    fn demand_resources(&self, _: &PaymentSummary) -> WorthQueryProducerDemandResources {
-        WorthQueryProducerDemandResources::new(512, 1_024)
+    fn demand_resources(
+        &self,
+        _: &PaymentSummary,
+    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
+        Ok(WorthQueryProducerDemandResources::new(Some(512), 1_024))
     }
 }
 

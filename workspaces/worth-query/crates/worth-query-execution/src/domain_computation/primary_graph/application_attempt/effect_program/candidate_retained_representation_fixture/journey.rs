@@ -9,7 +9,7 @@ use worth_query_declaration::facade::{
 };
 
 fn world(items: u64, bytes: u64) -> ReservationWorld {
-    fixture::installed_world_with_profile(crate::domain_computation::execution_runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(items, bytes).unwrap())
+    fixture::installed_world_with_candidate_policy(crate::domain_computation::execution_runtime::WorthQueryApplicationCandidateResourceProfile::policy(Some(items), Some(bytes)).unwrap())
 }
 fn input(key: &str, count: usize, width: usize) -> PreparedInput {
     PreparedInput {
@@ -172,7 +172,11 @@ fn allocation_refuses_before_authoring_and_candidate_grant_survives_sealing() {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1024 * 1024, 1_000_000),
+            ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                Some(1024 * 1024),
+                Some(1_000_000),
+            ),
         ),
         cancellation: worth_execution::CancellationToken::new(),
         deadline: None,
@@ -213,7 +217,7 @@ fn lease(bytes: u64) -> worth_execution::ExecutionResourceLease<'static> {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, bytes, 1_000_000),
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(bytes), Some(1_000_000)),
         ),
         cancellation: worth_execution::CancellationToken::new(),
         deadline: None,

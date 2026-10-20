@@ -26,7 +26,11 @@ fn policy(workers: usize, memory: u64, work: u64) -> ExecutionRequestPolicy {
     ExecutionRequestPolicy::new(
         ExecutionPosture::Automatic,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), memory, work),
+        ExecutionBudget::new(
+            NonZeroUsize::new(workers).unwrap(),
+            Some(memory),
+            Some(work),
+        ),
     )
 }
 fn serial(memory: u64, work: u64) -> SerialRequest {
@@ -110,9 +114,17 @@ fn assert_serial_scope_memory_refused(cause: BridgeExecutionDenial) {
     let BridgeExecutionDenial::MemoryExhausted(denial) = cause else {
         panic!("serial framework reservation must refuse memory: {cause:?}");
     };
-    assert_eq!(denial.level, MemoryLimitLevel::Policy { ancestor: 0 });
-    assert_eq!(denial.admitted, 0);
-    assert!(denial.requested > 0);
+    let worth_execution::MemoryLimitDenial::Capacity {
+        requested,
+        admitted,
+        level,
+    } = denial
+    else {
+        panic!("finite capacity refusal required");
+    };
+    assert_eq!(level, MemoryLimitLevel::Policy { ancestor: 0 });
+    assert_eq!(admitted, 0);
+    assert!(requested > 0);
 }
 
 #[test]
@@ -134,7 +146,7 @@ fn stopped_requests_refuse_bridge_reads_before_reader_contact() {
     let active = lease(1, 1 << 20, 100);
     let request = ExecutionRequest::leased(&active);
     let (_, report) = request
-        .run(ExecutionWorkCeiling::new(1), |_| {
+        .run(ExecutionWorkCeiling::new(Some(1)), |_| {
             exhaust_active_request(&active, || {
                 assert_read_stopped(&f, request, BridgeExecutionDenial::WorkCeiling);
             });
@@ -160,7 +172,7 @@ fn stopped_requests_refuse_bridge_reads_before_reader_contact() {
     ] {
         let f = fixture();
         let (_, report) = request
-            .run(ExecutionWorkCeiling::new(0), |_| {
+            .run(ExecutionWorkCeiling::new(Some(0)), |_| {
                 f.context
                     .read_packet(f.routes[0].read_packet(), request)
                     .unwrap();
@@ -201,7 +213,7 @@ fn stopped_requests_refuse_delivery_before_source_or_sink_contact() {
     let active = lease(1, 1 << 20, 100);
     let request = ExecutionRequest::leased(&active);
     let (_, report) = request
-        .run(ExecutionWorkCeiling::new(1), |_| {
+        .run(ExecutionWorkCeiling::new(Some(1)), |_| {
             exhaust_active_request(&active, || {
                 assert_delivery_stopped(&f, request, BridgeExecutionDenial::WorkCeiling);
             });
@@ -227,7 +239,7 @@ fn stopped_requests_refuse_delivery_before_source_or_sink_contact() {
     ] {
         let f = fixture();
         let (_, report) = request
-            .run(ExecutionWorkCeiling::new(0), |_| {
+            .run(ExecutionWorkCeiling::new(Some(0)), |_| {
                 f.runtime
                     .deliver_invalidation(f.routes[0].clone(), request)
                     .unwrap();
@@ -264,7 +276,7 @@ fn snapshot_bits_patch_order_and_actual_work_agree_across_widths() {
             ExecutionRequest::leased,
         );
         let (bits, report) = request
-            .run(ExecutionWorkCeiling::new(100), |_| {
+            .run(ExecutionWorkCeiling::new(Some(100)), |_| {
                 let read = f
                     .context
                     .read_packet(f.routes[0].read_packet(), request)

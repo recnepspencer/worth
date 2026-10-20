@@ -30,14 +30,20 @@ impl VisibilityProjectionView {
         Vec<crate::storage::data::RelationReadRecord>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        super::super::read_work::metered(
+        super::super::read_work::metered_with_memory(
             execution,
-            |context| {
+            |context, memory| {
                 self.entity_relations_of_kind(
                     entity_id,
                     kind_id,
                     AdjacencyDirection::Outgoing,
-                    &mut |units, _, _| context.checkpoint(units),
+                    &mut |units, _, _| {
+                        context
+                            .checkpoint(units)
+                            .map_err(crate::execution::denial::kernel_stop)
+                    },
+                    memory,
+                    &std::convert::identity,
                 )
                 .map(BoundedAdjacencyTruthRead::into_records)
             },
@@ -47,7 +53,6 @@ impl VisibilityProjectionView {
                     .map_or(0, super::super::read_footprint::relations)
             },
         )?
-        .map_err(crate::execution::denial::kernel_stop)
     }
 
     pub fn bounded_outgoing_relations_of_kind(
@@ -55,7 +60,7 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         kind_id: KindId,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
@@ -74,7 +79,7 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         kind_id: KindId,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
@@ -88,14 +93,14 @@ impl VisibilityProjectionView {
         )
     }
 
-    /// Read bounded adjacency already admitted by a caller's projection budget.
+    /// Read adjacency under the caller's optional projection work limit.
     /// Request stops are consulted before each examined or retained record.
     pub fn bounded_outgoing_relations_of_kind_admitted(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         kind_id: KindId,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
         mut admit_work: impl FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
@@ -111,14 +116,14 @@ impl VisibilityProjectionView {
         )
     }
 
-    /// Read bounded adjacency already admitted by a caller's projection budget.
+    /// Read adjacency under the caller's optional projection work limit.
     /// Request stops are consulted before each examined or retained record.
     pub fn bounded_incoming_relations_of_kind_admitted(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         kind_id: KindId,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
         mut admit_work: impl FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
@@ -140,7 +145,7 @@ impl VisibilityProjectionView {
         entity_id: EntityId,
         kind_id: KindId,
         direction: AdjacencyDirection,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
         admit_work: &mut dyn FnMut(
             u64,
         )
@@ -151,25 +156,30 @@ impl VisibilityProjectionView {
     > {
         use super::super::native_scan_stop::NativeScanStop;
         crate::execution::check_request(execution)?;
-        let read = self.entity_relations_of_kind(
-            entity_id,
-            kind_id,
-            direction,
-            &mut |units, examined, reserved| {
-                if examined + reserved == maximum_work_units {
-                    return Err(NativeScanStop::Limit(AdjacencyTruthReadLimitExceeded::new(
-                        examined, reserved,
-                    )));
-                }
-                crate::execution::check_request(execution).map_err(NativeScanStop::Request)?;
-                admit_work(units).map_err(NativeScanStop::Request)
+        super::super::read_work::scan_with_memory(
+            execution,
+            |_context, memory| {
+                self.entity_relations_of_kind(
+                    entity_id,
+                    kind_id,
+                    direction,
+                    &mut |units, examined, reserved| {
+                        if maximum_work_units.is_some_and(|maximum| examined + reserved >= maximum)
+                        {
+                            return Err(NativeScanStop::Limit(
+                                AdjacencyTruthReadLimitExceeded::new(examined, reserved),
+                            ));
+                        }
+                        crate::execution::check_request(execution)
+                            .map_err(NativeScanStop::Request)?;
+                        admit_work(units).map_err(NativeScanStop::Request)
+                    },
+                    memory,
+                    &NativeScanStop::Request,
+                )
             },
-        );
-        match read {
-            Ok(read) => Ok(Ok(read)),
-            Err(NativeScanStop::Limit(limit)) => Ok(Err(limit)),
-            Err(NativeScanStop::Request(cause)) => Err(cause),
-        }
+            |read| read.owned_bytes(),
+        )
     }
 
     fn bounded_entity_relations_of_kind(
@@ -178,20 +188,21 @@ impl VisibilityProjectionView {
         entity_id: EntityId,
         kind_id: KindId,
         direction: AdjacencyDirection,
-        maximum_work_units: usize,
+        maximum_work_units: Option<usize>,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        super::super::read_work::scan(
+        super::super::read_work::scan_with_memory(
             execution,
-            |context| {
+            |context, memory| {
                 self.entity_relations_of_kind(
                     entity_id,
                     kind_id,
                     direction,
                     &mut |units, examined, reserved| {
-                        if examined + reserved == maximum_work_units {
+                        if maximum_work_units.is_some_and(|maximum| examined + reserved >= maximum)
+                        {
                             return Err(super::super::native_scan_stop::NativeScanStop::Limit(
                                 AdjacencyTruthReadLimitExceeded::new(examined, reserved),
                             ));
@@ -200,6 +211,8 @@ impl VisibilityProjectionView {
                             .checkpoint(units)
                             .map_err(super::super::native_scan_stop::NativeScanStop::request)
                     },
+                    memory,
+                    &super::super::native_scan_stop::NativeScanStop::Request,
                 )
             },
             |read| read.owned_bytes(),
@@ -212,6 +225,8 @@ impl VisibilityProjectionView {
         kind_id: KindId,
         direction: AdjacencyDirection,
         spend: &mut dyn FnMut(u64, usize, usize) -> Result<(), E>,
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+        request: &dyn Fn(crate::execution::RelationalExecutionDenialCause) -> E,
     ) -> Result<BoundedAdjacencyTruthRead, E> {
         let Some(root) = self.basis.root() else {
             return Ok(BoundedAdjacencyTruthRead::new(Vec::new(), 0));
@@ -229,20 +244,40 @@ impl VisibilityProjectionView {
         let answer = (|| {
             let mut records = Vec::new();
             let mut examined = 0;
-            for id in ids.iter().copied() {
+            let mut iterator_bytes = 0;
+            let ids = ids.try_iter(|_navigation, bytes| {
+                super::super::read_work::record_memory::claim(memory, bytes).map_err(request)?;
+                iterator_bytes = bytes;
+                Ok(())
+            })?;
+            for id in ids.copied() {
                 spend(
                     super::super::read_prices::EXAMINE_SLOT,
                     examined,
                     records.len(),
                 )?;
                 examined += 1;
+                let clone_bytes =
+                    super::ProjectionRecordSource::candidate_relation_heap_for_id(self, id)
+                        .map_err(request)?;
+                super::super::read_work::record_memory::claim(memory, clone_bytes)
+                    .map_err(request)?;
                 let Some(record) = self.project_relation_record(id) else {
+                    super::super::read_work::record_memory::release(memory, clone_bytes)
+                        .map_err(request)?;
                     continue;
                 };
+                let actual = super::super::read_footprint::relation(&record);
+                super::super::read_work::record_memory::settle_clone(memory, clone_bytes, actual)
+                    .map_err(request)?;
+                let clone_bytes = actual;
                 if record.kind.kind_id != kind_id
                     || record.lifecycle != RecordLifecycleState::Live
                     || !direction.matches_endpoint(&record, entity_id)
                 {
+                    drop(record);
+                    super::super::read_work::record_memory::release(memory, clone_bytes)
+                        .map_err(request)?;
                     continue;
                 }
                 spend(
@@ -250,9 +285,13 @@ impl VisibilityProjectionView {
                     examined,
                     records.len(),
                 )?;
+                super::super::read_work::record_memory::prepare_push(memory, &mut records, 0)
+                    .map_err(request)?;
                 records.push(record);
             }
-            records.sort_by_key(relation_identity_order_key);
+            super::super::read_work::record_memory::release(memory, iterator_bytes)
+                .map_err(request)?;
+            records.sort_unstable_by_key(relation_identity_order_key);
             Ok(BoundedAdjacencyTruthRead::new(records, examined))
         })();
         ledger.settle_instrumentation(&self.instrumentation);

@@ -57,7 +57,7 @@ pub(super) fn resume(
             let access = WorthQueryApplicationQueryAccessContext::new(&principal, &root);
             let controls = WorthQueryApplicationQueryResumeControls::new(
                 NonZeroUsize::MIN,
-                NonZeroUsize::new(65_536).unwrap(),
+                Some(NonZeroUsize::new(65_536).unwrap()),
                 scope,
             );
             let plan = runtime
@@ -81,7 +81,11 @@ pub(super) fn resume(
                             policy: ExecutionRequestPolicy::new(
                                 parent.policy().posture(),
                                 parent.policy().determinism(),
-                                ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, work),
+                                ExecutionBudget::new(
+                                    NonZeroUsize::MIN,
+                                    Some(64 * 1024 * 1024),
+                                    Some(work),
+                                ),
                             ),
                             cancellation: scope.cancellation().execution_token(),
                             deadline: scope.deadline(),
@@ -90,7 +94,7 @@ pub(super) fn resume(
                 })
                 .unwrap();
             ExecutionRequest::leased(&child)
-                .run(ExecutionWorkCeiling::new(work), |_| {
+                .run(ExecutionWorkCeiling::new(Some(work)), |_| {
                     runtime.execute_application_query_continuation_page(&phase, plan)
                 })
                 .expect("the native original continuation scope ran")

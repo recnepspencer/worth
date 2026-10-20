@@ -43,7 +43,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
         ))
         .retain_operation()
         .unwrap_or_else(|cause| panic!("deposit construction: {cause:?}"));
-    let Advance::Completed(performed) = performed.advance(&deposit_request, history) else {
+    let Advance::Completed(performed) = performed.advance(&deposit_request, Some(history)) else {
         panic!("fresh retained deposit")
     };
     let Completion::Fresh {
@@ -78,7 +78,8 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
     let mut live = saved_view
         .as_principal(&owner)
         .subscribe(
-            WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8, 2_048).unwrap(),
+            WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8, Some(2_048))
+                .unwrap(),
         )
         .expect("the saved view opens the same query as a live subscription");
     assert!(matches!(
@@ -101,7 +102,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
         ))
         .retain_operation()
         .unwrap_or_else(|cause| panic!("later construction: {cause:?}"));
-    let Advance::Completed(later) = later.advance(&deposit_request, history) else {
+    let Advance::Completed(later) = later.advance(&deposit_request, Some(history)) else {
         panic!("later fresh deposit")
     };
     assert!(later.close(&deposit_request).is_ok());
@@ -143,10 +144,10 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
         ))
         .retain_operation()
         .unwrap_or_else(|cause| panic!("replay construction: {cause:?}"));
-    let Advance::Progress(replay) = replay.advance(&deposit_request, history) else {
+    let Advance::Progress(replay) = replay.advance(&deposit_request, Some(history)) else {
         panic!("native retained replay pending")
     };
-    let Advance::Completed(replay) = replay.advance(&deposit_request, history) else {
+    let Advance::Completed(replay) = replay.advance(&deposit_request, Some(history)) else {
         panic!("bounded original native replay delivery")
     };
     let Completion::Recovered {

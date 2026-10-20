@@ -69,14 +69,14 @@ fn budgeted_delta_matches_independent_grouping_with_mixed_scope_precision() {
                 apply.effect.changed_aspect_regions(),
                 apply.effect.changed_regions(),
             );
-            let mut measured = Work::new(10_000_000);
+            let mut measured = Work::new(Some(10_000_000));
             let actual = graph
                 .prepare_produced_delta(&apply, &mut EvaluationWork::Conditional(&mut measured))
                 .unwrap();
             assert_eq!(actual, expected);
             let cost = measured.visits();
             for available in [cost - 1, cost] {
-                let mut work = Work::new(cost + 7);
+                let mut work = Work::new(Some(cost + 7));
                 work.reserve_visits(cost + 7 - available).unwrap();
                 let actual = graph
                     .prepare_produced_delta(&apply, &mut EvaluationWork::Conditional(&mut work));
@@ -105,7 +105,7 @@ fn budgeted_delta_matches_independent_grouping_with_mixed_scope_precision() {
 #[test]
 fn delta_copy_and_normalization_charge_selected_payload_bytes() {
     let (short_graph, short) = packet(AspectMask::ALL, Vec::new(), vec![ChangedRegion::new("x")]);
-    let mut measured = Work::new(1_000_000);
+    let mut measured = Work::new(Some(1_000_000));
     short_graph
         .prepare_produced_delta(&short, &mut EvaluationWork::Conditional(&mut measured))
         .unwrap();
@@ -118,11 +118,11 @@ fn delta_copy_and_normalization_charge_selected_payload_bytes() {
     assert!(matches!(
         graph.prepare_produced_delta(
             &apply,
-            &mut EvaluationWork::Conditional(&mut Work::new(measured.visits()))
+            &mut EvaluationWork::Conditional(&mut Work::new(Some(measured.visits())))
         ),
         Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
     ));
-    let mut work = Work::new(10_000_000);
+    let mut work = Work::new(Some(10_000_000));
     let actual = graph
         .prepare_produced_delta(&apply, &mut EvaluationWork::Conditional(&mut work))
         .unwrap()

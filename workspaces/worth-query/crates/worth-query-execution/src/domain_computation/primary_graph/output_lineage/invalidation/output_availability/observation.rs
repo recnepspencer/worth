@@ -18,7 +18,7 @@ pub(super) trait SourcePublicationReader: Send + Sync {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
         positioned: &PositionedRelationalSnapshot,
-        maximum_work: usize,
+        maximum_work: Option<usize>,
     ) -> Result<(bool, usize), Stop>;
 }
 
@@ -113,7 +113,7 @@ impl ObservedSourcePublication {
 
     pub(in crate::domain_computation::primary_graph) fn source_facts(
         &self,
-    ) -> &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact] {
+    ) -> &crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload {
         self.read_closure.facts()
     }
 
@@ -124,7 +124,7 @@ impl ObservedSourcePublication {
         runtime: &RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
-        maximum_work: usize,
+        maximum_work: Option<usize>,
     ) -> Result<(bool, usize), crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure>{
         use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Stop;
         let positioned = runtime
@@ -155,12 +155,10 @@ impl SourcePublicationReader for SourceInvalidationOwner {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
         positioned: &PositionedRelationalSnapshot,
-        maximum_work: usize,
+        maximum_work: Option<usize>,
     ) -> Result<(bool, usize), Stop> {
         use super::super::admission::IndexAdmission;
-        let mut admission = self.edit_admission_within(
-            std::num::NonZeroUsize::new(maximum_work).ok_or(Stop::WorkBudgetExceeded)?,
-        );
+        let mut admission = self.edit_admission_with_work_limit(maximum_work);
         let cell = self.cell_for_read(positioned, &mut admission)
             .map_err(|stop| Stop::OutputObservation(crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop(stop)))?
             .ok_or(Stop::Unavailable)?;

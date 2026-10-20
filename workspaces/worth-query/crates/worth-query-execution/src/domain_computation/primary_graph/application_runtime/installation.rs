@@ -245,7 +245,7 @@ where
         .map_err(|denial| {
             WorthQueryPrimaryGraphInstallationDenial::new(
                 WorthQueryPrimaryGraphInstallationDenialKind::AuthorizationPolicyRejected,
-                denial.subject(),
+                denial.to_string(),
             )
         })
 }

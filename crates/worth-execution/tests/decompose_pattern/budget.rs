@@ -20,7 +20,11 @@ fn one_scope_enforces_total_work_and_preserves_snapshot_after_stop() {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), 200_000, work_ceiling),
+            ExecutionBudget::new(
+                NonZeroUsize::new(1).unwrap(),
+                Some(200_000),
+                Some(work_ceiling),
+            ),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),

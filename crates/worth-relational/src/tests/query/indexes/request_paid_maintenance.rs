@@ -7,9 +7,9 @@ use worth_execution::ExecutionWorkCeiling;
 
 fn cold_budget() -> Budget {
     Budget {
-        maximum_work_units: 100_000,
-        maximum_cold_record_slots: 100_000,
-        maximum_derived_rows: 100_000,
+        maximum_work_units: None,
+        maximum_cold_record_slots: None,
+        maximum_derived_rows: None,
     }
 }
 
@@ -37,7 +37,7 @@ fn cold_reconstruction_is_paid_and_short_requests_publish_nothing() {
         .unwrap();
     // Quote the complete request, including preparation beyond native visits.
     let (baseline, baseline_report) = execution
-        .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+        .run(ExecutionWorkCeiling::new(None), |_| {
             runtime.index_authority().refresh_for_basis(
                 request.clone(),
                 &basis,
@@ -56,7 +56,7 @@ fn cold_reconstruction_is_paid_and_short_requests_publish_nothing() {
         .unwrap();
     let needed = baseline_report.charged_work();
     let (short, _) = execution
-        .run(ExecutionWorkCeiling::new(needed - 1), |_| {
+        .run(ExecutionWorkCeiling::new(Some(needed - 1)), |_| {
             runtime.index_authority().refresh_for_basis(
                 request.clone(),
                 &basis,
@@ -77,7 +77,7 @@ fn cold_reconstruction_is_paid_and_short_requests_publish_nothing() {
     let next_host = crate::test_execution_policy::serial_request();
     let next_request = &worth_execution::ExecutionRequest::serial(&next_host);
     let (enough, report) = next_request
-        .run(ExecutionWorkCeiling::new(needed), |_| {
+        .run(ExecutionWorkCeiling::new(Some(needed)), |_| {
             runtime.index_authority().refresh_for_basis(
                 request,
                 &basis,
@@ -101,7 +101,7 @@ fn cold_reconstruction_is_paid_and_short_requests_publish_nothing() {
 fn cold_retry_and_cancellation_use_the_same_request_payer() {
     let source = worth_execution::CancellationSource::new();
     let host = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+        worth_execution::SerialMemoryBudget::new(None),
         source.token(),
         None,
     );
@@ -128,7 +128,7 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
     let (baseline, baseline_report) = execution
-        .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+        .run(ExecutionWorkCeiling::new(None), |_| {
             runtime.index_authority().refresh_for_basis(
                 request.clone(),
                 &basis,
@@ -146,9 +146,9 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
         ))
         .unwrap();
     let mut ordinary = cold_budget();
-    ordinary.maximum_cold_record_slots = 0;
+    ordinary.maximum_cold_record_slots = Some(0);
     let (first, first_report) = execution
-        .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+        .run(ExecutionWorkCeiling::new(None), |_| {
             runtime.index_authority().refresh_for_basis(
                 request.clone(),
                 &basis,
@@ -161,7 +161,7 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
     assert_eq!(first.unwrap_err().kind, Denial::ColdReconstructionRequired);
     let needed = first_report.charged_work() + baseline_report.charged_work();
     let (retry, _) = execution
-        .run(ExecutionWorkCeiling::new(needed - 1), |_| {
+        .run(ExecutionWorkCeiling::new(Some(needed - 1)), |_| {
             let first = runtime
                 .index_authority()
                 .refresh_for_basis(request.clone(), &basis, None, ordinary, execution)

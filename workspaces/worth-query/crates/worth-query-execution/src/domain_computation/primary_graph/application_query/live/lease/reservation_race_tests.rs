@@ -88,7 +88,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
                 &principal,
                 account,
                 live_account_parameters("account-1"),
-                WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048)
+                WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, Some(2_048))
                     .unwrap(),
             )
             .unwrap();

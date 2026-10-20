@@ -23,13 +23,9 @@ fn atomic_batch_width_does_not_enlarge_actual_candidate_reservation() {
         )
     };
     let reserve = |requested| {
-        WorthQueryCandidateReservation::admit(
-            requested, worth_query_declaration::facade::application_operation::ApplicationCandidateContract::FixedShape(requirements(2)),
-            envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems),
-            envelope.resource_ceiling(
+        WorthQueryCandidateReservation::admit(requested, worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy::finite(requirements(2)), Some(envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems)), Some(envelope.resource_ceiling(
                 WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
-            ),
-        )
+            )))
     };
     let mut reservation = reserve(requirements(1)).unwrap();
     assert_eq!(reservation.total_items(), 1);

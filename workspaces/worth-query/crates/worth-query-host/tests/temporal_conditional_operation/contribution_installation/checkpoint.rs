@@ -164,7 +164,7 @@ fn assert_live_relation_is_readable(
             worth_query_host::facade::declaration::application_query::ApplicationQueryParameterSet::new(),
             primary_graph::WorthQueryProductQueryControls::new(
                 std::num::NonZeroUsize::new(8).unwrap(),
-                std::num::NonZeroUsize::new(64).unwrap(),
+                None,
                 &request,
             ),
         )
@@ -330,7 +330,7 @@ fn checkpoint_bytes_are_denied(
 pub(super) fn checkpoint_limits() -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         product_world_resources(1_024),
-        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(5_120, 2_048)
+        runtime::WorthQueryApplicationCandidateResourceProfile::policy(Some(5_120), Some(2_048))
             .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
             .unwrap(),

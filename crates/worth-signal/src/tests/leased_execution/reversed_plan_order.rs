@@ -86,7 +86,11 @@ fn trial(base: &SignalGraph, sources: &[NodeId], targets: &[NodeId], memory: u64
     admission.policy = ExecutionRequestPolicy::new(
         admission.policy.posture(),
         admission.policy.determinism(),
-        ExecutionBudget::new(admission.policy.budget().max_workers(), memory, 100_000_000),
+        ExecutionBudget::new(
+            admission.policy.budget().max_workers(),
+            Some(memory),
+            Some(100_000_000),
+        ),
     );
     let lease = authority().request_lease(admission).ok()?;
     let report = match graph.execute_prepared_plan_checked(

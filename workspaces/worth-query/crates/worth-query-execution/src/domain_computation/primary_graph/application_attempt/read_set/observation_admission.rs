@@ -115,6 +115,9 @@ pub(super) fn graph_read_scope_matches_key(
             WorthQueryOperationGraphReadScope::NativeProjection(scope),
             WorthQueryApplicationFactKey::Field {
                 entity, locator, ..
+            }
+            | WorthQueryApplicationFactKey::AspectPresence {
+                entity, locator, ..
             },
         ) => {
             scope.entity().semantic_key() == entity
@@ -155,7 +158,13 @@ pub(super) fn graph_reads_exactly_cover_fact_keys<'key>(
             None => return false,
         };
     }
-    expected == keys.clone().count()
+    // Presence is metadata of its exact admitted field, not another author-
+    // supplied read role. It still passes the same unique projection check.
+    expected
+        == keys
+            .clone()
+            .filter(|key| !matches!(key, WorthQueryApplicationFactKey::AspectPresence { .. }))
+            .count()
         && keys.all(|key| {
             contract
                 .roles()

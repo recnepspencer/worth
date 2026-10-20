@@ -62,7 +62,7 @@ pub(super) struct PublicationPreparationInput<'a> {
 pub(super) fn prepare_publication_artifacts(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     input: PublicationPreparationInput<'_>,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<PublicationPreparation, TransactionCommitError> {
     let PublicationPreparationInput {
         working_state,
@@ -102,7 +102,7 @@ pub(super) fn prepare_publication_artifacts(
         } else {
             super::descriptive_touches::TouchPreparationMode::Ordinary
         },
-        lease,
+        execution,
     )?;
     let traces = capture_publication_traces(runtime, &patch, &publication.canonical_deltas);
     let diagnostics_summary = diagnostics_summary_artifact(

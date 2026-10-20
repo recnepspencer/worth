@@ -76,29 +76,42 @@ impl CompositeHistoryCatalog {
         start: CompositeCommitIdentity,
         maximum_commits: NonZeroUsize,
     ) -> Result<CompositeHistoryTraversal, CompositeHistoryCatalogDenial> {
-        self.trace_ancestry_within(start, maximum_commits, usize::MAX)
+        self.trace_ancestry_within(
+            HistoryTraversalControl::Inspection(maximum_commits),
+            start,
+            None,
+        )
     }
 
     /// Like `trace_ancestry`, but the page also ends before any commit that
     /// lies `span` or more original generations behind `start`.
     pub(crate) fn trace_ancestry_within(
         &self,
+        control: HistoryTraversalControl<'_, '_>,
         start: CompositeCommitIdentity,
-        maximum_commits: NonZeroUsize,
-        span: usize,
+        span: Option<usize>,
     ) -> Result<CompositeHistoryTraversal, CompositeHistoryCatalogDenial> {
+        control.check_live()?;
         let state = lock_state(&self.state);
         validate_owner(&state, start.owner_identity())?;
-        let capacity = maximum_commits.get().min(state.entries.len());
+        let maximum_commits = control.maximum();
+        let capacity = maximum_commits
+            .map(NonZeroUsize::get)
+            .into_iter()
+            .chain(span)
+            .chain(std::iter::once(state.entries.len()))
+            .min()
+            .unwrap();
         let mut commits = Vec::with_capacity(capacity);
         let mut generations = Vec::with_capacity(capacity);
         let mut next = Some((start.clone(), 0));
         let mut stopped_at_retired = false;
-        while commits.len() < maximum_commits.get() {
+        while maximum_commits.is_none_or(|maximum| commits.len() < maximum.get()) {
+            control.check_live()?;
             let Some((current, distance)) = next.take() else {
                 break;
             };
-            if distance >= span {
+            if span.is_some_and(|span| distance >= span) {
                 next = Some((current, distance));
                 break;
             }
@@ -119,7 +132,10 @@ impl CompositeHistoryCatalog {
         }
         let protections = commits
             .iter()
-            .map(|commit| protect_installed(&state, commit.identity()))
+            .map(|commit| {
+                control.check_live()?;
+                protect_installed(&state, commit.identity())
+            })
             .collect::<Result<Vec<_>, _>>()?;
         Ok(CompositeHistoryTraversal {
             commits,
@@ -142,4 +158,39 @@ fn protect_installed(
         identity.clone(),
         HistoryProtectionClass::ExplicitObligation,
     ))
+}
+
+fn check_live(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<(), CompositeHistoryCatalogDenial> {
+    execution.check_live().map_err(|stop| match stop {
+        worth_execution::MapKernelStop::Cancelled => CompositeHistoryCatalogDenial::Cancelled,
+        worth_execution::MapKernelStop::DeadlineElapsed => {
+            CompositeHistoryCatalogDenial::DeadlineElapsed
+        }
+        _ => unreachable!("pure interruption observation never reports resource accounting"),
+    })
+}
+
+/// Owner inspection is explicitly finite; an absent ceiling requires the actual request.
+pub(crate) enum HistoryTraversalControl<'request, 'authority> {
+    Inspection(NonZeroUsize),
+    Request {
+        execution: worth_execution::ExecutionRequest<'request, 'authority>,
+        maximum: Option<NonZeroUsize>,
+    },
+}
+impl HistoryTraversalControl<'_, '_> {
+    fn maximum(&self) -> Option<NonZeroUsize> {
+        match self {
+            Self::Inspection(maximum) => Some(*maximum),
+            Self::Request { maximum, .. } => *maximum,
+        }
+    }
+    fn check_live(&self) -> Result<(), CompositeHistoryCatalogDenial> {
+        match self {
+            Self::Inspection(_) => Ok(()),
+            Self::Request { execution, .. } => check_live(execution),
+        }
+    }
 }

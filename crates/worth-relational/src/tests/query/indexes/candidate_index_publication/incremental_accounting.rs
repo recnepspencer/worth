@@ -7,7 +7,7 @@ use worth_execution::{
 
 #[test]
 fn selected_field_and_join_candidate_keep_original_funding_until_performed_installation() {
-    let memory = SerialMemoryBudget::new(64 * 1024 * 1024);
+    let memory = SerialMemoryBudget::new(None);
     let host = SerialRequest::from_memory(memory.clone(), CancellationSource::new().token(), None);
     let execution = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_index_field_aspects();
@@ -72,7 +72,7 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
     let mut measure = candidate_for_update(execution, &runtime, entity, "after");
     let measure_baseline = memory.charged_memory_bytes();
     let (prepared, report) = execution
-        .run(ExecutionWorkCeiling::new(u64::MAX), |_| {
+        .run(ExecutionWorkCeiling::new(None), |_| {
             runtime
                 .index_authority()
                 .prepare_incremental_indexes_for_candidate(
@@ -102,7 +102,7 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
         .unwrap();
     // Near-complete work refusal exercises the late quote on the SAME candidate.
     let (refused, _) = execution
-        .run(ExecutionWorkCeiling::new(required_work - 1), |_| {
+        .run(ExecutionWorkCeiling::new(Some(required_work - 1)), |_| {
             runtime
                 .index_authority()
                 .prepare_incremental_indexes_for_candidate(
@@ -125,7 +125,7 @@ fn selected_field_and_join_candidate_keep_original_funding_until_performed_insta
         .derived_artifacts_for_commit(commit)
         .is_empty());
     assert_eq!(memory.charged_memory_bytes(), candidate_baseline);
-    let restricted_memory = SerialMemoryBudget::new(required_memory - 1);
+    let restricted_memory = SerialMemoryBudget::new(Some(required_memory - 1));
     let unfunded = SerialRequest::from_memory(
         restricted_memory.clone(),
         CancellationSource::new().token(),

@@ -75,14 +75,16 @@ where
         .prepare_shared_query_basis(request_admission)
         .map_err(|(_, stop)| resource_denial(stop))?;
     let installed_limits = runtime.resolve_application_query_limits(installed.limits());
-    let maximum_work = NonZeroUsize::new(
-        installed_limits
-            .maximum_work()
-            .get()
-            .min(limits.producer_work())
-            .min(request_admission.remaining_work()),
-    )
-    .ok_or_else(work_denial)?;
+    let ceiling = installed_limits
+        .maximum_work()
+        .map(NonZeroUsize::get)
+        .into_iter()
+        .chain(limits.producer_work())
+        .chain(request_admission.remaining_work())
+        .min();
+    let maximum_work = ceiling
+        .map(|work| NonZeroUsize::new(work).ok_or_else(work_denial))
+        .transpose()?;
     let (product, basis) = runtime
         .retain_selected_query_basis_admitted(&shared, request_admission)
         .map_err(|stop| match stop {
@@ -115,7 +117,6 @@ where
                 let plan = runtime
                     .finish_prepared_application_query_permission(execution, permission, admission)
                     .map_err(query_admission_denial)?;
-                let before = admission.charged_work();
                 let read = runtime
                     .execute_application_query_one_shot_admitted(execution, plan, admission)
                     .map_err(|stop| {
@@ -127,9 +128,6 @@ where
                             | Stop::WorkAccountingMismatch => work_denial(),
                         }
                     })?;
-                super::caller_pass_observation::observe_read_debit(
-                    read.receipt().work().total_work_units() as u64, admission.charged_work() - before,
-                );
                 crate::domain_computation::primary_graph::application_output_demand::observe_retained_source_selection(
                     retained.source_root(), retained.selected_product_commit().expect("retained Product source").clone(),
                     read_commit.clone());

@@ -157,6 +157,21 @@ where
         self
     }
 
+    /// Declares an exact mutation binding executed only by its native conditional owner.
+    pub fn conditional_mutation<Binding>(mut self) -> Self
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        self.actions
+            .push(ApplicationActionDeclaration::conditional_mutation::<
+                Schema,
+                Instance,
+                Feature,
+                Binding,
+            >());
+        self
+    }
+
     pub fn conditional_operation_with_requirement_and_external_input<Operation, Rule, Provider>(
         mut self,
     ) -> Self

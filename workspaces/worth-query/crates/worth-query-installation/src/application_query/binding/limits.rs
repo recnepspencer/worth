@@ -28,41 +28,42 @@ impl WorthQueryInstalledApplicationQueryLimits {
     /// Resolves operational policy without widening a declared explicit cap.
     pub fn resolve(
         self,
-        host_maximum_work: NonZeroUsize,
+        host_maximum_work: Option<NonZeroUsize>,
     ) -> WorthQueryResolvedApplicationQueryLimits {
         WorthQueryResolvedApplicationQueryLimits {
             maximum_results: self.maximum_results,
-            maximum_work: self
-                .maximum_work
-                .map_or(host_maximum_work, |cap| cap.min(host_maximum_work)),
+            maximum_work: self.maximum_work.into_iter().chain(host_maximum_work).min(),
         }
     }
 }
 
-/// Concrete finite controls after applying runtime policy to installed meaning.
+/// Resolved controls after applying optional runtime work policy to installed meaning.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryResolvedApplicationQueryLimits {
     maximum_results: NonZeroUsize,
-    maximum_work: NonZeroUsize,
+    maximum_work: Option<NonZeroUsize>,
 }
 
 impl WorthQueryResolvedApplicationQueryLimits {
     pub const fn maximum_results(self) -> NonZeroUsize {
         self.maximum_results
     }
-    pub const fn maximum_work(self) -> NonZeroUsize {
+    pub const fn maximum_work(self) -> Option<NonZeroUsize> {
         self.maximum_work
     }
 
     pub fn narrow(
         self,
         maximum_results: NonZeroUsize,
-        maximum_work: NonZeroUsize,
+        maximum_work: Option<NonZeroUsize>,
     ) -> Result<Self, WorthQueryApplicationQueryLimitDenial> {
         if maximum_results.get() > self.maximum_results.get() {
             return Err(WorthQueryApplicationQueryLimitDenial::MaximumResultsWidened);
         }
-        if maximum_work.get() > self.maximum_work.get() {
+        if self
+            .maximum_work
+            .is_some_and(|installed| maximum_work.is_none_or(|requested| requested > installed))
+        {
             return Err(WorthQueryApplicationQueryLimitDenial::MaximumWorkWidened);
         }
         Ok(Self {
@@ -97,22 +98,33 @@ mod tests {
     fn runtime_policy_resolves_absence_and_never_widens_explicit_caps() {
         let ordinary = WorthQueryInstalledApplicationQueryLimits::new(nz(4), None);
         assert_eq!(ordinary.maximum_work(), None);
-        assert_eq!(ordinary.resolve(nz(100)).maximum_work(), nz(100));
-        let explicit = WorthQueryInstalledApplicationQueryLimits::new(nz(4), Some(nz(30)));
-        assert_eq!(explicit.resolve(nz(100)).maximum_work(), nz(30));
-        assert_eq!(explicit.resolve(nz(20)).maximum_work(), nz(20));
+        assert_eq!(ordinary.resolve(None).maximum_work(), None);
         assert_eq!(
-            ordinary.resolve(nz(100)).narrow(nz(4), nz(101)),
+            ordinary.resolve(Some(nz(100))).maximum_work(),
+            Some(nz(100))
+        );
+        let explicit = WorthQueryInstalledApplicationQueryLimits::new(nz(4), Some(nz(30)));
+        assert_eq!(explicit.resolve(Some(nz(100))).maximum_work(), Some(nz(30)));
+        assert_eq!(explicit.resolve(Some(nz(20))).maximum_work(), Some(nz(20)));
+        assert_eq!(
+            ordinary.resolve(Some(nz(100))).narrow(nz(4), Some(nz(101))),
             Err(WorthQueryApplicationQueryLimitDenial::MaximumWorkWidened)
         );
         assert_eq!(
-            ordinary.resolve(nz(100)).narrow(nz(5), nz(100)),
+            ordinary.resolve(Some(nz(100))).narrow(nz(5), Some(nz(100))),
             Err(WorthQueryApplicationQueryLimitDenial::MaximumResultsWidened)
         );
         assert_eq!(
-            explicit.resolve(nz(100)).narrow(nz(4), nz(31)),
+            explicit.resolve(Some(nz(100))).narrow(nz(4), Some(nz(31))),
             Err(WorthQueryApplicationQueryLimitDenial::MaximumWorkWidened)
         );
-        assert!(ordinary.resolve(nz(100)).narrow(nz(2), nz(10)).is_ok());
+        assert!(ordinary
+            .resolve(Some(nz(100)))
+            .narrow(nz(2), Some(nz(10)))
+            .is_ok());
+        assert_eq!(
+            explicit.resolve(None).narrow(nz(4), None),
+            Err(WorthQueryApplicationQueryLimitDenial::MaximumWorkWidened)
+        );
     }
 }

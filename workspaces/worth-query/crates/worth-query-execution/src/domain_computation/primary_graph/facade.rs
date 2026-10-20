@@ -18,21 +18,22 @@ pub use super::application_attempt::{
     WorkflowApprovalDecision, WorkflowDefinitionExpectedPredecessor,
     WorkflowDefinitionPublicationOutcome, WorkflowDefinitionRetirementOutcome,
     WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
-    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowOperationAuthority,
-    WorkflowOperationAuthoritySlot, WorkflowProgressOutcome, WorkflowProposalBindingDenial,
-    WorkflowProposalOutcome, WorkflowProposalPreparationDenial, WorkflowTransitionBindingDenial,
-    WorkflowTransitionPreparationDenial, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCleanupRequired,
-    WorthQueryApplicationCommitAuthorityBinding, WorthQueryApplicationCommitDeferred,
-    WorthQueryApplicationCommitDeferredKind, WorthQueryApplicationCommitDenial,
-    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitOutcomeIdentity,
-    WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationCommitTerminalEvidence,
-    WorthQueryApplicationCommitTerminalKind, WorthQueryApplicationCommittedChanges,
-    WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
+    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowLocalActionKind,
+    WorkflowOperationAuthority, WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
+    WorkflowProposalBindingDenial, WorkflowProposalOutcome, WorkflowProposalPreparationDenial,
+    WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    WorthQueryApplicationCleanupRequired, WorthQueryApplicationCommitAuthorityBinding,
+    WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
+    WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
+    WorthQueryApplicationCommitOutcomeIdentity, WorthQueryApplicationCommitPublicationSource,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationCommitRecoveryKind,
+    WorthQueryApplicationCommitTerminalEvidence, WorthQueryApplicationCommitTerminalKind,
+    WorthQueryApplicationCommittedChanges, WorthQueryApplicationEffectEntity,
+    WorthQueryApplicationEffectProgram, WorthQueryApplicationEffectProgramBuilder,
+    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
+    WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryApplicationManagedCleanup,
     WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationNoEffect,
     WorthQueryApplicationNoEffectCause, WorthQueryApplicationOutputEntity,
@@ -107,8 +108,9 @@ pub use super::application_contribution::{
     WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
     WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
     WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
-    WorthQueryReductionInputDenial, WorthQuerySelectedApplicationProducer,
-    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
+    WorthQueryProducerResourceQuoteDenial, WorthQueryReductionInputDenial,
+    WorthQuerySelectedApplicationProducer, WorthQueryWorkflowAssessmentOutputFamily,
+    WorthQueryWorkflowAssessmentPosture,
 };
 pub use super::application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
@@ -343,15 +345,6 @@ pub use crate::basis::{
     WorthQueryProductBranchLease, WorthQueryProductBranchReadIdentity,
     WorthQueryProductObservationLease,
 };
-pub use crate::domain_computation::authorization::{
-    WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
-    WorthQueryApplicationAuthorizationExplanationCause,
-    WorthQueryElevationApprovalAuthorizationDenial, WorthQueryElevationCloseAuthorizationDenial,
-    WorthQueryMandatoryReviewAuthorizationDenial, WorthQueryOperationAuthorizationDenial,
-    WorthQueryOperationAuthorizationDenialIdentity, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryOperationAuthorizationRefusalKind, WorthQueryOperationScopeBinding,
-    WorthQueryOperationScopeEntityBinding,
-};
 pub use crate::domain_computation::runtime_time::{
     WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
 };
@@ -376,7 +369,11 @@ pub use crate::domain_computation::primary_graph::application_query::{
 };
 pub use worth_execution::ExecutionRequest;
 
+mod authorization;
+mod operation_body;
 pub use super::output_lineage::invalidation::carried_read_basis_custody_for_test;
+pub use authorization::*;
+pub use operation_body::*;
 
 pub use super::provider::{
     WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,

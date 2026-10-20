@@ -147,14 +147,14 @@ where
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct RelationalInvariantWorkBudget(NonZeroU64);
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct RelationalInvariantWorkBudget(Option<NonZeroU64>);
 
 impl RelationalInvariantWorkBudget {
-    pub const fn new(maximum_work_units: NonZeroU64) -> Self {
+    pub const fn new(maximum_work_units: Option<NonZeroU64>) -> Self {
         Self(maximum_work_units)
     }
-    pub const fn maximum_work_units(self) -> NonZeroU64 {
+    pub const fn maximum_work_units(self) -> Option<NonZeroU64> {
         self.0
     }
 }

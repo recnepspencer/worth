@@ -5,16 +5,17 @@ use crate::domain_computation::primary_graph::application_checkpoint::facts::Fac
 use std::collections::BTreeMap;
 use std::{mem::size_of, sync::Arc};
 use worth_execution::ExecutionMemoryReservation;
-use worth_foundational::facade::AspectFieldLocator;
 use worth_foundational::facade::{
     prepare_aspect_value_identity_basis, CanonicalAspectValueIdentityBasis,
 };
+use worth_foundational::facade::{AspectFieldLocator, AspectKey};
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
 use worth_relational::facade::indexes::DerivedIndexId;
 
 type FieldOrdinals = BTreeMap<EntityId, BTreeMap<AspectFieldLocator, Vec<usize>>>;
 pub(in crate::domain_computation::primary_graph) struct FactRoutes {
     ordinals: FieldOrdinals,
+    aspects: BTreeMap<EntityId, BTreeMap<AspectKey, Option<bool>>>,
     entities: BTreeMap<EntityId, usize>,
     relations: BTreeMap<RelationId, usize>,
     selections: BTreeMap<
@@ -85,6 +86,7 @@ impl FactRoutes {
     ) -> Result<Arc<Self>, StoreDenial> {
         let mut routes = Self {
             ordinals: BTreeMap::new(),
+            aspects: BTreeMap::new(),
             entities: BTreeMap::new(),
             relations: BTreeMap::new(),
             selections: BTreeMap::new(),
@@ -103,6 +105,19 @@ impl FactRoutes {
                     .entry(locator.clone())
                     .or_default()
                     .push(ordinal);
+            }
+            if let Some((entity, aspect, present)) = presence(fact) {
+                routes
+                    .aspects
+                    .entry(entity)
+                    .or_default()
+                    .entry(aspect.clone())
+                    .and_modify(|prior| {
+                        if *prior != Some(present) {
+                            *prior = None;
+                        }
+                    })
+                    .or_insert(Some(present));
             }
             match fact {
                 Fact::Entity { entity_id, .. } => {
@@ -144,6 +159,13 @@ impl FactRoutes {
             }
         }
         Ok(Arc::new(routes))
+    }
+    pub(in crate::domain_computation::primary_graph) fn aspect_presence(
+        &self,
+        entity: EntityId,
+        aspect: &AspectKey,
+    ) -> Option<bool> {
+        self.aspects.get(&entity)?.get(aspect).copied().flatten()
     }
     pub(in crate::domain_computation::primary_graph) fn field(
         &self,
@@ -192,7 +214,9 @@ impl FactRoutes {
     ) -> Result<bool, StoreDenial> {
         super::super::super::fact_verification_observation::effect_index_fact();
         super::super::super::fact_verification_observation::content_field_index();
-        if old.and_then(address) != new.and_then(address) {
+        if old.and_then(address) != new.and_then(address)
+            || old.and_then(presence) != new.and_then(presence)
+        {
             return Ok(false);
         }
         let matches = match (old, new) {
@@ -266,5 +290,23 @@ impl FactRoutes {
     }
     pub(in crate::domain_computation::primary_graph) fn bytes(&self) -> u64 {
         self.bytes
+    }
+}
+
+fn presence(fact: &Fact) -> Option<(EntityId, &AspectKey, bool)> {
+    match fact {
+        Fact::AspectPresence {
+            entity_id,
+            aspect,
+            present,
+            ..
+        } => Some((*entity_id, aspect, *present)),
+        Fact::Field {
+            entity_id, locator, ..
+        } => Some((*entity_id, locator.aspect().aspect_key(), true)),
+        Fact::OptionalAspectAbsent {
+            entity_id, locator, ..
+        } => Some((*entity_id, locator.aspect().aspect_key(), false)),
+        _ => None,
     }
 }

@@ -50,8 +50,14 @@ macro_rules! producer {
             fn idempotency_key(&self, _: &PlanarReadResult, identity: &[u8; 32]) -> u64 {
                 u64::from_be_bytes(identity[..8].try_into().unwrap())
             }
-            fn demand_resources(&self, _: &PlanarReadResult) -> WorthQueryProducerDemandResources {
-                planar_producer_resources()
+            fn demand_resources(
+                &self,
+                _: &PlanarReadResult,
+            ) -> Result<
+                WorthQueryProducerDemandResources,
+                crate::domain_computation::primary_graph::WorthQueryProducerResourceQuoteDenial,
+            > {
+                Ok({ planar_producer_resources() })
             }
         }
     };

@@ -146,7 +146,7 @@ fn install_configured(
         32,
         16,
         64,
-        support::invalidation(128 * 1024 * 1024, 1_000_000, 4),
+        support::invalidation(128 * 1024 * 1024, Some(1_000_000), 4),
         support::candidates(),
     );
     application_installation::in_memory_program(program, declaration, ((witnesses, indexed_selection),), limits, |_bootstrap_phase, graph, installed| {

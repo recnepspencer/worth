@@ -20,8 +20,8 @@ pub struct CheckedEvaluationContext<'graph, 'work, 'run, 'lease, Ctx> {
     declaration: &'graph BoundedSignalInputs,
     dependencies: PreparedDependencyCapture,
     work: &'work mut MapKernelContext<'run, 'lease>,
-    scratch_capacity_bytes: u64,
-    result_capacity_bytes: u64,
+    scratch_capacity_bytes: Option<u64>,
+    result_capacity_bytes: Option<u64>,
     rejected: bool,
 }
 
@@ -31,8 +31,8 @@ impl<'graph, 'work, 'run, 'lease, Ctx> CheckedEvaluationContext<'graph, 'work, '
         node: NodeId,
         domain: &'graph Ctx,
         work: &'work mut MapKernelContext<'run, 'lease>,
-        scratch_capacity_bytes: u64,
-        result_capacity_bytes: u64,
+        scratch_capacity_bytes: Option<u64>,
+        result_capacity_bytes: Option<u64>,
     ) -> Result<Self, SignalError> {
         let declaration = graph
             .get_contract(node)?
@@ -65,15 +65,15 @@ impl<'graph, 'work, 'run, 'lease, Ctx> CheckedEvaluationContext<'graph, 'work, '
         self.work
     }
 
-    /// Maximum additional scratch the caller's checked kernel may allocate.
+    /// Optional maximum additional scratch the caller's checked kernel may allocate.
     /// Signal's own observation capture is reserved separately.
-    pub fn scratch_capacity_bytes(&self) -> u64 {
+    pub fn scratch_capacity_bytes(&self) -> Option<u64> {
         self.scratch_capacity_bytes
     }
 
-    /// Maximum retained heap in the returned output, including trace metadata.
+    /// Optional maximum retained heap in the returned output, including trace metadata.
     /// Signal's captured dependency heap is reserved separately.
-    pub fn result_capacity_bytes(&self) -> u64 {
+    pub fn result_capacity_bytes(&self) -> Option<u64> {
         self.result_capacity_bytes
     }
 
@@ -147,7 +147,7 @@ impl<'graph, 'work, 'run, 'lease, Ctx> CheckedEvaluationContext<'graph, 'work, '
             .execution
             .max_checked_result_heap_bytes
         {
-            let mut measurement = RetainedStoragePreparation::new(usize::MAX);
+            let mut measurement = RetainedStoragePreparation::new(None);
             let mut checkpoint = |visits: usize| {
                 let units = u64::try_from(visits).map_err(|_| {
                     RetainedStoragePreparationDenial::ExecutionStopped(

@@ -15,7 +15,7 @@ fn growing_own_effect_preserves_original_and_publishes_a_distinct_funded_body() 
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 24, 1_000_000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(1 << 24), Some(1_000_000)),
     );
     with_bootstrap_advancement(policy, |phase| {
         let request = phase.execution_request();
@@ -61,7 +61,7 @@ fn growing_own_effect_preserves_original_and_publishes_a_distinct_funded_body() 
             fields: BTreeMap::from([(locator.clone(), effect_value.clone())]),
         }];
         let held = lease
-            .reserve_memory(lease.available_memory_bytes() - 8_192)
+            .reserve_memory(lease.available_memory_bytes().expect("this fixture supplies a finite memory ceiling") - 8_192)
             .unwrap();
         assert!(original.postcondition(&effects, &[1, 2], control).is_err());
         assert_eq!(body.iter().cloned().collect::<Vec<_>>(), values);

@@ -61,8 +61,8 @@ impl OperationHandler<BankSchema, ApprovePaymentMutationBinding> for ApprovePaym
         _: &BankInvariantApprovedProposal,
     ) -> ApplicationCandidateRequirements {
         ApprovePaymentMutationBinding::CANDIDATES
-            .fixed_requirements()
-            .expect("fixed candidate contract")
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(
@@ -117,8 +117,8 @@ impl OperationHandler<BankSchema, RejectPaymentMutationBinding> for RejectPaymen
         _: &BankInvariantApprovedProposal,
     ) -> ApplicationCandidateRequirements {
         RejectPaymentMutationBinding::CANDIDATES
-            .fixed_requirements()
-            .expect("fixed candidate contract")
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

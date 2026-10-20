@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
-use worth_foundational::facade::PortableAspectContractBasis;
+use worth_foundational::facade::{AspectFieldLocator, AspectValue, PortableAspectContractBasis};
+use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationOperationProgramTarget,
     ApplicationScalarValueBinding, OperationWrites, OptionalApplicationFieldValue,
@@ -58,6 +59,21 @@ impl<Schema, Operation, Input, Scope>
             ));
         };
         let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
+        self.write_optional_value(
+            &ApplicationFieldBindingLocus::new(field.entity(), field.aspect(), field.field()),
+            entity_id,
+            locator,
+            value,
+        )
+    }
+
+    pub(super) fn write_optional_value(
+        &mut self,
+        field: &ApplicationFieldBindingLocus,
+        entity_id: EntityId,
+        locator: AspectFieldLocator,
+        value: Option<AspectValue>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         let contract = self
             .layout
             .aspect_contract(field.entity(), locator.aspect().aspect_key())
@@ -72,22 +88,30 @@ impl<Schema, Operation, Input, Scope>
             .field_write_positions
             .position(field.entity(), entity_id);
         let matching_effect = position.map(|position| &self.effects[position]);
-        let replaced_representation_bytes = matching_effect.and_then(|effect| match effect {
-            WorthQueryApplicationRealizedEffect::UpdateEntity { fields, .. } => fields
-                .get(&locator)
-                .map(super::retained_representation::value),
-            WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields { fields, .. } => fields
-                .get(&locator)
-                .and_then(|write| write.value.as_ref())
-                .map(super::retained_representation::value),
-            _ => None,
-        });
+        let (replaced_representation_bytes, retains_locator_and_contract) = match matching_effect {
+            Some(WorthQueryApplicationRealizedEffect::UpdateEntity { fields, .. }) => {
+                fields.get(&locator).map_or((None, true), |value| {
+                    (Some(super::retained_representation::value(value)), false)
+                })
+            }
+            Some(WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
+                fields, ..
+            }) => fields.get(&locator).map_or((None, true), |write| {
+                (
+                    write
+                        .value
+                        .as_ref()
+                        .map(super::retained_representation::value),
+                    false,
+                )
+            }),
+            _ => (None, true),
+        };
         let promotion_contract_bytes = ordinary_write_contract_representation_bytes(
             &self.layout,
             matching_effect,
             field.entity(),
         )?;
-        let retains_locator_and_contract = replaced_representation_bytes.is_none();
         let retained_representation_bytes = super::retained_representation::optional_field_entry(
             &locator,
             &contract,

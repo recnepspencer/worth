@@ -73,8 +73,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     validation_preflight::work_denial()
                 }
             })?;
-        let remaining = NonZeroUsize::new(admission.remaining_work())
-            .ok_or_else(validation_preflight::work_denial)?;
-        Ok((parameters, controls.limit_maximum_work(remaining)))
+        let remaining = admission
+            .remaining_work()
+            .map(|work| NonZeroUsize::new(work).ok_or_else(validation_preflight::work_denial))
+            .transpose()?;
+        Ok((
+            parameters,
+            match remaining {
+                Some(remaining) => controls.limit_maximum_work(remaining),
+                None => controls,
+            },
+        ))
     }
 }

@@ -13,6 +13,7 @@ use super::{
     WorthQueryInvariantAccessDenial, WorthQueryInvariantAccessDenialKind,
 };
 
+mod interruption;
 mod relation_reads;
 
 pub struct WorthQueryApplicationInvariantEntity<Schema, Entity> {

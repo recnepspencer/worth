@@ -185,7 +185,7 @@ fn assert_resume_denial(
             &access,
             live_account_parameters("account-1"),
             cursor,
-            WorthQueryApplicationQueryResumeControls::new(one(), work(), &request),
+            WorthQueryApplicationQueryResumeControls::new(one(), Some(work()), &request),
         )
         .unwrap();
     let denied = context
@@ -212,7 +212,7 @@ fn assert_fresh_pages(
             &context.query,
             &access,
             live_account_parameters("account-1"),
-            WorthQueryProductQueryControls::new(one(), work(), &request),
+            WorthQueryProductQueryControls::new(one(), Some(work()), &request),
         )
         .unwrap();
     let first = context
@@ -234,7 +234,7 @@ fn assert_fresh_pages(
             &access,
             live_account_parameters("account-1"),
             cursor.expect("one ordered activity remains"),
-            WorthQueryApplicationQueryResumeControls::new(one(), work(), &request),
+            WorthQueryApplicationQueryResumeControls::new(one(), Some(work()), &request),
         )
         .unwrap();
     let last = context

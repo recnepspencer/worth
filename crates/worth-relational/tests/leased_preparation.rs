@@ -74,7 +74,11 @@ fn lease_request_with_work(
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(4).unwrap(), memory, work_ceiling),
+            ExecutionBudget::new(
+                NonZeroUsize::new(4).unwrap(),
+                Some(memory),
+                Some(work_ceiling),
+            ),
         ),
         deadline: None,
         cancellation,
@@ -280,7 +284,7 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     small_request.policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Automatic,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, 0, 1_000_000),
+        ExecutionBudget::new(NonZeroUsize::MIN, Some(0), Some(1_000_000)),
     );
     let small_lease = authority
         .request_lease(small_request)

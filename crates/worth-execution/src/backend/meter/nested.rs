@@ -42,7 +42,11 @@ pub(crate) fn record_nested(report: ExecutionReport, stop: Option<NestedStopOwne
             if let Some(owner) = stop {
                 parent.nested_stop.record(owner);
             }
-            if parent.work > parent.limits.ceiling {
+            if parent
+                .limits
+                .ceiling
+                .is_some_and(|ceiling| parent.work > ceiling)
+            {
                 let owner = parent.limits.ceiling_owner;
                 parent.nested_stop.record(owner);
             }

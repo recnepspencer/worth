@@ -51,14 +51,16 @@ pub(super) fn lower_checked_map(
                 declaration,
             )
             .ok_or_else(|| SignalError::invalid_input("checked capture memory overflow"))?;
-        let per_result = stage
-            .result_grant_bytes()
-            .checked_add(capture_bytes)
-            .ok_or_else(|| SignalError::invalid_input("checked result grant overflow"))?;
-        let result_bytes = per_result.checked_sub(capture_bytes).ok_or_else(|| {
-            SignalError::invalid_input("checked capture exceeds admitted result capacity")
-        })?;
-        let scratch_bytes = per_result
+        let result_bytes = stage.result_grant_bytes();
+        let scratch_capacity = result_bytes
+            .map(|bytes| {
+                bytes
+                    .checked_add(capture_bytes)
+                    .ok_or_else(|| SignalError::invalid_input("checked scratch memory overflow"))
+            })
+            .transpose()?;
+        let scratch_bytes = scratch_capacity
+            .unwrap_or(capture_bytes)
             .checked_add(capture_bytes)
             .ok_or_else(|| SignalError::invalid_input("checked scratch memory overflow"))?;
         super::super::work::checkpoint(
@@ -83,11 +85,6 @@ pub(super) fn lower_checked_map(
             preparation.as_deref_mut(),
             effect_count,
         )?;
-        if let Some(budget) = preparation.as_deref_mut() {
-            // Completed map values outlive the map's own reservation until the
-            // epoch owner consumes them, so the request retains their ceiling.
-            budget.claim(per_result)?;
-        }
         let mut read_keys = declaration
             .as_slice()
             .iter()
@@ -107,14 +104,14 @@ pub(super) fn lower_checked_map(
             value: GraphWorkItem {
                 task_index: index,
                 capacity: super::super::callback::CheckedKernelCapacity {
-                    scratch_bytes: per_result,
+                    scratch_bytes: scratch_capacity,
                     result_bytes,
                 },
             },
             read_keys,
             write_keys,
             kernel_scratch_bytes: scratch_bytes,
-            max_result_bytes: per_result,
+            max_result_bytes: 0,
         });
     }
     let identities = partitions

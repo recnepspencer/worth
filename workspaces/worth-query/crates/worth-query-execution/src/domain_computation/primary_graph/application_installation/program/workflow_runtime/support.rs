@@ -64,14 +64,8 @@ where
             if !(rostered && present) {
                 return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
             }
-            std::sync::Arc::get_mut(&mut self.runtime.backing)
-                .ok_or(WorthQueryWorkflowRuntimeBindingDenial::RuntimeKeepaliveRetained)?
-                .runtime
-                .workflow_coverage
-                .register(workflow.adoption_coverage())
-                .map_err(|_| {
-                    WorthQueryWorkflowRuntimeBindingDenial::ConflictingVocabularyCoverage
-                })?;
+            self.runtime
+                .install_workflow_registration(&workflow, &self.authentication)?;
             Ok(())
         })();
         if let Err(denial) = binding {

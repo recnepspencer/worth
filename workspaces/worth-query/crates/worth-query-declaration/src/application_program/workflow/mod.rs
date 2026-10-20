@@ -15,6 +15,7 @@ pub use read_binding::*;
 pub use read_target::*;
 mod canonical;
 mod expression;
+mod global_action;
 mod identity;
 mod inbound;
 mod limits;
@@ -44,6 +45,7 @@ pub use expression::{
     ApplicationWorkflowConditionDenial, ApplicationWorkflowConditionOperand,
     ApplicationWorkflowConditionOperands, ApplicationWorkflowConditionQuery,
 };
+pub use global_action::ApplicationWorkflowGlobalAction;
 pub use identity::{
     ApplicationWorkflowComponentIdentity, ApplicationWorkflowDefinitionContentIdentity,
     ApplicationWorkflowDefinitionIdentity, ApplicationWorkflowNodeIdentity,

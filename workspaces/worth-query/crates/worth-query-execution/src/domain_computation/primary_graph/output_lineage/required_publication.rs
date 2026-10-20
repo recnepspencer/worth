@@ -56,8 +56,11 @@ impl WorthQueryApplicationOutputLineage {
                         partition,
                         admission.remaining_work(),
                     )
-                    .map_err(|_| Stop::WorkExhaustedWithoutRequirement {
-                        maximum: admission.remaining_work() as u64,
+                    .map_err(|_| match admission.remaining_work() {
+                        Some(maximum) => Stop::WorkExhaustedWithoutRequirement {
+                            maximum: maximum as u64,
+                        },
+                        None => Stop::WorkCounterOverflow,
                     })?;
                 admission.charge_external_work(work as u64)?;
                 if let Some(cell) = cell {

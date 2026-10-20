@@ -16,7 +16,7 @@ fn evaluated_slot() -> (
     let mut graph = SignalGraph::new();
     graph.set_runtime_policy(SignalRuntimePolicy::forensic());
     let nodes = [graph.node().output_identity().build(), graph.node().build()];
-    let basis = SignalExecutionBasis::capture(&mut graph, &mut Work::new(100_000)).unwrap();
+    let basis = SignalExecutionBasis::capture(&mut graph, &mut Work::new(Some(100_000))).unwrap();
     let mut slot = basis.new_evaluation_partition();
     slot.execute(&mut graph, |selected| {
         evaluate(selected, nodes[0], &mut |_, _| {
@@ -136,7 +136,7 @@ fn mutable_evaluation_preparation_bounds_full_diagnostics_without_changing_seman
             serde_json::to_value(selected.diagnostics_state()).unwrap()
         })
         .unwrap();
-    let mut work = Work::new(100_000);
+    let mut work = Work::new(Some(100_000));
     let charge = slot
         .evaluation
         .prepare_mutable_heap_charge(&mut work)
@@ -145,7 +145,7 @@ fn mutable_evaluation_preparation_bounds_full_diagnostics_without_changing_seman
     assert_eq!(
         exact
             .evaluation
-            .prepare_mutable_heap_charge(&mut Work::new(work.visits()))
+            .prepare_mutable_heap_charge(&mut Work::new(Some(work.visits())))
             .unwrap(),
         charge
     );
@@ -153,7 +153,7 @@ fn mutable_evaluation_preparation_bounds_full_diagnostics_without_changing_seman
     assert_eq!(
         short
             .evaluation
-            .prepare_mutable_heap_charge(&mut Work::new(limit)),
+            .prepare_mutable_heap_charge(&mut Work::new(Some(limit))),
         Err(
             super::super::execution_basis::SignalExecutionBasisChargeDenial::Storage(
                 RetainedStoragePreparationDenial::WorkExhausted {
@@ -165,7 +165,7 @@ fn mutable_evaluation_preparation_bounds_full_diagnostics_without_changing_seman
     assert_eq!(
         short
             .evaluation
-            .prepare_mutable_heap_charge(&mut Work::new(100_000))
+            .prepare_mutable_heap_charge(&mut Work::new(Some(100_000)))
             .unwrap(),
         charge
     );
@@ -193,7 +193,7 @@ fn native_output_publication_preserves_carried_node_lane_charges() {
     let mut graph = SignalGraph::new();
     graph.set_runtime_policy(SignalRuntimePolicy::forensic());
     let node = graph.node().output_identity().build();
-    let basis = SignalExecutionBasis::capture(&mut graph, &mut Work::new(100_000)).unwrap();
+    let basis = SignalExecutionBasis::capture(&mut graph, &mut Work::new(Some(100_000))).unwrap();
     let mut slot = basis.new_evaluation_partition();
     slot.execute(&mut graph, |selected| {
         // Cold capture has already established the facts. The evaluation must
@@ -222,17 +222,17 @@ fn native_output_publication_preserves_carried_node_lane_charges() {
             selected
                 .arena
                 .hot
-                .retained_heap_charge(&mut Work::new(100_000))
+                .retained_heap_charge(&mut Work::new(Some(100_000)))
                 .unwrap(),
             selected
                 .arena
                 .warm
-                .retained_heap_charge(&mut Work::new(100_000))
+                .retained_heap_charge(&mut Work::new(Some(100_000)))
                 .unwrap(),
             selected
                 .arena
                 .cold
-                .retained_heap_charge(&mut Work::new(100_000))
+                .retained_heap_charge(&mut Work::new(Some(100_000)))
                 .unwrap(),
         ];
         assert_eq!(

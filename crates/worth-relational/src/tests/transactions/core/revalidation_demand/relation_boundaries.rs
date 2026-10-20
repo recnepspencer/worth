@@ -19,8 +19,8 @@ fn relation_demand_refused_backing_keeps_footprint_and_rollback_reports_no_write
                 worth_foundational::DeterminismContract::CanonicalBitwise,
                 worth_foundational::ExecutionBudget::new(
                     std::num::NonZeroUsize::new(1).unwrap(),
-                    0,
-                    1,
+                    Some(0),
+                    Some(1),
                 ),
             ),
             deadline: None,
@@ -60,7 +60,7 @@ fn cancelled_original_relation_request_cannot_publish_and_fresh_request_succeeds
     let before = runtime.current_version_id();
     let source = worth_execution::CancellationSource::new();
     let stopped = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+        worth_execution::SerialMemoryBudget::new(Some(64 * 1024 * 1024)),
         source.token(),
         None,
     );

@@ -50,6 +50,32 @@ pub(super) fn create_connection(
             AspectValue::UInt64(u64::from(retry.maximum_attempts())),
         );
     }
+    if let ApplicationWorkflowConnectionKind::BackAction(operation) = &connection {
+        for (field, value) in [
+            (
+                &layout.connection.back_action.operation,
+                operation.identifier(),
+            ),
+            (
+                &layout.connection.back_action.input_type,
+                operation.input_type().as_str(),
+            ),
+            (
+                &layout.connection.back_action.binding,
+                operation.binding().expect("validated guarded binding").0,
+            ),
+        ] {
+            fields.insert(field.clone(), text(value));
+        }
+        fields.insert(
+            layout.connection.back_action.requirements.clone(),
+            text(
+                operation
+                    .workflow_execution_requirements()
+                    .persistence_identity(),
+            ),
+        );
+    }
     WorthQueryApplicationRealizedEffect::CreateEntity {
         kind: reference.kind_id,
         key: raw_key(reference),

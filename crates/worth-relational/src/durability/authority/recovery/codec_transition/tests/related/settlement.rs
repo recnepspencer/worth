@@ -27,7 +27,7 @@ fn closed_relation_insufficient_funding_preserves_source_for_fresh_funded_retry(
         world.activation,
     );
     let limited = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(1),
+        worth_execution::SerialMemoryBudget::new(Some(1)),
         worth_execution::CancellationSource::new().token(),
         None,
     );

@@ -74,7 +74,7 @@ pub fn reconstruct(host: &host::Host, expected: i64, exercise_stops: bool) -> Re
             let controls = || {
                 WorthQueryProductQueryControls::new(
                     NonZeroUsize::new(3).unwrap(),
-                    NonZeroUsize::new(65_536).unwrap(),
+                    Some(NonZeroUsize::new(65_536).unwrap()),
                     &scope,
                 )
             };
@@ -121,7 +121,7 @@ pub fn reconstruct(host: &host::Host, expected: i64, exercise_stops: bool) -> Re
                                 policy: ExecutionRequestPolicy::new(
                                     parent.policy().posture(),
                                     parent.policy().determinism(),
-                                    ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, work),
+                                    ExecutionBudget::new(NonZeroUsize::MIN, Some(64 * 1024 * 1024), Some(work)),
                                 ),
                                 cancellation: cancellation.token(),
                                 deadline: scope.deadline(),
@@ -132,7 +132,7 @@ pub fn reconstruct(host: &host::Host, expected: i64, exercise_stops: bool) -> Re
                 let request = ExecutionRequest::leased(&child);
                 let mut projected = 0;
                 let (result, report) = request
-                    .run(ExecutionWorkCeiling::new(work), |_| {
+                    .run(ExecutionWorkCeiling::new(Some(work)), |_| {
                         runtime.reconstruct_managed_derived_collection_pair(
                             request,
                             &view,

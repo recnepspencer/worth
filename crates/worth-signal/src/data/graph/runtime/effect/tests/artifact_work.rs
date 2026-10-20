@@ -32,7 +32,7 @@ fn artifact_scope_preparation_matches_library_canonicalization_with_exact_and_sh
                 &mut EvaluationWork::Ordinary,
             )
             .unwrap();
-        let mut measured = Work::new(10_000_000);
+        let mut measured = Work::new(Some(10_000_000));
         let artifact = graph
             .build_effect_artifact_write(
                 &effect,
@@ -55,7 +55,7 @@ fn artifact_scope_preparation_matches_library_canonicalization_with_exact_and_sh
         );
         let cost = measured.visits();
         for available in [cost - 1, cost] {
-            let mut work = Work::new(cost + 7);
+            let mut work = Work::new(Some(cost + 7));
             work.reserve_visits(cost + 7 - available).unwrap();
             let result = graph.build_effect_artifact_write(
                 &effect,
@@ -95,7 +95,7 @@ fn warm_artifact_charges_selected_prior_tokens_and_custom_reuse_payload() {
             &mut EvaluationWork::Ordinary,
         )
         .unwrap();
-    let mut short = Work::new(1_000_000);
+    let mut short = Work::new(Some(1_000_000));
     graph
         .build_effect_artifact_write(
             &effect,
@@ -120,11 +120,11 @@ fn warm_artifact_charges_selected_prior_tokens_and_custom_reuse_payload() {
             Some(&identity),
             Some(&continuity),
             comparison,
-            &mut EvaluationWork::Conditional(&mut Work::new(short.visits()))
+            &mut EvaluationWork::Conditional(&mut Work::new(Some(short.visits())))
         ),
         Err(crate::data::error::SignalError::ConditionalEvaluationWorkExhausted { .. })
     ));
-    let mut work = Work::new(10_000_000);
+    let mut work = Work::new(Some(10_000_000));
     let artifact = graph
         .build_effect_artifact_write(
             &effect,
@@ -168,7 +168,7 @@ fn cold_detail_copies_every_owned_scope_and_omit_policy_does_no_payload_work() {
     });
     let scopes = PartitionScopeSet::default();
     let retention = RetentionBudget::development();
-    let mut work = Work::new(10_000_000);
+    let mut work = Work::new(Some(10_000_000));
     let intent = build_cold_artifact_intent(
         &effect,
         &retention,
@@ -185,7 +185,7 @@ fn cold_detail_copies_every_owned_scope_and_omit_policy_does_no_payload_work() {
         work.visits() >= 8 * text.len(),
         "three two-string scope copies, custom key and family"
     );
-    let mut denied = Work::new(8 * text.len() - 1);
+    let mut denied = Work::new(Some(8 * text.len() - 1));
     assert!(matches!(
         build_cold_artifact_intent(
             &effect,
@@ -200,7 +200,7 @@ fn cold_detail_copies_every_owned_scope_and_omit_policy_does_no_payload_work() {
         provenance_retention: ArtifactRetentionPolicy::Omit,
         ..retention
     };
-    let mut zero = Work::new(0);
+    let mut zero = Work::new(Some(0));
     assert!(build_cold_artifact_intent(
         &effect,
         &omit,

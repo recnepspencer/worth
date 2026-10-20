@@ -87,6 +87,7 @@ pub(super) fn complete_parts() -> WorthQueryPortableApplicationOperationContract
             },
         ],
         emissions: vec!["audit".to_owned(), "notify".to_owned()],
+        body: None,
         external_effect: Some(external_effect()),
         reconciliation: Some(
             WorthQueryPortableInstalledReconciliationProcedureRecord::from_untrusted_procedure_slot(

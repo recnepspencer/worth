@@ -20,7 +20,7 @@ fn partition_count_matches_independent_set_with_exact_and_short_work() {
             .map(|region| region.path().segments()[0].as_str())
             .collect::<std::collections::BTreeSet<_>>()
             .len() as u32;
-        let mut work = Work::new(1_000_000);
+        let mut work = Work::new(Some(1_000_000));
         assert_eq!(
             count_changed_partitions(&regions, &mut EvaluationWork::Conditional(&mut work))
                 .unwrap(),
@@ -30,7 +30,7 @@ fn partition_count_matches_independent_set_with_exact_and_short_work() {
         assert_eq!(
             count_changed_partitions(
                 &regions,
-                &mut EvaluationWork::Conditional(&mut Work::new(cost))
+                &mut EvaluationWork::Conditional(&mut Work::new(Some(cost)))
             )
             .unwrap(),
             expected
@@ -39,14 +39,14 @@ fn partition_count_matches_independent_set_with_exact_and_short_work() {
             assert!(matches!(
                 count_changed_partitions(
                     &regions,
-                    &mut EvaluationWork::Conditional(&mut Work::new(cost - 1))
+                    &mut EvaluationWork::Conditional(&mut Work::new(Some(cost - 1)))
                 ),
                 Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
             ));
         }
     }
     let short = [ChangedRegion::new("x"), ChangedRegion::new("x")];
-    let mut work = Work::new(1000);
+    let mut work = Work::new(Some(1000));
     count_changed_partitions(&short, &mut EvaluationWork::Conditional(&mut work)).unwrap();
     let long = [
         ChangedRegion::new("λ".repeat(1000)),
@@ -55,7 +55,7 @@ fn partition_count_matches_independent_set_with_exact_and_short_work() {
     assert!(matches!(
         count_changed_partitions(
             &long,
-            &mut EvaluationWork::Conditional(&mut Work::new(work.visits()))
+            &mut EvaluationWork::Conditional(&mut Work::new(Some(work.visits())))
         ),
         Err(SignalError::ConditionalEvaluationWorkExhausted { .. })
     ));
@@ -75,7 +75,7 @@ fn output_identity_comparison_uses_shared_work_and_query_bytes() {
         Vec::new(),
         Vec::new(),
     );
-    let mut work = Work::new(1_000_000);
+    let mut work = Work::new(Some(1_000_000));
     let comparison = graph
         .compare_effect(
             &effect,
@@ -90,7 +90,7 @@ fn output_identity_comparison_uses_shared_work_and_query_bytes() {
     assert!(comparison.propagation_suppressed);
     let cost = work.visits();
     for available in [cost - 1, cost] {
-        let mut work = Work::new(cost + 7);
+        let mut work = Work::new(Some(cost + 7));
         work.reserve_visits(cost + 7 - available).unwrap();
         let result = graph.compare_effect(
             &effect,

@@ -70,7 +70,10 @@ fn personal_account_creation_binding_declares_its_complete_fixed_shape() {
         "InstitutionIdentityField"
     );
 
-    let cardinality = descriptor.candidates().cardinality();
+    let cardinality = descriptor
+        .candidates()
+        .cardinality()
+        .expect("personal account creation declares an explicit finite cardinality policy");
     assert_eq!(cardinality.maximum_creates(), 1);
     assert_eq!(cardinality.maximum_deletes(), 0);
     assert_eq!(cardinality.maximum_links(), 2);
@@ -81,8 +84,8 @@ fn personal_account_creation_binding_declares_its_complete_fixed_shape() {
         descriptor
             .candidates()
             .resources()
-            .maximum_retained_representation_bytes(),
-        1392
+            .map(|resources| resources.maximum_retained_representation_bytes()),
+        Some(1392)
     );
 }
 

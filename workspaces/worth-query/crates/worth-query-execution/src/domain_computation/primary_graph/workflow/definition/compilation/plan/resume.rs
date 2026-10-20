@@ -249,6 +249,7 @@ mod tests {
                 ),
                 nodes: nodes.into_boxed_slice(),
                 connections: connections.into_boxed_slice(),
+                global_actions: Arc::from([]),
                 dispatch: Arc::new(CompiledWorkflowDispatch::build(3, &semantic_connections)),
             }),
             content_identity: ApplicationWorkflowDefinitionContentIdentity::from_recorded(

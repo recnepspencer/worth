@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use worth_execution::{
-    ChargedBytes, ExecutionMap, ExecutionResourceLease, KeylessPartition, MapKernelContext,
-    MapKernelFailure, MapOutcome, MapStop,
+    ChargedBytes, ExecutionMap, ExecutionResourceLease, KeylessPartition, MapKernelFailure,
+    MapOutcome, MapStop,
 };
 use worth_foundational::PartitionIdentity;
 
@@ -38,112 +38,7 @@ impl ChargedBytes for PacketBudgetDenial {
     }
 }
 
-pub(crate) struct PacketKernelContext<'a, 'b, 'c> {
-    meter: &'a mut MapKernelContext<'b, 'c>,
-    scratch_limit: u64,
-    result_limit: u64,
-    scratch_bytes: u64,
-    result_bytes: u64,
-}
-
-impl PacketKernelContext<'_, '_, '_> {
-    pub(crate) fn remaining_work(&self) -> u64 {
-        self.meter.remaining_work()
-    }
-
-    pub(crate) fn remaining_scratch(&self) -> u64 {
-        self.scratch_limit.saturating_sub(self.scratch_bytes)
-    }
-
-    pub(crate) fn account_completed_work(
-        &mut self,
-        units: u64,
-    ) -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
-        self.meter
-            .account_completed_work(units)
-            .map_err(MapKernelFailure::Stop)
-    }
-    pub(crate) fn checkpoint(
-        &mut self,
-        units: u64,
-    ) -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
-        self.meter.checkpoint(units).map_err(MapKernelFailure::Stop)
-    }
-
-    pub(crate) fn claim_scratch(
-        &mut self,
-        bytes: u64,
-    ) -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
-        self.scratch_bytes =
-            self.scratch_bytes
-                .checked_add(bytes)
-                .ok_or(MapKernelFailure::Domain(
-                    PacketBudgetDenial::ScratchCapacityExceeded,
-                ))?;
-        if self.scratch_bytes > self.scratch_limit {
-            return Err(MapKernelFailure::Domain(
-                PacketBudgetDenial::ScratchCapacityExceeded,
-            ));
-        }
-        Ok(())
-    }
-
-    pub(crate) fn check_scratch_peak(
-        &self,
-        bytes: u64,
-    ) -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
-        let peak = self
-            .scratch_bytes
-            .checked_add(bytes)
-            .ok_or(MapKernelFailure::Domain(
-                PacketBudgetDenial::ScratchCapacityExceeded,
-            ))?;
-        if peak > self.scratch_limit {
-            return Err(MapKernelFailure::Domain(
-                PacketBudgetDenial::ScratchCapacityExceeded,
-            ));
-        }
-        Ok(())
-    }
-
-    pub(crate) fn claim_result(
-        &mut self,
-        bytes: u64,
-    ) -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
-        self.result_bytes = self
-            .result_bytes
-            .checked_add(bytes)
-            .ok_or(MapKernelFailure::ResultCapacityExceeded)?;
-        if self.result_bytes > self.result_limit {
-            return Err(MapKernelFailure::ResultCapacityExceeded);
-        }
-        Ok(())
-    }
-
-    pub(crate) fn check_result_peak(
-        &self,
-        bytes: u64,
-    ) -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
-        let peak = self
-            .result_bytes
-            .checked_add(bytes)
-            .ok_or(MapKernelFailure::ResultCapacityExceeded)?;
-        if peak > self.result_limit {
-            return Err(MapKernelFailure::ResultCapacityExceeded);
-        }
-        Ok(())
-    }
-
-    pub(crate) fn ensure_result_total(
-        &mut self,
-        bytes: u64,
-    ) -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
-        if bytes > self.result_bytes {
-            self.claim_result(bytes - self.result_bytes)?;
-        }
-        Ok(())
-    }
-}
+pub(crate) use super::packet_memory::PacketKernelContext;
 
 impl From<PacketExecutionStop> for crate::transactions::data::TransactionCommitError {
     fn from(stop: PacketExecutionStop) -> Self {
@@ -160,15 +55,13 @@ pub(crate) struct ReadOnlyPacket<T> {
     pub identity: PartitionIdentity,
     pub value: T,
     pub input_bytes: u64,
-    pub kernel_scratch_bytes: u64,
-    pub max_result_bytes: u64,
+    pub memory: super::PacketMemory,
 }
 
 struct ChargedPacketInput<T> {
     value: T,
     owned_bytes: u64,
-    scratch_limit: u64,
-    result_limit: u64,
+    memory: super::PacketMemory,
 }
 
 impl<T> ChargedBytes for ChargedPacketInput<T> {
@@ -222,20 +115,28 @@ where
     C: Fn(&T) -> u64 + Sync,
 {
     admit_read_only_packet_order(&packets).map_err(PacketExecutionStop::Admission)?;
+    if packets
+        .iter()
+        .any(|packet| matches!(packet.memory, super::PacketMemory::Tracked))
+    {
+        return super::tracked_packets::execute(packets, lease, budget, kernel, charged_bytes);
+    }
     let partitions: BTreeMap<_, _> = packets
         .into_iter()
         .map(|packet| {
+            let super::PacketMemory::Declared { scratch, result } = packet.memory else {
+                unreachable!("tracked batches have their own owner carriage")
+            };
             (
                 packet.identity,
                 KeylessPartition {
                     value: ChargedPacketInput {
                         value: packet.value,
                         owned_bytes: packet.input_bytes,
-                        scratch_limit: packet.kernel_scratch_bytes,
-                        result_limit: packet.max_result_bytes,
+                        memory: packet.memory,
                     },
-                    kernel_scratch_bytes: packet.kernel_scratch_bytes,
-                    max_result_bytes: packet.max_result_bytes,
+                    kernel_scratch_bytes: scratch,
+                    max_result_bytes: result,
                 },
             )
         })
@@ -251,13 +152,7 @@ where
         |lease| {
             batch.run(Some(lease), |packet, context| {
                 context.checkpoint(1)?;
-                let mut packet_context = PacketKernelContext {
-                    meter: context,
-                    scratch_limit: packet.scratch_limit,
-                    result_limit: packet.result_limit,
-                    scratch_bytes: 0,
-                    result_bytes: 0,
-                };
+                let mut packet_context = PacketKernelContext::declared(context, packet.memory);
                 let value = kernel(&packet.value, &mut packet_context)?;
                 Ok(ChargedPacketResult {
                     owned_bytes: charged_bytes(&value),

@@ -271,7 +271,11 @@ where
                         target,
                         reduction_work,
                         results,
-                        context.remaining_work().min(remaining.remaining()),
+                        context
+                            .remaining_work()
+                            .map_or(remaining.remaining(), |requested| {
+                                requested.min(remaining.remaining())
+                            }),
                         declared_bytes,
                         reducer,
                         execution,
@@ -294,7 +298,7 @@ where
                         .map_err(WorthQueryPartitionedComputationDenial::from_kernel_stop)?;
                     if work == context.charged_cost().0
                         && tree.outcome.is_err()
-                        && context.remaining_work() == 0
+                        && context.remaining_work() == Some(0)
                     {
                         let _ = context.checkpoint(1);
                     }

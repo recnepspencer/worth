@@ -1,5 +1,6 @@
 use super::*;
 use std::marker::PhantomData;
+use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 use worth_query_host::facade::application_contribution::*;
 
 pub(super) struct ChainFamily;
@@ -105,7 +106,10 @@ impl<Schema: TopologySchemaBinding>
     fn idempotency_key(&self, _: &PlanarOutputReadResult, identity: &[u8; 32]) -> u64 {
         (planar_source_key(identity) ^ 0x9176_3000) | self.key_mask
     }
-    fn demand_resources(&self, _: &PlanarOutputReadResult) -> WorthQueryProducerDemandResources {
-        planar_producer_resources()
+    fn demand_resources(
+        &self,
+        _: &PlanarOutputReadResult,
+    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
+        Ok(planar_producer_resources())
     }
 }

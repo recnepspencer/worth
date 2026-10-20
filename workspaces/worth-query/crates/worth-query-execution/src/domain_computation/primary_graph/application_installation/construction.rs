@@ -163,6 +163,9 @@ where
         ));
     }
     graph.mutation_handlers = handlers;
+    graph.program_activation = admitted_program_support
+        .as_ref()
+        .map(|_| activation.clone());
     // Seal the real configured executors before a recovered producer route can
     // justify retiring an old output. The same registry is published below.
     let producers = producers

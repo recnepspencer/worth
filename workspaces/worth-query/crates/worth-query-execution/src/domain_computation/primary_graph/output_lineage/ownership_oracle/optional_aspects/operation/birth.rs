@@ -26,7 +26,7 @@ impl<Schema: BirthSchema> OperationHandler<Schema, $binding> for Handler {
         _: &Decision<Schema>,
     ) -> ApplicationCandidateRequirements {
         <$binding as ApplicationMutationBinding<Schema>>::CANDIDATES
-            .fixed_requirements()
+            .finite_requirements()
             .unwrap()
     }
     fn build_candidate(

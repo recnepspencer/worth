@@ -34,6 +34,16 @@ impl PartitionAccess for HistoricalProjectionStorage<'_> {
         }
     }
 
+    fn partition_ids_with_memory(
+        &self,
+        memory: &mut dyn crate::storage::overlay::PartitionIdMemory,
+    ) -> Result<Vec<PartitionId>, crate::storage::overlay::PartitionIdsDenial> {
+        match self {
+            Self::Retained(root) => root.as_ref().partition_ids_with_memory(memory),
+            Self::EmptyGenesis => Ok(Vec::new()),
+        }
+    }
+
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         match self {
             Self::Retained(root) => Box::new(root.partition_ids_iter()),
@@ -54,24 +64,32 @@ impl<'view> HistoricalProjectionReader<'view> {
         &self,
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<EntityReadRecord>, worth_execution::MapKernelStop> {
-        self.collect_entity_records(Some(kind), charge)
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        self.collect_entity_records(Some(kind), charge, memory)
     }
     pub(super) fn all_entity_records(
         &self,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<EntityReadRecord>, worth_execution::MapKernelStop> {
-        self.collect_entity_records(None, charge)
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        self.collect_entity_records(None, charge, memory)
     }
     fn collect_entity_records(
         &self,
         kind: Option<KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<EntityReadRecord>, worth_execution::MapKernelStop> {
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let mut records = Vec::new();
-        for partition in self.storage().partition_ids() {
-            records.extend(self.entity_records_in_selected_partition(partition, kind, charge)?);
+        let (partitions, partition_bytes) =
+            super::super::read_work::record_memory::partition_ids(&self.storage(), memory)?;
+        for partition in partitions {
+            let incoming =
+                self.entity_records_in_selected_partition(partition, kind, charge, memory)?;
+            super::super::read_work::record_memory::append(memory, &mut records, incoming)?;
         }
+        super::super::read_work::record_memory::release(memory, partition_bytes)?;
         debug_assert!(
             super::read_record_identity_ordering::authoritative_entity_records_are_identity_ordered(
                 &records
@@ -84,15 +102,17 @@ impl<'view> HistoricalProjectionReader<'view> {
         partition: PartitionId,
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<EntityReadRecord>, worth_execution::MapKernelStop> {
-        self.entity_records_in_selected_partition(partition, Some(kind), charge)
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        self.entity_records_in_selected_partition(partition, Some(kind), charge, memory)
     }
     fn entity_records_in_selected_partition(
         &self,
         partition: PartitionId,
         kind: Option<KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<EntityReadRecord>, worth_execution::MapKernelStop> {
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         self.view.reader().paid_entities_in_partition(
             &self.storage(),
             self.registry(),
@@ -103,6 +123,7 @@ impl<'view> HistoricalProjectionReader<'view> {
                 self.view.version_id(),
             ),
             charge,
+            memory,
         )
     }
     pub(super) fn entity_record(&self, entity_id: EntityId) -> Option<EntityReadRecord> {
@@ -122,25 +143,33 @@ impl<'view> HistoricalProjectionReader<'view> {
         &self,
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<RelationReadRecord>, worth_execution::MapKernelStop> {
-        self.collect_relation_records(Some(kind), charge)
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        self.collect_relation_records(Some(kind), charge, memory)
     }
     pub(super) fn all_relation_records(
         &self,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<RelationReadRecord>, worth_execution::MapKernelStop> {
-        self.collect_relation_records(None, charge)
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        self.collect_relation_records(None, charge, memory)
     }
     fn collect_relation_records(
         &self,
         kind: Option<KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<RelationReadRecord>, worth_execution::MapKernelStop> {
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let mut records = Vec::new();
-        for partition in self.storage().partition_ids() {
-            records.extend(self.relation_records_in_selected_partition(partition, kind, charge)?);
+        let (partitions, partition_bytes) =
+            super::super::read_work::record_memory::partition_ids(&self.storage(), memory)?;
+        for partition in partitions {
+            let incoming =
+                self.relation_records_in_selected_partition(partition, kind, charge, memory)?;
+            super::super::read_work::record_memory::append(memory, &mut records, incoming)?;
         }
-        records.sort_by_key(relation_identity_order_key);
+        super::super::read_work::record_memory::release(memory, partition_bytes)?;
+        records.sort_unstable_by_key(relation_identity_order_key);
         debug_assert!(super::read_record_identity_ordering::authoritative_relation_records_are_identity_ordered(&records));
         Ok(records)
     }
@@ -149,15 +178,17 @@ impl<'view> HistoricalProjectionReader<'view> {
         partition: PartitionId,
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<RelationReadRecord>, worth_execution::MapKernelStop> {
-        self.relation_records_in_selected_partition(partition, Some(kind), charge)
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        self.relation_records_in_selected_partition(partition, Some(kind), charge, memory)
     }
     fn relation_records_in_selected_partition(
         &self,
         partition: PartitionId,
         kind: Option<KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<RelationReadRecord>, worth_execution::MapKernelStop> {
+        memory: &mut worth_execution::ExecutionResultMemory<'_>,
+    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         self.view.reader().paid_relations_in_partition(
             &self.storage(),
             self.registry(),
@@ -168,6 +199,7 @@ impl<'view> HistoricalProjectionReader<'view> {
                 self.view.version_id(),
             ),
             charge,
+            memory,
         )
     }
     pub(super) fn relation_record(&self, relation_id: RelationId) -> Option<RelationReadRecord> {

@@ -74,6 +74,18 @@ impl PartitionAccess for WorkingState {
         Box::new(self.partitions.keys().copied())
     }
 
+    fn partition_ids_with_memory(
+        &self,
+        memory: &mut dyn crate::storage::overlay::PartitionIdMemory,
+    ) -> Result<Vec<PartitionId>, crate::storage::overlay::PartitionIdsDenial> {
+        use crate::storage::overlay::collect_partition_ids;
+        collect_partition_ids(
+            self.partitions.len(),
+            self.partitions.keys().copied(),
+            memory,
+        )
+    }
+
     fn touched_partition_ids(&self) -> Option<Vec<PartitionId>> {
         (!self.mutation_journal.is_empty()).then(|| self.mutation_journal.keys().copied().collect())
     }

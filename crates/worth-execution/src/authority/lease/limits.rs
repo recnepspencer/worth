@@ -23,10 +23,19 @@ impl<'a> ExecutionResourceLease<'a> {
         if budget.max_workers().get() > self.node.max_workers {
             return Err(LeaseDenial::refused(LeaseDenial::WorkerLimitExceedsParent));
         }
-        if budget.charged_memory_bytes() > self.node.charged_memory_bytes {
+        if self.node.charged_memory_bytes.is_some_and(|parent| {
+            budget
+                .charged_memory_bytes()
+                .is_some_and(|child| child > parent)
+        }) {
             return Err(LeaseDenial::refused(LeaseDenial::MemoryLimitExceedsParent));
         }
-        if budget.work_ceiling() > self.policy.budget().work_ceiling() {
+        if self
+            .policy
+            .budget()
+            .work_ceiling()
+            .is_some_and(|parent| budget.work_ceiling().is_none_or(|child| child > parent))
+        {
             return Err(LeaseDenial::refused(LeaseDenial::WorkLimitExceedsParent));
         }
         Ok(self.child_from_validated_request(request))

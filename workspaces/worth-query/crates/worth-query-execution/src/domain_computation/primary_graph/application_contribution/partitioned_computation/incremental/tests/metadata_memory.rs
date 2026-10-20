@@ -22,7 +22,7 @@ fn partition_metadata_refusal_preserves_prior_and_its_funded_view_lasts_until_fi
     let original = prior.partitions.get(&first_identity).unwrap().key.0;
     let request = live_scope();
     let narrow = QueryRequestExecution::open(
-        RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, 1)),
+        RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, Some(1))),
         &request,
     );
     let mut candidate = prior.partitions.fork();
@@ -41,7 +41,10 @@ fn partition_metadata_refusal_preserves_prior_and_its_funded_view_lasts_until_fi
     ));
     let capacity = bound * 4;
     let fresh = QueryRequestExecution::open(
-        RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, capacity)),
+        RuntimeWorldExecutionPlacement::Serial(test_policy(
+            std::num::NonZeroUsize::MIN,
+            Some(capacity),
+        )),
         &request,
     );
     assert!(

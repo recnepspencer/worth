@@ -58,7 +58,7 @@ fn commit_own_write(
     ),
 ) {
     let product_resources =
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources();
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources_with_retained_capacity_for_test(128 * 1024 * 1024);
     let resources = product_resources.invalidation_resources();
     let world = crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world_with_product_resources(product_resources);
     world.declare_output_contract::<OwnWriteOutputs>("OwnWriteOutputs");
@@ -197,25 +197,36 @@ fn commit_own_write(
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let maximum = resources.installation().maximum_retained_bytes;
-    let (key, dependency) = if generated {
-        program.producer_idempotency_identities::<OwnWriteOutputs>(
-            &world.application,
-            [11; 32],
-            None,
-            &mut owner.edit_admission(),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-    } else {
-        program.producer_idempotency_identities::<RetentionOutputs>(
-            &world.application,
-            [11; 32],
-            None,
-            &mut owner.edit_admission(),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-    }
-    .unwrap();
+    let maximum = resources
+        .installation()
+        .maximum_retained_bytes
+        .expect("this court installs a finite retained ceiling");
+    let (key, dependency) = world
+        .application
+        .with_host_advancement(|phase| {
+            let execution = phase.borrowed_request_for_test();
+            if generated {
+                program.producer_idempotency_identities::<OwnWriteOutputs>(
+                    &world.application,
+                    &execution,
+                    [11; 32],
+                    None,
+                    &mut owner.edit_admission(),
+                    execution.allocation_policy(),
+                )
+            } else {
+                program.producer_idempotency_identities::<RetentionOutputs>(
+                    &world.application,
+                    &execution,
+                    [11; 32],
+                    None,
+                    &mut owner.edit_admission(),
+                    execution.allocation_policy(),
+                )
+            }
+            .unwrap()
+        })
+        .expect("the installed host lends the identity request");
     let identity =
         crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding::new(
             key, [232; 32],

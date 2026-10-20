@@ -87,7 +87,7 @@ fn closed_no_projection_compares_the_action_selected_at_the_caller_observation()
         ))
         .unwrap();
         let fresh = world.application.request(&fresh_principal, &fresh_scope);
-        let policy = installed_policy(&world);
+        let policy = WorthQueryOperationDeliveryPolicy::default();
         let compatible = fresh.retain_current_read().unwrap();
         closed_fixed
             .deliver_current_at(&fresh.at(&compatible), policy)

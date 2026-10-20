@@ -51,7 +51,7 @@ fn policy() -> ExecutionRequestPolicy {
     ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(std::num::NonZeroUsize::MIN, 1 << 24, 1_000_000),
+        ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(1 << 24), Some(1_000_000)),
     )
 }
 
@@ -160,7 +160,13 @@ fn patch_refusal_precedes_copy_and_cancelled_author_never_seals_partial_facts() 
         let baseline = lease.charged_memory_bytes();
         let quote = leaf(&original, 37).clone_bytes.unwrap();
         let held = lease
-            .reserve_memory(lease.available_memory_bytes() - quote + 1)
+            .reserve_memory(
+                lease
+                    .available_memory_bytes()
+                    .expect("this fixture supplies a finite memory ceiling")
+                    - quote
+                    + 1,
+            )
             .unwrap();
         observation::fact_verification_on_this_thread_for_test();
         assert!(original
@@ -246,7 +252,13 @@ fn growing_replacement_is_admitted_before_copy_and_keeps_funding_until_final_vie
             .unwrap();
         let prepared = lease.charged_memory_bytes();
         let held = lease
-            .reserve_memory(lease.available_memory_bytes() - quote + 1)
+            .reserve_memory(
+                lease
+                    .available_memory_bytes()
+                    .expect("this fixture supplies a finite memory ceiling")
+                    - quote
+                    + 1,
+            )
             .unwrap();
         observation::fact_verification_on_this_thread_for_test();
         let Err(StoreDenial::Allocation(denial)) = patch.replace(0, &growing, control) else {

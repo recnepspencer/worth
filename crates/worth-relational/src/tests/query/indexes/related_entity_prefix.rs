@@ -59,7 +59,7 @@ fn related_entity_prefix_leased_seek_refusal_and_retained_page() {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Automatic,
                     DeterminismContract::CanonicalBitwise,
-                    ExecutionBudget::new(NonZeroUsize::MIN, memory, work),
+                    ExecutionBudget::new(NonZeroUsize::MIN, Some(memory), Some(work)),
                 ),
                 deadline: None,
                 cancellation: CancellationToken::new(),
@@ -96,7 +96,7 @@ fn related_entity_prefix_leased_seek_refusal_and_retained_page() {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::MIN, 1024 * 1024, 1_000_000),
+                ExecutionBudget::new(NonZeroUsize::MIN, Some(1024 * 1024), Some(1_000_000)),
             ),
             deadline: None,
             cancellation: cancelled.token(),
@@ -161,13 +161,13 @@ fn related_entity_prefix_leased_seek_refusal_and_retained_page() {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, memory, 1_000_000),
+            ExecutionBudget::new(NonZeroUsize::MIN, Some(memory), Some(1_000_000)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
     };
     let child = parent_lease.child(child_request(1024 * 1024)).unwrap();
-    let ceiling = worth_execution::ExecutionWorkCeiling::new(1_000_000);
+    let ceiling = worth_execution::ExecutionWorkCeiling::new(Some(1_000_000));
     let (framework, _) = ceiling
         .run(&child, || {
             ceiling
@@ -201,20 +201,30 @@ fn related_entity_prefix_leased_seek_refusal_and_retained_page() {
             })
             .unwrap();
         match &refused {
-            Err(Denial::Memory(cause)) if stage != 1 => {
-                assert_eq!(cause.requested, basis_bytes);
+            Err(Denial::Memory(worth_execution::MemoryLimitDenial::Capacity {
+                requested,
+                level,
+                ..
+            })) if stage != 1 => {
+                assert_eq!(*requested, basis_bytes);
                 assert_eq!(
-                    cause.level,
+                    *level,
                     worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
                 );
             }
             Err(Denial::Allocation(cause)) if stage == 1 => {
                 assert_eq!(cause.requested_payload_bytes(), Some(id_bytes));
-                assert!(
-                    matches!(cause.kind(), worth_execution::ExecutionAllocationDenialKind::Lease(
-                    worth_execution::LeaseDenial::MemoryExhausted(cause)
-                ) if cause.level == worth_execution::MemoryLimitLevel::Policy { ancestor: 0 })
-                );
+                assert!(matches!(
+                    cause.kind(),
+                    worth_execution::ExecutionAllocationDenialKind::Lease(
+                        worth_execution::LeaseDenial::MemoryExhausted(
+                            worth_execution::MemoryLimitDenial::Capacity {
+                                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
+                                ..
+                            }
+                        )
+                    )
+                ));
             }
             _ => panic!(
                 "framework admitted; backing stage {stage} must hit the child ceiling: {refused:?}"

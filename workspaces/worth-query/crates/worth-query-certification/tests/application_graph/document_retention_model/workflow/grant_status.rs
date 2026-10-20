@@ -1,5 +1,6 @@
 //! An ordinary, owner-published grant change for workflow wait-currentness courts.
 
+use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_host::facade::{
     declaration::{
         application_operation::{
@@ -108,12 +109,11 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for WorkflowGrantStatus
         "worth.query.certification.workflow-grant-status-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.workflow-grant-status-command.v1";
-    const CANDIDATES:
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
+    const CANDIDATES: ApplicationCandidatePolicy =
+        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(1_024),
-        );
+        ));
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -203,8 +203,8 @@ impl OperationHandler<DocumentRetentionSchema, WorkflowGrantStatusBinding>
         _: &WorthQueryInvariantMutationTarget<DocumentRetentionSchema, WorkflowAuthoringGrant>,
     ) -> ApplicationCandidateRequirements {
         WorkflowGrantStatusBinding::CANDIDATES
-            .fixed_requirements()
-            .expect("fixed candidate contract")
+            .finite_requirements()
+            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

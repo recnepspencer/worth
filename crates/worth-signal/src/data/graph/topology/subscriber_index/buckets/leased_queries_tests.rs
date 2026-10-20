@@ -23,7 +23,7 @@ fn checked_candidate_preparation_rejects_a_destroyed_reverse_index() {
     let lease = authority().request_lease(request(1, 1_000_000)).unwrap();
     let identity = PartitionIdentity::new(1);
     let scan = ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())]).unwrap();
-    let mut budget = SignalPreparationBudget::new(4 * 1024 * 1024);
+    let mut budget = SignalPreparationBudget::new(None);
     let outcome = scan.run(
         Some(&lease),
         (),
@@ -128,9 +128,9 @@ fn leased_hierarchy_candidates_match_current_edges_after_scope_replacement() {
                     4 * 1024 * 1024,
                     4 * 1024 * 1024,
                     |_, _, work| {
-                        let mut budget = SignalPreparationBudget::for_request(4 * 1024 * 1024, Some(&lease))
+                        let mut budget = SignalPreparationBudget::for_request(None, Some(&lease))
                             .map_err(MapKernelFailure::Domain)?;
-                        let mut retained = crate::data::retained_storage::RetainedStoragePreparation::new(usize::MAX);
+                        let mut retained = crate::data::retained_storage::RetainedStoragePreparation::new(None);
                         let mut checkpoint = |units: usize| work.checkpoint(units as u64)
                             .map_err(|stop| crate::data::retained_storage::RetainedStoragePreparationDenial::ExecutionStopped(stop.into()));
                         let mut observed = retained.reborrow_with_checkpoint(&mut checkpoint);

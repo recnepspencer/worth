@@ -191,13 +191,13 @@ mod tests {
             ),
             (Some(PartitionSubscription::whole_partition("missing")), 0),
         ] {
-            let mut full = RetainedStoragePreparation::new(1_000);
+            let mut full = RetainedStoragePreparation::new(Some(1_000));
             assert_eq!(
                 graph.conditional_node_version_for_scope(node, aspect, scope.as_ref(), &mut full),
                 Ok(expected)
             );
             let limit = full.visits() - 1;
-            let mut short = RetainedStoragePreparation::new(limit);
+            let mut short = RetainedStoragePreparation::new(Some(limit));
             assert_eq!(
                 graph.conditional_node_version_for_scope(node, aspect, scope.as_ref(), &mut short),
                 Err(SignalError::ConditionalEvaluationWorkExhausted {
@@ -212,7 +212,7 @@ mod tests {
                 node,
                 aspect,
                 Some(&huge),
-                &mut RetainedStoragePreparation::new(1_000)
+                &mut RetainedStoragePreparation::new(Some(1_000))
             ),
             Err(SignalError::ConditionalEvaluationWorkExhausted {
                 maximum_visits: 1_000

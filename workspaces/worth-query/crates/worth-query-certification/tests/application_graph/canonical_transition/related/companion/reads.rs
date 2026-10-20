@@ -146,7 +146,7 @@ where
         })
         .page(
             std::num::NonZeroUsize::MIN,
-            std::num::NonZeroUsize::new(65_536).unwrap(),
+            Some(std::num::NonZeroUsize::new(65_536).unwrap()),
         )
         .unwrap()
 }

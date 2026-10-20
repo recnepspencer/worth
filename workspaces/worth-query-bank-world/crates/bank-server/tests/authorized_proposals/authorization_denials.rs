@@ -91,7 +91,7 @@ fn program_entry_denies_unauthorized_account_mutations() {
             worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(
                 send_denial,
             ),
-    } = send_denial.advance(&fresh, std::num::NonZeroUsize::new(20_000).unwrap())
+    } = send_denial.advance(&fresh, Some(std::num::NonZeroUsize::new(20_000).unwrap()))
     else {
         panic!("native non-owner refusal")
     };

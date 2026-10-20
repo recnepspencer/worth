@@ -11,6 +11,7 @@ use super::{
     ApplicationProgramRulesShape, ApplicationSemanticDescription,
 };
 
+mod body_binding;
 mod definition_validation;
 mod delivery_validation;
 mod validation_denial;
@@ -57,6 +58,10 @@ where
 /// Phase 1 authoring progression. Validation is unavailable until its typed
 /// required connection has been supplied.
 pub struct ApplicationProgramAuthoring<Schema, Program> {
+    operation_bodies: Vec<(
+        String,
+        crate::application_schema::ApplicationOperationBodyProgram,
+    )>,
     marker: PhantomData<fn() -> (Schema, Program)>,
 }
 
@@ -67,6 +72,7 @@ where
 {
     pub const fn begin() -> Self {
         Self {
+            operation_bodies: Vec::new(),
             marker: PhantomData,
         }
     }
@@ -92,7 +98,11 @@ where
         self,
     ) -> Result<ValidatedApplicationProgram<Schema, Program>, ApplicationProgramValidationDenial>
     {
-        validate::<Schema, Program>(Program::Outputs::connections(), Program::Rules::rules())
+        validate::<Schema, Program>(
+            Program::Outputs::connections(),
+            Program::Rules::rules(),
+            self.operation_bodies,
+        )
     }
 }
 
