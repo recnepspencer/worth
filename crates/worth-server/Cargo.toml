@@ -46,3 +46,7 @@ path = "tests/isolated/product_operation_phase_thirteen_shared_read.rs"
 [[test]]
 name = "product_read_nested_lease"
 path = "tests/isolated/product_read_nested_lease.rs"
+
+[[test]]
+name = "product_retry_ownership"
+path = "tests/product_retry_ownership.rs"

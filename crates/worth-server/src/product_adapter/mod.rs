@@ -17,6 +17,7 @@ mod query_application_readiness;
 mod read_batch;
 mod registration;
 mod registry;
+mod retry_owner;
 mod schedule;
 mod support_snapshot;
 mod surface;
@@ -54,6 +55,7 @@ pub use registration::{
     WorthServerProductAdapterRegistrationReceipt, WorthServerProductApplicationAdapterRegistration,
 };
 pub use registry::{WorthServerProductAdapterRegistry, WorthServerProductAdapterRegistryError};
+pub use retry_owner::WorthServerProductRetryOwner;
 pub use schedule::{WorthServerProductSchedulerAdmission, WorthServerScheduledProductOperation};
 pub use support_snapshot::WorthServerProductOperationSupportSnapshot;
 pub use surface::{

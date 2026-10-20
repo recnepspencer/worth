@@ -1,13 +1,14 @@
 use std::sync::Arc;
 mod program_application;
+mod validation;
 
 use crate::WorthServerOperationFamily;
 
 use super::{
-    WorthServerProductAdapterCertificationCode, WorthServerProductAdapterCertificationError,
     WorthServerProductOperationAuthorityRequirement, WorthServerProductOperationBasisKind,
     WorthServerProductOperationErrorMap, WorthServerProductOperationSupportSnapshot,
     WorthServerProductPayloadSchemaValidator, WorthServerProductReadTransport,
+    WorthServerProductRetryOwner,
 };
 
 #[derive(Clone)]
@@ -20,6 +21,7 @@ pub struct WorthServerProductOperationDeclaration {
     support_snapshot: WorthServerProductOperationSupportSnapshot,
     authority_requirement: WorthServerProductOperationAuthorityRequirement,
     read_transport: Option<WorthServerProductReadTransport>,
+    retry_owner: WorthServerProductRetryOwner,
     payload_validator: Option<Arc<dyn WorthServerProductPayloadSchemaValidator>>,
     error_map: Option<Arc<dyn WorthServerProductOperationErrorMap>>,
     query_application_readiness:
@@ -37,6 +39,7 @@ impl std::fmt::Debug for WorthServerProductOperationDeclaration {
             .field("support_snapshot", &self.support_snapshot)
             .field("authority_requirement", &self.authority_requirement)
             .field("read_transport", &self.read_transport)
+            .field("retry_owner", &self.retry_owner)
             .field(
                 "query_application_readiness",
                 &self
@@ -116,6 +119,7 @@ impl WorthServerProductOperationDeclaration {
             payload_validator: None,
             error_map: None,
             query_application_readiness: None,
+            retry_owner: WorthServerProductRetryOwner::ServerReceipt,
         }
     }
 
@@ -141,6 +145,7 @@ impl WorthServerProductOperationDeclaration {
             payload_validator: None,
             error_map: None,
             query_application_readiness: None,
+            retry_owner: WorthServerProductRetryOwner::ServerReceipt,
         }
     }
 
@@ -167,6 +172,7 @@ impl WorthServerProductOperationDeclaration {
             payload_validator: None,
             error_map: None,
             query_application_readiness: None,
+            retry_owner: WorthServerProductRetryOwner::ServerReceipt,
         }
     }
 
@@ -209,6 +215,27 @@ impl WorthServerProductOperationDeclaration {
         self
     }
 
+    /// Declares response-retry ownership for a runtime-backed mutation.
+    /// Application custody always re-enters the adapter; it must provide native
+    /// original-intent and recovery ownership. No retry authority is created here.
+    /// Read, session-coordination and durable-executor declarations reject
+    /// application custody during registration.
+    /// ```
+    /// use worth_server::{WorthServerProductOperationDeclaration, WorthServerProductRetryOwner};
+    /// fn native_custody(declaration: WorthServerProductOperationDeclaration)
+    ///     -> WorthServerProductOperationDeclaration {
+    ///     declaration.with_retry_owner(WorthServerProductRetryOwner::ApplicationCustody)
+    /// }
+    /// ```
+    pub fn with_retry_owner(mut self, owner: WorthServerProductRetryOwner) -> Self {
+        self.retry_owner = owner;
+        self
+    }
+
+    pub fn retry_owner(&self) -> WorthServerProductRetryOwner {
+        self.retry_owner
+    }
+
     pub fn operation_name(&self) -> &str {
         &self.operation_name
     }
@@ -243,6 +270,7 @@ impl WorthServerProductOperationDeclaration {
             payload_validator: None,
             error_map: None,
             query_application_readiness: None,
+            retry_owner: WorthServerProductRetryOwner::ServerReceipt,
         }
     }
 
@@ -292,7 +320,7 @@ impl WorthServerProductOperationDeclaration {
                 coordination_lane,
             } => format!("session-coordination:{coordination_lane}"),
         };
-        crate::canonical_digest::WorthServerCanonicalDigestBuilder::new(
+        let digest = crate::canonical_digest::WorthServerCanonicalDigestBuilder::new(
             "worth-server-product-operation-declaration-v3",
         )
         .field("operation", &self.operation_name)
@@ -318,8 +346,15 @@ impl WorthServerProductOperationDeclaration {
                 .as_ref()
                 .map(|provider| provider.binding_digest())
                 .unwrap_or_else(|| "none".to_string()),
-        )
-        .finish()
+        );
+        // Existing declarations keep their identity; only the new ownership
+        // contract adds meaning to the canonical declaration.
+        match self.retry_owner {
+            WorthServerProductRetryOwner::ServerReceipt => digest.finish(),
+            WorthServerProductRetryOwner::ApplicationCustody => {
+                digest.field("retry_owner", "application-custody").finish()
+            }
+        }
     }
 
     pub(crate) fn payload_validator(
@@ -338,63 +373,5 @@ impl WorthServerProductOperationDeclaration {
         &self,
     ) -> Option<&Arc<dyn super::WorthServerQueryApplicationReadinessProvider>> {
         self.query_application_readiness.as_ref()
-    }
-
-    pub(crate) fn validate(&self) -> Result<(), WorthServerProductAdapterCertificationError> {
-        if self.operation_name.trim().is_empty() {
-            return Err(WorthServerProductAdapterCertificationError::new(
-                WorthServerProductAdapterCertificationCode::BlankOperationName,
-                "product operation declarations require a non-blank operation name",
-            ));
-        }
-        if self.payload_schema_identity.trim().is_empty() {
-            return Err(WorthServerProductAdapterCertificationError::new(
-                WorthServerProductAdapterCertificationCode::BlankPayloadSchemaIdentity,
-                "product operation declarations require a non-blank payload schema identity",
-            ));
-        }
-        if self.support_snapshot.support_row().trim().is_empty() {
-            return Err(WorthServerProductAdapterCertificationError::new(
-                WorthServerProductAdapterCertificationCode::BlankSupportSnapshotRow,
-                "product operation declarations require a non-blank support snapshot row",
-            ));
-        }
-        if self.error_map.is_none() {
-            return Err(WorthServerProductAdapterCertificationError::new(
-                WorthServerProductAdapterCertificationCode::MissingErrorMap,
-                "product operation declarations require an explicit denial or failure error map",
-            ));
-        }
-        if self.basis_kind == WorthServerProductOperationBasisKind::PrimaryGraphApplication
-            && self.query_application_readiness.is_none()
-        {
-            return Err(WorthServerProductAdapterCertificationError::new(
-                WorthServerProductAdapterCertificationCode::MissingQueryApplicationReadinessProvider,
-                "primary-graph application operations require their owning Query readiness provider",
-            ));
-        }
-        match &self.authority_requirement {
-            WorthServerProductOperationAuthorityRequirement::SharedRead => {}
-            WorthServerProductOperationAuthorityRequirement::DraftMutation { draft_scope } => {
-                if draft_scope.trim().is_empty() {
-                    return Err(WorthServerProductAdapterCertificationError::new(
-                        WorthServerProductAdapterCertificationCode::BlankDraftScope,
-                        "product mutation declarations require a non-blank draft scope",
-                    ));
-                }
-            }
-            WorthServerProductOperationAuthorityRequirement::DurableMutation { .. } => {}
-            WorthServerProductOperationAuthorityRequirement::SessionCoordination {
-                coordination_lane,
-            } => {
-                if coordination_lane.trim().is_empty() {
-                    return Err(WorthServerProductAdapterCertificationError::new(
-                        WorthServerProductAdapterCertificationCode::BlankCoordinationLane,
-                        "product session declarations require a non-blank coordination lane",
-                    ));
-                }
-            }
-        }
-        Ok(())
     }
 }

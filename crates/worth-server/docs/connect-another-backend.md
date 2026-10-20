@@ -104,6 +104,51 @@ path. Its default `execute_with_lease` returns the explicit
 batches, implement that method and propagate the exact lease into nested work;
 never call the unleased method as a fallback.
 
+### Application-owned command retries
+
+For a runtime-backed mutation that retains genuine native operation custody,
+declare `WorthServerProductRetryOwner::ApplicationCustody`:
+
+```rust
+use worth_server::{WorthServerProductOperationDeclaration, WorthServerProductRetryOwner};
+fn owning_command(declaration: WorthServerProductOperationDeclaration)
+    -> WorthServerProductOperationDeclaration {
+    declaration.with_retry_owner(WorthServerProductRetryOwner::ApplicationCustody)
+}
+```
+
+The default for eligible runtime-backed mutations is `ServerReceipt`: a matching
+idempotency retry returns the prior product response without executing the adapter
+again. Reads are never eligible for response replay, even with an idempotency
+header; each read reaches fresh adapter authorization. Receipt replay is not appropriate
+when the adapter must reauthenticate through Query or advance a live native
+owner. Cached responses can also describe Pending or a prior refusal rather than
+the owner's present outcome.
+
+With `ApplicationCustody`, Server still performs transport admission, session
+checks, readiness and scheduling, then re-enters the adapter for every command.
+It does not consult or write its response-retry cache and emits no Server retry
+receipt or `PreviouslyCommitted` classification. The adapter's current native
+outcome remains in its declared result contract. A successfully published response
+is not proof that the business operation committed.
+
+For example, an owning creation adapter reserves bounded capacity, captures the
+original input once, and retains the actual native operation before replying.
+After a lost reply, a fresh authenticated command addresses that same custody.
+The adapter supplies fresh request authority to native advancement, retains any
+returned owner before responding, and distinguishes completion from pending,
+denial, indeterminate publication and close refusal. It cannot recapture the
+clock, replace the original key, infer completion from a current row, or return
+protected prior results without fresh native authorization. The declaration flag
+does not implement any of those responsibilities.
+
+Only runtime-backed product mutations may use application retry custody. Reads,
+session-coordination operations and durable-executor declarations reject it during
+registration. Durable mutation replay keeps its separate installed executor
+contract. Existing default declarations keep their canonical identity; application
+custody contributes distinct canonical meaning. This is process-local ownership,
+not Store-backed crash recovery or an atomic whole-graph compare-and-swap promise.
+
 ## Inspection and debugging
 
 Log and preserve:
@@ -124,6 +169,8 @@ thin to debug this surface well.
 - Mixing binary transfer concerns into ordinary JSON writes.
 - Replacing explicit server preconditions with "best effort" local retries.
 - Assuming a generic HTTP client abstraction is enough by itself.
+- Using Server response replay to bypass fresh native authority or replace a live
+  operation owner, or treating `ApplicationCustody` as an idempotency implementation.
 
 ## Current limits
 
