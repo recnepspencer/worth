@@ -8,12 +8,9 @@ use super::super::{
     },
 };
 use super::{binding::ActorLifecycleBinding, declaration::*};
-use worth_query_host::facade::{
-    declaration::application_operation::ApplicationCandidateRequirements,
-    primary_graph::{
-        CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-        WorthQueryInvariantMutationTarget,
-    },
+use worth_query_host::facade::primary_graph::{
+    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
+    WorthQueryInvariantMutationTarget,
 };
 #[path = "handler/candidate.rs"]
 mod candidate;
@@ -37,13 +34,7 @@ impl OperationHandler<DocumentRetentionSchema, ActorLifecycleBinding> for ActorL
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
     }
-    fn candidate_requirements(
-        &self,
-        _: &ActorLifecycleInput,
-        _: &Targets,
-    ) -> ApplicationCandidateRequirements {
-        <ActorLifecycleBinding as worth_query_decl::facade::application_operation::ApplicationMutationBinding<DocumentRetentionSchema>>::CANDIDATES.finite_requirements().expect("fixed-shape handler declares finite candidate policy")
-    }
+
     fn build_candidate(
         &self,
         input: &ActorLifecycleInput,

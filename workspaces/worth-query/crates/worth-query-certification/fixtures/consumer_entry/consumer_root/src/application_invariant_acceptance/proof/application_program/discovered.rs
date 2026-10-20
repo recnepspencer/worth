@@ -47,7 +47,6 @@ pub(super) fn performed_source_discovers_required_root(
     ];
     let world = installation::install_selected_program(
         foreign,
-        8192,
         4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),
@@ -175,7 +174,6 @@ pub(super) fn isolated_source_settles_without_roots(
     ];
     let world = installation::install_selected_program(
         foreign,
-        8192,
         4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),

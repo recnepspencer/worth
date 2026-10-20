@@ -85,7 +85,6 @@ pub fn planar_query_definition<Schema: TopologySchemaBinding>(
     .scope(Body::reference())
     .result_shape(shape)
     .cardinality(ApplicationQueryCardinality::ExactlyOne)
-    .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(2, 2, 4))
     .disclosure(ApplicationQueryDisclosureContract::public())
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())

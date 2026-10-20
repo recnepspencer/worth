@@ -3,7 +3,6 @@
 
 use super::WorthQueryProviderAttemptPreparation;
 use crate::domain_computation::primary_graph::application_attempt::{
-    effect_program::{admit_workflow_settlement_effects, PlatformEffectDemand},
     workflow_transition_program::{receipt_identity_from_outcome, transition_entity_in_receipt},
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationCommitOutcomeIdentity,
     WorthQueryApplicationRealizedEffect,
@@ -95,17 +94,16 @@ impl WorthQueryProviderAttemptPreparation {
                 },
             )?;
         }
-        let mut demand = PlatformEffectDemand::default();
-        for effect in &settlement_effects {
-            demand.observe(effect)?;
-        }
-        let sidecar = demand.requirements();
-        admit_workflow_settlement_effects(admission, demand)?.materialize(&settlement_effects)?;
-        let combined_requirements = crate::domain_computation::primary_graph::application_attempt::effect_program::validate_candidate_extension(admission, self.candidate_requirements, sidecar)?;
-        crate::domain_computation::primary_graph::application_attempt::effect_program::candidate_backing::extend(
-            &mut self.effects, &mut self.effect_backing_memory, settlement_effects, admission.publication_request(),
-        )?;
-        self.candidate_requirements = combined_requirements;
+        admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
+        self.effects.try_reserve(settlement_effects.len()).map_err(|_| {
+            WorthQueryApplicationAttemptDenial::new(
+                super::super::super::super::WorthQueryApplicationAttemptDenialKind::AllocationDenied,
+                "workflow settlement effect allocation failed",
+            )
+        })?;
+        self.effects.extend(settlement_effects);
         self.effect_posture =
             crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;
         if external {

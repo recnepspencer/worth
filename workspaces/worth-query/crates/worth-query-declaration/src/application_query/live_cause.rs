@@ -1,6 +1,6 @@
 use crate::application_schema::{
-    ApplicationEffectRef, ApplicationFieldUnit, ApplicationRetainedEffectBinding,
-    ApplicationScalarValueBinding, ApplicationStructuredValueBinding, EqualityPredicate, ReadOnly,
+    ApplicationEffectRef, ApplicationFieldUnit, ApplicationScalarValueBinding,
+    ApplicationStructuredValueBinding, EqualityPredicate, ReadOnly,
 };
 use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
 
@@ -21,7 +21,7 @@ pub trait ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>:
     WorthQueryPortableType + 'static
 {
     type Effect;
-    type PayloadBinding: ApplicationRetainedEffectBinding;
+    type PayloadBinding: ApplicationStructuredValueBinding;
     type ScopeIdentityBinding: ApplicationScalarValueBinding;
     type TargetIdentityBinding: ApplicationScalarValueBinding;
 

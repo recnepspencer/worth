@@ -28,7 +28,8 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCo
 /// sealed output source match this reservation. Drop removes only its vacancy.
 #[must_use = "a prepared output slot must be filled or released"]
 pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlot {
-    pub(in crate::domain_computation::primary_graph) required_publication: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
+    pub(in crate::domain_computation::primary_graph) required_publication:
+        Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     owner: Arc<Mutex<WorthQueryApplicationOutputLineage>>,
     pub(super) source: SemanticSource,
     pub(super) output_binding_type: TypeId,
@@ -45,14 +46,14 @@ pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlo
     pub(super) completed_decision_reuse: Option<super::CompletedDecisionReuseProof>,
     pub(super) prepared_input_reuse_key: Option<super::PreparedInputReuseKey>,
     pub(super) native_output_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
-    pub(super) actual_resources: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
     /// A sealed partitioned computation run and the record its prior state
     /// came from. World recovery carries both unchanged to its replacement slot.
     pub(super) computation: PreparedComputationCustody,
     /// A pre-publication work allowance; a larger current fork set is not scanned.
     computation_fork_scan_bound: usize,
     pub(super) prior_computation: Option<super::PriorComputationRecord>,
-    pub(super) native_prior_checkpoint: Option<super::native_prior_checkpoint::NativePriorCheckpointLocator>,
+    pub(super) native_prior_checkpoint:
+        Option<super::native_prior_checkpoint::NativePriorCheckpointLocator>,
     filled: bool,
 }
 
@@ -115,14 +116,6 @@ pub(in crate::domain_computation::primary_graph) struct RecordedLineageSlot {
 }
 
 impl PreparedOutputLineageSlot {
-    pub(in crate::domain_computation::primary_graph) fn retain_actual_resources(
-        &mut self,
-        resources: Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>,
-    ) {
-        assert!(self.actual_resources.is_none());
-        self.actual_resources = resources;
-    }
-
     pub(in crate::domain_computation::primary_graph) fn retain_completed_handler_facts(
         &mut self,
         boundary: crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary,

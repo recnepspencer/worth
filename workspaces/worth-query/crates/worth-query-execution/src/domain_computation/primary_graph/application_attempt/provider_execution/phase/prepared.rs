@@ -50,9 +50,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     provider_attempt: WorthQueryPreparedApplicationProviderAttempt,
     outcome_identity: super::super::super::WorthQueryApplicationCommitOutcomeIdentity,
     workflow_settlement_publication: Option<LocalWorkflowSettlementPublication>,
-    _signing_lifecycle_memory: Option<
-        crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation,
-    >,
     effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
     authorization: WorthQueryProviderCommitAuthorization,
     idempotency: WorthQueryApplicationIdempotencyBinding,
@@ -113,7 +110,6 @@ impl<Schema, Operation, Input, Scope>
 }
 
 struct WorthQueryProviderAttemptPreparation {
-    signing_lifecycle_memory: Option<crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
     effect_routes: super::super::super::CompletedFactRoutes,
@@ -121,11 +117,7 @@ struct WorthQueryProviderAttemptPreparation {
     original_read: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead>>,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
-    candidate_requirements: Option<worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements>,
-    effect_backing_memory: Option<crate::domain_computation::primary_graph::application_attempt::effect_program::candidate_backing::CandidateBackingReservation>,
     application_effect_count: usize,
-    emission_retained_bytes: u64,
-    emission_retained_bytes_ceiling: u64,
     preimage_demand: Option<worth_query_installation::facade::InstalledPreImageDemand>,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
@@ -140,7 +132,7 @@ struct WorthQueryProviderAttemptPreparation {
         crate::domain_computation::primary_graph::application_attempt::read_set::WorkflowOperationBindingProof,
     >,
     // Last to drop: physical backing releases before its retained grant.
-    candidate_funding: Option<std::sync::Arc<super::super::super::effect_program::CandidateFunding>>,
+
 }
 
 struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {
@@ -173,7 +165,7 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
     else {
         return terminal(denied(DenialStage::ProposalBinding));
     };
-    let (mut provider, workflow_settlement_publication) =
+    let (provider, workflow_settlement_publication) =
         match provider.stage_local_workflow_settlement(&admission, outcome_identity) {
             Ok(prepared) => prepared,
             Err(denial) => {
@@ -182,16 +174,6 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
                 ))
             }
         };
-    if let Err(denial) = super::super::super::effect_program::check_combined_host_capacity(
-        &admission,
-        &provider.effects,
-        &provider.output_correspondence,
-        provider.candidate_requirements,
-    ) {
-        return terminal(WorthQueryApplicationCommitOutcome::Denied(
-            WorthQueryApplicationCommitDenial::effect_lowering_denied(&denial),
-        ));
-    }
     let authorization = match take_commit_authorization(application, &mut admission) {
         Ok(authorization) => authorization,
         Err(outcome) => return terminal(outcome),
@@ -201,7 +183,6 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
         return terminal(denied(DenialStage::ProposalBinding));
     };
     let effect_posture = provider.effect_posture;
-    let signing_lifecycle_memory = provider.signing_lifecycle_memory.take();
     let provider_attempt =
         match prepare_application_provider_attempt(&lease, provider, mutation_partition) {
             Ok(prepared) => prepared,
@@ -217,7 +198,6 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
         provider_attempt,
         outcome_identity,
         workflow_settlement_publication,
-        _signing_lifecycle_memory: signing_lifecycle_memory,
         effect_posture,
         authorization,
         idempotency,

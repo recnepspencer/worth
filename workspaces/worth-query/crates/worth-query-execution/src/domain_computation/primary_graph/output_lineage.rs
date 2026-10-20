@@ -132,8 +132,6 @@ pub(super) struct WorthQueryExactRecordedOutput {
     pub(super) scope:
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     pub(super) observed_source_facts: RetainedSourceFacts,
-    pub(super) resources:
-        Option<super::application_contribution::WorthQueryProducerDemandResources>,
 }
 
 #[derive(Clone)]
@@ -324,7 +322,6 @@ impl WorthQueryApplicationOutputLineage {
             mutable: std::sync::Mutex::new(RecordedOutputMutable::new(
                 verification_requirement,
                 (observed_source_facts).map(|facts| computation_source.retain_facts(facts)),
-                prepared.and_then(|slot| slot.actual_resources),
                 computation,
             )),
             settlement_identity: Arc::clone(&settlement_identity),

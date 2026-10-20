@@ -1,8 +1,5 @@
-use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
-use worth_query_decl::facade::application_operation::ApplicationCandidateRequirements;
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationCandidateCardinalityCeiling, ApplicationCandidateResourceCeiling,
         ApplicationCapabilityMutationBinding, ApplicationMutationBinding,
         ApplicationMutationFieldScope, ApplicationMutationIntent, NoApplicationMutationOutputs,
         NoApplicationMutationSource,
@@ -140,11 +137,6 @@ impl ApplicationMutationBinding<BankSchema> for NotifyEstateDeathMutationBinding
     const HANDLER_IDENTITY: &'static str = "bank.estate.notify-death.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "bank.application-mutation-client-key.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidatePolicy =
-        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 1),
-            ApplicationCandidateResourceCeiling::representation_bytes(32768),
-        ));
 
     fn scope_field() -> ApplicationFieldRef<
         BankSchema,
@@ -210,11 +202,6 @@ impl ApplicationMutationBinding<BankSchema> for FreezeEstateAccountMutationBindi
     const HANDLER_IDENTITY: &'static str = "bank.estate.freeze-account.handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "bank.application-mutation-client-key.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidatePolicy =
-        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(32768),
-        ));
 
     fn scope_field() -> ApplicationFieldRef<
         BankSchema,

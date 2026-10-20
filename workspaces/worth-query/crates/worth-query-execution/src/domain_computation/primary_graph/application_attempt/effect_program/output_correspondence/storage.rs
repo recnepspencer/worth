@@ -8,7 +8,6 @@ pub(super) struct CorrespondenceStorage {
     pub(super) roles: Vec<(String, CommittedOutputBinding)>,
     // Last to drop: the rows and their strings retain their actual admission.
     pub(super) _funding: Option<CheckpointMetadataFunding>,
-    pub(super) _candidate_funding: Option<std::sync::Arc<super::super::CandidateFunding>>,
 }
 impl PartialEq for CorrespondenceStorage {
     fn eq(&self, other: &Self) -> bool {
@@ -26,7 +25,6 @@ impl CorrespondenceStorage {
             optional_roles,
             roles,
             _funding: None,
-            _candidate_funding: None,
         }
     }
     pub(super) fn binding(&self, name: &str) -> Option<&CommittedOutputBinding> {

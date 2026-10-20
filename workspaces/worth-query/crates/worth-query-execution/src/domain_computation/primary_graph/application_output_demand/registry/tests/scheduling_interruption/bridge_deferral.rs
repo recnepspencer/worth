@@ -73,7 +73,6 @@ impl WorthQueryOutputDemandRegistry {
         let completion = WorthQueryCompletedOutputDemand {
             authority: WorthQueryAcceptedOutputAuthority::Committed(fixture.receipt.clone()),
             readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-            resources: None,
         };
         assert!(finish
             .publish(WorthQueryOutputCheckpoint::Ready(

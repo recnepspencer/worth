@@ -256,10 +256,7 @@ fn advanced_result_set_substitutions_preserve_original_partial() {
         .start_required_outputs(
             &world.application,
             &request,
-            WorthQueryOutputDemandControls::new(
-                NonZeroUsize::new(4096).unwrap(),
-                NonZeroUsize::new(8192).unwrap(),
-            ),
+            WorthQueryOutputDemandControls::default(),
         )
         .unwrap_or_else(|(_, denial)| panic!("original required demand: {denial:?}"));
     let settlement = super::super::super::settle(|| {

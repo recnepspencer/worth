@@ -4,13 +4,12 @@ use super::*;
 use std::marker::PhantomData;
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-        ApplicationCandidateResourceCeiling, ApplicationMutationFieldScope,
-        ApplicationMutationOutputContract, ApplicationMutationOutputPostureSet,
-        ApplicationMutationOutputRoleDescriptor, ApplicationMutationOutputRoleFamilyDescriptor,
-        WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationDeclaredOutputRoleFamily,
-        WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
-        WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
+        ApplicationMutationFieldScope, ApplicationMutationOutputContract,
+        ApplicationMutationOutputPostureSet, ApplicationMutationOutputRoleDescriptor,
+        ApplicationMutationOutputRoleFamilyDescriptor, WorthQueryApplicationDeclaredOutputRole,
+        WorthQueryApplicationDeclaredOutputRoleFamily, WorthQueryApplicationOutputRole,
+        WorthQueryApplicationOutputRoleFamily, WorthQueryExactlyOneOutput,
+        WorthQueryPreserveOutput,
     },
     application_schema::{NoApplicationUnit, ReadOnly},
     worth_query_structured_value_binding,
@@ -26,19 +25,6 @@ pub type PlanarMutationScope<Schema> = ApplicationMutationFieldScope<
     ReadOnly,
     NoApplicationUnit,
 >;
-
-pub const fn requirements(
-    creates: usize,
-    links: usize,
-    unlinks: usize,
-    writes: usize,
-    bytes: usize,
-) -> ApplicationCandidateRequirements {
-    ApplicationCandidateRequirements::fixed_shape(
-        ApplicationCandidateCardinalityCeiling::fixed(creates, 0, links, unlinks, writes, 0),
-        ApplicationCandidateResourceCeiling::representation_bytes(bytes),
-    )
-}
 
 /// The output contract of every planar mutation.
 ///

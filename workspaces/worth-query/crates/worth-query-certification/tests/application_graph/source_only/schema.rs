@@ -72,6 +72,4 @@ worth_query_mutation_binding!(
         principal_identity u64, identity_binding U64ApplicationValueBinding,
     scope Document, DocumentFacts, DocumentIdentityField, String, ReadOnly, NoApplicationUnit,
     field DocumentIdentityField::reference(), value document_identity,
-    candidates creates 0, deletes 0, links 0, unlinks 0, writes 2, emits 0,
-    resources retained_representation_bytes 1024
 );

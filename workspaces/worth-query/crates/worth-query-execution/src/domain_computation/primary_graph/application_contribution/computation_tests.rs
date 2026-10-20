@@ -4,8 +4,7 @@ use worth_query_admission::facade::authenticated_principal::{
 };
 use worth_query_declaration::facade::{
     application_program::{
-        ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
-        ApplicationArtifactRetention, ApplicationArtifactSuccession,
+        ApplicationArtifactDependency, ApplicationArtifactRetention, ApplicationArtifactSuccession,
         ApplicationComputationExecution, ApplicationComputationInput,
         ApplicationComputationResourceCeiling, ApplicationComputationReuse,
         ApplicationComputationStopped, ApplicationDerivedArtifact, ApplicationFeature,
@@ -77,8 +76,7 @@ impl ApplicationDerivedArtifact<Schema, Feature> for Artifact {
     const PRODUCER_FAMILY: &'static str = "worth.query.tests.computation-producer.v1";
     const DEPENDENCIES: &'static [ApplicationArtifactDependency] = &[];
     const REUSE_RULE: &'static str = "worth.query.tests.computation-reuse.v1";
-    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(Some(4), Some(64));
+
     const STOPPED_OUTCOME: &'static str = "worth.query.tests.computation-stopped.v1";
 }
 struct Input;

@@ -5,7 +5,6 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 mod operation_body;
 
-use worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationExecution, DeterminismContract,
@@ -33,7 +32,6 @@ struct PendingMutationHandler {
     decision_type: TypeId,
     denial_type: TypeId,
     value: Arc<dyn Any + Send + Sync>,
-    candidates: ApplicationCandidatePolicy,
 }
 
 struct TypedHandlerSlot<Schema, Binding>
@@ -134,7 +132,6 @@ where
                 value: Arc::new(TypedHandlerSlot::<Schema, Binding> {
                     handler: Arc::new(handler),
                 }),
-                candidates: installed.candidate_policy(),
             },
         );
         Ok(())
@@ -194,12 +191,7 @@ impl<Schema> InstalledMutationHandlerRegistry<Schema>
 where
     Schema: ApplicationSchema,
 {
-    fn get<Binding>(
-        &self,
-    ) -> Option<(
-        Arc<dyn OperationHandler<Schema, Binding>>,
-        ApplicationCandidatePolicy,
-    )>
+    fn get<Binding>(&self) -> Option<Arc<dyn OperationHandler<Schema, Binding>>>
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
@@ -210,7 +202,7 @@ where
                 entry
                     .value
                     .downcast_ref::<TypedHandlerSlot<Schema, Binding>>()
-                    .map(|slot| (Arc::clone(&slot.handler), entry.candidates))
+                    .map(|slot| Arc::clone(&slot.handler))
             })
     }
 }
@@ -227,13 +219,7 @@ where
     /// no retry of the same request can succeed.
     pub(in crate::domain_computation::primary_graph) fn mutation_handler_for_attempt<Binding>(
         &self,
-    ) -> Result<
-        (
-            Arc<dyn OperationHandler<Schema, Binding>>,
-            ApplicationCandidatePolicy,
-        ),
-        MutationHandlerExecutionDenial,
-    >
+    ) -> Result<Arc<dyn OperationHandler<Schema, Binding>>, MutationHandlerExecutionDenial>
     where
         Binding: ApplicationMutationBinding<Schema>,
     {

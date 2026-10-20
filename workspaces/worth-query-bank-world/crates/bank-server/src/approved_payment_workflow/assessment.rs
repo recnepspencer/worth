@@ -27,9 +27,6 @@ pub type BankApprovedPaymentAssessment =
 pub type BankApprovedPaymentAssessmentProgress =
     WorthQueryWorkflowAssessmentDemandProgress<PaymentDetailQuery>;
 
-const ASSESSMENT_WORK: NonZeroUsize = NonZeroUsize::new(1_024).expect("work is nonzero");
-const ASSESSMENT_BYTES: NonZeroUsize = NonZeroUsize::new(16_384).expect("bytes are nonzero");
-
 /// How much one settle call may spend: `attempts` source readings per round
 /// and at most `rounds` rounds, each after the first only when notified.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -131,8 +128,7 @@ impl<'runtime> BankApprovedPaymentWorkflow<'runtime, '_, '_> {
             .into_assessment_demand(ApprovedPaymentAssessmentDemand::new(payment_id))
             .map_err(BankApprovedPaymentWorkflowError::AssessmentPreparation)?
             .controls(
-                WorthQueryOutputDemandControls::new(ASSESSMENT_WORK, ASSESSMENT_BYTES)
-                    .settlement_attempts(settlement.attempts),
+                WorthQueryOutputDemandControls::default().settlement_attempts(settlement.attempts),
             )
             .retain_operation(self.runtime.application_program())
             .map_err(|denial| {

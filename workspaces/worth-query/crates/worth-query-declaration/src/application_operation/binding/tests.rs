@@ -154,8 +154,6 @@ crate::worth_query_mutation_binding!(
         crate::application_schema::ReadOnly, crate::application_schema::NoApplicationUnit,
     field AccountIdField::reference(),
     value rename_scope,
-    candidates creates 0, deletes 0, links 0, unlinks 0, writes 1, emits 1,
-    resources retained_representation_bytes 128
 );
 
 crate::worth_query_application_schema! {
@@ -190,7 +188,7 @@ crate::worth_query_application_schema! {
 }
 
 #[test]
-fn mutation_binding_registers_exact_handler_scope_and_candidate_metadata() {
+fn mutation_binding_registers_exact_handler_scope_and_output_metadata() {
     let declaration = MutationSchema::declaration().expect("mutation schema should declare");
     let descriptor = declaration
         .member_provenance()
@@ -236,49 +234,6 @@ fn mutation_binding_registers_exact_handler_scope_and_candidate_metadata() {
     );
     assert_eq!(descriptor.scope_entity(), "Account");
     assert_eq!(descriptor.scope().field().locus().field(), "AccountIdField");
-    assert_eq!(
-        descriptor
-            .candidates()
-            .cardinality()
-            .unwrap()
-            .maximum_writes(),
-        1
-    );
-    assert_eq!(
-        descriptor
-            .candidates()
-            .cardinality()
-            .unwrap()
-            .maximum_emits(),
-        1
-    );
-    assert_eq!(
-        descriptor
-            .candidates()
-            .finite_requirements()
-            .unwrap()
-            .cardinality()
-            .maximum_writes(),
-        1
-    );
-    assert_eq!(
-        descriptor
-            .candidates()
-            .finite_requirements()
-            .unwrap()
-            .cardinality()
-            .maximum_emits(),
-        1
-    );
-    assert_eq!(
-        descriptor
-            .candidates()
-            .finite_requirements()
-            .unwrap()
-            .resources()
-            .maximum_retained_representation_bytes(),
-        128
-    );
     assert!(declaration
         .member_provenance()
         .admits_mutation_binding_operation(descriptor));

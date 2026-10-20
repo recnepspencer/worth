@@ -17,7 +17,6 @@ pub(in crate::domain_computation::primary_graph) fn prepare_program_migration_ef
     program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
 ) -> Result<
     (
-        Option<std::sync::Arc<super::effect_program::CandidateFunding>>,
         ProductBranchObservation,
         worth_relational::facade::transactions::WorkerIntentBatch,
         usize,
@@ -66,13 +65,8 @@ where
         );
     }
     let WorthQueryApplicationEffectProgram {
-        candidate_funding,
-        candidate_requirements: _candidate_requirements,
-        effect_backing_memory: _effect_backing_memory,
         read_set,
         effects,
-        emission_retained_bytes,
-        emission_retained_bytes_ceiling: _,
         conditional_definition,
         effect_posture,
         output_correspondence,
@@ -111,10 +105,9 @@ where
             ),
         );
     }
-    if emission_retained_bytes != 0
-        || effects
-            .iter()
-            .any(|effect| matches!(effect, WorthQueryApplicationRealizedEffect::Emit(_)))
+    if effects
+        .iter()
+        .any(|effect| matches!(effect, WorthQueryApplicationRealizedEffect::Emit(_)))
     {
         return Err(
             WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
@@ -150,5 +143,5 @@ where
         &|entity, aspect| read_set.lease.layout.aspect_contract(entity, aspect),
         effects,
     )?;
-    Ok((candidate_funding, source_product, batch, effect_count))
+    Ok((source_product, batch, effect_count))
 }

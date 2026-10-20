@@ -72,7 +72,7 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
         native_output_witness: None,
         required_publication: None,
         native_prior_checkpoint: None,
-        actual_resources: None,
+
         prior_computation: None,
         filled: false,
         computation: PreparedComputationCustody::Unassigned,

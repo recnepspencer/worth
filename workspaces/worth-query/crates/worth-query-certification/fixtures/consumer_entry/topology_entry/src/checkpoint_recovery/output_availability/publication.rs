@@ -47,15 +47,7 @@ macro_rules! handler {
                     }
                 }
             }
-            fn candidate_requirements(
-                &self,
-                _: &binding::Input,
-                _: &Snapshot,
-            ) -> ApplicationCandidateRequirements {
-                binding::$binding::CANDIDATES
-                    .finite_requirements()
-                    .expect("fixed candidate contract")
-            }
+
             fn build_candidate(
                 &self,
                 input: &binding::Input,

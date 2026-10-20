@@ -1,6 +1,6 @@
 use super::*;
 use std::marker::PhantomData;
-use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
+
 use worth_query_host::facade::application_contribution::*;
 
 pub(super) struct ChainFamily;
@@ -65,7 +65,6 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     type OutputRole = PlanarAnchorOutput<Schema>;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-    const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
         Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
@@ -105,11 +104,5 @@ impl<Schema: TopologySchemaBinding>
     }
     fn idempotency_key(&self, _: &PlanarOutputReadResult, identity: &[u8; 32]) -> u64 {
         (planar_source_key(identity) ^ 0x9176_3000) | self.key_mask
-    }
-    fn demand_resources(
-        &self,
-        _: &PlanarOutputReadResult,
-    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
-        Ok(planar_producer_resources())
     }
 }

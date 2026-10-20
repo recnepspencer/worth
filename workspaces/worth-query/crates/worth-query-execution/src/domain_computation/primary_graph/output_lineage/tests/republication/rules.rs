@@ -151,8 +151,7 @@ fn a_restored_row_without_performed_proof_stays_fresh_until_verified() {
             IDEMPOTENCY_KEY,
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::clone(&facts)),
             None,
-            None,
-         None);
+            None);
         let restored = stage.restored();
         assert_eq!(
             restored.verification_requirement(),

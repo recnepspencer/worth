@@ -1,7 +1,7 @@
 use worth_query_declaration::facade::{
     application_operation::{
-        ApplicationCandidatePolicy, ApplicationMutationBinding,
-        ApplicationMutationBindingDescriptor, ApplicationMutationScopeContract,
+        ApplicationMutationBinding, ApplicationMutationBindingDescriptor,
+        ApplicationMutationScopeContract,
     },
     application_schema::{ApplicationOperationRef, ApplicationSchema},
 };
@@ -85,10 +85,6 @@ where
 
     pub fn scope_contract(&self) -> &ApplicationMutationScopeContract {
         self.meaning.scope()
-    }
-
-    pub fn candidate_policy(&self) -> ApplicationCandidatePolicy {
-        self.meaning.candidates()
     }
 
     pub fn result_identity(&self) -> &str {
@@ -181,12 +177,6 @@ fn validate_requested_meaning(
     {
         return Err(denial(
             DenialKind::MutationBindingScopeMeaningChanged,
-            requested.identity(),
-        ));
-    }
-    if installed.candidates() != requested.candidates() {
-        return Err(denial(
-            DenialKind::MutationBindingCandidateMeaningChanged,
             requested.identity(),
         ));
     }

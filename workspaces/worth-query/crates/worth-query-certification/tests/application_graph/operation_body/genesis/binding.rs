@@ -4,7 +4,7 @@ use super::super::{
     schema::*,
 };
 use super::declaration::*;
-use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
+
 use worth_query_host::facade::{
     declaration::{application_operation::*, application_schema::*},
     primary_graph::{WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial},
@@ -62,11 +62,7 @@ impl<const MODE: u64> ApplicationMutationBinding<DocumentRetentionSchema<MODE>>
     const HANDLER_IDENTITY: &'static str = "worth.query.body-court.create-body.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.body-court.create-command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidatePolicy =
-        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(1, 0, 2, 0, 4, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(4096),
-        ));
+
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema<MODE>,
         Tenant,

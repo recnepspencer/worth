@@ -1,46 +1,9 @@
-//! Preserve producer quote causes and recovery through the actual HTTP projection.
+//! Preserve ordinary output failure recovery through the actual HTTP projection.
 use super::*;
-use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial as Quote;
 
 #[test]
-fn producer_quote_causes_preserve_wire_values_and_recovery_actions() {
-    for (cause, kind, tag) in [
-        (
-            Quote::SizeOverflow,
-            Kind::ProducerSourceSizeOverflow,
-            "producer_source_size_overflow",
-        ),
-        (
-            Quote::SourceNotEncodable,
-            Kind::ProducerSourceNotEncodable,
-            "producer_source_not_encodable",
-        ),
-    ] {
-        let actual = query_denial(BankApplicationQueryDenial::OutputSettlement(
-            BankApplicationOutputSettlementDenialKind::ProducerResourceQuote(cause),
-        ));
-        assert_eq!(actual, BankHttpDenial::new(kind, Next::CorrectRequest));
-        assert_eq!(
-            super::super::routes::response_status(kind),
-            axum::http::StatusCode::BAD_REQUEST
-        );
-        let wire = serde_json::to_value(actual).unwrap();
-        assert_eq!(
-            wire,
-            serde_json::json!({"kind": tag, "next_action": "correct_request"})
-        );
-        assert_eq!(
-            serde_json::from_value::<BankHttpDenial>(wire).unwrap(),
-            actual
-        );
-    }
+fn ordinary_output_failures_preserve_recovery_actions() {
     for (cause, expected) in [
-        (
-            BankApplicationOutputSettlementDenialKind::ProducerResourceQuote(
-                Quote::ScratchReservationRefused,
-            ),
-            BankHttpDenial::new(Kind::Unavailable, Next::Retry),
-        ),
         (
             BankApplicationOutputSettlementDenialKind::RetentionBudgetExceeded,
             BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest),
@@ -58,15 +21,6 @@ fn producer_quote_causes_preserve_wire_values_and_recovery_actions() {
     assert_eq!(
         super::super::routes::response_status(Kind::Unavailable),
         axum::http::StatusCode::SERVICE_UNAVAILABLE
-    );
-    let scratch_refusal = query_denial(BankApplicationQueryDenial::OutputSettlement(
-        BankApplicationOutputSettlementDenialKind::ProducerResourceQuote(
-            Quote::ScratchReservationRefused,
-        ),
-    ));
-    assert_eq!(
-        serde_json::to_value(scratch_refusal).unwrap(),
-        serde_json::json!({"kind": "unavailable", "next_action": "retry"})
     );
     assert_eq!(
         super::super::relational_execution_denial::denial(

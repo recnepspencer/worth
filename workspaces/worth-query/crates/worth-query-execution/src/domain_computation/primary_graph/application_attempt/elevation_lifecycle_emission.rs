@@ -7,35 +7,32 @@ use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDeni
 pub(super) fn append_lifecycle_emission(
     effects: &mut Vec<WorthQueryApplicationRealizedEffect>,
     derived: Option<&DerivedApplicationCapabilityLifecycleEffect>,
-    retained_bytes_ceiling: u64,
     subject: &str,
-) -> Result<u64, WorthQueryApplicationAttemptDenial> {
+) -> Result<(), WorthQueryApplicationAttemptDenial> {
     let Some(derived) = derived else {
-        return Ok(0);
+        return Ok(());
     };
-    if derived.retained_bytes() > retained_bytes_ceiling {
-        return Err(denial(
-            WorthQueryApplicationAttemptDenialKind::RetainedEffectBytesExceeded,
+    effects.try_reserve(1).map_err(|_| {
+        denial(
+            WorthQueryApplicationAttemptDenialKind::AllocationDenied,
             subject,
-        ));
-    }
+        )
+    })?;
     effects.push(WorthQueryApplicationRealizedEffect::Emit(
         WorthQueryApplicationEmission::from_lifecycle(derived),
     ));
-    Ok(derived.retained_bytes())
+    Ok(())
 }
 
 pub(super) fn lifecycle_emission_is_exact(
     effects: &[WorthQueryApplicationRealizedEffect],
     base_effect_count: usize,
     derived: Option<&DerivedApplicationCapabilityLifecycleEffect>,
-    retained_bytes: u64,
 ) -> bool {
     match derived {
-        None => effects.len() == base_effect_count && retained_bytes == 0,
+        None => effects.len() == base_effect_count,
         Some(derived) => {
             effects.len() == base_effect_count.saturating_add(1)
-                && retained_bytes == derived.retained_bytes()
                 && matches!(
                     effects.last(),
                     Some(WorthQueryApplicationRealizedEffect::Emit(emission))
@@ -54,8 +51,7 @@ mod tests {
         },
         application_schema::{
             ApplicationEffectMarkerIdentity, ApplicationEffectRef,
-            ApplicationOperationMarkerIdentity, ApplicationOperationRef,
-            ApplicationRetainedEffectBinding, OperationEmits,
+            ApplicationOperationMarkerIdentity, ApplicationOperationRef, OperationEmits,
         },
     };
 
@@ -66,13 +62,6 @@ mod tests {
     pub struct Effect;
     worth_query_declaration::worth_query_structured_value_binding!(InputBinding for String { identity: "worth.rust.string" });
     worth_query_declaration::worth_query_structured_value_binding!(pub PayloadBinding for String { identity: "worth.rust.string" });
-    impl ApplicationRetainedEffectBinding for PayloadBinding {
-        fn retained_bytes(value: &Self::Value) -> u64 {
-            u64::try_from(std::mem::size_of::<Self::Value>())
-                .unwrap_or(u64::MAX)
-                .saturating_add(u64::try_from(value.capacity()).unwrap_or(u64::MAX))
-        }
-    }
 
     worth_query_declaration::worth_query_capability!(
         Capability in Schema,
@@ -119,41 +108,20 @@ mod tests {
         )
         .unwrap();
         let mut effects = Vec::new();
-        let retained =
-            append_lifecycle_emission(&mut effects, Some(&derived), u64::MAX, "Run").unwrap();
-        assert!(lifecycle_emission_is_exact(
-            &effects,
-            0,
-            Some(&derived),
-            retained,
-        ));
+        append_lifecycle_emission(&mut effects, Some(&derived), "Run").unwrap();
+        assert!(lifecycle_emission_is_exact(&effects, 0, Some(&derived),));
 
         let omitted = Vec::new();
-        assert!(!lifecycle_emission_is_exact(
-            &omitted,
-            0,
-            Some(&derived),
-            retained,
-        ));
+        assert!(!lifecycle_emission_is_exact(&omitted, 0, Some(&derived),));
 
         effects.push(WorthQueryApplicationRealizedEffect::Emit(
             WorthQueryApplicationEmission::new::<PayloadBinding>("ExtraEffect", "extra".to_owned()),
         ));
-        assert!(!lifecycle_emission_is_exact(
-            &effects,
-            0,
-            Some(&derived),
-            retained,
-        ));
+        assert!(!lifecycle_emission_is_exact(&effects, 0, Some(&derived),));
 
         let retargeted = vec![WorthQueryApplicationRealizedEffect::Emit(
             WorthQueryApplicationEmission::new::<PayloadBinding>("OtherEffect", input),
         )];
-        assert!(!lifecycle_emission_is_exact(
-            &retargeted,
-            0,
-            Some(&derived),
-            retained,
-        ));
+        assert!(!lifecycle_emission_is_exact(&retargeted, 0, Some(&derived),));
     }
 }

@@ -30,7 +30,6 @@ mod required_provenance;
 mod scheduling_progression;
 mod selected_source;
 mod selection;
-pub(super) use progression::resources::validate_retained_resources;
 use required_continuations::RequiredContinuations;
 pub(in crate::domain_computation::primary_graph) use required_continuations::{
     PreparedRequiredFreshSlot, RequiredFreshOutcome, RequiredFreshProgress,
@@ -57,7 +56,6 @@ pub struct WorthQuerySelectedApplicationProducer {
     pub(super) identity: String,
     pub(super) applicability: WorthQueryProducerApplicability,
     pub(super) exact_retained_output: bool,
-    pub(super) retained_resources: Option<super::WorthQueryProducerDemandResources>,
     pub(super) retained_idempotency_key: Option<[u8; 32]>,
     pub(super) retained_output_binding: Option<TypeId>,
     // An exact selection whose producer declares no Preserve posture reuses
@@ -81,8 +79,7 @@ where
         >,
     >,
     limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
-    resources: Option<super::WorthQueryProducerDemandResources>,
-    resources_validated: bool,
+
     producer_contacts_in_this_demand: usize,
     checkpoint_readmission_work_units: u64,
     checkpoint_readmission_work_bound: u64,
@@ -247,7 +244,7 @@ where
                 identity: selected.declaration.identity.clone(),
                 applicability,
                 exact_retained_output: false,
-                retained_resources: None,
+
                 retained_idempotency_key: None,
                 retained_output_binding: None,
                 reuses_live_output_only: false,

@@ -4,8 +4,6 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum BankHttpDenialKind {
     MalformedRequest,
-    ProducerSourceSizeOverflow,
-    ProducerSourceNotEncodable,
     UnsupportedProtocol,
     Unauthenticated,
     PermissionDenied,

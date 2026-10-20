@@ -6,9 +6,8 @@ use worth_foundational::facade::{
 };
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryAuthorizationRequirement, ApplicationQueryBasisSupport,
-    ApplicationQueryCardinality, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-    ApplicationQueryResultShape, ErasedApplicationQueryDefinition,
+    ApplicationQueryCardinality, ApplicationQueryDisclosureContract,
+    ApplicationQueryLaneEligibility, ApplicationQueryResultShape, ErasedApplicationQueryDefinition,
     WorthQueryPortableApplicationQueryParts, WorthQueryPortableApplicationQueryResultShapeParts,
 };
 use worth_query_declaration::facade::application_schema::{
@@ -124,7 +123,6 @@ fn downstream_decoder_constructs_owned_untrusted_application_query_meaning() {
             ordering: Vec::new(),
             continuation: None,
             live_cause: None,
-            dependency_ceiling: ApplicationQueryDependencyCeiling::bounded(0, 0, 0),
             disclosure: ApplicationQueryDisclosureContract::public(),
             authorization: ApplicationQueryAuthorizationRequirement::Public,
             basis_support: ApplicationQueryBasisSupport::current_and_pinned(),

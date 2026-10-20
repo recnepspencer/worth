@@ -14,13 +14,13 @@ const ROOT: &str = "worth-query-producer-content-root-v1";
 
 pub(super) fn leaf(ordinal: usize, fact: &Fact) -> Derived {
     super::super::super::fact_verification_observation::content_leaf();
-    derive_identity(LEAF, fact_entries(ordinal, fact)?, usize::MAX)
+    derive_identity(LEAF, fact_entries(ordinal, fact)?)
 }
 
 pub(super) fn empty() -> Derived {
     let mut entries = Vec::with_capacity(1);
     push(&mut entries, "fact-count".into(), Kind::Shape, unsigned(0));
-    derive_identity(EMPTY, entries, 8_192)
+    derive_identity(EMPTY, entries)
 }
 
 /// Both entries are fixed-width digest values. Work and material bounds are
@@ -40,10 +40,10 @@ pub(super) fn pair(left: [u8; 32], right: [u8; 32]) -> Derived {
         Kind::Identity,
         Value::BytesDigest(CanonicalDigestId::new(right)),
     );
-    derive_identity(PAIR, entries, 8_192)
+    derive_identity(PAIR, entries)
 }
 
-pub(super) fn root(key: [u8; 32], count: usize, content: [u8; 32], maximum: usize) -> Derived {
+pub(super) fn root(key: [u8; 32], count: usize, content: [u8; 32]) -> Derived {
     let mut entries = Vec::with_capacity(3);
     push(
         &mut entries,
@@ -63,5 +63,5 @@ pub(super) fn root(key: [u8; 32], count: usize, content: [u8; 32], maximum: usiz
         Kind::Identity,
         Value::BytesDigest(CanonicalDigestId::new(content)),
     );
-    derive_identity(ROOT, entries, maximum)
+    derive_identity(ROOT, entries)
 }

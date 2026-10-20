@@ -6,7 +6,7 @@ use super::*;
 use crate::application_schema::{
     ApplicationEffectMarkerIdentity, ApplicationInboundOccurrenceBinding,
     ApplicationInboundOccurrenceLimits, ApplicationInboundOccurrenceProtocol,
-    ApplicationRetainedEffectBinding,
+    ApplicationStructuredValueBinding,
 };
 
 struct RemoteEffect;
@@ -19,11 +19,7 @@ impl ApplicationStructuredValueBinding for RemotePayload {
         Ok(())
     }
 }
-impl ApplicationRetainedEffectBinding for RemotePayload {
-    fn retained_bytes(_: &Self::Value) -> u64 {
-        0
-    }
-}
+
 impl ApplicationEffectMarkerIdentity<TestSchema> for RemoteEffect {
     type PayloadBinding = RemotePayload;
     const IDENTIFIER: &'static str = "worth.query.tests.workflow.remote-effect.v1";

@@ -234,10 +234,7 @@ pub(super) fn direct_demand<'application, 'principal, 'scope>(
 }
 
 pub(super) fn controls() -> WorthQueryOutputDemandControls {
-    WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    )
+    WorthQueryOutputDemandControls::default()
 }
 
 fn direct_demand_with_controls<'application, 'principal, 'scope>(

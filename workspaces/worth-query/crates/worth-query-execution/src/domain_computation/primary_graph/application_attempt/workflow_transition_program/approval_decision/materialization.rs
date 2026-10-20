@@ -22,16 +22,6 @@ where
     let transition_identity_bytes = *admitted.identity_bytes();
     let instance = admitted.instance();
     let node_path = admitted.node_path().to_owned();
-    let mut demand = PlatformEffectDemand::default();
-    crate::domain_computation::primary_graph::workflow::visit_workflow_approval_facts(
-        layout,
-        &admitted,
-        &meaning,
-        basis,
-        admitted_text,
-        |effect| demand.observe(&effect),
-    )?;
-    let reservation = admit_platform_effects(admitted.read_set(), demand)?;
     let mut effects = Vec::new();
     crate::domain_computation::primary_graph::workflow::visit_workflow_approval_facts(
         layout,
@@ -44,17 +34,12 @@ where
             Ok::<(), WorthQueryApplicationAttemptDenial>(())
         },
     )?;
-    reservation.materialize(&effects)?;
+
     let progress_update = admitted.prepare_progress_update(meaning.decision.outcome(), None)?;
     Ok(PreparedWorkflowAdvance::Transition {
         program: WorthQueryApplicationEffectProgram {
-            candidate_funding: None,
-            candidate_requirements: None,
-            effect_backing_memory: None,
             read_set: admitted.into_read_set(),
             effects,
-            emission_retained_bytes: 0,
-            emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             output_correspondence: Default::default(),

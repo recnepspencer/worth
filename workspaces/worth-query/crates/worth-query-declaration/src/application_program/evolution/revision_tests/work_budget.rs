@@ -22,6 +22,11 @@ fn a_manifest_past_the_declared_entry_budget_is_denied_rather_than_hashed() {
             assert_eq!(maximum, 4_096);
             assert!(u64::from(attempted) > u64::from(maximum));
         }
+        ApplicationProgramRevisionBudgetDenial::Derivation(cause) => {
+            panic!(
+                "the explicit entry ceiling must refuse before canonical construction: {cause:?}"
+            )
+        }
         ApplicationProgramRevisionBudgetDenial::EncodedBytes { .. } => {
             panic!("the entry ceiling is reached before the encoded-byte ceiling")
         }

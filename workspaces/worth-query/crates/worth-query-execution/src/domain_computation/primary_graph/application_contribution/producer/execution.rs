@@ -1,6 +1,6 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 mod contact_observation;
-use std::{any::Any, sync::Arc};
+use std::sync::Arc;
 
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
@@ -41,7 +41,6 @@ pub(in crate::domain_computation::primary_graph) mod prepared_plan;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use prepared_plan::canonical_apply;
 mod readiness;
 mod required_cue;
-mod resource_quote;
 mod selected;
 mod selected_public;
 mod source_readmission;
@@ -88,14 +87,6 @@ pub(super) trait InstalledProducerExecutor<Schema>:
         request_admission: &mut InvalidationEditAdmission,
         producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop>;
-
-    fn resources(
-        &self,
-        source: &dyn Any,
-    ) -> Result<
-        Option<super::WorthQueryProducerDemandResources>,
-        super::WorthQueryProducerResourceQuoteDenial,
-    >;
 
     fn readiness_record(
         &self,
@@ -167,18 +158,6 @@ where
                 entity.generation.0,
             ),
         )
-    }
-
-    fn resources(
-        &self,
-        source: &dyn Any,
-    ) -> Result<
-        Option<super::WorthQueryProducerDemandResources>,
-        super::WorthQueryProducerResourceQuoteDenial,
-    > {
-        resource_quote::from_source::<SourceValue<Schema, Binding>>(source, |source| {
-            self.provider.demand_resources(source)
-        })
     }
 
     fn execute(
@@ -259,7 +238,6 @@ where
                     request_scope,
                     branch,
                     proof.source(),
-                    limits,
                     request_admission,
                     edition,
                 )?;

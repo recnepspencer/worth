@@ -1,10 +1,5 @@
-pub(super) mod candidate_backing;
-mod candidate_funding;
-mod candidate_preparation;
-mod candidate_reservation;
-pub(in crate::domain_computation::primary_graph) use candidate_funding::CandidateFunding;
-pub(in crate::domain_computation::primary_graph) mod candidate_retained_representation;
 mod conditional_definition;
+mod effect_growth;
 mod emission;
 mod entity_creation;
 mod entity_selection;
@@ -13,15 +8,10 @@ mod operation_body;
 mod optional_field_authoring;
 mod ordinary_field_authoring;
 pub(super) mod output_correspondence;
-mod platform_reservation;
 mod relation_effects;
-mod reservation_charging;
 mod target_admission;
 mod write_index;
 
-#[cfg(test)]
-#[path = "effect_program/candidate_retained_representation_tests.rs"]
-mod candidate_retained_representation_tests;
 #[cfg(test)]
 mod external_payload_tests;
 #[cfg(test)]
@@ -31,7 +21,6 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use worth_foundational::facade::AspectFieldLocator;
-use worth_query_declaration::facade::domain_computation::WorthQueryResourceDimension;
 use worth_query_installation::facade::{
     ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
     ApplicationOperationProgramTarget, ApplicationScalarValueBinding,
@@ -59,8 +48,6 @@ use super::{
     WorthQueryProjectedApplicationMutation,
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationEntityKey;
-use candidate_reservation::{CandidateItemKind, WorthQueryCandidateReservation};
-use candidate_retained_representation as retained_representation;
 pub(in crate::domain_computation::primary_graph) use output_correspondence::{
     OutputRoleUse, WorthQueryApplicationOutputCorrespondence, WorthQueryCheckpointOutputRole,
 };
@@ -69,17 +56,7 @@ pub use output_correspondence::{
     WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial,
     WorthQueryApplicationTypedOutputCorrespondence,
 };
-pub(in crate::domain_computation::primary_graph) use platform_reservation::{
-    admit_platform_effects, admit_signing_lifecycle_effects, admit_workflow_settlement_effects,
-    PlatformEffectDemand,
-};
-pub(in crate::domain_computation::primary_graph::application_attempt) use platform_reservation::{
-    check_combined_host_capacity, validate_candidate_extension,
-};
 use target_admission::installed_contract_admits_program_target;
-use worth_query_declaration::facade::application_operation::{
-    ApplicationCandidatePolicy, ApplicationCandidateRequirements,
-};
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
@@ -109,26 +86,14 @@ impl<Schema, Operation, Input, Scope>
         self,
     ) -> WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope> {
         let layout = Arc::clone(&self.lease.layout);
-        let emission_retained_bytes_ceiling = self
-            .admission
-            .allowed_graph_contract()
-            .execution_strategy()
-            .expect("installed application operation has exactly one execution strategy")
-            .envelope()
-            .resource_ceiling(WorthQueryResourceDimension::RetainedBytes);
         WorthQueryApplicationEffectProgramBuilder {
             read_set: self,
             layout,
             program: Arc::new(()),
             effects: Vec::new(),
-            effect_backing_memory: None,
             field_write_positions: FieldWriteIndex::default(),
             keys: BTreeSet::new(),
-            emission_retained_bytes: 0,
-            emission_retained_bytes_ceiling,
             conditional_definition: None,
-            candidate_reservation: None,
-            candidate_funding: None,
             output_correspondence: Default::default(),
             creation_partition: None,
         }
@@ -194,6 +159,7 @@ impl<Schema, Operation, Input, Scope>
         field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
         value: std::borrow::Cow<'_, worth_foundational::facade::AspectValue>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.reserve_effects(0)?;
         self.validate_target(target, field.entity())?;
         self.admit_program_target(&ApplicationOperationProgramTarget::Write {
             entity: field.entity().to_string(),
@@ -207,7 +173,7 @@ impl<Schema, Operation, Input, Scope>
                 field.entity(),
             ));
         };
-        let Some(WorthQueryApplicationRealizedEffect::CreateEntity { fields, .. }) =
+        let Some(WorthQueryApplicationRealizedEffect::CreateEntity { .. }) =
             self.effects.get(created_effect)
         else {
             return Err(denial(
@@ -215,17 +181,6 @@ impl<Schema, Operation, Input, Scope>
                 field.entity(),
             ));
         };
-        let retained_representation_bytes =
-            retained_representation::field_entry(&locator, &value, !fields.contains_key(&locator))
-                .ok_or_else(candidate_representation_denial)?;
-        let replaced_representation_bytes = fields
-            .get(&locator)
-            .map_or(0, retained_representation::value);
-        self.charge_candidate_representation(
-            CandidateItemKind::Write,
-            retained_representation_bytes,
-            replaced_representation_bytes,
-        )?;
         let WorthQueryApplicationRealizedEffect::CreateEntity { fields, .. } =
             &mut self.effects[created_effect]
         else {
@@ -253,7 +208,7 @@ impl<Schema, Operation, Input, Scope>
                 entity.name(),
             ));
         };
-        self.charge_candidate_item(CandidateItemKind::Delete)?;
+        self.reserve_effects(1)?;
         self.effects
             .push(WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id });
         Ok(())
@@ -273,11 +228,6 @@ impl<Schema, Operation, Input, Scope>
         Ok(WorthQueryApplicationEffectProgram {
             read_set: self.read_set,
             effects: self.effects,
-            candidate_funding: self.candidate_funding.map(Arc::new),
-            effect_backing_memory: self.effect_backing_memory,
-            candidate_requirements: self.candidate_reservation.as_ref().map(WorthQueryCandidateReservation::requirements),
-            emission_retained_bytes: self.emission_retained_bytes,
-            emission_retained_bytes_ceiling: self.emission_retained_bytes_ceiling,
             conditional_definition: self.conditional_definition,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
             output_correspondence: self.output_correspondence,
@@ -334,11 +284,4 @@ impl<Schema, Operation, Input, Scope>
                 )
             })
     }
-}
-
-fn candidate_representation_denial() -> WorthQueryApplicationAttemptDenial {
-    denial(
-        WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-        "candidate retained representation overflowed",
-    )
 }

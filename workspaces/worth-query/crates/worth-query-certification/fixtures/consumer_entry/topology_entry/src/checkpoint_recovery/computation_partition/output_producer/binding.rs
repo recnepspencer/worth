@@ -2,27 +2,17 @@
 // region output operation over the set the scope's ordinate names, first to
 // create the output and then to keep it.
 
-const DECISION_FACTS_PER_ENTRY: usize = 8;
-/// The scope, the set, its weight and the entry an armed decision writes.
-const DECISION_FACTS_BESIDE_ENTRIES: usize = 32;
-/// The facts the largest set's decision may read.
-pub(super) const DECISION_FACT_BUDGET: usize =
-    DECISION_FACTS_PER_ENTRY * LARGEST_SET + DECISION_FACTS_BESIDE_ENTRIES;
-
 use std::marker::PhantomData;
 
 use super::fixture_values::PositiveLength;
 use super::runtime_api::application_contribution::{
     self, WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
     WorthQueryApplicationProducerProvider, WorthQueryProducerApplicability,
-    WorthQueryProducerDemandResources, WorthQueryProducerInputReuseContract,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily,
+    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
 };
 
-use super::region_output::{
-    RegionOutputBinding, RegionOutputInput, TotalRegionOutput, LARGEST_SET,
-};
+use super::region_output::{RegionOutputBinding, RegionOutputInput, TotalRegionOutput};
 use super::*;
 
 const APPLICABILITY: &[WorthQueryProducerApplicability] = &[
@@ -76,7 +66,7 @@ impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
     type OutputRole = PlanarAnchorOutput<Schema>;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-    const RESOURCE_POLICY: &'static str = "bounded-synchronous";
+
     const REUSE_POLICY: &'static str = "exact-source";
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = if REUSE {
         Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
@@ -113,22 +103,5 @@ impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
         } else {
             key
         }
-    }
-    fn demand_resources(
-        &self,
-        _: &PlanarReadResult,
-    ) -> Result<
-        WorthQueryProducerDemandResources,
-        super::runtime_api::application_contribution::WorthQueryProducerResourceQuoteDenial,
-    > {
-        Ok({
-            if MODE == 1 {
-                // The wide-key decision may disclose every declared Native fact.
-                // Reserve its finite projection bound, including own-write rebasing.
-                WorthQueryProducerDemandResources::new(Some(4096), DECISION_FACT_BUDGET * 512)
-            } else {
-                planar_producer_resources()
-            }
-        })
     }
 }

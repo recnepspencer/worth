@@ -40,7 +40,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
     candidate: Option<&'basis AcceptedCurrentCandidate>,
     resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
-    limits: WorthQueryOutputDemandLimits,
     producer_contacts_in_this_demand: usize,
     admission: &mut InvalidationEditAdmission,
     on_disclosure: impl for<'prepared> FnOnce(
@@ -109,7 +108,6 @@ where
         .maximum_work()
         .map(NonZeroUsize::get)
         .into_iter()
-        .chain(limits.producer_work())
         .chain(admission.remaining_work())
         .min();
     let maximum_work = ceiling

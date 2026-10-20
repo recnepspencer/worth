@@ -7,9 +7,7 @@ use super::{
     RecordedSettlementIdentity, RecordedSourceIdentity, WorthQueryApplicationOutputCorrespondence,
 };
 use crate::domain_computation::primary_graph::{
-    application_attempt::CompletedHandlerFactBoundary,
-    application_contribution::WorthQueryProducerDemandResources,
-    invariant_projection::ConsumedOutputEvidence,
+    application_attempt::CompletedHandlerFactBoundary, invariant_projection::ConsumedOutputEvidence,
 };
 
 pub(in crate::domain_computation::primary_graph) struct RecordedOutput {
@@ -45,7 +43,6 @@ pub(super) struct RecordedOutputMutable {
     observed_source_facts: Option<
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     >,
-    pub(super) resources: Option<WorthQueryProducerDemandResources>,
     stable_fact_spans: Option<super::input_cutoff::stable_publication::StableFactSpans>,
     /// What the partitioned computation of the attempt that published this
     /// record retained for the producer's next run.
@@ -56,7 +53,6 @@ impl RecordedOutputMutable {
     pub(super) fn new(
         verification_requirement: Option<FullVerificationReason>,
         facts: Option<super::RetainedSourceFacts>,
-        resources: Option<WorthQueryProducerDemandResources>,
         computation: super::retained_computation::RecordedComputation,
     ) -> Self {
         match &computation {
@@ -68,7 +64,6 @@ impl RecordedOutputMutable {
         Self {
             verification_requirement,
             observed_source_facts: facts.map(|facts| facts.postconditions().clone()),
-            resources,
             stable_fact_spans: None,
             computation,
         }
@@ -165,17 +160,9 @@ impl RecordedOutput {
             .cloned()
     }
 
-    pub(super) fn resources(&self) -> Option<WorthQueryProducerDemandResources> {
-        self.mutable
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .resources
-    }
-
     pub(super) fn restore(
         &self,
         facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
-        resources: Option<WorthQueryProducerDemandResources>,
         verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     ) {
         if self.native_output_witness.get().is_some() {
@@ -194,7 +181,7 @@ impl RecordedOutput {
         row.computation = super::retained_computation::RecordedComputation::Absent(
             crate::domain_computation::primary_graph::application_contribution::PriorAbsence::Restored,
         );
-        row.resources = resources;
+
         if let Some(witness) = verified_witness {
             // An initialized original witness is immutable. Repeated exact
             // restoration retains that first proof and its lifetime custody.

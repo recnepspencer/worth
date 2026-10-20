@@ -7,9 +7,7 @@ use bank_domain::schema::{
     PaymentIdentityField, PaymentInitiator, PaymentIntent, PaymentSource, PaymentStatusField,
     PrincipalIdentityField,
 };
-use worth_query_host::facade::declaration::application_operation::{
-    ApplicationCandidateRequirements, ApplicationMutationBinding,
-};
+
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
     OperationHandler, WorthQueryApplicationEntityKey,
@@ -54,16 +52,6 @@ impl OperationHandler<BankSchema, InitiateBusinessPaymentMutationBinding>
             Ok(decision) => HandlerResult::Completed(decision),
             Err(denial) => HandlerResult::DomainDenied(denial),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &InitiateBusinessPayment,
-        _: &InitiateBusinessPaymentDecision,
-    ) -> ApplicationCandidateRequirements {
-        InitiateBusinessPaymentMutationBinding::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

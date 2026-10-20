@@ -3,7 +3,6 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 
 use worth_query_decl::facade::application_schema::{
     ApplicationInvariantExecutionPoint, ApplicationInvariantMarkerIdentity, ApplicationSchema,
@@ -17,8 +16,7 @@ use worth_query_host::facade::{
         WorthQueryApplicationContribution, WorthQueryApplicationContributionContracts,
         WorthQueryApplicationContributionSetup, WorthQueryApplicationProducerBinding,
         WorthQueryApplicationProducerProvider, WorthQueryProducerApplicability,
-        WorthQueryProducerDemandResources, WorthQueryProducerInvariantRequirement,
-        WorthQueryProducerLifecyclePosture,
+        WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
     },
     application_installation,
     primary_graph::{
@@ -219,13 +217,6 @@ impl<Schema: TopologySchemaBinding>
     fn idempotency_key(&self, _: &PlanarReadResult, source_identity: &[u8; 32]) -> u64 {
         worth_query_topology_entry::planar_source_key(source_identity)
     }
-
-    fn demand_resources(
-        &self,
-        _: &PlanarReadResult,
-    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
-        Ok({ worth_query_topology_entry::planar_producer_resources() })
-    }
 }
 
 struct AmbiguousProducer<Schema>(PhantomData<fn() -> Schema>);
@@ -251,7 +242,6 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
             0,
             ApplicationInvariantExecutionPoint::CommitBoundary,
         )];
-    const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
 }
 

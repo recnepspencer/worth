@@ -20,15 +20,8 @@ impl<Schema: BirthSchema> OperationHandler<Schema, $binding> for Handler {
             strict: None,
         })
     }
-    fn candidate_requirements(
-        &self,
-        _: &Input,
-        _: &Decision<Schema>,
-    ) -> ApplicationCandidateRequirements {
-        <$binding as ApplicationMutationBinding<Schema>>::CANDIDATES
-            .finite_requirements()
-            .unwrap()
-    }
+
+
     fn build_candidate(
         &self,
          $input: &Input,

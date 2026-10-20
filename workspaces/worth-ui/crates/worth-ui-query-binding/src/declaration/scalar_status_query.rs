@@ -2,10 +2,9 @@ use worth_query_decl::facade::{
     application_query::{
         ApplicationLiveQueryIntent, ApplicationQueryBasisSupport, ApplicationQueryCardinality,
         ApplicationQueryDefinition, ApplicationQueryDefinitionBuilder,
-        ApplicationQueryDependencyCeiling, ApplicationQueryDisclosureContract,
-        ApplicationQueryLaneEligibility, ApplicationQueryLiveResourceContract,
-        ApplicationQueryParameterSet, ApplicationQueryResultFieldRef,
-        ApplicationQueryResultShapeBuilder,
+        ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+        ApplicationQueryLiveResourceContract, ApplicationQueryParameterSet,
+        ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
     },
     application_schema::{
         EqualityPredicate, NoApplicationUnit, ReadOnly, ReadWrite, U64ApplicationValueBinding,
@@ -171,7 +170,6 @@ pub(crate) fn status_query_definition() -> ApplicationQueryDefinition<
         .scope(WorthUiRecord::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::OptionalOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 1, 3))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())

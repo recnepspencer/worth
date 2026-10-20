@@ -67,16 +67,10 @@ pub(super) fn world_resources() -> WorthQueryProductWorldResources {
 }
 
 pub(super) fn application_limits(
-    candidate_bytes: u64,
     query_bytes: usize,
 ) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
     worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits::new(
         world_resources(),
-        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::policy(
-            Some(4096),
-            Some(candidate_bytes),
-        )
-        .unwrap(),
         worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::bounded(
             4096,
             query_bytes,

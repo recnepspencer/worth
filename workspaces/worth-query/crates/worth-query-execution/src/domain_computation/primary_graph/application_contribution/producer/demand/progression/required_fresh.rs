@@ -214,7 +214,6 @@ where
         );
         self.admit_output_demand_with_source_admitted::<Family>(
             execution,
-            fresh.value(),
             retained_source,
             None,
             Family::profile_kind(fresh.value()),

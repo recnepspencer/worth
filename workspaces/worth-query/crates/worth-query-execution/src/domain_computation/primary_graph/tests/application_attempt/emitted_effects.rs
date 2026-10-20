@@ -1,16 +1,11 @@
-use super::{
-    admitted_program_with_emit, authenticated_principal, idempotency, resolved_account,
-    AccountStatus, TouchAccountOperation,
-};
+use super::{admitted_program_with_emit, authenticated_principal, idempotency, resolved_account};
 use crate::domain_computation::primary_graph::tests::fixture::{
-    installed_authorization_world, live_scope, AccountActivityEffect,
+    installed_authorization_world, live_scope,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationCommitTerminalKind, WorthQueryApplicationHistoricalRead,
-    WorthQueryApplicationQueryAdmissionDenialKind,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitTerminalKind,
+    WorthQueryApplicationHistoricalRead, WorthQueryApplicationQueryAdmissionDenialKind,
 };
-use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
 #[test]
 fn typed_emission_is_published_with_the_exact_provider_commit() {
@@ -70,14 +65,6 @@ fn typed_emission_is_published_with_the_exact_provider_commit() {
     assert_eq!(
         emissions[0].payload::<String>().map(String::as_str),
         Some("account-activity")
-    );
-    assert_eq!(
-        world
-            .application
-            .primary_provider
-            .retained_application_emission_bytes(),
-        emissions[0].retained_bytes(),
-        "the live source must account for the exact admitted payload bytes"
     );
 }
 
@@ -261,9 +248,6 @@ fn in_window_receipt_admits_its_exact_historical_basis() {
     assert_eq!(basis.version_id(), exact_version);
     assert!(basis.release().released());
 }
-
-#[path = "emitted_effects/cumulative_variable_width_payloads_are_denied_before_provider_co.rs"]
-mod cumulative_variable_width_payloads_are_denied_before_provider_co;
 
 #[path = "emitted_effects/pretransaction_emit_refusal.rs"]
 mod pretransaction_emit_refusal;

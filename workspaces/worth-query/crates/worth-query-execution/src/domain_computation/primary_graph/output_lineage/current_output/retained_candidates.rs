@@ -25,9 +25,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRetainedOutput
     /// The row's own settlement, as the owner knows it.
     pub(in crate::domain_computation::primary_graph) settlement_identity:
         Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
-    pub(in crate::domain_computation::primary_graph) resources: Option<
-        crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources,
-    >,
+
     pub(in crate::domain_computation::primary_graph) idempotency_key_identity: [u8; 32],
 }
 
@@ -140,7 +138,7 @@ impl WorthQueryApplicationOutputLineage {
                             .map(Arc::clone),
                         verification_requirement: recorded.verification_requirement(),
                         settlement_identity: Arc::clone(&recorded.settlement_identity),
-                        resources: recorded.resources(),
+
                         idempotency_key_identity: recorded.idempotency_key_identity,
                     });
                     break;

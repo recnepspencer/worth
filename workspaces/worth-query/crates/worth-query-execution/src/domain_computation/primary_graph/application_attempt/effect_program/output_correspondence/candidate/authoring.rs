@@ -1,7 +1,5 @@
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::effect_program::{
-    retained_representation, WorthQueryApplicationEffectProgramBuilder,
-};
+use crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryApplicationEffectProgramBuilder;
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding, application_schema::ApplicationSchema,
 };
@@ -29,24 +27,10 @@ impl<Schema, Operation, Input, Scope>
         Schema: ApplicationSchema,
         Binding: ApplicationMutationBinding<Schema>,
     {
-        use worth_query_declaration::facade::application_operation::ApplicationMutationOutputContract;
-        let roles = Binding::Output::ROLES;
-        let families = Binding::Output::ROLE_FAMILIES;
-        let bytes = roles
-            .iter()
-            .map(|role| role.name().len())
-            .chain(families.iter().map(|family| family.prefix().len()))
-            .try_fold(0usize, usize::checked_add)
-            .ok_or_else(super::super::super::candidate_representation_denial)?;
-        let entries = roles
-            .len()
-            .checked_add(families.len())
-            .ok_or_else(super::super::super::candidate_representation_denial)?;
-        self.charge_candidate_correspondence(bytes, entries)?;
-        let (prepared, families, retained_representation_bytes) =
-            self.output_correspondence
-                .prepare_contract::<Schema, Binding::Output>()?;
-        debug_assert_eq!(bytes, retained_representation_bytes);
+        self.reserve_effects(0)?;
+        let (prepared, families) = self
+            .output_correspondence
+            .prepare_contract::<Schema, Binding::Output>()?;
         self.output_correspondence.binding_type = Some(TypeId::of::<Binding>());
         self.output_correspondence.contract_type = Some(TypeId::of::<Binding::Output>());
         self.output_correspondence.expected_roles.extend(prepared);
@@ -64,18 +48,10 @@ impl<Schema, Operation, Input, Scope>
         role: OutputRoleUse,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.reserve_effects(0)?;
         validate_role_name(&role.name)?;
-        let retained_representation_bytes =
-            retained_representation::output_binding(&role.name, &target.entity, &target.reference)
-                .ok_or_else(|| {
-                    denial(
-                        WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-                        role.name.as_str(),
-                    )
-                })?;
         self.output_correspondence
             .validate_binding(&role, target, &self.program)?;
-        self.charge_candidate_correspondence(retained_representation_bytes, 1)?;
         self.output_correspondence.insert_binding(role, target);
         Ok(())
     }

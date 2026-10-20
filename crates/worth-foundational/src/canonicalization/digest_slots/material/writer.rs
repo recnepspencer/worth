@@ -91,7 +91,9 @@ impl<'a> CanonicalMaterialWriter<'a> {
         } else if growth {
             // `additional` is relative to length. Geometric growth avoids
             // copying the full canonical prefix for every small entry.
-            self.material.reserve(attempted - self.material.len());
+            self.material
+                .try_reserve(attempted - self.material.len())
+                .map_err(|_| CanonicalDigestPreparationStop::AllocationUnavailable)?;
         }
         self.material.push_str(value);
         Ok(())

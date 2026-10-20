@@ -177,7 +177,7 @@ pub struct WorthQueryPreparedBranchAdoption {
     pub(super) support_custody:
         crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportCustody,
     // Last to drop: physical backing releases before its retained grant.
-    pub(super) candidate_funding: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CandidateFunding>>,
+
 }
 
 impl WorthQueryPreparedBranchAdoption {

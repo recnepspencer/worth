@@ -92,11 +92,8 @@ fn observe<'application>(
         .into_assessment_demand(RetentionAssessmentDemand::new(DOCUMENT_IDENTITY))
         .expect("the demand matches the installed assessment contract")
         .controls(
-            WorthQueryOutputDemandControls::new(
-                std::num::NonZeroUsize::new(512).unwrap(),
-                std::num::NonZeroUsize::new(1024).unwrap(),
-            )
-            .settlement_attempts(std::num::NonZeroUsize::new(attempts).unwrap()),
+            WorthQueryOutputDemandControls::default()
+                .settlement_attempts(std::num::NonZeroUsize::new(attempts).unwrap()),
         )
         .advanced()
         .start()

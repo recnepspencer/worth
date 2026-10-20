@@ -16,7 +16,7 @@ fn replacing_retained_body_invalidates_its_alias_layout_even_for_equal_data() {
     let spans =
         super::super::input_cutoff::stable_publication::StableFactSpans::new(body.clone(), 3, 2)
             .unwrap();
-    let mut row = RecordedOutputMutable::new(None, Some(source.retain_facts(body.clone())), None,
+    let mut row = RecordedOutputMutable::new(None, Some(source.retain_facts(body.clone())),
         super::super::retained_computation::RecordedComputation::Absent(crate::domain_computation::primary_graph::application_contribution::PriorAbsence::FirstRun)).with_stable_fact_spans(spans.clone());
     assert!(row.stable_fact_spans.as_ref().unwrap().matches(&body));
     row.replace_retained_facts(source.retain_facts(native(8, control)));

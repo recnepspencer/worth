@@ -4,8 +4,7 @@ use super::super::{
     WorthQueryApplicationAdjacencyDirection as Direction,
 };
 use super::{
-    attempt, capacity, refused, resource, unavailable, EntityId, Fact, Kind, KindId, Lease,
-    Outcome, QueryMemoryReservation, QueryRequestExecution, Rule,
+    attempt, capacity, refused, unavailable, EntityId, Fact, Kind, KindId, Lease, Outcome, Rule,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationReadableScalarValueBinding, ApplicationSigningSubjectProvenance as Provenance,
@@ -96,10 +95,9 @@ pub(super) fn footprint(
     evidence: EntityId,
     lease: &Lease,
     runtime: &RelationalRuntime,
-    execution: &QueryRequestExecution<'_>,
     request: &worth_execution::ExecutionRequest<'_, '_>,
     facts: &mut Vec<Fact>,
-) -> Result<(Provenance, QueryMemoryReservation), Outcome> {
+) -> Result<Provenance, Outcome> {
     let field = rule.provenance();
     let locator = lease
         .layout
@@ -118,15 +116,8 @@ pub(super) fn footprint(
         locator,
         |value| {
             let value = value.ok_or_else(unavailable)?;
-            let bytes = value
-                .owned_allocation_capacity_bytes()
-                .checked_mul(8)
-                .ok_or_else(capacity)?;
-            let memory = execution
-                .reserve(u64::try_from(bytes).map_err(|_| capacity())?)
-                .map_err(resource)?;
             let value = Binding::decode(value).map_err(|_| unavailable())?;
-            Ok::<_, Outcome>((value, memory))
+            Ok::<_, Outcome>(value)
         },
     )
     .map_err(|cause| {

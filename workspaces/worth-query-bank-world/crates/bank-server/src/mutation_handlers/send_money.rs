@@ -2,9 +2,7 @@ use bank_domain::proposals::{
     BankInvariantApprovedProposal, BankProposalDenial, BankProposalEngine, BankProposedEffect,
 };
 use bank_domain::schema::{BankSchema, MoneyMovementResult, SendMoney, SendMoneyMutationBinding};
-use worth_query_host::facade::declaration::application_operation::{
-    ApplicationCandidateRequirements, ApplicationMutationBinding,
-};
+
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
@@ -37,16 +35,6 @@ impl OperationHandler<BankSchema, SendMoneyMutationBinding> for SendMoneyHandler
             Ok(proposal) => HandlerResult::Completed(proposal),
             Err(denial) => HandlerResult::DomainDenied(denial),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &SendMoney,
-        _: &BankInvariantApprovedProposal,
-    ) -> ApplicationCandidateRequirements {
-        SendMoneyMutationBinding::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

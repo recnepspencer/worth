@@ -79,8 +79,6 @@ macro_rules! institution_movement_binding {
                 NoApplicationUnit,
             field InstitutionIdentityField::reference(),
             value $scope,
-            candidates creates 3, deletes 0, links 4, unlinks 0, writes 12, emits 2,
-            resources retained_representation_bytes 32768
         );
     };
 }
@@ -139,6 +137,4 @@ worth_query_mutation_binding!(
         NoApplicationUnit,
     field AccountIdentity::reference(),
     value send_scope,
-    candidates creates 3, deletes 0, links 4, unlinks 0, writes 12, emits 2,
-    resources retained_representation_bytes 32768
 );

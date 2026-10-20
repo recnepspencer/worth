@@ -3,7 +3,6 @@ use crate::facade::application_installation::WorthQueryApplicationCheckpoint;
 use crate::facade::application_installation::{
     in_memory_program, WorthQueryInMemoryApplicationLimits, WorthQueryProgramApplicationRuntime,
 };
-use crate::facade::runtime::WorthQueryApplicationCandidateResourceProfile;
 use std::sync::{atomic::AtomicUsize, Arc};
 worth_query_decl::facade::worth_query_application! { pub(super) OptionalSchema { owner: "worth.query.test.optional-aspects", version: (1, 0), contributions: [Members], } }
 worth_query_decl::facade::worth_query_application! { pub(super) RequiredSchema { owner: "worth.query.test.required-aspects", version: (1, 0), contributions: [Members], } }
@@ -145,25 +144,8 @@ pub(super) fn install<
 }
 
 fn limits<Schema: BirthSchema>() -> WorthQueryInMemoryApplicationLimits {
-    let defaults = WorthQueryApplicationCandidateResourceProfile::default();
-    let required_bytes = u64::try_from(
-        <Binding<Schema, false> as ApplicationMutationBinding<Schema>>::CANDIDATES
-            .finite_requirements()
-            .expect("fixed candidate contract")
-            .resources()
-            .maximum_retained_representation_bytes(),
-    )
-    .expect("the real producer candidate requirement fits the host resource type");
-    let candidates = WorthQueryApplicationCandidateResourceProfile::policy(
-        defaults.maximum_items(),
-        defaults
-            .maximum_retained_representation_bytes()
-            .map(|bytes| bytes.max(required_bytes)),
-    )
-    .expect("the default host capacity and declared producer requirement are nonzero");
     WorthQueryInMemoryApplicationLimits::new(
         crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
-        candidates,
         Default::default(),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
     )

@@ -102,7 +102,7 @@ fn completes_once(
     };
     let completion = ready_backing.complete(super::super::WorthQueryCompletedOutputDemand {
         authority: super::super::WorthQueryAcceptedOutputAuthority::Committed(receipt),
-        readiness: crate::domain_computation::primary_graph::WorthQueryOutputReadinessDeliveryEvidence::without_execution(), resources: None,
+        readiness: crate::domain_computation::primary_graph::WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
     });
     registry
         .finish_checkpoint(owner, claim, Checkpoint::Ready(completion), None)

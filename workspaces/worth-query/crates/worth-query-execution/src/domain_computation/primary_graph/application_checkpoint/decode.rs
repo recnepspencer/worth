@@ -76,7 +76,6 @@ impl WorthQueryApplicationCheckpoint {
                 .next_bytes(32)?
                 .try_into()
                 .expect("the checkpoint idempotency identity length is exact");
-            let resources = resources::decode_profile(&mut cursor)?;
             let role_count = usize::try_from(cursor.next_u64()?)
                 .map_err(|_| "checkpoint output-role count exceeds this host".to_owned())?;
             if role_count > cursor.remaining.len() / (8 + 1 + 8 + 16) {
@@ -186,7 +185,6 @@ impl WorthQueryApplicationCheckpoint {
                     source_partition,
                     producer_dependency,
                     idempotency_key,
-                    resources,
                     roles: std::sync::Arc::new(roles),
                     producer_facts: producer_facts.map(std::sync::Arc::new),
                     producer_fact_wire_version,

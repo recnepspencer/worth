@@ -10,8 +10,6 @@ pub(super) fn prepare_application_provider_attempt(
     preparation: WorthQueryProviderAttemptPreparation,
     mutation_partition: worth_relational::facade::identity::PartitionId,
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, WorthQueryApplicationAttemptDenial> {
-    // Hold the original ticket until lowering has consumed the original Vec.
-    let _effect_backing_memory = preparation.effect_backing_memory;
     prepare_provider_attempt(
         lease.layout.unique_fields(),
         &|entity, aspect| lease.layout.aspect_contract(entity, aspect),
@@ -23,8 +21,6 @@ pub(super) fn prepare_application_provider_attempt(
         preparation.original_read,
         preparation.consumed_outputs,
         preparation.effects,
-        preparation.emission_retained_bytes,
-        preparation.emission_retained_bytes_ceiling,
         preparation.preimage_demand,
         preparation.conditional_definition,
         preparation.output_correspondence,
@@ -33,9 +29,5 @@ pub(super) fn prepare_application_provider_attempt(
         preparation.producer_required_invariants,
         preparation.output_currentness_facts,
     )
-    .map(|prepared| {
-        prepared
-            .with_candidate_funding(preparation.candidate_funding)
-            .with_required_output_demand(preparation.required_output_demand)
-    })
+    .map(|prepared| prepared.with_required_output_demand(preparation.required_output_demand))
 }

@@ -1,8 +1,6 @@
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::collections::BTreeMap;
 
-use worth_query_declaration::facade::domain_computation::WorthQueryResourceDimension;
-
 use super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::effect_validation::denial;
 use super::elevation_lifecycle_effects::lifecycle_effects_are_exact;
@@ -54,27 +52,14 @@ impl<Schema, Operation, Input, Scope>
         validate_installed_contract(binding, &self)?;
         validate_lifecycle_facts(binding, &self.facts)?;
         let mut effects = close_effects(binding);
-        let emission_retained_bytes_ceiling = self
-            .admission
-            .allowed_graph_contract()
-            .execution_strategy()
-            .expect("installed application operation has exactly one execution strategy")
-            .envelope()
-            .resource_ceiling(WorthQueryResourceDimension::RetainedBytes);
-        let emission_retained_bytes = append_lifecycle_emission(
+        append_lifecycle_emission(
             &mut effects,
             binding.lifecycle_effect(),
-            emission_retained_bytes_ceiling,
             self.admission.operation(),
         )?;
         let program = WorthQueryApplicationEffectProgram {
-            candidate_funding: None,
-            candidate_requirements: None,
-            effect_backing_memory: None,
             read_set: self,
             effects,
-            emission_retained_bytes,
-            emission_retained_bytes_ceiling,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
             output_correspondence: Default::default(),
@@ -125,12 +110,7 @@ pub(in crate::domain_computation::primary_graph) fn validate_elevation_close_pro
             .effects
             .get(..1)
             .is_some_and(|actual| lifecycle_effects_are_exact(actual, &expected))
-        && lifecycle_emission_is_exact(
-            &program.effects,
-            1,
-            binding.lifecycle_effect(),
-            program.emission_retained_bytes,
-        )
+        && lifecycle_emission_is_exact(&program.effects, 1, binding.lifecycle_effect())
     {
         Ok(())
     } else {

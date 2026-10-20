@@ -31,7 +31,6 @@ mod retained_read;
 pub(in crate::domain_computation::primary_graph) use required_wave::{
     MatchedRequiredPredecessors, ReboundConsumedOutput, ResolvedRequiredPredecessors,
 };
-pub(super) mod resources;
 mod selected_program;
 mod source_recovery;
 mod unavailable;
@@ -167,7 +166,6 @@ where
                 > + 'static,
         FamilySourceQuery<Schema, Family>: 'static,
     {
-        let limits = demand.limits;
         self.advance_output_demand_with_prepared_source(
             execution,
             phase,
@@ -183,7 +181,6 @@ where
                     principal,
                     request_scope,
                     delivery_branch,
-                    limits,
                     admission,
                 )
                 .map(Some)

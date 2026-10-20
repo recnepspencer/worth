@@ -63,40 +63,6 @@ impl WorthQueryApplicationOutputRole for CreatedPersonalAccountOutput {
     const NAME: &'static str = "account";
 }
 
-// The decision creates ordinal zero: `operation:` + 64 hex digits + `:0`.
-// Candidate keys have exact-length allocations; the ID codec retains capacity 83.
-const CREATED_ACCOUNT_ID_BYTES: usize = "operation:".len() + 64 + ":0".len();
-const CREATED_ACCOUNT_KEY_BYTES: usize = "bank-account:".len() + CREATED_ACCOUNT_ID_BYTES;
-const INSTITUTION_LINK_KEY_BYTES: usize = "institution-account:".len() + CREATED_ACCOUNT_ID_BYTES;
-const OWNER_LINK_KEY_BYTES: usize = "personal-owner:".len() + CREATED_ACCOUNT_ID_BYTES;
-
-// Five single-field locators retain their aspect/field text and one FieldKey each.
-const CREATED_ACCOUNT_FIELD_LOCATOR_BYTES: usize = 5 * std::mem::size_of::<
-    worth_foundational::facade::FieldKey,
->() + "Identity".len()
-    + "AccountIdentity".len()
-    + "AccountProfile".len()
-    + "AccountDisplayName".len()
-    + "AccountState".len()
-    + "AccountingRevision".len()
-    + "AccountProfile".len()
-    + "Kind".len()
-    + "AccountState".len()
-    + "Status".len();
-
-pub const CREATE_PERSONAL_ACCOUNT_RETAINED_BYTES: usize =
-    // Created effect, uniqueness key and created reference.
-    3 * CREATED_ACCOUNT_KEY_BYTES + "Account".len()
-    // Each relation retains its effect/uniqueness key and created endpoint.
-    + 2 * INSTITUTION_LINK_KEY_BYTES + CREATED_ACCOUNT_KEY_BYTES
-    + 2 * OWNER_LINK_KEY_BYTES + CREATED_ACCOUNT_KEY_BYTES
-    // Encoded ID, maximum name, kind/status; UInt64 revision has no owned allocation.
-    + CREATED_ACCOUNT_FIELD_LOCATOR_BYTES + 83 + AccountName::MAX_BYTES
-    + "personal".len() + "open".len()
-    // Expected role plus bound role/entity/created reference.
-    + 2 * <CreatedPersonalAccountOutput as WorthQueryApplicationOutputRole>::NAME.len() + "Account".len()
-    + CREATED_ACCOUNT_KEY_BYTES;
-
 impl ApplicationMutationOutputContract<BankSchema> for CreatePersonalAccountOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
         &[<CreatedPersonalAccountOutput as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
@@ -180,8 +146,6 @@ worth_query_mutation_binding!(
         NoApplicationUnit,
     field InstitutionIdentityField::reference(),
     value institution_scope,
-    candidates creates 1, deletes 0, links 2, unlinks 0, writes 5, emits 0,
-    resources retained_representation_bytes CREATE_PERSONAL_ACCOUNT_RETAINED_BYTES
 );
 
 fn derive_identity<const N: usize>(

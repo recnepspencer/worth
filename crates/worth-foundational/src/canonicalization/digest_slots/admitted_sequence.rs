@@ -43,5 +43,5 @@ fn prepare_sequence(
     let evidence = CanonicalDigestInputEvidence::SingleSequence(
         CanonicalDigestBasisSequence::from_owned_sequence(sequence),
     );
-    prepare_canonical_digest_derivation(slot.into_metadata(), evidence, budget, Some(admit))
+    prepare_canonical_digest_derivation(slot.into_metadata(), evidence, Some(budget), Some(admit))
 }

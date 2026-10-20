@@ -113,12 +113,12 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
             return Err(WorthQueryBranchAdoptionPreparationDenial::MigrationSourceChanged);
         }
     }
-    let (candidate_funding, migration_description, migration_batch) = match migration {
+    let (migration_description, migration_batch) = match migration {
         Some(candidate) => {
-            let (_, _, description, batch, funding) = candidate.into_parts();
-            (funding, Some(description), Some(batch))
+            let (_, _, description, batch) = candidate.into_parts();
+            (Some(description), Some(batch))
         }
-        None => (None, None, None),
+        None => (None, None),
     };
     let migrated_entities = migration_batch
         .as_ref()
@@ -270,7 +270,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         selected_entity_count,
         selection_work_units,
         migration: migration_description,
-        candidate_funding,
+
         custody,
         publication,
         recovery,

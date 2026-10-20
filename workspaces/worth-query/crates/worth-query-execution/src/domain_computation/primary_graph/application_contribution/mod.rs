@@ -75,9 +75,8 @@ pub use producer::{
     WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputReadCleanup,
     WorthQueryOutputReadCloseDenial, WorthQueryProducerApplicability,
-    WorthQueryProducerDemandResources, WorthQueryProducerInputReuseContract,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily, WorthQueryProducerResourceQuoteDenial,
+    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
     WorthQuerySelectedApplicationProducer, WorthQueryWorkflowAssessmentOutputFamily,
     WorthQueryWorkflowAssessmentPosture,
 };

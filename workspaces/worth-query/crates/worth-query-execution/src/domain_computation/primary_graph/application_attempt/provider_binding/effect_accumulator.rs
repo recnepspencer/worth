@@ -9,7 +9,7 @@ use super::effect_lowering::{
     WorthQueryLoweredProviderEffect,
 };
 use super::{
-    retained_bytes_denial, WorthQueryAdmittedApplicationEmissionBatch,
+    invalid_emission_denial, WorthQueryAdmittedApplicationEmissionBatch,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission;
@@ -37,7 +37,7 @@ pub(super) struct WorthQueryRegisteredProviderEffects {
     output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     // Last to drop: physical backing releases before its retained grant.
-    candidate_funding: Option<Arc<super::super::effect_program::CandidateFunding>>,
+
 }
 
 impl<'facts, 'layout, Facts: FactSequence + ?Sized>
@@ -89,8 +89,6 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
 
     pub(super) fn finish(
         self,
-        expected_emission_retained_bytes: u64,
-        emission_retained_bytes_ceiling: u64,
         output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     ) -> Result<WorthQueryRegisteredProviderEffects, WorthQueryApplicationAttemptDenial> {
         let (intents, emissions, expected_steps) = materialize_commit_projections(self.lowered)?;
@@ -98,16 +96,9 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
             WorkerIntentBatch::new("application-provider-attempt"),
             WorkerIntentBatch::push,
         );
-        let emissions = WorthQueryAdmittedApplicationEmissionBatch::admit(
-            emissions,
-            emission_retained_bytes_ceiling,
-        )
-        .map_err(|_| retained_bytes_denial())?;
-        if emissions.retained_bytes() != expected_emission_retained_bytes {
-            return Err(retained_bytes_denial());
-        }
+        let emissions = WorthQueryAdmittedApplicationEmissionBatch::admit(emissions)
+            .map_err(|_| invalid_emission_denial())?;
         Ok(WorthQueryRegisteredProviderEffects {
-            candidate_funding: None,
             expected_steps,
             batch,
             emissions,
@@ -119,15 +110,6 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
 }
 
 impl WorthQueryRegisteredProviderEffects {
-    pub(super) fn retain_candidate_funding(
-        &mut self,
-        funding: Option<Arc<super::super::effect_program::CandidateFunding>>,
-    ) {
-        for emission in self.emissions.emissions_mut() {
-            emission.retain_candidate_funding(funding.clone());
-        }
-        self.candidate_funding = funding;
-    }
     pub(in crate::domain_computation::primary_graph) fn native_publication_roles(
         &self,
     ) -> impl ExactSizeIterator<Item = (&str, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture, &str, &worth_relational::facade::transactions::EntityReference)> + Clone{
@@ -220,7 +202,6 @@ impl WorthQueryRegisteredProviderEffects {
             provider.bind_application_dispatch_outbox(batch, dispatch_basis, mutation_partition)?;
         Ok((
             Self {
-                candidate_funding: self.candidate_funding,
                 expected_steps: self.expected_steps,
                 batch,
                 emissions: self.emissions,
@@ -239,10 +220,7 @@ impl WorthQueryRegisteredProviderEffects {
         &self,
         commit: &worth_relational::facade::transactions::CommitResult,
     ) -> super::super::effect_program::WorthQueryApplicationOutputCorrespondence {
-        self.output_correspondence
-            .clone()
-            .seal(commit)
-            .retain_candidate_funding(self.candidate_funding.clone())
+        self.output_correspondence.clone().seal(commit)
     }
 }
 

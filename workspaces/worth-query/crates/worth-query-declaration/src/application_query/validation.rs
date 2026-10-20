@@ -7,10 +7,9 @@ mod disclosure;
 mod result_shape;
 use result_shape::{
     contains_entity as shape_contains_entity, continuation_parent_path_is_exact,
-    counts as count_shape, field_by_slot as shape_field_by_slot,
-    many_relation_count as count_many_relations, query_is_consistent as shape_query_is_valid,
-    relation_by_slot as shape_relation_by_slot, relation_parent_entity,
-    slots_are_unique as shape_slots_are_unique,
+    field_by_slot as shape_field_by_slot, many_relation_count as count_many_relations,
+    query_is_consistent as shape_query_is_valid, relation_by_slot as shape_relation_by_slot,
+    relation_parent_entity, slots_are_unique as shape_slots_are_unique,
 };
 
 mod portable_identity;
@@ -42,7 +41,6 @@ pub enum ApplicationQueryDefinitionDenial {
     ContinuationRequiresSingleRoot,
     ContinuationRequiresSingleManyCollection,
     InvalidRootPath,
-    DependencyCeilingExceeded,
     PreviewLaneWithoutBasisSupport,
     LiveLaneWithoutCauseContract,
     LiveCauseContractWithoutLane,
@@ -69,7 +67,6 @@ pub(crate) fn validate_portable_application_query_freshly(
     validate_ordering(definition)?;
     validate_continuation(definition)?;
     validate_live_cause(definition)?;
-    validate_dependency_ceiling(definition)?;
     if definition.lanes().preview_enabled() && !definition.basis_support().preview() {
         return Err(ApplicationQueryDefinitionDenial::PreviewLaneWithoutBasisSupport);
     }
@@ -221,31 +218,6 @@ fn validate_ordering(
         {
             return Err(ApplicationQueryDefinitionDenial::OrderingResultFieldMismatch);
         }
-    }
-    Ok(())
-}
-
-fn validate_dependency_ceiling(
-    definition: &WorthQueryPortableApplicationQueryParts,
-) -> Result<(), ApplicationQueryDefinitionDenial> {
-    let shape_counts = count_shape(definition.result_shape());
-    let root_path_depth = definition
-        .root_paths()
-        .iter()
-        .map(|path| path.steps().len())
-        .max()
-        .unwrap_or(0);
-    let root_path_relations = definition
-        .root_paths()
-        .iter()
-        .map(|path| path.steps().len())
-        .sum::<usize>();
-    let ceiling = definition.dependency_ceiling();
-    if shape_counts.0.max(root_path_depth) > ceiling.maximum_traversal_depth()
-        || shape_counts.1.saturating_add(root_path_relations) > ceiling.maximum_relation_count()
-        || shape_counts.2 > ceiling.maximum_projected_field_count()
-    {
-        return Err(ApplicationQueryDefinitionDenial::DependencyCeilingExceeded);
     }
     Ok(())
 }

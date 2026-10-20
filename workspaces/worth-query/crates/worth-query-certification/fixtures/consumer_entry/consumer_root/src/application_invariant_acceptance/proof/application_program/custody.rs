@@ -1,4 +1,3 @@
-use std::num::NonZeroUsize;
 use worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 
 use worth_query_host::facade::application_entry::{
@@ -265,10 +264,7 @@ fn prepare<'a>(
 }
 
 fn controls() -> WorthQueryOutputDemandControls {
-    WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    )
+    WorthQueryOutputDemandControls::default()
 }
 
 fn settle<'a>(

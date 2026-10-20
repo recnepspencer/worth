@@ -111,13 +111,6 @@ where
         .into());
     }
     let (source, observed_source) = proof.into_parts();
-    let resources = this.provider.demand_resources(&source).map_err(|cause| {
-        denial(
-            WorthQueryOutputDemandDenialKind::ProducerResourceQuote(cause),
-            Binding::IDENTITY,
-        )
-    })?;
-    super::super::super::demand::validate_retained_resources(resources, Binding::IDENTITY, limits)?;
     let input = this.provider.operation_input(&source);
     let prepared =
         super::super::selected_public::prepare_selected_public_mutation::<Schema, Binding>(
@@ -145,7 +138,6 @@ where
         observed_source,
         input,
         matched_predecessors,
-        resources,
         successor_of,
         commit_authority,
         edition,

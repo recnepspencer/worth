@@ -1,11 +1,10 @@
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryInfluenceContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryOptionalResultFieldRef,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-    ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
-    TypedApplicationQueryResultShape,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+    ApplicationQueryInfluenceContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryOptionalResultFieldRef, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ForwardResultTraversal,
+    ManyResults, TypedApplicationQueryResultShape,
 };
 use worth_query_declaration::facade::application_schema::ApplicationEncodedScalarValue;
 use worth_query_declaration::worth_query_application_query;
@@ -88,7 +87,6 @@ pub(super) fn governed_account_omission_definition() -> ApplicationQueryDefiniti
         .scope(Account::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 1, 5))
         .disclosure(disclosure)
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned().with_preview())
         .lanes(

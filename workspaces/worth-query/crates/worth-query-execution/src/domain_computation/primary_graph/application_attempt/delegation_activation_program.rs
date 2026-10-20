@@ -1,5 +1,3 @@
-use worth_query_declaration::facade::domain_computation::WorthQueryResourceDimension;
-
 mod child_identity;
 
 use super::effect_program::WorthQueryApplicationRealizedEffect;
@@ -51,21 +49,9 @@ impl<Schema, Operation, Input, Scope>
             .ok_or_else(|| transition_required(self.admission.operation()))?;
         let effects = activation_effects(binding, self.admission.allowed_graph_contract())?;
         self.observe_created_unique_values(execution, &effects, allocation_policy)?;
-        let emission_retained_bytes_ceiling = self
-            .admission
-            .allowed_graph_contract()
-            .execution_strategy()
-            .expect("installed application operation has exactly one execution strategy")
-            .envelope()
-            .resource_ceiling(WorthQueryResourceDimension::RetainedBytes);
         let program = WorthQueryApplicationEffectProgram {
-            candidate_funding: None,
-            candidate_requirements: None,
-            effect_backing_memory: None,
             read_set: self,
             effects,
-            emission_retained_bytes: 0,
-            emission_retained_bytes_ceiling,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
             output_correspondence: Default::default(),
@@ -110,7 +96,7 @@ pub(in crate::domain_computation::primary_graph) fn validate_delegation_activati
         .ok_or_else(|| transition_required(program.read_set.admission.operation()))?;
     let expected =
         activation_effects(binding, program.read_set.admission.allowed_graph_contract())?;
-    if program.emission_retained_bytes == 0 && effects_are_exact(&program.effects, &expected) {
+    if effects_are_exact(&program.effects, &expected) {
         Ok(())
     } else {
         Err(program_mismatch(program.read_set.admission.operation()))

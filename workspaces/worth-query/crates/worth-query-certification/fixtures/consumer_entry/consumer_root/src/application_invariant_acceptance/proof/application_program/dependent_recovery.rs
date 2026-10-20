@@ -1,5 +1,3 @@
-use std::num::NonZeroUsize;
-
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
     WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
@@ -51,10 +49,7 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source edit must be fresh")
     };
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let mut started = performed
         .start_required_outputs(&world.application, &request, controls)
         .unwrap_or_else(|failure| panic!("required outputs start: {:?}", failure.denial()));

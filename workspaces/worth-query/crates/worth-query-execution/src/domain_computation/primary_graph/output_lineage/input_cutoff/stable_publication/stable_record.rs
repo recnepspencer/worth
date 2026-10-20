@@ -16,7 +16,6 @@ use crate::domain_computation::primary_graph::{
     },
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationObservedFact as Fact,
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind as Kind,
-    WorthQueryProducerDemandResources,
 };
 
 impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
@@ -32,7 +31,6 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
         mut self,
         fresh: BoundStableObservedSourceFacts,
         operation: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-        resources: WorthQueryProducerDemandResources,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedStableLineagePublication<'lane, 'selected>, WorthQueryOutputDemandDenial>
@@ -135,7 +133,6 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
                 RecordedOutputMutable::new(
                     None,
                     Some(selected_row.computation_source.retain_facts(facts.clone())),
-                    Some(resources),
                     selected_row
                         .mutable
                         .lock()

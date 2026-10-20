@@ -1,9 +1,9 @@
 use crate::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
-    ApplicationQueryDependencyCeiling, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
-    ApplicationQueryParameterRef, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultShapeBuilder, ErasedApplicationQueryDefinition,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryOrderingDirection, ApplicationQueryParameterRef,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
+    ErasedApplicationQueryDefinition,
 };
 
 use super::{
@@ -48,7 +48,6 @@ struct QueryControlFixture {
     output: &'static str,
     parameter: &'static str,
     cardinality: ApplicationQueryCardinality,
-    ceiling: ApplicationQueryDependencyCeiling,
     disclosure: ApplicationQueryDisclosureContract,
     basis: ApplicationQueryBasisSupport,
     lanes: ApplicationQueryLaneEligibility,
@@ -64,7 +63,6 @@ impl QueryControlFixture {
             output: "value",
             parameter: "parameter",
             cardinality: ApplicationQueryCardinality::ExactlyOne,
-            ceiling: ApplicationQueryDependencyCeiling::bounded(0, 0, 1),
             disclosure: ApplicationQueryDisclosureContract::public(),
             basis: ApplicationQueryBasisSupport::current_and_pinned(),
             lanes: ApplicationQueryLaneEligibility::one_shot(),
@@ -95,15 +93,6 @@ fn every_scalar_query_control_is_identity_bearing() {
     let mut changed = baseline.clone();
     changed.cardinality = ApplicationQueryCardinality::OptionalOne;
     variants.push(("cardinality", changed));
-    let mut changed = baseline.clone();
-    changed.ceiling = ApplicationQueryDependencyCeiling::bounded(1, 0, 1);
-    variants.push(("traversal ceiling", changed));
-    let mut changed = baseline.clone();
-    changed.ceiling = ApplicationQueryDependencyCeiling::bounded(0, 1, 1);
-    variants.push(("relation ceiling", changed));
-    let mut changed = baseline.clone();
-    changed.ceiling = ApplicationQueryDependencyCeiling::bounded(0, 0, 2);
-    variants.push(("projection ceiling", changed));
     let mut changed = baseline.clone();
     changed.disclosure = ApplicationQueryDisclosureContract::installed_policy("private");
     variants.push(("disclosure posture", changed));
@@ -176,7 +165,6 @@ fn definition(fixture: &QueryControlFixture) -> ErasedApplicationQueryDefinition
         .scope(scope)
         .result_shape(shape)
         .cardinality(fixture.cardinality)
-        .dependency_ceiling(fixture.ceiling)
         .disclosure(fixture.disclosure.clone())
         .basis_support(fixture.basis)
         .lanes(fixture.lanes)

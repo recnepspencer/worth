@@ -1,7 +1,6 @@
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::collections::BTreeMap;
 
-use worth_query_declaration::facade::domain_computation::WorthQueryResourceDimension;
 use worth_query_installation::facade::{
     WorthQueryCompiledApplicationOperationContracts, WorthQueryOperationFieldTouchScope,
     WorthQueryOperationTouchScope,
@@ -45,13 +44,6 @@ impl<Schema, Operation, Input, Scope>
             self.admission.allowed_graph_contract(),
         )?;
         validate_target(binding, target, &self.facts, &self.admission)?;
-        let emission_retained_bytes_ceiling = self
-            .admission
-            .allowed_graph_contract()
-            .execution_strategy()
-            .expect("installed application operation has exactly one execution strategy")
-            .envelope()
-            .resource_ceiling(WorthQueryResourceDimension::RetainedBytes);
         let effect = WorthQueryApplicationRealizedEffect::UpdateEntity {
             entity: binding.target_entity().to_owned(),
             entity_id: target.entity_id(),
@@ -59,13 +51,8 @@ impl<Schema, Operation, Input, Scope>
         };
         Ok(WorthQueryCapabilityRevocationProgram {
             program: WorthQueryApplicationEffectProgram {
-                candidate_funding: None,
-            candidate_requirements: None,
-            effect_backing_memory: None,
                 read_set: self,
                 effects: vec![effect],
-                emission_retained_bytes: 0,
-                emission_retained_bytes_ceiling,
                 conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
             output_correspondence: Default::default(),

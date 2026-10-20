@@ -54,8 +54,6 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     DuplicateEffectKey,
     ConflictingEffectStep,
     CandidateCapacityExceeded,
-    CandidateReservationExceeded,
-    RetainedEffectBytesExceeded,
     ExternalEffectPayloadProjectionRejected,
     ForeignConditionalDefinitionChange,
     DuplicateConditionalDefinitionChange,
@@ -173,7 +171,6 @@ pub struct WorthQueryApplicationAttemptDenial {
 enum AttemptDenialCause {
     OutputObservation(Box<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop>),
     None,
-    CandidateMemory(worth_execution::MemoryLimitDenial),
     RelationalExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     NativeQueryRead(Box<worth_relational::facade::runtime::QueryReadExecutionStop>),
     RetainedSource(Box<super::retained_decision_facts::StoreDenial>),
@@ -384,5 +381,3 @@ mod native_query_cause;
 mod request_read;
 
 mod capacity;
-
-mod candidate_backing;

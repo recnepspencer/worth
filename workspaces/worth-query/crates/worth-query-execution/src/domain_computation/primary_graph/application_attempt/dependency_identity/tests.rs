@@ -21,16 +21,7 @@ fn dependency_identity(
     ),
     (),
 > {
-    super::dependency_identity(declared_key, facts, 4 * 1_024 * 1_024)
-}
-
-#[test]
-fn producer_dependency_identity_rejects_an_insufficient_host_byte_budget() {
-    let fact = WorthQueryApplicationObservedFact::SourceEntity {
-        entity_id: EntityId::new(PartitionId::main(), 41, 1),
-    };
-    assert!(super::dependency_identity([9; 32], std::slice::from_ref(&fact), 1).is_err());
-    assert!(super::dependency_identity([9; 32], &[fact], 4 * 1_024).is_ok());
+    super::dependency_identity(declared_key, facts)
 }
 
 #[test]
@@ -163,7 +154,7 @@ fn indexed_selection_remains_in_the_complete_reusable_fact_set() {
 }
 
 #[test]
-fn dependency_identity_budget_covers_the_admitted_dependency_set() {
+fn dependency_identity_accepts_a_large_real_dependency_set_without_a_caller_budget() {
     let facts = (0..4_096)
         .map(|slot| WorthQueryApplicationObservedFact::SourceEntity {
             entity_id: EntityId::new(PartitionId::main(), slot, 1),

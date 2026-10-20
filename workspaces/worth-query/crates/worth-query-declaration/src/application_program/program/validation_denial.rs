@@ -29,6 +29,7 @@ pub enum ApplicationProgramValidationDenialKind {
     AmbiguousCollectionComputation,
     CollectionComputationNotPartitioned,
     CanonicalRevisionBudgetExceeded,
+    CanonicalRevisionUnavailable,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

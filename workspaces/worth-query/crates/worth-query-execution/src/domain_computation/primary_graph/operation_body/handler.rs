@@ -5,7 +5,7 @@ use super::super::{
 use super::{BodyFieldExpectation, WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial};
 use std::marker::PhantomData;
 use worth_query_declaration::facade::application_operation::{
-    ApplicationCandidateRequirements, ApplicationMutationBinding, ApplicationMutationScopeBinding,
+    ApplicationMutationBinding, ApplicationMutationScopeBinding,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyProgram,
@@ -147,16 +147,6 @@ where
             }),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &Binding::Input,
-        _: &Binding::Decision,
-    ) -> ApplicationCandidateRequirements {
-        Binding::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

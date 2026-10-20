@@ -25,7 +25,6 @@ use super::entry_edit::{EntryEdit, EntryEditBinding, EntryEditHandler};
 use super::facts::{self, Entry, EntryData, Graph, InputDenial, Reader, RegionEntry, Set};
 use super::output_producer::{
     RegionOutputDemand, RegionOutputProducer, RegionOutputProvider, RegionOutputReadiness,
-    DECISION_FACT_BUDGET,
 };
 use super::region_output::{
     RegionOutputBinding, RegionOutputHandler, TotalRegionOutput, LARGEST_SET,
@@ -68,7 +67,6 @@ const WORK_PER_ENTRY: usize = 512;
 /// The input's digest.
 const WORK_BESIDE_ENTRIES: usize = 4_096;
 /// The width every other operation of the program fits, the host's default.
-const WIDTH_BESIDE_DECISION: usize = 4_096;
 
 /// The totals of one region output, declared for the largest set its
 /// decision reads.

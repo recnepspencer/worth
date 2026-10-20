@@ -1,9 +1,8 @@
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryInfluenceContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryResultShapeBuilder,
-    TypedApplicationQueryResultShape,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+    ApplicationQueryInfluenceContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryResultShapeBuilder, TypedApplicationQueryResultShape,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationEncodedScalarValue, ApplicationStructuredValueBinding,
@@ -203,7 +202,6 @@ where
         .scope(Account::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 2))
         .disclosure(disclosure)
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

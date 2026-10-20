@@ -1,8 +1,8 @@
 use worth_foundational::facade::{
     canonical_basis_value_for_aspect_value, canonicalization, prepare_canonical_basis_sequence,
     CanonicalBasisDomain, CanonicalBasisEntry, CanonicalBasisEntryKind, CanonicalBasisLocus,
-    CanonicalBasisValue, CanonicalDigestAlgorithmId, CanonicalDigestId, CanonicalDigestWorkBudget,
-    CanonicalIntegerWidth, CanonicalizationRuleVersion,
+    CanonicalBasisValue, CanonicalDigestAlgorithmId, CanonicalDigestId, CanonicalIntegerWidth,
+    CanonicalizationRuleVersion,
 };
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 use worth_relational::facade::identity::{EntityId, RelationId};
@@ -24,7 +24,6 @@ const RULE_VERSION: &str = "worth-query-application-producer-dependencies-v1";
 const INDEX_GUARD_RULE_VERSION: &str =
     "worth-query-application-producer-dependencies-v2-index-definition";
 const LINEAGE_RULE_VERSION: &str = "worth-query-application-producer-lineage-v2-content-tree";
-const MAXIMUM_LINEAGE_CANONICAL_BYTES: usize = 4 * 1_024 * 1_024;
 
 /// One logical ordinal, independently of payload chunking or edit history.
 pub(super) fn fact_entries(
@@ -71,11 +70,7 @@ pub(super) fn lineage_identity(
             CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(identity))
         }),
     );
-    derive_identity(
-        LINEAGE_RULE_VERSION,
-        entries,
-        MAXIMUM_LINEAGE_CANONICAL_BYTES,
-    )
+    derive_identity(LINEAGE_RULE_VERSION, entries)
 }
 
 fn append_fact(

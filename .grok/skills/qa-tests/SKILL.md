@@ -14,6 +14,30 @@ Read the governing specification, relevant production code,
 `docs/coding-guidelines/qa_review_guide.md`. Trace setup, action, observation,
 and teardown rather than trusting test names.
 
+## Test behavior, not speculative resource budgets
+
+Do not require work-counter, candidate-budget, retained-byte, mutation-quote,
+reservation-ledger, or one-byte-short exhaustion matrices for ordinary modeling
+and publication. Such tests need an explicit resource-admission product
+requirement or a measured resource failure that actually needs accounting.
+Hypothetical exhaustion and a desire for more complete accounting do not qualify.
+Do not expand these suites or make them a milestone gate by default.
+
+When unnecessary accounting is removed, remove or rewrite its causally affected
+tests rather than preserving the mechanism to satisfy old assertions. Retain
+meaningful evidence for geometry, currentness/invalidation, authority, atomic
+publication, cancellation, and ordinary failure handling. Include a focused
+positive case showing the real authoring operation succeeds without a caller
+supplying resource estimates or an arbitrary work ceiling; do not replace this
+with another bookkeeping certification system.
+
+Measure iteration cost and investigate actual bottlenecks. Favor focused tests
+of invalidation, reuse, partition independence, and concurrency when affected.
+Semantic cardinalities, revisions, termination conditions, checked arithmetic,
+and simple diagnostics are not speculative admission accounting. Preserve them
+when they serve real correctness or diagnosis. Reuse accepted evidence and
+avoid broad exhaustion campaigns or repeated full builds after each edit.
+
 ## Choose the execution lane
 
 - **Focused:** the reproducer, affected owner tests, and the smallest honest

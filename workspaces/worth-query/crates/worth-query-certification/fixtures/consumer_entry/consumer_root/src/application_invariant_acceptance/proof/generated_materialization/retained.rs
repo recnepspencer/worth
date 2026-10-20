@@ -3,7 +3,7 @@ use super::super::{
     length, output_correspondence::observed_source, source_version, ProgramApplication, Request,
 };
 use crate::ConsumerSchema;
-use std::num::NonZeroUsize;
+
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryRequestScope,
     application_entry::{
@@ -130,8 +130,5 @@ pub(super) fn preserved_outputs_remain_read_only(
 }
 
 fn controls() -> WorthQueryOutputDemandControls {
-    WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    )
+    WorthQueryOutputDemandControls::default()
 }

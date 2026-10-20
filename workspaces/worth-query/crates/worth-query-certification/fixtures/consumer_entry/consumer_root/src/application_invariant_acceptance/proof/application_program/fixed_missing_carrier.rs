@@ -321,10 +321,7 @@ fn fixed_missing_carrier_direct_query_promotion_retains_real_refusal() {
                 .start_required_outputs(
                     &world.application,
                     &request,
-                    WorthQueryOutputDemandControls::new(
-                        NonZeroUsize::new(4096).unwrap(),
-                        NonZeroUsize::new(8192).unwrap(),
-                    ),
+                    WorthQueryOutputDemandControls::default(),
                 )
                 .unwrap_or_else(|(_, cause)| panic!("valid output owner: {cause:?}"));
             super::super::settle(|| {

@@ -47,7 +47,6 @@ impl DeclaredProducerBinding {
             applicability: Binding::APPLICABILITY.to_vec(),
             supported: Binding::OutputFamily::SUPPORTED.to_vec(),
             required_invariants: Binding::REQUIRED_INVARIANTS.to_vec(),
-            resource_policy: Binding::RESOURCE_POLICY.to_owned(),
             reuse_policy: Binding::REUSE_POLICY.to_owned(),
             input_reuse: Binding::INPUT_REUSE,
             binding_type: TypeId::of::<Binding>(),
@@ -93,7 +92,6 @@ impl DeclaredProducerBinding {
             && self.applicability == expected.applicability
             && self.supported == expected.supported
             && self.required_invariants == expected.required_invariants
-            && self.resource_policy == expected.resource_policy
             && self.reuse_policy == expected.reuse_policy
             && self.input_reuse == expected.input_reuse
             && self.binding_type == expected.binding_type

@@ -169,7 +169,5 @@ impl ApplicationDerivedArtifact<Schema, QuantityFeature> for QuantityArtifact {
             <PlanarSourceAdjustmentBinding<Schema> as ApplicationMutationBinding<Schema>>::IDENTITY,
         )];
     const REUSE_RULE: &'static str = "native-source-publication";
-    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(Some(1_000_000), Some(4 * 1024 * 1024));
     const STOPPED_OUTCOME: &'static str = "availability-owner-stopped";
 }

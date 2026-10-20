@@ -4,7 +4,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use worth_query_host::facade::{declaration::application_operation::*, primary_graph::*};
+use worth_query_host::facade::primary_graph::*;
 #[derive(Default)]
 pub struct Contacts {
     decision: AtomicUsize,
@@ -50,15 +50,7 @@ impl OperationHandler<SourceOnlyRetentionSchema, SetRetentionBinding> for Retent
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
     }
-    fn candidate_requirements(
-        &self,
-        _: &SetRetentionInput,
-        _: &WorthQueryInvariantMutationTarget<SourceOnlyRetentionSchema, Document>,
-    ) -> ApplicationCandidateRequirements {
-        SetRetentionBinding::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
-    }
+
     fn build_candidate(
         &self,
         input: &SetRetentionInput,

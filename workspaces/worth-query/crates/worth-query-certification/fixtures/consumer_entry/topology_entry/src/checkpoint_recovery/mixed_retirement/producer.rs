@@ -5,7 +5,7 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 use worth_query_consumer_values::{PlanarVertex, PlanarVertexReplacement};
-use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
+
 use worth_query_host::facade::application_contribution::*;
 
 pub(super) struct ReplacementFamily;
@@ -63,7 +63,6 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.mixed-replacement-producer.v1";
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-    const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
         Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
@@ -95,14 +94,5 @@ impl<Schema: TopologySchemaBinding>
     fn idempotency_key(&self, _: &PlanarReadResult, identity: &[u8; 32]) -> u64 {
         CONTACTS.fetch_add(1, Ordering::SeqCst);
         planar_source_key(identity) ^ 0x9176_7301
-    }
-    fn demand_resources(
-        &self,
-        _: &PlanarReadResult,
-    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
-        Ok({
-            CONTACTS.fetch_add(1, Ordering::SeqCst);
-            planar_producer_resources()
-        })
     }
 }

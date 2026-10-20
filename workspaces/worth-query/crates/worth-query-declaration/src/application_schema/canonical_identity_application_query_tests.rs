@@ -1,10 +1,10 @@
 use crate::{
     application_query::{
         ApplicationQueryBasisSupport, ApplicationQueryCardinality,
-        ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-        ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-        ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ExactlyOneResult,
-        ForwardResultTraversal, ManyResults, OptionalOneResult,
+        ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+        ApplicationQueryLaneEligibility, ApplicationQueryResultRelationRef,
+        ApplicationQueryResultShapeBuilder, ExactlyOneResult, ForwardResultTraversal, ManyResults,
+        OptionalOneResult,
     },
     application_schema::{ApplicationEntityRef, ApplicationRelationRef, ApplicationSchemaMember},
 };
@@ -117,7 +117,6 @@ fn application_query_with_relation(
         .scope(entity)
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 1, 0))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

@@ -45,7 +45,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 )
             })?;
         let waiting = || OwnStages::Answer(WorthQueryOutputDemandAdvance::Pending);
-        let disclosed_value = disclosure.value();
         let disclosed_source = disclosure.source();
         if let SourceGuard::Replaced = self.prepare_progression_entry(
             demand,
@@ -76,7 +75,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             self.refresh_output_demand(
                 &execution,
                 demand,
-                disclosed_value,
+                disclosure.value(),
                 disclosed_source.clone(),
                 None,
                 request_admission,
@@ -84,17 +83,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             return Ok(ExecutionPreparation::Reached(OwnStages::Refreshed(
                 disclosure,
             )));
-        }
-        if schedule_progression.is_selected() {
-            // Validate the immutable selected input before changing registry state.
-            entry::validate_progression_resources(
-                &mut demand.resources,
-                &mut demand.resources_validated,
-                disclosed_value,
-                entry,
-                &demand.selected.identity,
-                demand.limits,
-            )?;
         }
         let interest = demand
             .interest
@@ -274,18 +262,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 return Err(denial);
             }
         };
-        if !schedule_progression.is_selected() {
-            entry::validate_resources_after_begin(
-                &self.output_demands,
-                interest,
-                &mut demand.resources,
-                &mut demand.resources_validated,
-                disclosed_value,
-                entry,
-                &demand.selected.identity,
-                demand.limits,
-            )?;
-        }
         let published_mode = if let Some(mode) = selected_published_mode.take() {
             mode
         } else {
@@ -302,14 +278,12 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             required_output.reuse_live_output_only();
         }
         let required_execution = required_output.prepare_execution(published_mode);
-        let retained_resources = demand.resources;
         let runtime_identity = self.runtime.authority_identity().as_u64();
         let root = demand.observed_source.source_root();
         let finish = move |result, readiness| {
             super::execution_completion::finish(
                 result,
                 selected_execution_finish,
-                retained_resources,
                 performed,
                 readiness,
                 runtime_identity,

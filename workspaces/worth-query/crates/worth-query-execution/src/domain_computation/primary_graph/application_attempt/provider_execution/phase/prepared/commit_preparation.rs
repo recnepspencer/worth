@@ -29,13 +29,8 @@ where
         aftermath_causality,
     } = request;
     let WorthQueryApplicationEffectProgram {
-        candidate_funding,
-        mut candidate_requirements,
-        mut effect_backing_memory,
         read_set,
         mut effects,
-        emission_retained_bytes,
-        emission_retained_bytes_ceiling,
         conditional_definition,
         effect_posture,
         output_correspondence,
@@ -131,7 +126,7 @@ where
         return terminal(outcome);
     }
     let lifecycle = match crate::domain_computation::primary_graph::application_attempt::signing_lifecycle::expand(
-        &admission, &lease, &mut effects, &mut effect_backing_memory, &mut candidate_requirements, read_set.facts,
+        &admission, &lease, &mut effects, read_set.facts,
         phase.execution_for(&application.product_runtime).expect("phase readmitted for this runtime"),
         *idempotency.key_identity(),
     ) { Ok(lifecycle) => lifecycle, Err(outcome) => return terminal(outcome) };
@@ -164,7 +159,6 @@ where
             admission,
             lease,
             provider: WorthQueryProviderAttemptPreparation {
-                signing_lifecycle_memory: lifecycle.memory,
                 required_output_demand,
                 installed_read_scopes: read_set.installed_read_scopes,
                 effect_routes,
@@ -173,11 +167,6 @@ where
                 consumed_outputs: read_set.consumed_outputs,
                 application_effect_count: effects.len(),
                 effects,
-                candidate_funding,
-                effect_backing_memory,
-                candidate_requirements,
-                emission_retained_bytes,
-                emission_retained_bytes_ceiling,
                 preimage_demand,
                 conditional_definition,
                 effect_posture,

@@ -44,13 +44,6 @@ pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAt
 }
 
 impl WorthQueryPreparedApplicationProviderAttempt {
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn with_candidate_funding(
-        mut self,
-        funding: Option<std::sync::Arc<super::effect_program::CandidateFunding>>,
-    ) -> Self {
-        self.effects.retain_candidate_funding(funding);
-        self
-    }
     pub(in crate::domain_computation::primary_graph::application_attempt) fn with_required_output_demand(
         mut self,
         context: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
@@ -126,8 +119,6 @@ pub(super) fn prepare_provider_attempt<'layout>(
         crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
     >,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
-    expected_emission_retained_bytes: u64,
-    emission_retained_bytes_ceiling: u64,
     preimage_demand: Option<InstalledPreImageDemand>,
     conditional_definition: Option<
         crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition,
@@ -152,11 +143,7 @@ pub(super) fn prepare_provider_attempt<'layout>(
     for effect in effects {
         accumulator.add_effect(effect)?;
     }
-    let completed = accumulator.finish(
-        expected_emission_retained_bytes,
-        emission_retained_bytes_ceiling,
-        output_correspondence,
-    )?;
+    let completed = accumulator.finish(output_correspondence)?;
     Ok(WorthQueryPreparedApplicationProviderAttempt {
         required_output_demand: None,
         installed_read_scopes,
@@ -201,8 +188,6 @@ pub(super) fn prepare_program_migration_batch<'layout>(
     }
     accumulator
         .finish(
-            0,
-            0,
             super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate::default(),
         )?
         .into_migration_batch()
@@ -216,9 +201,9 @@ pub(super) fn progression_denial() -> WorthQueryApplicationAttemptDenial {
     )
 }
 
-pub(super) fn retained_bytes_denial() -> WorthQueryApplicationAttemptDenial {
+pub(super) fn invalid_emission_denial() -> WorthQueryApplicationAttemptDenial {
     WorthQueryApplicationAttemptDenial::new(
-        WorthQueryApplicationAttemptDenialKind::RetainedEffectBytesExceeded,
+        WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
         "application emission batch",
     )
 }

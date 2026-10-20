@@ -3,7 +3,6 @@
 //! trading numbers.
 
 use std::marker::PhantomData;
-use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
 use worth_query_decl::facade::{
@@ -219,11 +218,6 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.entry-edit.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.entry-edit-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.certification.entry-edit-command.v1";
-    const CANDIDATES: ApplicationCandidatePolicy =
-        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(160, 160, 320, 320, 800, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(1024 * 160 + 320 * 256),
-        ));
 
     fn scope_field() -> ApplicationFieldRef<
         Schema,
@@ -291,36 +285,6 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryEditBinding<Sc
             Ok(target) => HandlerResult::Completed(target),
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        input: &EntryEdit,
-        target: &EditTarget<Schema>,
-    ) -> ApplicationCandidateRequirements {
-        let unlinks = match target {
-            EditTarget::Delete(entries) => entries.iter().map(|(_, sets)| sets.len()).sum(),
-            _ => 2,
-        };
-        if input.count == 1 && unlinks <= 2 && input.sets.len() <= 2 {
-            return ApplicationCandidateRequirements::fixed_shape(
-                ApplicationCandidateCardinalityCeiling::fixed(1, 1, 2, 2, 5, 0),
-                ApplicationCandidateResourceCeiling::representation_bytes(1024),
-            );
-        }
-        ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(
-                input.count,
-                input.count,
-                input.count * input.sets.len().max(2),
-                unlinks,
-                input.count * 5,
-                0,
-            ),
-            ApplicationCandidateResourceCeiling::representation_bytes(
-                1024 * input.count + (unlinks + input.count * input.sets.len()) * 256,
-            ),
-        )
     }
 
     fn build_candidate(

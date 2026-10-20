@@ -60,9 +60,9 @@ pub use connection::{
     ApplicationOccurrenceConnectionBinding,
 };
 pub use derived_artifact::{
-    ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
-    ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationDerivedArtifact,
-    ApplicationDerivedArtifactDeclaration, ApplicationDerivedArtifactGovernance,
+    ApplicationArtifactDependency, ApplicationArtifactRetention, ApplicationArtifactSuccession,
+    ApplicationDerivedArtifact, ApplicationDerivedArtifactDeclaration,
+    ApplicationDerivedArtifactGovernance,
 };
 pub use derived_collection::{
     ApplicationCollectionCompleteness, ApplicationCollectionContributor,

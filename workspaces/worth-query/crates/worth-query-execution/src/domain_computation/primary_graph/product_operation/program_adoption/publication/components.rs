@@ -86,7 +86,6 @@ impl WorthQueryPreparedBranchAdoption {
             .request_for_owner(self.owner_identity)
             .expect("the adoption call opened on its retained owner identity");
         let Self {
-            candidate_funding,
             source,
             target,
             selected_entity_count,
@@ -127,7 +126,6 @@ impl WorthQueryPreparedBranchAdoption {
                         selected_entity_count,
                         migration,
                         custody,
-                        candidate_funding,
                         unpublished,
                         recovery,
                         disposition,

@@ -4,8 +4,8 @@ use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersi
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
     ApplicationInboundOccurrenceBinding, ApplicationInboundOccurrenceLimits,
-    ApplicationInboundOccurrenceProtocol, ApplicationRetainedEffectBinding,
-    StringApplicationValueBinding, U64ApplicationValueBinding,
+    ApplicationInboundOccurrenceProtocol, StringApplicationValueBinding,
+    U64ApplicationValueBinding,
 };
 use worth_query_declaration::facade::authentication::{
     WorthQueryExternalPrincipalIdentityBinding, WorthQueryPrincipalMappingStatusBinding,
@@ -67,11 +67,7 @@ impl worth_query_declaration::facade::application_schema::ApplicationStructuredV
         })
     }
 }
-impl ApplicationRetainedEffectBinding for NoticeBinding {
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        u64::try_from(value.0.len()).unwrap_or(u64::MAX)
-    }
-}
+
 impl ApplicationExternalEffectBinding for NoticeBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(
         BoundaryProtocolIdentity::new(PROTOCOL),

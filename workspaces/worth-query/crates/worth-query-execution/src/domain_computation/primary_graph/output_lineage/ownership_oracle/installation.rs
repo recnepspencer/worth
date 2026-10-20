@@ -4,12 +4,8 @@ use super::*;
 use crate::facade::application_installation::{
     in_memory_program, WorthQueryInMemoryApplicationLimits, WorthQueryProgramApplicationRuntime,
 };
-use crate::facade::runtime::WorthQueryApplicationCandidateResourceProfile;
 use std::sync::{atomic::AtomicUsize, Arc};
-use worth_query_decl::facade::{
-    application_operation::ApplicationMutationBinding, application_program::*,
-    application_schema::*,
-};
+use worth_query_decl::facade::{application_program::*, application_schema::*};
 
 worth_query_decl::facade::worth_query_application! {
     pub(super) OwnerSchema { owner: "worth.query.test.mixed-owner", version: (1, 0), contributions: [OwnerMembers], }
@@ -93,28 +89,12 @@ impl ApplicationProgramDefinition<OwnerSchema> for OwnerProgram {
 pub(super) type Application = WorthQueryProgramApplicationRuntime<OwnerSchema, OwnerProgram>;
 pub(super) const ANCHOR: &str = "owner-source:a";
 pub(super) fn install() -> Application {
-    let defaults = WorthQueryApplicationCandidateResourceProfile::default();
-    let required_bytes = u64::try_from(
-        <RegionOutputBinding<OwnerSchema> as ApplicationMutationBinding<OwnerSchema>>::CANDIDATES
-            .finite_requirements()
-            .expect("fixed candidate contract")
-            .resources()
-            .maximum_retained_representation_bytes(),
-    )
-    .expect("the real producer candidate requirement fits the host resource type");
-    let candidates = WorthQueryApplicationCandidateResourceProfile::policy(
-        defaults.maximum_items(),
-        defaults
-            .maximum_retained_representation_bytes()
-            .map(|bytes| bytes.max(required_bytes)),
-    )
-    .expect("the default host capacity and declared producer requirement are nonzero");
     in_memory_program(
         ApplicationProgramAuthoring::<OwnerSchema, OwnerProgram>::begin().validated_program().unwrap(),
         OwnerSchema::declaration().unwrap(), ((),),
         WorthQueryInMemoryApplicationLimits::new(
             crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
-            candidates, Default::default(),
+            Default::default(),
             worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development()),
         |_, graph, installed| {
             let binding = installed.principal_binding(ConsumerPrincipalBinding::reference()).unwrap();

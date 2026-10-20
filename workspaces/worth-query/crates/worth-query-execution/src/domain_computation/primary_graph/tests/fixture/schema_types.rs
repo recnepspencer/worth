@@ -2,8 +2,8 @@ use super::*;
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
-    ApplicationRetainedEffectBinding, ApplicationStructuredValueBinding,
-    ApplicationValueValidationDenial, StringApplicationValueBinding, U64ApplicationValueBinding,
+    ApplicationStructuredValueBinding, ApplicationValueValidationDenial,
+    StringApplicationValueBinding, U64ApplicationValueBinding,
 };
 use worth_query_declaration::facade::authentication::{
     WorthQueryExternalPrincipalIdentityBinding, WorthQueryPrincipalMappingStatusBinding,
@@ -95,13 +95,7 @@ worth_query_ability!(pub EditAccount scoped_to Account, in IdentityExecutionSche
 worth_query_ability!(pub ManageOwnership scoped_to Principal, in IdentityExecutionSchema);
 worth_query_policy!(pub AccountAccessPolicy in IdentityExecutionSchema);
 worth_query_declaration::worth_query_structured_value_binding!(pub AccountActivityBinding for String { identity: "worth.rust.string" });
-impl ApplicationRetainedEffectBinding for AccountActivityBinding {
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        u64::try_from(std::mem::size_of::<Self::Value>())
-            .unwrap_or(u64::MAX)
-            .saturating_add(u64::try_from(value.capacity()).unwrap_or(u64::MAX))
-    }
-}
+
 worth_query_effect!(pub AccountActivityEffect for IdentityExecutionSchema, payload AccountActivityBinding);
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -127,12 +121,6 @@ impl ApplicationStructuredValueBinding for RetainedStatusNoticeBinding {
     }
 }
 
-impl ApplicationRetainedEffectBinding for RetainedStatusNoticeBinding {
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        u64::try_from(value.0.len()).unwrap_or(u64::MAX)
-    }
-}
-
 impl ApplicationExternalEffectBinding for RetainedStatusNoticeBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(
         BoundaryProtocolIdentity::new("test.status-retention"),
@@ -154,11 +142,6 @@ worth_query_declaration::worth_query_portable_type!(
 );
 
 worth_query_declaration::worth_query_structured_value_binding!(pub MutationFreeNoticeBinding for MutationFreeNotice { identity: "worth.query.test.mutation-free-notice.v1" });
-impl ApplicationRetainedEffectBinding for MutationFreeNoticeBinding {
-    fn retained_bytes(_value: &Self::Value) -> u64 {
-        u64::try_from(std::mem::size_of::<MutationFreeNotice>()).unwrap_or(u64::MAX)
-    }
-}
 
 impl ApplicationExternalEffectBinding for MutationFreeNoticeBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(

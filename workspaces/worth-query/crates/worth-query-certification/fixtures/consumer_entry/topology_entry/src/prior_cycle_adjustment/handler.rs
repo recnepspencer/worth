@@ -1,5 +1,5 @@
 use super::*;
-use worth_query_decl::facade::application_operation::ApplicationCandidateRequirements;
+
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerResult, OperationHandler,
 };
@@ -18,14 +18,6 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PriorCycleAdjustmen
         reader: &mut DecisionReader<'_, '_, '_, Schema, PriorCycleAdjustmentBinding<Schema>>,
     ) -> HandlerResult<decision::PriorCycleDecision<Schema>, PriorCycleAdjustmentDenial> {
         decision::observe_prior_cycle(input, reader)
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &PriorCycleAdjustment,
-        decision: &decision::PriorCycleDecision<Schema>,
-    ) -> ApplicationCandidateRequirements {
-        super::binding::requirements(decision.members.len())
     }
 
     fn build_candidate(

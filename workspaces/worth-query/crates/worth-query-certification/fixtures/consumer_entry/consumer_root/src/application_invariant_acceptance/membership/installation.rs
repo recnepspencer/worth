@@ -61,7 +61,7 @@ fn install_program_seeded<
         program,
         Schema::declaration().unwrap(),
         configuration,
-        resources::application_limits(8192, 4096),
+        resources::application_limits(8192),
         |phase, graph, installed| {
             let principal = installed
                 .principal_binding(ConsumerPrincipalBinding::reference::<Schema>())

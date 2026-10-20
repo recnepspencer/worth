@@ -1,15 +1,13 @@
 //! A public fixture mutation inserts the native authored applicability relation.
 
-use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
 use worth_query_decl::facade::{worth_query_operation_links, worth_query_operation_reads};
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt,
     WorthQueryApplicationRequestMutationDenial,
 };
 use worth_query_host::facade::declaration::application_operation::{
-    ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-    ApplicationCandidateResourceCeiling, ApplicationMutationBinding, ApplicationMutationFieldScope,
-    ApplicationMutationIntent, NoApplicationMutationOutputs, NoApplicationMutationSource,
+    ApplicationMutationBinding, ApplicationMutationFieldScope, ApplicationMutationIntent,
+    NoApplicationMutationOutputs, NoApplicationMutationSource,
 };
 use worth_query_host::facade::declaration::application_schema::{
     ApplicationFieldRef, ApplicationPrincipalBindingRef, ApplicationRelationCardinality,
@@ -115,11 +113,6 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ReviewRequirementBi
         "worth.query.certification.review-requirement-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.review-requirement-command.v1";
-    const CANDIDATES: ApplicationCandidatePolicy =
-        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 1, 0, 0, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(1024),
-        ));
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,
@@ -193,15 +186,7 @@ impl OperationHandler<DocumentRetentionSchema, ReviewRequirementBinding>
         };
         HandlerResult::Completed(ReviewRequirementTargets { resource, related })
     }
-    fn candidate_requirements(
-        &self,
-        _: &ReviewRequirementInput,
-        _: &ReviewRequirementTargets,
-    ) -> ApplicationCandidateRequirements {
-        ReviewRequirementBinding::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
-    }
+
     fn build_candidate(
         &self,
         _: &ReviewRequirementInput,

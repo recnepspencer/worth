@@ -58,14 +58,6 @@ fn installed_mutation_binding_resolves_exact_callback_free_contracts() {
         binding.scope_contract().field().locus().field(),
         "PrincipalIdentityField"
     );
-    assert_eq!(
-        binding
-            .candidate_policy()
-            .resources()
-            .expect("fixture has a finite representation policy")
-            .maximum_retained_representation_bytes(),
-        128
-    );
     let envelope = binding
         .operation()
         .contracts()
@@ -83,33 +75,6 @@ fn installed_mutation_binding_resolves_exact_callback_free_contracts() {
     assert_eq!(
         envelope.optional_resource_ceiling(WorthQueryResourceDimension::QueueDepth),
         None
-    );
-    assert_eq!(envelope.resource_ceilings().iter().count(), 2);
-    assert_eq!(
-        envelope.optional_resource_ceiling(WorthQueryResourceDimension::RetainedBytes),
-        Some(262_144)
-    );
-    assert!(
-        envelope.scale_ceiling(WorthQuerySemanticScaleAxis::CandidateItems) >= 1,
-        "the operation envelope must admit the binding's exact candidate cardinality"
-    );
-    assert_eq!(
-        envelope
-            .resource_ceiling(WorthQueryResourceDimension::CandidateRetainedRepresentationBytes),
-        128,
-        "candidate bytes must derive from the installed binding"
-    );
-    assert_eq!(
-        envelope.optional_scale_ceiling(WorthQuerySemanticScaleAxis::WorkItems),
-        None,
-    );
-    assert_eq!(
-        binding.handler_identity(),
-        "worth.query.installation-test.mutation-handler.v1"
-    );
-    assert_eq!(
-        binding.result_identity(),
-        TestInputBinding::IDENTITY.as_str()
     );
 }
 
@@ -152,14 +117,6 @@ fn typed_mutation_lookup_denies_each_changed_contract_axis() {
             .unwrap()
             .kind(),
         DenialKind::MutationBindingScopeMeaningChanged
-    );
-    assert_eq!(
-        schema
-            .installed_mutation_binding::<ChangedCandidateBinding>()
-            .err()
-            .unwrap()
-            .kind(),
-        DenialKind::MutationBindingCandidateMeaningChanged
     );
     assert_eq!(
         schema

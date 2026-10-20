@@ -1,13 +1,12 @@
 use std::num::NonZeroUsize;
 
-/// Optional host quotas for output resolution. Producer limits are per demand;
+/// Host-owned controls for output resolution;
 /// registry obligation custody, demand records, and required-key indexing have
 /// separate aggregate retained-byte limits.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryOutputDemandResourceProfile {
     source_currentness_work: Option<NonZeroUsize>,
-    producer_work: Option<NonZeroUsize>,
-    producer_retained_bytes: Option<NonZeroUsize>,
+
     settlement_attempts: Option<NonZeroUsize>,
     registry_obligation_retained_bytes: Option<NonZeroUsize>,
     registry_record_retained_bytes: Option<NonZeroUsize>,
@@ -20,8 +19,7 @@ pub struct WorthQueryOutputDemandResourceProfile {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryOutputDemandLimits {
     source_currentness_work: Option<usize>,
-    producer_work: Option<usize>,
-    producer_retained_bytes: Option<usize>,
+
     settlement_attempts: Option<usize>,
 }
 
@@ -29,8 +27,6 @@ impl WorthQueryOutputDemandResourceProfile {
     pub const fn standard() -> Self {
         Self {
             source_currentness_work: None,
-            producer_work: None,
-            producer_retained_bytes: None,
             settlement_attempts: None,
             registry_obligation_retained_bytes: None,
             registry_record_retained_bytes: None,
@@ -39,14 +35,9 @@ impl WorthQueryOutputDemandResourceProfile {
         }
     }
 
-    /// Install explicit producer-retention and convenience settlement-attempt policies.
-    /// Ordinary source/currentness and producer work has no intrinsic ceiling.
-    pub const fn new(
-        producer_retained_bytes: NonZeroUsize,
-        settlement_attempts: NonZeroUsize,
-    ) -> Self {
+    /// Install an explicit convenience settlement-attempt policy.
+    pub const fn new(settlement_attempts: NonZeroUsize) -> Self {
         Self {
-            producer_retained_bytes: Some(producer_retained_bytes),
             settlement_attempts: Some(settlement_attempts),
             ..Self::standard()
         }
@@ -55,14 +46,13 @@ impl WorthQueryOutputDemandResourceProfile {
     /// An explicit host choice of finite work limits.
     pub const fn bounded(
         source_currentness_work: NonZeroUsize,
-        producer_work: NonZeroUsize,
-        producer_retained_bytes: NonZeroUsize,
+
         settlement_attempts: NonZeroUsize,
     ) -> Self {
         Self {
             source_currentness_work: Some(source_currentness_work),
-            producer_work: Some(producer_work),
-            ..Self::new(producer_retained_bytes, settlement_attempts)
+
+            ..Self::new(settlement_attempts)
         }
     }
 
@@ -106,8 +96,7 @@ impl WorthQueryOutputDemandResourceProfile {
     pub fn limits(self) -> WorthQueryOutputDemandLimits {
         WorthQueryOutputDemandLimits {
             source_currentness_work: self.source_currentness_work.map(NonZeroUsize::get),
-            producer_work: self.producer_work.map(NonZeroUsize::get),
-            producer_retained_bytes: self.producer_retained_bytes.map(NonZeroUsize::get),
+
             settlement_attempts: self.settlement_attempts.map(NonZeroUsize::get),
         }
     }
@@ -118,8 +107,6 @@ impl WorthQueryOutputDemandResourceProfile {
     ) -> WorthQueryOutputDemandLimits {
         self.limits().restricted(
             requested.source_currentness_work,
-            requested.producer_work,
-            requested.producer_retained_bytes,
             requested.settlement_attempts,
         )
     }
@@ -135,8 +122,7 @@ impl WorthQueryOutputDemandLimits {
     pub fn restricted(
         self,
         source_currentness_work: Option<usize>,
-        producer_work: Option<usize>,
-        producer_retained_bytes: Option<usize>,
+
         settlement_attempts: Option<usize>,
     ) -> Self {
         Self {
@@ -145,12 +131,7 @@ impl WorthQueryOutputDemandLimits {
                 .into_iter()
                 .chain(source_currentness_work)
                 .min(),
-            producer_work: self.producer_work.into_iter().chain(producer_work).min(),
-            producer_retained_bytes: self
-                .producer_retained_bytes
-                .into_iter()
-                .chain(producer_retained_bytes)
-                .min(),
+
             settlement_attempts: self
                 .settlement_attempts
                 .into_iter()
@@ -159,31 +140,8 @@ impl WorthQueryOutputDemandLimits {
         }
     }
 
-    /// Artifact ceilings bound production, not the work of proving source currentness.
-    pub fn for_artifact(
-        self,
-        producer_work: Option<usize>,
-        producer_retained_bytes: Option<usize>,
-    ) -> Self {
-        Self {
-            producer_work: self.producer_work.into_iter().chain(producer_work).min(),
-            producer_retained_bytes: self
-                .producer_retained_bytes
-                .into_iter()
-                .chain(producer_retained_bytes)
-                .min(),
-            ..self
-        }
-    }
-
     pub const fn source_currentness_work(self) -> Option<usize> {
         self.source_currentness_work
-    }
-    pub const fn producer_work(self) -> Option<usize> {
-        self.producer_work
-    }
-    pub const fn producer_retained_bytes(self) -> Option<usize> {
-        self.producer_retained_bytes
     }
     pub const fn settlement_attempts(self) -> Option<usize> {
         self.settlement_attempts
@@ -195,60 +153,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn ordinary_work_is_absent_and_child_limits_do_not_shrink_source_proof() {
-        let host = WorthQueryOutputDemandResourceProfile::default();
-        let child = host.limits().for_artifact(Some(17), Some(31));
-        assert_eq!(child.source_currentness_work(), None);
-        assert_eq!(child.producer_work(), Some(17));
-        assert_eq!(child.producer_retained_bytes(), Some(31));
-        assert_eq!(child.settlement_attempts(), None);
-    }
-
-    #[test]
-    fn explicit_restrictions_and_foreign_host_limits_cannot_widen_capacity() {
-        let standard = WorthQueryOutputDemandResourceProfile::default();
-        let narrow = standard
-            .limits()
-            .restricted(Some(9), Some(7), Some(5), Some(3));
-        assert_eq!(standard.constrain(narrow), narrow);
+    fn explicit_currentness_and_settlement_restrictions_cannot_widen_host_policy() {
+        let ordinary = WorthQueryOutputDemandResourceProfile::standard();
+        let narrow = ordinary.limits().restricted(Some(9), Some(3));
+        assert_eq!(ordinary.constrain(narrow), narrow);
         let small = WorthQueryOutputDemandResourceProfile::bounded(
             NonZeroUsize::new(2).unwrap(),
-            NonZeroUsize::new(3).unwrap(),
-            NonZeroUsize::new(4).unwrap(),
             NonZeroUsize::new(1).unwrap(),
         );
-        assert_eq!(small.constrain(standard.limits()), small.limits());
-        assert_eq!(narrow.for_artifact(Some(100), Some(100)), narrow);
-    }
-
-    #[test]
-    fn registry_obligation_limit_is_independent_of_artifact_allowances() {
-        let host = WorthQueryOutputDemandResourceProfile::standard();
-        let registry_limited =
-            host.with_registry_obligation_retained_bytes(NonZeroUsize::new(128).unwrap());
-        assert_eq!(
-            registry_limited.registry_obligation_retained_bytes(),
-            Some(128)
-        );
-        assert_eq!(registry_limited.limits(), host.limits());
-    }
-
-    #[test]
-    fn absent_artifact_retention_preserves_the_independent_host_and_zero_narrows() {
-        let host = WorthQueryOutputDemandResourceProfile::new(
-            NonZeroUsize::new(23).unwrap(),
-            NonZeroUsize::new(4).unwrap(),
-        )
-        .limits();
-        assert_eq!(host.for_artifact(None, None), host);
-        assert_eq!(host.for_artifact(None, Some(100)), host);
-        assert_eq!(
-            host.for_artifact(None, Some(7)).producer_retained_bytes(),
-            Some(7)
-        );
-        assert_eq!(
-            host.for_artifact(None, Some(0)).producer_retained_bytes(),
-            Some(0)
-        );
+        assert_eq!(small.constrain(ordinary.limits()), small.limits());
     }
 }

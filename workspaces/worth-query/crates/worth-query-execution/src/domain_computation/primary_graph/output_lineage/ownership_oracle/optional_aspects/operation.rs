@@ -72,18 +72,7 @@ macro_rules! binding {
             const IDENTITY: &'static str = $identity;
             const HANDLER_IDENTITY: &'static str = Self::IDENTITY;
             const IDEMPOTENCY_IDENTITY: &'static str = Self::IDENTITY;
-            const CANDIDATES: ApplicationCandidatePolicy =
-                ApplicationCandidatePolicy::finite(requirements(
-                    4,
-                    1,
-                    0,
-                    2 + if $keep {
-                        0
-                    } else {
-                        Schema::SOURCE_WRITE.fields()
-                    },
-                    8192,
-                ));
+
             fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
                 ApplicationWorkflowExecutionRequirements::not_applicable()
             }
@@ -164,15 +153,7 @@ impl<Schema: BirthSchema> OperationHandler<Schema, Binding<Schema, true>> for Ha
             Err(stop) => HandlerResult::ExecutionDenied(stop),
         }
     }
-    fn candidate_requirements(
-        &self,
-        _: &KeepInput,
-        _: &Decision<Schema>,
-    ) -> ApplicationCandidateRequirements {
-        Binding::<Schema, true>::CANDIDATES
-            .finite_requirements()
-            .unwrap()
-    }
+
     fn build_candidate(
         &self,
         _: &KeepInput,

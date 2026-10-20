@@ -3,7 +3,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::{
-    application_contribution::producer::WorthQueryProducerDemandResources,
     application_output_demand::{PreparedSelectedCheckpointFinish, SelectedCheckpointFinishStop},
     output_lineage::invalidation::InvalidationEditAdmission,
 };
@@ -27,7 +26,6 @@ where
         claim: WorthQueryOutputClaimIdentity,
         checkpoint: Checkpoint,
         request_scope: &WorthQueryRequestScope,
-        resources: Option<WorthQueryProducerDemandResources>,
         returned: &mut Option<Checkpoint>,
         finish: PreparedSelectedCheckpointFinish<'_>,
         admission: &mut InvalidationEditAdmission,
@@ -203,7 +201,6 @@ where
                 let completion = ready_backing.complete(WorthQueryCompletedOutputDemand {
                     authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
                     readiness,
-                    resources,
                 });
                 finish_selected(finish, claim, Checkpoint::Ready(completion), None, returned)?;
                 Ok(true)

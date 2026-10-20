@@ -3,7 +3,7 @@ use super::*;
 
 const RECORD_SIX_ENVELOPE_HEX: &str = include_str!("release_envelope_v1.hex");
 const RECORD_SEVEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v7.hex");
-const CURRENT_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v8.hex");
+const CURRENT_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v9.hex");
 
 pub(super) fn assert_current_envelope_and_unsupported_records() {
     for (version, vector) in [
@@ -49,7 +49,7 @@ pub(super) fn assert_current_envelope_and_unsupported_records() {
     );
     assert_eq!(
         u16::from_be_bytes(decoded.archive()[118..120].try_into().unwrap()),
-        8
+        9
     );
     let archive =
         decode_package_archive(decoded.archive(), WorthQueryPackageArchiveLimits::DEFAULT).unwrap();

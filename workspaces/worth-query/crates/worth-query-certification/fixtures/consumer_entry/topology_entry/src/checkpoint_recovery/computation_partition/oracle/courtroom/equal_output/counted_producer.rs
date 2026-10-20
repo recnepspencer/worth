@@ -1,6 +1,6 @@
 //! The ordinary dependent uses the counted source with the existing operation.
 use super::*;
-use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
+
 pub(super) struct Family;
 pub(super) struct Producer;
 pub(super) struct Provider;
@@ -30,7 +30,6 @@ impl WorthQueryApplicationProducerBinding<Schema> for Producer {
     const IDENTITY: &'static str = "courtroom-counted-dependent-producer";
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-    const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
         Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
@@ -50,11 +49,5 @@ impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
     }
     fn idempotency_key(&self, _: &counted_source::CountedReadResult, identity: &[u8; 32]) -> u64 {
         planar_source_key(identity) ^ 0x0006_12c0
-    }
-    fn demand_resources(
-        &self,
-        _: &counted_source::CountedReadResult,
-    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
-        Ok(planar_producer_resources())
     }
 }

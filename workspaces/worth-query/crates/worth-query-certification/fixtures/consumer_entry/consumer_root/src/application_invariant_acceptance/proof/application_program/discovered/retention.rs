@@ -20,10 +20,7 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
     ))
     .unwrap();
     let request = world.application.request(&principal, &scope);
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4096).unwrap(),
-        NonZeroUsize::new(8192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     macro_rules! publish {
         ($input:expr, $key:expr) => {{
             let source = request

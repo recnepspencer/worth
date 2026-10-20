@@ -34,7 +34,6 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
         (
             BTreeMap<String, ExpectedOutputBinding>,
             Vec<ExpectedOutputFamily>,
-            usize,
         ),
         WorthQueryApplicationAttemptDenial,
     >
@@ -75,9 +74,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                 minimum: family.minimum(),
             });
         }
-        let retained_representation_bytes = super::super::super::retained_representation::output_contract_bytes::<Schema, Contract>()
-            .ok_or_else(|| denial(WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded, "output contract quote overflow"))?;
-        Ok((prepared, families, retained_representation_bytes))
+        Ok((prepared, families))
     }
 }
 

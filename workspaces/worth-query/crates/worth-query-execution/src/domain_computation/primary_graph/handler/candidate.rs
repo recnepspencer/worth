@@ -21,7 +21,7 @@ use super::invariant::HandlerInterruption;
 mod operation_body;
 mod verbs;
 
-/// Borrow of the already-reserved candidate builder for one exact binding.
+/// Borrow of the effect builder for one exact binding.
 pub struct CandidateWriter<'borrow, Schema, Binding>
 where
     Schema: ApplicationSchema,

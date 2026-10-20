@@ -20,7 +20,6 @@ pub(in crate::domain_computation::primary_graph) use output_postcondition::Outpu
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryProducerIdentityDenial {
-    DependencyByteCapacityUnsupported,
     DependencyStorage(StoreDenial),
     DependencyCanonicalizationRejected,
     MissingSourcePartition,
@@ -68,13 +67,6 @@ impl<Schema, Operation, Input, Scope>
                 control,
             )
             .map_err(WorthQueryProducerIdentityDenial::DependencyStorage)?;
-        let maximum_dependency_bytes = (runtime
-            .runtime
-            .application_candidate_resource_profile()
-            .maximum_producer_dependency_bytes())
-        .map(usize::try_from)
-        .transpose()
-        .map_err(|_| WorthQueryProducerIdentityDenial::DependencyByteCapacityUnsupported)?;
         let root_funding = control.policy().reserve_memory(8_192);
         control
             .check_live()
@@ -82,7 +74,7 @@ impl<Schema, Operation, Input, Scope>
         let _root_funding = root_funding
             .map_err(|cause| WorthQueryProducerIdentityDenial::DependencyStorage(cause.into()))?;
         let (dependency, work) = content
-            .identity(declared_key, maximum_dependency_bytes)
+            .identity(declared_key)
             .map_err(|_| WorthQueryProducerIdentityDenial::DependencyCanonicalizationRejected)?;
         control
             .check_live()

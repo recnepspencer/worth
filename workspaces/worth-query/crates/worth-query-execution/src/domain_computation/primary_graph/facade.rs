@@ -105,10 +105,9 @@ pub use super::application_contribution::{
     WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
     WorthQueryPreparedManagedComputation, WorthQueryPreparedPartitionedComputation,
-    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
-    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
-    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
-    WorthQueryProducerResourceQuoteDenial, WorthQueryReductionInputDenial,
+    WorthQueryProducerApplicability, WorthQueryProducerInputReuseContract,
+    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerOutputFamily, WorthQueryReductionInputDenial,
     WorthQuerySelectedApplicationProducer, WorthQueryWorkflowAssessmentOutputFamily,
     WorthQueryWorkflowAssessmentPosture,
 };

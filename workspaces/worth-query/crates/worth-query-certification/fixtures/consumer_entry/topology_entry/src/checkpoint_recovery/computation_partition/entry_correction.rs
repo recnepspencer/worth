@@ -1,5 +1,5 @@
 //! A value correction retains the exact value its inverse restores.
-use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
+
 pub(super) mod capability;
 pub(super) mod program_adoption;
 use super::{
@@ -89,11 +89,7 @@ impl<Schema: TopologySchemaBinding, const WORKFLOW: bool> ApplicationMutationBin
         "worth.query.certification.entry-correction-command.v1"
     };
     const REQUIRES_WORKFLOW_AUTHORITY: bool = WORKFLOW;
-    const CANDIDATES: ApplicationCandidatePolicy =
-        ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 1, 0),
-            ApplicationCandidateResourceCeiling::representation_bytes(1024),
-        ));
+
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Body,
@@ -142,15 +138,7 @@ impl<Schema: TopologySchemaBinding, const WORKFLOW: bool>
             Err(e) => HandlerResult::ExecutionDenied(e),
         }
     }
-    fn candidate_requirements(
-        &self,
-        _: &EntryCorrection,
-        _: &<EntryCorrectionBinding<Schema, WORKFLOW> as ApplicationMutationBinding<Schema>>::Decision,
-    ) -> ApplicationCandidateRequirements {
-        EntryCorrectionBinding::<Schema, WORKFLOW>::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
-    }
+
     fn build_candidate(
         &self,
         input: &EntryCorrection,

@@ -173,7 +173,6 @@ fn fixed_delivery_no_projection_settles_real_required_outputs() {
     ];
     let world = installation::install_selected_program(
         &crate::installed_schema(),
-        8192,
         4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),
@@ -251,7 +250,6 @@ fn fixed_prepared_source_receipts_distinguish_shared_scope_publications() {
         .unwrap();
     let mut world = installation::install_selected_program(
         &crate::installed_schema(),
-        8192,
         4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),

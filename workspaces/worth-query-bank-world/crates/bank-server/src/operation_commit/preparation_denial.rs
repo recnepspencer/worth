@@ -42,8 +42,6 @@ pub enum BankApplicationAttemptDenialKind {
     OutputRoleCardinalityMismatch,
     DuplicateEffectKey,
     CandidateCapacityExceeded,
-    CandidateReservationExceeded,
-    RetainedEffectBytesExceeded,
     ExternalEffectPayloadProjectionRejected,
     ForeignConditionalDefinitionChange,
     DuplicateConditionalDefinitionChange,
@@ -194,12 +192,6 @@ const fn application_attempt_kind(
         Query::DuplicateEffectKey => BankApplicationAttemptDenialKind::DuplicateEffectKey,
         Query::CandidateCapacityExceeded => {
             BankApplicationAttemptDenialKind::CandidateCapacityExceeded
-        }
-        Query::CandidateReservationExceeded => {
-            BankApplicationAttemptDenialKind::CandidateReservationExceeded
-        }
-        Query::RetainedEffectBytesExceeded => {
-            BankApplicationAttemptDenialKind::RetainedEffectBytesExceeded
         }
         Query::ExternalEffectPayloadProjectionRejected => {
             BankApplicationAttemptDenialKind::ExternalEffectPayloadProjectionRejected

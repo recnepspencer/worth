@@ -8,9 +8,8 @@ use worth_query_installation::facade::{
 use worth_relational::facade::transactions::EntityReference;
 
 use super::{
-    denial, CandidateItemKind, WorthQueryApplicationEffectEntity,
-    WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationOptionalFieldWrite,
-    WorthQueryApplicationRealizedEffect,
+    denial, WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder,
+    WorthQueryApplicationOptionalFieldWrite, WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
@@ -80,27 +79,8 @@ impl<Schema, Operation, Input, Scope>
             .field_write_positions
             .position(field.entity(), entity_id);
         let matching_effect = position.map(|position| &self.effects[position]);
-        let (replaced_representation_bytes, retains_entry) = match matching_effect {
-            Some(WorthQueryApplicationRealizedEffect::UpdateEntity { fields, .. }) => {
-                fields.get(&locator).map_or((None, true), |value| {
-                    (Some(super::retained_representation::value(value)), false)
-                })
-            }
-            Some(WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
-                fields, ..
-            }) => fields.get(&locator).map_or((None, true), |write| {
-                (
-                    write
-                        .value
-                        .as_ref()
-                        .map(super::retained_representation::value),
-                    false,
-                )
-            }),
-            _ => (None, true),
-        };
         // Required fields stored in an optional patch retain the same contract
-        // as optional entries. Resolve it before changing reservation credit.
+        // as optional entries. Resolve it before retaining the value.
         let patch_contract = match matching_effect {
             Some(WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields { .. }) => Some(
                 self.layout
@@ -115,43 +95,13 @@ impl<Schema, Operation, Input, Scope>
             ),
             _ => None,
         };
-        let entry_bytes = match patch_contract.as_ref() {
-            Some(contract) => super::retained_representation::optional_field_entry(
-                &locator,
-                contract,
-                Some(value.as_ref()),
-                retains_entry,
-            ),
-            None => {
-                super::retained_representation::field_entry(&locator, value.as_ref(), retains_entry)
-            }
-        };
-        let retained_representation_bytes = entry_bytes
-            .and_then(|bytes| {
-                bytes.checked_add(if matching_effect.is_none() {
-                    field.entity().len()
-                } else {
-                    0
-                })
-            })
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-                    field.field(),
-                )
-            })?;
-        self.charge_candidate_representation(
-            CandidateItemKind::Write,
-            retained_representation_bytes,
-            replaced_representation_bytes.unwrap_or(0),
-        )?;
+        self.reserve_effects(usize::from(position.is_none()))?;
         let value = value.into_owned();
         match position.map(|position| &mut self.effects[position]) {
             Some(WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
                 fields, ..
             }) => {
-                let contract =
-                    patch_contract.expect("existing patch contract prepared before debit");
+                let contract = patch_contract.expect("existing patch contract prepared");
                 fields.insert(
                     locator,
                     WorthQueryApplicationOptionalFieldWrite {

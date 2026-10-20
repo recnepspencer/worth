@@ -34,7 +34,7 @@ macro_rules! producer {
             const IDENTITY: &'static str = $identity;
             const APPLICABILITY: &'static [WorthQueryProducerApplicability] = &[$posture];
             const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-            const RESOURCE_POLICY: &'static str = "bounded-synchronous";
+
             const REUSE_POLICY: &'static str = "exact-source";
         }
         impl<Schema: BirthSchema> WorthQueryApplicationProducerProvider<Schema, $producer<Schema>>
@@ -49,15 +49,6 @@ macro_rules! producer {
             }
             fn idempotency_key(&self, _: &PlanarReadResult, identity: &[u8; 32]) -> u64 {
                 u64::from_be_bytes(identity[..8].try_into().unwrap())
-            }
-            fn demand_resources(
-                &self,
-                _: &PlanarReadResult,
-            ) -> Result<
-                WorthQueryProducerDemandResources,
-                crate::domain_computation::primary_graph::WorthQueryProducerResourceQuoteDenial,
-            > {
-                Ok({ planar_producer_resources() })
             }
         }
     };

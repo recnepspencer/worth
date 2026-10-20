@@ -59,10 +59,7 @@ pub(super) fn performed_source_settles_required_output(
         .expect("the source occurrence is readable")
         .observed_sources()[0]
         .clone();
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let outcome = request
         .advanced()
         .mutate(PlanarSourceAdjustment {

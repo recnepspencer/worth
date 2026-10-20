@@ -175,7 +175,7 @@ fn checkpoint(
         source_partition: [0; 32],
         producer_dependency: None,
         idempotency_key: [0; 32],
-        resources: None,
+
         roles: roles.into(),
             producer_facts: None,
             producer_fact_wire_version: 0,
@@ -215,7 +215,7 @@ fn declared(binding_type: TypeId) -> DeclaredProducerBinding {
         applicability: Vec::new(),
         supported: Vec::new(),
         required_invariants: Vec::new(),
-        resource_policy: "bounded".into(),
+
         reuse_policy: "exact".into(),
         input_reuse: None,
         binding_type,

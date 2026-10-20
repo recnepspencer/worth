@@ -101,7 +101,7 @@ impl NativePriorCheckpointOutput<'_> {
                 source_partition: partition,
                 producer_dependency: recorded.producer_dependency_identity,
                 idempotency_key: recorded.idempotency_key_identity,
-                resources: recorded.resources(),
+
                 roles: roles.into(),
                 producer_facts: None,
                 producer_fact_wire_version: 0,

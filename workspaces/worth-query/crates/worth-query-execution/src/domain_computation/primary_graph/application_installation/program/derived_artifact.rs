@@ -64,47 +64,12 @@ where
                 "output connection is not installed for this program",
             ));
         }
-        let artifact = self.validate_derived_artifact_demand::<Connection, Demand>()?;
-        self.resolve_artifact_limits(limits, artifact)
-    }
-
-    pub(super) fn resolve_artifact_limits(
-        &self,
-        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
-        artifact: Option<ApplicationDerivedArtifactDeclaration>,
-    ) -> Result<
-        crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
-        WorthQueryOutputDemandDenial,
-    >
-    where
-        Schema: 'static,
-    {
-        let limits = self
+        self.validate_derived_artifact_demand::<Connection, Demand>()?;
+        Ok(self
             .backing
             .runtime
             .output_demand_resource_profile()
-            .constrain(limits);
-        let Some(artifact) = artifact else {
-            return Ok(limits);
-        };
-        let limits = limits.for_artifact(
-            artifact.resource_ceiling().maximum_work(),
-            artifact.resource_ceiling().maximum_retained_bytes(),
-        );
-        let denied = if limits.producer_work() == Some(0) {
-            Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
-        } else if limits.producer_retained_bytes() == Some(0) {
-            Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
-        } else {
-            None
-        };
-        if let Some(kind) = denied {
-            return Err(WorthQueryOutputDemandDenial::new(
-                kind,
-                artifact.stopped_outcome(),
-            ));
-        }
-        Ok(limits)
+            .constrain(limits))
     }
 
     /// Proves that the concrete performed operation is an authored cause of

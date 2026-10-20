@@ -1,8 +1,7 @@
 use super::{description_of, BoundedExport, BoundedFeature, RevisionSchema, SHARED_IDENTITY};
 use crate::application_program::{
-    ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
-    ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationComputationExecution,
-    ApplicationComputationInput, ApplicationComputationPartition,
+    ApplicationArtifactDependency, ApplicationArtifactRetention, ApplicationArtifactSuccession,
+    ApplicationComputationExecution, ApplicationComputationInput, ApplicationComputationPartition,
     ApplicationComputationResourceCeiling, ApplicationComputationReuse,
     ApplicationComputationStopped, ApplicationDerivedArtifact, ApplicationFeature,
     ApplicationFeatureSpec, ApplicationLocalityGranule, ApplicationLocalityScope,
@@ -31,8 +30,7 @@ impl ApplicationDerivedArtifact<RevisionSchema, BoundedFeature> for MeaningArtif
     const DEPENDENCIES: &'static [ApplicationArtifactDependency] =
         &[ApplicationArtifactDependency::new(BoundedFeature::IDENTITY)];
     const REUSE_RULE: &'static str = "worth.query.tests.semantic-meaning-reuse.v1";
-    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(Some(8), Some(4_096));
+
     const STOPPED_OUTCOME: &'static str = "worth.query.tests.semantic-meaning-stopped.v1";
 }
 

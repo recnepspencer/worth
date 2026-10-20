@@ -1,7 +1,7 @@
 //! Collect immutable supersession and current-membership removal as one admitted native batch.
 use super::{
-    attempt, capacity, coordinates, observation, stopped, unavailable, Effect, EntityId, Fact,
-    Lease, Locus, Outcome, QueryRequestExecution, Rule,
+    capacity, coordinates, observation, stopped, unavailable, Effect, EntityId, Fact, Lease, Locus,
+    Outcome, Rule,
 };
 use std::collections::BTreeMap;
 use worth_query_declaration::facade::application_schema::{
@@ -15,26 +15,6 @@ pub(super) struct Batch {
     pub(super) effects: Vec<Effect>,
     pub(super) facts: Vec<Fact>,
 }
-impl Batch {
-    pub(super) fn admit<Schema, Operation, Input, Scope>(
-        &self,
-        admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-    ) -> Result<
-        worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements,
-        Outcome,
-    > {
-        let mut demand = super::super::effect_program::PlatformEffectDemand::default();
-        for effect in &self.effects {
-            demand.observe(effect).map_err(attempt)?;
-        }
-        let requirements = demand.requirements();
-        super::super::effect_program::admit_signing_lifecycle_effects(admission, demand)
-            .map_err(attempt)?
-            .materialize(&self.effects)
-            .map_err(attempt)?;
-        Ok(requirements)
-    }
-}
 
 pub(super) fn collect(
     rule: &Rule,
@@ -44,7 +24,6 @@ pub(super) fn collect(
     operation: &str,
     logical_request: [u8; 32],
     lease: &Lease,
-    execution: &QueryRequestExecution<'_>,
     request: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     batch: &mut Batch,
@@ -70,15 +49,8 @@ pub(super) fn collect(
         for edge in edges {
             context.checkpoint(1).map_err(stopped)?;
             let evidence = edge.to;
-            let (footprint, _memory) = observation::footprint(
-                rule,
-                evidence,
-                lease,
-                runtime,
-                execution,
-                request,
-                &mut batch.facts,
-            )?;
+            let footprint =
+                observation::footprint(rule, evidence, lease, runtime, request, &mut batch.facts)?;
             if footprint.authentication().subject != coordinates(subject)
                 || footprint
                     .dependencies()

@@ -1,7 +1,4 @@
 //! Bind complete body meaning and codecs once at native installation.
-use worth_query_declaration::facade::application_operation::ApplicationCandidatePolicy;
-#[cfg(test)]
-mod tests;
 use super::super::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
@@ -13,42 +10,6 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationMutationBinding,
     WorthQueryInstalledApplicationSchema,
 };
-
-fn require_candidate_capacity(
-    body: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
-    policy: &ApplicationCandidatePolicy,
-    binding_identity: &str,
-) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    let denied = || {
-        WorthQueryPrimaryGraphInstallationDenial::new(
-            WorthQueryPrimaryGraphInstallationDenialKind::OperationBodyUnavailable,
-            binding_identity,
-        )
-    };
-    let requirements = policy.finite_requirements().ok_or_else(denied)?;
-    let required_writes = body
-        .scope_fields()
-        .iter()
-        .filter(|step| step.write_target().is_some())
-        .count()
-        .checked_add(
-            body.creation()
-                .map_or(0, |creation| creation.fields().len()),
-        )
-        .ok_or_else(denied)?;
-    let cardinality = requirements.cardinality();
-    let required_unlinks = body.creation().map_or(0, |creation| creation.links().iter().filter(|link|
-        link.posture == worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle).count());
-    if cardinality.maximum_unlinks() < required_unlinks
-        || cardinality.maximum_writes() < required_writes
-        || cardinality.maximum_creates() < usize::from(body.creation().is_some())
-        || cardinality.maximum_links()
-            < body.creation().map_or(0, |creation| creation.links().len())
-    {
-        return Err(denied());
-    }
-    Ok(())
-}
 
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     OperationBodyHandler<Schema, Binding>
@@ -70,7 +31,6 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         if body.scope_entity() != Some(Binding::scope_field().entity()) {
             return Err(denied());
         }
-        require_candidate_capacity(body, &Binding::CANDIDATES, Binding::IDENTITY)?;
         let mut input_bindings = Vec::new();
         for source in body
             .requirements()

@@ -46,10 +46,7 @@ pub(super) fn quantity_scope(
     )
 }
 pub(super) fn controls() -> WorthQueryOutputDemandControls {
-    WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(1_000_000).unwrap(),
-        NonZeroUsize::new(8 * 1024 * 1024).unwrap(),
-    )
+    WorthQueryOutputDemandControls::host_policy()
 }
 #[test]
 fn first_and_edited_sources_publish_pending_without_driving_then_renew() {
@@ -154,43 +151,9 @@ fn first_and_edited_sources_publish_pending_without_driving_then_renew() {
     assert!(current
         .read_current(&request, read::Read(publication::output_key("population")))
         .is_err());
-    // Stop real native regeneration and retain/close its original returned owner.
-    let mut stopped = request
-        .demand(PlanarOutputDemand::new("measure-a"))
-        .controls(
-            WorthQueryOutputDemandControls::new(
-                NonZeroUsize::MIN,
-                NonZeroUsize::new(8 * 1024 * 1024).unwrap(),
-            )
-            .source_currentness_work(NonZeroUsize::new(1_000_000).unwrap()),
-        )
-        .retain_program_outputs::<Program, GeometryRoot>(&app)
-        .unwrap_or_else(|stop| panic!("{:?}", stop.denial()));
-    loop {
-        stopped = match stopped.advance(&request) {
-            WorthQueryProgramOutputOperationAdvance::Pending(next) => next,
-            WorthQueryProgramOutputOperationAdvance::Refused { operation, denial } => {
-                use worth_query_host::facade::application_entry::{
-                    WorthQueryApplicationOutputDemandDenial as DemandStop,
-                    WorthQueryProgramOutputAdvanceDenial as AdvanceStop,
-                    WorthQueryRequiredOutputPreparationDenial as PreparationStop,
-                };
-                let kind = match &denial {
-                    AdvanceStop::Outputs(PreparationStop::DemandExecution(stop)) => stop.kind(),
-                    AdvanceStop::Outputs(PreparationStop::Demand(DemandStop::Demand(stop))) => {
-                        stop.kind()
-                    }
-                    _ => panic!("expected actual producer work refusal: {denial:?}"),
-                };
-                assert_eq!(kind, WorthQueryOutputDemandDenialKind::WorkBudgetExceeded);
-                operation
-                    .close(&request)
-                    .unwrap_or_else(|stop| panic!("{:?}", stop.denial()));
-                break;
-            }
-            _ => panic!("one unit cannot fund native producer regeneration"),
-        };
-    }
+    // Availability observes the edited source without driving regeneration.
+    // Genuine interrupted-owner custody is exercised in races::interruption;
+    // an obsolete one-unit producer quote is not a semantic stop contract.
     crate::producer::reset_provider_contacts();
     let pending = quantity(&app, &request);
     let pending_read = pending
@@ -203,7 +166,7 @@ fn first_and_edited_sources_publish_pending_without_driving_then_renew() {
         0,
         "edited source observation cannot fund upstream"
     );
-    eprintln!("native availability: edited source work stop/original close -> Count1/Pending; upstream contacts=0");
+    eprintln!("native availability: edited source -> Count1/Pending; upstream contacts=0");
     let completed = finish!(
         request
             .demand(PlanarOutputDemand::new("measure-a"))

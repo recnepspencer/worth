@@ -165,14 +165,22 @@ fn require_identity(identity: &str) -> Result<(), ApplicationProgramValidationDe
     }
 }
 
-/// Names an exceeded canonical revision budget as program validation meaning,
-/// so a program too large to identify is denied rather than silently hashed.
+/// Preserves canonical construction failures separately from explicit revision
+/// budget refusals when reporting program validation.
 pub(in crate::application_program) fn deny_canonical_revision_budget(
     identity: &ApplicationProgramIdentity,
     budget: ApplicationProgramRevisionBudgetDenial,
 ) -> ApplicationProgramValidationDenial {
     denial(
-        ApplicationProgramValidationDenialKind::CanonicalRevisionBudgetExceeded,
+        match budget {
+            ApplicationProgramRevisionBudgetDenial::Derivation(_) => {
+                ApplicationProgramValidationDenialKind::CanonicalRevisionUnavailable
+            }
+            ApplicationProgramRevisionBudgetDenial::BasisEntries { .. }
+            | ApplicationProgramRevisionBudgetDenial::EncodedBytes { .. } => {
+                ApplicationProgramValidationDenialKind::CanonicalRevisionBudgetExceeded
+            }
+        },
         format!("{}: {budget}", identity.as_str()),
     )
 }

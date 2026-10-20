@@ -1,5 +1,3 @@
-use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
-use worth_query_decl::facade::application_operation::ApplicationCandidateRequirements;
 use worth_query_decl::facade::{
     application_capability::{
         ApplicationCapabilityEntitySelector, ApplicationCapabilityRequest,
@@ -7,7 +5,6 @@ use worth_query_decl::facade::{
         ApplicationCapabilityRequestProjectionDenial,
     },
     application_operation::{
-        ApplicationCandidateCardinalityCeiling, ApplicationCandidateResourceCeiling,
         ApplicationCapabilityMutationBinding, ApplicationMutationBinding,
         ApplicationMutationFieldScope, ApplicationMutationIntent, NoApplicationMutationOutputs,
         NoApplicationMutationSource,
@@ -112,11 +109,7 @@ macro_rules! payment_workflow_control {
             const IDEMPOTENCY_IDENTITY: &'static str = $command_identity;
             const REQUIRES_APPLICATION_PROGRAM: bool = true;
             const WORKFLOW_CONTROL: bool = true;
-            const CANDIDATES: ApplicationCandidatePolicy =
-                ApplicationCandidatePolicy::finite(ApplicationCandidateRequirements::fixed_shape(
-                    ApplicationCandidateCardinalityCeiling::fixed(64, 0, 128, 2, 512, 0),
-                    ApplicationCandidateResourceCeiling::representation_bytes(2 * 1_024 * 1_024),
-                ));
+
 
             fn scope_field() -> ApplicationFieldRef<
                 BankSchema,

@@ -74,7 +74,6 @@ fn recorded_settlements(
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::from([crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact::SourceEntity {
             entity_id: entity,
         }])),
-        None,
             None,
          None);
     }

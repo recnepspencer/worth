@@ -123,7 +123,6 @@ fn real_mode2_mixed_query_publication_attests_neither_whole_nor_created_subset()
 fn ordinary_profiles_publish_mode2_with_large_live_lineage_and_real_source_authority() {
     let runtime = installation::install();
     let profile = runtime.output_demand_resource_profile();
-    assert_eq!(profile.limits().producer_retained_bytes(), None);
     assert_eq!(profile.limits().settlement_attempts(), None);
     assert_eq!(profile.registry_obligation_retained_bytes(), None);
     assert_eq!(profile.registry_record_retained_bytes(), None);

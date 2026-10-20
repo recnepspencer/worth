@@ -19,12 +19,6 @@ impl PreparedPrerequisiteClaims {
         (&key.producer, key.source.checkpoint_identity().bytes())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn take_actual_resources(
-        &mut self,
-    ) -> Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>{
-        self.context.take_actual_resources()
-    }
-
     pub(in crate::domain_computation::primary_graph) fn take_completed_handler_facts(
         &mut self,
     ) -> Option<CompletedHandlerFactBoundary> {

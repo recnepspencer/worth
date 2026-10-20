@@ -11,15 +11,6 @@ pub(super) enum SourceWrite {
     Incomplete,
     Select,
 }
-impl SourceWrite {
-    pub(super) const fn fields(self) -> usize {
-        match self {
-            Self::None => 0,
-            Self::Materialize | Self::Unobserved => 2,
-            Self::Clear | Self::Incomplete | Self::Select => 1,
-        }
-    }
-}
 worth_query_decl::facade::worth_query_application! {
     pub(super) MaterializingSchema { owner: "worth.query.test.optional-own-materialize", version: (1, 0), contributions: [installation::Members], }
 }

@@ -158,7 +158,6 @@ mod tests {
                     source_partition: partition(number),
                     producer_dependency: None,
                     idempotency_key: [0x41; 32],
-                    resources: None,
                     roles: (Vec::new()).into(),
                     producer_facts: None,
                     producer_fact_wire_version: 0,

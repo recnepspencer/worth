@@ -61,8 +61,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         [0x41; 32],
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
-        None,
-         None);
+        None);
     lineage.record_restoration(
         TypeId::of::<RestoredOutputBinding>(),
         runtime_authority,
@@ -76,8 +75,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         [0x42; 32],
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
-        None,
-         None);
+        None);
     lineage.record_restoration(
         TypeId::of::<RestoredOutputBinding>(),
         runtime_authority,
@@ -91,8 +89,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         [0x41; 32],
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
-        None,
-         None);
+        None);
 
     let source = SemanticSource {
         runtime_authority,
@@ -249,7 +246,6 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         None,
         [0x41; 32],
         None,
-        None,
     );
     lineage.record_recovered_prior_output(
         TypeId::of::<RestoredOutputBinding>(),
@@ -263,7 +259,6 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         partition,
         None,
         [0x41; 32],
-        None,
         None,
     );
     let semantic_source = SemanticSource {
@@ -303,8 +298,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         [0x41; 32],
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>::from([])),
         None,
-        None,
-         None);
+        None);
 
     assert!(
         lineage
@@ -334,8 +328,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         [0x41; 32],
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
-        None,
-         None);
+        None);
 
     assert!(lineage
         .qualified_output::<RestoredOutputBinding>(

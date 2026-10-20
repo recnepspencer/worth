@@ -18,10 +18,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     ))
     .expect("the source owner authenticates");
     let request = world.application.request(&principal, &scope);
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let initial = request
         .query(PlanarRead {
             body_key: "anchor-a".to_owned(),
@@ -195,10 +192,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn u
     ))
     .expect("the source owner authenticates");
     let request = world.application.request(&principal, &scope);
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let initial = request
         .query(PlanarRead {
             body_key: "anchor-a".to_owned(),

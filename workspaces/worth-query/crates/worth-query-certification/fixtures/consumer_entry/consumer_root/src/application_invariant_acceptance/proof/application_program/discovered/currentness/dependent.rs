@@ -44,10 +44,7 @@ fn discovered_currentness_dependent_membership_empty_and_deep() {
             .start_required_outputs(
                 &world.application,
                 &request,
-                WorthQueryOutputDemandControls::new(
-                    NonZeroUsize::new(4096).unwrap(),
-                    retained_bytes(),
-                ),
+                WorthQueryOutputDemandControls::default(),
             )
             .unwrap_or_else(|failure| panic!("native source: {:?}", failure.denial()));
         let aggregate = settled!(world, request, started);

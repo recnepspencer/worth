@@ -8,10 +8,7 @@ use crate::application_schema::{
     ApplicationAbilityRef, ApplicationEntityRef, ApplicationStructuredValueBinding,
 };
 
-use super::{
-    ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
-    ApplicationQueryDependencyCeiling,
-};
+use super::{ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder};
 
 pub struct ApplicationQueryRootAuthoring<Schema, Query, Parameters, QueryResult, Scope> {
     reference: ApplicationQueryReference<Schema, Query, Parameters, QueryResult, Scope>,
@@ -137,33 +134,11 @@ impl<Schema, Query, Parameters, QueryResult, Scope, Root>
     pub fn cardinality(
         self,
         cardinality: ApplicationQueryCardinality,
-    ) -> ApplicationQueryDependencyAuthoring<Schema, Query, Parameters, QueryResult, Scope, Root>
-    {
-        ApplicationQueryDependencyAuthoring {
-            previous: self,
-            cardinality,
-        }
-    }
-}
-
-pub struct ApplicationQueryDependencyAuthoring<Schema, Query, Parameters, QueryResult, Scope, Root>
-{
-    previous:
-        ApplicationQueryCardinalityAuthoring<Schema, Query, Parameters, QueryResult, Scope, Root>,
-    cardinality: ApplicationQueryCardinality,
-}
-
-impl<Schema, Query, Parameters, QueryResult, Scope, Root>
-    ApplicationQueryDependencyAuthoring<Schema, Query, Parameters, QueryResult, Scope, Root>
-{
-    pub fn dependency_ceiling(
-        self,
-        dependency_ceiling: ApplicationQueryDependencyCeiling,
     ) -> ApplicationQueryDisclosureAuthoring<Schema, Query, Parameters, QueryResult, Scope, Root>
     {
         ApplicationQueryDisclosureAuthoring {
             previous: self,
-            dependency_ceiling,
+            cardinality,
         }
     }
 }
@@ -171,8 +146,8 @@ impl<Schema, Query, Parameters, QueryResult, Scope, Root>
 pub struct ApplicationQueryDisclosureAuthoring<Schema, Query, Parameters, QueryResult, Scope, Root>
 {
     previous:
-        ApplicationQueryDependencyAuthoring<Schema, Query, Parameters, QueryResult, Scope, Root>,
-    dependency_ceiling: ApplicationQueryDependencyCeiling,
+        ApplicationQueryCardinalityAuthoring<Schema, Query, Parameters, QueryResult, Scope, Root>,
+    cardinality: ApplicationQueryCardinality,
 }
 
 impl<Schema, Query, Parameters, QueryResult, Scope, Root>
@@ -269,16 +244,14 @@ impl<Schema, Query, Parameters, QueryResult, Scope, Root>
             basis_support,
         } = previous;
         let disclosure = basis.previous;
-        let dependency = disclosure.previous;
-        let cardinality = dependency.previous;
+        let cardinality = disclosure.previous;
         ApplicationQueryDefinitionBuilder::with_authorization(
             ApplicationQueryDefinitionParts {
                 reference: cardinality.reference,
                 root: cardinality.root,
                 scope: cardinality.scope,
                 result_shape: cardinality.result_shape,
-                cardinality: dependency.cardinality,
-                dependency_ceiling: disclosure.dependency_ceiling,
+                cardinality: disclosure.cardinality,
                 disclosure: basis.disclosure,
                 basis_support,
                 lanes,
@@ -301,7 +274,6 @@ pub(super) struct ApplicationQueryDefinitionParts<
     pub(super) scope: ApplicationEntityRef<Schema, Scope>,
     pub(super) result_shape: ApplicationQueryResultShape,
     pub(super) cardinality: ApplicationQueryCardinality,
-    pub(super) dependency_ceiling: ApplicationQueryDependencyCeiling,
     pub(super) disclosure: ApplicationQueryDisclosureContract,
     pub(super) basis_support: ApplicationQueryBasisSupport,
     pub(super) lanes: ApplicationQueryLaneEligibility,

@@ -1,6 +1,6 @@
 use super::*;
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, PlanarOperation};
-use worth_query_decl::facade::application_operation::ApplicationCandidateRequirements;
+
 use worth_query_decl::facade::application_schema::{
     OperationCreates, OperationLinks, OperationReads, OperationUnlinks, OperationWrites,
 };
@@ -230,26 +230,7 @@ where
         checkpoint_polling::poll(reader);
         HandlerResult::Completed(())
     }
-    fn candidate_requirements(
-        &self,
-        input: &PlanarMutation,
-        _: &(),
-    ) -> ApplicationCandidateRequirements {
-        let (creates, links, unlinks, writes) = match &input.operation {
-            PlanarOperation::CreateCycle(vertices) => (
-                vertices.len(),
-                vertices.len(),
-                0,
-                vertices.len().saturating_mul(4),
-            ),
-            PlanarOperation::Adjust(adjustments) => (0, 0, 0, adjustments.len()),
-            PlanarOperation::PublishDerivedOutput(_) => (0, 0, 0, 1),
-            PlanarOperation::RetargetSuccessor { .. } => (0, 1, 1, 0),
-            PlanarOperation::VerifyCurrentOutputs(_)
-            | PlanarOperation::VerifyFinalCurrentOutputs(_) => (0, 0, 0, 0),
-        };
-        requirements(creates, links, unlinks, writes, 8192)
-    }
+
     fn build_candidate(
         &self,
         input: &PlanarMutation,

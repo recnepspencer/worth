@@ -38,12 +38,6 @@ impl ValidatedCheckpointSize {
                         ])?)
                     },
                 )?;
-                if let Some(resources) = output.resources {
-                    if let Some(work) = resources.work() {
-                        wire_length(work)?;
-                    }
-                    wire_length(resources.retained_bytes())?;
-                }
                 Ok(checked_sum(&[
                     total,
                     MINIMUM_ACCEPTED_OUTPUT_BYTES - 1,

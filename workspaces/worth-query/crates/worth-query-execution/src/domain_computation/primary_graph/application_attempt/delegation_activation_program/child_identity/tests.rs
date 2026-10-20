@@ -37,7 +37,7 @@ fn delegation_child_identity_records_absence_and_taken_values_once() {
                     worth_relational::facade::identity::PartitionId::main(),
                     effects.len(), crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture, crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
             crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(super::super::super::read_set::admit_array(facts.len(), facts, worth_execution::ExecutionAllocationPolicy::SystemAllocation, "unique fixture", || Ok(())).unwrap()), crate::domain_computation::primary_graph::StorageControl::new(
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None, Vec::new(), effects, 0, 0, None, None,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None, Vec::new(), effects, None, None,
                     Default::default(), false, false, &[], None,
                 ).map(|_| ()).map_err(|denial| denial.kind())
             };

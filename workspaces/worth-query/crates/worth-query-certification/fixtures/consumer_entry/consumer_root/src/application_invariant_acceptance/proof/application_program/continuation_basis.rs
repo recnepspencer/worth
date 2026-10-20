@@ -1,5 +1,3 @@
-use std::num::NonZeroUsize;
-
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
     WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
@@ -44,10 +42,7 @@ pub(super) fn revised_parent_publication_is_the_dependent_basis(
     ))
     .expect("the program source owner authenticates");
     let request = world.application.request(&principal, &scope);
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
 
     for (replacement_y, idempotency) in [(2, 10_052), (3, 10_053)] {
         let source = request

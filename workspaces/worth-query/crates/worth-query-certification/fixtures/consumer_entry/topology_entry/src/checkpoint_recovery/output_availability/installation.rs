@@ -118,10 +118,13 @@ fn install_selected_with_window(demand_key: &str, window: Arc<EnrollmentWindow>)
         Schema::declaration().unwrap(),
         configuration,
         // This journey holds historical deliveries and multiple original output
-        // owners while the real 16KiB publication candidate is admitted.
-        support::limits_with_room(64,64,256,
+        // owners through ordinary publication.
+        support::limits_with_room(
+            64,
+            64,
+            256,
             support::invalidation(256 * 1024 * 1024, Some(1_000_000), 64),
-            worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::policy(Some(4_096),Some(16_384)).unwrap()),
+        ),
         |_phase, graph, installed| {
             let binding = installed
                 .principal_binding(ConsumerPrincipalBinding::reference::<Schema>())

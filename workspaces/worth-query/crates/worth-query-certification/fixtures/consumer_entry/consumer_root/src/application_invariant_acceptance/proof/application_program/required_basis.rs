@@ -1,5 +1,3 @@
-use std::num::NonZeroUsize;
-
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
     WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
@@ -27,10 +25,7 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
     ))
     .expect("the source owner authenticates");
     let request = world.application.request(&principal, &scope);
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let initial = request
         .query(PlanarRead {
             body_key: "anchor-a".to_owned(),

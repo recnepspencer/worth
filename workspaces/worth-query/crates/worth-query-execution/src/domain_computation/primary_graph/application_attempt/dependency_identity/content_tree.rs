@@ -248,14 +248,10 @@ impl FactContent {
     ) -> bool {
         self.0.body.same_backing(body)
     }
-    pub(super) fn identity(&self, key: [u8; 32], maximum: Option<usize>) -> rule::Derived {
+    pub(super) fn identity(&self, key: [u8; 32]) -> rule::Derived {
         let summary = self.0.tree.result();
-        let content_bytes = summary.content_bytes.ok_or(())?;
-        let remaining = match maximum {
-            Some(maximum) => maximum.checked_sub(content_bytes).ok_or(())?,
-            None => 8_192, // the root is three fixed-shape canonical entries
-        };
-        rule::root(key, self.0.body.len(), summary.digest?, remaining)
+        summary.content_bytes.ok_or(())?;
+        rule::root(key, self.0.body.len(), summary.digest?)
     }
     pub(in crate::domain_computation::primary_graph) fn reusable(&self) -> bool {
         self.0.tree.result().reusable
@@ -273,7 +269,6 @@ impl FactContent {
 pub(super) fn dependency_identity(
     key: [u8; 32],
     facts: &[super::super::WorthQueryApplicationObservedFact],
-    maximum: usize,
 ) -> rule::Derived {
     let body: FactPayload = Arc::<[_]>::from(facts).into();
     let (content, work) = FactContent::build(
@@ -285,6 +280,6 @@ pub(super) fn dependency_identity(
     )
     .map_err(|_| ())?;
     content
-        .identity(key, Some(maximum))
+        .identity(key)
         .map(|(digest, root)| (digest, work.combine(root)))
 }

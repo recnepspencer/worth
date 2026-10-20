@@ -86,7 +86,6 @@ pub struct WorthQueryInstalledApplicationOperation<Schema, Operation, Input> {
         Arc<crate::application_schema::WorthQueryInstalledApplicationSchemaContractCatalog>,
     portable_native_contracts: Arc<Vec<WorthQueryPortableNativeAspectContractRecord>>,
     portable_contract: WorthQueryPortableApplicationOperationContractRecord,
-    mutation_bindings: Arc<Vec<worth_query_declaration::facade::application_operation::ApplicationMutationBindingDescriptor>>,
     obligations: WorthQueryInstalledGraphObligationSet,
     authority_identity: AuthoritySeal,
     definition_identity: [u8; 32],
@@ -227,7 +226,6 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
             operation_compilation::WorthQueryApplicationOperationCompilation::resolve(
                 binding_identity.clone(),
                 schema.installed_declaration().members(),
-                schema.member_provenance.mutation_bindings(),
                 portable_contract,
                 operation,
                 input_type,
@@ -271,7 +269,6 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
             native_contracts: schema.retain_native_contracts(),
             portable_native_contracts: Arc::new(schema.portable_native_contracts().to_vec()),
             portable_contract: portable_contract.clone(),
-            mutation_bindings: Arc::new(schema.member_provenance.mutation_bindings().to_vec()),
             obligations,
             authority_identity,
             definition_identity,

@@ -48,7 +48,6 @@ fn fixed_action_instances_deliver_only_their_canonical_contract() {
     ];
     let mut world = installation::install_selected_program(
         &crate::installed_schema(),
-        8192,
         4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),

@@ -218,7 +218,6 @@ impl WorthQueryExecutionInstallationAuthority {
                     runtime
                         .application_query_resource_profile()
                         .maximum_concurrent_graph_work(),
-                    runtime.application_candidate_resource_profile(),
                 ),
             product_world_resources,
             rows: Vec::new(),

@@ -190,7 +190,6 @@ fn closed_leaf_clean_currentness_uses_native_marks_before_projection() {
     let grants = [model_owner_grant::<Program>()];
     let mut world = installation::install_selected_program(
         &crate::installed_schema(),
-        8192,
         4096,
         WorthQueryApplicationProgramRoster::new(),
         &grants,

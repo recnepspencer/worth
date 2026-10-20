@@ -39,8 +39,6 @@ macro_rules! binding {
             const IDENTITY: &'static str = $id;
             const HANDLER_IDENTITY: &'static str = concat!($id, ".handler");
             const IDEMPOTENCY_IDENTITY: &'static str = concat!($id, ".command");
-            const CANDIDATES: crate::application_operation::ApplicationCandidatePolicy =
-                RenameBinding::CANDIDATES;
             fn workflow_execution_requirements(
             ) -> crate::application_operation::ApplicationWorkflowExecutionRequirements {
                 RenameBinding::workflow_execution_requirements()

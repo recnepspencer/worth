@@ -67,8 +67,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution) struc
         Vec<WorthQueryProducerApplicability>,
     pub(in crate::domain_computation::primary_graph::application_contribution) required_invariants:
         Vec<WorthQueryProducerInvariantRequirement>,
-    pub(in crate::domain_computation::primary_graph::application_contribution) resource_policy:
-        String,
     pub(in crate::domain_computation::primary_graph::application_contribution) reuse_policy: String,
     pub(in crate::domain_computation::primary_graph::application_contribution) input_reuse:
         Option<super::WorthQueryProducerInputReuseContract>,
@@ -296,7 +294,7 @@ where
                 identity: selected.declaration.identity.clone(),
                 applicability: selected.declaration.applicability[0],
                 exact_retained_output: true,
-                retained_resources: None,
+
                 retained_idempotency_key: None,
                 retained_output_binding: None,
                 reuses_live_output_only: !selected.declaration.applicability.iter().any(

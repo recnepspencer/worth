@@ -52,7 +52,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     const IDENTITY: &'static str = "worth.query.certification.consumed-value-source-producer.v1";
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-    const RESOURCE_POLICY: &'static str = "bounded-synchronous";
+
     const REUSE_POLICY: &'static str = "exact-source";
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
         Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
@@ -74,15 +74,6 @@ impl<Schema: TopologySchemaBinding>
     }
     fn idempotency_key(&self, _: &PlanarReadResult, identity: &[u8; 32]) -> u64 {
         planar_source_key(identity) ^ 0x9176_33a0
-    }
-    fn demand_resources(
-        &self,
-        _: &PlanarReadResult,
-    ) -> Result<
-        WorthQueryProducerDemandResources,
-        worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial,
-    > {
-        Ok(planar_producer_resources())
     }
 }
 

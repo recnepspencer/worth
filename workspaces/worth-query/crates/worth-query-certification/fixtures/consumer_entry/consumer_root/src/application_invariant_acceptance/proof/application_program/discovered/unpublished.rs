@@ -151,10 +151,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         .is_err());
     assert!(recovery.performed().is_none());
 
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     // Promotion cannot synthesize a performed witness from an unpublished owner.
     let (denial, retained) = original_request!(&fresh_scope, intent.clone(), &key)
         .promote_recovered_discovered_outputs(recovery, &world.application, controls)

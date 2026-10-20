@@ -89,7 +89,7 @@ fn expected(court: &Court) -> Identity {
         source_partition: [7; 32],
         producer_dependency: None,
         idempotency_key: [2; 32],
-        resources: None,
+
         roles: expected_roles().into(),
         producer_facts: None,
         producer_fact_wire_version: 0,

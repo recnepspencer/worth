@@ -71,7 +71,6 @@ impl Fixture {
                     .complete(WorthQueryCompletedOutputDemand {
                         authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
                         readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-                        resources: None,
                     });
                 if input.key == interest.key {
                     ready_identity = std::ptr::from_ref(&*ready).cast::<()>();

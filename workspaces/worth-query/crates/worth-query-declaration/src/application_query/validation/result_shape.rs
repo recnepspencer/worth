@@ -52,19 +52,6 @@ pub(super) fn slots_are_unique<'a>(
         })
 }
 
-pub(super) fn counts(shape: &ApplicationQueryResultShape) -> (usize, usize, usize) {
-    let mut maximum_depth = 0;
-    let mut relation_count = 0;
-    let mut field_count = shape.fields().len();
-    for relation in shape.relations() {
-        let nested = counts(relation.nested_shape());
-        maximum_depth = maximum_depth.max(nested.0 + 1);
-        relation_count += nested.1 + 1;
-        field_count += nested.2;
-    }
-    (maximum_depth, relation_count, field_count)
-}
-
 pub(super) fn contains_entity(shape: &ApplicationQueryResultShape, entity: &str) -> bool {
     shape.root_entity() == entity
         || shape

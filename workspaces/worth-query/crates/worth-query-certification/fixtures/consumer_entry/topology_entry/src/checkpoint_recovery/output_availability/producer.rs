@@ -45,7 +45,7 @@ macro_rules! producer {
                     WorthQueryProducerLifecyclePosture::$posture,
                 )];
             const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-            const RESOURCE_POLICY: &'static str = "bounded-native";
+
             const REUSE_POLICY: &'static str = "tracked-source-and-publication-facts";
         }
         impl WorthQueryApplicationProducerProvider<Schema, $producer> for Provider {
@@ -58,9 +58,6 @@ macro_rules! producer {
             fn idempotency_key(&self, _: &PlanarReadResult, epoch: &[u8; 32]) -> u64 {
                 planar_source_key(epoch) ^ 0x91742700
             }
-            fn demand_resources(&self, _: &PlanarReadResult) -> Result<WorthQueryProducerDemandResources, worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial> { Ok({
-                WorthQueryProducerDemandResources::new(Some(1_000_000), 4 * 1024 * 1024)
-            }) }
         }
     };
 }

@@ -47,7 +47,7 @@ fn cold_pair(left: [u8; 32], right: [u8; 32]) -> [u8; 32] {
         Kind::Identity,
         Value::BytesDigest(CanonicalDigestId::new(right)),
     );
-    derive_identity("worth-query-producer-content-pair-v1", entries, usize::MAX)
+    derive_identity("worth-query-producer-content-pair-v1", entries)
         .unwrap()
         .0
 }
@@ -61,7 +61,6 @@ pub(super) fn cold(facts: &[Fact], key: [u8; 32]) -> [u8; 32] {
         let leaf = derive_identity(
             "worth-query-producer-content-leaf-v1",
             fact_entries(offset + root, &facts[root]).unwrap(),
-            usize::MAX,
         )
         .unwrap()
         .0;
@@ -74,13 +73,9 @@ pub(super) fn cold(facts: &[Fact], key: [u8; 32]) -> [u8; 32] {
         Kind::Shape,
         unsigned(0),
     );
-    let empty = derive_identity(
-        "worth-query-producer-content-empty-v1",
-        empty_basis,
-        usize::MAX,
-    )
-    .unwrap()
-    .0;
+    let empty = derive_identity("worth-query-producer-content-empty-v1", empty_basis)
+        .unwrap()
+        .0;
     let mut entries = Vec::new();
     push(
         &mut entries,
@@ -100,7 +95,7 @@ pub(super) fn cold(facts: &[Fact], key: [u8; 32]) -> [u8; 32] {
         Kind::Identity,
         Value::BytesDigest(CanonicalDigestId::new(subtree(facts, 0, empty))),
     );
-    derive_identity("worth-query-producer-content-root-v1", entries, usize::MAX)
+    derive_identity("worth-query-producer-content-root-v1", entries)
         .unwrap()
         .0
 }
@@ -110,10 +105,7 @@ fn cold_content_matches_native_edits_independently_of_storage_and_history() {
     let original: Vec<_> = (0..65).map(|ordinal| fact(ordinal, 1)).collect();
     let original_body = body(&original);
     let (first, _) = FactContent::build(original_body.clone(), control()).unwrap();
-    assert_eq!(
-        first.identity([9; 32], Some(usize::MAX)).unwrap().0,
-        cold(&original, [9; 32])
-    );
+    assert_eq!(first.identity([9; 32]).unwrap().0, cold(&original, [9; 32]));
     assert!(first.same_body(&original_body));
     assert!(!first.same_body(&body(&original)));
     let mut current = first;
@@ -123,10 +115,7 @@ fn cold_content_matches_native_edits_independently_of_storage_and_history() {
         let (next, work) = current
             .refresh(body(&values), [ordinal], control())
             .unwrap();
-        assert_eq!(
-            next.identity([9; 32], Some(usize::MAX)).unwrap().0,
-            cold(&values, [9; 32])
-        );
+        assert_eq!(next.identity([9; 32]).unwrap().0, cold(&values, [9; 32]));
         assert!(
             work.digest_derivations() < 65,
             "changed-path hashing is not a cold population walk"
@@ -134,7 +123,7 @@ fn cold_content_matches_native_edits_independently_of_storage_and_history() {
         current = next;
     }
     assert_eq!(
-        current.identity([9; 32], Some(usize::MAX)).unwrap().0,
+        current.identity([9; 32]).unwrap().0,
         cold(&original, [9; 32])
     );
     for values in [
@@ -144,10 +133,7 @@ fn cold_content_matches_native_edits_independently_of_storage_and_history() {
         vec![fact(1, 1), fact(0, 1)],
     ] {
         let (content, _) = FactContent::build(body(&values), control()).unwrap();
-        assert_eq!(
-            content.identity([9; 32], Some(usize::MAX)).unwrap().0,
-            cold(&values, [9; 32])
-        );
+        assert_eq!(content.identity([9; 32]).unwrap().0, cold(&values, [9; 32]));
     }
     assert_ne!(cold(&original, [9; 32]), cold(&original, [10; 32]));
     assert_ne!(cold(&original[..64], [9; 32]), cold(&original, [9; 32]));
@@ -157,22 +143,9 @@ fn cold_content_matches_native_edits_independently_of_storage_and_history() {
     let (short, _) = current.refresh(body(&values[..33]), [], control()).unwrap();
     let (regrown, _) = short.refresh(body(&values), 33..65, control()).unwrap();
     assert_eq!(
-        regrown.identity([9; 32], Some(usize::MAX)).unwrap().0,
+        regrown.identity([9; 32]).unwrap().0,
         cold(&original, [9; 32])
     );
-}
-
-#[test]
-fn whole_content_capacity_is_not_replaced_by_the_small_root_encoding() {
-    let values: Vec<_> = (0..33).map(|ordinal| fact(ordinal, 1)).collect();
-    let (content, _) = FactContent::build(body(&values), control()).unwrap();
-    let (_, root) = content.identity([1; 32], Some(usize::MAX)).unwrap();
-    let maximum = content.0.tree.result().content_bytes.unwrap() + root.canonical_encoded_bytes();
-    assert!(content.identity([1; 32], Some(maximum)).is_ok());
-    assert!(content.identity([1; 32], Some(maximum - 1)).is_err());
-    assert!(content
-        .identity([1; 32], Some(root.canonical_encoded_bytes()))
-        .is_err());
 }
 
 #[test]
@@ -198,7 +171,7 @@ fn native_content_refusal_preserves_prior_and_funding_survives_clones() {
         let values: Vec<_> = (0..33).map(|ordinal| fact(ordinal, 1)).collect();
         let original_body = body(&values);
         let (original, _) = FactContent::build(original_body.clone(), control).unwrap();
-        let identity = original.identity([9; 32], Some(usize::MAX)).unwrap().0;
+        let identity = original.identity([9; 32]).unwrap().0;
         let before = lease.charged_memory_bytes();
         assert!(before > baseline);
         let mut changed = values.clone();
@@ -212,10 +185,7 @@ fn native_content_refusal_preserves_prior_and_funding_survives_clones() {
             )
             .unwrap();
         assert!(original.refresh(body(&changed), [17], control).is_err());
-        assert_eq!(
-            original.identity([9; 32], Some(usize::MAX)).unwrap().0,
-            identity
-        );
+        assert_eq!(original.identity([9; 32]).unwrap().0, identity);
         assert!(original.same_body(&original_body));
         drop(blocked);
         assert_eq!(lease.charged_memory_bytes(), before);
@@ -233,10 +203,7 @@ fn native_content_refusal_preserves_prior_and_funding_survives_clones() {
             )
             .is_err());
         let (next, _) = original.refresh(body(&changed), [17], control).unwrap();
-        assert_eq!(
-            next.identity([9; 32], Some(usize::MAX)).unwrap().0,
-            cold(&changed, [9; 32])
-        );
+        assert_eq!(next.identity([9; 32]).unwrap().0, cold(&changed, [9; 32]));
         let clone = next.clone();
         let weak = Arc::downgrade(&next.0);
         drop(next);

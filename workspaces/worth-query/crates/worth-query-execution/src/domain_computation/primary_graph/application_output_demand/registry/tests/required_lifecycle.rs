@@ -243,7 +243,6 @@ fn settlement_releases_only_the_ready_authority_it_accepted() {
     let completion = super::super::WorthQueryCompletedOutputDemand {
         authority: actual.clone(),
         readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-        resources: None,
     };
     let mut retained = record(
         occurrence(),

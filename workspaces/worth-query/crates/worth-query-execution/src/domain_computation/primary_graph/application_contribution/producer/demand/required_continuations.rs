@@ -277,7 +277,6 @@ where
             claim,
             checkpoint,
             request,
-            demand.resources,
             &mut demand.unpublished_selected_checkpoint,
             finish,
             admission,

@@ -94,7 +94,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         }
         let binding = self.product().publication_binding().clone();
         let WorthQueryBranchAdoptionRecovery {
-            candidate_funding,
             source,
             target,
             selected_entity_count,
@@ -129,7 +128,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     custody,
                     product,
                     support_custody,
-                    candidate_funding,
                 },
             )),
             Err(PublicationDenial::Refused(no_effect)) => {
@@ -143,7 +141,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         custody,
                         product,
                         support_custody,
-                        candidate_funding,
                     },
                 })
             }
@@ -154,7 +151,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     selected_entity_count,
                     migration,
                     custody,
-                    candidate_funding,
                     effects,
                     binding.recovery(),
                     self.application()

@@ -72,13 +72,8 @@ macro_rules! handler {
                     None => HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate),
                 })
             }
-            fn candidate_requirements(
-                &self,
-                _: &RegionOutputInput,
-                _: &u64,
-            ) -> ApplicationCandidateRequirements {
-                $binding::<Schema>::CANDIDATES.finite_requirements().expect("fixed candidate contract")
-            }
+
+
             fn build_candidate(
                 &self,
                 input: &RegionOutputInput,

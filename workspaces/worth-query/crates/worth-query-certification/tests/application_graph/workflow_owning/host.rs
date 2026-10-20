@@ -162,10 +162,6 @@ impl Host {
                     model::retention_entry::DOCUMENT_IDENTITY,
                 ))
                 .unwrap()
-                .controls(WorthQueryOutputDemandControls::new(
-                    std::num::NonZeroUsize::new(512).unwrap(),
-                    std::num::NonZeroUsize::new(1024).unwrap(),
-                ))
                 .retain_operation(self.workflow.program_runtime())
                 .unwrap()
         };

@@ -52,13 +52,6 @@ where
         .into());
     }
     let (source, observed_source) = disclosure.into_parts();
-    let resources = provider.demand_resources(&source).map_err(|cause| {
-        denial(
-            WorthQueryOutputDemandDenialKind::ProducerResourceQuote(cause),
-            Binding::IDENTITY,
-        )
-    })?;
-    super::super::demand::validate_retained_resources(resources, Binding::IDENTITY, limits)?;
     let input = provider.operation_input(&source);
     // The producer installed this exact binding once. Ordinary authorization
     // below still checks its current runtime/schema/operation authority; fresh
@@ -115,7 +108,6 @@ where
         observed_source,
         input,
         None,
-        resources,
         successor_of,
         commit_authority,
         edition,

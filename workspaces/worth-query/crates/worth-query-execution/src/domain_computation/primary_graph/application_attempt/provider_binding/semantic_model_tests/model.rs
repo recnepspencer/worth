@@ -19,7 +19,6 @@ pub(super) struct LoweringObservation {
     steps: Vec<StepObservation>,
     intents: Vec<MutationIntent>,
     emissions: Vec<EmissionObservation>,
-    retained_bytes: u64,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -42,7 +41,7 @@ pub(super) fn observe(
     let steps = effects.expected_steps().iter().map(observe_step).collect();
     let intents = effects.batch().intents.clone();
     let emissions = effects.into_emissions();
-    let (emissions, retained_bytes) = emissions.into_parts();
+    let emissions = emissions.into_emissions();
     LoweringObservation {
         steps,
         intents,
@@ -56,7 +55,6 @@ pub(super) fn observe(
                     .clone(),
             })
             .collect(),
-        retained_bytes,
     }
 }
 
@@ -96,7 +94,7 @@ fn observe_step(step: &WorthQueryProvisionalEffectStep) -> StepObservation {
     }
 }
 
-pub(super) fn expected_model(axes: &MixedEffectAxes, retained_bytes: u64) -> LoweringObservation {
+pub(super) fn expected_model(axes: &MixedEffectAxes) -> LoweringObservation {
     LoweringObservation {
         steps: vec![
             step(create("application-create-entity:10:created-alpha"), &[]),
@@ -125,14 +123,10 @@ pub(super) fn expected_model(axes: &MixedEffectAxes, retained_bytes: u64) -> Low
             emission("AuditNotice", "sent"),
             emission("MetricNotice", "counted"),
         ],
-        retained_bytes,
     }
 }
 
-pub(super) fn expected_alternate_model(
-    axes: &MixedEffectAxes,
-    retained_bytes: u64,
-) -> LoweringObservation {
+pub(super) fn expected_alternate_model(axes: &MixedEffectAxes) -> LoweringObservation {
     LoweringObservation {
         steps: vec![
             step(retire(&entity_identity(axes.deleted_entity, 12)), &[]),
@@ -161,7 +155,6 @@ pub(super) fn expected_alternate_model(
             emission("MetricNotice", "counted"),
             emission("AuditNotice", "sent"),
         ],
-        retained_bytes,
     }
 }
 

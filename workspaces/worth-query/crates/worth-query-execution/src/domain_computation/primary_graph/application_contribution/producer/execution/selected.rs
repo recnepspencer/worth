@@ -214,7 +214,6 @@ where
             retained,
             candidate,
             resolved,
-            selected.limits(),
             producer_contacts_in_this_demand,
             request_admission,
             |permission, matched_predecessors, admission| {
@@ -351,7 +350,6 @@ where
             retained,
             candidate,
             None,
-            selected.limits(),
             producer_contacts,
             admission,
             |_, _, _| Ok(super::required_cue::FrozenCurrentInspection::NotCurrent),

@@ -10,7 +10,6 @@ pub enum BankOperationInstallationDenialKind {
     MutationBindingPrincipalMeaningChanged,
     MutationBindingResultMeaningChanged,
     MutationBindingScopeMeaningChanged,
-    MutationBindingCandidateMeaningChanged,
     MutationBindingHandlerMeaningChanged,
     MutationBindingIdempotencyMeaningChanged,
     MutationBindingOutputMeaningChanged,
@@ -20,7 +19,6 @@ pub enum BankOperationInstallationDenialKind {
     InvalidMutationIdempotencyIdentity,
     InvalidMutationOutputRole,
     MutationOutputEntityNotInstalled,
-    MutationOutputCandidateMismatch,
     OperationNotInstalled,
     OperationMeaningChanged,
     MissingAbilityPolicy,
@@ -68,9 +66,6 @@ impl BankOperationInstallationDenial {
             }
             Bank::MutationBindingResultMeaningChanged => "mutation-binding-result-meaning-changed",
             Bank::MutationBindingScopeMeaningChanged => "mutation-binding-scope-meaning-changed",
-            Bank::MutationBindingCandidateMeaningChanged => {
-                "mutation-binding-candidate-meaning-changed"
-            }
             Bank::MutationBindingHandlerMeaningChanged => {
                 "mutation-binding-handler-meaning-changed"
             }
@@ -84,7 +79,6 @@ impl BankOperationInstallationDenial {
             Bank::InvalidMutationIdempotencyIdentity => "invalid-mutation-idempotency-identity",
             Bank::InvalidMutationOutputRole => "invalid-mutation-output-role",
             Bank::MutationOutputEntityNotInstalled => "mutation-output-entity-not-installed",
-            Bank::MutationOutputCandidateMismatch => "mutation-output-candidate-mismatch",
             Bank::OperationNotInstalled => "operation-not-installed",
             Bank::OperationMeaningChanged => "operation-meaning-changed",
             Bank::MissingAbilityPolicy => "missing-ability-policy",
@@ -127,9 +121,6 @@ impl BankOperationInstallationDenial {
             QueryKind::MutationBindingScopeMeaningChanged => {
                 Bank::MutationBindingScopeMeaningChanged
             }
-            QueryKind::MutationBindingCandidateMeaningChanged => {
-                Bank::MutationBindingCandidateMeaningChanged
-            }
             QueryKind::MutationBindingHandlerMeaningChanged => {
                 Bank::MutationBindingHandlerMeaningChanged
             }
@@ -147,7 +138,6 @@ impl BankOperationInstallationDenial {
             }
             QueryKind::InvalidMutationOutputRole => Bank::InvalidMutationOutputRole,
             QueryKind::MutationOutputEntityNotInstalled => Bank::MutationOutputEntityNotInstalled,
-            QueryKind::MutationOutputCandidateMismatch => Bank::MutationOutputCandidateMismatch,
             QueryKind::OperationNotInstalled => Bank::OperationNotInstalled,
             QueryKind::OperationMeaningChanged => Bank::OperationMeaningChanged,
             QueryKind::MissingAbilityPolicy => Bank::MissingAbilityPolicy,

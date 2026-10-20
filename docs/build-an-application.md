@@ -1478,16 +1478,6 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         plan.and_then(move |()| decided)
     }
 
-    fn candidate_requirements(
-        &self,
-        _: &RegionTotalsDemand,
-        _: &WorthQueryInvariantMutationTarget<Schema, Body>,
-    ) -> ApplicationCandidateRequirements {
-        RegionTotalsDemandBinding::<Schema>::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
-    }
-
     fn build_candidate(
         &self,
         input: &RegionTotalsDemand,
@@ -1547,8 +1537,6 @@ let runtime = application_installation::in_memory_program(
 // Same file: limits.
 application_installation::WorthQueryInMemoryApplicationLimits::new(
     product_world_resources(),
-    runtime::WorthQueryApplicationCandidateResourceProfile::policy(Some(5_120), Some(2_048))
-        .expect("valid candidate limits"),
     runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
         .expect("valid query limits"),
     primary_graph::SignalConditionalEvaluationBudget::development(),
@@ -1877,7 +1865,7 @@ A mutation has three parts:
 | Part | Trait | Written by | Role |
 |---|---|---|---|
 | Intent | `ApplicationMutationIntent<Schema>` | Your request code | The value you pass to `mutate(..)`: its input and the entity it targets |
-| Binding | `ApplicationMutationBinding<Schema>` | Declared once | Ties the operation to its input, result, denial, decision type, idempotency key, principal binding, scope field, and optional candidate policy |
+| Binding | `ApplicationMutationBinding<Schema>` | Declared once | Ties the operation to its input, result, denial, decision type, idempotency key, principal binding, scope field |
 | Handler | `OperationHandler<Schema, Binding>` | Registered in the contribution's `configure` | Decides, then builds the candidate |
 
 <!-- illustrative -->
@@ -1898,7 +1886,6 @@ impl ApplicationMutationBinding<TemporalHostSchema> for AmendTemporalBinding {
     const IDENTITY: &'static str = "worth.query.example.temporal-amend.v1";
     const HANDLER_IDENTITY: &'static str = "worth.query.example.temporal-amend-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.example.temporal-amend-command.v1";
-    const CANDIDATES: ApplicationCandidatePolicy = ApplicationCandidatePolicy::new(None, None);
     // fn scope_field, principal_binding
 }
 
@@ -1914,90 +1901,27 @@ impl OperationHandler<TemporalHostSchema, AmendTemporalBinding> for AmendTempora
     fn decide(&self, input: &AmendTemporalInput, reader: &mut DecisionReader<'_, '_, '_, _, _>)
         -> HandlerResult<Decision, AmendTemporalDenial> { /* read, then decide */ }
     // `Decision` here is the binding's Decision type (see above).
-    fn candidate_requirements(&self, ..) -> ApplicationCandidateRequirements { .. }
     fn build_candidate(&self, input: &AmendTemporalInput, target: Decision, writer: &mut CandidateWriter<'_, _, _>)
         -> HandlerResult<AmendTemporalResult, AmendTemporalDenial> { /* write fields */ }
 }
 ```
 
-`CANDIDATES` is declaration policy. `ApplicationCandidatePolicy::new(None, None)`
-imposes no intrinsic candidate cardinality or retained-representation ceiling.
-Each dimension can instead carry a finite ceiling independently. The binding
-macro accepts `candidates policy ApplicationCandidatePolicy::new(None, None)`;
-its `candidates creates …, … resources retained_representation_bytes …` form
-expresses a genuine finite policy.
+#### Prepared decisions and typed effects
 
-The handler's `candidate_requirements(input, decision)` still returns concrete,
-finite `ApplicationCandidateRequirements::fixed_shape(cardinality, resources)`
-for this actual source/member shape. Compute checked shape/storage during the
-decision and return that carried demand. Do not use an absent policy as a demand,
-a maximum integer, or a fitted fixture ceiling. Fixed-shape handlers may explicitly
-use `Binding::CANDIDATES.finite_requirements().expect("fixed candidate policy")`.
+Use `DecisionReader` for the actual declared reads during `decide` or
+`prepare_decision`. Carry the resulting typed targets, owned keys and prepared
+values in the binding's `Decision`, then consume them in `build_candidate` through
+`CandidateWriter`. The framework opens the effect program directly after the
+admitted decision. A handler supplies domain intent and valid effects, without
+predicting field, link, output or emission storage.
 
-The host's `WorthQueryApplicationCandidateResourceProfile::policy(None, None)`
-and its ordinary default impose no candidate item or representation-byte policy.
-`Some(limit)` retains finite refusal, independently for each dimension; zero finite
-host limits are rejected. Operation width, producer dependency storage and shared
-concurrency retain their separate policies. A logical candidate reservation does
-not authorize allocation: the ordinary handler path carries the original request's
-allocation policy into checked effect backing admission and retains its ticket
-through consumption or discard. Nested payload storage keeps its own allocation
-owner.
-
-Native authored bodies currently require a complete finite candidate policy.
-Dynamic signed-creation assembly and signing-lifecycle sidecars still have a
-separate finite-only owner seam; absent policy does not bypass those contracts.
-Use a real measured ordinary handler for the supported absent-policy path.
-
-#### Candidate representation quotes
-
-During `decide`, use the existing `DecisionReader` to measure SDK-owned
-representation before returning finite actual `candidate_requirements`:
-
-- `candidate_create_bytes(entity, &key)` measures the actual typed create key.
-- `candidate_initial_field_bytes(field, encoded_value_bytes)` includes the
-  original installed locator for one new initialized field.
-- `candidate_write_field_bytes(field, encoded_value_bytes)` includes the
-  original installed locator and, for an optional existing-field write, its
-  portable contract. Add `candidate_update_bytes(entity)` once per target effect.
-- `candidate_field_promotion_bytes(required_field)` measures contract backing
-  for each required-field entry stored in an optional patch: either an earlier
-  required write promoted by a later optional write, or a required entry inserted
-  after the patch exists. Add it once per entry; replacement adds no second contract.
-- `candidate_link_bytes(relation, &link_key, from_created, to_created)` measures
-  the actual owned link key and endpoint references. Each endpoint is `Some(&key)`
-  for a candidate-created entity or `None` for an existing entity.
-- `candidate_emit_bytes(effect, &payload)` validates and measures one ordinary
-  `emit` through that effect's original retained-payload binding. Carry the same
-  measured payload in the decision and move it to `writer.emit`. The operation
-  must declare `OperationEmits` for that effect. This quote excludes the encoded
-  projection retained by `emit_external`; the separate emission-retention ceiling
-  and writer payload validation still apply.
-- `candidate_output_contract_bytes()` counts declared role/family backing once.
-  Add `candidate_output_bytes::<Role>(created_key)` for each actual fixed binding,
-  or `candidate_output_member_bytes::<Family, Action>(suffix, created_key)` for
-  each actual family member. These use the writer's declared-role checks.
-
-The checked methods return `Result<usize, WorthQueryApplicationAttemptDenial>`;
-the update-name measurement is infallible `usize`. Combine components with checked
-addition and carry the result in the decision. Move the same measured owned keys
-to the writer. Supply actual encoded-value retained heap bytes from its original
-binding or value owner, such as an encoded value's
-`owned_allocation_capacity_bytes()`. Wire width is sufficient only when the
-binding guarantees the same retained footprint.
-
-Each field quote describes a new entry, counted once. Include the promotion
-component for every required entry that joins the optional patch, in either
-write order. Replacement credits and write ordering remain with the original
-writer; these component methods do not simulate a write sequence.
-For repeated writes, quote the largest retained payload in the sequence, rather
-than only the final payload.
-Clearing an optional field retains its patch entry. A later set or repeated clear
-reuses that locator and contract; quote the entry once with its actual sequential
-peak payload, rather than adding its metadata again.
-Quotes grant no read, target, field, effect, publication or
-allocation authority. They measure the logical candidate representation rather
-than total process memory. Existing writer debits still reject an underestimate.
+The writer enforces the operation's declared create, write, relation and emission
+authority. Existing-entity targets must come from tracked decision reads. Bind the
+declared output roles or family members to the actual created or preserved
+entities; required roles and cardinalities remain checked before publication. Typed payload
+validation, checked sizes, request cancellation and fallible effect-buffer growth
+remain with their original owners. Invariant validation and atomic commit still
+precede successful publication.
 
 The full, compiling version of all three is
 `.../examples/product_workflow_support/application_entry.rs` (about 320
@@ -2156,56 +2080,6 @@ ordered:
   identity. Renaming one changes the identity of every in-flight retry and
   of every workflow requirement that names the input; version the input
   binding identity when you do.
-
-#### Candidate preparation
-
-`ApplicationMutationBinding::CANDIDATES` declares an
-`ApplicationCandidateContract`. Select `prepared()` for an input-dependent
-candidate, `fixed_cardinality(counts)` to retain meaningful effect-count maxima
-with variable representation bytes, or `fixed_shape(counts, resources)` for a
-fixed maximum contract. These declarations grant no mutation authority.
-
-<!-- compiled: candidate_preparation.rs -->
-```rust
-use worth_query_decl::facade::application_operation::{
-    ApplicationCandidateCardinalityCeiling, ApplicationCandidateContract,
-    ApplicationCandidateRequirements, ApplicationCandidateResourceCeiling,
-};
-const CANDIDATES: ApplicationCandidateContract = ApplicationCandidateContract::prepared();
-fn prepared_footprint(
-    creates: usize,
-    writes: usize,
-    owned_bytes: usize,
-) -> ApplicationCandidateRequirements {
-    ApplicationCandidateRequirements::fixed_shape(
-        ApplicationCandidateCardinalityCeiling::fixed(creates, 0, 0, 0, writes, 0),
-        ApplicationCandidateResourceCeiling::representation_bytes(owned_bytes),
-    )
-}
-```
-
-The installed `OperationHandler::candidate_requirements(input, decision)` must
-derive finite counts and retained representation bounds from the actual
-prepared decision. Include owned key/value capacity, references, encoded
-emissions and output correspondence; checked arithmetic must remain valid.
-Returning a declaration preparation mode as this footprint does not compile.
-Native preparation checks the real runtime candidate profile and reserves
-physical memory using the request's allocation policy before `build_candidate`.
-The writer also admits actual correspondence entry storage before insertion;
-preserved members need not consume create/write counts. The same reservation
-grows under native memory limits and freezes when the program seals.
-Growth checks that reservation's original allocation lease for cancellation and
-deadline before and after admission; a stop preserves its prior charge. Those
-controls are independent of the authentication request's authority checks.
-Runtime capacity, allocation and interruption refusals leave effects unapplied;
-the writer also refuses usage beyond the admitted footprint. The funding holder
-survives sealing and provider preparation until backing release. All current
-read, principal, target, required-output and publication checks still apply.
-
-Applications continue through their existing declared mutation/operation path.
-They do not reserve native storage themselves or substitute a constant generous
-footprint for input-specific preparation. Existing host runtime capacity policy
-continues to govern the physical resource limit.
 
 ## 5.3 Execute through the program
 
@@ -2826,46 +2700,33 @@ observation, requires every settled output's native lineage at that observation,
 and executes the declared read there. Refusal retains settlement and original
 meaning for a later read; it does not perform the source or outputs again.
 `read_current_with_policy` accepts `WorthQueryOperationDeliveryPolicy` for one
-attempt. Ordinary currentness, producer work and query work have no intrinsic
-operation-count ceiling. Any explicit finite host, declaration or attempt work
-limit still intersects the others; result and retained-byte limits remain physical
-admission. Omit `.operation_projection_work_budget(..)` to declare no decision-read
-work ceiling, and use `ApplicationArtifactResourceCeiling::new(None, Some(bytes))` for
-uncapped producer work with explicit artifact retained-byte admission. An absent
-artifact retention policy leaves the independent host ceiling active. At the demand boundary,
-`WorthQueryOutputDemandControls::default().producer_retained_bytes(bytes)` narrows
-producer custody without adding a work restriction; `.producer_work(work)`
-independently selects a finite producer-only allowance. Neither widens host policy.
+attempt. Ordinary currentness and query work have no intrinsic operation-count
+ceiling. Explicit currentness, query or attempt restrictions still intersect the
+receiving policy. Omit `.operation_projection_work_budget(..)` to declare no
+decision-read work ceiling. Ordinary output demands can omit controls; use
+`WorthQueryOutputDemandControls::default().source_currentness_work(work)` or
+`.settlement_attempts(attempts)` only for a deliberate restriction of the existing
+currentness or settlement policy.
 Signal runtime presets also leave waiter-resolution and upstream-dependency work
 absent. `with_maximum_waiter_resolution_visits(Some(n))` and
 `with_maximum_upstream_dependency_visits(Some(n))` are explicit finite choices;
 `None` keeps the original request and physical admission without a local work cap.
 The installed workflow fact-custody rule likewise checks every candidate on the
 original request without imposing a fixed candidate count.
-### Producer resource quotes
+### Producer source and publication
 
-The existing producer `demand_resources(&source)` hook returns
-`Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial>`.
-Use checked source-dependent sizing and return `SizeOverflow` if its concrete
-retained requirement is not representable. `SourceNotEncodable` reports an
-intrinsic encoding failure required for that measurement; it does not stand for
-a byte policy, cancellation or scratch reservation refusal.
-`ScratchReservationRefused` reports refused transient scratch needed to construct
-the quote, such as source-measurement deduplication storage. A fallible reservation
-may refuse allocation or capacity/layout; this cause does not specialize that
-refusal. It grants no allocation authority and supplies no successful quote.
-Execution preserves each typed cause
-and producer identity in
-`WorthQueryOutputDemandDenialKind::ProducerResourceQuote(cause)` before effects.
-Wrong-source erasure remains `ForeignSource`.
+A `WorthQueryApplicationProducerProvider` supplies its semantic identity,
+`operation_input` and `idempotency_key` from the authentic source. Its optional
+`domain_denial_reason` supplies diagnostic text. The installed operation's handler
+prepares and writes the actual effects through the same typed mutation path.
+Source admission, output contracts, currentness and atomic publication remain
+enforced without a producer resource forecast.
 
-`WorthQueryProducerDemandResources::new(work, retained_bytes)` keeps a concrete
-retained requirement. Current and restored output reuse retain their original
-resource description without contacting the provider for work that will not run.
-`ApplicationArtifactResourceCeiling::new(work, None)` omits only the artifact's
-retention ceiling; `Some(bytes)` narrows the host allowance, including `Some(0)`.
-Absence and zero have distinct canonical program meaning. The standard output
-host still applies its independent 4 MiB producer-retention policy.
+Declare an artifact's output, locality, retention, succession, required posture,
+producer family, dependencies, reuse rule and stopped outcome through
+`ApplicationDerivedArtifact`. Current and restored output reuse checks original
+source and installed meaning without contacting a producer for work that will
+not run.
 
 Operation-body requirement expressions retain their separately admitted Foundation
 expression profile; an absent request ceiling adds no further work restriction.
@@ -3595,7 +3456,7 @@ impl ApplicationMutationBinding<BankSchema> for $binding {
     // ... the same associated types as any mutation binding (§5.2) ...
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const WORKFLOW_CONTROL: bool = true;
-    // ... identities, CANDIDATES, scope_field, and principal_binding ...
+    // ... identities, scope_field, and principal_binding ...
 }
 
 impl ApplicationCapabilityMutationBinding<BankSchema> for $binding {
@@ -3877,7 +3738,7 @@ worth_query_decl::facade::worth_query_mutation_binding!(
     // ... identity, input, operation, result, idempotency, decision, handler ...
     workflow_authority required,
     workflow_requirements ApplicationWorkflowExecutionRequirements::occurrence_only(),
-    // ... outputs, principal, scope, candidates, resources ...
+    // ... outputs, principal, scope ...
 );
 ```
 
@@ -5024,17 +4885,16 @@ owner. Explicit finite step controls return `Progressed` at their boundary;
 only `Settled` carries settlement authority.
 
 Ordinary `WorthQueryOutputDemandResourceProfile::standard()` (also `Default`)
-installs no work, producer-retention, settlement-step, registry-obligation,
+installs no currentness-work, settlement-step, registry-obligation,
 registry-record, required-custody or lineage-byte policy. `new` and `bounded`
-retain explicit finite producer and settlement controls; the named registry and
+retain explicit finite currentness-work and settlement controls; the named registry and
 lineage setters install only the requested finite policy. Counts, byte ledgers,
 preparation, backing grants, sharing and final-drop accounting remain active.
 
-`WorthQueryApplicationCandidateResourceProfile::default()` has no item, byte,
-operation-width or producer-dependency policy. A finite prepared candidate must
-still quote actual requirements, reserve the original runtime request and meet
-installed semantic/required-output contracts. The finite `with_maximum_*`
-setters narrow host policy; they do not issue candidate or source authority.
+Ordinary mutation preparation does not require a candidate quote, retained-byte
+estimate or producer dependency ceiling. The prepared decision carries actual
+values and native targets into the installed writer; mutation authority, required
+output roles/families, cancellation, checked growth and atomic publication remain.
 
 `WorthQueryApplicationQueryResourceProfile::default()` omits index, result and
 intermediate policies. Native result owners claim concrete vector/value storage before copying; cost
@@ -5057,7 +4917,8 @@ reservations still account shared backing and retain charges through final drop.
 Concrete prepared node/root footprints remain required before copying or publication.
 
 With no settlement-step policy, convenience settlement drives the native
-advancement and parks on its `Pending` answer. It does not spin retrying blocked
+advancement through genuine `Progressed` answers on the same request and parks
+on `Pending`. It does not spin retrying blocked
 work. A subsequent advancement uses a fresh authorized request; explicit finite
 step controls preserve their limit. Branch commit coordination also defaults to
 no byte quota while retaining its shared weak/strong backing grants. Unpublished
@@ -5065,7 +4926,7 @@ idempotency has no additional fixed population quota; World recovery admission,
 exact identity, allocation and cleanup remain mandatory.
 
 Applications adopting this path should remove manual policy numbers from their
-ordinary candidate/query/output resource installation, retaining real semantic
-cardinality, concrete prepared footprints, request interruption and scheduling
+ordinary query/output resource installation, retaining real semantic
+cardinality, actual native allocation, request interruption and scheduling
 contracts. Policy absence grants no source, authorization, snapshot or settlement
 currentness, and does not widen an explicit finite ancestor request limit.

@@ -1,12 +1,11 @@
 use crate::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
     ApplicationQueryDefinitionBuilder, ApplicationQueryDefinitionDenial,
-    ApplicationQueryDependencyCeiling, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
-    ApplicationQueryParameterRef, ApplicationQueryReference, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder,
-    ApplicationQueryResultTraversalEndpoints, ErasedApplicationQueryDefinition,
-    ForwardResultTraversal, ManyResults, ReverseResultTraversal,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryOrderingDirection, ApplicationQueryParameterRef, ApplicationQueryReference,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+    ApplicationQueryResultShapeBuilder, ApplicationQueryResultTraversalEndpoints,
+    ErasedApplicationQueryDefinition, ForwardResultTraversal, ManyResults, ReverseResultTraversal,
 };
 
 use super::canonical_identity::{canonical_identity, ApplicationSchemaCanonicalHeader};
@@ -85,7 +84,6 @@ fn duplicate_result_slot_denies_definition_authority() {
         .scope(entity)
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 2))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
@@ -112,7 +110,6 @@ fn scoped_authorization_requirement_changes_definition_and_schema_identity() {
         .scope(entity)
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 1))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
@@ -195,7 +192,6 @@ fn definition<Slot: crate::portable_identity::WorthQueryPortableType>() -> Resul
         .scope(entity)
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 1))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
@@ -270,7 +266,6 @@ where
         .scope(entity)
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 1, 0))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
@@ -306,7 +301,6 @@ fn ordering_definition<Slot: crate::portable_identity::WorthQueryPortableType>(
         .scope(entity)
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 1))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

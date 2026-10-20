@@ -14,9 +14,7 @@ use super::super::{
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
 };
 use crate::domain_computation::primary_graph::{
-    application_attempt::CompletedHandlerFactBoundary,
-    application_contribution::WorthQueryProducerDemandResources,
-    invariant_projection::ConsumedOutputEvidence,
+    application_attempt::CompletedHandlerFactBoundary, invariant_projection::ConsumedOutputEvidence,
 };
 
 /// What a restoration carries over from the retained performed record it
@@ -186,7 +184,6 @@ impl WorthQueryApplicationOutputLineage {
         producer_dependency_identity: Option<[u8; 32]>,
         idempotency_key_identity: [u8; 32],
         suspended_facts: super::super::RetainedSourceFacts,
-        resources: Option<WorthQueryProducerDemandResources>,
         republished: RepublishedOutput,
     ) -> Option<RepublishedRecord> {
         let computation_source = republished.computation_source;
@@ -206,7 +203,6 @@ impl WorthQueryApplicationOutputLineage {
             producer_dependency_identity,
             idempotency_key_identity,
             suspended_facts.postconditions().clone(),
-            resources,
             None,
             &mut republished,
             computation_source,

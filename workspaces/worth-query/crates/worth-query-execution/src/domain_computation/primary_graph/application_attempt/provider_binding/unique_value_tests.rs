@@ -230,8 +230,6 @@ fn lower(
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
         effects,
-        0,
-        0,
         None,
         None,
         Default::default(),

@@ -59,8 +59,6 @@ pub(crate) fn example_limits(
     };
     application_installation::WorthQueryInMemoryApplicationLimits::new(
         world,
-        runtime::WorthQueryApplicationCandidateResourceProfile::policy(Some(5_120), Some(2_048))
-            .expect("valid candidate limits"),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
             .expect("valid query limits"),
         primary_graph::SignalConditionalEvaluationBudget::development(),

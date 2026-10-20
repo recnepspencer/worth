@@ -14,7 +14,6 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
     ];
     let mut world = installation::install_selected_program(
         &crate::installed_schema(),
-        8192,
         4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),

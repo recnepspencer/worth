@@ -237,7 +237,6 @@ fn unauthorized_caller_leaves_the_row_for_an_authorized_peer_to_ready() {
     let completion = super::super::WorthQueryCompletedOutputDemand {
         authority: super::super::WorthQueryAcceptedOutputAuthority::Committed(receipt),
         readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-        resources: None,
     };
     if finish
         .publish(super::super::WorthQueryOutputCheckpoint::Ready(

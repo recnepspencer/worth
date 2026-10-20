@@ -1,12 +1,11 @@
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryInfluenceContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryLiveCauseBinding,
-    ApplicationQueryLiveResourceContract, ApplicationQueryOrderingDirection,
-    ApplicationQueryParameterRef, ApplicationQueryParameterSet, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ForwardResultTraversal,
-    ManyResults,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+    ApplicationQueryInfluenceContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryLiveCauseBinding, ApplicationQueryLiveResourceContract,
+    ApplicationQueryOrderingDirection, ApplicationQueryParameterRef, ApplicationQueryParameterSet,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+    ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationEncodedScalarValue, ApplicationScalarValueBinding, StringApplicationValueBinding,
@@ -159,7 +158,6 @@ pub(super) fn governed_live_account_definition() -> ApplicationQueryDefinition<
         .scope(Account::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 1, 4))
         .disclosure(disclosure)
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned().with_preview())
         .lanes(
