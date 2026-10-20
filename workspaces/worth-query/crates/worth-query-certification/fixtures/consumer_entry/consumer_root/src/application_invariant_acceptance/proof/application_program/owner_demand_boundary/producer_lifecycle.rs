@@ -139,10 +139,7 @@ fn publish_initial_output(
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the initial source must retain performed delivery")
     };
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let mut outputs = performed
         .start_required_outputs(application, request, controls)
         .unwrap_or_else(|failure| {

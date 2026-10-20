@@ -71,7 +71,7 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
             runtime_authority: exact.runtime_authority, schema: exact.schema, scope: exact.scope,
             output_occurrence: observation.lifecycle_incarnation(),
             output_generation: observation.reference_generation().get(),
-            observed_source_facts: exact.observed_source_facts, resources: exact.resources,
+            observed_source_facts: exact.observed_source_facts,
         };
         let generated = receipt
             .output_correspondence()
@@ -251,14 +251,16 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
         // Another reservation may exhaust the derived ledger after World has
         // published but before the lineage recorder runs. The fallback must
         // carry the same qualification evidence as performed republication.
-        let held = exhaust_registration.then(|| {
-            resources
-                .reserve_retained_capacity(
-                    resources.installation().maximum_retained_bytes.expect("capacity-exhaustion control requires a finite installed ceiling")
-                        - resources.retained_capacity_bytes(),
-                )
-                .unwrap()
-        });
+        let held =
+            exhaust_registration.then(|| {
+                resources
+                    .reserve_retained_capacity(
+                        resources.installation().maximum_retained_bytes.expect(
+                            "capacity-exhaustion control requires a finite installed ceiling",
+                        ) - resources.retained_capacity_bytes(),
+                    )
+                    .unwrap()
+            });
         world
             .application
             .with_host_advancement(|phase| {

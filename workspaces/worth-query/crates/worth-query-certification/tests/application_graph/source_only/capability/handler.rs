@@ -60,15 +60,7 @@ where
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
     }
-    fn candidate_requirements(
-        &self,
-        _: &SetRetentionInput,
-        _: &WorthQueryInvariantMutationTarget<CapabilitySchema, Document>,
-    ) -> ApplicationCandidateRequirements {
-        B::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
-    }
+
     fn build_candidate(
         &self,
         input: &SetRetentionInput,

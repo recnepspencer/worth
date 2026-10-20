@@ -72,8 +72,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         .signed_creation
         .as_ref()
         .expect("retained native signing slot");
-    let (creation, encoding) = super::subject_binding::creation::<Schema, Binding>(&candidate)?;
-    let subject_bytes = super::subject_binding::quote(creation, encoding)?;
+    let (_, encoding) = super::subject_binding::creation::<Schema, Binding>(&candidate)?;
     let request = phase
         .execution_request_for(&application.product_runtime)
         .map_err(|_| Denial::CandidateMismatch)?;
@@ -109,58 +108,6 @@ pub(in crate::domain_computation::primary_graph) fn seal<
             WorthQueryAuthenticationEventDenial::PrincipalMismatch,
         ))?;
     let revision_text = revision.to_string();
-    let metadata_bytes = [
-        revision_text.as_str(),
-        candidate.read_set.admission.operation(),
-        Binding::IDENTITY,
-        principal.issuer(),
-        principal.subject(),
-        state.slot.spec.purpose(),
-        owner.metadata().verification_configuration(),
-        owner.metadata().clock_source(),
-        owner.metadata().clock_timeline(),
-    ]
-    .into_iter()
-    .try_fold(4096usize, |total, text| {
-        total.checked_add(text.len().checked_mul(6)?)
-    })
-    .ok_or(Denial::RepresentationCapacity)?;
-    let provenance_bytes = metadata_bytes
-        .checked_add(subject_bytes)
-        .ok_or(Denial::RepresentationCapacity)?;
-    let retained = provenance_bytes
-        .checked_add(state.slot.field.owned_allocation_capacity_bytes())
-        .ok_or(Denial::RepresentationCapacity)?;
-    if retained > state.slot.representation_capacity {
-        return Err(Denial::RepresentationCapacity);
-    }
-    let maximum_bytes = Binding::CANDIDATES
-        .resources()
-        .ok_or(Denial::RepresentationCapacity)?
-        .maximum_retained_representation_bytes();
-    let metadata_memory = execution
-        .reserve(
-            u64::try_from(
-                provenance_bytes
-                    .checked_mul(3)
-                    .ok_or(Denial::RepresentationCapacity)?,
-            )
-            .map_err(|_| Denial::RepresentationCapacity)?,
-        )
-        .map_err(resource)?;
-    let _canonical_memory = execution
-        .reserve(
-            u64::try_from(
-                maximum_bytes
-                    .checked_mul(6)
-                    .ok_or(Denial::RepresentationCapacity)?,
-            )
-            .map_err(|_| Denial::RepresentationCapacity)?,
-        )
-        .map_err(resource)?;
-    execution
-        .decision_stage(|context| identity::admit_assembly(context, metadata_bytes))
-        .map_err(Denial::Execution)??;
     let metadata = ApplicationSigningProvenanceMetadata {
         program_revision: revision_text,
         operation: candidate.read_set.admission.operation().to_owned(),
@@ -193,12 +140,11 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         .decision_stage(|context| {
             context.checkpoint(1).map_err(stopped)?;
             if encoding == worth_query_declaration::facade::application_schema::ApplicationSigningProvenanceEncoding::CertifiedSubjectV2 {
-                identity::certified_subject(fields, subject, &certified_dependencies, maximum_bytes, &request, context)
+                identity::certified_subject(fields, subject, &certified_dependencies, &request, context)
             } else { identity::subject(
                 fields,
                 subject,
                 &candidate.read_set.facts,
-                maximum_bytes,
                 &request,
                 context,
             ) }
@@ -207,7 +153,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
     let (effect_identity, candidate_work) = execution
         .decision_stage(|context| {
             context.checkpoint(1).map_err(stopped)?;
-            identity::candidate(&candidate.effects, maximum_bytes, &request, context)
+            identity::candidate(&candidate.effects, &request, context)
         })
         .map_err(Denial::Execution)??;
     let operation_meaning = *candidate
@@ -217,14 +163,14 @@ pub(in crate::domain_computation::primary_graph) fn seal<
     let observation = if encoding == worth_query_declaration::facade::application_schema::ApplicationSigningProvenanceEncoding::CertifiedSubjectV2 {
         let (digest, work) = execution.decision_stage(|context|
             super::super::dependency_identity::authentication_observation_identity(
-                operation_meaning, &candidate.read_set.facts, maximum_bytes, &request, context,
+                operation_meaning, &candidate.read_set.facts, &request, context,
             )).map_err(Denial::Execution)??;
         candidate.read_set.admission.retain_execution_canonical_work(work);
         Some(digest)
     } else { None };
     let (signing, signing_work) = execution
         .decision_stage(|context| {
-            identity::admit_assembly(context, metadata_bytes)?;
+            context.checkpoint(0).map_err(stopped)?;
             let mut signing = identity::IdentityEntries::new();
             signing.text("program", revision.to_string());
             signing.text("binding", Binding::IDENTITY);
@@ -246,7 +192,6 @@ pub(in crate::domain_computation::primary_graph) fn seal<
                 } else {
                     "worth-query-signed-creation-intent-v1"
                 },
-                maximum_bytes,
                 &request,
                 context,
             )
@@ -270,12 +215,9 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         .as_mut()
         .expect("retained native slot")
         .sealed = Some(SealedSigningContext {
-        canonical_byte_capacity: maximum_bytes,
-        provenance_bytes,
         encoding,
         certified_dependencies,
         _dependencies_memory: dependencies_memory,
-        _metadata_memory: metadata_memory,
         owner,
         principal,
         intent,
@@ -290,13 +232,6 @@ pub(in crate::domain_computation::primary_graph) fn seal<
     Ok(candidate)
 }
 
-fn resource(
-    cause: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial,
-) -> Denial {
-    Denial::Execution(
-        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause),
-    )
-}
 fn stopped(cause: worth_execution::MapKernelStop) -> Denial {
     Denial::Execution(
         crate::domain_computation::primary_graph::application_contribution::advancement_denial(

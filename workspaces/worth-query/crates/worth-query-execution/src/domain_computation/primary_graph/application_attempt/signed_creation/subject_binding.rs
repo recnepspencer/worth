@@ -41,25 +41,6 @@ pub(super) fn creation<Schema: ApplicationSchema, Binding: ApplicationMutationBi
     Ok((creation, encoding))
 }
 
-pub(super) fn quote(
-    creation: &ApplicationOperationBodyCreation,
-    encoding: Encoding,
-) -> Result<usize, Denial> {
-    if encoding == Encoding::AuthenticationV1 {
-        return Ok(0);
-    }
-    creation
-        .fields()
-        .iter()
-        .filter_map(scope_capture)
-        .try_fold(128usize, |total, (source, target, binding)| {
-            total
-                .checked_add(Dependency::quote(source, target, binding.as_str())?)
-                .and_then(|bytes| bytes.checked_add(size_of::<Dependency>()))
-        })
-        .ok_or(Denial::RepresentationCapacity)
-}
-
 pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>(
     candidate: &BodyCandidate<Schema, Binding>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
@@ -72,10 +53,9 @@ pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBin
         return Ok(Vec::new());
     }
     let subject = candidate.read_set.admission.scope_entity_id();
-    identity::admit_assembly(context, quote(creation, encoding)?)?;
     let mut revisions = std::collections::BTreeMap::new();
     for (source, _, _) in creation.fields().iter().filter_map(scope_capture) {
-        identity::admit_assembly(context, 0)?;
+        identity::check_interruption(context)?;
         let locator = candidate
             .read_set
             .lease
@@ -85,7 +65,7 @@ pub(super) fn capture<Schema: ApplicationSchema, Binding: ApplicationMutationBin
         revisions.insert((locator.aspect().aspect_key(), locator.field_path()), None);
     }
     for fact in candidate.read_set.facts.iter() {
-        identity::admit_assembly(context, 0)?;
+        identity::check_interruption(context)?;
         if let Fact::SourceFieldRevision {
             entity_id,
             locator,

@@ -34,9 +34,7 @@ macro_rules! guarded_binding {
             scope_field_type Account, AccountIdentity, AccountIdField, u64,
                 crate::application_schema::ReadOnly, crate::application_schema::NoApplicationUnit,
             scope_field AccountIdField::reference(),
-            candidates creates 0, deletes 0, links 0, unlinks 0, writes 1, emits 1,
-            resources retained_representation_bytes 128
-        );
+);
     };
 }
 

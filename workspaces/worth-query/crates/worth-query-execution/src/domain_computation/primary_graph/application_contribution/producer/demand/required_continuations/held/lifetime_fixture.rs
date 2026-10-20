@@ -38,11 +38,11 @@ impl WorthQueryOutputDemandInterest {
             schema_binding: observed_source.schema_binding.clone(),
             selected: WorthQuerySelectedApplicationProducer {
                 identity: "lifetime".into(), applicability: WorthQueryProducerApplicability::new("retained", WorthQueryProducerLifecyclePosture::Preserve),
-                exact_retained_output: false, retained_resources: None, retained_idempotency_key: None,
+                exact_retained_output: false, retained_idempotency_key: None,
                 retained_output_binding: None, reuses_live_output_only: false,
             },
             installed_entry: InstalledProducerProvider::lifetime_fixture(),
-            observed_source, limits, resources: None, resources_validated: true,
+            observed_source, limits,
             producer_contacts_in_this_demand: 0, checkpoint_readmission_work_units: 0,
             checkpoint_readmission_work_bound: 0, checkpoint_readmission_charged_preparation_bytes: 0,
             settled: false, admission_kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,

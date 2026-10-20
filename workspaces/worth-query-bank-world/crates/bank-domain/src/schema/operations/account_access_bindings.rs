@@ -110,9 +110,7 @@ worth_query_mutation_binding!(
         ReadOnly,
         NoApplicationUnit,
     field AccountIdentity::reference(),
-    value grant_scope,
-    candidates creates 1, deletes 0, links 2, unlinks 0, writes 2, emits 0,
-    resources retained_representation_bytes 8192
+    value grant_scope
 );
 
 worth_query_mutation_binding!(
@@ -140,7 +138,5 @@ worth_query_mutation_binding!(
         ReadOnly,
         NoApplicationUnit,
     field AccountIdentity::reference(),
-    value revoke_scope,
-    candidates creates 0, deletes 1, links 0, unlinks 2, writes 0, emits 0,
-    resources retained_representation_bytes 8192
+    value revoke_scope
 );

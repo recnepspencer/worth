@@ -119,7 +119,7 @@ mod tests {
         application_schema::{
             ApplicationEffectMarkerIdentity, ApplicationEffectRef,
             ApplicationOperationMarkerIdentity, ApplicationOperationRef, ApplicationRelationRef,
-            ApplicationRetainedEffectBinding, ApplicationStructuredValueBinding, OperationEmits,
+            ApplicationStructuredValueBinding, OperationEmits,
         },
     };
 
@@ -165,12 +165,6 @@ mod tests {
     worth_query_declaration::worth_query_structured_value_binding!(
         SecondInputBinding for SecondInput { identity: "worth.query.installation-test.second-lifecycle-input" }
     );
-
-    impl ApplicationRetainedEffectBinding for LifecycleEffectPayloadBinding {
-        fn retained_bytes(value: &Self::Value) -> u64 {
-            std::mem::size_of::<String>() as u64 + value.capacity() as u64
-        }
-    }
 
     impl ApplicationOperationMarkerIdentity<Schema> for Operation {
         type InputBinding = LifecycleOperationInputBinding;

@@ -298,10 +298,7 @@ fn observed(request: &Request<'_>, key: &str) -> worth_query_host::facade::prima
 }
 
 pub(super) fn controls() -> WorthQueryOutputDemandControls {
-    WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    )
+    WorthQueryOutputDemandControls::default()
 }
 
 fn settle<'a>(

@@ -76,7 +76,6 @@ fn restored_output(
             source_partition: [0x66; 32],
             producer_dependency: None,
             idempotency_key: [0x77; 32],
-            resources: None,
             roles: (Vec::new()).into(),
             producer_facts: None,
             producer_fact_wire_version: 0,

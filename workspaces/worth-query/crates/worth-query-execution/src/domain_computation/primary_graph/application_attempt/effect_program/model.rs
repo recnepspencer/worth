@@ -85,26 +85,14 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         >,
     pub(in crate::domain_computation::primary_graph::application_attempt) effects:
         Vec<WorthQueryApplicationRealizedEffect>,
-    pub(in crate::domain_computation::primary_graph::application_attempt) candidate_requirements:
-        Option<worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements>,
-    pub(in crate::domain_computation::primary_graph::application_attempt) effect_backing_memory:
-        Option<crate::domain_computation::primary_graph::application_attempt::effect_program::candidate_backing::CandidateBackingReservation>,
-    pub(in crate::domain_computation::primary_graph::application_attempt) emission_retained_bytes:
-        u64,
-    pub(in crate::domain_computation::primary_graph::application_attempt) emission_retained_bytes_ceiling:
-        u64,
     pub(in crate::domain_computation::primary_graph::application_attempt) conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    /// Whether effects follow the application contract, Query's reserved
-    /// platform contract, or both within one candidate.
     pub(in crate::domain_computation::primary_graph::application_attempt) effect_posture:
         crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
     pub(in crate::domain_computation::primary_graph::application_attempt) output_correspondence:
         super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
-    pub(in crate::domain_computation::primary_graph::application_attempt) retain_output_demand_observation:
-        bool,
-    pub(in crate::domain_computation::primary_graph::application_attempt) retain_client_observation:
-        bool,
+    pub(in crate::domain_computation::primary_graph::application_attempt) retain_output_demand_observation: bool,
+    pub(in crate::domain_computation::primary_graph::application_attempt) retain_client_observation: bool,
     pub(in crate::domain_computation::primary_graph::application_attempt) producer_required_invariants:
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
     pub(in crate::domain_computation::primary_graph::application_attempt) output_currentness_facts:
@@ -126,7 +114,6 @@ impl<Schema, Operation, Input, Scope>
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
 {
-    /// Exercise the provider boundary with genuine owner-ticketed evidence.
     pub(in crate::domain_computation::primary_graph) fn with_consumed_output_for_test(
         mut self,
         evidence: crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
@@ -139,9 +126,7 @@ impl<Schema, Operation, Input, Scope>
 /// Authors the effects of one candidate against a complete projected read set.
 ///
 /// Begin with `begin_effect_program`. Each write, create, delete, link, unlink,
-/// or emit is checked against the operation's installed ceiling and charged to
-/// its candidate reservation, and is refused with a typed attempt denial when it
-/// does not fit. Call `finish` to get the [`WorthQueryApplicationEffectProgram`].
+/// or emit is checked against the operation's installed authority. Call `finish` to get the [`WorthQueryApplicationEffectProgram`].
 pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope> {
     pub(super) read_set: WorthQueryCompleteApplicationReadSet<
         Schema,
@@ -153,14 +138,10 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
     pub(super) layout: Arc<super::super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
     pub(super) program: Arc<()>,
     pub(super) effects: Vec<WorthQueryApplicationRealizedEffect>,
-    pub(super) effect_backing_memory: Option<crate::domain_computation::primary_graph::application_attempt::effect_program::candidate_backing::CandidateBackingReservation>,
     pub(super) field_write_positions: super::FieldWriteIndex,
     pub(super) keys: BTreeSet<(KindId, String)>,
-    pub(super) emission_retained_bytes: u64,
-    pub(super) emission_retained_bytes_ceiling: u64,
     pub(super) conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    pub(super) candidate_reservation: Option<super::WorthQueryCandidateReservation>,
     pub(super) output_correspondence:
         super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     pub(super) creation_partition: Option<WorthQueryApplicationCreationPartition>,

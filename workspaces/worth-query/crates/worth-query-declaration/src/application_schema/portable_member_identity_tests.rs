@@ -148,11 +148,7 @@ macro_rules! effect_identity {
             type PayloadBinding = $binding;
             const IDENTIFIER: &'static str = "SameEffect";
         }
-        impl ApplicationRetainedEffectBinding for $binding {
-            fn retained_bytes(_: &Self::Value) -> u64 {
-                0
-            }
-        }
+
     };
 }
 

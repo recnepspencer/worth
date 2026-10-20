@@ -3,9 +3,9 @@
 //! connection whose demands select it.
 
 use worth_query_decl::facade::application_program::{
-    ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
-    ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationConnectionIdentity,
-    ApplicationDerivedArtifact, ApplicationFeature, ApplicationOccurrenceConnectionBinding,
+    ApplicationArtifactDependency, ApplicationArtifactRetention, ApplicationArtifactSuccession,
+    ApplicationConnectionIdentity, ApplicationDerivedArtifact, ApplicationFeature,
+    ApplicationOccurrenceConnectionBinding,
 };
 use worth_query_host::facade::application_contribution::WorthQueryProducerOutputFamily;
 use worth_query_host::facade::primary_graph::{
@@ -39,11 +39,7 @@ impl ApplicationDerivedArtifact<CheckpointSchema, PlanarFinalOutputFeature> for 
             <PlanarOutputFeature as ApplicationFeature<CheckpointSchema>>::IDENTITY,
         )];
     const REUSE_RULE: &'static str = "exact-source";
-    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(
-            Some(TOTALS_WORK),
-            Some(DECISION_FACT_BUDGET * 512),
-        );
+
     const STOPPED_OUTCOME: &'static str = "region-output-resource-denied";
 }
 

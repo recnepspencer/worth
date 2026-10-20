@@ -3,9 +3,7 @@ use super::super::super::{
     WorthQueryApplicationRealizedEffect,
 };
 use super::{mismatch, WorkflowBirthAuthority, WorthQueryApplicationAttemptDenial};
-use crate::domain_computation::primary_graph::application_attempt::effect_program::{
-    admit_workflow_settlement_effects, PlatformEffectDemand, WorthQueryApplicationCreationPartition,
-};
+use crate::domain_computation::primary_graph::application_attempt::effect_program::WorthQueryApplicationCreationPartition;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationCommitDenial,
 };
@@ -111,12 +109,12 @@ impl<Schema, Operation, Input, Scope>
                 Ok::<(), WorthQueryApplicationAttemptDenial>(())
             },
         )?;
-        let mut demand = PlatformEffectDemand::default();
-        for effect in &effects {
-            demand.observe(effect)?;
-        }
-        admit_workflow_settlement_effects(&self.read_set.admission, demand)?
-            .materialize(&effects)?;
+        self.effects.try_reserve(effects.len()).map_err(|_| {
+            WorthQueryApplicationAttemptDenial::new(
+                super::super::super::WorthQueryApplicationAttemptDenialKind::AllocationDenied,
+                "workflow birth effect allocation failed",
+            )
+        })?;
         self.effects.extend(effects);
         self.effect_posture = crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::ApplicationWithPlatform;
         self.read_set.workflow_deadline = authority.carry.deadline;

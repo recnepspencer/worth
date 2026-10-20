@@ -8,7 +8,6 @@ use crate::domain_computation::primary_graph::application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
 use worth_query_declaration::facade::application_operation::{
-    ApplicationCandidateRequirements, ApplicationMutationBinding,
     ApplicationMutationOutputContract, ApplicationMutationOutputRoleDescriptor,
     WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
     WorthQueryAtMostOneOutput, WorthQueryExactlyOneOutput, WorthQueryPreserveOutput,
@@ -102,8 +101,6 @@ worth_query_declaration::worth_query_mutation_binding!(
     scope Account, AccountPolicy, AccountStatus, String, ReadWrite, NoApplicationUnit,
     field AccountStatus::reference(),
     value optional_output_scope,
-    candidates creates 0, deletes 0, links 0, unlinks 0, writes 1, emits 0,
-    resources retained_representation_bytes 128
 );
 
 fn optional_output_scope(input: &OptionalOutputInput) -> String {
@@ -163,14 +160,6 @@ impl OperationHandler<IdentityExecutionSchema, OptionalOutputMutationBinding>
             }
         }
         HandlerResult::Completed(input.clone())
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &OptionalOutputInput,
-        _: &OptionalOutputInput,
-    ) -> ApplicationCandidateRequirements {
-        <OptionalOutputMutationBinding as ApplicationMutationBinding<IdentityExecutionSchema>>::CANDIDATES.finite_requirements().expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

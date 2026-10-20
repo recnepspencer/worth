@@ -4,7 +4,6 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationProgramMigrationPreparationDenial, WorthQueryApplicationRequestExt,
 };
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
-use worth_query_host::facade::declaration::application_operation::ApplicationCandidatePolicy;
 
 use crate::document_retention_model::host::publish_on_first_program;
 use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
@@ -67,12 +66,6 @@ impl
     const HANDLER_IDENTITY: &'static str = "worth.query.certification.unowned-migration-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str =
         "worth.query.certification.unowned-migration-command.v1";
-    const CANDIDATES: ApplicationCandidatePolicy =
-        ApplicationCandidatePolicy::finite(
-        worth_query_host::facade::declaration::application_operation::ApplicationCandidateRequirements::fixed_shape(
-            worth_query_host::facade::declaration::application_operation::ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 0),
-            worth_query_host::facade::declaration::application_operation::ApplicationCandidateResourceCeiling::representation_bytes(0),
-        ));
 
     fn scope_field(
     ) -> worth_query_host::facade::declaration::application_schema::ApplicationFieldRef<

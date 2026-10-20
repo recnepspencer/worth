@@ -216,7 +216,6 @@ fn a_ready_and_its_successor_share_one_performed_member() {
             let completion = ReadyCompletion::for_test(WorthQueryCompletedOutputDemand {
                 authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
                 readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-                resources: None,
             });
             let publication = commit_receipt(
                 "published successor",

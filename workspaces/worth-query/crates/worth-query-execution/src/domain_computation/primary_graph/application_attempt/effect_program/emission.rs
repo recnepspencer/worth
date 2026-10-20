@@ -1,12 +1,12 @@
 use worth_query_declaration::facade::application_schema::{
     ApplicationEffectMarkerIdentity, ApplicationEffectRef, ApplicationExternalEffectBinding,
-    ApplicationRetainedEffectBinding, ApplicationStructuredValueBinding, OperationEmits,
+    ApplicationStructuredValueBinding, OperationEmits,
 };
 use worth_query_installation::facade::ApplicationOperationProgramTarget;
 
 use super::{
-    denial, CandidateItemKind, WorthQueryApplicationEffectProgramBuilder,
-    WorthQueryApplicationEmission, WorthQueryApplicationRealizedEffect,
+    denial, WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationEmission,
+    WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
@@ -52,7 +52,7 @@ impl<Schema, Operation, Input, Scope>
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
         Effect: ApplicationEffectMarkerIdentity<Schema> + OperationEmits<Operation>,
-        Effect::PayloadBinding: ApplicationRetainedEffectBinding<Value = Payload>,
+        Effect::PayloadBinding: ApplicationStructuredValueBinding<Value = Payload>,
         Payload: Send + Sync + 'static,
     {
         self.admit_program_target(&ApplicationOperationProgramTarget::Emit {
@@ -60,29 +60,11 @@ impl<Schema, Operation, Input, Scope>
         })?;
         Effect::PayloadBinding::validate(&payload)
             .map_err(|_| invalid_payload_denial(effect.name()))?;
-        let payload_retained_bytes = Effect::PayloadBinding::retained_bytes(&payload);
-        let Some(retained_bytes) = self
-            .emission_retained_bytes
-            .checked_add(payload_retained_bytes)
-        else {
-            return Err(retained_bytes_denial(effect.name()));
-        };
-        if retained_bytes > self.emission_retained_bytes_ceiling {
-            return Err(retained_bytes_denial(effect.name()));
-        }
+        self.reserve_effects(1)?;
         let emission =
             WorthQueryApplicationEmission::new::<Effect::PayloadBinding>(effect.name(), payload);
-        let candidate_retained_representation_bytes = emission
-            .candidate_retained_representation_bytes()
-            .ok_or_else(|| candidate_bytes_denial(effect.name()))?;
-        self.charge_candidate_representation(
-            CandidateItemKind::Emit,
-            candidate_retained_representation_bytes,
-            0,
-        )?;
         self.effects
             .push(WorthQueryApplicationRealizedEffect::Emit(emission));
-        self.emission_retained_bytes = retained_bytes;
         Ok(())
     }
 
@@ -104,48 +86,16 @@ impl<Schema, Operation, Input, Scope>
         })?;
         Effect::PayloadBinding::validate(&payload)
             .map_err(|_| invalid_payload_denial(effect.name()))?;
-        let payload_retained_bytes = Effect::PayloadBinding::retained_bytes(&payload);
-        let Some(retained_bytes) = self
-            .emission_retained_bytes
-            .checked_add(payload_retained_bytes)
-        else {
-            return Err(retained_bytes_denial(effect.name()));
-        };
-        if retained_bytes > self.emission_retained_bytes_ceiling {
-            return Err(retained_bytes_denial(effect.name()));
-        }
+        self.reserve_effects(1)?;
         let emission = WorthQueryApplicationEmission::new_external::<Effect::PayloadBinding>(
             effect.name(),
             payload,
         )
         .map_err(|()| external_payload_denial(effect.name()))?;
-        let candidate_retained_representation_bytes = emission
-            .candidate_retained_representation_bytes()
-            .ok_or_else(|| candidate_bytes_denial(effect.name()))?;
-        self.charge_candidate_representation(
-            CandidateItemKind::Emit,
-            candidate_retained_representation_bytes,
-            0,
-        )?;
         self.effects
             .push(WorthQueryApplicationRealizedEffect::Emit(emission));
-        self.emission_retained_bytes = retained_bytes;
         Ok(())
     }
-}
-
-fn retained_bytes_denial(effect: &str) -> WorthQueryApplicationAttemptDenial {
-    denial(
-        WorthQueryApplicationAttemptDenialKind::RetainedEffectBytesExceeded,
-        effect,
-    )
-}
-
-fn candidate_bytes_denial(effect: &str) -> WorthQueryApplicationAttemptDenial {
-    denial(
-        WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-        effect,
-    )
 }
 
 fn invalid_payload_denial(effect: &str) -> WorthQueryApplicationAttemptDenial {

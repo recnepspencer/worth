@@ -238,7 +238,6 @@ fn install_no_projection(
         .unwrap();
     installation::install_selected_program(
         &crate::installed_schema(),
-        8192,
         4096,
         roster,
         grants,

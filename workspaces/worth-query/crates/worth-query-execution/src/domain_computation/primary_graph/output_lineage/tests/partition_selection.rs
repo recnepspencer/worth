@@ -73,7 +73,6 @@ fn unrelated_partition_selection(population: u64) {
         partition(0),
         None,
         [0x41; 32],
-        None,
     );
     for number in 1..=population {
         lineage.record_recovered_prior_output(
@@ -88,7 +87,6 @@ fn unrelated_partition_selection(population: u64) {
             partition(number),
             None,
             [0x41; 32],
-            None,
         );
     }
     let coordinate = ProductCoordinate {
@@ -145,7 +143,7 @@ fn unrelated_partition_selection(population: u64) {
         completed_decision_reuse: None,
         prepared_input_reuse_key: None,
         native_output_witness: OnceLock::new(),
-        mutable: std::sync::Mutex::new(super::super::RecordedOutputMutable::new(None, None, None, super::super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))),
+        mutable: std::sync::Mutex::new(super::super::RecordedOutputMutable::new(None, None, super::super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored))),
         settlement_identity: super::super::RecordedSettlementIdentity::retain(
             &source,
             ProductCoordinate {
@@ -325,7 +323,6 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
         None,
         [0x41; 32],
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
-        None,
         None,
         );
     lineage.register_fork(parent, &child);

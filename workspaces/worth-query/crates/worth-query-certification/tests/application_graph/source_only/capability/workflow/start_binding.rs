@@ -1,6 +1,6 @@
 //! Native instance-start command selects its separately installed capability.
 use super::*;
-use worth_query_decl::facade::application_operation::ApplicationCandidatePolicy;
+
 pub struct StartBinding;
 impl ApplicationMutationBinding<CapabilitySchema> for StartBinding {
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
@@ -37,10 +37,6 @@ impl ApplicationMutationBinding<CapabilitySchema> for StartBinding {
     const IDEMPOTENCY_IDENTITY: &'static str = "capability-workflow.key.StartBinding";
     // Closed propose/effect/done graph: eight native creates and fifteen links.
     // Reuse the finite small kernel profile; domain writer limits remain separate.
-    const CANDIDATES: ApplicationCandidatePolicy =
-        <crate::document_retention_model::workflow::WorkflowInstanceStartBinding as ApplicationMutationBinding<
-            crate::document_retention_model::schema::DocumentRetentionSchema,
-        >>::CANDIDATES;
 
     fn scope_field() -> ApplicationFieldRef<
         CapabilitySchema,

@@ -53,25 +53,6 @@ pub(super) fn append_feature_outputs(
                 ]),
             ),
         ));
-        let resources = artifact.resource_ceiling();
-        facts.push(fact(
-            ApplicationSemanticFamily::Resources,
-            subject,
-            framed_fields([
-                (
-                    "work",
-                    resources
-                        .maximum_work()
-                        .map_or_else(|| "absent".to_owned(), |work| work.to_string()),
-                ),
-                (
-                    "bytes",
-                    resources
-                        .maximum_retained_bytes()
-                        .map_or_else(|| "absent".to_owned(), |bytes| bytes.to_string()),
-                ),
-            ]),
-        ));
     }
     for collection in feature.derived_collections() {
         facts.push(fact(

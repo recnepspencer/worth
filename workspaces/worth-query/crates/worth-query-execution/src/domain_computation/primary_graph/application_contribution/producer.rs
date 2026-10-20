@@ -140,44 +140,6 @@ pub struct WorthQueryProducerInvariantRequirement {
     execution_point: ApplicationInvariantExecutionPoint,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct WorthQueryProducerDemandResources {
-    work: Option<usize>,
-    retained_bytes: usize,
-}
-
-/// Why the original source cannot supply a concrete producer resource quote.
-/// A successfully quoted demand exceeding a receiving policy is reported by
-/// the demand's existing work or retention denial instead.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryProducerResourceQuoteDenial {
-    /// Checked source-dependent storage arithmetic is not representable.
-    SizeOverflow,
-    /// Encoding needed to measure the original source failed.
-    SourceNotEncodable,
-    /// Transient scratch needed to measure the original source could not be reserved.
-    /// The reservation may refuse allocation or capacity/layout; this is not a
-    /// receiving policy or an allocation grant.
-    ScratchReservationRefused,
-}
-
-impl WorthQueryProducerDemandResources {
-    pub const fn new(work: Option<usize>, retained_bytes: usize) -> Self {
-        Self {
-            work,
-            retained_bytes,
-        }
-    }
-
-    pub const fn work(self) -> Option<usize> {
-        self.work
-    }
-
-    pub const fn retained_bytes(self) -> usize {
-        self.retained_bytes
-    }
-}
-
 impl WorthQueryProducerInvariantRequirement {
     pub const fn new(
         identifier: &'static str,
@@ -237,11 +199,6 @@ where
     ) -> Option<&'static str> {
         None
     }
-
-    fn demand_resources(
-        &self,
-        source: &<<<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
-    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial>;
 }
 
 pub trait WorthQueryApplicationProducerBinding<Schema>: Sized + 'static
@@ -278,7 +235,6 @@ where
     const IDENTITY: &'static str;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability];
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement];
-    const RESOURCE_POLICY: &'static str;
     const REUSE_POLICY: &'static str;
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;
 }

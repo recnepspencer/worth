@@ -68,9 +68,7 @@ impl WorthQueryApplicationOutputLineage {
         producer_dependency_identity: Option<[u8; 32]>,
         idempotency_key_identity: [u8; 32],
         observed_source_facts: super::RetainedSourceFacts,
-        resources: Option<
-            super::super::application_contribution::WorthQueryProducerDemandResources,
-        >,
+
         verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     ) -> Option<RestoredRecord> {
         let computation_source = observed_source_facts.source();
@@ -87,7 +85,6 @@ impl WorthQueryApplicationOutputLineage {
             producer_dependency_identity,
             idempotency_key_identity,
             observed_source_facts,
-            resources,
             verified_witness,
             &mut None,
             computation_source,
@@ -113,9 +110,7 @@ impl WorthQueryApplicationOutputLineage {
         observed_source_facts: impl Into<
             crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
         >,
-        resources: Option<
-            super::super::application_contribution::WorthQueryProducerDemandResources,
-        >,
+
         verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
         republished: &mut Option<republication::RepublishedOutput>,
         computation_source: super::ComputationSourceEvidence,
@@ -169,7 +164,7 @@ impl WorthQueryApplicationOutputLineage {
                     && Arc::ptr_eq(&recorded.correspondence, &correspondence),
                 "one restored output partition keeps one exact identity"
             );
-            recorded.restore(observed_source_facts, resources, verified_witness);
+            recorded.restore(observed_source_facts, verified_witness);
             let restored = RestoredRecord {
                 identity: Arc::clone(&recorded.settlement_identity),
                 facts: recorded
@@ -198,7 +193,6 @@ impl WorthQueryApplicationOutputLineage {
             mutable: Mutex::new(RecordedOutputMutable::new(
                 Some(super::invalidation::FullVerificationReason::CheckpointRestore),
                 (Some(observed_source_facts)).map(|facts| computation_source.retain_facts(facts)),
-                resources,
                 super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored),
             )),
             settlement_identity: super::RecordedSettlementIdentity::retain(
@@ -271,9 +265,6 @@ impl WorthQueryApplicationOutputLineage {
         source_partition_identity: [u8; 32],
         producer_dependency_identity: Option<[u8; 32]>,
         idempotency_key_identity: [u8; 32],
-        resources: Option<
-            super::super::application_contribution::WorthQueryProducerDemandResources,
-        >,
     ) {
         let source = SemanticSource {
             runtime_authority,
@@ -331,7 +322,6 @@ impl WorthQueryApplicationOutputLineage {
             mutable: Mutex::new(RecordedOutputMutable::new(
                 Some(super::invalidation::FullVerificationReason::CheckpointRestore),
                 None,
-                resources,
                 super::retained_computation::RecordedComputation::Absent(PriorAbsence::Restored),
             )),
             settlement_identity: super::RecordedSettlementIdentity::retain(

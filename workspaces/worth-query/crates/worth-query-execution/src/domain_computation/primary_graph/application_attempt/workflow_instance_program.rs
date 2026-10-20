@@ -8,7 +8,6 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
 };
 
-use super::effect_program::{admit_platform_effects, PlatformEffectDemand};
 use super::{
     observe_adjacency, PublishedWorkflowDefinitionRef, WorthQueryApplicationAdjacencyDirection,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
@@ -106,20 +105,7 @@ where
                 compiled.program_revision(),
             )
         })?;
-        let mut demand = PlatformEffectDemand::default();
         let branch_occurrence = self.lease.product().product_branch().occurrence_ordinal();
-        visit_instance_start_facts(
-            &layout,
-            &compiled,
-            discovery_intent.lookup_identity(),
-            &start_revision,
-            branch_occurrence,
-            subject,
-            carry,
-            crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission),
-            |effect| demand.observe(&effect),
-        )?;
-        let reservation = admit_platform_effects(&self, demand)?;
         let mut effects = Vec::new();
         visit_instance_start_facts(
             &layout,
@@ -135,18 +121,14 @@ where
                 Ok::<(), WorthQueryApplicationAttemptDenial>(())
             },
         )?;
-        reservation.materialize(&effects)?;
+
         let start_path = compiled.start_path().to_owned();
         let definition = compiled.definition();
         let definition_content_identity = compiled.content_identity().clone();
         let program_revision = *compiled.program_revision();
         let program = WorthQueryApplicationEffectProgram {
-            candidate_requirements: None,
-            effect_backing_memory: None,
             read_set: self,
             effects,
-            emission_retained_bytes: 0,
-            emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             output_correspondence: Default::default(),

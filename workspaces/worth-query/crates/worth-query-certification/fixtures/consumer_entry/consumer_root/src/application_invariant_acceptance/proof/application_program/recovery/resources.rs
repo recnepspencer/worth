@@ -29,10 +29,8 @@ pub(in super::super) fn resource_denial_preserves_source_and_delivery(
         .execute()
         .expect("the source occurrence is readable");
     let source = source_result.observed_sources()[0].clone();
-    let denied_controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(1).unwrap(),
-        NonZeroUsize::new(1).unwrap(),
-    );
+    let denied_controls =
+        WorthQueryOutputDemandControls::default().source_currentness_work(NonZeroUsize::MIN);
     let outcome = request
         .advanced()
         .mutate(PlanarSourceAdjustment {
@@ -52,7 +50,7 @@ pub(in super::super) fn resource_denial_preserves_source_and_delivery(
     let failure = performed
         .start_required_outputs(&world.application, &request, denied_controls)
         .err()
-        .expect("insufficient derived resources deny required-output start");
+        .expect("explicit currentness restriction denies required-output start");
     assert_eq!(
         failure.denial().recovery_posture(),
         worth_query_host::facade::application_entry::WorthQueryRequiredOutputRecoveryPosture::Retryable,
@@ -63,7 +61,7 @@ pub(in super::super) fn resource_denial_preserves_source_and_delivery(
         worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
     ) = failure.denial()
     else {
-        panic!("resource denial must preserve the exact output-demand cause")
+        panic!("currentness refusal must preserve the exact output-demand cause")
     };
     assert_eq!(
         denial.kind(),

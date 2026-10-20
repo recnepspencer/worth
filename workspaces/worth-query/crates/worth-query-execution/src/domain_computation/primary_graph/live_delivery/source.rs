@@ -1,5 +1,5 @@
 use std::collections::{HashMap, VecDeque};
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 mod custody;
@@ -19,9 +19,6 @@ use super::super::application_attempt::{
 use crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication;
 
 const RETAINED_COMMIT_BATCH_CAPACITY: usize = 64;
-const RETAINED_COMMIT_BATCH_BYTES: u64 = 262_144;
-const RETAINED_DELIVERY_BYTES: u64 =
-    RETAINED_COMMIT_BATCH_BYTES * RETAINED_COMMIT_BATCH_CAPACITY as u64;
 
 #[derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct WorthQueryLiveProductKey {
@@ -48,7 +45,6 @@ impl WorthQueryLiveProductKey {
 pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveDeliverySource {
     state: Arc<Mutex<WorthQueryLiveDeliverySourceState>>,
     batch_capacity: AtomicUsize,
-    byte_capacity: AtomicU64,
     #[cfg(test)]
     after_reservation: Mutex<Option<Arc<dyn Fn() + Send + Sync>>>,
 }
@@ -66,7 +62,6 @@ struct WorthQueryLiveProductPartition {
     allocated_batch_capacity: usize,
     next_sequence: u64,
     last_product_commit: Option<worth_runtime_world::facade::CompositeCommitIdentity>,
-    retained_payload_bytes: u64,
     subscriber_count: usize,
     reservation_live: bool,
     retired: bool,
@@ -77,7 +72,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCommitBatc
     pub(super) publication: WorthQueryCommittedProductPublication,
     pub(super) product: crate::basis::WorthQueryProductObservationLease,
     pub(super) emissions: Vec<WorthQueryApplicationEmission>,
-    retained_payload_bytes: u64,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryLiveCommitBatchCell(
@@ -99,16 +93,15 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryLiveSourcePoll {
 
 impl Default for WorthQueryLiveDeliverySource {
     fn default() -> Self {
-        Self::with_limits(RETAINED_COMMIT_BATCH_CAPACITY, RETAINED_DELIVERY_BYTES)
+        Self::with_limits(RETAINED_COMMIT_BATCH_CAPACITY)
     }
 }
 
 impl WorthQueryLiveDeliverySource {
-    fn with_limits(batch_capacity: usize, byte_capacity: u64) -> Self {
+    fn with_limits(batch_capacity: usize) -> Self {
         Self {
             state: Arc::new(Mutex::new(WorthQueryLiveDeliverySourceState::default())),
             batch_capacity: AtomicUsize::new(batch_capacity),
-            byte_capacity: AtomicU64::new(byte_capacity),
             #[cfg(test)]
             after_reservation: Mutex::new(None),
         }
@@ -117,11 +110,9 @@ impl WorthQueryLiveDeliverySource {
     pub(in crate::domain_computation::primary_graph) fn reserve(
         &self,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
-        retained_payload_bytes: u64,
     ) -> Result<WorthQueryLivePublicationReservation, &'static str> {
         let key = WorthQueryLiveProductKey::from_observation(observation);
         let configured_batch_capacity = self.batch_capacity.load(Ordering::Acquire);
-        let byte_capacity = self.byte_capacity.load(Ordering::Acquire);
         let mut state = self
             .state
             .lock()
@@ -142,14 +133,11 @@ impl WorthQueryLiveDeliverySource {
                     allocated_batch_capacity: configured_batch_capacity,
                     next_sequence: 0,
                     last_product_commit: None,
-                    retained_payload_bytes: 0,
                     subscriber_count: 0,
                     reservation_live: false,
                     retired: false,
                 }),
             configured_batch_capacity,
-            byte_capacity,
-            retained_payload_bytes,
         );
         let (slot, evictions) = match result {
             Ok(reservation) => reservation,
@@ -164,7 +152,6 @@ impl WorthQueryLiveDeliverySource {
             state: Arc::clone(&self.state),
             key,
             slot: Some(slot),
-            retained_payload_bytes,
             evictions,
             active: true,
         };
@@ -188,10 +175,7 @@ impl WorthQueryLiveDeliverySource {
         emissions: WorthQueryAdmittedApplicationEmissionBatch,
     ) -> usize {
         let emitted = emissions.len();
-        let (emissions, retained_payload_bytes) = emissions.into_parts();
-        if reservation.active {
-            assert_eq!(retained_payload_bytes, reservation.retained_payload_bytes);
-        }
+        let emissions = emissions.into_emissions();
         let mut state = self
             .state
             .lock()
@@ -227,14 +211,10 @@ impl WorthQueryLiveDeliverySource {
             publication.composite_commit()
         );
         for _ in 0..reservation.evictions {
-            let evicted = partition
+            partition
                 .batches
                 .pop_front()
                 .expect("reserved eviction exists");
-            partition.retained_payload_bytes = partition
-                .retained_payload_bytes
-                .checked_sub(evicted.batch().retained_payload_bytes)
-                .expect("reserved eviction has accounted bytes");
         }
         partition.reservation_live = false;
         reservation.active = false;
@@ -260,14 +240,9 @@ impl WorthQueryLiveDeliverySource {
                 publication,
                 product: crate::basis::WorthQueryProductObservationLease::new(observation),
                 emissions,
-                retained_payload_bytes,
             })
             .unwrap_or_else(|_| panic!("reserved live batch initializes once"));
         partition.last_product_commit = Some(slot.batch().publication.composite_commit().clone());
-        partition.retained_payload_bytes = partition
-            .retained_payload_bytes
-            .checked_add(retained_payload_bytes)
-            .expect("reservation proved retained-byte arithmetic");
         partition.batches.push_back(slot);
         emitted
     }

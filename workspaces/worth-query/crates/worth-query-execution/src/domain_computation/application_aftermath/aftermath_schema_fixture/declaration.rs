@@ -10,9 +10,8 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, ApplicationPolicyRef, ApplicationPrincipalBindingRef,
     ApplicationPrincipalBindingRequirements, ApplicationPrincipalIdentityRequirement,
     ApplicationPrincipalMappingIdentityRequirement, ApplicationPrincipalMappingStatusRequirement,
-    ApplicationPrincipalTargetRequirement, ApplicationRelationRef,
-    ApplicationRetainedEffectBinding, ApplicationSchema, ApplicationSchemaDeclaration,
-    ApplicationSchemaDeclarationBuilder, BoolApplicationValueBinding,
+    ApplicationPrincipalTargetRequirement, ApplicationRelationRef, ApplicationSchema,
+    ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder, BoolApplicationValueBinding,
     DeclaredApplicationFieldValue, EqualityPredicate, NoEqualityPredicate, OperationEmits,
     OperationReads, OperationRequiresAbility, ReadOnly, ReadWrite, StringApplicationValueBinding,
     U64ApplicationValueBinding,
@@ -157,12 +156,6 @@ worth_query_declaration::worth_query_portable_type!(
     FixtureExternalNotice => "worth.query.test.fixture-external-notice.v1"
 );
 worth_query_declaration::worth_query_structured_value_binding!(pub(super) FixtureExternalNoticeBinding for FixtureExternalNotice { identity: "worth.query.test.fixture-external-notice.v1" });
-
-impl ApplicationRetainedEffectBinding for FixtureExternalNoticeBinding {
-    fn retained_bytes(_value: &Self::Value) -> u64 {
-        u64::try_from(std::mem::size_of::<Self::Value>()).unwrap_or(u64::MAX)
-    }
-}
 
 impl ApplicationExternalEffectBinding for FixtureExternalNoticeBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(

@@ -4,14 +4,9 @@ use bank_domain::schema::{
     ApprovedPaymentAssessmentPublished, BankSchema, PaymentIdentityField, PaymentIntent,
     PaymentStatusField,
 };
-use worth_query_host::facade::{
-    declaration::application_operation::{
-        ApplicationCandidateRequirements, ApplicationMutationBinding,
-    },
-    primary_graph::{
-        CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-        WorthQueryInvariantMutationTarget,
-    },
+use worth_query_host::facade::primary_graph::{
+    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
+    WorthQueryInvariantMutationTarget,
 };
 
 pub(crate) struct ApprovedPaymentAssessmentHandler;
@@ -43,16 +38,6 @@ impl OperationHandler<BankSchema, ApprovedPaymentAssessmentBinding>
             Ok(target) => HandlerResult::Completed(target),
             Err(error) => HandlerResult::ExecutionDenied(error),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &ApprovedPaymentAssessmentInput,
-        _: &WorthQueryInvariantMutationTarget<BankSchema, PaymentIntent>,
-    ) -> ApplicationCandidateRequirements {
-        ApprovedPaymentAssessmentBinding::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

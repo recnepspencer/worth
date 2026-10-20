@@ -106,8 +106,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedOutpu
     pub(in crate::domain_computation::primary_graph) authority: WorthQueryAcceptedOutputAuthority,
     pub(in crate::domain_computation::primary_graph) readiness:
         super::WorthQueryOutputReadinessDeliveryEvidence,
-    pub(in crate::domain_computation::primary_graph) resources:
-        Option<super::super::application_contribution::WorthQueryProducerDemandResources>,
 }
 
 pub(in crate::domain_computation::primary_graph) enum WorthQueryOutputSchedulingResult {

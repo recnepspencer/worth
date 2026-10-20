@@ -55,7 +55,11 @@ where
         let artifact = self
             .validate_derived_artifact_demand::<Connection, ConnectionDemand<Schema, Connection>>(
             )?;
-        let limits = self.resolve_artifact_limits(limits, artifact)?;
+        let limits = self
+            .backing
+            .runtime
+            .output_demand_resource_profile()
+            .constrain(limits);
         if let (Some(child), Some(parent_artifact)) = (artifact, parent.artifact) {
             let consumes_parent = child.dependencies().iter().any(|dependency| {
                 dependency.identity() == parent_artifact.identity()

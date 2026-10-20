@@ -162,7 +162,6 @@ impl Court {
                 facts
                     .then(source_facts)
                     .map(|facts| computation_source.retain_facts(facts)),
-                None,
                 retained_computation::RecordedComputation::Absent(PriorAbsence::NotProduced),
             )),
         };

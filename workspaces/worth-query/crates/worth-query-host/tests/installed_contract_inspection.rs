@@ -8,8 +8,7 @@ use worth_query_decl::facade::{
     },
     application_schema::{
         ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
-        ApplicationRetainedEffectBinding, AspectContractRevision, AspectIdentity,
-        WorthQueryExternalEffectCorrelationFamily,
+        AspectContractRevision, AspectIdentity, WorthQueryExternalEffectCorrelationFamily,
     },
     worth_query_application_schema, worth_query_aspect, worth_query_effect, worth_query_entity,
     worth_query_field, worth_query_operation, worth_query_operation_creates,
@@ -123,12 +122,6 @@ worth_query_operation!(pub EmitAccountNotice for ContractInspectionSchema, input
 pub struct AccountNotice(u64);
 worth_query_declaration::worth_query_portable_type!(AccountNotice => "worth.query.test.host.account_notice.v1");
 worth_query_declaration::worth_query_structured_value_binding!(pub AccountNoticeBinding for AccountNotice { identity: "worth.query.test.host.account_notice.v1" });
-
-impl ApplicationRetainedEffectBinding for AccountNoticeBinding {
-    fn retained_bytes(_value: &Self::Value) -> u64 {
-        8
-    }
-}
 
 impl ApplicationExternalEffectBinding for AccountNoticeBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(

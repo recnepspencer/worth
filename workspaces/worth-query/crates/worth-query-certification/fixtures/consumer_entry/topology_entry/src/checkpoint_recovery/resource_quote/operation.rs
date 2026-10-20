@@ -1,4 +1,4 @@
-//! Genuine counted input backing and one-field output; source correction is separate.
+//! Semantic source count and one-field output; source editing is separate.
 use super::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
@@ -16,7 +16,7 @@ pub(super) static OPERATIONS: AtomicUsize = AtomicUsize::new(0);
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct Input {
     pub scope_key: String,
-    pub rows: Vec<u64>,
+    pub count: u64,
 }
 #[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
 pub struct Edit {
@@ -43,9 +43,7 @@ worth_query_mutation_binding! {
         mapping ExternalPrincipalMapping,principal_entity Principal,principal_identity u64,
         identity_binding U64ApplicationValueBinding,
     scope Body,PlanarPosition,BodyKey,String,ReadOnly,NoApplicationUnit,
-    field BodyKey::reference(),value_field scope_key,
-    candidates creates 0,deletes 0,links 0,unlinks 0,writes 1,emits 0,
-    resources retained_representation_bytes 1024
+    field BodyKey::reference(),value_field scope_key
 }
 worth_query_mutation_binding! {
     pub EditBinding for Edit,schema generic S:TopologySchemaBinding,
@@ -58,9 +56,7 @@ worth_query_mutation_binding! {
         mapping ExternalPrincipalMapping,principal_entity Principal,principal_identity u64,
         identity_binding U64ApplicationValueBinding,
     scope Body,PlanarPosition,BodyKey,String,ReadOnly,NoApplicationUnit,
-    field BodyKey::reference(),value_field scope_key,
-    candidates creates 0,deletes 0,links 0,unlinks 0,writes 1,emits 0,
-    resources retained_representation_bytes 1024
+    field BodyKey::reference(),value_field scope_key
 }
 pub(super) fn declare<S: TopologySchemaBinding>(
     schema: ApplicationSchemaDeclarationBuilder<S>,
@@ -101,13 +97,7 @@ impl<S: TopologySchemaBinding> OperationHandler<S, ProduceBinding<S>> for Handle
             Err(e) => HandlerResult::ExecutionDenied(e),
         }
     }
-    fn candidate_requirements(
-        &self,
-        _: &Input,
-        _: &WorthQueryInvariantMutationTarget<S, Body>,
-    ) -> ApplicationCandidateRequirements {
-        super::super::super::requirements(0, 0, 0, 1, 1024)
-    }
+
     fn build_candidate(
         &self,
         input: &Input,
@@ -118,7 +108,7 @@ impl<S: TopologySchemaBinding> OperationHandler<S, ProduceBinding<S>> for Handle
             let entity = writer
                 .projected_entity(&target)
                 .map_err(HandlerExecutionDenial::new)?;
-            let total = input.rows.iter().sum::<u64>();
+            let total = input.count;
             writer
                 .write_field(&entity, CountedTotal::reference(), total)
                 .map_err(HandlerExecutionDenial::new)?;
@@ -151,13 +141,7 @@ impl<S: TopologySchemaBinding> OperationHandler<S, EditBinding<S>> for Handler {
             Err(e) => HandlerResult::ExecutionDenied(e),
         }
     }
-    fn candidate_requirements(
-        &self,
-        _: &Edit,
-        _: &WorthQueryInvariantMutationTarget<S, Body>,
-    ) -> ApplicationCandidateRequirements {
-        super::super::super::requirements(0, 0, 0, 1, 1024)
-    }
+
     fn build_candidate(
         &self,
         input: &Edit,

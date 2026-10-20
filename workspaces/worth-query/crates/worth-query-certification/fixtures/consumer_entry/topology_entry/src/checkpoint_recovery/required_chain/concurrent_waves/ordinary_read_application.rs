@@ -1,7 +1,7 @@
 //! Owner preparation reads an ordinary sibling fact; commit must reject stale inputs.
 use super::*;
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial};
-use worth_query_decl::facade::application_operation::ApplicationCandidateRequirements;
+
 use worth_query_decl::facade::application_schema::*;
 use worth_query_host::facade::application_contribution::*;
 use worth_query_host::facade::primary_graph::{
@@ -106,16 +106,7 @@ impl OperationHandler<CheckpointSchema, PlanarMutationBinding<CheckpointSchema>>
             )),
         }
     }
-    fn candidate_requirements(
-        &self,
-        input: &PlanarMutation,
-        decision: &(),
-    ) -> ApplicationCandidateRequirements {
-        <PlanarHandler as OperationHandler<
-            CheckpointSchema,
-            PlanarMutationBinding<CheckpointSchema>,
-        >>::candidate_requirements(&PlanarHandler, input, decision)
-    }
+
     fn build_candidate(
         &self,
         input: &PlanarMutation,

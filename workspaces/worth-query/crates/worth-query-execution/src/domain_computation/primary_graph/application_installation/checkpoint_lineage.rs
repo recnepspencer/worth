@@ -64,7 +64,6 @@ pub(super) fn restore<Schema: ApplicationSchema>(
             checkpoint.producer_dependency,
             checkpoint.idempotency_key,
             computation_source.retain_facts(facts),
-            checkpoint.resources,
             // The row is recorded, not verified: its first reader or demand
             // compares its facts and output in full.
             None,

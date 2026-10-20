@@ -79,7 +79,6 @@ fn install_observing(
             observations,
             512,
             support::invalidation(retained.bytes, work, retained.commit_positions),
-            support::candidates(),
         ),
         seed,
     )

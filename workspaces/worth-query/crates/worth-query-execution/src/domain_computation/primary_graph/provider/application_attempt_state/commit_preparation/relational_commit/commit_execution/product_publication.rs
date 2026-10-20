@@ -221,14 +221,13 @@ fn prepare_lineage_slot(
         // Move already declared resources through the prepared owner record.
         // This also pays its final fixed-width copy before World publication.
         admission
-            .charge_external_work((4 * std::mem::size_of::<Option<crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources>>() + 4) as u64)
+            .charge_external_work(4)
             .map_err(|_| crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(
                 crate::domain_computation::WorthQueryProviderSessionCommitDeferred::required_prerequisite(
                     crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""),
                     "",
                 ),
             ))?;
-        slot.retain_actual_resources(required.take_actual_resources());
         required
             .reserve_identity(slot.identity(), admission)
             .map_err(lineage_pending)?;

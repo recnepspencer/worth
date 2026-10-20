@@ -86,8 +86,7 @@ impl ApplicationDerivedArtifact<QuoteSchema, OutputFeature> for Artifact {
             <SourceFeature as ApplicationFeature<QuoteSchema>>::IDENTITY,
         )];
     const REUSE_RULE: &'static str = "exact-source";
-    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(None, None);
+
     const STOPPED_OUTCOME: &'static str = "counted-output-stopped";
 }
 impl ApplicationProgramDefinition<QuoteSchema> for Program {

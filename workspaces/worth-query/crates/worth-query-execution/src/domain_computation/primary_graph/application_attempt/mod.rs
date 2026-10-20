@@ -10,7 +10,6 @@ pub(in crate::domain_computation::primary_graph) use dependency_identity::{
     OutputCurrentnessFacts, WorthQueryProducerIdentityDenial,
 };
 mod effect_program;
-pub(in crate::domain_computation::primary_graph) use effect_program::candidate_retained_representation;
 mod effect_validation;
 mod elevation_approval_outcome;
 mod elevation_approval_program;

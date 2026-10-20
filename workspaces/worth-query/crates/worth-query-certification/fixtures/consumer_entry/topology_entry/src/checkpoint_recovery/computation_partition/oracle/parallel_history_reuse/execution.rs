@@ -164,13 +164,6 @@ fn install_configured(
     issuances: usize,
     configuration: HistoryConfiguration,
 ) -> Application {
-    let width = u64::try_from(DECISION_FACT_BUDGET + WIDTH_BESIDE_DECISION).unwrap();
-    let candidates =
-        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::policy(
-            None, None,
-        )
-        .and_then(|candidates| candidates.with_maximum_operation_width(width))
-        .unwrap();
     const RETAINED_COMMITS: u64 = 32;
     let invalidation = support::invalidation(
         128 * 1_024 * 1_024,

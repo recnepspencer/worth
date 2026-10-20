@@ -13,7 +13,6 @@ where
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: &FamilySourceValue<Schema, Family>,
         observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
         selection_source: Option<&WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>>,
         profile_kind: &'static str,
@@ -157,17 +156,6 @@ where
         };
         if let Some(readmitted) = restored {
             let restored = &readmitted.restored;
-            let resources = restored.checkpoint.resources.ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
-                    "restored output has no retained producer resource profile",
-                )
-            })?;
-            super::super::resources::validate_retained_resources(
-                resources,
-                &selected.identity,
-                limits,
-            )?;
             let (interest, newly_adopted) = self.output_demands.admit_restored(
                 key,
                 source_scope,
@@ -193,8 +181,7 @@ where
                 installed_entry,
                 observed_source,
                 limits,
-                resources: Some(resources),
-                resources_validated: true,
+
                 producer_contacts_in_this_demand: 0,
                 checkpoint_readmission_work_units: readmitted.preparation_work_units,
                 checkpoint_readmission_work_bound: readmitted.preparation_work_bound,
@@ -211,31 +198,6 @@ where
                 settled_at_observation: None,
             });
         }
-        // Exact source currentness has already been proved by Query selection.
-        // An unchanged output must not contact the provider just to estimate
-        // resources for work it will not perform. A racing fresh execution
-        // validates the same limits before producer execution.
-        let resources = if selected.exact_retained_output {
-            let resources = selected.retained_resources.ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
-                    "retained output has no producer resource profile",
-                )
-            })?;
-            super::super::resources::validate_retained_resources(
-                resources,
-                &selected.identity,
-                limits,
-            )?;
-            resources
-        } else {
-            super::super::resources::validate_demand_resources(
-                entry.executor.as_ref(),
-                source,
-                &selected.identity,
-                limits,
-            )?
-        };
         let (interest, join_pause) = match performed_source {
             Some(source_commit) => (
                 self.output_demands.admit_performed(
@@ -273,7 +235,6 @@ where
         selected.applicability = interest.key().applicability();
         let observed_source = observed_source.install(&interest, installed_entry.clone())?;
         crate::domain_computation::primary_graph::application_output_demand::observe_stable_join_admission(join_pause);
-        let resources_validated = !selected.exact_retained_output;
         Ok(WorthQueryAdmittedOutputDemand {
             runtime_authority: self.runtime.authority_identity().as_u64(),
             schema_binding: self.installed_schema.binding_identity(),
@@ -281,8 +242,7 @@ where
             installed_entry,
             observed_source,
             limits,
-            resources: Some(resources),
-            resources_validated,
+
             producer_contacts_in_this_demand: 0,
             checkpoint_readmission_work_units: 0,
             checkpoint_readmission_work_bound: 0,

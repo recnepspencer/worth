@@ -51,7 +51,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 WorthQueryMutationHandlerWork::NotStarted,
             ));
         }
-        let (handler, installed_ceiling) = match self.mutation_handler_for_attempt::<Binding>() {
+        let handler = match self.mutation_handler_for_attempt::<Binding>() {
             Ok(installed) => installed,
             Err(denial) => {
                 return Err(WorthQueryMutationHandlerExecutionReport::new(
@@ -165,15 +165,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             allocation_control.policy(),
                         )
                         .map_err(MutationHandlerExecutionDenial::Attempt)?;
-                    let requirements =
-                        handler.candidate_requirements(identities.mutation_input(), &decision);
-                    let mut candidate = reads
-                        .begin_reserved_effect_program(
-                            requirements,
-                            installed_ceiling,
-                            allocation_control.policy(),
-                        )
-                        .map_err(MutationHandlerExecutionDenial::Attempt)?;
+                    let mut candidate = reads.begin_effect_program();
                     candidate
                         .prepare_output_contract::<Binding>()
                         .map_err(MutationHandlerExecutionDenial::Attempt)?;

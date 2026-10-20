@@ -19,7 +19,7 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
             WorthQueryOutputCheckpoint::Ready(super::super::super::ReadyCompletion::for_test(super::super::super::WorthQueryCompletedOutputDemand {
                 authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
                 readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-                resources: Some(crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerDemandResources::new(Some(7), 8)),
+
             })),
         ))
     };
@@ -46,7 +46,6 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
         super::super::super::ReadyCompletion::for_test(super::super::super::WorthQueryCompletedOutputDemand {
             authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
             readiness: crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-            resources: None,
         }),
     ));
     stopped.stop(WorthQueryOutputDemandDenial::new(
@@ -80,7 +79,6 @@ fn checkpoint_output_slots_ignore_superseded_source_generations() {
         source_partition: [7; 32],
         producer_dependency: None,
         idempotency_key: source,
-        resources: None,
         roles: (Vec::new()).into(),
         producer_facts: None,
         producer_fact_wire_version: 0,

@@ -319,15 +319,6 @@ where
         PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
-        let mut demand = super::PlatformEffectDemand::default();
-        visit_workflow_operation_transition_facts(
-            &self.layout,
-            &self.admitted,
-            &receipt_identity,
-            executor,
-            |effect| demand.observe(&effect),
-        )?;
-        let reservation = super::admit_platform_effects(self.admitted.read_set(), demand)?;
         let mut effects = Vec::new();
         visit_workflow_operation_transition_facts(
             &self.layout,
@@ -339,7 +330,7 @@ where
                 Ok::<(), WorthQueryApplicationAttemptDenial>(())
             },
         )?;
-        reservation.materialize(&effects)?;
+
         let transition_identity = self.admitted.identity().to_owned();
         let transition_identity_bytes = *self.admitted.identity_bytes();
         let instance = self.admitted.instance();
@@ -349,12 +340,8 @@ where
             Some(receipt_identity),
         )?;
         let program = WorthQueryApplicationEffectProgram {
-            candidate_requirements: None,
-            effect_backing_memory: None,
             read_set: self.admitted.into_read_set(),
             effects,
-            emission_retained_bytes: 0,
-            emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             output_correspondence: Default::default(),

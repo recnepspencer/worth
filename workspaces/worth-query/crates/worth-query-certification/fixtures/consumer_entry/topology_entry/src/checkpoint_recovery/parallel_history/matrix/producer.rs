@@ -1,7 +1,7 @@
 //! Source inputs derive from the declared partition set and real revision field.
 use super::{application::*, control::Control, operation, source};
 use std::sync::Arc;
-use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
+
 use worth_query_host::facade::application_contribution::*;
 use worth_query_host::facade::primary_graph::*;
 const APPLICABILITY: &[WorthQueryProducerApplicability] = &[
@@ -36,7 +36,6 @@ impl WorthQueryApplicationProducerBinding<Schema> for Producer {
     const IDENTITY: &'static str = "matrix-producer";
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-    const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "matrix-exact";
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
         Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
@@ -72,12 +71,6 @@ impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
             .map(|chunk| u64::from_le_bytes(chunk.try_into().unwrap()))
             .fold(0, u64::wrapping_add))
             | (3 << 62)
-    }
-    fn demand_resources(
-        &self,
-        _: &source::Result,
-    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
-        Ok({ WorthQueryProducerDemandResources::new(Some(4096), 16384) })
     }
 }
 impl WorthQueryApplicationRequiredOutputConnection<Schema> for Connection {

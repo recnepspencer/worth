@@ -1,4 +1,4 @@
-//! Quote the actual retained input vector from its authored symbolic row count.
+//! Produce the counted output from its original authored source.
 use super::*;
 use std::marker::PhantomData;
 const APPLICABILITY: &[WorthQueryProducerApplicability] = &[
@@ -34,35 +34,18 @@ impl<S: TopologySchemaBinding> WorthQueryApplicationProducerBinding<S> for Produ
     const IDENTITY: &'static str = "quote-count.producer";
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-    const RESOURCE_POLICY: &'static str = "actual-counted-input";
     const REUSE_POLICY: &'static str = "exact-source";
 }
 pub struct Provider;
 impl<S: TopologySchemaBinding> WorthQueryApplicationProducerProvider<S, Producer<S>> for Provider {
     const SEMANTIC_IDENTITY: &'static str = "quote-count.provider";
     fn operation_input(&self, source: &Source) -> Input {
-        // Execution has admitted this same immutable source's finite quote.
         Input {
             scope_key: source.key.clone(),
-            rows: vec![1; source.count as usize],
+            count: source.count,
         }
     }
     fn idempotency_key(&self, _: &Source, identity: &[u8; 32]) -> u64 {
         super::super::super::planar_source_key(identity) ^ 0x51554f5445
-    }
-    fn demand_resources(
-        &self,
-        source: &Source,
-    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
-        let count = usize::try_from(source.count)
-            .map_err(|_| WorthQueryProducerResourceQuoteDenial::SizeOverflow)?;
-        let bytes = count
-            .checked_mul(size_of::<u64>())
-            .and_then(|n| n.checked_add(size_of::<Input>()))
-            .and_then(|n| n.checked_add(source.key.len()))
-            .and_then(|n| n.checked_add(size_of::<Source>()))
-            .and_then(|n| n.checked_add(source.key.capacity()))
-            .ok_or(WorthQueryProducerResourceQuoteDenial::SizeOverflow)?;
-        Ok(WorthQueryProducerDemandResources::new(None, bytes))
     }
 }

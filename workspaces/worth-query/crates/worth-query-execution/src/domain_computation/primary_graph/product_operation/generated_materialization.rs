@@ -62,7 +62,6 @@ pub(super) struct ProducerQualification {
     output_generation: u64,
     observed_source_facts:
         crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts,
-    resources: Option<crate::domain_computation::primary_graph::WorthQueryProducerDemandResources>,
 }
 
 /// A generated output taken out of its product branch and held in custody, so

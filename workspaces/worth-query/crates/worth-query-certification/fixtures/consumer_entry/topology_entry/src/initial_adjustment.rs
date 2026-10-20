@@ -46,9 +46,7 @@ worth_query_mutation_binding! {
         principal_entity Principal, principal_identity u64,
         identity_binding U64ApplicationValueBinding,
     scope Body, PlanarPosition, BodyKey, String, ReadOnly, NoApplicationUnit,
-    field BodyKey::reference(), value_field scope_key,
-    candidates creates 0, deletes 0, links 0, unlinks 0, writes 1, emits 0,
-    resources retained_representation_bytes 1024
+    field BodyKey::reference(), value_field scope_key
 }
 
 pub(crate) fn declare_initial_adjustment<Schema: TopologySchemaBinding>(

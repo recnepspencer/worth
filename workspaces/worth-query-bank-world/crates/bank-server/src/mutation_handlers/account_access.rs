@@ -8,9 +8,7 @@ use bank_domain::schema::{
     GrantedAccountAuthorizationOutput, PrincipalIdentityField, RevokeAccountAccessMutationBinding,
     RevokeAccountAuthorization, RevokedAccountAuthorizationOutput,
 };
-use worth_query_host::facade::declaration::application_operation::{
-    ApplicationCandidateRequirements, ApplicationMutationBinding,
-};
+
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
     WorthQueryApplicationEntityKey,
@@ -46,16 +44,6 @@ impl OperationHandler<BankSchema, GrantAccountAccessMutationBinding> for GrantAc
             Ok(proposal) => HandlerResult::Completed(proposal),
             Err(denial) => HandlerResult::DomainDenied(denial),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &GrantAccountAuthorization,
-        _: &bank_domain::proposals::BankInvariantApprovedProposal,
-    ) -> ApplicationCandidateRequirements {
-        GrantAccountAccessMutationBinding::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(
@@ -99,16 +87,6 @@ impl OperationHandler<BankSchema, RevokeAccountAccessMutationBinding>
             Ok(proposal) => HandlerResult::Completed(proposal),
             Err(denial) => HandlerResult::DomainDenied(denial),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &RevokeAccountAuthorization,
-        _: &bank_domain::proposals::BankInvariantApprovedProposal,
-    ) -> ApplicationCandidateRequirements {
-        RevokeAccountAccessMutationBinding::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

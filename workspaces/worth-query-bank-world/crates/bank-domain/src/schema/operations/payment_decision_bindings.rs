@@ -90,9 +90,7 @@ worth_query_mutation_binding!(
         ReadOnly,
         NoApplicationUnit,
     field PaymentIdentityField::reference(),
-    value payment_scope_from_approval,
-    candidates creates 4, deletes 0, links 6, unlinks 0, writes 13, emits 3,
-    resources retained_representation_bytes 32768
+    value payment_scope_from_approval
 );
 
 worth_query_mutation_binding!(
@@ -120,7 +118,5 @@ worth_query_mutation_binding!(
         ReadOnly,
         NoApplicationUnit,
     field PaymentIdentityField::reference(),
-    value payment_scope_from_rejection,
-    candidates creates 1, deletes 0, links 2, unlinks 0, writes 1, emits 0,
-    resources retained_representation_bytes 4096
+    value payment_scope_from_rejection
 );

@@ -2,7 +2,6 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::{
-    application_contribution::WorthQueryProducerDemandResources,
     invariant_projection::ConsumedOutputEvidence,
     output_lineage::invalidation::InvalidationEditAdmission,
 };
@@ -23,8 +22,6 @@ pub(in crate::domain_computation::primary_graph) struct ObservedRetainedOutput {
         Option<super::super::invalidation::FullVerificationReason>,
     pub(in crate::domain_computation::primary_graph) native_output_witness:
         Option<Arc<OnceLock<super::super::SealedNativeOutputWitness>>>,
-    pub(in crate::domain_computation::primary_graph) resources:
-        Option<WorthQueryProducerDemandResources>,
 }
 
 impl WorthQueryApplicationOutputLineage {
@@ -101,7 +98,6 @@ impl WorthQueryApplicationOutputLineage {
                         consumed_outputs: Arc::clone(&recorded.consumed_outputs),
                         verification_requirement: recorded.verification_requirement(),
                         native_output_witness: origin.native_output_witness_cell().map(Arc::clone),
-                        resources: recorded.resources(),
                     });
                     break;
                 }

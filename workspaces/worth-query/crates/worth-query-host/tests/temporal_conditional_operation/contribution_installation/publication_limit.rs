@@ -201,8 +201,6 @@ fn configuration() -> TemporalContributionConfiguration {
 fn limits() -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         product_world_resources(1_024),
-        runtime::WorthQueryApplicationCandidateResourceProfile::policy(Some(5_120), Some(2_048))
-            .unwrap(),
         runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
             .unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),

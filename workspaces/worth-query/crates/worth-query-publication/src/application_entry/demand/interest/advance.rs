@@ -113,7 +113,6 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::MissingApplicableProducer
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::AmbiguousApplicableProducer
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerUnavailable
-                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerResourceQuote(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ManagedCleanupRequired(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerDomainDenied
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RequestAuthorization(_)

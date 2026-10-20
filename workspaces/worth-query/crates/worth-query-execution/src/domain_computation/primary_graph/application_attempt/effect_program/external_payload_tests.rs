@@ -1,7 +1,6 @@
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
-    ApplicationRetainedEffectBinding,
 };
 use worth_query_installation::facade::InstalledExternalEffectContract;
 
@@ -20,11 +19,6 @@ worth_query_declaration::worth_query_portable_type!(
 );
 
 worth_query_declaration::worth_query_structured_value_binding!(ExternalPayloadBinding for ExternalPayload { identity: "worth.query.test.external-payload.v1" });
-impl ApplicationRetainedEffectBinding for ExternalPayloadBinding {
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        u64::try_from(std::mem::size_of::<Self::Value>() + value.0.capacity()).unwrap_or(u64::MAX)
-    }
-}
 
 impl ApplicationExternalEffectBinding for ExternalPayloadBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = EXTERNAL_PROTOCOL;
@@ -118,6 +112,6 @@ fn external(effect: &'static str, bytes: &[u8]) -> WorthQueryApplicationEmission
 fn admitted(
     emissions: Vec<WorthQueryApplicationEmission>,
 ) -> WorthQueryAdmittedApplicationEmissionBatch {
-    WorthQueryAdmittedApplicationEmissionBatch::admit(emissions, 1_024)
+    WorthQueryAdmittedApplicationEmissionBatch::admit(emissions)
         .expect("fixture batch stays within its retained-byte ceiling")
 }

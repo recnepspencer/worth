@@ -27,7 +27,6 @@ where
         })?;
         let profile_kind = Family::profile_kind(&source);
         self.admit_output_demand_with_source::<Family>(execution,
-            source,
             observed_source,
             None,
             profile_kind,

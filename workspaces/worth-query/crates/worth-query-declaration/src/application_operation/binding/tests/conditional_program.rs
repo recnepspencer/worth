@@ -25,8 +25,6 @@ crate::worth_query_mutation_binding!(@binding
     scope_field_type Account, AccountIdentity, AccountIdField, u64,
         crate::application_schema::ReadOnly, crate::application_schema::NoApplicationUnit,
     scope_field AccountIdField::reference(),
-    candidates creates 0, deletes 0, links 0, unlinks 0, writes 1, emits 0,
-    resources retained_representation_bytes 128
 );
 
 struct Feature;

@@ -34,7 +34,7 @@ fn scheduling_progression_preserves_admission_stops_at_every_consult() {
             crate::domain_computation::primary_graph::WorthQueryProducerLifecyclePosture::Initial,
         ),
         exact_retained_output: false,
-        retained_resources: None,
+
         retained_idempotency_key: None,
         retained_output_binding: None,
         reuses_live_output_only: false,

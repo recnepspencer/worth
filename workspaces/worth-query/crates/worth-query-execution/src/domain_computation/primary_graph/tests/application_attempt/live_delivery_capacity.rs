@@ -1,9 +1,8 @@
-use worth_query_declaration::facade::application_schema::ApplicationRetainedEffectBinding;
 use worth_runtime_bridge::facade::TruthBranchHeadSource;
 
 use super::{admitted_program_with_emit, authenticated_principal, idempotency, resolved_account};
 use crate::domain_computation::primary_graph::tests::fixture::{
-    installed_authorization_world, live_scope, AccountActivityBinding,
+    installed_authorization_world, live_scope,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedChange, WorthQueryApplicationCommitOutcome,
@@ -14,23 +13,11 @@ fn one_missing_batch_slot_denies_before_world_or_bridge_movement() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    assert_live_reservation_denial(0, u64::MAX, "slot-short", 211, resource_request);
-}
-
-#[test]
-fn one_missing_payload_byte_denies_before_world_or_bridge_movement() {
-    let host_request = crate::bridge_host_request::serial_request();
-    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
-
-    let payload = "byte-short".to_owned();
-    let required = AccountActivityBinding::retained_bytes(&payload);
-    assert!(required > 0);
-    assert_live_reservation_denial(1, required - 1, &payload, 212, resource_request);
+    assert_live_reservation_denial(0, "slot-short", 211, resource_request);
 }
 
 fn assert_live_reservation_denial(
     batch_capacity: usize,
-    byte_capacity: u64,
     payload: &str,
     identity: u8,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -66,7 +53,7 @@ fn assert_live_reservation_denial(
     world
         .application
         .primary_provider
-        .set_application_commit_causality_limits(batch_capacity, byte_capacity);
+        .set_application_commit_causality_limits(batch_capacity);
     let program = world
         .application
         .with_application_advancement(&request, |phase| {

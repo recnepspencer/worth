@@ -16,7 +16,6 @@ fn fixed_constructor_rejects_missing_governed_locality_without_effects() {
         .unwrap();
     let mut world = installation::install_selected_program(
         &crate::installed_schema(),
-        8192,
         4096,
         WorthQueryApplicationProgramRoster::new(),
         &[],

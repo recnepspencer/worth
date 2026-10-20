@@ -218,7 +218,6 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         )?;
         let reservation = provider.reserve_application_commit_causality(
             self.affinity.product_publication().observation(),
-            self.effects.emissions().retained_bytes(),
         )?;
         let live = reservation.requires_successor_observation();
         let demand = self.retain_output_demand_observation;

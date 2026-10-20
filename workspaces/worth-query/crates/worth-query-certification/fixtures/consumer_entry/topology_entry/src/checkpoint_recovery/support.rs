@@ -21,8 +21,8 @@ use worth_query_host::facade::{
         RuntimeWorldCustodyBudgetInstallation, RuntimeWorldHistoryBudgetInstallation,
         RuntimeWorldObservationBudgetInstallation, RuntimeWorldPublicationBudgetInstallation,
         RuntimeWorldRecoveryBudgetInstallation, RuntimeWorldRetentionBudgetInstallation,
-        WorthQueryApplicationCandidateResourceProfile, WorthQueryApplicationQueryResourceProfile,
-        WorthQueryProductWorldClock, WorthQueryProductWorldResources,
+        WorthQueryApplicationQueryResourceProfile, WorthQueryProductWorldClock,
+        WorthQueryProductWorldResources,
     },
 };
 
@@ -252,13 +252,7 @@ pub(super) fn limits(
     retained_composite_commits: u64,
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
 ) -> WorthQueryInMemoryApplicationLimits {
-    let host = candidates();
-    limits_with_room(retained_composite_commits, 16, 64, invalidation, host)
-}
-
-/// The candidate resources of a host whose widest operation is the default.
-pub(super) fn candidates() -> WorthQueryApplicationCandidateResourceProfile {
-    WorthQueryApplicationCandidateResourceProfile::policy(Some(4_096), Some(8_192)).unwrap()
+    limits_with_room(retained_composite_commits, 16, 64, invalidation)
 }
 
 /// A world with room for a long history under open demands. Rows settled at
@@ -269,14 +263,12 @@ pub(super) fn limits_with_room(
     active_observations: u64,
     unique_exact_component_pins: u64,
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-    candidates: WorthQueryApplicationCandidateResourceProfile,
 ) -> WorthQueryInMemoryApplicationLimits {
     limits_with_policy(
         retained_composite_commits,
         active_observations,
         unique_exact_component_pins,
         invalidation,
-        candidates,
         execution_policy::CHECKPOINT_EXECUTION_POLICY,
     )
 }
@@ -286,7 +278,6 @@ pub(super) fn limits_with_policy(
     active_observations: u64,
     unique_exact_component_pins: u64,
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-    candidates: WorthQueryApplicationCandidateResourceProfile,
     policy: worth_foundational::ExecutionRequestPolicy,
 ) -> WorthQueryInMemoryApplicationLimits {
     limits_with_history_and_policy(
@@ -294,7 +285,6 @@ pub(super) fn limits_with_policy(
         active_observations,
         unique_exact_component_pins,
         invalidation,
-        candidates,
         524_288,
         policy,
     )
@@ -305,7 +295,6 @@ pub(super) fn limits_with_history_and_policy(
     active_observations: u64,
     unique_exact_component_pins: u64,
     invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
-    candidates: WorthQueryApplicationCandidateResourceProfile,
     history_metadata_bytes: u64,
     policy: worth_foundational::ExecutionRequestPolicy,
 ) -> WorthQueryInMemoryApplicationLimits {
@@ -342,7 +331,6 @@ pub(super) fn limits_with_history_and_policy(
             policy,
         )
         .unwrap(),
-        candidates,
         WorthQueryApplicationQueryResourceProfile::bounded(4_096, 4_096, 4_096, 32).unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     )

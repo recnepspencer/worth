@@ -4,7 +4,7 @@ use crate::application_invariant_acceptance::membership::{
 };
 use crate::application_invariant_acceptance::proof::settle;
 use crate::application_invariant_acceptance::{authentication, membership, seed::length};
-use std::num::NonZeroUsize;
+
 use worth_query_consumer_values::{PlanarAdjustment, PlanarOperation};
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryApplicationRequestExt,
@@ -64,10 +64,7 @@ macro_rules! outputs {
             .start_required_outputs(
                 &$world.application,
                 &$request,
-                WorthQueryOutputDemandControls::new(
-                    NonZeroUsize::new(4096).unwrap(),
-                    NonZeroUsize::new(8192).unwrap(),
-                ),
+                WorthQueryOutputDemandControls::default(),
             )
             .unwrap_or_else(|failure| panic!("native source setup: {:?}", failure.denial()))
     }};
@@ -121,9 +118,6 @@ fn comparison_work(
         .source_currentness_work()
 }
 
-fn retained_bytes() -> NonZeroUsize {
-    NonZeroUsize::new(8192).unwrap()
-}
 fn stale(result: Result<(), WorthQueryOutputCurrentnessDenial>) {
     assert!(
         matches!(result, Err(WorthQueryOutputCurrentnessDenial::Output(ref cause)) if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded),

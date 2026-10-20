@@ -50,10 +50,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
             .start_required_outputs(
                 &world.application,
                 &request,
-                WorthQueryOutputDemandControls::new(
-                    NonZeroUsize::new(4096).unwrap(),
-                    NonZeroUsize::new(8192).unwrap(),
-                ),
+                WorthQueryOutputDemandControls::default(),
             )
             .unwrap_or_else(|failure| panic!("source setup: {:?}", failure.denial()))
     };

@@ -264,7 +264,7 @@ where
         let (mut selected, entry) = self
             .installed_producers
             .select_exact::<Family>(output.binding, None)?;
-        selected.retained_resources = output.resources;
+
         selected.retained_idempotency_key = Some(output.stable.idempotency_key_identity());
         selected.retained_output_binding = Some(output.binding);
         let installed_entry = Arc::clone(entry);
@@ -289,8 +289,7 @@ where
             installed_entry,
             observed_source,
             limits,
-            resources: output.resources,
-            resources_validated: false,
+
             producer_contacts_in_this_demand: 0,
             checkpoint_readmission_work_units: 0,
             checkpoint_readmission_work_bound: 0,

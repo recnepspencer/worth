@@ -21,21 +21,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn publish
     lease: &super::super::snapshot_lease::WorthQueryApplicationSnapshotLease,
     idempotency: &WorthQueryApplicationIdempotencyBinding,
 ) -> Result<(), Outcome> {
-    let bytes = state
-        .as_ref()
-        .and_then(|state| state.sealed.as_ref())
-        .map_or(Some(0), |sealed| {
-            sealed
-                .canonical_byte_capacity
-                .checked_mul(6)
-                .and_then(|bytes| bytes.checked_add(sealed.provenance_bytes.checked_mul(2)?))
-        })
-        .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or_else(|| Outcome::Denied(refused(AuthenticationDenial::CapacityExceeded)))?;
-    let _memory = execution.reserve(bytes).map_err(|cause| {
-        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause)
-            .into_commit_outcome()
-    })?;
     let request = execution.execution_request().map_err(|cause| {
         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(cause)
             .into_commit_outcome()
@@ -79,8 +64,7 @@ fn publish_prepared<Schema>(
         return Err(refused(AuthenticationDenial::IntentMismatch).into());
     }
     let (actual, _) =
-        identity::candidate(effects, sealed.canonical_byte_capacity, execution, context)
-            .map_err(PublicationRefusal::canonical)?;
+        identity::candidate(effects, execution, context).map_err(PublicationRefusal::canonical)?;
     if actual != sealed.effect_identity
         || consumed.principal() != sealed.principal.as_ref()
         || consumed.intent() != &sealed.intent
@@ -136,13 +120,6 @@ fn publish_prepared<Schema>(
         }),
     }
     .map_err(|_| refused(AuthenticationDenial::MissingSigningProof))?;
-    let retained = encoded
-        .owned_allocation_capacity_bytes()
-        .checked_add(state.slot.field.owned_allocation_capacity_bytes())
-        .ok_or_else(|| refused(AuthenticationDenial::CapacityExceeded))?;
-    if retained > state.slot.representation_capacity {
-        return Err(refused(AuthenticationDenial::CapacityExceeded).into());
-    }
     fields.insert(state.slot.field, encoded);
     Ok(())
 }

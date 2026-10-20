@@ -1,8 +1,8 @@
 //! A real governed root whose ordinary source deliberately omits required locality.
 use super::*;
 use worth_query_decl::facade::application_program::{
-    ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
-    ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationDerivedArtifact,
+    ApplicationArtifactDependency, ApplicationArtifactRetention, ApplicationArtifactSuccession,
+    ApplicationDerivedArtifact,
 };
 use worth_query_host::facade::application_contribution::WorthQueryProducerOutputFamily;
 use worth_query_topology_entry::PlanarOutputFamily;
@@ -23,8 +23,7 @@ impl ApplicationDerivedArtifact<ConsumerSchema, PlanarOutputFeature> for Governe
             <PlanarSourceFeature as ApplicationFeature<ConsumerSchema>>::IDENTITY,
         )];
     const REUSE_RULE: &'static str = "exact-source";
-    const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-        ApplicationArtifactResourceCeiling::new(Some(4_096), Some(8_192));
+
     const STOPPED_OUTCOME: &'static str = "governed-planar-resource-denied";
 }
 impl ApplicationProgramDefinition<ConsumerSchema> for MissingLocalityProgram {

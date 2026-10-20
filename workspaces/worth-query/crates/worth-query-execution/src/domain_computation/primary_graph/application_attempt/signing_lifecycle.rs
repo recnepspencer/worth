@@ -5,9 +5,7 @@ use super::{
     WorthQueryApplicationCommitOutcome as Outcome, WorthQueryApplicationObservedFact as Fact,
     WorthQueryApplicationRealizedEffect as Effect,
 };
-use crate::domain_computation::primary_graph::application_contribution::{
-    QueryMemoryReservation, QueryRequestExecution,
-};
+use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus as Locus;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledSigningLifecycleRule as Rule,
@@ -23,7 +21,6 @@ pub(super) use signing::capture_signing;
 
 pub(super) struct PreparedLifecycle {
     pub(super) facts: worth_execution::ExecutionArray<Fact>,
-    pub(super) memory: Option<QueryMemoryReservation>,
 }
 
 pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
@@ -35,36 +32,17 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
     >,
     lease: &Lease,
     effects: &mut Vec<Effect>,
-    effect_backing_memory: &mut Option<crate::domain_computation::primary_graph::application_attempt::effect_program::candidate_backing::CandidateBackingReservation>,
-    candidate_requirements: &mut Option<
-        worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements,
-    >,
     facts: worth_execution::ExecutionArray<Fact>,
     execution: &QueryRequestExecution<'_>,
     logical_request: [u8; 32],
 ) -> Result<PreparedLifecycle, Outcome> {
     let rules = admission.allowed_graph_contract().signing_lifecycle_rules();
     if rules.is_empty() {
-        return Ok(PreparedLifecycle {
-            facts,
-            memory: None,
-        });
+        return Ok(PreparedLifecycle { facts });
     }
-    let ceiling = admission
-        .allowed_graph_contract()
-        .signing_lifecycle_ceiling()
-        .ok_or_else(unavailable)?;
-    let retained = ceiling
-        .resources()
-        .maximum_retained_representation_bytes()
-        .checked_mul(3)
-        .ok_or_else(capacity)?;
-    let memory = execution
-        .reserve(u64::try_from(retained).map_err(|_| capacity())?)
-        .map_err(resource)?;
     let request = execution.execution_request().map_err(resource)?;
     let actor = admission.graph_work().principal();
-    let (batch, sidecar) = execution
+    let batch = execution
         .decision_stage(|context| {
             let mut batch = consequences::Batch::default();
             for rule in rules {
@@ -79,23 +57,15 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
                         admission.operation(),
                         logical_request,
                         lease,
-                        execution,
                         &request,
                         context,
                         &mut batch,
                     )?;
                 }
             }
-            let sidecar = batch.admit(admission)?;
-            Ok::<_, Outcome>((batch, sidecar))
+            Ok::<_, Outcome>(batch)
         })
         .map_err(|cause| cause.into_commit_outcome())??;
-    let combined_requirements = super::effect_program::validate_candidate_extension(
-        admission,
-        *candidate_requirements,
-        sidecar,
-    )
-    .map_err(attempt)?;
     let total = facts
         .len()
         .checked_add(batch.facts.len())
@@ -112,18 +82,15 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
         },
     )
     .map_err(attempt)?;
-    super::effect_program::candidate_backing::extend(
-        effects,
-        effect_backing_memory,
-        batch.effects,
-        admission.publication_request(),
-    )
-    .map_err(attempt)?;
-    *candidate_requirements = combined_requirements;
-    Ok(PreparedLifecycle {
-        facts,
-        memory: Some(memory),
-    })
+    admission
+        .validate_current_authority()
+        .map_err(super::WorthQueryApplicationAttemptDenial::request_authority_lost)
+        .map_err(attempt)?;
+    effects
+        .try_reserve(batch.effects.len())
+        .map_err(|_| capacity())?;
+    effects.extend(batch.effects);
+    Ok(PreparedLifecycle { facts })
 }
 
 fn refused(kind: Kind) -> Outcome {

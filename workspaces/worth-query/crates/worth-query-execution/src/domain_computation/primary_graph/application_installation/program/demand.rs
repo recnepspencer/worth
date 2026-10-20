@@ -125,7 +125,11 @@ where
             <RootConnection<Schema, Root> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Source,
         >(access)?;
         let artifact = self.validate_root_artifact_demand::<Root>()?;
-        let limits = self.resolve_artifact_limits(limits, artifact)?;
+        let limits = self
+            .backing
+            .runtime
+            .output_demand_resource_profile()
+            .constrain(limits);
         self.backing.runtime
             .admit_required_output_demand::<
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
@@ -293,7 +297,11 @@ where
             ));
         }
         let artifact = self.validate_root_artifact_demand::<Root>()?;
-        let limits = self.resolve_artifact_limits(limits, artifact)?;
+        let limits = self
+            .backing
+            .runtime
+            .output_demand_resource_profile()
+            .constrain(limits);
         self.backing.runtime.validate_recovered_output_root_kind(
             source_receipt,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()),
@@ -347,7 +355,11 @@ where
             ));
         }
         let artifact = self.validate_root_artifact_demand::<Root>()?;
-        let limits = self.resolve_artifact_limits(limits, artifact)?;
+        let limits = self
+            .backing
+            .runtime
+            .output_demand_resource_profile()
+            .constrain(limits);
         self.backing.runtime
             .admit_performed_output_demand::<
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,

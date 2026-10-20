@@ -86,7 +86,6 @@ where
         };
         let execution = &phase_request;
 
-        let limits = demand.limits;
         self.advance_selected_program_output_demand_with_source(
             execution,
             phase,
@@ -103,7 +102,6 @@ where
                     principal,
                     request_scope,
                     delivery_branch,
-                    limits,
                     admission,
                 )
                 .map(Some)

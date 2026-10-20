@@ -75,7 +75,6 @@ pub(super) fn advance_input_cutoff<'owner, Schema, Binding, OperationType, Input
     key: Option<PreparedInputReuseKey>,
     context: Option<PreparedDecisionReuseContext>,
     matched_predecessors: Option<super::super::demand::MatchedRequiredPredecessors<'_>>,
-    resources: super::super::WorthQueryProducerDemandResources,
     edition: InstalledProducerEdition,
     admission: &mut InvalidationEditAdmission,
     currentness: &mut InvalidationEditAdmission,
@@ -282,7 +281,6 @@ where
                     fresh,
                     verified,
                     required_output,
-                    resources,
                     admission,
                 )
             })

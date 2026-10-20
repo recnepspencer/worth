@@ -34,7 +34,7 @@ fn delegation_child_identity_records_absence_and_taken_values_once() {
             let lower = |facts: Vec<WorthQueryApplicationObservedFact>, effects: Vec<WorthQueryApplicationRealizedEffect>| {
                 super::super::super::provider_binding::prepare_provider_attempt(
                     unique.fields(), worth_relational::facade::identity::PartitionId::main(),
-                    effects.len(), super::super::super::read_set::admit_array(0, [], worth_execution::ExecutionAllocationPolicy::SystemAllocation, "read scopes", || Ok(())).unwrap(), super::super::super::read_set::admit_array(facts.len(), facts, worth_execution::ExecutionAllocationPolicy::SystemAllocation, "unique fixture", || Ok(())).unwrap(), Vec::new(), effects, 0, 0, None, None,
+                    effects.len(), super::super::super::read_set::admit_array(0, [], worth_execution::ExecutionAllocationPolicy::SystemAllocation, "read scopes", || Ok(())).unwrap(), super::super::super::read_set::admit_array(facts.len(), facts, worth_execution::ExecutionAllocationPolicy::SystemAllocation, "unique fixture", || Ok(())).unwrap(), Vec::new(), effects, None, None,
                     Default::default(), false, false, &[], None,
                 ).map(|_| ()).map_err(|denial| denial.kind())
             };

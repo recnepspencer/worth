@@ -46,7 +46,6 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         source_partition: [2; 32],
         producer_dependency: None,
         idempotency_key: [3; 32],
-        resources: None,
         roles: (Vec::new()).into(),
         producer_facts: None,
         producer_fact_wire_version: 0,
@@ -65,7 +64,6 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
             },
         ),
         readiness: WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
-        resources: None,
     };
     let wake = Arc::new(DemandWake {
         _record_capacity: test_record_capacity(),

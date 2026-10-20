@@ -11,16 +11,14 @@ use crate::domain_computation::primary_graph::application_attempt::signed_creati
 pub(in crate::domain_computation::primary_graph::application_attempt) fn authentication_observation_identity(
     operation: [u8; 32],
     facts: &[Fact],
-    maximum_bytes: usize,
     request: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<([u8; 32], WorthQueryCanonicalWorkEvidence), Denial> {
     // Assembly storage is already reserved by the enclosing signing owner.
     // Admit the bounded representation work before building the first entry,
     // and retain interruption points while traversing the original facts.
-    identity::admit_assembly(context, maximum_bytes)?;
-    let (rule, entries) = basis(operation, facts, || identity::admit_assembly(context, 0))?;
-    canonical::derive(entries, DOMAIN, rule, maximum_bytes, request, context)
+    let (rule, entries) = basis(operation, facts, || identity::check_interruption(context))?;
+    canonical::derive(entries, DOMAIN, rule, request, context)
 }
 
 pub(super) fn basis<E>(
@@ -88,7 +86,7 @@ mod tests {
         let _stopped = execution.decision_stage(|context| {
             entered.set(true);
             cancellation.cancel();
-            let denied = authentication_observation_identity([1; 32], &[], 4096, &request, context);
+            let denied = authentication_observation_identity([1; 32], &[], &request, context);
             assert!(matches!(denied, Err(Denial::Execution(_))));
         });
         assert!(

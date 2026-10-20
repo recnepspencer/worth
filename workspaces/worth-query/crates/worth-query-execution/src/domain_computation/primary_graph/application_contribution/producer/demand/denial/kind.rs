@@ -48,7 +48,6 @@ pub enum WorthQueryOutputDemandDenialKind {
     /// The installed producer ran and its domain rejected the decision.
     ProducerDomainDenied,
     /// The selected original source could not supply a concrete resource quote.
-    ProducerResourceQuote(super::super::super::WorthQueryProducerResourceQuoteDenial),
     /// The admitted request lost its operation authorization before publication.
     RequestAuthorization(
         crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind,

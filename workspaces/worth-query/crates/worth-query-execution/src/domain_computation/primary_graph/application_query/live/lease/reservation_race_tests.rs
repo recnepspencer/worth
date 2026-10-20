@@ -197,13 +197,6 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
             .active_application_commit_causality_partitions(),
         0
     );
-    assert_eq!(
-        world
-            .application
-            .primary_provider
-            .retained_application_emission_bytes(),
-        0
-    );
     // Compare before preparing the live attempt and after it finishes, with
     // the descriptive receipt still retained. Neither receipt owner pins it.
     let retention_after_publication = world

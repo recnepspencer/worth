@@ -82,7 +82,7 @@ fn workflow_actor_contract_authentic_predecessor_refuses_before_native_restore()
     .expect("displaced checkpoint must refuse before native restoration");
     match denial {
         worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial::Graph(cause) => {
-            assert!(matches!(cause.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedCheckpointFormat { observed: 9, supported: 10 }));
+            assert!(matches!(cause.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::UnsupportedCheckpointFormat { observed: 9, supported: 11 }));
         }
         other => panic!("expected typed intact format refusal: {other:?}"),
     }
@@ -105,7 +105,7 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_native_frame_before_au
     // Reframe only Query's envelope. The authentic old native authority layout
     // is left intact and must not acquire the new workflow interpretation.
     assert!(!original[66..66 + native_len].starts_with(b"WORTH-REL-CHK4\n"));
-    let mut body = Vec::from(10u16.to_be_bytes());
+    let mut body = Vec::from(11u16.to_be_bytes());
     body.extend_from_slice(&2u16.to_be_bytes());
     body.extend_from_slice(&4u16.to_be_bytes());
     body.extend_from_slice(&original[42..]);

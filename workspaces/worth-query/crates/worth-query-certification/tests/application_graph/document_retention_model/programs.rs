@@ -5,14 +5,12 @@
 //! difference is what the court holds the platform to.
 
 use worth_query_host::facade::declaration::application_program::{
-    ApplicationArtifactDependency, ApplicationArtifactResourceCeiling,
-    ApplicationArtifactRetention, ApplicationArtifactSuccession, ApplicationChangePosture,
-    ApplicationChangeShape, ApplicationCommitBoundary, ApplicationDerivedArtifact,
+    ApplicationChangePosture, ApplicationChangeShape, ApplicationCommitBoundary,
     ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationFeatureSpec,
     ApplicationLocalRuleRef, ApplicationLocalityGranule, ApplicationLocalityScope,
-    ApplicationNoOutputGraph, ApplicationOutputPort, ApplicationProgramAuthoring,
-    ApplicationProgramDefinition, ApplicationProgramIdentity, ApplicationProgramOutputs,
-    ApplicationRuleAt, ApplicationRuleLeaf, ApplicationRuleList, ValidatedApplicationProgram,
+    ApplicationNoOutputGraph, ApplicationProgramAuthoring, ApplicationProgramDefinition,
+    ApplicationProgramIdentity, ApplicationProgramOutputs, ApplicationRuleAt, ApplicationRuleLeaf,
+    ApplicationRuleList, ValidatedApplicationProgram,
 };
 
 use super::assessment_output::PublishRetentionAssessment;
@@ -21,8 +19,8 @@ use super::retention_entry::{
     ReviewedSetRetentionBinding, SetRetentionBinding,
 };
 use super::schema::{
-    DocumentRetentionContribution, DocumentRetentionRowBinding, DocumentRetentionSchema,
-    DocumentRetentionV1, DocumentRetentionV2, DocumentRetentionV3,
+    DocumentRetentionContribution, DocumentRetentionSchema, DocumentRetentionV1,
+    DocumentRetentionV2, DocumentRetentionV3,
 };
 use super::workflow::{
     ReviewRequirementBinding, UnlinkReviewRequirementBinding, WorkflowAdvanceBinding,
@@ -73,14 +71,9 @@ pub struct RemovedOperationRetentionProgram;
 /// A rostered target that keeps the operation identity but changes its
 /// locality/change contract, forcing fresh current admission.
 pub struct ChangedOperationRetentionProgram;
-pub struct ResourceRetentionProgramP0;
-pub struct ResourceRetentionProgramP1;
 
 struct ChangedOperationLocality;
 struct ChangedOperationShape;
-struct RetentionArtifactOutput;
-struct RetentionArtifactP0;
-struct RetentionArtifactP1;
 
 impl ApplicationLocalityScope for ChangedOperationLocality {
     const IDENTITY: &'static str =
@@ -93,46 +86,6 @@ impl ApplicationChangeShape for ChangedOperationShape {
         "worth.query.certification.document-retention.changed-operation-shape.v1";
     const POSTURE: ApplicationChangePosture = ApplicationChangePosture::Replace;
 }
-
-impl ApplicationOutputPort<DocumentRetentionSchema, DocumentRetentionFeature>
-    for RetentionArtifactOutput
-{
-    type Value = DocumentRetentionRowBinding;
-
-    const IDENTITY: &'static str = "worth.query.certification.retention-artifact-output.v1";
-}
-
-macro_rules! retention_artifact {
-    ($artifact:ty, $work:expr_2021, $bytes:expr_2021) => {
-        impl ApplicationDerivedArtifact<DocumentRetentionSchema, DocumentRetentionFeature>
-            for $artifact
-        {
-            type Output = RetentionArtifactOutput;
-            type Locality = ChangedOperationLocality;
-
-            const IDENTITY: &'static str = "worth.query.certification.retention-artifact.v1";
-            const RETENTION: ApplicationArtifactRetention = ApplicationArtifactRetention::Retained;
-            const SUCCESSION: ApplicationArtifactSuccession =
-                ApplicationArtifactSuccession::PreserveWhenEquivalent;
-            const REQUIRED: bool = false;
-            const PRODUCER_FAMILY: &'static str =
-                "worth.query.certification.retention-artifact-producer.v1";
-            const DEPENDENCIES: &'static [ApplicationArtifactDependency] =
-                &[ApplicationArtifactDependency::new(
-                    DocumentRetentionFeature::IDENTITY,
-                )];
-            const REUSE_RULE: &'static str =
-                "worth.query.certification.retention-artifact-reuse.v1";
-            const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
-                ApplicationArtifactResourceCeiling::new(Some($work), Some($bytes));
-            const STOPPED_OUTCOME: &'static str =
-                "worth.query.certification.retention-artifact-stopped.v1";
-        }
-    };
-}
-
-retention_artifact!(RetentionArtifactP0, 8, 4096);
-retention_artifact!(RetentionArtifactP1, 16, 8192);
 
 /// A program this court never rosters on any host.
 pub struct UnrosteredRetentionProgram;
@@ -210,9 +163,6 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for ForeignRuleRetent
     }
 }
 
-#[path = "programs/resource.rs"]
-mod resource;
-
 pub fn validated_first_program(
 ) -> ValidatedApplicationProgram<DocumentRetentionSchema, RetentionProgramP0> {
     validate::<RetentionProgramP0>()
@@ -236,16 +186,6 @@ pub fn validated_removed_operation_program(
 pub fn validated_changed_operation_program(
 ) -> ValidatedApplicationProgram<DocumentRetentionSchema, ChangedOperationRetentionProgram> {
     validate::<ChangedOperationRetentionProgram>()
-}
-
-pub fn validated_first_resource_program(
-) -> ValidatedApplicationProgram<DocumentRetentionSchema, ResourceRetentionProgramP0> {
-    validate::<ResourceRetentionProgramP0>()
-}
-
-pub fn validated_second_resource_program(
-) -> ValidatedApplicationProgram<DocumentRetentionSchema, ResourceRetentionProgramP1> {
-    validate::<ResourceRetentionProgramP1>()
 }
 
 pub fn validated_foreign_rule_program(

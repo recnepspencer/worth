@@ -9,22 +9,16 @@ pub(in crate::domain_computation::primary_graph::application_attempt::signed_cre
     fields: &BTreeMap<AspectFieldLocator, AspectValue>,
     scope: EntityId,
     dependencies: &[ApplicationSigningSubjectDependency],
-    maximum_bytes: usize,
     request: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<([u8; 32], WorthQueryCanonicalWorkEvidence), Denial> {
-    super::admit_assembly(context, 0)?;
+    super::check_interruption(context)?;
     let mut entries = IdentityEntries::new();
     entries.entity("scope", scope);
     entries.fields("subject", fields, context)?;
     entries.number("certified-dependency-count", dependencies.len() as u64);
     for (index, dependency) in dependencies.iter().enumerate() {
-        super::admit_assembly(
-            context,
-            dependency
-                .maximum_encoded_bytes()
-                .ok_or(Denial::RepresentationCapacity)?,
-        )?;
+        super::check_interruption(context)?;
         let prefix = format!("certified-dependency.{index}");
         entries.number(format!("{prefix}.partition"), dependency.source.partition);
         entries.number(format!("{prefix}.slot"), dependency.source.slot);
@@ -46,10 +40,5 @@ pub(in crate::domain_computation::primary_graph::application_attempt::signed_cre
             dependency.native_revision,
         );
     }
-    entries.derive(
-        "worth-query-signed-certified-subject-v2",
-        maximum_bytes,
-        request,
-        context,
-    )
+    entries.derive("worth-query-signed-certified-subject-v2", request, context)
 }

@@ -5,9 +5,7 @@ use bank_domain::schema::{
     ApplyOpeningFunding, ApplyOpeningFundingMutationBinding, BankSchema, Deposit,
     DepositMutationBinding, MoneyMovementResult, Withdraw, WithdrawMutationBinding,
 };
-use worth_query_host::facade::declaration::application_operation::{
-    ApplicationCandidateRequirements, ApplicationMutationBinding,
-};
+use worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding;
 use worth_query_host::facade::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
@@ -48,16 +46,6 @@ macro_rules! institution_movement_handler {
                     Ok(proposal) => HandlerResult::Completed(proposal),
                     Err(denial) => HandlerResult::DomainDenied(denial),
                 }
-            }
-
-            fn candidate_requirements(
-                &self,
-                _: &$Input,
-                _: &BankInvariantApprovedProposal,
-            ) -> ApplicationCandidateRequirements {
-                <$Binding>::CANDIDATES
-                    .finite_requirements()
-                    .expect("fixed-shape handler declares finite candidate policy")
             }
 
             fn build_candidate(

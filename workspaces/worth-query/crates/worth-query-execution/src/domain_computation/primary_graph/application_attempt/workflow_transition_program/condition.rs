@@ -97,15 +97,6 @@ where
         } else {
             ApplicationWorkflowControlOutcome::ConditionUnsatisfied
         };
-        let mut demand = super::PlatformEffectDemand::default();
-        visit_workflow_transition_facts(
-            &self.layout,
-            &self.admitted,
-            outcome,
-            WorkflowInstanceState::Ready,
-            |effect| demand.observe(&effect),
-        )?;
-        let reservation = super::admit_platform_effects(self.admitted.read_set(), demand)?;
         let mut effects = Vec::new();
         visit_workflow_transition_facts(
             &self.layout,
@@ -117,7 +108,7 @@ where
                 Ok::<(), WorthQueryApplicationAttemptDenial>(())
             },
         )?;
-        reservation.materialize(&effects)?;
+
         let transition_identity = self.admitted.identity().to_owned();
         let transition_identity_bytes = *self.admitted.identity_bytes();
         let node_path = self.admitted.node_path().to_owned();
@@ -130,12 +121,8 @@ where
             &node_path,
         )?;
         let program = WorthQueryApplicationEffectProgram {
-            candidate_requirements: None,
-            effect_backing_memory: None,
             read_set,
             effects,
-            emission_retained_bytes: 0,
-            emission_retained_bytes_ceiling: 0,
             conditional_definition: None,
             effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
             output_correspondence: Default::default(),

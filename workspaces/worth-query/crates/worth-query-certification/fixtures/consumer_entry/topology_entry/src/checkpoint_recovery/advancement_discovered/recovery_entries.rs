@@ -269,10 +269,7 @@ fn discovered_promotion_opens_before_its_receipt_reader_and_returns_custody_on_r
         fresh!(request, source, &9134_u64)
             .recover_unpublished_discovered_in_program(&mut recovery, &application)
             .unwrap();
-        let controls = WorthQueryOutputDemandControls::new(
-            NonZeroUsize::new(4096).unwrap(),
-            NonZeroUsize::new(8192).unwrap(),
-        );
+        let controls = WorthQueryOutputDemandControls::default();
         zero_work();
         reports();
         let before = reads();

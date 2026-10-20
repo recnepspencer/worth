@@ -3,7 +3,6 @@ use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
 };
-use worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial;
 
 use worth_query_consumer_values::{
     PlanarCurrentOutputExpectation, PlanarDerivedOutput, PlanarMutationDenial, PlanarOperation,
@@ -11,9 +10,9 @@ use worth_query_consumer_values::{
 use worth_query_decl::facade::application_schema::ApplicationInvariantExecutionPoint;
 use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
-    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
-    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
-    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
+    WorthQueryProducerApplicability, WorthQueryProducerInputReuseContract,
+    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerOutputFamily,
 };
 
 use super::{PlanarMutationBinding, TopologySchemaBinding};
@@ -126,17 +125,6 @@ impl<Schema: TopologySchemaBinding>
         PROVIDER_CONTACTS.fetch_add(1, Ordering::SeqCst);
         planar_source_key(source_identity) | self.key_mask
     }
-
-    fn demand_resources(
-        &self,
-        _: &super::PlanarReadResult,
-    ) -> Result<WorthQueryProducerDemandResources, WorthQueryProducerResourceQuoteDenial> {
-        Ok({
-            #[cfg(test)]
-            PROVIDER_CONTACTS.fetch_add(1, Ordering::SeqCst);
-            planar_producer_resources()
-        })
-    }
 }
 
 pub struct InitialPlanarProducer<Schema>(PhantomData<fn() -> Schema>);
@@ -158,7 +146,6 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
             0,
             ApplicationInvariantExecutionPoint::CommitBoundary,
         )];
-    const RESOURCE_POLICY: &'static str = "bounded-synchronous";
     const REUSE_POLICY: &'static str = "exact-source";
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = Schema::ROOT_INPUT_REUSE;
 }
@@ -181,8 +168,4 @@ pub fn planar_source_key(source_identity: &[u8; 32]) -> u64 {
         .chunks_exact(8)
         .map(|chunk| u64::from_le_bytes(chunk.try_into().expect("eight-byte identity chunk")))
         .fold(0, u64::wrapping_add)
-}
-
-pub const fn planar_producer_resources() -> WorthQueryProducerDemandResources {
-    WorthQueryProducerDemandResources::new(Some(4_096), 8_192)
 }

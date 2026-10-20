@@ -1,7 +1,7 @@
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_schema::{
     ApplicationEffectMarkerIdentity, ApplicationEffectRef, ApplicationExternalEffectBinding,
-    ApplicationRetainedEffectBinding, OperationEmits,
+    ApplicationStructuredValueBinding, OperationEmits,
 };
 use worth_query_installation::facade::{
     ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit, ApplicationRelationRef,
@@ -73,7 +73,7 @@ where
     }
 
     /// Writes or clears one optional field using the same observed target and
-    /// candidate reservation as every other handler-authored effect.
+    /// effect authority as every other handler-authored effect.
     pub fn write_optional_field<Entity, Aspect, Field, Value, Write, Equality, Unit>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
@@ -119,7 +119,7 @@ where
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
         Effect: ApplicationEffectMarkerIdentity<Schema> + OperationEmits<Binding::Operation>,
-        Effect::PayloadBinding: ApplicationRetainedEffectBinding<Value = Payload>,
+        Effect::PayloadBinding: ApplicationStructuredValueBinding<Value = Payload>,
         Payload: Send + Sync + 'static,
     {
         self.candidate.emit(effect, payload)

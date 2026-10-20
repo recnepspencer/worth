@@ -49,7 +49,5 @@ worth_query_mutation_binding!(
         ReadOnly,
         NoApplicationUnit,
     field InstitutionIdentityField::reference(),
-    value reversal_scope,
-    candidates creates 3, deletes 0, links 5, unlinks 0, writes 12, emits 2,
-    resources retained_representation_bytes 32768
+    value reversal_scope
 );

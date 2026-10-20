@@ -1,6 +1,5 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationCandidatePolicy, ApplicationMutationBindingDescriptor,
-    ApplicationMutationScopeContract,
+    ApplicationMutationBindingDescriptor, ApplicationMutationScopeContract,
 };
 
 pub(crate) struct WorthQueryCompiledApplicationMutationBinding {
@@ -18,9 +17,5 @@ impl WorthQueryCompiledApplicationMutationBinding {
 
     pub(crate) fn scope(&self) -> &ApplicationMutationScopeContract {
         self.descriptor.scope()
-    }
-
-    pub(crate) const fn candidates(&self) -> ApplicationCandidatePolicy {
-        self.descriptor.candidates()
     }
 }

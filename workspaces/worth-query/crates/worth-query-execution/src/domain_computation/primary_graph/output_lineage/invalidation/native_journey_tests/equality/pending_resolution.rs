@@ -272,7 +272,6 @@ fn candidate(
         mutable: Mutex::new(RecordedOutputMutable::new(
             None,
             Some(RetainedSourceFacts::for_test(false, prefix)),
-            None,
             RecordedComputation::Absent(PriorAbsence::Restored),
         )),
     })))

@@ -1,7 +1,6 @@
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
 use worth_query_decl::facade::application_schema::{
     ApplicationExternalEffectBinding, ApplicationExternalEffectProtocol,
-    ApplicationRetainedEffectBinding,
 };
 use worth_query_decl::facade::worth_query_structured_value_binding;
 
@@ -23,12 +22,6 @@ impl From<EstateDeathNotificationRequest> for EstateDeathNotificationV2Payload {
 }
 
 worth_query_structured_value_binding!(pub EstateDeathNotificationV2PayloadBinding for EstateDeathNotificationV2Payload { identity: "bank.estate.effect.death-notification.payload.v2" });
-
-impl ApplicationRetainedEffectBinding for EstateDeathNotificationV2PayloadBinding {
-    fn retained_bytes(_: &Self::Value) -> u64 {
-        u64::try_from(std::mem::size_of::<EstateDeathNotificationV2Payload>()).unwrap_or(u64::MAX)
-    }
-}
 
 impl ApplicationExternalEffectBinding for EstateDeathNotificationV2PayloadBinding {
     const PROTOCOL: ApplicationExternalEffectProtocol = ApplicationExternalEffectProtocol::new(

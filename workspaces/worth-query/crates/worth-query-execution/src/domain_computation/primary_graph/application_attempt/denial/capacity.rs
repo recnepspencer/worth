@@ -9,9 +9,7 @@ impl ChargedBytes for WorthQueryApplicationAttemptDenial {
             cause,
         } = self;
         let nested = match cause {
-            AttemptDenialCause::None
-            | AttemptDenialCause::CandidateMemory(_)
-            | AttemptDenialCause::RelationalExecution(_) => 0,
+            AttemptDenialCause::None | AttemptDenialCause::RelationalExecution(_) => 0,
             // Native query stops contain only inline reports, identities and enums.
             AttemptDenialCause::NativeQueryRead(_) => std::mem::size_of::<
                 worth_relational::facade::runtime::QueryReadExecutionStop,

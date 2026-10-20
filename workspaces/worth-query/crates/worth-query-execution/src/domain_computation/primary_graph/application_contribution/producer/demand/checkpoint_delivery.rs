@@ -86,17 +86,9 @@ where
                             .map(|_| false)
                     }
                 };
-                let resources = self
-                    .primary_provider
-                    .graph
-                    .output_lineage
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner)
-                    .producer_resources_for_receipt(&receipt);
                 let completion = ready_backing.complete(WorthQueryCompletedOutputDemand {
                     authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
                     readiness,
-                    resources,
                 });
                 self.finish_output_checkpoint(
                     interest,

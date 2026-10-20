@@ -136,10 +136,7 @@ fn secondary_root_settles_independently(
         .start_required_outputs(
             &world.application,
             &request,
-            WorthQueryOutputDemandControls::new(
-                NonZeroUsize::new(4_096).unwrap(),
-                NonZeroUsize::new(8_192).unwrap(),
-            ),
+            WorthQueryOutputDemandControls::default(),
         )
         .unwrap_or_else(|failure| panic!("primary root starts: {:?}", failure.denial()));
 
@@ -169,10 +166,7 @@ fn secondary_root_settles_independently(
     else {
         panic!("the secondary root must retain performed delivery")
     };
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::default();
     let mut secondary_started = secondary_performed
         .start_required_outputs(&world.application, &secondary_request, controls)
         .unwrap_or_else(|failure| panic!("secondary root starts: {:?}", failure.denial()));

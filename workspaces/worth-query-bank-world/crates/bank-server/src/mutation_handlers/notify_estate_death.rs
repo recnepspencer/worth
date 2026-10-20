@@ -6,13 +6,8 @@ use bank_domain::{
         NotifyEstateDeathMutationBinding,
     },
 };
-use worth_query_host::facade::{
-    declaration::application_operation::{
-        ApplicationCandidateRequirements, ApplicationMutationBinding,
-    },
-    primary_graph::{
-        CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
-    },
+use worth_query_host::facade::primary_graph::{
+    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
 
 pub(crate) struct NotifyEstateDeathHandler;
@@ -36,16 +31,6 @@ impl OperationHandler<BankSchema, NotifyEstateDeathMutationBinding> for NotifyEs
             Ok(()) => HandlerResult::Completed(*input),
             Err(denial) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(denial)),
         }
-    }
-
-    fn candidate_requirements(
-        &self,
-        _: &EstateAction,
-        _: &EstateAction,
-    ) -> ApplicationCandidateRequirements {
-        NotifyEstateDeathMutationBinding::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
     }
 
     fn build_candidate(

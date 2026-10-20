@@ -56,7 +56,6 @@ fn refuse_changed_action(metadata_changed: bool) {
     ];
     let world = installation::install_with_roster(
         &crate::installed_schema(),
-        8192,
         4096,
         WorthQueryApplicationProgramRoster::new()
             .support(removed)

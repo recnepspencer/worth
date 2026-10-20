@@ -52,7 +52,6 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::ManagedCleanupRequired(_)
             | Self::ProducerUnavailable
             | Self::ProducerDomainDenied
-            | Self::ProducerResourceQuote(_)
             | Self::RequestAuthorization(_)
             | Self::SchedulingRejected
             | Self::PublicationStale

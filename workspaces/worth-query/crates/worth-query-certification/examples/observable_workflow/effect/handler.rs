@@ -30,15 +30,7 @@ impl OperationHandler<DocumentRetentionSchema, ArchiveBinding> for ArchiveHandle
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
     }
-    fn candidate_requirements(
-        &self,
-        _: &SetRetentionInput,
-        _: &<ArchiveBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::Decision,
-    ) -> ApplicationCandidateRequirements {
-        ArchiveBinding::CANDIDATES
-            .finite_requirements()
-            .expect("fixed-shape handler declares finite candidate policy")
-    }
+
     fn build_candidate(
         &self,
         input: &SetRetentionInput,
