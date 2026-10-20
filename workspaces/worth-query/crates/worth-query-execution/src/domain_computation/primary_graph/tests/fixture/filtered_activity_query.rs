@@ -1,9 +1,9 @@
 use worth_query_declaration::facade::{
     application_query::{
         ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-        ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-        ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-        ApplicationQueryParameterRef, ApplicationQueryParameterSet, ApplicationQueryResultFieldRef,
+        ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+        ApplicationQueryLaneEligibility, ApplicationQueryParameterRef,
+        ApplicationQueryParameterSet, ApplicationQueryResultFieldRef,
         ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ExactlyOneResult,
         ForwardResultTraversal,
     },
@@ -114,7 +114,6 @@ pub(super) fn selected_activity_definition() -> ApplicationQueryDefinition<
         .scope(Account::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 1, 1))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

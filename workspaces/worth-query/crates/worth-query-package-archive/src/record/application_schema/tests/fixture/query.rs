@@ -100,7 +100,6 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
                 },
             )),
             live_cause: Some(live_cause()),
-            dependency_ceiling: ApplicationQueryDependencyCeiling::bounded(4, 3, 2),
             disclosure: disclosure(),
             authorization: ApplicationQueryAuthorizationRequirement::Ability {
                 ability: text("Read"),

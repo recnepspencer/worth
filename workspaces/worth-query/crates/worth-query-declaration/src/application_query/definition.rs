@@ -8,9 +8,9 @@ mod builder;
 
 pub use authoring::{
     ApplicationQueryAuthorizationAuthoring, ApplicationQueryBasisAuthoring,
-    ApplicationQueryCardinalityAuthoring, ApplicationQueryDependencyAuthoring,
-    ApplicationQueryDisclosureAuthoring, ApplicationQueryLaneAuthoring,
-    ApplicationQueryResultAuthoring, ApplicationQueryRootAuthoring, ApplicationQueryScopeAuthoring,
+    ApplicationQueryCardinalityAuthoring, ApplicationQueryDisclosureAuthoring,
+    ApplicationQueryLaneAuthoring, ApplicationQueryResultAuthoring, ApplicationQueryRootAuthoring,
+    ApplicationQueryScopeAuthoring,
 };
 pub use builder::ApplicationQueryDefinitionBuilder;
 
@@ -69,39 +69,6 @@ impl ApplicationQueryPredicate {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub struct ApplicationQueryDependencyCeiling {
-    maximum_traversal_depth: usize,
-    maximum_relation_count: usize,
-    maximum_projected_field_count: usize,
-}
-
-impl ApplicationQueryDependencyCeiling {
-    pub const fn bounded(
-        maximum_traversal_depth: usize,
-        maximum_relation_count: usize,
-        maximum_projected_field_count: usize,
-    ) -> Self {
-        Self {
-            maximum_traversal_depth,
-            maximum_relation_count,
-            maximum_projected_field_count,
-        }
-    }
-
-    pub const fn maximum_traversal_depth(self) -> usize {
-        self.maximum_traversal_depth
-    }
-
-    pub const fn maximum_relation_count(self) -> usize {
-        self.maximum_relation_count
-    }
-
-    pub const fn maximum_projected_field_count(self) -> usize {
-        self.maximum_projected_field_count
-    }
-}
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Scope> {
     pub(super) name: &'static str,
@@ -119,7 +86,6 @@ pub struct ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Sc
     pub(super) ordering: Vec<ApplicationQueryOrderingTerm>,
     pub(super) continuation: Option<ApplicationQueryContinuationTarget>,
     pub(super) live_cause: Option<ApplicationQueryLiveCauseContract>,
-    pub(super) dependency_ceiling: ApplicationQueryDependencyCeiling,
     pub(super) disclosure: ApplicationQueryDisclosureContract,
     pub(super) authorization: ApplicationQueryAuthorizationRequirement,
     pub(super) basis_support: ApplicationQueryBasisSupport,
@@ -204,10 +170,6 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
 
     pub const fn live_cause(&self) -> Option<&ApplicationQueryLiveCauseContract> {
         self.live_cause.as_ref()
-    }
-
-    pub const fn dependency_ceiling(&self) -> ApplicationQueryDependencyCeiling {
-        self.dependency_ceiling
     }
 
     pub const fn dependency_equivalence(&self) -> ApplicationQueryDependencyEquivalence {

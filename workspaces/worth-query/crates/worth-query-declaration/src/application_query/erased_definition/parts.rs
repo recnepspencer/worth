@@ -1,11 +1,10 @@
 use super::super::{
     ApplicationQueryAuthorizationRequirement, ApplicationQueryBasisSupport,
     ApplicationQueryCardinality, ApplicationQueryContinuationTarget, ApplicationQueryDefinition,
-    ApplicationQueryDependencyCeiling, ApplicationQueryDependencyEquivalence,
-    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-    ApplicationQueryLiveCauseContract, ApplicationQueryOrderingTerm,
-    ApplicationQueryParameterDefinition, ApplicationQueryPredicate, ApplicationQueryResultShape,
-    ApplicationQueryRootPathMeaning,
+    ApplicationQueryDependencyEquivalence, ApplicationQueryDisclosureContract,
+    ApplicationQueryLaneEligibility, ApplicationQueryLiveCauseContract,
+    ApplicationQueryOrderingTerm, ApplicationQueryParameterDefinition, ApplicationQueryPredicate,
+    ApplicationQueryResultShape, ApplicationQueryRootPathMeaning,
 };
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
@@ -26,7 +25,6 @@ pub struct WorthQueryPortableApplicationQueryParts {
     pub ordering: Vec<ApplicationQueryOrderingTerm>,
     pub continuation: Option<ApplicationQueryContinuationTarget>,
     pub live_cause: Option<ApplicationQueryLiveCauseContract>,
-    pub dependency_ceiling: ApplicationQueryDependencyCeiling,
     pub disclosure: ApplicationQueryDisclosureContract,
     pub authorization: ApplicationQueryAuthorizationRequirement,
     pub basis_support: ApplicationQueryBasisSupport,
@@ -94,10 +92,6 @@ impl WorthQueryPortableApplicationQueryParts {
         self.live_cause.as_ref()
     }
 
-    pub const fn dependency_ceiling(&self) -> ApplicationQueryDependencyCeiling {
-        self.dependency_ceiling
-    }
-
     pub const fn dependency_equivalence(&self) -> ApplicationQueryDependencyEquivalence {
         ApplicationQueryDependencyEquivalence::CompleteNativeSourceRevisions
     }
@@ -137,7 +131,6 @@ impl WorthQueryPortableApplicationQueryParts {
             ordering: definition.ordering,
             continuation: definition.continuation,
             live_cause: definition.live_cause,
-            dependency_ceiling: definition.dependency_ceiling,
             disclosure: definition.disclosure,
             authorization: definition.authorization,
             basis_support: definition.basis_support,
@@ -164,7 +157,6 @@ impl WorthQueryPortableApplicationQueryParts {
             ordering: definition.ordering.clone(),
             continuation: definition.continuation.clone(),
             live_cause: definition.live_cause.clone(),
-            dependency_ceiling: definition.dependency_ceiling,
             disclosure: definition.disclosure.clone(),
             authorization: definition.authorization.clone(),
             basis_support: definition.basis_support,

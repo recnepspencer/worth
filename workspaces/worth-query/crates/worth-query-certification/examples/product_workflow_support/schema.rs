@@ -1,8 +1,8 @@
 use worth_query_host::facade::declaration::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+    ApplicationQueryLaneEligibility, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultShapeBuilder,
 };
 use worth_query_host::facade::{declaration, primary_graph};
 use worth_query_host::facade::{
@@ -224,7 +224,6 @@ pub fn temporal_intent_query_definition() -> ApplicationQueryDefinition<
         .scope(TemporalIntent::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 5))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

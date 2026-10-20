@@ -89,8 +89,6 @@ pub(super) fn definition() -> ApplicationQueryDefinition<
         .scope(Account::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        // The declared status field adds one observed field to this one-entity, one-relation shape.
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 1, 1))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

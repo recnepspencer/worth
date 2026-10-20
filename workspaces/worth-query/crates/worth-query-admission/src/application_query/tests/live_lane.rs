@@ -1,7 +1,7 @@
 use worth_query_declaration::{
     facade::{
         application_query::ApplicationQueryLiveCauseBinding,
-        application_schema::{ApplicationEffectRef, ApplicationRetainedEffectBinding},
+        application_schema::ApplicationEffectRef,
     },
     worth_query_effect,
 };
@@ -22,12 +22,6 @@ worth_query_declaration::worth_query_structured_value_binding!(
         identity: "worth.query.test.planning-live-event.v1"
     }
 );
-
-impl ApplicationRetainedEffectBinding for PlanningLiveEventBinding {
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        u64::try_from(std::mem::size_of_val(value)).unwrap_or(u64::MAX)
-    }
-}
 
 worth_query_effect!(
     pub(super) PlanningLiveEffect for PlanningTestSchema,

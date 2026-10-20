@@ -17,7 +17,7 @@ const RETAINED_VERSION_TWO_MINIMAL_ARCHIVE_HEX: &str =
     include_str!("archive_stream/archive_v2.hex");
 
 const VERSION_TWO_MINIMAL_ARCHIVE_HEX: &str =
-    include_str!("archive_stream/archive_v2_record_v7.hex");
+    include_str!("archive_stream/archive_v2_record_v8.hex");
 
 #[test]
 fn version_two_minimal_archive_is_deterministic_and_frozen() {
@@ -29,6 +29,15 @@ fn version_two_minimal_archive_is_deterministic_and_frozen() {
         WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
     );
     assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
+
+    let previous = decode_hex(include_str!("archive_stream/archive_v2_record_v7.hex").trim());
+    let denial = decode_package_archive(&previous, WorthQueryPackageArchiveLimits::DEFAULT)
+        .expect_err("removed query slots require a new record-frame version");
+    assert_eq!(
+        denial.kind(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+    );
+    assert_eq!(denial.compatibility().unwrap().observed_version(), 7);
 
     // package/identity.rs:81 declares canonical identity v4: hash the fixture's
     // canonical tokens with that domain, then encode the v2 archive framing.

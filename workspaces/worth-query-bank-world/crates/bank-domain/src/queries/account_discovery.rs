@@ -1,10 +1,10 @@
 use worth_query_decl::facade::{
     application_query::{
         ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-        ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-        ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-        ApplicationQueryOrderingDirection, ApplicationQueryResultFieldRef,
-        ApplicationQueryResultShapeBuilder, ApplicationQueryRootPath,
+        ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+        ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
+        ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
+        ApplicationQueryRootPath,
     },
     application_schema::{EqualityPredicate, NoApplicationUnit, ReadOnly},
     worth_query_application_query,
@@ -78,7 +78,6 @@ pub fn account_discovery_definition() -> ApplicationQueryDefinition<
         .scope(Principal::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::Many)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(2, 5, 1))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

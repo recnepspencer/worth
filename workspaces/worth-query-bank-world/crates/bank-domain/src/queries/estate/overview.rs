@@ -1,7 +1,7 @@
 use worth_query_decl::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
-    ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+    ApplicationQueryLaneEligibility,
 };
 use worth_query_decl::facade::worth_query_application_query;
 
@@ -75,7 +75,6 @@ pub fn estate_case_overview_definition() -> ApplicationQueryDefinition<
         .scope(EstateCase::reference())
         .result_shape(overview_shape())
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(3, 16, 28))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned().with_preview())
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_preview())

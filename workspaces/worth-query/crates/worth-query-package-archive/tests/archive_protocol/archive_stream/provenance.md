@@ -34,11 +34,18 @@ positive counterpart is the existing all-family current export and fresh
 validation test, still pending current execution.
 
 The original `archive_v2.hex` and release-envelope golden remain unchanged.
-New current expectations use independently specified record-frame version 7;
+New current expectations use independently specified record-frame version 8;
 unchanged payloads and outer archive 2/manifest 1 framing retain their exact
 bytes. The minimal archive has one record at offset 118. Its current counterpart
 changes only that frame's two-byte version. The envelope 1 counterpart changes
 only those nested archive bytes and their SHA-256 checksum at bytes 50–81.
 Current expectations were constructed from this reviewed grammar without
 calling a current production writer. The envelope decoder may still return the
-original untrusted archive; the nested archive loader owns frame-6 refusal.
+original untrusted archive; the nested archive loader owns historical-frame refusal.
+
+Frame8 removes the obsolete application-query dependency-ceiling payload. The
+minimal archive and the two single-record goldens have no application query, so
+their payloads are unchanged. Current v8 vectors were constructed from the
+retained v7 vectors by changing the original two-byte record version; the
+release envelope additionally updates only the nested archive checksum. The
+v7 vectors remain historical bytes, alongside the original v6 vectors.

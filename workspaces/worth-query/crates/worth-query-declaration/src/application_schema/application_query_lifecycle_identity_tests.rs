@@ -4,12 +4,11 @@ use super::{
 };
 use crate::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
-    ApplicationQueryDependencyCeiling, ApplicationQueryDisclosureContract,
-    ApplicationQueryLaneEligibility, ApplicationQueryLiveCauseBinding,
-    ApplicationQueryLiveResourceContract, ApplicationQueryOrderingDirection,
-    ApplicationQueryReference, ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-    ApplicationQueryResultShapeBuilder, ErasedApplicationQueryDefinition, ForwardResultTraversal,
-    ManyResults,
+    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
+    ApplicationQueryLiveCauseBinding, ApplicationQueryLiveResourceContract,
+    ApplicationQueryOrderingDirection, ApplicationQueryReference, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder,
+    ErasedApplicationQueryDefinition, ForwardResultTraversal, ManyResults,
 };
 pub(super) struct Schema;
 struct Root;
@@ -207,7 +206,6 @@ where
     .scope(scope)
     .result_shape(shape)
     .cardinality(ApplicationQueryCardinality::ExactlyOne)
-    .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(0, 0, 1))
     .disclosure(ApplicationQueryDisclosureContract::public())
     .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
     .lanes(ApplicationQueryLaneEligibility::one_shot())
@@ -240,7 +238,6 @@ fn collection_definition(continuation: bool) -> ErasedApplicationQueryDefinition
         .scope(root)
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 1, 2))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
@@ -295,7 +292,6 @@ where
         .scope(root)
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 1, 2))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())

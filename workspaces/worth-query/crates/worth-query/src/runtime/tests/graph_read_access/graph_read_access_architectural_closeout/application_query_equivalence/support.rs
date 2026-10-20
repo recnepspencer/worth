@@ -1,11 +1,11 @@
 use worth_query_declaration::facade::{
     application_query::{
         ApplicationQueryBasisSupport, ApplicationQueryCardinality,
-        ApplicationQueryDefinitionBuilder, ApplicationQueryDependencyCeiling,
-        ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-        ApplicationQueryOrderingDirection, ApplicationQueryParameterSet, ApplicationQueryReference,
-        ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-        ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
+        ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
+        ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
+        ApplicationQueryParameterSet, ApplicationQueryReference, ApplicationQueryResultFieldRef,
+        ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder,
+        ForwardResultTraversal, ManyResults,
     },
     authoring::{
         AspectFieldSelector, AspectName, AuthoredResultShapeField, FieldName, OrderingSelector,
@@ -311,7 +311,6 @@ fn query_definition(
         .scope(Account::reference())
         .result_shape(shape)
         .cardinality(ApplicationQueryCardinality::Many)
-        .dependency_ceiling(ApplicationQueryDependencyCeiling::bounded(1, 1, 3))
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())

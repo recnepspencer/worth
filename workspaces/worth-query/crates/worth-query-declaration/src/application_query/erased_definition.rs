@@ -6,11 +6,10 @@ use super::{
     ApplicationQueryAuthorizationRequirement, ApplicationQueryBasisSupport,
     ApplicationQueryCanonicalArtifact, ApplicationQueryCardinality,
     ApplicationQueryContinuationTarget, ApplicationQueryDefinition,
-    ApplicationQueryDependencyCeiling, ApplicationQueryDependencyEquivalence,
-    ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-    ApplicationQueryLiveCauseContract, ApplicationQueryOrderingTerm,
-    ApplicationQueryParameterDefinition, ApplicationQueryPredicate, ApplicationQueryReference,
-    ApplicationQueryResultShape, ApplicationQueryRootPathMeaning,
+    ApplicationQueryDependencyEquivalence, ApplicationQueryDisclosureContract,
+    ApplicationQueryLaneEligibility, ApplicationQueryLiveCauseContract,
+    ApplicationQueryOrderingTerm, ApplicationQueryParameterDefinition, ApplicationQueryPredicate,
+    ApplicationQueryReference, ApplicationQueryResultShape, ApplicationQueryRootPathMeaning,
 };
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
@@ -113,10 +112,6 @@ impl ErasedApplicationQueryDefinition {
 
     pub const fn live_cause(&self) -> Option<&ApplicationQueryLiveCauseContract> {
         self.parts.live_cause.as_ref()
-    }
-
-    pub const fn dependency_ceiling(&self) -> ApplicationQueryDependencyCeiling {
-        self.parts.dependency_ceiling
     }
 
     pub const fn dependency_equivalence(&self) -> ApplicationQueryDependencyEquivalence {

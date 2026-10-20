@@ -7,7 +7,7 @@ use super::release_envelope_fixture::*;
 const RETAINED_VERSION_ONE_RELEASE_ENVELOPE_HEX: &str =
     include_str!("release_envelope/release_envelope_v1.hex");
 const VERSION_ONE_RELEASE_ENVELOPE_HEX: &str =
-    include_str!("release_envelope/release_envelope_v1_record_v7.hex");
+    include_str!("release_envelope/release_envelope_v1_record_v8.hex");
 const ENVELOPE_HEADER_BYTES: usize = 18;
 const EXPECTED_IDENTITY_BYTES: usize = 32;
 const CHECKSUM_BYTES: usize = 32;
