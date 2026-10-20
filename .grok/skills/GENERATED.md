@@ -1,5 +1,6 @@
 Generated from repository skills/ by boundary-check --write-guidance.
 Edit skills/ only. Installed user skills are outside this generated zone.
+- cad-engineering/SKILL.md
 - code-quality-qa/SKILL.md
 - code-quality-qa/agents/openai.yaml
 - feature-doc-writer/SKILL.md
