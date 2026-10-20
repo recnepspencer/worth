@@ -1,4 +1,4 @@
-//! The original local effect's fresh capability owns completion, not generic Advance.
+//! The original local effect's binding-selected admission owns completion, not Advance.
 use super::super::{local_actions::VerifiedLocalActionCompletion, WorkflowLocalActionKind};
 use super::*;
 use crate::domain_computation::primary_graph::{
@@ -6,10 +6,7 @@ use crate::domain_computation::primary_graph::{
 };
 mod replay;
 use worth_query_declaration::facade::{
-    application_capability::ApplicationCapabilityRequest,
-    application_operation::{
-        ApplicationCapabilityMutationBinding, ApplicationMutationScopeBinding,
-    },
+    application_operation::{ApplicationMutationAdmissionBinding, ApplicationMutationScopeBinding},
     application_schema::ApplicationStructuredValueBinding,
 };
 
@@ -37,16 +34,9 @@ impl WorthQueryWorkflowAdvanceAdapter {
     where
         S: ApplicationSchema,
         Spec: ApplicationWorkflowSpec<Schema = S>,
-        B: ApplicationCapabilityMutationBinding<S>,
+        B: ApplicationMutationAdmissionBinding<S>,
         B::Operation: ApplicationOperationMarkerIdentity<S>,
-        B::Input: Clone
-            + Send
-            + Sync
-            + ApplicationCapabilityRequest<
-                S,
-                B::Capability,
-                Scope = <B::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope,
-            > + 'static,
+        B::Input: Clone + Send + Sync + 'static,
         <B::Operation as ApplicationOperationMarkerIdentity<S>>::InputBinding:
             ApplicationStructuredValueBinding<Value = B::Input>,
     {
@@ -62,9 +52,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             .ok_or_else(|| {
                 D::Attempt(local_mismatch("original local vocabulary is unavailable"))
             })?;
-        super::local_actions::validate_action_admission::<S, Spec, B, _>(
-            selected, installed, &admission,
-        )?;
+        super::local_actions::validate_action_admission::<S, Spec, B, _>(installed, &admission)?;
         let kind = validate_original(selected, installed, required)?;
         let performed = super::super::operation::validate_operation_receipt::<S, B>(
             runtime,
@@ -101,7 +89,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             workflow_execution_requirements: required.workflow_execution_requirements().clone(),
         };
         let prepared = selected
-            .prepare_workflow_transition::<B::Capability, B::Operation, B::Input, _, Spec>(
+            .prepare_local_workflow_transition::<B::Operation, B::Input, _, Spec>(
                 &execution,
                 installed,
                 required.original_instance().clone(),

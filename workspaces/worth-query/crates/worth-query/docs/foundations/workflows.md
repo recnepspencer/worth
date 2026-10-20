@@ -1188,30 +1188,33 @@ not clear document fields or supersede signatures merely because the cursor
 returns. Declare certified dependencies separately through native signing
 lifecycle; a later relevant edit, not navigation alone, supersedes them.
 
-Prepare under the return binding's own capability, not the Advance capability.
+Prepare under the return binding's own native admission, not Advance permission.
+Conventional bindings use the installed operation's required abilities and policies;
+capability bindings use their exact installed capability. Do not invent a parallel
+role capability to fit a local action. Authoring, instance start, ordinary Advance
+and cursor navigation retain their separate capability contracts.
 The request supplies intent and logical key, never a destination:
 
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-let required = application.request(&principal, &scope)
-    .on_branch(instance.branch())
-    .mutate(ReturnToDraft { identity: identity.clone() })
+let request = application.request(&principal, &scope).on_branch(instance.branch());
+let original = ReturnToDraft { identity };
+let required = request.advanced().mutate(original.clone())
     .without_source()
     .idempotency(&key)
     .prepare_workflow_back_action(&workflow, instance.clone())?;
 
-let outcome = application.request(&principal, &scope)
-    .on_branch(required.branch())
-    .mutate(ReturnToDraft { identity })
+let operation = request.mutate(original)
     .without_source()
-    .idempotency(&key)
+    .idempotency_owned(key)?
     .for_workflow_operation(&workflow, &required)?
-    .execute_capability_in_program(&program, ExecutionAllocationPolicy::SystemAllocation)?;
+    .retain_operation::<Program, ReturnAction>(workflow.program_runtime())?;
+let outcome = operation.advance(&fresh_request);
 ```
 
-Preparation changes nothing. Query derives input identity from the admitted
-input, checks the binding-associated installed capability, resolves the current
+Preparation changes nothing. Query derives input identity from the original
+typed request identities, checks the binding-selected native admission, resolves the current
 source occurrence and exact route, and retains its facts in the operation
 authority. Normal mutation execution freshly authorizes the request and admits
 the body. Without an emitted external effect, its business effects, audit and
@@ -1274,27 +1277,27 @@ owners and need local-action acceptance below. Each binding appears at most once
 collection, and each action counts against the declared effect ceiling. Multiple
 distinct bindings are allowed; canonical identity retains their exact contracts.
 
-Prepare under the action's own capability, then retain the returned requirement
+Prepare under the action binding's own native admission, then retain the returned requirement
 with the original input and logical key:
 
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
 let intent = VoidRequest { identity, justification };
-let required = application.request(&principal, &scope)
-    .on_branch(instance.branch()).mutate(intent.clone())
+let request = application.request(&principal, &scope).on_branch(instance.branch());
+let required = request.advanced().mutate(intent.clone())
     .without_source().idempotency(&key)
     .prepare_workflow_termination_action(&workflow, instance)?;
 
-let outcome = application.request(&principal, &scope)
-    .on_branch(required.branch()).mutate(intent)
-    .without_source().idempotency(&key)
+let operation = request.mutate(intent)
+    .without_source().idempotency_owned(key)?
     .for_workflow_operation(&workflow, &required)?
-    .execute_capability_in_program(&program, ExecutionAllocationPolicy::SystemAllocation)?;
+    .retain_operation::<Program, EndingAction>(workflow.program_runtime())?;
+let outcome = operation.advance(&fresh_request);
 ```
 
-The issuer derives identity from admitted input and verifies the exact
-binding-associated installed capability. Normal execution freshly authorizes
+The issuer derives identity from the original typed request identities and verifies the exact
+binding-selected native admission. Normal execution freshly authorizes
 and admits the native body. Without an emitted effect, business writes, audit, receipted `Terminated`
 settlement, distinct Terminated instance state and live-membership retirement
 publish in one candidate. There is no successor progress update. A denied body
@@ -1330,7 +1333,8 @@ installed transport recovery or authenticated inbound source, never a second
 mutation, copied receipt, local pending ledger or cursor update.
 
 Once `advance` returns the completed owner, accept it under the original action
-binding's fresh capability. A Quality-Manager-only ending need not borrow an
+binding's fresh admission: conventional operation abilities/policies or its exact
+installed capability. A Quality-Manager-only ending need not borrow an
 unrelated editor or Advance capability:
 
 <!-- illustrative -->

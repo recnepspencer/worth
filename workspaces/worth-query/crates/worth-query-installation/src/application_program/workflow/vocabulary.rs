@@ -95,6 +95,7 @@ pub(super) struct InstalledWorkflowOperation {
     pub(super) requires_workflow_authority: bool,
     pub(super) supports_local_workflow_action: bool,
     pub(super) capability: Option<(&'static str, WorthQueryPortableTypeIdentity)>,
+    pub(super) admission_identity: Option<[u8; 32]>,
     pub(super) reference: ApplicationWorkflowOperationRef,
     pub(super) inbound_ref:
         Option<worth_query_declaration::facade::application_program::ApplicationWorkflowInboundRef>,

@@ -19,6 +19,7 @@ impl InstalledWorkflowOperation {
             binding_identity: Binding::IDENTITY,
             requires_workflow_authority: Binding::REQUIRES_WORKFLOW_AUTHORITY,
             supports_local_workflow_action,
+            admission_identity: None,
             capability: <Binding::Admission as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionMode>::capability_identity(),
             reference,
             inbound_ref: None,
@@ -51,6 +52,29 @@ where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
+    /// Descriptive identity of the installed local binding's sealed admission mode.
+    /// `Some(None)` denotes conventional admission; no result grants permission.
+    #[doc(hidden)]
+    pub fn local_action_admission_identity<
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<
+            Schema,
+        >,
+    >(
+        &self,
+    ) -> Option<Option<[u8; 32]>> {
+        let reference = ApplicationWorkflowOperationRef::declared_binding::<Spec, Binding>();
+        use worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionMode;
+        let mut matches = self.operations.iter().filter(|operation| {
+            operation.supports_local_workflow_action
+                && operation.matches_reference(&reference, true)
+                && operation.capability == Binding::Admission::capability_identity()
+        });
+        let operation = matches.next()?;
+        matches
+            .next()
+            .is_none()
+            .then_some(operation.admission_identity)
+    }
     #[doc(hidden)]
     pub fn supports_local_workflow_action<Binding: ApplicationMutationBinding<Schema>>(
         &self,

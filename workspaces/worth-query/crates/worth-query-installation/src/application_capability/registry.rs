@@ -31,6 +31,24 @@ pub(crate) struct ApplicationCapabilityRegistryKey {
 }
 
 impl ApplicationCapabilityRegistryKey {
+    pub(crate) fn from_mutation_admission<Schema, Binding>() -> Option<Self>
+    where
+        Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
+    {
+        use worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionMode;
+        let (name, capability_type) = Binding::Admission::capability_identity()?;
+        let operation =
+            ApplicationOperationRef::<Schema, Binding::Operation, Binding::Input>::from_declaration(
+            );
+        Some(Self {
+            name: name.to_owned(),
+            capability_type,
+            operation: operation.name().to_owned(),
+            operation_type: WorthQueryPortableTypeIdentity::declared(operation.name()),
+            input_type: operation.input_identity(),
+        })
+    }
     pub(crate) fn from_contract(contract: &ErasedApplicationCapabilityContract) -> Self {
         Self {
             name: contract.name().to_string(),

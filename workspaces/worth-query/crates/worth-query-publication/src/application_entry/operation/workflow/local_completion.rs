@@ -1,13 +1,7 @@
-//! Completed local actions settle with their original fresh capability and exact source owner.
+//! Completed local actions settle with their binding's fresh admission and exact source owner.
 use super::*;
 use crate::application_entry::WorthQueryWorkflowOperationOwnerAcceptanceDenial as Denial;
-use worth_query_declaration::facade::{
-    application_capability::ApplicationCapabilityRequest,
-    application_operation::{
-        ApplicationCapabilityMutationBinding, ApplicationMutationAdmissionBinding,
-        ApplicationMutationScopeBinding,
-    },
-};
+use worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding;
 use worth_query_execution::{
     facade::application_installation::WorthQueryWorkflowVocabulary,
     publication_boundary::workflow_advance::{
@@ -21,17 +15,17 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
-    I::Binding: ApplicationMutationAdmissionBinding<S> + ApplicationCapabilityMutationBinding<S>,
+    I::Binding: ApplicationMutationAdmissionBinding<S>,
     <I::Binding as ApplicationMutationAdmissionBinding<S>>::Admission:
-        crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<S, I::Binding>,
-    <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync + 'static
-        + ApplicationCapabilityRequest<
+        crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<
             S,
-            <I::Binding as ApplicationCapabilityMutationBinding<S>>::Capability,
-            Scope = <<I::Binding as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope,
+            I::Binding,
         >,
-    <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
-        ApplicationMutationScopeResolution<S, <I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity>,
+    <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync + 'static,
+    <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeResolution<
+        S,
+        <I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity,
+    >,
 {
     /// Accept an original Back/termination owner without borrowing Advance permission.
     /// Fresh original-binding admission precedes exact effect and settlement inspection.
@@ -89,7 +83,10 @@ where
             ))
             .and_then(|result| result);
         match result {
-            Ok(progress) => Ok(WorthQueryWorkflowAcceptance { progress, operation: self }),
+            Ok(progress) => Ok(WorthQueryWorkflowAcceptance {
+                progress,
+                operation: self,
+            }),
             Err(cause) => Err((self, cause)),
         }
     }

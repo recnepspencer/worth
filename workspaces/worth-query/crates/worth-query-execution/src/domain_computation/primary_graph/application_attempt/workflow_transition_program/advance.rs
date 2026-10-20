@@ -15,8 +15,7 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub(in crate::domain_computation::primary_graph) fn materialize_workflow_advance<
-        Capability,
+    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn materialize_admitted_workflow_transition<
         Spec,
     >(
         mut self,
@@ -30,7 +29,6 @@ where
         WorthQueryApplicationAttemptDenial,
     >
     where
-        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
         if instance.branch() != self.lease.product().product_branch() {
@@ -43,9 +41,6 @@ where
             request_kind,
             WorkflowTransitionRequestKind::LocalAction { .. }
         );
-        if !business_action {
-            self.authorize_advance::<Capability, Spec>(installed)?;
-        }
         let layout = self.lease.layout.workflow().clone();
         let published = super::super::PublishedWorkflowDefinitionRef::retained(
             instance.branch(),

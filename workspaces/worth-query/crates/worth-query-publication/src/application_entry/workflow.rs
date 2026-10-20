@@ -11,6 +11,7 @@ mod assessment;
 mod condition;
 mod definition;
 mod instance;
+mod local_actions;
 mod navigation;
 pub(in crate::application_entry) mod operation;
 mod ordinary;

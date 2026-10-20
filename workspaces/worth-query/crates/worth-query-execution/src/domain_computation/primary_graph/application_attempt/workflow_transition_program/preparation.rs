@@ -33,6 +33,7 @@ mod adapter_replay;
 #[path = "preparation/local_actions.rs"]
 mod local_actions;
 mod local_completion;
+mod observation;
 /// Which authored local action the binding requests; never a destination or authority.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorkflowLocalActionKind {
@@ -189,61 +190,12 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        if installed.schema_binding() != &self.application().installed_schema().binding_identity() {
-            return Err(WorkflowTransitionPreparationDenial::Binding(
-                WorkflowTransitionBindingDenial::ForeignSchema,
-            ));
-        }
-        let selected = self.inspect_selected_program().map_err(|_| {
-            WorkflowTransitionPreparationDenial::Binding(
-                WorkflowTransitionBindingDenial::SelectedProgramUnavailable,
-            )
-        })?;
-        if selected.revision() != installed.program_revision() {
-            return Err(WorkflowTransitionPreparationDenial::Binding(
-                WorkflowTransitionBindingDenial::ProgramRevisionChanged,
-            ));
-        }
-        let selected_occurrence =
-            crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
-                self.product().observation(),
-            );
-        let (_, projection, _) = self
-            .application()
-            .mutation_projection
-            .project_admitted_operation_with_request(
-                execution,
-                &admission,
-                |_, _| {},
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .map_err(WorkflowTransitionPreparationDenial::Projection)?
-            .into_parts();
-        let read_set = self
-            .application()
-            .begin_projected_application_read_attempt_with_request(
-                execution,
-                admission,
-                projection,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .map_err(WorkflowTransitionPreparationDenial::Attempt)?
-            .complete_projected_dependencies_with_request(
-                execution,
-                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .map_err(WorkflowTransitionPreparationDenial::Attempt)?;
-        if selected_occurrence
-            != crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
-                read_set.lease.product().observation(),
-            )
-        {
-            return Err(WorkflowTransitionPreparationDenial::Binding(
-                WorkflowTransitionBindingDenial::SelectedOccurrenceChanged,
-            ));
-        }
+        let read_set = self.prepare_transition_observation(execution, installed, admission)?;
         read_set
-            .materialize_workflow_advance::<Capability, Spec>(
+            .authorize_advance::<Capability, Spec>(installed)
+            .map_err(WorkflowTransitionPreparationDenial::Attempt)?;
+        read_set
+            .materialize_admitted_workflow_transition::<Spec>(
                 execution,
                 installed,
                 instance,

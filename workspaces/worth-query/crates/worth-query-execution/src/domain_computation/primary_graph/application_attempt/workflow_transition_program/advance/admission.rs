@@ -18,7 +18,10 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub(super) fn authorize_advance<Capability, Spec>(
+    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn authorize_advance<
+        Capability,
+        Spec,
+    >(
         &self,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
