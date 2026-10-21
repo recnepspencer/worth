@@ -3,27 +3,23 @@
 
 use std::sync::Arc;
 
-use worth_relational::facade::{
-    mvcc::{
-        CompanionBranchCell, CompanionBranchImage, CompanionCellEditStop, CompanionPreflightStop,
-    },
-    runtime::{PositionedRelationalSnapshot, RelationalRuntime},
-    snapshots::SnapshotHandle,
-};
+use worth_relational::facade::mvcc::CompanionBranchCell;
+use worth_relational::facade::mvcc::CompanionBranchImage;
+use worth_relational::facade::mvcc::CompanionCellEditStop;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
 
-use crate::domain_computation::primary_graph::application_attempt::{
-    Movement, WorthQuerySourceCurrentnessFailure,
-};
+use crate::domain_computation::primary_graph::application_attempt::Movement;
+use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
 
 use super::super::RecordedSettlementIdentity;
-use super::{
-    admission::{IndexAdmission, RetainedIndexAdmission},
-    index_capacity,
-    mark_state::{SettlementCurrentness, SettlementMarks},
-    retention,
-    source_alignment::{BranchMarkRoot, SnapshotAlignedMarkState},
-    InvalidationEditAdmission, SourceInvalidationOwner,
-};
+use super::mark_state::SettlementCurrentness;
+use super::mark_state::SettlementMarks;
+use super::source_alignment::BranchMarkRoot;
+use super::source_alignment::SnapshotAlignedMarkState;
+use super::SourceInvalidationOwner;
 
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) enum SettlementVerificationStop {
@@ -78,12 +74,10 @@ impl SourceInvalidationOwner {
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
         identity: &Arc<RecordedSettlementIdentity>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<DirtyReverification, SettlementVerificationStop> {
         // Resolving the native root precedes reading its mark image. The
         // positioned proof is descriptive; this pins its actual read source.
-        admission.work(1 + selected.branch_id().0.len() as u64)?;
-        admission.bytes(selected.branch_id().0.len() as u64)?;
+
         let actual = runtime
             .read_truth()
             .positioned_snapshot(snapshot)
@@ -92,21 +86,19 @@ impl SourceInvalidationOwner {
             return Err(SettlementVerificationStop::Alignment);
         }
         let cell = self
-            .cell_for_read(selected, admission)?
+            .cell_for_read(selected)?
             .ok_or(SettlementVerificationStop::Alignment)?;
         let image = cell.read_image();
-        admission.ordered_read(image.payload().past.len())?;
-        admission.ordered_read(image.payload().past.len())?;
+
         let aligned = SnapshotAlignedMarkState::observe_image(&image, selected)
             .map_err(|_| SettlementVerificationStop::Alignment)?;
-        admission.ordered_read(aligned.settlement_count())?;
+
         let live = image.root_id() == selected.root_id()
             && image.commit_id() == selected.commit_id()
             && image.position() == selected.position();
         let state = if live {
             &image.payload().current
         } else {
-            admission.ordered_read(image.payload().past.len())?;
             &image
                 .payload()
                 .past
@@ -114,7 +106,7 @@ impl SourceInvalidationOwner {
                 .expect("aligned historical image retains its selected state")
                 .state
         };
-        admission.ordered_read(state.settlements.len())?;
+
         let row = Arc::clone(
             state
                 .settlements
@@ -135,12 +127,11 @@ impl SourceInvalidationOwner {
             }
         };
         for ordinal in ordinals {
-            admission.work(1)?;
             let fact = row
                 .fact_at(ordinal)
                 .ok_or(SettlementVerificationStop::Alignment)?;
             let movement = fact
-                .source_currentness_in(runtime, execution, snapshot, admission)?
+                .source_currentness_in(runtime, execution, snapshot)?
                 .map_err(SettlementVerificationStop::SourceRead)?;
             if movement.movement() == Movement::Moved {
                 return Ok(DirtyReverification::ChangedOrdinal(ordinal));
@@ -163,7 +154,6 @@ impl SourceInvalidationOwner {
     pub(in crate::domain_computation::primary_graph) fn clear_verified_dirty(
         &self,
         verified: VerifiedDirtySettlement,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), SettlementVerificationStop> {
         let VerifiedDirtySettlement {
             runtime_instance_id,
@@ -175,32 +165,20 @@ impl SourceInvalidationOwner {
         if runtime_instance_id != self.runtime_instance_id {
             return Err(SettlementVerificationStop::Alignment);
         }
-        let before = admission.index_checkpoint();
-        admission.index_bytes(
-            index_capacity::arc_bytes::<SettlementMarks>()
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-        )?;
-        admission.bytes(
-            index_capacity::arc_bytes::<super::mark_state::MarkState>()
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-        )?;
+
         let mut replacement = (*row).clone();
         replacement.dirty_ordinals = im::OrdSet::new();
         let mut state = (*image.payload().current).clone();
         state.dirty_ordinal_count -= row.dirty_ordinals.len();
-        admission.index_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
-            state.settlements.len(),
-        )?;
+
         state.settlements.insert(identity, Arc::new(replacement));
-        let root = retention::admit_live_replacement(
-            image.payload(),
-            state,
-            before,
-            &self.resources,
-            admission,
-        )?;
+        let root = {
+            let mut root = (**image.payload()).clone();
+            root.current = Arc::new(state);
+            root
+        };
         let prepared = self
-            .prepare_root_replacement(cell, image, Arc::new(root), admission)
+            .prepare_root_replacement(cell, image, Arc::new(root))
             .map_err(SettlementVerificationStop::from)?;
         let cleanup = prepared
             .install()

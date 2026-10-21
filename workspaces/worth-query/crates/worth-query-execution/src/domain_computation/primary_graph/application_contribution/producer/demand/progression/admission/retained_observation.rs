@@ -135,7 +135,7 @@ where
         let owner = &self.primary_provider.graph.source_owner.invalidation_owner;
         // The selection and its verification share one meter, no larger than
         // the demand's declared source-currentness work.
-        let mut remaining = owner.edit_admission_with_work_limit(limits.source_currentness_work());
+
         let observation = at.product().observation();
         let outputs = self
             .primary_provider
@@ -151,7 +151,6 @@ where
                 &self.installed_producers.family_output_bindings::<Family>(),
                 observed_source.partition_identity(),
                 execution,
-                &mut remaining,
             )
             .map_err(|stop| {
                 crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
@@ -225,7 +224,6 @@ where
                         relational,
                         snapshot,
                         &selected,
-                        &mut remaining,
                     ) {
                         Ok(verification) => Ok(verification == ConsumedOutputVerification::Current),
                         // What it consumed was not current at this observation.
@@ -264,7 +262,7 @@ where
         let output = current.ok_or_else(|| stop(WorthQueryOutputDemandDenialKind::Superseded))?;
         let (mut selected, entry) = self
             .installed_producers
-            .select_exact::<Family>(output.binding, None)?;
+            .select_exact::<Family>(output.binding)?;
 
         selected.retained_idempotency_key = Some(output.stable.idempotency_key_identity());
         selected.retained_output_binding = Some(output.binding);
@@ -277,12 +275,10 @@ where
             Family::IDENTITY,
             0, // This retained-read admission starts a new handle with no executions.
         );
-        let mut admission = self.demand_request_admission();
 
         let observed_source = self
             .output_demands
-            .retain_readmission_source(observed_source, limits, None, &mut admission)
-            .map_err(|stop| self.starting_custody_stop(stop, &mut admission))?
+            .retain_readmission_source(observed_source, limits, None)?
             .without_row();
         Ok(WorthQueryAdmittedOutputDemand {
             runtime_authority: self.runtime.authority_identity().as_u64(),
@@ -293,9 +289,6 @@ where
             limits,
 
             producer_contacts_in_this_demand: 0,
-            checkpoint_readmission_work_units: 0,
-            checkpoint_readmission_work_bound: 0,
-            checkpoint_readmission_charged_preparation_bytes: 0,
             settled: false,
             admission_kind: DemandAdmissionKind::Ordinary,
             retained_program_basis: None,

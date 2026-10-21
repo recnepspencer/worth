@@ -1,13 +1,12 @@
 //! Original retained custody paired with the comparator's exact native pin.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_attempt::SealedComputationFacts, output_lineage::CustodiedComputation,
-};
+use crate::domain_computation::primary_graph::application_attempt::SealedComputationFacts;
+use crate::domain_computation::primary_graph::application_contribution::RetainedComputation;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct NativeComputationReads {
-    prior: Arc<CustodiedComputation>,
+    prior: Arc<RetainedComputation>,
     snapshot: SnapshotHandle,
     rebase_changes: Option<
         crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges,
@@ -30,7 +29,7 @@ impl NativeComputationReads {
             })
             .cloned()
     }
-    pub(super) fn new(prior: Arc<CustodiedComputation>, snapshot: SnapshotHandle) -> Self {
+    pub(super) fn new(prior: Arc<RetainedComputation>, snapshot: SnapshotHandle) -> Self {
         Self {
             prior,
             snapshot,

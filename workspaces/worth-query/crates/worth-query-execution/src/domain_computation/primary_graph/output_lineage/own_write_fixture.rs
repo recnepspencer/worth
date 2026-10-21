@@ -3,7 +3,7 @@ use std::sync::Arc;
 use worth_execution::ExecutionAllocationPolicy;
 #[cfg(test)]
 mod comparison_access;
-mod index_loss;
+
 use crate::domain_computation::primary_graph::{
     application_attempt::{ComputationRead, OutputRoleUse},
     output_lineage::RecordedOutput,
@@ -24,7 +24,6 @@ use crate::domain_computation::primary_graph::{
     },
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
 };
-pub(in crate::domain_computation::primary_graph) use index_loss::evict_index_with_unrelated_write;
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 
@@ -58,7 +57,7 @@ fn commit_own_write(
     ),
 ) {
     let product_resources =
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources_with_retained_capacity_for_test(128 * 1024 * 1024);
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources();
     let resources = product_resources.invalidation_resources();
     let world = crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world_with_product_resources(product_resources);
     world.declare_output_contract::<OwnWriteOutputs>("OwnWriteOutputs");
@@ -197,10 +196,6 @@ fn commit_own_write(
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    let maximum = resources
-        .installation()
-        .maximum_retained_bytes
-        .expect("this court installs a finite retained ceiling");
     let (key, dependency) = world
         .application
         .with_host_advancement(|phase| {
@@ -211,7 +206,6 @@ fn commit_own_write(
                     &execution,
                     [11; 32],
                     None,
-                    &mut owner.edit_admission(),
                     execution.allocation_policy(),
                 )
             } else {
@@ -220,7 +214,6 @@ fn commit_own_write(
                     &execution,
                     [11; 32],
                     None,
-                    &mut owner.edit_admission(),
                     execution.allocation_policy(),
                 )
             }
@@ -242,7 +235,7 @@ fn commit_own_write(
     let WorthQueryApplicationCommitOutcome::Committed(receipt) = outcome else {
         panic!("the legal effect commits: {outcome:?}");
     };
-    assert!(resources.retained_capacity_bytes() <= maximum);
+
     if generated {
         // The tested boundary starts at an already performed record, not at
         // producer selection. Give that real computation its test edition and

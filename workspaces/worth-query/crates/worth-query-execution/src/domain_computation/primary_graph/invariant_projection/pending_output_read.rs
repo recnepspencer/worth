@@ -1,7 +1,5 @@
 //! An actual projected read names one exact native output needing managed progress.
-use super::super::output_lineage::{
-    invalidation::RetainedConsumedOutputCapacity, RecordedSettlementIdentity,
-};
+use super::super::output_lineage::RecordedSettlementIdentity;
 use std::sync::Arc;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
@@ -10,19 +8,13 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 pub(in crate::domain_computation::primary_graph) struct RequestedOutputRead {
     identity: Arc<RecordedSettlementIdentity>,
     selected: PositionedRelationalSnapshot,
-    _capacity: RetainedConsumedOutputCapacity,
 }
 impl RequestedOutputRead {
     pub(super) fn new(
         identity: Arc<RecordedSettlementIdentity>,
         selected: PositionedRelationalSnapshot,
-        capacity: RetainedConsumedOutputCapacity,
     ) -> Self {
-        Self {
-            identity,
-            selected,
-            _capacity: capacity,
-        }
+        Self { identity, selected }
     }
     pub(in crate::domain_computation::primary_graph) fn identity(
         &self,

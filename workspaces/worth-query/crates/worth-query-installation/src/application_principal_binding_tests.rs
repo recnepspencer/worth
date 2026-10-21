@@ -132,7 +132,7 @@ worth_query_query_binding!(
         ReadOnly,
         worth_query_declaration::facade::application_schema::NoApplicationUnit,
     principal_field PrincipalIdentityField::reference(),
-    limits results 8, work 256
+    limits results 8
 );
 
 #[derive(Clone, Copy)]
@@ -153,7 +153,7 @@ worth_query_query_binding!(
         ReadOnly,
         worth_query_declaration::facade::application_schema::NoApplicationUnit,
     principal_field PrincipalIdentityField::reference(),
-    limits results 8, work 257
+    limits results 8
 );
 
 fn principal_query_definition() -> ApplicationQueryDefinition<
@@ -249,23 +249,16 @@ fn installed_query_binding_retains_exact_principal_scope_and_finite_limits() {
         "PrincipalIdentityField"
     );
     assert_eq!(binding.limits().maximum_results().get(), 8);
-    assert_eq!(binding.limits().maximum_work().unwrap().get(), 256);
     assert!(binding
         .limits()
-        .resolve(Some(std::num::NonZeroUsize::new(1024).unwrap()))
-        .narrow(
-            std::num::NonZeroUsize::new(1).unwrap(),
-            Some(std::num::NonZeroUsize::new(128).unwrap()),
-        )
+        .resolve()
+        .narrow(std::num::NonZeroUsize::new(1).unwrap())
         .is_ok());
     assert_eq!(
         binding
             .limits()
-            .resolve(Some(std::num::NonZeroUsize::new(1024).unwrap()))
-            .narrow(
-                std::num::NonZeroUsize::new(9).unwrap(),
-                Some(std::num::NonZeroUsize::new(128).unwrap()),
-            )
+            .resolve()
+            .narrow(std::num::NonZeroUsize::new(9).unwrap())
             .unwrap_err(),
         crate::facade::WorthQueryApplicationQueryLimitDenial::MaximumResultsWidened
     );

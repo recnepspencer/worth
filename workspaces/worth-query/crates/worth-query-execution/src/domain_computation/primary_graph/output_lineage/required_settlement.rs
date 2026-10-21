@@ -6,20 +6,20 @@ use std::sync::Arc;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-use crate::domain_computation::primary_graph::application_output_demand::{
-    ReadyCompletion, WorthQueryAcceptedOutputAuthority,
-};
+use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority;
 
-use super::{
-    input_cutoff::RetainedInputCutoffCandidate,
-    invalidation::{FullVerificationReason, InvalidationEditAdmission},
-    ProductCoordinate, RecordedSourceIdentity, SemanticSource, WorthQueryApplicationOutputLineage,
-};
+use super::input_cutoff::RetainedInputCutoffCandidate;
+use super::invalidation::FullVerificationReason;
+use super::ProductCoordinate;
+use super::RecordedSourceIdentity;
+use super::SemanticSource;
+use super::WorthQueryApplicationOutputLineage;
 
 mod current_accepted;
-pub(in crate::domain_computation::primary_graph) use current_accepted::{
-    BoundCurrentAcceptedOutput, CurrentAcceptedResult, CurrentAcceptedStop,
-};
+pub(in crate::domain_computation::primary_graph) use current_accepted::BoundCurrentAcceptedOutput;
+pub(in crate::domain_computation::primary_graph) use current_accepted::CurrentAcceptedResult;
+pub(in crate::domain_computation::primary_graph) use current_accepted::CurrentAcceptedStop;
 #[cfg(test)]
 mod tests;
 
@@ -72,9 +72,7 @@ impl AcceptedCurrentCandidate {
     pub(in crate::domain_computation::primary_graph) fn matches_ready_admitted(
         &self,
         ready: &ReadyCompletion,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, worth_relational::facade::mvcc::CompanionPreflightStop> {
-        admission.charge_external_work(1)?;
         Ok(self.ready.same_cell(ready))
     }
 }
@@ -89,12 +87,11 @@ impl WorthQueryApplicationOutputLineage {
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
         completion: &ReadyCompletion,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         Result<Option<AcceptedCurrentCandidate>, FullVerificationReason>,
         RequiredSettlementStop,
     > {
-        match self.exact_required_settlement(runtime_authority, schema, completion, admission) {
+        match self.exact_required_settlement(runtime_authority, schema, completion) {
             Ok(candidate) => Ok(Ok(candidate)),
             Err(Unresolved::Reason(reason)) => Ok(Err(reason)),
             Err(Unresolved::Stop(stop)) => Err(stop),
@@ -106,9 +103,7 @@ impl WorthQueryApplicationOutputLineage {
         runtime_authority: u64,
         schema: &ApplicationSchemaBindingIdentity,
         completion: &ReadyCompletion,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<AcceptedCurrentCandidate>, Unresolved> {
-        admission.charge_external_work(2)?;
         let authority = &completion.authority;
         let (correspondence, scope, coordinate, source_identity, partition, dependency, key, pin) =
             match authority {
@@ -216,33 +211,19 @@ impl WorthQueryApplicationOutputLineage {
         }
         // The accepted coordinate chooses one row at each index level. Each
         // ordered descent is paid before the corresponding selected read.
-        admission.charge_ordered_operations(
-            1,
-            super::prepared_slot::tree_work::<SemanticSource>(self.by_source.len())
-                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
-        )?;
+
         let Some(occurrences) = self.by_source.get(&source) else {
             return Err(FullVerificationReason::NativeRevisionUnavailable.into());
         };
-        admission
-            .charge_ordered_operations(1,
-                super::prepared_slot::tree_work::<
-                    worth_runtime_world::facade::ProductBranchIncarnation,
-                >(occurrences.len())
-                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
-            )?;
+
         let Some(history) = occurrences.get(&coordinate.occurrence) else {
             return Err(FullVerificationReason::NativeRevisionUnavailable.into());
         };
-        admission.charge_ordered_operations(
-            1,
-            super::prepared_slot::tree_work::<u64>(history.len())
-                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
-        )?;
+
         let Some(records) = history.get(&coordinate.generation) else {
             return Err(FullVerificationReason::NativeRevisionUnavailable.into());
         };
-        admission.charge_external_work(12)?;
+
         let Some(cell) = records.get(pin.slot()) else {
             return Err(FullVerificationReason::NativeRevisionUnavailable.into());
         };

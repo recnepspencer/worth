@@ -72,11 +72,7 @@ pub fn reconstruct(host: &host::Host, expected: i64, exercise_stops: bool) -> Re
                 .map(|root| WorthQueryApplicationQueryAccessContext::new(&principal, root))
                 .collect::<Vec<_>>();
             let controls = || {
-                WorthQueryProductQueryControls::new(
-                    NonZeroUsize::new(3).unwrap(),
-                    Some(NonZeroUsize::new(65_536).unwrap()),
-                    &scope,
-                )
+                WorthQueryProductQueryControls::new(NonZeroUsize::new(3).unwrap(), &scope)
             };
             let census = runtime
                 .execute_application_query_one_shot(

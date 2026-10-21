@@ -162,11 +162,7 @@ fn assert_live_relation_is_readable(
             &host_phase, &query,
             &access,
             worth_query_host::facade::declaration::application_query::ApplicationQueryParameterSet::new(),
-            primary_graph::WorthQueryProductQueryControls::new(
-                std::num::NonZeroUsize::new(8).unwrap(),
-                None,
-                &request,
-            ),
+            primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(8).unwrap(), &request),
         )
         .unwrap()).expect("installed host call opens");
     let result = application
@@ -330,8 +326,9 @@ fn checkpoint_bytes_are_denied(
 pub(super) fn checkpoint_limits() -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         product_world_resources(1_024),
-        runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
-            .unwrap(),
+        runtime::WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
+        ),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     )
 }

@@ -6,8 +6,9 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let resources =
-        WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 2).unwrap();
+    let resources = WorthQueryApplicationQueryResourceProfile::new(
+        std::num::NonZeroUsize::new(2).expect("concurrent graph work is non-zero"),
+    );
     let world = installed_authorization_world_with_resource_profile(resources);
     let source = world.application.current_world();
     let sibling_a_branch = world

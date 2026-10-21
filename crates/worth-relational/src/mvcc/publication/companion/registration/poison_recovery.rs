@@ -18,12 +18,7 @@ impl RelationalPublicationCompanion for Unindexed {
         context.seal_replacement(reserved, Arc::new(1_u64))
     }
 }
-fn budget() -> CompanionPreflightBudget {
-    CompanionPreflightBudget {
-        maximum_work_visits: Some(32),
-        maximum_preparation_bytes: None,
-    }
-}
+
 fn catch(run: impl FnOnce()) {
     assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(run)).is_err());
 }
@@ -36,21 +31,21 @@ fn recover(execution: &worth_execution::ExecutionRequest<'_, '_>, door: Door) {
     if door == Door::Activate {
         guard_fault::arm(door);
         catch(|| {
-            pending.activate(Arc::new(Unindexed), budget()).unwrap();
+            pending.activate(Arc::new(Unindexed)).unwrap();
         });
         // A consumed pending registration is not reconstructed. The owner
         // legitimately begins a new generation under the recovered guard.
         let _registration = port
             .begin_required_registration()
             .unwrap()
-            .activate(Arc::new(Unindexed), budget())
+            .activate(Arc::new(Unindexed))
             .unwrap();
         let committed =
             create_entity_outcome(execution, &runtime, "registry-poison-after-activate");
         release_test_commit_snapshot(&runtime, &committed);
         return;
     }
-    let mut registration = pending.activate(Arc::new(Unindexed), budget()).unwrap();
+    let mut registration = pending.activate(Arc::new(Unindexed)).unwrap();
     guard_fault::arm(door);
     catch(|| match door {
         Door::Fork => {
@@ -100,7 +95,7 @@ fn recover(execution: &worth_execution::ExecutionRequest<'_, '_>, door: Door) {
             registration = port
                 .begin_required_registration()
                 .unwrap()
-                .activate(Arc::new(Unindexed), budget())
+                .activate(Arc::new(Unindexed))
                 .unwrap();
         }
         Door::Remove => {
@@ -108,7 +103,7 @@ fn recover(execution: &worth_execution::ExecutionRequest<'_, '_>, door: Door) {
             registration = port
                 .begin_required_registration()
                 .unwrap()
-                .activate(Arc::new(Unindexed), budget())
+                .activate(Arc::new(Unindexed))
                 .unwrap();
         }
         Door::Head => {

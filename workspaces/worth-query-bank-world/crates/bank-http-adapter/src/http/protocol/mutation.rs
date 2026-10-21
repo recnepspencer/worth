@@ -16,7 +16,6 @@ pub struct BankHttpMutationControls {
 pub struct BankHttpMutationReadControls {
     pub deadline_milliseconds: u64,
     pub maximum_results: usize,
-    pub maximum_work: usize,
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields, tag = "command", rename_all = "snake_case")]

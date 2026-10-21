@@ -1,9 +1,14 @@
 //! Owned closed-row debt; links live in admitted note backing, never in rows.
-use super::super::{DemandRecord, DemandRegistryState, WorthQueryOutputDemandKey};
-use std::sync::{Arc, Mutex, Weak};
+use super::super::DemandRecord;
+use super::super::DemandRegistryState;
+use super::super::WorthQueryOutputDemandKey;
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::Weak;
 mod transition;
 mod visit;
-pub(in super::super) use visit::{ClosedRowNote, QueuedClosedRow};
+pub(in super::super) use visit::ClosedRowNote;
+pub(in super::super) use visit::QueuedClosedRow;
 
 pub(in super::super) struct ClosedCleanupLinks(Arc<ClosedNoteBacking>);
 pub(in super::super) struct ClosedNoteBacking {
@@ -13,20 +18,17 @@ pub(in super::super) struct ClosedNoteBacking {
     key: std::sync::Mutex<Option<ClosedNoteKey>>,
     closed_note: std::sync::Mutex<ClosedNoteLinks>,
     order: Mutex<Weak<Mutex<ClosedOrder>>>,
-    _capacity: super::super::record_capacity::RecordCapacity,
 }
 impl ClosedCleanupLinks {
     pub(in super::super) fn new(
         key: Arc<super::super::required_work::RequiredWorkMembership>,
-        capacity: super::super::record_capacity::RecordCapacity,
     ) -> Self {
         Self(Arc::new(ClosedNoteBacking {
             claim_owner: Default::default(),
             claimants: Default::default(),
-            key: std::sync::Mutex::new(Some(ClosedNoteKey::Funded(key))),
+            key: std::sync::Mutex::new(Some(ClosedNoteKey::Native(key))),
             closed_note: Default::default(),
             order: Default::default(),
-            _capacity: capacity,
         }))
     }
     pub(in super::super) fn node(&self) -> Arc<ClosedNoteBacking> {
@@ -54,13 +56,12 @@ impl Default for ClosedCleanupLinks {
             key: Default::default(),
             closed_note: Default::default(),
             order: Default::default(),
-            _capacity: super::super::record_capacity::fixture_capacity(),
         }))
     }
 }
 enum ClosedNoteKey {
     // Keeping the original owner keeps its key-allocation credit alive too.
-    Funded(Arc<super::super::required_work::RequiredWorkMembership>),
+    Native(Arc<super::super::required_work::RequiredWorkMembership>),
     #[cfg(test)]
     Fixture(Arc<WorthQueryOutputDemandKey>),
 }
@@ -73,7 +74,7 @@ impl ClosedNoteBacking {
             .as_ref()
             .expect("noted key was admitted")
         {
-            ClosedNoteKey::Funded(member) => Arc::clone(member.key_arc()),
+            ClosedNoteKey::Native(member) => Arc::clone(member.key_arc()),
             #[cfg(test)]
             ClosedNoteKey::Fixture(key) => Arc::clone(key),
         }
@@ -239,9 +240,7 @@ impl DemandRegistryState {
         // Membership is derived from a live row. Once that row leaves, a
         // stale owner's claim cannot keep a membership with no answer behind it.
         let member = self.remove_required_member_with_awaited(key, false);
-        self.required_reserved_bytes = self
-            .required_reserved_bytes
-            .saturating_sub(member.refund_required_bytes);
+
         drop(member);
         Some(row)
     }
@@ -258,5 +257,8 @@ impl DemandRegistryState {
 impl Drop for ClosedCleanupLinks {
     fn drop(&mut self) {
         self.0.claim_owner.lock().unwrap().live = false;
+        if let Some(ClosedNoteKey::Native(member)) = self.0.key.lock().unwrap().as_ref() {
+            member.set_required(false);
+        }
     }
 }

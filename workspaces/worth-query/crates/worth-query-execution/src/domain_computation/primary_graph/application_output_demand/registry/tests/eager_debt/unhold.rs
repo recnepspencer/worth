@@ -51,7 +51,7 @@ pub(super) fn run(context: &world::Context, seed: u64, divergences: &mut Vec<Str
     world.registry.release_prepared_token(&context.commit(1));
     world.model.settle();
     for _ in 0..4 {
-        world.admission(1_000_000).unwrap();
+        world.admission().unwrap();
     }
     observe::compare(
         &world,

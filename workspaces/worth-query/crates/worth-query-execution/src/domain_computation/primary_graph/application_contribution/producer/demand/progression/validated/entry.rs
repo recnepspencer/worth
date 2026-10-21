@@ -3,34 +3,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
-/// Copy the actual executed mode into the Ready backing. A required successor
-/// already paid its separate admission copy before this effect boundary.
-pub(super) fn clone_published_mode(
-    registry: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry,
-    interest: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandInterest,
-    mode: &WorthQueryProducerCommitAuthority,
-    selected: bool,
-    producer_identity: &str,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<WorthQueryProducerCommitAuthority, WorthQueryOutputDemandDenial> {
-    let copy = if selected {
-        std::mem::size_of::<WorthQueryProducerCommitAuthority>()
-    } else {
-        0
-    };
-    let work = u64::try_from(copy)
-        .ok()
-        .and_then(|copy| copy.checked_add(3));
-    if work.is_none_or(|work| admission.charge_external_work(work).is_err()) {
-        registry.relinquish_execution(interest);
-        return Err(denial(
-            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-            producer_identity.to_owned(),
-        ));
-    }
-    Ok(mode.clone())
-}
-
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
@@ -53,7 +25,6 @@ where
         entry: &InstalledProducerProvider<Schema>,
         commit_authority: WorthQueryProducerCommitAuthority,
         performed: &std::cell::RefCell<super::super::required_wave::performed::PerformedMembers>,
-        request_admission: &mut InvalidationEditAdmission,
     ) -> Result<
         CallerPass<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
         WorthQueryOutputDemandDenial,
@@ -79,7 +50,6 @@ where
             disclosure,
             entry,
             commit_authority,
-            request_admission,
             performed,
         )? {
             OwnStages::Answer(advance) => return Ok(CallerPass::Answer(advance)),
@@ -119,7 +89,6 @@ where
                 .key(),
             &completion,
             self,
-            request_admission,
         )?;
         if matches!(checkpoint_progress, CheckpointProgress::Published(_)) {
             return self.settle_own_ready(
@@ -143,7 +112,6 @@ where
             delivery_branch,
             &wave_authority,
             performed,
-            request_admission,
         )? {
             return Ok(CallerPass::Answer(advance));
         }

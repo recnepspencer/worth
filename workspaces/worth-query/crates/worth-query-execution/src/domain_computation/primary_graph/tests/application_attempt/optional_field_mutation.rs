@@ -327,7 +327,6 @@ fn query(
             ApplicationQueryParameterSet::<OptionalAccountFieldQuery>::new(),
             crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 NonZeroUsize::new(1).unwrap(),
-                Some(NonZeroUsize::new(256).unwrap()),
                 request,
             ),
         )

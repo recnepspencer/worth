@@ -7,7 +7,6 @@ pub(super) fn validate(
     provider: &WorthQueryPrimaryGraphProvider,
     before: &worth_relational::facade::snapshots::SnapshotHandle,
     observations: &[Arc<ObservedSourcePublication>],
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<(), crate::domain_computation::WorthQueryProviderSessionCommitStop> {
     let stop = consumed_output::verification_stop;
     let map_admission=crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop;
@@ -17,7 +16,7 @@ pub(super) fn validate(
                 observation: std::sync::Arc::clone(observed),
             };
             let current = fact
-                .source_currentness_in(runtime, execution, before, admission)
+                .source_currentness_in(runtime, execution, before)
                 .map_err(|cause| stop(map_admission(cause)))?
                 .map_err(|cause| {
                     stop(match cause {
@@ -45,33 +44,21 @@ pub(super) fn validate(
     let control = &provider.application_attempt_operation_control;
     let observed = control.source_validation_observed();
     if observed {
-        control.record_source_validation_image(image(
-            execution,
-            provider,
-            before,
-            observations,
-            admission,
-        )?);
+        control.record_source_validation_image(image(execution, provider, before, observations)?);
     }
     control.after_source_publication_validation();
     if observed {
-        control.record_source_validation_image(image(
-            execution,
-            provider,
-            before,
-            observations,
-            admission,
-        )?);
+        control.record_source_validation_image(image(execution, provider, before, observations)?);
     }
     Ok(())
 }
 fn image(execution:&worth_execution::ExecutionRequest<'_, '_>,provider:&WorthQueryPrimaryGraphProvider,
- before:&worth_relational::facade::snapshots::SnapshotHandle,observations:&[Arc<ObservedSourcePublication>],admission:&mut InvalidationEditAdmission,
+ before:&worth_relational::facade::snapshots::SnapshotHandle,observations:&[Arc<ObservedSourcePublication>],
 )->Result<crate::domain_computation::primary_graph::application_runtime::WorthQuerySourcePublicationImageForTest,crate::domain_computation::WorthQueryProviderSessionCommitStop>{
     let stop = consumed_output::verification_stop;
     provider.graph.with_runtime(execution,|runtime|{
  let selected=runtime.read_truth().positioned_snapshot(before).map_err(|_|stop(VerificationStop::Unavailable))?;
- provider.graph.source_owner.invalidation_owner.source_publication_validation_image_for_test(observations,&selected,admission)
+ provider.graph.source_owner.invalidation_owner.source_publication_validation_image_for_test(observations, &selected)
  .map_err(|cause|stop(crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop(cause)))
  })
 }

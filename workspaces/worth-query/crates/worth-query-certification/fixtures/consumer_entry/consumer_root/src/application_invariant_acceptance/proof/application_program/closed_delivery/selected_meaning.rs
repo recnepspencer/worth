@@ -47,7 +47,6 @@ fn closed_delivery_uses_actual_selected_action_and_root_after_adoption() {
     ];
     let mut world = installation::install_with_roster(
         &crate::installed_schema(),
-        4096,
         WorthQueryApplicationProgramRoster::new()
             .support(changed)
             .support(removed)

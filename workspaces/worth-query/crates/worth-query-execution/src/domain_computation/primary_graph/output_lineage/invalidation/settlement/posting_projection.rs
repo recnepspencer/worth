@@ -1,7 +1,9 @@
 //! Immutable physical addresses. A handle proves storage identity, never currentness.
-use super::super::{fact_key::FactPostingKey, mark_state::FullVerificationReason};
-use crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity;
-use im::{OrdMap, OrdSet};
+use super::super::fact_key::FactPostingKey;
+use super::super::mark_state::FullVerificationReason;
+
+use im::OrdMap;
+use im::OrdSet;
 use std::sync::Arc;
 
 #[derive(Debug)]
@@ -16,8 +18,6 @@ pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) s
         usize,
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) requirement:
         Option<FullVerificationReason>,
-    pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) _capacity:
-        Arc<RetainedInvalidationCapacity>,
 }
 impl PostingProjection {
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn ordinals(
@@ -33,6 +33,4 @@ pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) s
 {
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) projection:
         Arc<PostingProjection>,
-    pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) _fact_capacity:
-        super::super::fact_retention::RetainedFactCapacity,
 }

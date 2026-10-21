@@ -1,43 +1,30 @@
 //! Shared physical storage never substitutes one exact settlement for another.
-use super::super::super::super::{
-    delivery::affected::posting_order::LogicalPostings, mark_state::FactPosting,
-};
-use super::super::super::{posting_bindings, posting_removal};
+use super::super::super::super::delivery::affected::posting_order::LogicalPostings;
+use super::super::super::super::mark_state::FactPosting;
+use super::super::super::posting_bindings;
+use super::super::super::posting_removal;
 use super::*;
 
-fn admission() -> InvalidationEditAdmission {
-    InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(1_000_000),
-        maximum_preparation_bytes: Some(64 * 1024 * 1024),
-    })
-}
-fn projection(
-    id: u64,
-    resources: &crate::domain_computation::execution_runtime::source_invalidation::WorthQueryInvalidationResources,
-    admission: &mut InvalidationEditAdmission,
-) -> Arc<super::super::super::PostingProjection> {
+fn projection(id: u64) -> Arc<super::super::super::PostingProjection> {
     let entity = EntityId::new(PartitionId::main(), 1, 1);
     let facts = [
         Fact::SourceEntity { entity_id: entity },
         Fact::SourceEntity { entity_id: entity },
     ];
-    PreparedPostingOrdinals::prepare(&facts[..], None, &mut None, admission)
+    PreparedPostingOrdinals::prepare(&facts[..], None, &mut None)
         .unwrap()
-        .into_projection(id, facts.len(), 0, None, resources, admission)
-        .unwrap()
+        .into_projection(id, facts.len(), 0, None)
 }
 
 #[test]
 fn shared_bindings_detach_exactly_and_historical_storage_lives_until_final_drop() {
     let (_, [first, second]) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement_pair();
-    let resources = resources();
-    let mut admission = admission();
-    let projection = projection(0, &resources, &mut admission);
+    let projection = projection(0);
     let mut state = MarkState::initial();
-    posting_bindings::bind(&mut state, &projection, &first, &mut admission).unwrap();
+    posting_bindings::bind(&mut state, &projection, &first).unwrap();
     let historical = state.clone();
     let physical = state.postings.clone();
-    posting_bindings::bind(&mut state, &projection, &second, &mut admission).unwrap();
+    posting_bindings::bind(&mut state, &projection, &second).unwrap();
     assert_eq!(state.postings, physical);
     assert_eq!(
         state.posting_bindings[&0]
@@ -47,7 +34,7 @@ fn shared_bindings_detach_exactly_and_historical_storage_lives_until_final_drop(
             .len(),
         2
     );
-    posting_removal::remove(&mut state, &first, &projection, &mut admission).unwrap();
+    posting_removal::remove(&mut state, &first, &projection).unwrap();
     assert_eq!(state.postings, physical);
     assert_eq!(
         state.posting_bindings[&0]
@@ -69,40 +56,31 @@ fn shared_bindings_detach_exactly_and_historical_storage_lives_until_final_drop(
         .unwrap()
         .settlements
         .contains(&second));
-    posting_removal::remove(&mut state, &second, &projection, &mut admission).unwrap();
+    posting_removal::remove(&mut state, &second, &projection).unwrap();
     assert!(state.postings.is_empty());
     assert!(state.posting_bindings.is_empty());
     assert_eq!(state.posting_count, 0);
     drop(state);
     drop(projection);
-    assert!(
-        resources.retained_capacity_bytes() > 0,
-        "the historical image holds the actual projection grant"
-    );
+
     drop(historical);
-    assert_eq!(resources.retained_capacity_bytes(), 0);
 }
 
 #[test]
 fn logical_delivery_orders_exact_settlements_and_duplicate_ordinals_not_projection_ids() {
     let (_, [first, second]) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement_pair();
-    let resources = resources();
-    let mut admission = admission();
     let mut state = MarkState::initial();
-    let later = projection(0, &resources, &mut admission);
-    let earlier = projection(1, &resources, &mut admission);
-    posting_bindings::bind(&mut state, &later, &second, &mut admission).unwrap();
-    posting_bindings::bind(&mut state, &earlier, &first, &mut admission).unwrap();
+    let later = projection(0);
+    let earlier = projection(1);
+    posting_bindings::bind(&mut state, &later, &second).unwrap();
+    posting_bindings::bind(&mut state, &earlier, &first).unwrap();
     let key = FactPostingKey::EntityLifecycle(EntityId::new(PartitionId::main(), 1, 1));
     let mut counts = Default::default();
-    let mut cursor = LogicalPostings::prepare(&state, &key, &mut admission, &mut counts)
+    let mut cursor = LogicalPostings::prepare(&state, &key, &mut counts)
         .unwrap()
         .unwrap();
     let mut observed = Vec::new();
-    while let Some(posting) = cursor
-        .next(&state, &key, &mut admission, &mut counts)
-        .unwrap()
-    {
+    while let Some(posting) = cursor.next(&state, &key, &mut counts).unwrap() {
         observed.push(posting);
     }
     assert_eq!(
@@ -131,54 +109,4 @@ fn logical_delivery_orders_exact_settlements_and_duplicate_ordinals_not_projecti
         observed.len(),
         "each actually discovered logical pair is counted once"
     );
-    let mut counts = Default::default();
-    let mut cursor = LogicalPostings::prepare(&state, &key, &mut admission, &mut counts)
-        .unwrap()
-        .unwrap();
-    let mut stopped = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(0),
-        maximum_preparation_bytes: Some(0),
-    });
-    assert!(cursor
-        .next(&state, &key, &mut stopped, &mut counts)
-        .is_err());
-    assert_eq!(state.posting_bindings.len(), 2);
-    assert_eq!(
-        cursor
-            .next(&state, &key, &mut admission, &mut counts)
-            .unwrap(),
-        Some(observed[0].clone()),
-        "a first stop does not consume a logical prefix"
-    );
-}
-
-#[test]
-fn a_refused_successor_binding_leaves_the_original_image_usable() {
-    let (_, [first, second]) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement_pair();
-    let resources = resources();
-    let mut admission = admission();
-    let projection = projection(0, &resources, &mut admission);
-    let mut original = MarkState::initial();
-    posting_bindings::bind(&mut original, &projection, &first, &mut admission).unwrap();
-    let mut candidate = original.clone();
-    let mut stopped = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(0),
-        maximum_preparation_bytes: Some(0),
-    });
-    assert!(posting_bindings::bind(&mut candidate, &projection, &second, &mut stopped).is_err());
-    drop(candidate);
-    assert_eq!(
-        original.posting_bindings[&0]
-            .settlements()
-            .unwrap()
-            .settlements
-            .len(),
-        1
-    );
-    assert!(original.posting_bindings[&0]
-        .settlements()
-        .unwrap()
-        .settlements
-        .contains(&first));
-    assert!(!original.postings.is_empty());
 }

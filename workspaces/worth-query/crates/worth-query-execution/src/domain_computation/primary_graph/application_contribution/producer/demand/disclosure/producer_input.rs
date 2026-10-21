@@ -36,50 +36,23 @@ where
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
         >,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         PreparedProducerInput<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
         WorthQueryOutputDemandDenial,
     > {
         let entry = self.installed_entry.as_ref();
-        admission
-            .charge_external_work(12 + 4 * 32)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
-        let identity_work = entry
-            .declaration
-            .identity
-            .len()
-            .checked_add(self.selected.identity.len())
-            .and_then(|n| n.checked_add(entry.declaration.output_family.len()))
-            .and_then(|n| n.checked_add(Family::IDENTITY.len()))
-            .and_then(|n| u64::try_from(n).ok())
-            .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
-        admission
-            .charge_external_work(identity_work)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
+
         // Price each reached applicability comparison before consulting its
         // variable-width profile. This is the original admission's meter.
         let mut admitted_applicability = false;
         for applicability in &entry.declaration.applicability {
-            admission
-                .charge_external_work(3)
-                .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
-            let work = applicability
-                .profile_kind()
-                .len()
-                .checked_add(self.selected.applicability.profile_kind().len())
-                .and_then(|n| u64::try_from(n).ok())
-                .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
-            admission
-                .charge_external_work(work)
-                .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
             if *applicability == self.selected.applicability {
                 admitted_applicability = true;
                 break;
             }
         }
         let source = disclosure.source();
-        let same_admitted_source = self.matches_observed_source_admitted(source, admission)?;
+        let same_admitted_source = self.matches_observed_source_admitted(source)?;
         if !same_admitted_source
             || source.runtime_authority != self.runtime_authority
             || source.schema_binding != self.schema_binding

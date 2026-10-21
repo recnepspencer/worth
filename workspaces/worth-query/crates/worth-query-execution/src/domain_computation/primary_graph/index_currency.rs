@@ -1,17 +1,14 @@
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::indexes::DerivedIndexBuildRequest;
-use worth_relational::facade::indexes::{DerivedIndexId, SelectedIndexGenerationAdmissionStop};
-use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::indexes::DerivedIndexId;
 use worth_relational::facade::runtime::RelationalRuntime;
 
-use super::output_lineage::invalidation::InvalidationEditAdmission;
 use super::WorthQueryPrimaryGraphIntegrationHandle;
 
 #[path = "index_currency/selected_field.rs"]
 mod selected_field;
-pub(crate) use selected_field::{
-    ensure_selected_field_indexes_admitted, SelectedFieldIndexAdmissionStop,
-};
+pub(crate) use selected_field::ensure_selected_field_indexes_admitted;
+pub(crate) use selected_field::SelectedFieldIndexAdmissionStop;
 
 #[derive(Debug)]
 pub(crate) enum WorthQueryPrimaryIndexCurrencyDenial {
@@ -23,25 +20,15 @@ pub(crate) enum WorthQueryPrimaryIndexCurrencyDenial {
 /// Probe the one selected published generation through the native index
 /// authority. The primary integration handle's installed index inventory is
 /// irrelevant to this exact read.
-pub(crate) fn selected_index_is_current_admitted(
+pub(crate) fn selected_index_is_current(
     runtime: &RelationalRuntime,
     basis: &AdmittedRelationalBranchBasis,
     index: DerivedIndexId,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<bool, CompanionPreflightStop> {
+) -> bool {
     runtime
         .index_access()
-        .has_published_generation_for_observation_admitted(
-            index,
-            &basis.observation(),
-            |work, bytes| admission.charge_selected_index_read(work, bytes),
-        )
-        .map_err(|stop| match stop {
-            SelectedIndexGenerationAdmissionStop::Admission(stop) => stop,
-            SelectedIndexGenerationAdmissionStop::AccountingOverflow => {
-                CompanionPreflightStop::WorkCounterOverflow
-            }
-        })
+        .published_generation_for_observation(index, &basis.observation())
+        .is_some()
 }
 
 impl WorthQueryPrimaryGraphIntegrationHandle {

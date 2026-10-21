@@ -19,7 +19,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     claim: &SelectedRequiredRefreshClaim,
     predecessor: &InstalledProducerProvider<Schema>,
     successor: &WorthQueryAdmittedOutputDemand<Schema, Family>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<
     FreshOutputDisclosure<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
     WorthQueryOutputDemandDenial,
@@ -28,15 +27,6 @@ where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
-    let work = 2 * std::mem::size_of::<InstalledProducerEdition>()
-        + 6 * std::mem::size_of::<TypeId>()
-        + 12;
-    admission
-        .charge_external_work(
-            u64::try_from(work)
-                .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?,
-        )
-        .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
     let installed = successor.installed_entry.as_ref();
     let same_source = predecessor.declaration.source_type == TypeId::of::<Family::Source>()
         && installed.declaration.source_type == TypeId::of::<Family::Source>();
@@ -51,20 +41,7 @@ where
     }
     let before = claim.selected().key().applicability();
     let after = successor.selected.applicability;
-    let producer_work = predecessor
-        .declaration
-        .identity
-        .len()
-        .checked_add(installed.declaration.identity.len())
-        .and_then(|n| n.checked_add(before.profile_kind().len()))
-        .and_then(|n| n.checked_add(after.profile_kind().len()))
-        .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
-    admission
-        .charge_external_work(
-            u64::try_from(producer_work)
-                .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?,
-        )
-        .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
+
     if predecessor.declaration.identity != installed.declaration.identity
         && (before.lifecycle() != WorthQueryProducerLifecyclePosture::Initial
             || after.lifecycle() != WorthQueryProducerLifecyclePosture::Preserve

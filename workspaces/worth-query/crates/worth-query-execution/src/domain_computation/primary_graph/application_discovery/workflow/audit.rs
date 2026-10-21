@@ -1,9 +1,7 @@
 //! Permission withholding is distinct from a technical authorization failure.
-use crate::domain_computation::authorization::{
-    WorthQueryOperationAuthorizationDenial as Denial,
-    WorthQueryOperationAuthorizationDenialKind as Kind,
-    WorthQueryOperationAuthorizationRefusalKind as Refusal,
-};
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial as Denial;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as Refusal;
 /// Only evaluated permission outcomes may withhold audit. Technical causes remain errors.
 pub(super) fn permission_withheld(cause: &Denial) -> bool {
     !cause.causes().is_empty()
@@ -26,21 +24,18 @@ pub(super) fn permission_withheld(cause: &Denial) -> bool {
         })
 }
 
-use super::admission::{admit, WorthQueryWorkflowReadDenial as WorkflowReadAdmissionDenial};
+use super::admission::admit;
+use super::admission::WorthQueryWorkflowReadDenial as WorkflowReadAdmissionDenial;
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementPhase, WorthQuerySelectedProductOperation,
-};
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
-use worth_query_declaration::facade::{
-    application_program::{
-        ApplicationWorkflowReadBinding, ApplicationWorkflowReadRoute, ApplicationWorkflowSpec,
-    },
-    application_schema::ApplicationSchema,
-};
+
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowReadBinding;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowReadRoute;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
+use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledWorkflowReadBinding;
 
 /// Independently admit audit before its actor reader, matched to the subject access.
@@ -60,7 +55,6 @@ pub(super) fn admit_audit<Schema, Spec, Subject, Audit>(
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     input: Audit::Input,
     request: &WorthQueryRequestScope,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<
     Option<
         WorthQueryAdmittedApplicationCapabilityAccess<
@@ -88,15 +82,7 @@ where
     {
         return Err(WorkflowReadAdmissionDenial::PolicyMismatch);
     }
-    let audit = match admit(
-        current,
-        phase,
-        audit_binding,
-        principal,
-        input,
-        request,
-        admission,
-    ) {
+    let audit = match admit(current, phase, audit_binding, principal, input, request) {
         Ok(access) => access,
         Err(WorkflowReadAdmissionDenial::Authorization(cause)) if permission_withheld(&cause) => {
             return Ok(None)
@@ -129,7 +115,7 @@ pub(super) fn observe<Schema, Spec, Subject, Audit>(
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     input: Audit::Input,
     request: &WorthQueryRequestScope,
-    admission: &mut InvalidationEditAdmission,
+
     history:&crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::ReadOnlyWorkflowHistory,
 ) -> Result<super::view::WorthQueryWorkflowAudit, WorkflowReadAdmissionDenial>
 where
@@ -152,7 +138,6 @@ where
         principal,
         input,
         request,
-        admission,
     )?
     else {
         return Ok(WorthQueryWorkflowAudit::Withheld);

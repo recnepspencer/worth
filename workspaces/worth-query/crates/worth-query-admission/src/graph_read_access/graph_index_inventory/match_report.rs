@@ -16,10 +16,6 @@ use crate::graph_read_access::{
 };
 use worth_foundational::facade::CanonicalDigestId;
 
-mod admitted;
-use crate::graph_read_access::digest_text::{
-    admitted_digest_text, admitted_text_clone, AdmittedDigestTextStop,
-};
 use std::fmt::{self, Write};
 
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -104,7 +104,6 @@ fn delegated_chain_expiry_between_access_and_governed_query_sessions_denies() {
                     ApplicationQueryParameterSet::<GovernedAccountOmissionQuery>::new(),
                     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                         NonZeroUsize::new(1).unwrap(),
-                        Some(NonZeroUsize::new(256).unwrap()),
                         &request,
                     ),
                 )

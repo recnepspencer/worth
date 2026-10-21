@@ -1,21 +1,14 @@
 //! Native non-driving assessment of one actual selected publication.
-use super::consumed_output::{
-    ConsumedOutputEvidence, ConsumedOutputVerification as ResultMeaning,
-    ConsumedOutputVerificationStop as Stop,
-};
-use crate::domain_computation::primary_graph::{
-    output_lineage::{
-        invalidation::{InvalidationEditAdmission, RetainedConsumedOutputCapacity},
-        WorthQueryCurrentOutputCandidate,
-    },
-    SourceInvalidationOwner,
-};
+use super::consumed_output::ConsumedOutputEvidence;
+use super::consumed_output::ConsumedOutputVerification as ResultMeaning;
+use super::consumed_output::ConsumedOutputVerificationStop as Stop;
+use crate::domain_computation::primary_graph::output_lineage::WorthQueryCurrentOutputCandidate;
+use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 use std::sync::Arc;
 mod dependencies;
-use worth_relational::facade::{
-    runtime::{PositionedRelationalSnapshot, RelationalRuntime},
-    snapshots::SnapshotHandle,
-};
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum ObservedOutputPosture {
@@ -27,7 +20,6 @@ pub(in crate::domain_computation::primary_graph) struct ObservedOutputCandidate 
     candidate: CandidateEvidence,
     expected: ObservedOutputPosture,
     dependencies: dependencies::PostingDependencies,
-    _capacity: RetainedConsumedOutputCapacity,
 }
 struct CandidateEvidence {
     observed_source_facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts,
@@ -44,7 +36,6 @@ impl ObservedOutputCandidate {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Arc<Self>, Stop> {
         let candidate = CandidateEvidence {
             observed_source_facts: candidate.observed_source_facts,
@@ -53,31 +44,14 @@ impl ObservedOutputCandidate {
             verification_requirement: candidate.verification_requirement,
             native_output_witness: candidate.native_output_witness,
         };
-        let expected = Self::assess(
-            execution, &candidate, owner, runtime, snapshot, selected, admission,
-        )?;
-        let facts = candidate
-            .observed_source_facts
-            .for_comparison()
-            .ok_or(Stop::Unavailable)?;
-        let dependencies =
-            dependencies::PostingDependencies::capture(&candidate, owner, admission)?;
-        let metadata = dependencies
-            .metadata_bytes()
-            .and_then(|bytes| {
-                bytes.checked_add(
-                    (std::mem::size_of::<Self>() + 2 * std::mem::size_of::<usize>()) as u64,
-                )
-            })
-            .ok_or(Stop::WorkExhausted)?;
-        let capacity = owner
-            .retain_consumed_output(&facts, selected, metadata, admission)
-            .map_err(super::consumed_output::map_admission_stop)?;
+        let expected = Self::assess(execution, &candidate, owner, runtime, snapshot, selected)?;
+
+        let dependencies = dependencies::PostingDependencies::capture(&candidate, owner)?;
+
         Ok(Arc::new(Self {
             candidate,
             expected,
             dependencies,
-            _capacity: capacity,
         }))
     }
     pub(in crate::domain_computation::primary_graph) fn posting_facts(
@@ -97,7 +71,6 @@ impl ObservedOutputCandidate {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, Stop> {
         Ok(Self::assess(
             execution,
@@ -106,7 +79,6 @@ impl ObservedOutputCandidate {
             runtime,
             snapshot,
             selected,
-            admission,
         )? == self.expected)
     }
     fn assess(
@@ -116,12 +88,7 @@ impl ObservedOutputCandidate {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<ObservedOutputPosture, Stop> {
-        let facts = candidate
-            .observed_source_facts
-            .for_comparison()
-            .ok_or(Stop::Unavailable)?;
         let witness = candidate
             .native_output_witness
             .as_ref()
@@ -134,11 +101,15 @@ impl ObservedOutputCandidate {
         if !witness
             .get()
             .expect("checked sealed witness")
-            .roles_remain_present_in(runtime, snapshot, admission)
+            .roles_remain_present_in(runtime, snapshot)
             .map_err(super::consumed_output::map_admission_stop)?
         {
             return Err(Stop::Unavailable);
         }
+        let facts = candidate
+            .observed_source_facts
+            .for_comparison()
+            .ok_or(Stop::Unavailable)?;
         match ConsumedOutputEvidence::observe_at_observation(
             execution,
             &candidate.settlement_identity,
@@ -150,7 +121,6 @@ impl ObservedOutputCandidate {
             runtime,
             snapshot,
             selected,
-            admission,
         )? {
             ResultMeaning::Current => Ok(ObservedOutputPosture::Current),
             ResultMeaning::ChangedDirectFact(_)

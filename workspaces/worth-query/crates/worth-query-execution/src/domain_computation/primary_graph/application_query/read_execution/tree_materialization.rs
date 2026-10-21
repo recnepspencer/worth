@@ -22,7 +22,6 @@ use crate::domain_computation::primary_graph::application_query::projection::{
     WorthQueryApplicationProjectedRelation, WorthQueryApplicationProjectionNode,
     WorthQueryApplicationWorkingProjectionTree,
 };
-use crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationResultBufferReservation;
 
 mod bounded_ordering;
 mod collection_selection;
@@ -63,16 +62,16 @@ pub(super) fn materialize_result_tree(
     root_ids: &[EntityId],
     selected_predicate_source: Option<&crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedFieldRevision>,
     root_path_source: Option<&BTreeMap<EntityId, Arc<crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection>>>,
-    maximum_work: Option<usize>,
+
     collection_selection: ResultTreeCollectionSelection,
     interruption: super::ReadInterruption<'_>,
-    result_buffer: &mut WorthQueryApplicationResultBufferReservation,
+
     spent: Option<&OneShotReadWorkObservation<'_>>,
 ) -> Result<MaterializedApplicationResultTree, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
         .project_snapshot(snapshot)
         .ok_or_else(|| projection_denial(contract.root_entity()))?;
-    let mut work = ResultTreeWork::new(maximum_work, interruption, spent);
+    let mut work = ResultTreeWork::new(interruption, spent);
     work.checkpoint("root")?;
     let mut collection_selection = ActiveResultTreeCollectionSelection::new(collection_selection);
     let mut rows = project_nodes(
@@ -89,7 +88,6 @@ pub(super) fn materialize_result_tree(
         root_ids,
         &mut work,
         &mut collection_selection,
-        result_buffer,
     )?;
     if rows.len() != root_ids.len() {
         return Err(projection_denial(contract.root_entity()));
@@ -105,10 +103,8 @@ pub(super) fn materialize_result_tree(
         selected_predicate_source,
         root_path_source,
         &mut work,
-        result_buffer,
     )?;
-    let rows = WorthQueryApplicationWorkingProjectionTree::new(rows)
-        .into_disclosed(governance, result_buffer);
+    let rows = WorthQueryApplicationWorkingProjectionTree::new(rows).into_disclosed(governance);
     Ok(MaterializedApplicationResultTree {
         rows,
         source_footprints,
@@ -139,7 +135,6 @@ fn project_nodes(
     entity_ids: &[EntityId],
     work: &mut ResultTreeWork,
     collection_selection: &mut ActiveResultTreeCollectionSelection,
-    result_buffer: &mut WorthQueryApplicationResultBufferReservation,
 ) -> Result<Vec<WorthQueryApplicationProjectionNode>, WorthQueryApplicationReadExecutionDenial> {
     let fields = direct_projections(contract, governance, result_path);
     let relations = direct_relations(contract, result_path);
@@ -152,8 +147,7 @@ fn project_nodes(
             .iter()
             .all(|relation| governance.is_disclosed(relation.slot_key_identity().as_ref()));
     work.charge_projection(entity_ids.len(), fields.len(), result_path)?;
-    let mut nodes = allocate_claimed_result_vector::<WorthQueryApplicationProjectionNode>(
-        result_buffer,
+    let mut nodes = allocate_result_vector::<WorthQueryApplicationProjectionNode>(
         entity_ids.len(),
         result_path,
     )?;
@@ -167,19 +161,18 @@ fn project_nodes(
             .entity_record_with_projection_scope(execution, *entity_id, scope.clone(), |record| {
                 (record.kind_id() == kind && record.lifecycle() == RecordLifecycleState::Live).then(
                     || {
-                        let projected = allocate_claimed_result_vector::<
+                        let projected = allocate_result_vector::<
                             WorthQueryApplicationProjectedField,
-                        >(
-                            result_buffer, fields.len(), result_path
-                        )?;
-                        project_fields(record, &fields, projected, result_buffer)
+                        >(fields.len(), result_path)?;
+                        project_fields(record, &fields, projected)
                     },
                 )
             }).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, result_path))?
             .ok_or_else(|| projection_denial(result_path))??;
-        let projected_relations = allocate_claimed_result_vector::<
-            WorthQueryApplicationProjectedRelation,
-        >(result_buffer, relations.len(), result_path)?;
+        let projected_relations = allocate_result_vector::<WorthQueryApplicationProjectedRelation>(
+            relations.len(),
+            result_path,
+        )?;
         nodes.push(WorthQueryApplicationProjectionNode::new(
             *entity_id,
             source_path.clone(),
@@ -214,7 +207,6 @@ fn project_nodes(
             &mut nodes,
             work,
             collection_selection,
-            result_buffer,
         )?;
     }
     Ok(nodes)
@@ -224,7 +216,6 @@ fn project_fields(
     record: worth_relational::facade::runtime::EntityProjectionRecord<'_>,
     fields: &[&WorthQueryInstalledGraphProjection],
     mut projected: Vec<WorthQueryApplicationProjectedField>,
-    result_buffer: &mut WorthQueryApplicationResultBufferReservation,
 ) -> Result<Vec<WorthQueryApplicationProjectedField>, WorthQueryApplicationReadExecutionDenial> {
     for projection in fields {
         let Some(value) =
@@ -238,9 +229,7 @@ fn project_fields(
         if value.value_family() != projection.scalar_family() {
             return Err(projection_denial(projection.result_path()));
         }
-        result_buffer
-            .claim(value.owned_allocation_capacity_bytes())
-            .map_err(|()| result_buffer_denial(projection.result_path()))?;
+
         projected.push(WorthQueryApplicationProjectedField::new(
             projection,
             value.clone(),
@@ -249,21 +238,14 @@ fn project_fields(
     Ok(projected)
 }
 
-pub(super) fn allocate_claimed_result_vector<T>(
-    result_buffer: &mut WorthQueryApplicationResultBufferReservation,
+pub(super) fn allocate_result_vector<T>(
     capacity: usize,
     subject: &str,
 ) -> Result<Vec<T>, WorthQueryApplicationReadExecutionDenial> {
-    let bytes = capacity
-        .checked_mul(std::mem::size_of::<T>())
-        .ok_or_else(|| result_buffer_denial(subject))?;
-    result_buffer
-        .claim(bytes)
-        .map_err(|()| result_buffer_denial(subject))?;
-    let vector = Vec::with_capacity(capacity);
-    if vector.capacity().checked_mul(std::mem::size_of::<T>()) != Some(bytes) {
-        return Err(result_buffer_denial(subject));
-    }
+    let mut vector = Vec::new();
+    vector
+        .try_reserve_exact(capacity)
+        .map_err(|_| result_buffer_denial(subject))?;
     Ok(vector)
 }
 

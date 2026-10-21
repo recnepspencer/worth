@@ -110,8 +110,6 @@ fn operation_definition() -> domain::WorthQueryDomainOperationDefinition<
         canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("published-output").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("canonical-companion-readiness").unwrap(),
-        32,
-        32,
         "canonical-companion-readiness-v1",
     )
     .semantic_reads([output_projection()])

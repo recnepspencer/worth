@@ -2,7 +2,6 @@
 
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::SelectedOutputAdmission;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -29,33 +28,17 @@ where
             >,
         >,
         source_selection: super::SourceAdmissionSelection<'_, '_, Schema>,
-        registry_admission: &mut InvalidationEditAdmission,
     ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        registry_admission
-            .charge_external_work(1)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
         let selected_product = source_selection.selected_product();
         let limits = self.output_demand_resource_profile().constrain(limits);
-        if limits.source_currentness_work() == Some(0) {
-            return Err(denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, Family::IDENTITY)
-                .with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable));
-        }
-        if retained_program_basis.is_some() {
-            registry_admission.charge_external_work(1).map_err(|_| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    Family::IDENTITY,
-                )
-            })?;
-        }
+
         let observed_source = self.output_demands.retain_readmission_source(
             observed_source,
             limits,
             retained_program_basis.clone(),
-            registry_admission,
         )?;
         // Selection spends this request's meter on success and failure; it
         // cannot mint a fresh allowance during refresh.
@@ -64,7 +47,6 @@ where
                 execution,
                 selection_source.unwrap_or(&observed_source),
                 profile_kind,
-                registry_admission,
                 retained_program_basis.as_deref(),
                 selected,
             ),
@@ -72,41 +54,24 @@ where
                 execution,
                 selection_source.unwrap_or(&observed_source),
                 profile_kind,
-                registry_admission,
                 retained_program_basis.as_deref(),
             ),
         }?;
         if selected_product.is_some() {
-            source_selection.admit_selected_producer::<Family>(&selected, registry_admission)?;
+            source_selection.admit_selected_producer::<Family>(&selected)?;
         }
 
         // Selection already returned the exact immutable entry from its sole
         // matching iterator. Retain that entry for this demand's Interest.
-        registry_admission
-            .charge_external_work((std::mem::size_of_val(entry) + 1) as u64)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
+
         let installed_entry = std::sync::Arc::clone(entry);
-        let source_epoch = match selected_product {
-            Some(_) => observed_source
-                .output_source_epoch_admitted(&mut |work, bytes| {
-                    registry_admission.charge_external_work(work)?;
-                    registry_admission.admit_read_scratch(bytes)
-                })
-                .map_err(super::selected_custody::epoch_denial)?,
-            None => observed_source.output_source_epoch(),
-        }
-        .ok_or_else(|| {
+        let source_epoch = observed_source.output_source_epoch().ok_or_else(|| {
             denial(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
                 Family::IDENTITY,
             )
         })?;
-        if selected_product.is_some() {
-            super::selected_custody::preclaim_temporary_key(
-                &selected.identity,
-                registry_admission,
-            )?;
-        }
+
         let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
             Family::IDENTITY,
             selected.identity.clone(),
@@ -150,7 +115,6 @@ where
                 source_epoch,
                 source_scope,
                 retained_program_basis.is_some(),
-                registry_admission,
             )?
         } else {
             None
@@ -164,15 +128,9 @@ where
                 admission_kind,
                 restored.clone(),
                 &readmitted.settlement,
-                registry_admission,
             )?;
             if newly_adopted {
-                self.record_restored_output(
-                    execution,
-                    source_scope,
-                    &readmitted,
-                    registry_admission,
-                )?;
+                self.record_restored_output(execution, source_scope, &readmitted)?;
             }
             let observed_source = observed_source.install(&interest, installed_entry.clone())?;
             return Ok(WorthQueryAdmittedOutputDemand {
@@ -184,10 +142,6 @@ where
                 limits,
 
                 producer_contacts_in_this_demand: 0,
-                checkpoint_readmission_work_units: readmitted.preparation_work_units,
-                checkpoint_readmission_work_bound: readmitted.preparation_work_bound,
-                checkpoint_readmission_charged_preparation_bytes: readmitted
-                    .charged_preparation_bytes,
                 settled: false,
                 admission_kind,
                 retained_program_basis,
@@ -206,7 +160,6 @@ where
                     &source_commit,
                     source_scope,
                     product_occurrence,
-                    registry_admission,
                 )?,
                 None,
             ),
@@ -229,7 +182,6 @@ where
                 admission_kind,
                 expected_source_commit,
                 successor_of,
-                registry_admission,
             )?,
         };
         // Rejoin the posture of the authenticated accepted row.
@@ -245,9 +197,6 @@ where
             limits,
 
             producer_contacts_in_this_demand: 0,
-            checkpoint_readmission_work_units: 0,
-            checkpoint_readmission_work_bound: 0,
-            checkpoint_readmission_charged_preparation_bytes: 0,
             settled: false,
             admission_kind,
             retained_program_basis,

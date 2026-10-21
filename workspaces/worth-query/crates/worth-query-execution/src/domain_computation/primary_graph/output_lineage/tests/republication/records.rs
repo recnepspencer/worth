@@ -79,11 +79,7 @@ pub(super) fn assert_continues_the_performed_read(row: &RecordedOutput) {
         1
     );
     let completed = row.completed_decision_reuse.as_ref().unwrap();
-    let same = |key| {
-        decision(key)
-            .matches_completed(completed, |_| Ok::<_, ()>(()))
-            .unwrap()
-    };
+    let same = |key| decision(key).matches_completed(completed);
     assert!(same(DECISION_KEY));
     assert!(!same([0x72; 32]));
 }
@@ -96,8 +92,7 @@ pub(super) fn continues_input(
     row.prepared_input_reuse_key
         .as_ref()
         .unwrap()
-        .same_prepared_input_as(&input_key(selection, input), |_| Ok::<_, ()>(()))
-        .unwrap()
+        .same_prepared_input_as(&input_key(selection, input))
 }
 
 /// A real completed boundary refuses reuse when its context is untracked.

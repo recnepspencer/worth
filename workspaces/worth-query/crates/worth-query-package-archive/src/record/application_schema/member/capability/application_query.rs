@@ -1,8 +1,7 @@
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryContinuationTarget, ApplicationQueryLiveCauseContract,
-    ApplicationQueryLiveResourceContract, ApplicationQueryLiveTargetMode,
-    ApplicationQueryOrderingDirection, ApplicationQueryOrderingTerm,
-    ApplicationQueryParameterDefinition, ApplicationQueryPredicate,
+    ApplicationQueryLiveTargetMode, ApplicationQueryOrderingDirection,
+    ApplicationQueryOrderingTerm, ApplicationQueryParameterDefinition, ApplicationQueryPredicate,
     ErasedApplicationQueryDefinition, WorthQueryPortableApplicationQueryContinuationParts,
     WorthQueryPortableApplicationQueryLiveCauseParts,
     WorthQueryPortableApplicationQueryOrderingParts, WorthQueryPortableApplicationQueryParts,
@@ -254,10 +253,7 @@ fn write_live_cause(
         ApplicationQueryLiveTargetMode::Root => 0,
         ApplicationQueryLiveTargetMode::Collection => 1,
     })?;
-    let resources = value.resources();
-    output.u64(resources.maximum_buffered_causes())?;
-    output.u64(resources.maximum_work_per_delivery())?;
-    output.u64(resources.maximum_retained_payload_bytes())
+    Ok(())
 }
 fn decode_live_cause(
     input: &mut BinaryInput<'_>,
@@ -282,11 +278,6 @@ fn decode_live_cause(
                 1 => ApplicationQueryLiveTargetMode::Collection,
                 _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
             },
-            resources: ApplicationQueryLiveResourceContract::bounded(
-                input.u64()?,
-                input.u64()?,
-                input.u64()?,
-            ),
         },
     ))
 }

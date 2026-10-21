@@ -138,9 +138,9 @@ impl<Schema: ApplicationSchema + 'static, Operation>
                 return Err(Cause::SourceMismatch.into());
             }
             let execution = self.reader.execution;
-            let maximum = self.reader.work_budget.remaining();
+
             let owner = std::sync::Arc::clone(&self.reader.invalidation_owner);
-            let mut admission = owner.edit_admission_with_work_limit(maximum);
+
             let observed = (|| {
                 let mut native = ApplicationQueryNativeAccess::borrowed(
                     access
@@ -159,7 +159,6 @@ impl<Schema: ApplicationSchema + 'static, Operation>
                         demand.source_intent(),
                         context,
                         &mut native,
-                        &mut admission,
                     )
                     .map_err(Cause::SourceQuery)?;
                 if observed.source.source_root() != producer.entity_id() {
@@ -172,7 +171,6 @@ impl<Schema: ApplicationSchema + 'static, Operation>
                         &observed,
                         access.shared,
                         &mut native,
-                        &mut admission,
                     )
                     .map_err(Cause::Producer)?;
 
@@ -188,7 +186,7 @@ impl<Schema: ApplicationSchema + 'static, Operation>
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
                 let mut covered = lineage
-                    .covered_source_publication(&qualified, &mut admission)
+                    .covered_source_publication(&qualified)
                     .map_err(Cause::Producer)?;
                 let mut entity = None;
                 let candidate = if let Some(candidate) = covered.take_candidate() {
@@ -205,7 +203,6 @@ impl<Schema: ApplicationSchema + 'static, Operation>
                             self.reader.runtime,
                             self.reader.snapshot,
                             &selected,
-                            &mut admission,
                         )
                         .map_err(Cause::Verification)?,
                     )
@@ -218,26 +215,14 @@ impl<Schema: ApplicationSchema + 'static, Operation>
                         candidate.expected()
                     });
                 let observed = owner
-                    .observe_source_publication(&covered, &selected, candidate, &mut admission)
+                    .observe_source_publication(&covered, &selected, candidate)
                     .map_err(Cause::Registration)?;
                 let observation = std::sync::Arc::new(observed);
-                self.decision_facts.record_source_publication(SourcePublicationRead::new(admission_identity,observation.clone()),observation,&owner,&mut admission)
+                self.decision_facts.record_source_publication(SourcePublicationRead::new(admission_identity,observation.clone()), observation)
                     .map_err(|stop|Cause::Registration(crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop::Admission(stop)))?;
                 Ok((posture, entity))
             })();
-            let charged = usize::try_from(admission.charged_work()).unwrap_or(usize::MAX);
-            let accounted = self.reader.work_budget.consume(charged);
-            self.reader.work.record_output_lineage_selection(charged);
             let (posture, entity) = observed.map_err(WorthQueryOutputAvailabilityDenial::from)?;
-            if !accounted {
-                let stop = if self.reader.work_budget.overflowed() {
-                    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::Execution(
-                        worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow)
-                } else {
-                    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::WorkExhausted
-                };
-                return Err(Cause::Verification(stop).into());
-            }
             let state =
                 match posture {
                     ObservedOutputPosture::Pending => WorthQueryOutputAvailabilityState::Pending,

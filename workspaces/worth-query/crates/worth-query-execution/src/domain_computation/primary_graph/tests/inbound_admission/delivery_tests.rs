@@ -34,18 +34,16 @@ fn performed_completion_reaches_the_canonical_subscription_once_and_terminal_tur
     );
     let after = owner.latest_position();
     let unwatched = BTreeSet::new();
-    let batch = owner
-        .touched_commits_after(
-            branch,
-            before,
-            Some(CommitId(u64::MAX)),
-            2,
-            CommitTouchInterest {
-                entities: (&unwatched).into(),
-                every_commit: true,
-            },
-        )
-        .unwrap();
+    let batch = owner.touched_commits_after(
+        branch,
+        before,
+        Some(CommitId(u64::MAX)),
+        2,
+        CommitTouchInterest {
+            entities: (&unwatched).into(),
+            every_commit: true,
+        },
+    );
     assert_eq!(
         batch.commits.len(),
         1,

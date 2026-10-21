@@ -157,33 +157,6 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         Ok(())
     }
 
-    /// Replaces the active binding with one rebuilt from the selected truth
-    /// after its commit cursor fell behind the retained subscription window.
-    /// The fresh managed clock re-derives every active wake from that truth;
-    /// progress resumes after the newest position the truth already contains.
-    /// The next accepted observation's batch carries `RefreshAll`.
-    pub(super) fn rebuild_lagging_evaluation_binding(
-        &mut self,
-execution: &worth_execution::ExecutionRequest<'_, '_>,
-        bridge: &BridgeSealedRuntimeAssembly,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        truth: &super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis,
-        resume_after: Option<worth_relational::facade::publication::PatchStreamPosition>,
-    ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
-        super::super::retained_managed_cleanup::admit_reinstallation(
-            super::super::retained_managed_cleanup::pending_kind(self.retained_wakes.iter()
-                .chain(self.inactive_bindings.values().flat_map(|binding| binding.retained_wakes.iter()))),
-            &self.runtime_binding_identity)?;
-        let mut rebuilt = self.fresh_evaluation_binding(execution, bridge, runtime, truth, None)?;
-        rebuilt.authoritative_commit_cursor = resume_after;
-        // The Query-commit delivery stays deliverable; the gap the rebuild
-        // skipped and everything owed before it are owed as a full refresh.
-        rebuilt.pending_invalidations = std::mem::replace(&mut self.pending_invalidations, super::pending_invalidations::WorthQueryPendingGranularInvalidations::empty());
-        rebuilt.pending_invalidations.refresh_all();
-        self.activate_first_evaluation_binding(rebuilt);
-        Ok(())
-    }
-
     fn fresh_evaluation_binding(
         &mut self,
 execution: &worth_execution::ExecutionRequest<'_, '_>,

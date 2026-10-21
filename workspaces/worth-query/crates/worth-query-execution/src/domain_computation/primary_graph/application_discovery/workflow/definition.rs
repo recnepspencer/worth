@@ -1,22 +1,18 @@
 //! Exact, principal-first definition metadata at the caller's retained observation.
-use super::{
-    admission::{admit, WorthQueryWorkflowReadDenial as Denial},
-    *,
-};
+use super::admission::admit;
+use super::admission::WorthQueryWorkflowReadDenial as Denial;
+use super::*;
 use crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementPhase, WorthQuerySelectedProductOperation,
-};
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
-use worth_query_declaration::facade::application_program::{
-    ApplicationWorkflowDefinitionReadTarget, ApplicationWorkflowReadBinding,
-    ApplicationWorkflowReadRoute, ApplicationWorkflowSpec,
-};
+
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowDefinitionReadTarget;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowReadBinding;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowReadRoute;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 use worth_query_installation::facade::ApplicationSchema;
-use worth_relational::facade::mvcc::CompanionPreflightBudget;
 
 /// Exact metadata result owns its authentic data basis, never read permission.
 pub struct WorthQueryWorkflowDefinitionRead {
@@ -70,25 +66,8 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 ApplicationWorkflowReadRoute::DefinitionMetadata,
             )
             .map_err(Denial::Installation)?;
-        let profile = self
-            .application()
-            .runtime
-            .application_query_resource_profile();
-        let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: profile.maximum_work().map(|work| work.get() as u64),
-            maximum_preparation_bytes: profile
-                .maximum_inline_index_bytes()
-                .map(|bytes| bytes.get() as u64),
-        });
-        let _access = admit(
-            self,
-            phase,
-            &binding,
-            principal,
-            input,
-            request,
-            &mut admission,
-        )?;
+
+        let _access = admit(self, phase, &binding, principal, input, request)?;
         let execution = phase
             .execution_request_for(&self.application().product_runtime)
             .map_err(Denial::Phase)?;
@@ -109,7 +88,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     data.product().relational_basis(),
                     layout,
                     target.identity().as_str(),
-                    &mut admission,
                 )?
                 else {
                     return Ok(WorthQueryWorkflowDefinitionDiscovery::Unpublished);

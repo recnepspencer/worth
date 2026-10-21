@@ -45,6 +45,7 @@ impl<'a, R> RetainedSettlement<'a, R> {
                 prefix.accept(
                     id,
                     TaskOutcome {
+                        allocation_denial: None,
                         result: TaskResult::<(), E>::new(
                             Err(KernelFailure::Stop(stop)),
                             Some(NestedStopOwner::Request),
@@ -104,13 +105,20 @@ impl<'a, R> RetainedSettlement<'a, R> {
                         }
                     }
                     self.metrics.carried_slot_visits += 1;
-                    let (outcome, _, _) =
-                        evaluation::evaluate(slot, lease, limits, 0, None, &|slot, context| {
+                    let (outcome, _, _) = evaluation::evaluate(
+                        slot,
+                        lease,
+                        limits,
+                        Some(0),
+                        None,
+                        None,
+                        &|slot, context| {
                             slot.try_carry(context)
                                 .expect("run eligibility checked before native effects")
                                 .map(|_| ())
                                 .map_err(KernelFailure::<E>::Stop)
-                        });
+                        },
+                    );
                     if prefix.accept(id, outcome, limits).is_some() {
                         self.metrics.carried_slots += 1;
                     }

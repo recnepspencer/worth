@@ -1,18 +1,19 @@
 //! One Query-owner preparation for the exact freshly resolved source access.
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
-use worth_query_declaration::facade::{
-    application_query::{ApplicationQueryBinding, ApplicationQueryScopeBinding},
-    application_schema::{ApplicationSchema, ApplicationStructuredValueBinding},
-};
+use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
+use worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding;
+use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 
-use super::{PreparedApplicationQueryPermission, *};
+use super::PreparedApplicationQueryPermission;
+use super::*;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryControls;
-use crate::domain_computation::primary_graph::{
-    WorthQueryEntityResolutionDenial, WorthQueryObservedSource,
-    WorthQueryPrincipalResolutionDenial, WorthQueryPrincipalResolutionMode,
-};
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial;
+use crate::domain_computation::primary_graph::WorthQueryObservedSource;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 
 type Parameters<Schema, Binding> =
     <<Binding as ApplicationQueryBinding<Schema>>::ParameterBinding as ApplicationStructuredValueBinding>::Value;
@@ -53,7 +54,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         observed: &WorthQueryObservedSource<Binding::Query>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         controls: WorthQueryApplicationQueryControls<'a, Schema>,
-        admission: &mut InvalidationEditAdmission,
         inspect: impl for<'prepared> FnOnce(
             PreparedApplicationQueryPermission<
                 'prepared,
@@ -65,7 +65,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 Binding::PrincipalIdentity,
                 Scope<Schema, Binding>,
             >,
-            &mut InvalidationEditAdmission,
         ) -> Result<R, E>,
     ) -> Result<R, FreshQueryPermissionStop<E>>
     where
@@ -82,7 +81,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 request,
                 WorthQueryPrincipalResolutionMode::Ordinary,
                 validated_principal,
-                admission,
             )
             .map_err(FreshQueryPermissionStop::Principal)?;
         let scope = selected
@@ -91,20 +89,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 Binding::scope_field(),
                 observed.retained_scope_selector(),
                 request,
-                admission,
             )
             .map_err(FreshQueryPermissionStop::Scope)?;
         let access =
             WorthQueryApplicationQueryAccessContext::new(principal.principal(), scope.scope());
         let query = installed.query();
         let source = self
-            .prepare_application_query_from_observed(query, &access, observed, controls, admission)
+            .prepare_application_query_from_observed(query, &access, observed, controls)
             .map_err(FreshQueryPermissionStop::Query)?;
         let permission = self
             .prepare_application_query_permission(
-                execution, query, access, source, selected, request, &principal, &scope, admission,
+                execution, query, access, source, selected, request, &principal, &scope,
             )
             .map_err(FreshQueryPermissionStop::Query)?;
-        inspect(permission, admission).map_err(FreshQueryPermissionStop::Inspect)
+        inspect(permission).map_err(FreshQueryPermissionStop::Inspect)
     }
 }

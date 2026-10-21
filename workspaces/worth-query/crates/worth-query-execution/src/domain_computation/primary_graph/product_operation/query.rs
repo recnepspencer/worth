@@ -15,23 +15,17 @@ mod batch;
 mod retained;
 pub use batch::WorthQueryRetainedBatchQueryAdmissionDenial;
 
-/// Work and request limits for an already selected product. These controls
+/// Result cardinality and request scope for an already selected product. These controls
 /// cannot select a second basis or change the operation's retained occurrence.
 pub struct WorthQueryProductQueryControls<'request> {
     maximum_results: NonZeroUsize,
-    maximum_work: Option<NonZeroUsize>,
     request: &'request WorthQueryRequestScope,
 }
 
 impl<'request> WorthQueryProductQueryControls<'request> {
-    pub fn new(
-        maximum_results: NonZeroUsize,
-        maximum_work: Option<NonZeroUsize>,
-        request: &'request WorthQueryRequestScope,
-    ) -> Self {
+    pub fn new(maximum_results: NonZeroUsize, request: &'request WorthQueryRequestScope) -> Self {
         Self {
             maximum_results,
-            maximum_work,
             request,
         }
     }
@@ -93,7 +87,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 product,
                 application_basis,
                 controls.maximum_results,
-                controls.maximum_work,
                 controls.request,
             ),
         )
@@ -208,7 +201,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 product.into_read_lease(),
                 application_basis,
                 controls.maximum_results,
-                controls.maximum_work,
                 controls.request,
             ),
         )
@@ -283,7 +275,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 product,
                 application_basis,
                 controls.maximum_results,
-                controls.maximum_work,
                 controls.request,
             ),
         )
@@ -358,7 +349,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 product.into_read_lease(),
                 application_basis,
                 controls.maximum_results,
-                controls.maximum_work,
                 controls.request,
             ),
         )

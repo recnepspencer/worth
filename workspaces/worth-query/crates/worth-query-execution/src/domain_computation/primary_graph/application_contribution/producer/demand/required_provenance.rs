@@ -5,16 +5,13 @@
 
 mod validation;
 
-use crate::domain_computation::primary_graph::application_contribution::producer::{
-    registry::{InstalledProducerEdition, InstalledProducerProvider},
-    WorthQueryProducerCommitAuthority,
-};
-use crate::domain_computation::primary_graph::{
-    application_output_demand::SelectedRequiredRefreshClaim,
-    output_lineage::invalidation::InvalidationEditAdmission,
-};
+use crate::domain_computation::primary_graph::application_contribution::producer::registry::InstalledProducerEdition;
+use crate::domain_computation::primary_graph::application_contribution::producer::registry::InstalledProducerProvider;
+use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
+use crate::domain_computation::primary_graph::application_output_demand::SelectedRequiredRefreshClaim;
 
-use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
+use super::WorthQueryOutputDemandDenial;
+use super::WorthQueryOutputDemandDenialKind;
 
 #[derive(Default)]
 pub(super) enum DemandProgressionProvenance {
@@ -34,55 +31,15 @@ impl RequiredSuccessorProvenance {
     pub(super) fn prepare_from_ready<Schema>(
         claim: &SelectedRequiredRefreshClaim,
         installed: &InstalledProducerProvider<Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Self, WorthQueryOutputDemandDenial> {
         const SUBJECT: &str = "required successor producer differs from accepted Ready";
-        let work_denial = || {
-            WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                "",
-            )
-        };
-        let capacity_denial = || {
-            WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                "",
-            )
-        };
+
         // Claim, selected producer, installed declaration, and its width are
         // all inspected before the variable text comparison is prepared.
-        admission
-            .charge_external_work(4)
-            .map_err(|_| work_denial())?;
+
         let expected = claim.selected().producer_identity();
         let actual = &installed.declaration.identity;
-        let copied_mode = std::mem::size_of::<WorthQueryProducerCommitAuthority>()
-            .checked_add(std::mem::size_of::<InstalledProducerEdition>())
-            .ok_or_else(work_denial)?;
-        let work = expected
-            .len()
-            .checked_add(actual.len())
-            .and_then(|bytes| bytes.checked_add(SUBJECT.len()))
-            .and_then(|bytes| bytes.checked_add(copied_mode))
-            .ok_or_else(work_denial)?;
-        admission
-            .charge_external_work(u64::try_from(work).map_err(|_| work_denial())?)
-            .map_err(|_| work_denial())?;
-        let denial_backing = SUBJECT
-            .len()
-            .checked_add(std::mem::size_of::<String>())
-            .ok_or_else(capacity_denial)?;
-        admission
-            .admit_read_scratch(u64::try_from(denial_backing).map_err(|_| capacity_denial())?)
-            .map_err(|stop| match stop {
-                worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
-                    ..
-                } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-                | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
-                    work_denial()
-                }
-                _ => capacity_denial(),
-            })?;
+
         if expected != actual
             || claim.selected().key().family_identity() != installed.declaration.output_family
         {

@@ -4,11 +4,11 @@ mod selected_begin;
 mod selected_checkpoint_finish;
 mod selected_finish;
 mod supersession;
-pub(in crate::domain_computation::primary_graph) use selected_checkpoint_finish::{
-    PreparedSelectedCheckpointFinish, SelectedCheckpointFinishStop,
-};
+pub(in crate::domain_computation::primary_graph) use selected_checkpoint_finish::PreparedSelectedCheckpointFinish;
+pub(in crate::domain_computation::primary_graph) use selected_checkpoint_finish::SelectedCheckpointFinishStop;
 
-use super::post_commit::{release_completed_member, release_completed_prerequisites};
+use super::post_commit::release_completed_member;
+use super::post_commit::release_completed_prerequisites;
 use super::succession::Succession;
 use super::*;
 
@@ -18,7 +18,6 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn begin_admitted<'a>(
         &'a self,
         interest: &'a WorthQueryOutputDemandInterest,
-        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<
         (
             WorthQueryOutputDemandAdvanceAdmission,
@@ -26,7 +25,7 @@ impl WorthQueryOutputDemandRegistry {
         ),
         WorthQueryOutputDemandDenial,
     > {
-        selected_begin::begin_admitted(self, interest, admission)
+        selected_begin::begin_admitted(self, interest)
     }
 
     /// The required wave's second begin pays its exact ordered lookup and
@@ -35,17 +34,11 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn begin_scheduled_admitted(
         &self,
         interest: &WorthQueryOutputDemandInterest,
-        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<WorthQueryOutputDemandAdvanceAdmission, WorthQueryOutputDemandDenial> {
         // The ordered-lookup owner can construct a subject up to 55 bytes on
         // refusal. Its terminal backing and initialized copy are admitted
         // before it can run; failure of this envelope uses empty diagnostics.
-        admission
-            .admit_read_scratch(55)
-            .map_err(empty_begin_preflight_denial)?;
-        admission
-            .charge_external_work(55 + 4)
-            .map_err(|_| empty_begin_work_denial())?;
+
         if !std::sync::Arc::ptr_eq(&self.state, &interest.owner.state) {
             return Err(WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
@@ -56,7 +49,7 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.charge_record_lookup(&interest.key, admission)?;
+
         let mut record = state
             .records
             .get_mut(&interest.key)
@@ -65,11 +58,7 @@ impl WorthQueryOutputDemandRegistry {
         let state @ DemandState::Scheduled = &mut record.state else {
             return Ok(WorthQueryOutputDemandAdvanceAdmission::Pending);
         };
-        let copy_work = u64::try_from(std::mem::size_of::<Option<[u8; 32]>>())
-            .map_err(|_| empty_begin_work_denial())?;
-        admission
-            .charge_external_work(copy_work)
-            .map_err(|_| empty_begin_work_denial())?;
+
         Ok(start_scheduled(state, predecessor))
     }
 }
@@ -180,17 +169,14 @@ impl WorthQueryOutputDemandRegistry {
                 }
             };
         }
-        let released = if matches!(record.state, DemandState::Failed(_)) {
-            record.release_obligations()
-        } else {
-            0
-        };
+        if matches!(record.state, DemandState::Failed(_)) {
+            record.release_obligations();
+        }
         let terminal = matches!(record.state, DemandState::Failed(_));
         record.wake.notify();
         record.finish();
         let released_prerequisites =
             terminal.then(|| release_completed_prerequisites(&mut state, &interest.key));
-        state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
         release_completed_member(&mut state, &interest.key);
         drop(state);
         drop(released_prerequisites);
@@ -225,16 +211,13 @@ impl WorthQueryOutputDemandRegistry {
         } else {
             record.state = DemandState::Failed(denial.clone());
         }
-        let released = if rescheduled {
-            0
-        } else {
-            record.release_obligations()
-        };
+        if !rescheduled {
+            record.release_obligations();
+        }
         record.wake.notify();
         record.finish();
         let released_prerequisites =
             (!rescheduled).then(|| release_completed_prerequisites(&mut state, &interest.key));
-        state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
         release_completed_member(&mut state, &interest.key);
         drop(state);
         drop(released_prerequisites);
@@ -275,10 +258,8 @@ impl WorthQueryOutputDemandRegistry {
                 let stopped = stopped.clone();
                 if output.checkpoint.is_none() { output.install_checkpoint(checkpoint); }
                 output.finish_stopped(stopped.clone());
-                let released = record.release_obligations();
+        record.release_obligations();
                 record.finish();
-        state.obligation_reserved_bytes =
-                    state.obligation_reserved_bytes.saturating_sub(released);
                 let released_prerequisites =
                     release_completed_prerequisites(&mut state, &interest.key);
                 release_completed_member(&mut state, &interest.key);
@@ -302,16 +283,13 @@ impl WorthQueryOutputDemandRegistry {
             output.advancement(),
             WorthQueryOutputAdvancement::Stopped { .. }
         );
-        let released = if terminal {
-            record.release_obligations()
-        } else {
-            0
-        };
+        if terminal {
+            record.release_obligations();
+        }
         record.wake.notify();
         record.finish();
         let released_prerequisites =
             terminal.then(|| release_completed_prerequisites(&mut state, &interest.key));
-        state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
         release_completed_member(&mut state, &interest.key);
         drop(state);
         drop(released_prerequisites);
@@ -332,19 +310,6 @@ fn empty_begin_work_denial() -> WorthQueryOutputDemandDenial {
         crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         "",
     )
-}
-
-fn empty_begin_preflight_denial(
-    stop: worth_relational::facade::mvcc::CompanionPreflightStop,
-) -> WorthQueryOutputDemandDenial {
-    use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-    let kind = match stop {
-        Stop::WorkExhausted { .. } | Stop::WorkExhaustedWithoutRequirement { .. } | Stop::WorkCounterOverflow => {
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-        }
-        _ => crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-    };
-    WorthQueryOutputDemandDenial::new(kind, "")
 }
 
 fn demand_record_is_closed(record: &DemandRecord) -> bool {

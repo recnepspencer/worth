@@ -1,5 +1,8 @@
-use super::super::{DemandState, WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint};
-use super::selection::{charge_required_key_lookup, work_denial, SelectedReadyReadmission};
+use super::super::DemandState;
+use super::super::WorthQueryOutputAdvancement;
+use super::super::WorthQueryOutputCheckpoint;
+
+use super::selection::SelectedReadyReadmission;
 use super::*;
 
 /// The first failed predicate at the actual refresh selection under the registry lock.
@@ -51,7 +54,7 @@ pub(in crate::domain_computation::primary_graph) enum RequiredRefreshCheckpoint 
 /// wave. The key's owned String remains funded until its interest drops.
 pub(in crate::domain_computation::primary_graph) struct SelectedRequiredRefreshClaim {
     interest: super::super::WorthQueryOutputDemandInterest,
-    _key_capacity: super::super::required_custody::RequiredOutputCustodyCapacity,
+
     selected: SelectedReadyReadmission,
 }
 
@@ -62,13 +65,8 @@ impl SelectedRequiredRefreshClaim {
     pub(in crate::domain_computation::primary_graph) fn into_predecessor(
         self,
     ) -> SelectedReadyReadmission {
-        let Self {
-            interest,
-            _key_capacity,
-            selected,
-        } = self;
+        let Self { interest, selected } = self;
         drop(interest);
-        drop(_key_capacity);
         selected
     }
 
@@ -100,31 +98,16 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn claim_required_ready_refresh(
         &self,
         selected: &SelectedReadyReadmission,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         Result<SelectedRequiredRefreshClaim, RequiredRefreshRejection>,
         WorthQueryOutputDemandDenial,
     > {
         let key = selected.membership.key.as_ref();
-        let key_bytes = std::mem::size_of::<super::super::WorthQueryOutputDemandInterest>()
-            .checked_add(key.producer.len())
-            .ok_or_else(capacity_denial)?;
-        // The refresh retains one more Ready. A producer is not contacted for
-        // an output custody cannot keep; the row stays Ready for a later claim.
-        let kept = key_bytes
-            .checked_add(super::super::ready_backing::PreparedReadyBacking::retained_bytes())
-            .ok_or_else(capacity_denial)?;
-        self.reclaim_cached_rows(kept, admission)?;
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.charge_record_lookup(key, admission)?;
-        charge_required_key_lookup(&state, key, admission)?;
-        let copy_work = key.producer.len().checked_add(9).ok_or_else(work_denial)?;
-        admission
-            .charge_external_work(u64::try_from(copy_work).map_err(|_| work_denial())?)
-            .map_err(|_| work_denial())?;
+
         let Some(record) = state.records.get(key) else {
             return Ok(Err(RequiredRefreshRejection::MissingRow));
         };
@@ -133,14 +116,8 @@ impl WorthQueryOutputDemandRegistry {
         let required = if record.is_required() {
             true
         } else {
-            let mut prepaid = super::super::refreshed_rejoin::charge_whole_map(
-                &state.records,
-                admission,
-                super::super::refreshed_rejoin::WholeMapPasses::One,
-                0,
-            )
-            .map_err(|_| work_denial())?;
-            prepaid.stale_owner(key)?
+            let prepaid = &state.records;
+            crate::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner(prepaid, key)
         };
         if !required {
             return Ok(Err(RequiredRefreshRejection::NotRequired {
@@ -224,9 +201,7 @@ impl WorthQueryOutputDemandRegistry {
         }
         // The claim shares all three exact pins only after the current Ready,
         // readmission and membership have been revalidated under this guard.
-        admission
-            .charge_external_work(3)
-            .map_err(|_| work_denial())?;
+
         let _ = record
             .interests
             .checked_add(1)
@@ -237,21 +212,7 @@ impl WorthQueryOutputDemandRegistry {
             .ok_or_else(capacity_denial)?;
         // The mutable row selection below is a second ordered descent after
         // the first immutable Ready validation.
-        state.charge_record_lookup(key, admission)?;
-        let refreshed = state
-            .required_reserved_bytes
-            .checked_add(kept)
-            .ok_or_else(capacity_denial)?;
-        if !state.has_required_capacity(refreshed) {
-            return Err(super::super::required_custody::full_custody_denial(
-                kept,
-                state.required_budget_bytes,
-            ));
-        }
-        admission
-            .admit_read_scratch(u64::try_from(key_bytes).map_err(|_| capacity_denial())?)
-            .map_err(|_| capacity_denial())?;
-        let capacity = state.reserve_required_custody_capacity(key_bytes)?;
+
         let interest_key = key.clone();
         let mut record = state
             .records
@@ -271,7 +232,7 @@ impl WorthQueryOutputDemandRegistry {
         drop(state);
         Ok(Ok(SelectedRequiredRefreshClaim {
             interest,
-            _key_capacity: capacity,
+
             selected: SelectedReadyReadmission {
                 completion: selected.completion.clone(),
                 readmission: Arc::clone(&selected.readmission),

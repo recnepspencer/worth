@@ -68,11 +68,7 @@ pub(super) fn commit<Schema: BirthSchema>(
                     query.query(),
                     &access,
                     ApplicationQueryParameterSet::new(),
-                    WorthQueryProductQueryControls::new(
-                        NonZeroUsize::new(1).unwrap(),
-                        Some(NonZeroUsize::new(100_000).unwrap()),
-                        &request,
-                    ),
+                    WorthQueryProductQueryControls::new(NonZeroUsize::new(1).unwrap(), &request),
                 )
                 .unwrap();
             let (_, source) = runtime
@@ -195,11 +191,7 @@ pub(super) fn required_read_refuses(
                     query.query(),
                     &access,
                     ApplicationQueryParameterSet::new(),
-                    WorthQueryProductQueryControls::new(
-                        NonZeroUsize::new(1).unwrap(),
-                        Some(NonZeroUsize::new(100_000).unwrap()),
-                        &request,
-                    ),
+                    WorthQueryProductQueryControls::new(NonZeroUsize::new(1).unwrap(), &request),
                 )
                 .unwrap();
             let (_, source) = runtime

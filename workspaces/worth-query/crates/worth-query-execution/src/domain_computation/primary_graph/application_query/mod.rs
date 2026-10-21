@@ -14,9 +14,8 @@ mod batch;
 pub(in crate::domain_computation::primary_graph) use basis::PreparedSelectedReadIndexes;
 pub(in crate::domain_computation::primary_graph) use basis::WorthQueryApplicationQueryBasisCustody;
 pub use batch::{
-    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchLimits,
-    WorthQueryApplicationQueryBatchMemory, WorthQueryApplicationQueryBatchReadPlan,
-    WorthQueryApplicationQueryBatchResourceDenial, WorthQueryApplicationQueryBatchWork,
+    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchReadPlan,
+    WorthQueryApplicationQueryBatchResourceDenial,
 };
 mod continuation;
 mod control_validation;
@@ -51,11 +50,6 @@ mod readiness;
 pub(crate) mod resource_lifecycle;
 mod retained_read;
 mod runtime_support;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use runtime_support::primary_graph_support_inventory;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use runtime_support::primary_graph_support_inventory_admitted;
-
 pub use access_context::WorthQueryApplicationQueryAccessContext;
 pub use access_receipt::{
     WorthQueryApplicationQueryAccessReceipt, WorthQueryApplicationQueryOmissionPosture,
@@ -104,8 +98,7 @@ pub use live::{
 };
 pub(in crate::domain_computation::primary_graph) use observed_source::{
     BoundStableObservedSourceFacts, PreparedObservedSourceExpectation,
-    WorthQueryCheckpointSourceIdentity, WorthQueryObservedEpochStop,
-    WorthQueryObservedScopeSelector, WorthQueryObservedSourceCloneStop,
+    WorthQueryCheckpointSourceIdentity, WorthQueryObservedScopeSelector,
     WorthQueryObservedSourceEpoch, WorthQueryObservedSourceSelection,
     WorthQueryRuntimeSourceIdentity,
 };
@@ -129,10 +122,10 @@ pub use resource_lifecycle::{
     WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisObservation,
     WorthQueryApplicationBasisObserver, WorthQueryApplicationBasisReleaseOutcome,
     WorthQueryApplicationBasisReleaseReceipt, WorthQueryApplicationBasisSelectionIdentity,
-    WorthQueryApplicationResultBufferEvidence, WorthQueryApplicationResultBufferObservation,
-    WorthQueryApplicationResultBufferObserver,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use runtime_support::primary_graph_support_inventory;
 
 pub use one_shot::{WorthQueryDependentPairReadContext, WorthQueryDerivedPairReadPlans};
 

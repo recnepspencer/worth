@@ -85,8 +85,6 @@ fn operation_definition() -> domain::WorthQueryDomainOperationDefinition<
         crate::readiness::canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("region-output-readiness").unwrap(),
-        128,
-        128,
         "region-output-readiness-v1",
     )
     .semantic_reads([crate::readiness::output_change_projection()])

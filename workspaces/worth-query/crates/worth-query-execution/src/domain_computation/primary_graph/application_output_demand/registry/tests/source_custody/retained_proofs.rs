@@ -34,9 +34,7 @@ fn completed_multi_root_custody_waits_for_token_and_active_record() {
         },
     );
     state.note_custody(&commit);
-    state
-        .prune_completed_custody(&mut super::super::super::lifecycle::release::CleanupWalk::new())
-        .unwrap();
+    state.prune_completed_custody().unwrap();
     assert_eq!(state.source_custody.len(), 1);
     state.source_custody.get_mut(&commit).unwrap().token_count = 0;
     let demand_key = key("producer", 5, 1);
@@ -44,9 +42,7 @@ fn completed_multi_root_custody_waits_for_token_and_active_record() {
     active.source_commits.push(commit.clone());
     state.records.insert(demand_key.clone(), active);
     state.note_custody(&commit);
-    state
-        .prune_completed_custody(&mut super::super::super::lifecycle::release::CleanupWalk::new())
-        .unwrap();
+    state.prune_completed_custody().unwrap();
     assert_eq!(state.source_custody.len(), 1);
     let mut record = state.records.get_mut(&demand_key).unwrap();
     record.interests = 0;
@@ -56,9 +52,7 @@ fn completed_multi_root_custody_waits_for_token_and_active_record() {
     ));
     record.finish();
     state.note_custody(&commit);
-    state
-        .prune_completed_custody(&mut super::super::super::lifecycle::release::CleanupWalk::new())
-        .unwrap();
+    state.prune_completed_custody().unwrap();
     assert!(state.source_custody.is_empty());
 }
 
@@ -103,14 +97,10 @@ fn fully_superseded_multi_root_custody_prunes_after_its_last_token() {
         },
     );
     state.note_custody(&commit);
-    state
-        .prune_completed_custody(&mut super::super::super::lifecycle::release::CleanupWalk::new())
-        .unwrap();
+    state.prune_completed_custody().unwrap();
     assert_eq!(state.source_custody.len(), 1);
     state.source_custody.get_mut(&commit).unwrap().token_count = 0;
     state.note_custody(&commit);
-    state
-        .prune_completed_custody(&mut super::super::super::lifecycle::release::CleanupWalk::new())
-        .unwrap();
+    state.prune_completed_custody().unwrap();
     assert!(state.source_custody.is_empty());
 }

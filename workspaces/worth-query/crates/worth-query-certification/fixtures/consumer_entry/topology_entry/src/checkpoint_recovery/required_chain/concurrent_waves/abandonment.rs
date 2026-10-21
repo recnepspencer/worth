@@ -9,8 +9,6 @@ fn case(cancel: bool, check_entry: bool) {
         None,
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard(),
         4096,
-        128 * 1024 * 1024,
-        Some(1_000_000),
         |graph| {
             diamond::seed(graph);
             source_world::seed(graph);
@@ -26,7 +24,6 @@ fn case(cancel: bool, check_entry: bool) {
         other.advance(&request).unwrap(),
         WorthQueryApplicationOutputDemandProgress::Settled(_)
     ));
-    let baseline = application.required_custody_bytes_for_test();
     let selected = request
         .query(PlanarRead {
             body_key: "diamond-left".into(),
@@ -96,11 +93,7 @@ fn case(cancel: bool, check_entry: bool) {
         application.published_required_rows_for_test().is_empty(),
         "last-interest release retires the authentic Published row: {published:?}"
     );
-    assert_eq!(
-        application.required_custody_bytes_for_test(),
-        baseline,
-        "the abandoned row's reserved custody returns to the baseline"
-    );
+
     assert!(matches!(
         other.advance(&request).unwrap(),
         WorthQueryApplicationOutputDemandProgress::Settled(_)

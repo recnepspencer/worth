@@ -181,12 +181,7 @@ fn application<const FRESH: bool>(
     value: f64,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program<FRESH>>
 {
-    let limits = support::limits_with_room(
-        32,
-        16,
-        64,
-        support::invalidation(128 * 1024 * 1024, Some(1_000_000), 4),
-    );
+    let limits = support::limits_with_room(32, 16, 64, support::invalidation());
     support::install_program_with_limits::<Program<FRESH>>(
         None,
         Default::default(),

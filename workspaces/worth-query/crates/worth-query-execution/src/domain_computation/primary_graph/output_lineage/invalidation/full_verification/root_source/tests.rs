@@ -74,8 +74,7 @@ fn retained_source_must_include_every_registered_upstream_edge() {
             (Arc::clone(&consumer), OrdSet::unit(Arc::clone(&upstream))),
         ] {
             owner
-                .register_settlement(
-                    super::super::super::SettlementRegistration {
+                .register_settlement(super::super::super::SettlementRegistration {
                         computation: None,
                         work_membership: None,
                         identity,
@@ -85,31 +84,20 @@ fn retained_source_must_include_every_registered_upstream_edge() {
                         stale_at_read_basis: im::OrdSet::new(),
                         requirement: None,
                         upstream: consumed_upstream,
-                    },
-                    &mut owner.edit_admission(),
-                )
+                    })
                 .unwrap();
         }
         let retained = |identity, upstream| {
-            ConsumedOutputEvidence::retained_for_test(
-                owner,
-                identity,
-                Arc::from([]),
-                upstream,
-                None,
-                Arc::clone(&selected),
-            )
+            ConsumedOutputEvidence::retained_for_test(identity, Arc::from([]), upstream, None, Arc::clone(&selected))
         };
         let omitted = retained(Arc::clone(&consumer), Vec::new());
         let complete = retained(Arc::clone(&consumer), vec![retained(upstream, Vec::new())]);
-        let captured = owner
-            .capture_full_verification(runtime, &snapshot, &selected, &mut owner.edit_admission())
-            .unwrap();
+
+        let captured = owner.capture_full_verification(runtime, &snapshot, &selected).unwrap();
         assert_eq!(
             captured.require_complete_root_upstream(
                 EvidenceView::from(&omitted),
                 &consumer,
-                &mut owner.edit_admission(),
             ),
             Err(FullVerificationStop::OutputEvidenceUnavailable),
         );
@@ -117,7 +105,6 @@ fn retained_source_must_include_every_registered_upstream_edge() {
             captured.require_complete_root_upstream(
                 EvidenceView::from(&complete),
                 &consumer,
-                &mut owner.edit_admission(),
             ),
             Ok(()),
             "the control carries the actual registered upstream identity",

@@ -47,7 +47,7 @@ async fn abandoned_response_cancels_before_closing_worker_reply() {
             "nonce": "not-authenticated",
         }))
         .unwrap(),
-        controls: super::super::super::protocol::BankHttpRequestControls::new(60_000, 1, 1),
+        controls: super::super::super::protocol::BankHttpRequestControls::new(60_000, 1),
         account: bank_domain::model::AccountId::new(1).unwrap(),
         deadline: Instant::now() + Duration::from_secs(60),
     };

@@ -29,7 +29,6 @@ where
             FamilySourceValue<Schema, Family>,
         >,
     ) {
-        let mut admission = runtime.demand_request_admission();
         let original = self.installed_entry.as_ref();
         let ValidatedOutputDisclosure::Fresh(fresh) = validate_disclosure(
             execution,
@@ -47,41 +46,30 @@ where
         };
         let ready = runtime
             .output_demands
-            .interest_ready_readmission(self.interest.as_ref().unwrap(), &mut admission)
+            .interest_ready_readmission(self.interest.as_ref().unwrap())
             .unwrap()
             .expect("the actual required Interest pins its exact Ready/source/member");
         assert!(ready
-            .matches_interest(self.interest.as_ref().unwrap(), &mut admission)
+            .matches_interest(self.interest.as_ref().unwrap())
             .unwrap());
         let claim = runtime
             .output_demands
-            .claim_required_ready_refresh(&ready, &mut admission)
+            .claim_required_ready_refresh(&ready)
             .unwrap()
             .expect("authentic current Ready claim");
-        let mut slot = PreparedRequiredFreshSlot::<Schema, Family>::prepare(
-            &runtime.output_demands,
-            claim,
-            original,
-            &mut admission,
-        )
-        .unwrap();
+        let mut slot =
+            PreparedRequiredFreshSlot::<Schema, Family>::prepare(claim, original).unwrap();
         let current = runtime
             .on_branch(runtime.current_world())
             .select(phase)
             .unwrap();
         let shared = current
-            .prepare_shared_query_basis(&mut admission)
+            .prepare_shared_query_basis()
             .unwrap_or_else(|(_, stop)| {
                 panic!("actual selected basis admission refused: {stop:?}")
             });
         let mut successor = runtime
-            .admit_required_fresh_successor::<Family>(
-                execution,
-                &fresh,
-                &shared,
-                slot.claim(),
-                &mut admission,
-            )
+            .admit_required_fresh_successor::<Family>(execution, &fresh, &shared, slot.claim())
             .unwrap();
         slot.bind_admitted(&mut successor);
         runtime
@@ -90,25 +78,21 @@ where
                 slot.claim().interest(),
                 successor.interest.as_ref().unwrap(),
                 Family::IDENTITY,
-                &mut admission,
             )
             .unwrap();
         assert_eq!(successor.selected.applicability.lifecycle(),
             crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture::Preserve);
         assert_ne!(original.edition, successor.installed_entry.edition);
-        let fresh =
-            validate_required_successor(fresh, slot.claim(), original, &successor, &mut admission)
-                .unwrap();
+        let fresh = validate_required_successor(fresh, slot.claim(), original, &successor).unwrap();
         successor
             .progression_provenance
             .validate_for_execution(
                 slot.claim().commit_authority(),
                 &successor.installed_entry.edition,
-                &mut admission,
             )
             .unwrap();
         successor
-            .prepare_disclosed_input(ValidatedOutputDisclosure::Fresh(fresh), &mut admission)
+            .prepare_disclosed_input(ValidatedOutputDisclosure::Fresh(fresh))
             .unwrap()
             .assert_transport_guards(original.edition);
         assert_eq!(self.producer_contacts_in_this_demand, 1);

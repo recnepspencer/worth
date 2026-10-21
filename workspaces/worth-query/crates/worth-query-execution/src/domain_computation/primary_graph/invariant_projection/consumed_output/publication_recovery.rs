@@ -1,16 +1,13 @@
 //! A freshly performed consumer restores missing derived upstream rows.
-use crate::domain_computation::primary_graph::invariant_projection::{
-    ConsumedOutputEvidence, ConsumedOutputVerification,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::{
-    FullVerificationReason, InvalidationEditAdmission, SourceInvalidationOwner,
-    SourceSettlementCurrentness,
-};
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
 use std::sync::Arc;
-use worth_relational::facade::{
-    runtime::{PositionedRelationalSnapshot, RelationalRuntime},
-    snapshots::SnapshotHandle,
-};
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
 
 pub(in crate::domain_computation::primary_graph) enum PublicationRecoveryStop {
     Reason(FullVerificationReason),
@@ -43,12 +40,9 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), FullVerificationReason> {
-        Self::recover_missing(
-            execution, owner, roots, runtime, snapshot, selected, admission,
-        )
-        .map_err(PublicationRecoveryStop::reason)
+        Self::recover_missing(execution, owner, roots, runtime, snapshot, selected)
+            .map_err(PublicationRecoveryStop::reason)
     }
 
     pub(in crate::domain_computation::primary_graph) fn recover_missing(
@@ -58,26 +52,22 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), PublicationRecoveryStop> {
         let incomplete =
             PublicationRecoveryStop::Reason(FullVerificationReason::RegistrationIncomplete);
         let mut pending = Vec::new();
-        reserve(&mut pending, roots.len(), admission)?;
+        reserve(&mut pending, roots.len())?;
         pending.extend(roots.iter().map(Visit::Enter));
         let mut checked = im::OrdSet::new();
         while let Some(visit) = pending.pop() {
             let evidence = match visit {
                 Visit::Enter(evidence) => {
-                    admission
-                        .admit_visited_settlement(checked.len())
-                        .map_err(PublicationRecoveryStop::Admission)?;
                     if checked.contains(evidence.identity()) {
                         continue;
                     }
                     checked.insert(Arc::clone(evidence.identity()));
                     let state = owner
-                        .currentness(selected, evidence.identity(), admission)
+                        .currentness(selected, evidence.identity())
                         .map_err(|stop| PublicationRecoveryStop::Registration(crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop::Admission(stop)))?;
                     if !state.no_row_answers() {
                         continue;
@@ -94,7 +84,6 @@ impl ConsumedOutputEvidence {
                         runtime,
                         snapshot,
                         selected,
-                        admission,
                     )
                     .map_err(PublicationRecoveryStop::Closure)?
                         != ConsumedOutputVerification::Current
@@ -103,11 +92,7 @@ impl ConsumedOutputEvidence {
                             FullVerificationReason::MissingSettlement,
                         ));
                     }
-                    reserve(
-                        &mut pending,
-                        evidence.upstream.len().saturating_add(1),
-                        admission,
-                    )?;
+                    reserve(&mut pending, evidence.upstream.len().saturating_add(1))?;
                     pending.push(Visit::Established(evidence));
                     pending.extend(evidence.upstream.iter().map(Visit::Enter));
                     continue;
@@ -121,7 +106,7 @@ impl ConsumedOutputEvidence {
                 .ok_or(PublicationRecoveryStop::Reason(
                     FullVerificationReason::NativeRevisionUnavailable,
                 ))?;
-            let upstream = crate::domain_computation::primary_graph::output_lineage::invalidation::collect_consumed_output_upstream(&*evidence.upstream, admission)
+            let upstream = crate::domain_computation::primary_graph::output_lineage::invalidation::collect_consumed_output_upstream(&*evidence.upstream)
             .map_err(PublicationRecoveryStop::Admission)?;
             owner
                 .establish_verified_consumed(
@@ -130,7 +115,6 @@ impl ConsumedOutputEvidence {
                     &evidence.source_facts,
                     witness,
                     upstream,
-                    admission,
                 )
                 .map_err(PublicationRecoveryStop::Registration)?;
         }
@@ -141,22 +125,10 @@ impl ConsumedOutputEvidence {
 fn reserve<'a>(
     pending: &mut Vec<Visit<'a>>,
     additional: usize,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<(), PublicationRecoveryStop> {
     let incomplete =
         || PublicationRecoveryStop::Reason(FullVerificationReason::RegistrationIncomplete);
-    let bytes = pending
-        .len()
-        .checked_add(additional)
-        .and_then(|count| count.checked_mul(std::mem::size_of::<Visit<'a>>()))
-        .and_then(|n| u64::try_from(n).ok())
-        .ok_or_else(incomplete)?;
-    admission
-        .admit_read_scratch(bytes)
-        .map_err(PublicationRecoveryStop::Admission)?;
-    admission
-        .charge_external_work(pending.len() as u64)
-        .map_err(PublicationRecoveryStop::Admission)?;
+
     pending
         .try_reserve_exact(additional)
         .map_err(|_| incomplete())

@@ -42,7 +42,6 @@ where
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
-        policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<WorthQueryApplicationReadObservation, WorthQueryOperationDeliveryDenial> {
         if !self.matches(request) {
             return Err(WorthQueryOperationDeliveryDenial::FreshRequestMismatch);
@@ -50,19 +49,18 @@ where
         let observation = request
             .retain_read(phase)
             .map_err(WorthQueryOperationDeliveryDenial::Observation)?;
-        self.require_current_at(&request.at(&observation), phase, policy)?;
+        self.require_current_at(&request.at(&observation), phase)?;
         Ok(observation)
     }
     fn matches(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> bool {
         std::ptr::eq(self.runtime.runtime(), request.application)
             && self.description.branch == request.branch
     }
-    /// The original action, ceiling and complete lineage at the request's pinned observation.
+    /// The original action and complete lineage at the request's pinned observation.
     pub(super) fn require_current_at(
         &self,
         retained: &WorthQueryApplicationRetainedRequest<'_, '_, '_, Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
-        policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<(), WorthQueryOperationDeliveryDenial> {
         use WorthQueryOperationDeliveryDenial as Denial;
         let selected = retained
@@ -82,19 +80,7 @@ where
         owner
             .resolve_declared_action::<Binding<Schema, Intent>>(&self.installed_action)
             .map_err(Denial::Action)?;
-        let installed = self
-            .runtime
-            .runtime()
-            .output_demand_resource_profile()
-            .limits()
-            .source_currentness_work();
-        let work = policy
-            .currentness_work
-            .map(std::num::NonZeroUsize::get)
-            .into_iter()
-            .chain(installed)
-            .min();
-        retained.require_current_program_output_in_advancement(phase, &self.settlement, work).map_err(|denial| match denial {
+        retained.require_current_program_output_in_advancement(phase, &self.settlement).map_err(|denial| match denial {
             WorthQueryOutputCurrentnessDenial::Output(output) if matches!(output.kind(), worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded) => Denial::Stale(output),
             other => Denial::Currentness(other),
         })

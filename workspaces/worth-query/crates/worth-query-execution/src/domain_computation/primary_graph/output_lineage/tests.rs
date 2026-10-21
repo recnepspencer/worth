@@ -103,14 +103,12 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         occurrence: observation.lifecycle_incarnation(),
         generation: maximum_generation,
     };
-    let (selected_first, _) = lineage
-        .latest_output_in_partition_budgeted(&source, coordinate, first_partition, Some(1))
+    let selected_first = lineage
+        .latest_output_in_partition(&source, coordinate, first_partition)
         .unwrap();
-    let (selected_sibling, _) = lineage
-        .latest_output_in_partition_budgeted(&source, coordinate, sibling_partition, Some(1))
+    let selected_sibling = lineage
+        .latest_output_in_partition(&source, coordinate, sibling_partition)
         .unwrap();
-    let selected_first = selected_first.unwrap();
-    let selected_sibling = selected_sibling.unwrap();
     let matching_sibling = latest_output_matching(history, maximum_generation, |recorded| {
         recorded.source_partition_identity == Some(sibling_partition)
     })
@@ -125,7 +123,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         "partitioned-family".to_owned().into(),
         vec![(TypeId::of::<RestoredOutputBinding>(), "output".to_owned())],
     )]));
-    let resolve = |budget| {
+    let resolve = || {
         lineage.resolve_current_family(
             execution,
             runtime_authority,
@@ -134,25 +132,20 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
             "partitioned-family",
             observation.lifecycle_incarnation(),
             maximum_generation,
-            Some(budget),
         )
     };
-    let family = resolve(27).expect("binding, partition heads, and bounded publication selection");
-    assert_eq!(family.selection_work, 27);
+    let family = resolve().expect("binding, partition heads, and bounded publication selection");
+
     assert_eq!(family.candidates.len(), 2);
     assert!(Arc::ptr_eq(&family.candidates[0].correspondence, &first));
     assert!(Arc::ptr_eq(&family.candidates[1].correspondence, &sibling));
-    assert!(
-        resolve(26).is_err(),
-        "partition selection must obey its work budget"
-    );
 
     let current_checkpoint =
         crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new([0x31; 32]);
     let current_runtime =
         crate::domain_computation::primary_graph::application_query::WorthQueryRuntimeSourceIdentity::new([0x99; 32]);
-    let (candidates, _) = lineage
-        .retained_output_candidates(
+    let candidates = lineage
+        .retained_output_candidates_metered(
             runtime_authority,
             &source.schema,
             scope,
@@ -160,7 +153,9 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
             maximum_generation,
             &[TypeId::of::<RestoredOutputBinding>()],
             first_partition,
-            8,
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_request_policy::serial_request(),
+            ),
         )
         .unwrap();
     assert_eq!(candidates.len(), 1);

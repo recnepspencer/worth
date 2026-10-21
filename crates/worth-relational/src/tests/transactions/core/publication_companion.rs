@@ -4,8 +4,8 @@ use std::sync::{Arc, Mutex};
 
 use crate::mvcc::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionDerivedImageRetention,
-    CompanionDerivedRootAdmission, CompanionDerivedRootCost, CompanionPreflightBudget,
-    CompanionPreflightStop, PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
+    CompanionDerivedRootAdmission, CompanionDerivedRootCost, CompanionPreflightStop,
+    PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
     RelationalPublicationCompanion, RelationalPublicationDeferred, RelationalPublicationOutcome,
 };
 use crate::tests::support::*;
@@ -52,7 +52,7 @@ impl RelationalPublicationCompanion for CountingCompanion {
         &self,
         context: &mut PublicationCompanionPreflight<'_>,
     ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
-        context.claim_work(1)?;
+        context.checkpoint()?;
         let reserved = self.cell.reserve_preflight(context)?;
         let next_value = *reserved.current().payload().as_ref() + 1;
         let effect = context.seal_replacement(reserved, Arc::new(next_value))?;
@@ -121,13 +121,7 @@ fn first_write_companion_mints_from_selected_source_without_runtime_reentry() {
     });
     let consumer: Arc<dyn RelationalPublicationCompanion> = participant.clone();
     let _registration = pending
-        .activate(
-            consumer,
-            CompanionPreflightBudget {
-                maximum_work_visits: Some(16),
-                maximum_preparation_bytes: None,
-            },
-        )
+        .activate(consumer)
         .expect("participant is active without a caller-selected branch cell");
     let written = create_entity_outcome(execution, &runtime, "first-write-after-subscription");
     assert_eq!(
@@ -174,16 +168,10 @@ fn direct_publication_invokes_required_companion_and_positions_its_root() {
         .expect("initial cell belongs to the selected source");
     let calls = Arc::new(AtomicUsize::new(0));
     let registration = pending
-        .activate(
-            Arc::new(CountingCompanion {
-                cell: cell.clone(),
-                calls: Arc::clone(&calls),
-            }),
-            CompanionPreflightBudget {
-                maximum_work_visits: Some(16),
-                maximum_preparation_bytes: None,
-            },
-        )
+        .activate(Arc::new(CountingCompanion {
+            cell: cell.clone(),
+            calls: Arc::clone(&calls),
+        }))
         .expect("required participant is active");
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -281,16 +269,10 @@ fn prepared_derived_image_keeps_conflict_and_retired_drop_custody() {
         )
         .expect("the owner mints a real branch cell");
     let _registration = pending
-        .activate(
-            Arc::new(CountingCompanion {
-                cell: cell.clone(),
-                calls: Arc::new(AtomicUsize::new(0)),
-            }),
-            CompanionPreflightBudget {
-                maximum_work_visits: Some(16),
-                maximum_preparation_bytes: None,
-            },
-        )
+        .activate(Arc::new(CountingCompanion {
+            cell: cell.clone(),
+            calls: Arc::new(AtomicUsize::new(0)),
+        }))
         .expect("the cell stays registered");
     let dropped = Arc::new(AtomicUsize::new(0));
     let mut meter = DerivedMeter(Vec::new());

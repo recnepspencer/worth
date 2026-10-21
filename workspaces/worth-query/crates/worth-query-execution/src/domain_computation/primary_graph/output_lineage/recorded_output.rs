@@ -3,8 +3,8 @@
 use std::sync::{Arc, Mutex, OnceLock};
 
 use super::{
-    invalidation::FullVerificationReason, retained_capacity::RetainedLineageCapacity,
-    RecordedSettlementIdentity, RecordedSourceIdentity, WorthQueryApplicationOutputCorrespondence,
+    invalidation::FullVerificationReason, RecordedSettlementIdentity, RecordedSourceIdentity,
+    WorthQueryApplicationOutputCorrespondence,
 };
 use crate::domain_computation::primary_graph::{
     application_attempt::CompletedHandlerFactBoundary, invariant_projection::ConsumedOutputEvidence,
@@ -18,7 +18,6 @@ pub(in crate::domain_computation::primary_graph) struct RecordedOutput {
     pub(super) computation_source: super::ComputationSourceEvidence,
     pub(super) native_prior_checkpoint:
         Option<super::native_prior_checkpoint::NativePriorCheckpointLocator>,
-    pub(super) _retained_capacity: Option<RetainedLineageCapacity>,
     /// Stable settlements pin the original performed record, never another
     /// alias. This preserves completion proof and its original lifetime cost.
     pub(super) performed_origin: Option<Arc<OnceLock<RecordedOutput>>>,

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::{key, test_record_capacity};
+use super::{key, };
 use crate::domain_computation::primary_graph::application_output_demand::registry::required_work::{
     RequiredWorkMembership, RequiredWorkPop, RequiredWorkQueue, SelectedRequiredWork,
     SelectedRequiredWorkKind,
@@ -63,7 +63,6 @@ impl super::WorthQueryOutputDemandRegistry {
                 super::super::DemandAdmissionKind::Required,
                 None,
                 None,
-                &mut super::record_admission(),
             )
             .expect("real required-interest admission creates its work token")
             .0;
@@ -88,11 +87,10 @@ fn selected(queue: &RequiredWorkQueue) -> SelectedRequiredWork {
 #[test]
 fn activation_and_newer_hint_survive_an_older_selected_ack() {
     let (_lineage, [earlier, later]) = registry_fixture::recorded_settlement_pair();
-    let queue = Arc::new(RequiredWorkQueue::new(Arc::new(test_record_capacity())));
+    let queue = Arc::new(RequiredWorkQueue::new());
     let member = Arc::new(RequiredWorkMembership::new(
         Arc::new(key("selected-output", 1, 1)),
         &queue,
-        test_record_capacity(),
     ));
     // Preparation can mark an inactive row before its required interest opens.
     drop(member.mark_local_required(Arc::clone(&earlier)));
@@ -117,11 +115,10 @@ fn activation_and_newer_hint_survive_an_older_selected_ack() {
 
 #[test]
 fn new_required_record_selects_unresolved_work_without_a_settlement_identity() {
-    let queue = Arc::new(RequiredWorkQueue::new(Arc::new(test_record_capacity())));
+    let queue = Arc::new(RequiredWorkQueue::new());
     let member = Arc::new(RequiredWorkMembership::new(
         Arc::new(key("unsettled-output", 1, 1)),
         &queue,
-        test_record_capacity(),
     ));
     member.set_required(true);
     let selected = selected(&queue);
@@ -136,11 +133,10 @@ fn new_required_record_selects_unresolved_work_without_a_settlement_identity() {
 #[test]
 fn duplicate_selected_version_cannot_acknowledge_the_next_cause() {
     let (_lineage, [settlement, _]) = registry_fixture::recorded_settlement_pair();
-    let queue = Arc::new(RequiredWorkQueue::new(Arc::new(test_record_capacity())));
+    let queue = Arc::new(RequiredWorkQueue::new());
     let member = Arc::new(RequiredWorkMembership::new(
         Arc::new(key("selected-output", 1, 1)),
         &queue,
-        test_record_capacity(),
     ));
     member.set_required(true); // Keeps an independent unresolved cause.
     drop(member.mark_local_required(Arc::clone(&settlement)));
@@ -168,11 +164,10 @@ fn duplicate_selected_version_cannot_acknowledge_the_next_cause() {
 
 #[test]
 fn requeued_last_cause_becomes_one_stale_pop() {
-    let queue = Arc::new(RequiredWorkQueue::new(Arc::new(test_record_capacity())));
+    let queue = Arc::new(RequiredWorkQueue::new());
     let member = Arc::new(RequiredWorkMembership::new(
         Arc::new(key("unsettled-output", 1, 1)),
         &queue,
-        test_record_capacity(),
     ));
     member.set_required(true);
     let first = selected(&queue);
@@ -185,11 +180,10 @@ fn requeued_last_cause_becomes_one_stale_pop() {
 #[test]
 fn a_claim_selects_newer_causes_and_current_acknowledges_the_row_once() {
     let (_lineage, [earlier, later]) = registry_fixture::recorded_settlement_pair();
-    let queue = Arc::new(RequiredWorkQueue::new(Arc::new(test_record_capacity())));
+    let queue = Arc::new(RequiredWorkQueue::new());
     let member = Arc::new(RequiredWorkMembership::new(
         Arc::new(key("claimed-output", 1, 1)),
         &queue,
-        test_record_capacity(),
     ));
     member.set_required(true);
     drop(member.mark_local_required(earlier));
@@ -207,7 +201,7 @@ fn a_claim_selects_newer_causes_and_current_acknowledges_the_row_once() {
         "inspection selects the live cause, not the popped one"
     );
     crate::domain_computation::primary_graph::application_contribution::CurrentProof::with_current_fixture_basis(&member, |proof| {
-        assert!(selected.acknowledge_current_admitted(proof, &mut super::record_admission()).unwrap().is_some());
+        assert!(selected.acknowledge_current_admitted(proof).unwrap().is_some());
     });
     drop(claim);
     assert!(
@@ -260,7 +254,6 @@ fn discontinuity_selects_the_first_declared_family_member() {
                 occurrence,
                 &worth_relational::facade::history::BranchId("main".to_owned()),
                 worth_relational::facade::history::CommitId(1),
-                &mut super::record_admission(),
             )
             .unwrap();
         let first = selected(&queue);

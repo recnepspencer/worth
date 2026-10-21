@@ -67,8 +67,14 @@ impl SettlementRecords {
         )
         .map_err(ResultStorageDenial::Allocation)?;
         for index in 0..batch.len() {
-            let bytes = result_bytes::<R>(batch.result_capacity(index))
-                .ok_or_else(LeaseDenial::charged_bytes_overflow)?;
+            let capacity =
+                batch
+                    .result_capacity(index)
+                    .ok_or(ResultStorageDenial::RequiresExecution(
+                        batch.identities()[index],
+                    ))?;
+            let bytes =
+                result_bytes::<R>(capacity).ok_or_else(LeaseDenial::charged_bytes_overflow)?;
             slots
                 .push(SettlementSlot {
                     evaluated: OnceLock::new(),

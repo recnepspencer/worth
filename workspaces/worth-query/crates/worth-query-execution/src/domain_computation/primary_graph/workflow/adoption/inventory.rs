@@ -33,7 +33,6 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowAdoptionInventor
     pub(in crate::domain_computation::primary_graph) source: &'a ApplicationProgramRevision,
     pub(in crate::domain_computation::primary_graph) target: &'a ApplicationProgramRevision,
     pub(in crate::domain_computation::primary_graph) maximum_work_units: usize,
-    pub(in crate::domain_computation::primary_graph) maximum_preparation_bytes: Option<u64>,
 }
 
 struct ReadDefinition {
@@ -50,12 +49,8 @@ pub(in crate::domain_computation::primary_graph) fn inventory_workflows(
     request: &WorkflowAdoptionInventoryRequest<'_>,
 ) -> Result<WorthQueryWorkflowAdoptionInventory, WorkflowAdoptionReadDenial> {
     let layout = request.layout;
-    let (empty, selection_work) =
-        super::selected_population::is_empty(execution, runtime, basis, &branch, request)?;
-    let mut truth = WorkflowAdoptionTruth::new(
-        branch,
-        request.maximum_work_units.saturating_sub(selection_work),
-    );
+    let empty = super::selected_population::is_empty(execution, runtime, basis, &branch, request)?;
+    let mut truth = WorkflowAdoptionTruth::new(branch, request.maximum_work_units);
     let mut read = BTreeMap::<EntityId, ReadDefinition>::new();
     let mut definitions = Vec::new();
     // Every definition and instance is linked to a lineage. An exact empty
@@ -120,7 +115,7 @@ pub(in crate::domain_computation::primary_graph) fn inventory_workflows(
         definitions: definitions.into_boxed_slice(),
         instances: instances.into_boxed_slice(),
         digest,
-        work_units: selection_work.saturating_add(truth.consumed_work_units()),
+        work_units: truth.consumed_work_units(),
     })
 }
 

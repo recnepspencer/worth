@@ -1,20 +1,11 @@
 //! Graph continuation of the exact permission prepared before a Clean probe.
 
-use crate::domain_computation::primary_graph::application_query::denial::{
-    QueryPreparationContext, QueryPreparationOperation as Operation,
-};
-use crate::domain_computation::provider_session::SessionPreparationPhase;
-use std::fmt::Write;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
-use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use super::*;
-use crate::domain_computation::primary_graph::application_query::{
-    admission::permission::PreparedApplicationQueryPermission,
-    disclosure::WorthQueryApplicationQueryGovernance,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::provider_session::WorthQueryAdmittedQuerySessionStartStop;
+use crate::domain_computation::primary_graph::application_query::admission::permission::PreparedApplicationQueryPermission;
+use crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance;
+
 use crate::domain_computation::provider_session::WorthQueryPreparedQuerySessionIdentity;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -42,7 +33,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             PrincipalIdentity,
             Scope,
         >,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         WorthQueryAdmittedApplicationQueryPlan<
             'a,
@@ -56,8 +46,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         >,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
-        self.finish_prepared_application_query_permission_with_native_access(execution, permission, admission,
-            &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+        self.finish_prepared_application_query_permission_with_native_access(execution, permission, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
     }
 
     pub(in crate::domain_computation::primary_graph) fn finish_prepared_application_query_permission_with_native_access<
@@ -81,7 +70,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             PrincipalIdentity,
             Scope,
         >,
-        admission: &mut InvalidationEditAdmission,
+
         native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
     ) -> Result<
         WorthQueryAdmittedApplicationQueryPlan<
@@ -111,18 +100,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             selected_access,
             shape,
         } = permission;
-        admission.charge_external_work(1).map_err(|stop| {
-            denial(
-                WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
-                String::new(),
-            )
-            .with_preparation_stop(stop)
-            .with_preparation_context(QueryPreparationContext::new(
-                Operation::FinishPermissionVisit,
-                1,
-                0,
-            ))
-        })?;
+
         if !std::ptr::eq(self, issuer) {
             return Err(denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
@@ -142,16 +120,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             shape,
             graph,
             disclosure,
-            admission,
         )?;
-        let indexes = crate::domain_computation::primary_graph::application_query::basis::ensure_selected_read_indexes_admitted_with_native_access(
-            execution,
-            graph,
-            query,
-            basis.selected_product().relational_basis(),
-            admission,
-            native,
-        )?;
+        let indexes = crate::domain_computation::primary_graph::application_query::basis::ensure_selected_read_indexes_admitted_with_native_access(execution, graph, query, basis.selected_product().relational_basis(), native)?;
         let index_posture = WorthQueryQueryIndexPosture::SelectedInstalled(indexes);
         validate_admission_request(controls.request_scope(), query.name())?;
         let graph_work = start_prepared_query_session(
@@ -164,7 +134,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             &basis,
             &security_product,
             graph,
-            admission,
         )?;
         if !authorization.belongs_to_session(graph_work.identity()) {
             return Err(graph_work_denial(query.name()));
@@ -224,67 +193,11 @@ fn start_prepared_query_session<
     basis: &WorthQueryApplicationQueryBasisCustody,
     security_product: &crate::basis::WorthQueryProductObservationLease,
     graph: &WorthQueryPrimaryGraph,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<WorthQueryManagedGraphWorkSession, WorthQueryApplicationQueryAdmissionDenial>
 where
     Schema: ApplicationSchema,
 {
-    // The returned read plan owns these two identity Strings. A failed
-    // session may instead own one formatted denial; fund that maximum before
-    // session construction, including the physical denial backing.
-    const MAX_START_DENIAL_LABEL: usize = 27;
-    admission.charge_external_work(3).map_err(|stop| {
-        prepared_session_resource_denial(stop)
-            .with_preparation_context(QueryPreparationContext::new(Operation::SessionHeader, 3, 0))
-    })?;
-    let authority_len = application
-        .primary_graph_authority
-        .authority_identity()
-        .len();
-    let provider_len = application
-        .primary_graph_authority
-        .provider_identity()
-        .len();
-    let denial_len = query
-        .name()
-        .len()
-        .checked_add(2 + MAX_START_DENIAL_LABEL)
-        .ok_or_else(prepared_session_bytes_overflow)?;
-    let copy_bytes = authority_len
-        .checked_add(provider_len)
-        .and_then(|value| value.checked_add(denial_len))
-        .ok_or_else(prepared_session_bytes_overflow)?;
-    let copy_work = copy_bytes
-        .checked_add(3)
-        .ok_or_else(prepared_session_work_overflow)?;
-    admission
-        .charge_external_work(
-            u64::try_from(copy_work).map_err(|_| prepared_session_work_overflow())?,
-        )
-        .map_err(|stop| {
-            prepared_session_resource_denial(stop).with_preparation_context(
-                QueryPreparationContext::new(
-                    Operation::SessionIdentityBacking,
-                    copy_work as u64,
-                    0,
-                ),
-            )
-        })?;
-    admission
-        .admit_read_scratch(
-            u64::try_from(copy_bytes).map_err(|_| prepared_session_bytes_overflow())?,
-        )
-        .map_err(|stop| {
-            prepared_session_resource_denial(stop).with_preparation_context(
-                QueryPreparationContext::new(
-                    Operation::SessionIdentityBacking,
-                    0,
-                    copy_bytes as u64,
-                ),
-            )
-        })?;
-
-    WorthQueryManagedGraphWorkSession::start_query_with_reserved_identity_admitted(
+    WorthQueryManagedGraphWorkSession::start_query_with_reserved_identity(
         reserved,
         plan,
         application.runtime.authority_identity(),
@@ -294,71 +207,10 @@ where
         access.principal().principal_entity_id(),
         WorthQueryGraphWorkAccessContextAffinity::entity(access.scope().entity_id()),
         basis.identity(),
-        basis.selected_product(),
+        basis.retained_product(),
         security_product,
         application.graph_work_provider_identity(),
-        graph,
-        |work, bytes| {
-            admission.charge_external_work(work)?;
-            admission.admit_read_scratch(
-                u64::try_from(bytes)
-                    .map_err(|_| CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-            )?;
-            Ok(())
-        },
+        graph.query_session_port(),
     )
-    .map_err(|stop| match stop {
-        WorthQueryAdmittedQuerySessionStartStop::Admission { cause, quote } => {
-            let operation = match quote.phase {
-                SessionPreparationPhase::Header => Operation::NativeSessionHeader,
-                SessionPreparationPhase::Copies => Operation::NativeSessionCopies,
-            };
-            prepared_session_resource_denial(cause).with_preparation_context(
-                QueryPreparationContext::new(operation, quote.work, quote.bytes as u64),
-            )
-        }
-        WorthQueryAdmittedQuerySessionStartStop::WorkCounterOverflow => {
-            prepared_session_work_overflow()
-        }
-        WorthQueryAdmittedQuerySessionStartStop::PreparationBytesCounterOverflow => denial(
-            WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted,
-            String::new(),
-        ),
-        WorthQueryAdmittedQuerySessionStartStop::Session(cause) => {
-            let mut subject = String::with_capacity(denial_len);
-            subject.push_str(query.name());
-            subject.push_str(": ");
-            // The four fixed StartDenial Debug labels fit the preclaimed
-            // maximum; this write cannot grow the owned String.
-            let _ = write!(&mut subject, "{cause:?}");
-            graph_work_denial(subject)
-        }
-    })
-}
-
-fn prepared_session_work_overflow() -> WorthQueryApplicationQueryAdmissionDenial {
-    denial(
-        WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
-        String::new(),
-    )
-}
-
-fn prepared_session_bytes_overflow() -> WorthQueryApplicationQueryAdmissionDenial {
-    denial(
-        WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted,
-        String::new(),
-    )
-}
-
-fn prepared_session_resource_denial(
-    stop: CompanionPreflightStop,
-) -> WorthQueryApplicationQueryAdmissionDenial {
-    let kind = match stop {
-        CompanionPreflightStop::PreparationMemoryExhausted { .. }
-        | CompanionPreflightStop::PreparationMemoryCounterOverflow => {
-            WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted
-        }
-        _ => WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
-    };
-    denial(kind, String::new()).with_preparation_stop(stop)
+    .map_err(|cause| graph_work_denial(format!("{}: {cause:?}", query.name())))
 }

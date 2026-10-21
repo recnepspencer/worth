@@ -87,7 +87,6 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         OrdSet::unit(Arc::clone(&a)),
     );
     let a_evidence = ConsumedOutputEvidence::retained_for_test(
-        owner,
         Arc::clone(&a),
         a_facts,
         Vec::new(),
@@ -95,20 +94,18 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
         Arc::new(before.clone()),
     );
     let b_evidence = ConsumedOutputEvidence::retained_for_test(
-        owner,
         Arc::clone(&b),
         Arc::from([]),
         vec![a_evidence],
         None,
         Arc::new(before),
     );
-    request_custody::assert_backing_paid_by_the_request(owner, std::slice::from_ref(&b_evidence));
 
     // World publication advances both the native and product selected roots.
     // The unrelated field leaves the actual consumed source fact current.
     publish_field(request_execution, &world, entity, label, "unrelated-label");
     let (unrelated_handle, unrelated) = handle.with_runtime(request_execution, snapshot);
-    let mut work = owner.edit_admission();
+
     assert_eq!(
         handle.with_runtime(request_execution, |runtime| {
             ConsumedOutputEvidence::verify_many_with_admission(
@@ -118,46 +115,16 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
                 runtime,
                 &unrelated_handle,
                 &unrelated,
-                &mut work,
             )
         }),
         Ok(ConsumedOutputVerification::Current),
     );
 
-    // Two closures on one admitted meter must consume two real sets of Work
-    // and scratch. A fresh allowance per closure would incorrectly pass the
-    // second call under either one-short budget.
-    let verify_unrelated = |admission: &mut InvalidationEditAdmission| {
-        handle.with_runtime(request_execution, |runtime| {
-            ConsumedOutputEvidence::verify_many_with_admission(
-                request_execution,
-                std::slice::from_ref(&b_evidence),
-                owner,
-                runtime,
-                &unrelated_handle,
-                &unrelated,
-                admission,
-            )
-        })
-    };
-    let mut shared = owner.edit_admission();
-    let first = verify_unrelated(&mut shared);
-    assert_eq!(first, Ok(ConsumedOutputVerification::Current));
-    let first_work = shared.charged_work();
-    let first_bytes = shared.charged_bytes();
-    let second = verify_unrelated(&mut shared);
-    assert_eq!(second, Ok(ConsumedOutputVerification::Current));
-    let total_work = shared.charged_work();
-    let total_bytes = shared.charged_bytes();
-    assert!(total_work > first_work && total_bytes > first_bytes);
-    request_custody::assert_carried_native_verification(owner, total_work, verify_unrelated);
-    request_custody::assert_closures_share_the_meter(total_work, total_bytes, verify_unrelated);
-
     // C has already consumed B. Changing A leaves B pending at the new
     // product-selected source, before C's provider commit can prepare effects.
     publish_field(request_execution, &world, entity, status, "closed");
     let (after_handle, after) = handle.with_runtime(request_execution, snapshot);
-    let mut work = owner.edit_admission();
+
     assert_eq!(
         handle.with_runtime(request_execution, |runtime| {
             ConsumedOutputEvidence::verify_many_with_admission(
@@ -167,41 +134,32 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
                 runtime,
                 &after_handle,
                 &after,
-                &mut work,
             )
         }),
         Err(ConsumedOutputVerificationStop::PendingUpstream),
     );
-    assert!(
-        work.charged_work() > 0,
-        "the wrapper debits the work spent before denial"
-    );
-
     // A discontinuous B row has no direct facts. Its shared A evidence must
     // still catch the changed source fact after full verification is required.
     owner
-        .register_settlement(
-            SettlementRegistration {
-                computation: None,
-                work_membership: None,
-                identity: Arc::clone(&b),
-                facts: RetainedSourceFacts::for_test(false, Arc::from([])),
-                output_facts: None,
-                read_basis: after.clone(),
-                stale_at_read_basis: OrdSet::new(),
-                requirement: Some(FullVerificationReason::DeclaredChangeUnavailable),
-                upstream: OrdSet::unit(Arc::clone(&a)),
-            },
-            &mut owner.edit_admission(),
-        )
+        .register_settlement(SettlementRegistration {
+            computation: None,
+            work_membership: None,
+            identity: Arc::clone(&b),
+            facts: RetainedSourceFacts::for_test(false, Arc::from([])),
+            output_facts: None,
+            read_basis: after.clone(),
+            stale_at_read_basis: OrdSet::new(),
+            requirement: Some(FullVerificationReason::DeclaredChangeUnavailable),
+            upstream: OrdSet::unit(Arc::clone(&a)),
+        })
         .expect("discontinuous B row is retained at the selected source");
     assert!(matches!(
-        owner.currentness(&after, &b, &mut owner.edit_admission()),
+        owner.currentness(&after, &b),
         Ok(SourceSettlementCurrentness::FullVerificationRequired(
             FullVerificationReason::DeclaredChangeUnavailable
         ))
     ));
-    let mut work = owner.edit_admission();
+
     assert_eq!(
         handle.with_runtime(request_execution, |runtime| {
             ConsumedOutputEvidence::verify_many_with_admission(
@@ -211,7 +169,6 @@ fn provider_precommit_refuses_earlier_three_hop_evidence_at_current_submission()
                 runtime,
                 &after_handle,
                 &after,
-                &mut work,
             )
         }),
         Ok(ConsumedOutputVerification::ChangedUpstream),

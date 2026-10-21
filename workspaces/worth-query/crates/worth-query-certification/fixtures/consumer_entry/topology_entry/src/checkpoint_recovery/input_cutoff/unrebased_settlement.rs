@@ -197,18 +197,7 @@ fn demand_outcome<'application, 'principal, 'scope>(
 }
 
 fn install_manual_bodies() -> support::Application {
-    let source_work =
-        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard()
-            .limits()
-            .source_currentness_work();
-    support::install_program_with_seed::<CheckpointProgram>(
-        None,
-        Default::default(),
-        32,
-        128 * 1_024 * 1_024,
-        source_work.map(|work| u64::try_from(work).unwrap()),
-        seed,
-    )
+    support::install_program_with_seed::<CheckpointProgram>(None, Default::default(), 32, seed)
 }
 
 fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>) {

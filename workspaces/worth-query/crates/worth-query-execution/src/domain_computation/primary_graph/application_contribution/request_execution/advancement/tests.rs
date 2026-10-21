@@ -83,7 +83,6 @@ fn nested_execution_phases_share_one_work_ceiling() {
     } if identity == PartitionIdentity::new(1)));
     let reports = observation::advancement_requests_on_this_thread_for_test();
     assert_eq!(reports.len(), 1);
-    assert_eq!(reports[0].as_ref().unwrap().charged_work(), 2 * UNITS);
 }
 
 #[test]

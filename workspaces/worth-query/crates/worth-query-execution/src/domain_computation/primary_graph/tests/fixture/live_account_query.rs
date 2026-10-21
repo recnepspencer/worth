@@ -2,10 +2,9 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
     ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
     ApplicationQueryLaneEligibility, ApplicationQueryLiveCauseBinding,
-    ApplicationQueryLiveResourceContract, ApplicationQueryOrderingDirection,
-    ApplicationQueryParameterRef, ApplicationQueryParameterSet, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ForwardResultTraversal,
-    ManyResults,
+    ApplicationQueryOrderingDirection, ApplicationQueryParameterRef, ApplicationQueryParameterSet,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+    ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationScalarValueBinding, StringApplicationValueBinding,
@@ -155,7 +154,6 @@ pub(super) fn live_account_activity_definition() -> ApplicationQueryDefinition<
         .live_by::<Activity, LiveAccountActivityCause, _, _, _, _, _, _, _, _>(
             account_identity(),
             activity_identity(),
-            ApplicationQueryLiveResourceContract::bounded(4, 2_048, 4_096),
         )
         .build()
         .unwrap()

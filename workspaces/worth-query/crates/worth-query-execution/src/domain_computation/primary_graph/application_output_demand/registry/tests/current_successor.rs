@@ -44,9 +44,7 @@ fn registry_current_successor_pin_acknowledges_only_its_native_current_proof() {
             )
         };
         let mut work = old_member.fixture_selected_work();
-        registry
-            .pin_current_required_successor(&mut work, &mut record_admission())
-            .unwrap();
+        registry.pin_current_required_successor(&mut work).unwrap();
         // The cause stays on the predecessor even though its answer is newer.
         assert_eq!(work.key(), &old);
         CurrentProof::with_current_fixture_basis(
@@ -56,7 +54,7 @@ fn registry_current_successor_pin_acknowledges_only_its_native_current_proof() {
                 &answer_member
             },
             |proof| {
-                let result = work.acknowledge_current_admitted(proof, &mut record_admission());
+                let result = work.acknowledge_current_admitted(proof);
                 if foreign {
                     assert!(
                         matches!(result, Err(ref denial) if denial.kind() == WorthQueryOutputDemandDenialKind::ForeignDemand)

@@ -309,10 +309,7 @@ fn shared_operation_conflicting_readiness_is_refused_before_initial_effects() {
     >(
         None,
         Default::default(),
-        support::limits(
-            32,
-            support::invalidation(128 * 1024 * 1024, Some(1_000_000), 32),
-        ),
+        support::limits(32, support::invalidation()),
         |_| initial_effects.set(true),
     );
     assert!(

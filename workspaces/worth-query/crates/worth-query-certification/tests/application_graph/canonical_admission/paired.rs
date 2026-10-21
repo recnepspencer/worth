@@ -74,11 +74,7 @@ fn late_swallowed_pair_decode_refusal_keeps_the_view_cold_and_fresh_retry_recons
                 .map(|root| WorthQueryApplicationQueryAccessContext::new(&principal, root))
                 .collect::<Vec<_>>();
             let controls = || {
-                WorthQueryProductQueryControls::new(
-                    NonZeroUsize::new(2).unwrap(),
-                    Some(NonZeroUsize::new(5_120).unwrap()),
-                    &scope,
-                )
+                WorthQueryProductQueryControls::new(NonZeroUsize::new(2).unwrap(), &scope)
             };
             let membership = runtime
                 .execute_application_query_one_shot(

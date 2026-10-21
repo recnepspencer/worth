@@ -113,43 +113,11 @@ fn continuation_presence_is_identity_bearing() {
 }
 
 #[test]
-fn live_binding_and_each_resource_bound_are_identity_bearing() {
-    let baseline =
-        live_definition::<LiveBinding>(ApplicationQueryLiveResourceContract::bounded(8, 64, 512));
-    let variants = [
-        (
-            "binding type",
-            live_definition::<OtherLiveBinding>(ApplicationQueryLiveResourceContract::bounded(
-                8, 64, 512,
-            )),
-        ),
-        (
-            "buffered cause bound",
-            live_definition::<LiveBinding>(ApplicationQueryLiveResourceContract::bounded(
-                9, 64, 512,
-            )),
-        ),
-        (
-            "delivery work bound",
-            live_definition::<LiveBinding>(ApplicationQueryLiveResourceContract::bounded(
-                8, 65, 512,
-            )),
-        ),
-        (
-            "retained payload bound",
-            live_definition::<LiveBinding>(ApplicationQueryLiveResourceContract::bounded(
-                8, 64, 513,
-            )),
-        ),
-    ];
-
-    for (dimension, changed) in variants {
-        assert_ne!(
-            baseline.canonical_basis(),
-            changed.canonical_basis(),
-            "{dimension} must change the canonical query basis"
-        );
-    }
+fn live_binding_is_identity_bearing() {
+    assert_ne!(
+        live_definition::<LiveBinding>().canonical_basis(),
+        live_definition::<OtherLiveBinding>().canonical_basis()
+    );
 }
 
 #[test]
@@ -168,13 +136,7 @@ fn rust_module_move_cannot_change_query_protocol_identity() {
         std::any::type_name::<relocated_module::LiveBinding>()
     );
     assert_eq!(
-        live_definition::<original_module::LiveBinding>(
-            ApplicationQueryLiveResourceContract::bounded(8, 64, 512),
-        )
-        .canonical_basis(),
-        live_definition::<relocated_module::LiveBinding>(
-            ApplicationQueryLiveResourceContract::bounded(8, 64, 512),
-        )
-        .canonical_basis()
+        live_definition::<original_module::LiveBinding>().canonical_basis(),
+        live_definition::<relocated_module::LiveBinding>().canonical_basis()
     );
 }

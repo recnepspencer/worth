@@ -26,9 +26,8 @@ pub(crate) use companion::{
 };
 pub use companion::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,
-    CompanionDerivedImageRetention, CompanionDerivedRootAdmission, CompanionDerivedRootCleanup,
-    CompanionDerivedRootCost, CompanionDerivedRootInstalled, CompanionDerivedRootPreparationStop,
-    CompanionDerivedRootStopped, CompanionPreflightBudget, CompanionPreflightStop,
+    CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
+    CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
     PendingCompanionRegistration, PreparedCompanionBranchCell, PreparedCompanionDerivedRoot,
     PreparedPublicationCompanionEffect, PublicationCompanionPreflight,

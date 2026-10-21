@@ -1,9 +1,10 @@
-use crate::domain_computation::primary_graph::application_checkpoint::facts::{
-    FactPayload, NativeFactPayloadBuilder,
-};
-use std::{collections::BTreeSet, sync::Arc};
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::NativeFactPayloadBuilder;
+use std::collections::BTreeSet;
+use std::sync::Arc;
 
-use worth_relational::facade::{identity::EntityId, mvcc::CompanionPreflightStop};
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::fact_verification_observation;
@@ -219,8 +220,7 @@ pub(super) fn rebase_output(
     correspondence: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
     changed_records: &[worth_relational::facade::transactions::RecordRef],
     producer_output: bool,
-    maximum_indexed_rebase_work: Option<usize>,
-    admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+
     control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
 ) -> RebasedSourceFacts {
     let changed_entities = changed_records
@@ -241,8 +241,6 @@ pub(super) fn rebase_output(
         prepared,
         &retired,
         producer_output,
-        maximum_indexed_rebase_work,
-        admission,
         control,
     )
 }
@@ -256,11 +254,8 @@ fn rebase(
     prepared: PreparedSourceFactRebase,
     retired: &BTreeSet<EntityId>,
     producer: bool,
-    maximum: Option<usize>,
-    admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> RebasedSourceFacts {
-    preparation::rebase(execution, runtime, snapshot, prepared, retired, producer, maximum, admission,
-        crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), None))
+    preparation::rebase(execution, runtime, snapshot, prepared, retired, producer, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), None))
 }
 mod rebase_walk;
 

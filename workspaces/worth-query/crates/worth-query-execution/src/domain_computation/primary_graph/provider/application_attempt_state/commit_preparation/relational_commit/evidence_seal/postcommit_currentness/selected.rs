@@ -1,14 +1,15 @@
 //! Selected native revision resolution against a distinct normalized body.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_attempt::retained_decision_facts::{StorageControl, StoreDenial},
-    application_checkpoint::facts::NativeFactPatchBuilder,
-    output_lineage::invalidation::{InvalidationEditAdmission, PostconditionCarry},
-};
-use worth_execution::{
-    ChargedBytes, ExecutionArray, ExecutionArrayBuilder, ExecutionMemoryReservation,
-};
-use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHandle};
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::NativeFactPatchBuilder;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry;
+use worth_execution::ChargedBytes;
+use worth_execution::ExecutionArray;
+use worth_execution::ExecutionArrayBuilder;
+use worth_execution::ExecutionMemoryReservation;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
 
 type Endpoints =
     crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints;
@@ -24,7 +25,6 @@ pub(super) struct SelectedRebase {
     actions: ExecutionArrayBuilder<resolution::PreparedFactRebase>,
     superseded: ExecutionArrayBuilder<Option<usize>>,
     patch: NativeFactPatchBuilder,
-    _selection_memory: Option<ExecutionMemoryReservation>,
     _resolution_memory: Option<ExecutionMemoryReservation>,
 }
 impl SelectedRebase {
@@ -34,29 +34,21 @@ impl SelectedRebase {
         moved: Arc<[usize]>,
         carry: PostconditionCarry,
         ordinals: im::OrdSet<usize>,
-        selection_memory: Option<ExecutionMemoryReservation>,
         posting_basis: crate::domain_computation::primary_graph::output_lineage::invalidation::PostingRebaseBasis,
-        admission: &mut InvalidationEditAdmission,
+
         control: StorageControl<'_, '_>,
     ) -> Result<Self, PreparedRebaseDenial> {
         control.check_live()?;
         let payload_bytes = carry
-            .unchanged_payload_bytes(&ordinals, admission)
+            .unchanged_payload_bytes(&ordinals)
             .map_err(PreparedRebaseDenial::Admission)?;
         let suffix = facts.slice(carry.prefix()..facts.len());
         let base = carry
             .baseline()
             .slice(0..carry.prefix())
             .append_completed(suffix, control)?;
-        let mut prepared = Self::prepare_body(
-            facts,
-            moved,
-            base,
-            payload_bytes,
-            ordinals,
-            selection_memory,
-            control,
-        )?;
+        let mut prepared =
+            Self::prepare_body(facts, moved, base, payload_bytes, ordinals, control)?;
         prepared.posting_basis = Some(posting_basis);
         Ok(prepared)
     }
@@ -66,16 +58,12 @@ impl SelectedRebase {
         control: StorageControl<'_, '_>,
     ) -> Result<Self, PreparedRebaseDenial> {
         control.check_live()?;
-        let quote = crate::domain_computation::primary_graph::output_lineage::invalidation::insertion_sequence_bytes::<usize, ()>(facts.len()).ok_or(StoreDenial::Representability)?;
-        let memory = control.policy().reserve_memory(quote);
-        control.check_live()?;
-        let memory = memory?;
         let mut ordinals = im::OrdSet::new();
         for ordinal in 0..facts.len() {
             control.check_live()?;
             ordinals.insert(ordinal);
         }
-        Self::prepare_body(facts.clone(), moved, facts, 0, ordinals, memory, control)
+        Self::prepare_body(facts.clone(), moved, facts, 0, ordinals, control)
     }
     #[allow(clippy::too_many_arguments)]
     fn prepare_body(
@@ -84,7 +72,6 @@ impl SelectedRebase {
         base: FactPayload,
         payload_bytes: u64,
         ordinals: im::OrdSet<usize>,
-        selection_memory: Option<ExecutionMemoryReservation>,
         control: StorageControl<'_, '_>,
     ) -> Result<Self, PreparedRebaseDenial> {
         let patch = base.prepare_native_patch(&ordinals, control)?;
@@ -125,7 +112,6 @@ impl SelectedRebase {
             actions,
             superseded,
             patch,
-            _selection_memory: selection_memory,
             _resolution_memory: memory,
         })
     }
@@ -137,17 +123,9 @@ impl SelectedRebase {
         snapshot: &SnapshotHandle,
         retired: &BTreeSet<EntityId>,
         producer: bool,
-        maximum: Option<usize>,
-        admission: &mut InvalidationEditAdmission,
+
         control: StorageControl<'_, '_>,
     ) -> RebasedSourceFacts {
-        let mut width = InvalidationEditAdmission::new(
-            worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: maximum
-                    .map(|maximum| u64::try_from(maximum).unwrap_or(u64::MAX)),
-                maximum_preparation_bytes: Some(0),
-            },
-        );
         let mut failure = None;
         let mut own = OwnEffectOnReads::NONE_ASKED;
         if !self.moved.is_empty() {
@@ -165,8 +143,7 @@ impl SelectedRebase {
                 continue;
             }
             let prepared = resolution::PreparedFactRebase::prepare(
-                runtime, execution, snapshot, fact, retired, producer, admission, &mut width,
-                endpoints,
+                runtime, execution, snapshot, fact, retired, producer, endpoints,
             );
             match prepared {
                 Err(stop) => {
@@ -236,10 +213,7 @@ impl SelectedRebase {
             // Temporary deep clone is covered by pre-effect resolution memory;
             // patch replacement separately holds its surviving deep grant.
             let replacement = action.apply(self.facts[ordinal].clone());
-            let added = match crate::domain_computation::primary_graph::output_lineage::invalidation::retained_fact_payload_bytes(&replacement, admission) {
-                Ok(bytes) => bytes,
-                Err(stop) => return RebasedSourceFacts::VerificationRequired { reason: RebaseVerificationReason::AdmissionDenied(stop), own_effect: own },
-            };
+            let added = worth_execution::ChargedBytes::additional_charged_bytes(&replacement);
             self.payload_bytes = match self.payload_bytes.checked_add(added) {
                 Some(bytes) => bytes,
                 None => return storage_stop(StoreDenial::Representability, own),
@@ -259,37 +233,20 @@ impl SelectedRebase {
         let posting_continuation = match self.posting_basis {
             None => None,
             Some(basis) => {
-                let after = match runtime.read_truth().positioned_snapshot_admitted(
-                    snapshot,
-                    |work, bytes| {
-                        admission.charge_external_work(work)?;
-                        admission.admit_read_scratch(bytes)
-                    },
-                ) {
+                let after = match runtime.read_truth().positioned_snapshot(snapshot) {
                     Ok(after) => after,
-                    Err(stop) => {
+                    Err(_) => {
                         if let Err(interrupted) = control.check_live() {
                             return storage_stop(interrupted, own);
                         }
-                        use worth_relational::facade::runtime::RelationalSnapshotPositionAdmissionStop as Stop;
-                        let reason = match stop {
-                            Stop::Admission(stop) => {
-                                RebaseVerificationReason::AdmissionDenied(stop)
-                            }
-                            Stop::AccountingOverflow => RebaseVerificationReason::AdmissionDenied(
-                                CompanionPreflightStop::WorkCounterOverflow,
-                            ),
-                            Stop::Position(_) => {
-                                RebaseVerificationReason::NativeRevisionUnavailable
-                            }
-                        };
+                        let reason = RebaseVerificationReason::NativeRevisionUnavailable;
                         return RebasedSourceFacts::VerificationRequired {
                             reason,
                             own_effect: own,
                         };
                     }
                 };
-                match basis.seal(facts.clone(), after, self._selection_memory, control) {
+                match basis.seal(facts.clone(), after, control) {
                     Ok(completed) => Some(completed),
                     Err(stop) => return storage_stop(stop, own),
                 }

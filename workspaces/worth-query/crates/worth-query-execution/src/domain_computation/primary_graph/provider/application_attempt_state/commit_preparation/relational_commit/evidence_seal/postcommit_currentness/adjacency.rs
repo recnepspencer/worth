@@ -1,10 +1,7 @@
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAdjacencyDirection as DecisionDirection,
-    WorthQueryApplicationObservedFact as Fact,
-};
-use worth_relational::facade::runtime::{
-    AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection as NativeDirection,
-};
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection as DecisionDirection;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
+use worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial;
+use worth_relational::facade::runtime::RelationalAdjacencyDirection as NativeDirection;
 
 // The native revision is one selected owner-index lookup; it does not walk
 // the adjacency population. It covers pair presence and ABA.
@@ -16,19 +13,11 @@ pub(super) fn rebase_decision_adjacency(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     fact: Fact,
-    admitted_work: Option<usize>,
 ) -> Fact {
     let endpoints = prepare_endpoints(&fact, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap();
-    prepare_decision_adjacency(
-        execution,
-        runtime,
-        snapshot,
-        &fact,
-        admitted_work,
-        endpoints,
-    )
-    .expect("fixture request remains live")
-    .unwrap_or(fact)
+    prepare_decision_adjacency(execution, runtime, snapshot, &fact, endpoints)
+        .expect("fixture request remains live")
+        .unwrap_or(fact)
 }
 
 pub(super) fn prepare_decision_adjacency(
@@ -36,14 +25,10 @@ pub(super) fn prepare_decision_adjacency(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     fact: &Fact,
-    admitted_work: Option<usize>,
     prepared_endpoints: Option<
         crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
     >,
 ) -> Result<Option<Fact>, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
-    if admitted_work == Some(0) {
-        return Ok(None);
-    }
     let (relation_kind, anchor, direction, limit) = match fact {
         Fact::Relation {
             relation_kind,
@@ -53,9 +38,7 @@ pub(super) fn prepare_decision_adjacency(
             *relation_kind,
             *from,
             NativeDirection::Outgoing,
-            admitted_work.map_or(NATIVE_REVISION_LOOKUP_WORK, |maximum| {
-                NATIVE_REVISION_LOOKUP_WORK.min(maximum)
-            }),
+            NATIVE_REVISION_LOOKUP_WORK,
         ),
         Fact::Adjacency {
             relation_kind,
@@ -72,9 +55,7 @@ pub(super) fn prepare_decision_adjacency(
                 *relation_kind,
                 *anchor,
                 native_direction,
-                admitted_work.map_or(*maximum_work_units, |maximum| {
-                    (*maximum_work_units).min(maximum)
-                }),
+                *maximum_work_units,
             )
         }
         _ => return Ok(None),
@@ -143,19 +124,11 @@ pub(super) fn prepare_endpoints(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain_computation::primary_graph::tests::fixture::{
-        installed_authorization_world, live_scope, AccountOwner, PrincipalIdentityField,
-    };
+    use crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world;
+    use crate::domain_computation::primary_graph::tests::fixture::live_scope;
+    use crate::domain_computation::primary_graph::tests::fixture::AccountOwner;
+    use crate::domain_computation::primary_graph::tests::fixture::PrincipalIdentityField;
     use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
-
-    fn admission(work: u64) -> crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission{
-        crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(
-            worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: Some(work),
-                maximum_preparation_bytes: None,
-            },
-        )
-    }
 
     #[test]
     fn pair_rebase_requires_admitted_native_work_and_never_retains_partial_facts() {
@@ -195,9 +168,9 @@ mod tests {
         };
         world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); graph.integration_handle().with_runtime(request_execution, |runtime| {
             let snapshot = selected.application_basis().snapshot_handle();
-            let mut zero_work = admission(0);
+
             assert!(matches!(
-                rebase_decision_adjacency(&host_custody.borrowed_request_for_test(), runtime, snapshot, fact.clone(), Some(64)),
+                rebase_decision_adjacency(&host_custody.borrowed_request_for_test(), runtime, snapshot, fact.clone()),
                 Fact::SourceAdjacencyRevision {
                     comparison_work_limit: 64,
                     native_revision: Some(_),
@@ -206,15 +179,7 @@ mod tests {
             ));
             assert!(
                 matches!(
-                    super::super::rebase(&host_custody.borrowed_request_for_test(),
-                        runtime,
-                        snapshot,
-                        super::super::PreparedSourceFactRebase::admit(vec![fact], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(),
-                        &std::collections::BTreeSet::new(),
-                        true,
-                        Some(0),
-                        &mut zero_work
-                    ),
+                    super::super::rebase(&host_custody.borrowed_request_for_test(), runtime, snapshot, super::super::PreparedSourceFactRebase::admit(vec![fact], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &std::collections::BTreeSet::new(), true),
                     super::super::RebasedSourceFacts::VerificationRequired { .. }
                 ),
                 "failed relation revision acquisition marks the entire output non-reusable"
@@ -227,31 +192,15 @@ mod tests {
                 comparison_work_limit: 0,
                 endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
             };
-            let mut producer_work = admission(64);
+
             assert!(matches!(
-                super::super::rebase(&host_custody.borrowed_request_for_test(),
-                    runtime,
-                    snapshot,
-                    super::super::PreparedSourceFactRebase::admit(vec![stale_revision.clone()], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))
-                        .unwrap(),
-                    &std::collections::BTreeSet::new(),
-                    true,
-                    Some(64),
-                    &mut producer_work,
-                ),
+                super::super::rebase(&host_custody.borrowed_request_for_test(), runtime, snapshot, super::super::PreparedSourceFactRebase::admit(vec![stale_revision.clone()], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))
+                        .unwrap(), &std::collections::BTreeSet::new(), true),
                 super::super::RebasedSourceFacts::VerificationRequired { .. }
             ));
-            let mut ordinary_work = admission(64);
-            match super::super::rebase(&host_custody.borrowed_request_for_test(),
-                runtime,
-                snapshot,
-                super::super::PreparedSourceFactRebase::admit(vec![stale_revision.clone()], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))
-                    .unwrap(),
-                &std::collections::BTreeSet::new(),
-                false,
-                Some(64),
-                &mut ordinary_work,
-            ) {
+
+            match super::super::rebase(&host_custody.borrowed_request_for_test(), runtime, snapshot, super::super::PreparedSourceFactRebase::admit(vec![stale_revision.clone()], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))
+                    .unwrap(), &std::collections::BTreeSet::new(), false) {
                 super::super::RebasedSourceFacts::Exact(facts) => {
                     assert_eq!(facts.iter().cloned().collect::<Vec<_>>(), &[stale_revision])
                 }

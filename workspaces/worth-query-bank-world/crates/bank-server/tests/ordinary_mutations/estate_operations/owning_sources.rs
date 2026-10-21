@@ -86,7 +86,7 @@ fn owning_freeze_partial_fresh_permission_recovery_and_issuer_cleanup() {
         .runtime
         .query(queries::estate_case(fixture.estate))
         .as_principal(&specialist)
-        .controls(BankReadControls::current(request_scope(), 1, 20_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 1).unwrap())
         .execute()
         .unwrap();
     assert_eq!(view.rows()[0].account().status(), AccountStatus::Frozen);

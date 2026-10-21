@@ -1,14 +1,14 @@
 //! Derived partition locators; the recorded output history remains the sole authority.
 
-use std::collections::{BTreeMap, BTreeSet};
-use std::sync::{Arc, OnceLock};
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
+use std::sync::Arc;
+use std::sync::OnceLock;
 
 mod admitted_lookup;
 mod family_heads;
 pub(super) use family_heads::FamilyPublicationHead;
-mod history_retirement;
 mod newest;
-mod preparation;
 mod source_coverage;
 mod stable_publication;
 pub(super) use source_coverage::SourcePartitionPublication;
@@ -16,10 +16,12 @@ pub(super) use stable_publication::PreparedStablePartitionLocator;
 
 use worth_runtime_world::facade::ProductBranchIncarnation;
 
-use super::{
-    prepared_slot::CancelledLineageSlot, ProductCoordinate, RecordedOutput,
-    RecordedSettlementIdentity, SemanticSource, WorthQueryApplicationOutputLineage,
-};
+use super::prepared_slot::CancelledLineageSlot;
+use super::ProductCoordinate;
+use super::RecordedOutput;
+use super::RecordedSettlementIdentity;
+use super::SemanticSource;
+use super::WorthQueryApplicationOutputLineage;
 
 type Generations = BTreeMap<u64, Arc<OnceLock<usize>>>;
 type Partitions = BTreeMap<Option<[u8; 32]>, Generations>;
@@ -190,9 +192,7 @@ impl WorthQueryApplicationOutputLineage {
             generation: coordinate.generation.checked_sub(1)?,
             ..coordinate
         };
-        let (generation, slot) = self
-            .partition_index
-            .latest_unbudgeted(source, below, partition)?;
+        let (generation, slot) = self.partition_index.latest(source, below, partition)?;
         let displaced = self.recorded_at_partition_slot(
             source,
             coordinate.occurrence,
@@ -243,54 +243,29 @@ impl WorthQueryApplicationOutputLineage {
 
     /// The filled cell of the latest output a reader at `coordinate` selects
     /// in this partition. Holding the cell keeps its row.
-    pub(super) fn latest_cell_in_partition_budgeted(
+    pub(super) fn latest_cell_in_partition(
         &self,
         source: &SemanticSource,
         coordinate: ProductCoordinate,
         partition: [u8; 32],
-        maximum_work: Option<usize>,
-    ) -> Result<(Option<&Arc<OnceLock<RecordedOutput>>>, usize), ()> {
-        if maximum_work == Some(0) {
-            return Err(());
-        }
-        let (location, work) =
-            self.partition_index
-                .latest(source, coordinate, partition, maximum_work)?;
-        let cell = location.map(|(generation, slot)| {
-            self.cell_at_partition_slot(
-                source,
-                coordinate.occurrence,
-                generation,
-                Some(partition),
-                slot,
-            )
-        });
-        Ok((cell, work))
+    ) -> Option<&Arc<OnceLock<RecordedOutput>>> {
+        let (generation, slot) = self.partition_index.latest(source, coordinate, partition)?;
+        Some(self.cell_at_partition_slot(
+            source,
+            coordinate.occurrence,
+            generation,
+            Some(partition),
+            slot,
+        ))
     }
-
-    pub(super) fn latest_output_in_partition_budgeted(
+    pub(super) fn latest_output_in_partition(
         &self,
         source: &SemanticSource,
         coordinate: ProductCoordinate,
         partition: [u8; 32],
-        maximum_work: Option<usize>,
-    ) -> Result<(Option<&RecordedOutput>, usize), ()> {
-        if maximum_work == Some(0) {
-            return Err(());
-        }
-        let (location, work) =
-            self.partition_index
-                .latest(source, coordinate, partition, maximum_work)?;
-        let recorded = location.map(|(generation, slot)| {
-            self.recorded_at_partition_slot(
-                source,
-                coordinate.occurrence,
-                generation,
-                Some(partition),
-                slot,
-            )
-        });
-        Ok((recorded, work))
+    ) -> Option<&RecordedOutput> {
+        self.latest_cell_in_partition(source, coordinate, partition)
+            .and_then(|cell| cell.get())
     }
 
     pub(super) fn matching_output_in_partition_budgeted(
@@ -299,7 +274,7 @@ impl WorthQueryApplicationOutputLineage {
         coordinate: ProductCoordinate,
         partition: [u8; 32],
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        admission: &mut super::invalidation::InvalidationEditAdmission,
+
         mut matches: impl FnMut(&RecordedOutput) -> bool,
     ) -> Result<
         (Option<&RecordedOutput>, usize),
@@ -320,7 +295,7 @@ impl WorthQueryApplicationOutputLineage {
                 execution.consult().map_err(|stop| {
                     worth_relational::facade::mvcc::CompanionPreflightStop::Execution(stop.into())
                 })?;
-                admission.charge_external_work(1)?;
+
                 let Some(slot) = slot.get() else { continue };
                 let recorded = self.recorded_at_partition_slot(
                     source,
@@ -335,7 +310,6 @@ impl WorthQueryApplicationOutputLineage {
             }
         }
         if work == 0 {
-            admission.charge_external_work(1)?;
             work = 1;
         }
         Ok((None, work))
@@ -346,7 +320,7 @@ impl WorthQueryApplicationOutputLineage {
         source: &SemanticSource,
         coordinate: ProductCoordinate,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        admission: &mut super::invalidation::InvalidationEditAdmission,
+
         mut matches: impl FnMut(&RecordedOutput) -> bool,
     ) -> Result<
         (Option<&RecordedOutput>, usize),
@@ -368,7 +342,7 @@ impl WorthQueryApplicationOutputLineage {
                             stop.into(),
                         )
                     })?;
-                    admission.charge_external_work(1)?;
+
                     let Some(recorded) = recorded.get() else {
                         continue;
                     };
@@ -379,7 +353,6 @@ impl WorthQueryApplicationOutputLineage {
             }
         }
         if work == 0 {
-            admission.charge_external_work(1)?;
             work = 1;
         }
         Ok((None, work))

@@ -152,10 +152,6 @@ impl WorthQueryInvariantProjectionWork {
         self.aggregate_rebuild_input_rows += rebuild_rows;
     }
 
-    pub(super) fn record_output_lineage_selection(&mut self, lookups: usize) {
-        self.output_lineage_source_selections += lookups;
-    }
-
     pub(super) fn record_output_lineage_role_lookup(&mut self) {
         self.output_lineage_role_lookups += 1;
     }
@@ -263,11 +259,6 @@ impl WorthQueryInvariantProjectionWorkBudget {
 
     pub(super) const fn overflowed(&self) -> bool {
         self.overflowed
-    }
-
-    pub(super) fn mark_overflowed(&mut self) {
-        self.overflowed = true;
-        self.exceeded = true;
     }
 
     pub(super) fn mark_exceeded(&mut self) {

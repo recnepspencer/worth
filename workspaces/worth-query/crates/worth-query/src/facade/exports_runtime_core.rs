@@ -115,7 +115,6 @@ pub use crate::runtime::{
     WorthQueryIntentInspectionDeliveryCounters, WorthQueryIntentNonAdmittedStop,
     WorthQueryIntentReceipt, WorthQueryIntentReceiptInspection, WorthQueryIntentSourceLane,
     WorthQueryIntentViolationDecision, WorthQueryIntentViolationStop,
-    WorthQueryInvalidationResourceDenial, WorthQueryInvalidationResourceInstallation,
     WorthQueryInvalidationResources, WorthQueryLiveArtifactBinding, WorthQueryLiveArtifactBundle,
     WorthQueryLiveArtifactTarget, WorthQueryLiveGraphReadAccessDenial,
     WorthQueryLiveGraphReadAccessPlan, WorthQueryLiveGraphReadAccessPosture,

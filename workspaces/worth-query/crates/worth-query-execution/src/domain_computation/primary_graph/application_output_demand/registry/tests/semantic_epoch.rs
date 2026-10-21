@@ -10,8 +10,6 @@ fn unchanged_source_after_unrelated_world_work_joins_the_active_demand() {
     registry.state.lock().unwrap().records.insert(
         older.clone(),
         DemandRecord {
-            _record_capacity: test_record_capacity(),
-            source_commit_capacity: None,
             source_scope: Some(scope),
             ..record(occurrence(), DemandState::Scheduled, 1)
         },
@@ -26,7 +24,6 @@ fn unchanged_source_after_unrelated_world_work_joins_the_active_demand() {
             super::super::DemandAdmissionKind::Ordinary,
             None,
             None,
-            &mut record_admission(),
         )
         .expect("an unchanged semantic source joins its active demand")
         .0;
@@ -49,8 +46,6 @@ fn semantic_join_deterministically_selects_the_latest_active_generation() {
         state.records.insert(
             key.clone(),
             DemandRecord {
-                _record_capacity: test_record_capacity(),
-                source_commit_capacity: None,
                 source_scope: Some(scope),
                 ..record(occurrence(), DemandState::Scheduled, 1)
             },
@@ -67,7 +62,6 @@ fn semantic_join_deterministically_selects_the_latest_active_generation() {
             super::super::DemandAdmissionKind::Ordinary,
             None,
             None,
-            &mut record_admission(),
         )
         .expect("semantic join chooses one active owner deterministically")
         .0;
@@ -86,8 +80,6 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
     registry.state.lock().unwrap().records.insert(
         source_a.clone(),
         DemandRecord {
-            _record_capacity: test_record_capacity(),
-            source_commit_capacity: None,
             source_scope: Some(scope),
             ..record(occurrence(), DemandState::Scheduled, 1)
         },
@@ -102,7 +94,6 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
             super::super::DemandAdmissionKind::Ordinary,
             None,
             None,
-            &mut record_admission(),
         )
         .expect("the changed source supersedes its predecessor")
         .0;
@@ -115,7 +106,6 @@ fn changed_source_can_return_after_its_prior_cycle_was_superseded() {
             super::super::DemandAdmissionKind::Ordinary,
             None,
             None,
-            &mut record_admission(),
         )
         .expect("a later return is a new source cycle, not the stopped old record")
         .0;
@@ -198,8 +188,6 @@ fn recovery_rejoins_the_older_key_that_retains_newer_semantic_custody() {
     state.records.insert(
         newer_non_owner.clone(),
         DemandRecord {
-            _record_capacity: test_record_capacity(),
-            source_commit_capacity: None,
             required_interests: 1,
             source_scope: Some(scope),
             ..record(occurrence, DemandState::Scheduled, 1)
@@ -237,7 +225,6 @@ fn recovery_rejoins_the_older_key_that_retains_newer_semantic_custody() {
             super::super::DemandAdmissionKind::Recovery,
             Some(&commit),
             None,
-            &mut record_admission(),
         )
         .expect("recovery finds the semantic record that owns retained custody")
         .0;

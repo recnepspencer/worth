@@ -1,13 +1,12 @@
 //! Clean certification for a required cue on the wave's one selected Product.
 
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_contribution::producer::demand::{
-        MatchedRequiredPredecessors, ResolvedRequiredPredecessors,
-    },
-    application_query::{FreshQueryPermissionStop, PreparedApplicationQueryPermission},
-    product_operation::{SelectedQueryBasisRetentionStop, SharedSelectedProductOperation},
-};
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::MatchedRequiredPredecessors;
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::ResolvedRequiredPredecessors;
+use crate::domain_computation::primary_graph::application_query::FreshQueryPermissionStop;
+use crate::domain_computation::primary_graph::application_query::PreparedApplicationQueryPermission;
+use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop;
+use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
@@ -41,7 +40,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     candidate: Option<&'basis AcceptedCurrentCandidate>,
     resolved: Option<&ResolvedRequiredPredecessors<'_, Schema>>,
     producer_contacts_in_this_demand: usize,
-    admission: &mut InvalidationEditAdmission,
     on_disclosure: impl for<'prepared> FnOnce(
         PreparedApplicationQueryPermission<
             'prepared,
@@ -54,7 +52,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             BoundScope<Schema, Binding>,
         >,
         Option<MatchedRequiredPredecessors<'_>>,
-        &mut InvalidationEditAdmission,
     ) -> Result<Outcome, ProducerExecutionStop>,
 ) -> Result<Outcome, ProducerExecutionStop>
 where
@@ -68,31 +65,14 @@ where
     // The installed executor owns this exact source Query binding from cold
     // contribution setup. Its schema affinity is rechecked here before the
     // prepared permission uses the caller's selected Product.
-    let schema_bytes = std::mem::size_of::<
-        worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity,
-    >();
-    let installed_work = schema_bytes
-        .checked_mul(3)
-        .and_then(|work| work.checked_add(4))
-        .and_then(|work| u64::try_from(work).ok())
-        .ok_or_else(|| ready::ready_work_denial(""))?;
-    admission
-        .charge_external_work(installed_work)
-        .map_err(|_| ready::ready_work_denial(""))?;
+
     let query = installed.query();
     if query.binding_identity() != &runtime.installed_schema.binding_identity() {
         return Err(denial(WorthQueryOutputDemandDenialKind::Superseded, "").into());
     }
     // The retained identity comparison reads two schema digests and one
     // Query digest. Static denial subjects need no initialized backing.
-    let identity_work = 8u64
-        .checked_add(64)
-        .and_then(|work| work.checked_add(32))
-        .and_then(|work| work.checked_add(3))
-        .ok_or_else(|| ready::ready_work_denial(""))?;
-    admission
-        .charge_external_work(identity_work)
-        .map_err(|_| ready::ready_work_denial(""))?;
+
     if retained.runtime_authority != runtime.runtime.authority_identity().as_u64()
         || retained.schema_binding != *query.binding_identity()
         || retained.query_identity != *query.identity()
@@ -104,19 +84,8 @@ where
         .into());
     }
     let installed_limits = runtime.resolve_application_query_limits(installed.limits());
-    let ceiling = installed_limits
-        .maximum_work()
-        .map(NonZeroUsize::get)
-        .into_iter()
-        .chain(admission.remaining_work())
-        .min();
-    let maximum_work = ceiling
-        .map(|work| {
-            NonZeroUsize::new(work).ok_or_else(|| ready::ready_work_denial(Binding::IDENTITY))
-        })
-        .transpose()?;
     let (product, basis) = runtime
-        .retain_selected_query_basis_admitted(shared, admission)
+        .retain_selected_query_basis_admitted(shared)
         .map_err(|stop| match stop {
             SelectedQueryBasisRetentionStop::Basis => denial(
                 WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
@@ -131,29 +100,19 @@ where
         product,
         basis,
         installed_limits.maximum_results(),
-        maximum_work,
         request,
-        admission,
     )
     .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
     runtime
-        .with_fresh_retained_query_permission(execution,
-            installed,
-            Some(validated_principal),
-            external_principal,
-            retained,
-            shared.selected(),
-            controls,
-            admission,
-            |permission, admission| {
+        .with_fresh_retained_query_permission(execution, installed, Some(validated_principal), external_principal, retained, shared.selected(), controls, |permission| {
                 let Some(candidate) = candidate else {
-                    return on_disclosure(permission, None, admission);
+                    return on_disclosure(permission, None);
                 };
                 let Some(sealed) = permission
-                    .seal_current_ready(execution, admission)
+                    .seal_current_ready(execution)
                     .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?
                 else {
-                    return on_disclosure(permission, None, admission);
+                    return on_disclosure(permission, None);
                 };
                 let handle = &runtime.primary_provider.graph;
                 let current = handle
@@ -164,27 +123,26 @@ where
                             sealed.product(),
                             sealed.snapshot_handle(),
                             positioned,
-                            admission,
                         )
                     })
                     .map_err(|stop| ready::ready_currentness_denial(Binding::IDENTITY, stop))?;
                 sealed
-                    .validate_request(admission)
+                    .validate_request()
                     .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?;
                 match current {
                     CurrentAcceptedResult::Current(proof) => {
                         let Some(bound) = proof
-                            .bind_product(admission)
+                            .bind_product()
                             .map_err(|stop| ready::ready_currentness_denial(Binding::IDENTITY, stop))?
                         else {
                             drop(sealed);
-                            return on_disclosure(permission, None, admission);
+                            return on_disclosure(permission, None);
                         };
                         // Binding the pinned recorded row may wait on its mutex.
                         // Preserve the same request's terminal interruption
                         // boundary before constructing a reusable settlement.
                         sealed
-                            .validate_request(admission)
+                            .validate_request()
                             .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?;
                         let settled = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement::from_current_accepted(
                             runtime,
@@ -192,7 +150,6 @@ where
                             Binding::IDENTITY,
                             <<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as super::super::super::WorthQueryProducerOutputFamily<Schema>>::IDENTITY,
                             producer_contacts_in_this_demand,
-                            admission,
                         )?;
                         Ok(ReadyInspection::Current(settled).into())
                     }
@@ -201,17 +158,17 @@ where
                             // Every pending consumed edge must have resolved on
                             // this wave before the consumer refreshes; the first
                             // unresolved one is the next upstream to schedule.
-                            let consumer = candidate.retain_recorded_identity(admission)
+                            let consumer = candidate.retain_recorded_identity()
                                 .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
                             let mut matched = None;
                             loop {
                                 let old = match resolved
-                                    .match_pending(runtime, &pending, positioned, admission)
+                                    .match_pending(runtime, &pending, positioned)
                                     .map_err(ProducerExecutionStop::ExecutionStopped)?
                                 {
                                     Some(old) => Some(old),
                                     None => resolved
-                                        .match_current_upstream(runtime, &pending, positioned, admission)
+                                        .match_current_upstream(runtime, &pending, positioned)
                                         .map_err(ProducerExecutionStop::ExecutionStopped)?,
                                 };
                                 let Some(old) = old else {
@@ -219,9 +176,9 @@ where
                                 };
                                 let (old, successor) = old.into_parts();
                                 let evidence = rebound_consumption::retain(execution, runtime, &successor, &pending, sealed.product(),
-                                    sealed.snapshot_handle(), positioned, admission)?;
+                                    sealed.snapshot_handle(), positioned)?;
 
-                                MatchedRequiredPredecessors::join(&mut matched, &runtime.output_demands, &consumer, old, evidence, positioned, admission)
+                                MatchedRequiredPredecessors::join(&mut matched, &runtime.output_demands, &consumer, old, evidence, positioned)
                                     .map_err(ProducerExecutionStop::ExecutionStopped)?;
                                 let next = handle
                                     .with_runtime(execution, |relational| {
@@ -229,7 +186,6 @@ where
                                             &handle.source_owner.invalidation_owner,
                                             relational,
                                             sealed.snapshot_handle(),
-                                            admission,
                                         )
                                     })
                                     .map_err(|stop| ready::ready_currentness_denial(
@@ -240,7 +196,7 @@ where
                                     Some(next) => pending = next,
                                     None => {
                                         drop(sealed);
-                                        return on_disclosure(permission, matched, admission);
+                                        return on_disclosure(permission, matched);
                                     }
                                 }
                             }
@@ -248,7 +204,7 @@ where
                         // The evidence is an owned, ticketed pin. Only its
                         // selected-root borrow crosses this scoped callback.
                         let rebound = pending
-                            .rebind_selected(positioned, admission)
+                            .rebind_selected(positioned)
                             .map_err(|stop| ready::ready_currentness_denial(
                                 Binding::IDENTITY,
                                 CurrentAcceptedStop::Closure(stop),
@@ -262,18 +218,17 @@ where
                         Ok(ReadyInspection::PendingUnresolved.into()),
                     CurrentAcceptedResult::NeedsDisclosure => {
                         let matched = if candidate.consumes_outputs() {
-                            let consumer = candidate.retain_recorded_identity(admission)
+                            let consumer = candidate.retain_recorded_identity()
                                 .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
                             Some(MatchedRequiredPredecessors::retain_consumer(
-                                &runtime.output_demands, &consumer, positioned, admission,
+                                &runtime.output_demands, &consumer, positioned,
                             ).map_err(ProducerExecutionStop::ExecutionStopped)?)
                         } else { None };
                         drop(sealed);
-                        on_disclosure(permission, matched, admission)
+                        on_disclosure(permission, matched)
                     }
                 }
-            },
-        )
+            })
         .map_err(|stop| match stop {
             FreshQueryPermissionStop::Principal(error) => principal_rejected(Binding::IDENTITY, error),
             FreshQueryPermissionStop::Scope(error) => scope_rejected(Binding::IDENTITY, error),

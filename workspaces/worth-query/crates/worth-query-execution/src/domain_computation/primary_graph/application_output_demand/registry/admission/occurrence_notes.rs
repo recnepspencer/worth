@@ -1,8 +1,8 @@
 //! Discover the request's notes while making its ordinary paid occurrence scan.
-use super::super::{DemandRegistryState, DemandState, WorthQueryOutputDemandKey};
-use crate::domain_computation::primary_graph::{
-    InvalidationEditAdmission, WorthQueryOutputDemandDenial,
-};
+use super::super::DemandRegistryState;
+use super::super::DemandState;
+use super::super::WorthQueryOutputDemandKey;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 pub(super) struct OccurrenceNotes {
     pub delivery: Option<WorthQueryOutputDemandKey>,
@@ -14,26 +14,18 @@ pub(super) fn discover(
     requested: &WorthQueryOutputDemandKey,
     selected: Option<&CompositeCommitIdentity>,
     stable_refresh: bool,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<OccurrenceNotes, WorthQueryOutputDemandDenial> {
     let mut notes = OccurrenceNotes {
         delivery: None,
         closed: None,
         custody: false,
     };
-    for (key, record) in
-        super::super::refreshed_rejoin::occurrence_rows(&state.records, requested, admission)?
+    for (key, record) in super::super::refreshed_rejoin::occurrence_rows(&state.records, requested)
     {
-        admission
-            .charge_external_work(1)
-            .map_err(|_| super::super::refreshed_rejoin::work_denial())?;
         if notes.closed.is_none() {
             notes.closed = record.closed_cleanup.queued_note();
         }
         for commit in &record.source_commits {
-            admission
-                .charge_external_work(1)
-                .map_err(|_| super::super::refreshed_rejoin::work_denial())?;
             notes.custody |= state
                 .source_custody
                 .get(commit)

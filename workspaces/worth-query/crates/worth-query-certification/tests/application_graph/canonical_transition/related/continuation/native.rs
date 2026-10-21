@@ -55,11 +55,7 @@ pub(super) fn resume(
                 )
                 .unwrap();
             let access = WorthQueryApplicationQueryAccessContext::new(&principal, &root);
-            let controls = WorthQueryApplicationQueryResumeControls::new(
-                NonZeroUsize::MIN,
-                Some(NonZeroUsize::new(65_536).unwrap()),
-                scope,
-            );
+            let controls = WorthQueryApplicationQueryResumeControls::new(NonZeroUsize::MIN, scope);
             let plan = runtime
                 .readmit_application_query_continuation(
                     &phase,

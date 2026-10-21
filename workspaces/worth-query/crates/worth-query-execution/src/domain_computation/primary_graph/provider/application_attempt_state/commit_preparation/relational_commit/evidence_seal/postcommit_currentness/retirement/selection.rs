@@ -168,11 +168,7 @@ fn sealed_rebase(
         .unwrap()
         .integration_handle()
         .with_runtime(execution, |runtime| {
-            exact(super::super::super::rebase_output(
-                execution,
-                runtime,
-                selected.application_basis().snapshot_handle(),
-                super::super::super::PreparedSourceFactRebase::admit(
+            exact(super::super::super::rebase_output(execution, runtime, selected.application_basis().snapshot_handle(), super::super::super::PreparedSourceFactRebase::admit(
                     facts,
                     [].into(),
                     StorageControl::new(
@@ -180,13 +176,6 @@ fn sealed_rebase(
                         None,
                     ),
                 )
-                .unwrap(),
-                correspondence,
-                changed,
-                true,
-                Some(64),
-                &mut admission(),
-                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), None),
-            ))
+                .unwrap(), correspondence, changed, true, crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), None)))
         })
 }

@@ -1,7 +1,6 @@
 //! selection denies invalid work and overflow budgets without retaining partial results.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
-use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
 #[test]
 fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_results() {
@@ -52,37 +51,6 @@ fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let over_budget = world
-        .application
-        .with_host_advancement(|phase| {
-            world.invariant.project_admitted_operation(
-                &phase,
-                &admission,
-                |reader, _| {
-                    let denial = reader
-                        .decision_select_entities(
-                            AccountLabel::reference(),
-                            "primary".to_owned(),
-                            32,
-                        )
-                        .unwrap_err()
-                        .downcast::<WorthQueryEntityResolutionDenial>()
-                        .unwrap();
-                    assert_eq!(
-                        denial.kind(),
-                        WorthQueryEntityResolutionDenialKind::Stopped(
-                            NativeReadStop::WorkExhausted
-                        )
-                    );
-                },
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-        })
-        .expect("the fixture read owns its installed host call");
-    assert!(
-        over_budget.is_err(),
-        "an exhausted projection cannot be sealed after a handler ignores its denial"
-    );
     let (_, projection, work) = world
         .application
         .with_host_advancement(|phase| {

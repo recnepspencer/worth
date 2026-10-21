@@ -7,16 +7,10 @@
 //! whose chain consumed it.
 
 use std::ops::Deref;
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
+use std::sync::OnceLock;
 
-use super::{
-    required_custody::RequiredOutputCustodyCapacity, DemandRegistryState,
-    WorthQueryCompletedOutputDemand,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-};
+use super::WorthQueryCompletedOutputDemand;
 
 type ProducerMode =
     crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerCommitAuthority;
@@ -24,7 +18,6 @@ type ProducerMode =
 struct ReadyCell {
     completion: OnceLock<WorthQueryCompletedOutputDemand>,
     producer_mode: OnceLock<ProducerMode>,
-    _capacity: RequiredOutputCustodyCapacity,
 }
 
 /// Prepared before an output effect. It cannot be read as a Ready completion.
@@ -32,22 +25,9 @@ pub(in crate::domain_computation::primary_graph) struct PreparedReadyBacking {
     cell: Arc<ReadyCell>,
 }
 
-/// The completed cell pins the original authority and its refundable custody.
+/// The completed cell pins the original authority.
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct ReadyCompletion(Arc<ReadyCell>);
-
-/// The required custody one Ready row declares.
-#[doc(hidden)]
-pub fn required_ready_custody_bytes_for_test() -> usize {
-    PreparedReadyBacking::retained_bytes()
-}
-
-/// A wave may keep the posted Ready beside its successor through one handoff.
-#[doc(hidden)]
-pub fn required_handoff_custody_bytes_for_test(producer: &str) -> usize {
-    super::consumer_custody::ConsumerHandoff::retained_bytes(producer)
-        .expect("installed producer identity fits custody")
-}
 
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -67,80 +47,21 @@ impl<Schema>
             key.source.root_entity_for_test() == root && !record.settlements.is_empty()
         })
     }
-
-    /// The required-retained bytes this runtime's demand registry holds now:
-    /// required members and the custody beneath them.
-    #[doc(hidden)]
-    pub fn required_custody_bytes_for_test(&self) -> usize {
-        let state = self
-            .output_demands
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.required_reserved_bytes
-            + state
-                .required_custody_retained_bytes
-                .load(std::sync::atomic::Ordering::Acquire)
-    }
 }
 
 impl PreparedReadyBacking {
-    pub(super) const fn retained_bytes() -> usize {
-        let header = 2 * std::mem::size_of::<usize>();
-        let alignment = std::mem::align_of::<ReadyCell>();
-        let body_offset = (header + alignment - 1) & !(alignment - 1);
-        body_offset + std::mem::size_of::<ReadyCell>()
-    }
-
-    pub(super) fn new(capacity: RequiredOutputCustodyCapacity) -> Self {
+    pub(super) fn new() -> Self {
         Self {
             cell: Arc::new(ReadyCell {
                 completion: OnceLock::new(),
                 producer_mode: OnceLock::new(),
-                _capacity: capacity,
             }),
         }
     }
 
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn for_test() -> Self {
-        Self::new(super::required_custody::test_capacity(
-            Self::retained_bytes(),
-        ))
-    }
-
-    pub(super) fn prepare(
-        state: &DemandRegistryState,
-        admission: &mut InvalidationEditAdmission,
-        pending_indexed_bytes: usize,
-    ) -> Result<Self, WorthQueryOutputDemandDenial> {
-        let indexed = state
-            .required_reserved_bytes
-            .checked_add(pending_indexed_bytes)
-            .and_then(|bytes| bytes.checked_add(Self::retained_bytes()))
-            .ok_or_else(capacity_denial)?;
-        if !state.has_required_capacity(indexed) {
-            return Err(super::required_custody::full_custody_denial(
-                Self::retained_bytes(),
-                state.required_budget_bytes,
-            ));
-        }
-        admission
-            .charge_external_work(1)
-            .map_err(|_| work_denial())?;
-        admission
-            .admit_read_scratch(Self::retained_bytes() as u64)
-            .map_err(|stop| match stop {
-                worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
-                    ..
-                } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-                | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
-                    work_denial()
-                }
-                _ => capacity_denial(),
-            })?;
-        let capacity = state.reserve_required_custody_capacity(Self::retained_bytes())?;
-        Ok(Self::new(capacity))
+        Self::new()
     }
 
     /// Bind the mode selected for the actual producer execution before it
@@ -160,20 +81,6 @@ impl PreparedReadyBacking {
         assert!(self.cell.completion.set(completion).is_ok());
         ReadyCompletion(self.cell)
     }
-}
-
-fn work_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        "Ready backing preparation exceeds request work",
-    )
-}
-
-fn capacity_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-        "Ready backing preparation exceeds request memory",
-    )
 }
 
 impl Deref for ReadyCompletion {
@@ -215,21 +122,13 @@ impl ReadyCompletion {
     pub(in crate::domain_computation::primary_graph) fn for_test(
         completion: WorthQueryCompletedOutputDemand,
     ) -> Self {
-        PreparedReadyBacking::new(super::required_custody::test_capacity(
-            PreparedReadyBacking::retained_bytes(),
-        ))
-        .complete(completion)
+        PreparedReadyBacking::new().complete(completion)
     }
 }
 
 #[cfg(test)]
 impl PreparedReadyBacking {
-    pub(in crate::domain_computation::primary_graph) fn for_registry_test(
-        registry: &super::WorthQueryOutputDemandRegistry,
-    ) -> Self {
-        let capacity = registry
-            .reserve_required_custody_capacity(Self::retained_bytes())
-            .unwrap();
-        Self::new(capacity)
+    pub(in crate::domain_computation::primary_graph) fn for_registry_test() -> Self {
+        Self::new()
     }
 }

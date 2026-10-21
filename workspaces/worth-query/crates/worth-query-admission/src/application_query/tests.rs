@@ -1,9 +1,8 @@
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
     ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-    ApplicationQueryLiveResourceContract, ApplicationQueryOrderingDirection,
-    ApplicationQueryParameterRef, ApplicationQueryParameterSet, ApplicationQueryReference,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+    ApplicationQueryOrderingDirection, ApplicationQueryParameterRef, ApplicationQueryParameterSet,
+    ApplicationQueryReference, ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
     ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
 };
 use worth_query_declaration::{

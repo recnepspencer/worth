@@ -222,10 +222,10 @@ pub mod runtime {
         RelationalProjectedFieldObservation, RelationalRelationMetadata, RelationalReplayRecord,
         RelationalRuntime, RelationalRuntimeConfig, RelationalRuntimeForkDenial,
         RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
-        RelationalSnapshotPositionAdmissionStop, RelationalSnapshotProjectionAdmissionStop,
-        ReplaySchemaVersion, RuntimeComplexityCounters, SimulationAccess, SimulationAuthority,
-        SnapshotGuard, SnapshotPositionDenial, TopologyFreezeMode, VisibilityProjectionView,
-        VisibilityReadContext, VisibilityRetentionAuthority,
+        RelationalSnapshotPositionAdmissionStop, ReplaySchemaVersion, RuntimeComplexityCounters,
+        SimulationAccess, SimulationAuthority, SnapshotGuard, SnapshotPositionDenial,
+        TopologyFreezeMode, VisibilityProjectionView, VisibilityReadContext,
+        VisibilityRetentionAuthority,
     };
     pub use crate::storage::data::{
         ChunkVisibilitySummary, ChunkedStorageSummary, EntityReadRecord, PartitionStorageStats,

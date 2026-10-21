@@ -1,37 +1,31 @@
 //! Exact prior-output checks before a producer may omit its handler.
 
-use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::{
-    self as observation, Gate,
-};
+use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff as observation;
+use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::Gate;
 mod owned;
 mod refusal;
 pub(in crate::domain_computation::primary_graph) use owned::OwnedInputCutoffDecision;
 pub(in crate::domain_computation::primary_graph) use refusal::InputCutoffVerificationStop;
 
-use worth_relational::facade::{
-    mvcc::CompanionPreflightStop,
-    runtime::{PositionedRelationalSnapshot, RelationalRuntime},
-    snapshots::SnapshotHandle,
-};
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
 
-use super::super::{
-    invalidation::{
-        FullVerificationReason, InvalidationEditAdmission, SourceSettlementCurrentness,
-    },
-    PreparedInputReuseKey,
-};
-use super::{PreparedInputCutoffBasis, RetainedInputCutoffCandidate};
-use crate::domain_computation::primary_graph::{
-    application_attempt::{
-        Movement, PreparedDecisionReuseContext, WorthQueryApplicationObservedFact,
-        WorthQuerySourceCurrentnessFailure,
-    },
-    application_contribution::MatchedRequiredPredecessors,
-    invariant_projection::{
-        ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
-    },
-    SourceInvalidationOwner,
-};
+use super::super::invalidation::FullVerificationReason;
+use super::super::invalidation::SourceSettlementCurrentness;
+use super::super::PreparedInputReuseKey;
+use super::PreparedInputCutoffBasis;
+use super::RetainedInputCutoffCandidate;
+use crate::domain_computation::primary_graph::application_attempt::Movement;
+use crate::domain_computation::primary_graph::application_attempt::PreparedDecisionReuseContext;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
+use crate::domain_computation::primary_graph::application_contribution::MatchedRequiredPredecessors;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 
 /// What the cutoff does not verify: a row still in its checkpoint posture,
 /// and a settlement no mark row answers for under the selected source.
@@ -83,10 +77,8 @@ impl RetainedInputCutoffCandidate {
         runtime: &RelationalRuntime,
         basis: &'selected PreparedInputCutoffBasis<'_>,
         owner: &SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
-        currentness: &mut InvalidationEditAdmission,
     ) -> Result<InputCutoffDecision<'selected>, InputCutoffVerificationStop> {
-        let (snapshot, selected) = basis.in_runtime(runtime, admission)?;
+        let (snapshot, selected) = basis.in_runtime(runtime)?;
         let verified = self.eligible_for_reuse(
             execution,
             &fresh_key,
@@ -96,8 +88,6 @@ impl RetainedInputCutoffCandidate {
             snapshot,
             selected,
             owner,
-            admission,
-            currentness,
         )?;
         Ok(
             if let Some(VerifiedDependencies {
@@ -133,11 +123,9 @@ impl RetainedInputCutoffCandidate {
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
         owner: &SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
-        currentness: &mut InvalidationEditAdmission,
     ) -> Result<Option<VerifiedDependencies>, InputCutoffVerificationStop> {
         observation::reach(Gate::PriorKey);
-        admission.charge_external_work(1)?;
+
         let Some(prior_key) = self.prepared_input_key() else {
             return Ok(None);
         };
@@ -149,26 +137,20 @@ impl RetainedInputCutoffCandidate {
         let Some(witness) = self.native_output_witness() else {
             return Ok(None);
         };
-        if !prior_key.same_prepared_input_as(fresh_key, |visits| {
-            let visits =
-                u64::try_from(visits).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
-            admission.charge_external_work(visits)
-        })? {
+        if !prior_key.same_prepared_input_as(fresh_key) {
             return Ok(None);
         }
         observation::reach(Gate::DecisionContext);
-        if !fresh_context.matches_completed(prior_context, |visits| {
-            admission.charge_external_work(visits)
-        })? {
+        if !fresh_context.matches_completed(prior_context) {
             return Ok(None);
         }
         observation::reach(Gate::RestoreFence);
-        let requirement = self.verification_requirement(admission)?;
+        let requirement = self.verification_requirement()?;
         if cutoff_declines(requirement, None) {
             return Ok(None);
         }
         observation::reach(Gate::ComparableFacts);
-        let Some(facts) = self.observed_source_facts(admission)? else {
+        let Some(facts) = self.observed_source_facts()? else {
             return Ok(None);
         };
         observation::reach(Gate::HandlerPrefixBoundary);
@@ -177,7 +159,7 @@ impl RetainedInputCutoffCandidate {
             return Ok(None);
         }
         observation::reach(Gate::SettlementCurrentness);
-        let settlement = owner.currentness(selected, self.settlement_identity(), admission)?;
+        let settlement = owner.currentness(selected, self.settlement_identity())?;
         if cutoff_declines(requirement, Some(&settlement)) {
             observation::settlement_decline(&settlement, selected, || {
                 let identity = self.settlement_identity();
@@ -194,17 +176,11 @@ impl RetainedInputCutoffCandidate {
         }
         let verified_consumed = if let Some(matched) = &matched_predecessors {
             observation::reach(Gate::MatchedConsumer);
-            if !matched.matches_consumer(self.settlement_identity(), admission)? {
+            if !matched.matches_consumer(self.settlement_identity())? {
                 return Ok(None);
             }
             observation::reach(Gate::MatchedRoots);
-            let Some(rebound) = matched_roots::rebound(
-                self.consumed_outputs(),
-                matched,
-                selected,
-                owner,
-                admission,
-            )?
+            let Some(rebound) = matched_roots::rebound(self.consumed_outputs(), matched, selected)?
             else {
                 return Ok(None);
             };
@@ -230,7 +206,6 @@ impl RetainedInputCutoffCandidate {
                     witness,
                     runtime,
                     snapshot,
-                    currentness,
                 ) {
                     Ok(false) => return Ok(None),
                     Ok(true) | Err(ConsumedOutputVerificationStop::Unavailable) => {}
@@ -260,17 +235,13 @@ impl RetainedInputCutoffCandidate {
                 }
                 observation::reach(Gate::PendingRoots);
                 let resolved_here = match &matched_predecessors {
-                    Some(matched) => matched_roots::names_every_edge(&edges, matched, admission)?,
+                    Some(matched) => matched_roots::names_every_edge(&edges, matched)?,
                     None => false,
                 };
                 if !resolved_here {
-                    match pending_upstream::resolve(&edges, selected, owner, admission)? {
+                    match pending_upstream::resolve(&edges, selected, owner)? {
                         pending_upstream::Resolution::Resolved(_) => {}
                         pending_upstream::Resolution::Awaiting(identity) => {
-                            admission
-                                .charge_external_work(std::mem::size_of::<
-                                    std::sync::Arc<super::super::RecordedSettlementIdentity>,
-                                >() as u64)?;
                             return Err(InputCutoffVerificationStop::PendingOutput(
                                 std::sync::Arc::clone(identity),
                             ));
@@ -287,13 +258,7 @@ impl RetainedInputCutoffCandidate {
         }
         observation::reach(Gate::HandlerPrefix);
         let current = if verify_full_prefix {
-            marked_facts_permit_reuse(
-                execution,
-                facts.iter().take(count),
-                runtime,
-                snapshot,
-                currentness,
-            )?
+            marked_facts_permit_reuse(execution, facts.iter().take(count), runtime, snapshot)?
         } else if let Some(ordinals) = dirty_prefix {
             marked_facts_permit_reuse(
                 execution,
@@ -303,7 +268,6 @@ impl RetainedInputCutoffCandidate {
                     .map(|ordinal| &facts[*ordinal]),
                 runtime,
                 snapshot,
-                currentness,
             )?
         } else {
             true
@@ -321,7 +285,6 @@ impl RetainedInputCutoffCandidate {
             runtime,
             snapshot,
             selected,
-            admission,
         ) {
             Ok(ConsumedOutputVerification::Current) => {}
             Err(stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_)) => {
@@ -361,7 +324,7 @@ impl RetainedInputCutoffCandidate {
             }
         }
         observation::reach(Gate::OutputCurrentness);
-        if !witness.unchanged_in(runtime, snapshot, admission)? {
+        if !witness.unchanged_in(runtime, snapshot)? {
             return Ok(None);
         }
         Ok(Some(VerifiedDependencies {
@@ -377,4 +340,5 @@ mod pending_upstream;
 mod tests;
 
 mod source_facts;
-use source_facts::{facts_are_current, marked_facts_permit_reuse};
+use source_facts::facts_are_current;
+use source_facts::marked_facts_permit_reuse;

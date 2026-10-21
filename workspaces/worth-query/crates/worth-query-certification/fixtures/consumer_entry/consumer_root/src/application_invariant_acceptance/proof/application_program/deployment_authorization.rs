@@ -24,7 +24,6 @@ fn fixed_adoption_requires_an_explicit_source_revision_grant() {
     ] {
         let world = installation::install_with_roster(
             &crate::installed_schema(),
-            4096,
             WorthQueryApplicationProgramRoster::new().support(
                 ApplicationProgramAuthoring::<ConsumerSchema, UnchangedFixed>::begin()
                     .validated_program()

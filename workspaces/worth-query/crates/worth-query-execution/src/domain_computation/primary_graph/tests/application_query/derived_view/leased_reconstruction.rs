@@ -137,8 +137,7 @@ fn failed_reconstruction_preserves_observed_same_basis_retention() {
                 ..Case::default()
             },
         );
-        assert!(!observed.retention.0);
-        assert_eq!(observed.retention.1, 3);
+
         assert_eq!(observed.retained_values.len(), 3);
     }
 }

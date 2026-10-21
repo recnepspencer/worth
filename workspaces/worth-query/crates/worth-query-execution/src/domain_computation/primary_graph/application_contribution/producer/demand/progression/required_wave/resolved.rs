@@ -15,11 +15,7 @@ impl ResolvedConsumedPredecessor {
     fn retain(
         old: Arc<RecordedSettlementIdentity>,
         successor: &ReadyCompletion,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Self, WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work((std::mem::size_of::<Self>() + 2) as u64)
-            .map_err(admission_denial)?;
         Ok(Self {
             old,
             successor: successor.clone(),
@@ -33,9 +29,8 @@ impl ResolvedConsumedPredecessor {
 }
 
 mod matched_predecessors;
-pub(in crate::domain_computation::primary_graph) use matched_predecessors::{
-    MatchedRequiredPredecessors, ReboundConsumedOutput,
-};
+pub(in crate::domain_computation::primary_graph) use matched_predecessors::MatchedRequiredPredecessors;
+pub(in crate::domain_computation::primary_graph) use matched_predecessors::ReboundConsumedOutput;
 
 /// The rows this wave certified Current while resolving one dependent's
 /// consumed edges. A dependent of several outputs is readmitted once every
@@ -53,22 +48,10 @@ impl ResolvedOnWave {
         &mut self,
         ready: SelectedReadyReadmission,
         current: Arc<WorthQueryOutputDemandSettlement>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let item = std::mem::size_of::<(
-            SelectedReadyReadmission,
-            Arc<WorthQueryOutputDemandSettlement>,
-        )>();
-        admission
-            .charge_external_work(u64::try_from(item + 1).map_err(|_| work_denial())?)
-            .map_err(|_| work_denial())?;
         if self.entries.len() == self.entries.capacity() {
             let next = self.entries.capacity().saturating_mul(2).max(1);
-            admission
-                .admit_read_scratch(
-                    u64::try_from(next.saturating_mul(item)).map_err(|_| capacity_denial())?,
-                )
-                .map_err(admission_denial)?;
+
             self.entries
                 .try_reserve_exact(next - self.entries.len())
                 .map_err(|_| capacity_denial())?;
@@ -129,12 +112,11 @@ where
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         pending: &SelectedPendingConsumedOutput<'_>,
         positioned: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ResolvedConsumedPredecessor>, WorthQueryOutputDemandDenial> {
         for (successor_ready, current) in self.resolved {
             let mut progress = None;
             for entry in self.custody.iter().chain(self.other_custody).rev() {
-                if successor_ready.matches_interest(entry.interest(), admission)? {
+                if successor_ready.matches_interest(entry.interest())? {
                     progress = Some(entry);
                     break;
                 }
@@ -149,7 +131,6 @@ where
                 current,
                 pending,
                 positioned,
-                admission,
             )? {
                 return Ok(Some(old));
             }
@@ -167,28 +148,23 @@ where
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         pending: &SelectedPendingConsumedOutput<'_>,
         positioned: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ResolvedConsumedPredecessor>, WorthQueryOutputDemandDenial> {
         let crate::domain_computation::primary_graph::application_output_demand::PendingUpstream::Ready(
             upstream,
         ) = runtime
             .output_demands
-            .pending_exact_ready_readmission(pending, positioned, admission)?
+            .pending_exact_ready_readmission(pending, positioned)?
         else {
             return Ok(None);
         };
         for (successor_ready, _) in self.resolved {
-            if upstream.same_ready_cell(successor_ready, admission)? {
+            if upstream.same_ready_cell(successor_ready)? {
                 return pending
-                    .retain_identity(admission)
+                    .retain_identity()
                     .map_err(admission_denial)
                     .and_then(|old| {
-                        ResolvedConsumedPredecessor::retain(
-                            old,
-                            successor_ready.completion(),
-                            admission,
-                        )
-                        .map(Some)
+                        ResolvedConsumedPredecessor::retain(old, successor_ready.completion())
+                            .map(Some)
                     });
             }
         }
@@ -204,26 +180,12 @@ fn match_one<Schema>(
     current: &WorthQueryOutputDemandSettlement,
     pending: &SelectedPendingConsumedOutput<'_>,
     positioned: &PositionedRelationalSnapshot,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<ResolvedConsumedPredecessor>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
 {
-    admission
-        .charge_external_work(8)
-        .map_err(|_| work_denial())?;
     let progress_name = progress.producer_identity();
-    let comparison_work = progress_name
-        .len()
-        .checked_mul(2)
-        .and_then(|work| work.checked_add(current.producer_identity().len()))
-        .and_then(|work| work.checked_add(progress.predecessor().producer_identity().len()))
-        .and_then(|work| work.checked_add(2))
-        .and_then(|work| u64::try_from(work).ok())
-        .ok_or_else(work_denial)?;
-    admission
-        .charge_external_work(comparison_work)
-        .map_err(|_| work_denial())?;
+
     if !std::ptr::eq(pending.selected_root(), positioned)
         || current.producer_identity() != progress_name
     {
@@ -234,14 +196,14 @@ where
     // the live successor cell and the exact consumed predecessor below.
     let Some(live_successor) = runtime
         .output_demands
-        .interest_ready_readmission(progress.interest(), admission)?
+        .interest_ready_readmission(progress.interest())?
     else {
         return Ok(None);
     };
-    if !live_successor.same_ready_cell(successor_ready, admission)? {
+    if !live_successor.same_ready_cell(successor_ready)? {
         return Ok(None);
     }
-    preclaim_required_settlement_arguments(admission)?;
+
     let predecessor = runtime
         .primary_provider
         .graph
@@ -252,29 +214,20 @@ where
             runtime.runtime.authority_identity().as_u64(),
             &runtime.installed_schema.binding_identity(),
             progress.predecessor().completion(),
-            admission,
         );
     let predecessor = match predecessor.map_err(required_settlement_denial)? {
         Ok(Some(predecessor)) => predecessor,
         // No exact predecessor row: this edge matches nothing.
         Ok(None) | Err(_) => return Ok(None),
     };
-    let identity_work = std::mem::size_of::<RecordedSettlementIdentity>()
-        .checked_mul(2)
-        .and_then(|work| work.checked_add(4))
-        .and_then(|work| u64::try_from(work).ok())
-        .ok_or_else(work_denial)?;
-    admission
-        .charge_external_work(identity_work)
-        .map_err(|_| work_denial())?;
+
     if predecessor.recorded_identity() != pending.identity() {
         return Ok(None);
     }
     pending
-        .retain_identity(admission)
+        .retain_identity()
         .map_err(admission_denial)
         .and_then(|old| {
-            ResolvedConsumedPredecessor::retain(old, successor_ready.completion(), admission)
-                .map(Some)
+            ResolvedConsumedPredecessor::retain(old, successor_ready.completion()).map(Some)
         })
 }

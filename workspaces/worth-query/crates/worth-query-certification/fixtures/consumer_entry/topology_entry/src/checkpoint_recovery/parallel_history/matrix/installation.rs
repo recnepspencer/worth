@@ -20,7 +20,7 @@ pub(super) fn install(control: std::sync::Arc<Control>) -> Application {
     let declaration = Schema::declaration().unwrap();
     let limits = crate::checkpoint_recovery::support::limits(
         32,
-        crate::checkpoint_recovery::support::invalidation(128 * 1024 * 1024, Some(1_000_000), 32),
+        crate::checkpoint_recovery::support::invalidation(),
     );
     application_installation::in_memory_program(
         program,

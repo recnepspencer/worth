@@ -8,14 +8,12 @@ impl SourceInvalidationOwner {
         &self,
         registration: SettlementRegistration,
         partition: Option<[u8; 32]>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), SettlementRegistrationStop> {
         let prepared = self.prepare_settlement_at_basis(
             registration,
             RegistrationReadBasis::RetainedReadAllowed,
             None,
             partition,
-            admission,
         )?;
         let cleanup = prepared
             .install()

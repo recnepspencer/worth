@@ -34,7 +34,6 @@ pub(super) fn collect<'owner, 'custody, 'collection, Schema, Family>(
     caller_kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind,
     authority: &WorthQueryProducerCommitAuthority,
     performed: &'owner std::cell::RefCell<super::super::performed::PerformedMembers>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<CollectedRequiredWave<'owner, 'collection, Schema>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
@@ -61,7 +60,6 @@ where
             caller_contacts,
             authority,
             performed,
-            admission,
         )
         .map(CollectedRequiredWave::Frozen);
     }
@@ -93,12 +91,12 @@ where
             {
                 let declared = runtime
                     .output_demands
-                    .declared_required_predecessors(frontier.members[index].key(), admission)?;
+                    .declared_required_predecessors(frontier.members[index].key())?;
                 let mut pending = None;
                 for (upstream, member) in frontier.members.iter().enumerate() {
                     if upstream != index
                         && member.state.is_unfinished_predecessor()
-                        && declared.contains_occurrence(member.key(), admission)?
+                        && declared.contains_occurrence(member.key())?
                     {
                         pending = Some(upstream);
                         break;
@@ -114,7 +112,6 @@ where
                 &mut frontier.members[index],
                 caller_storage,
                 queue_storage,
-                admission,
             )? {
                 index += 1;
                 continue;
@@ -124,11 +121,9 @@ where
             if let Some(claim) = frontier.members[index].ready.claim_mut() {
                 let queued = queued.expect("a claim has queue custody");
                 if successor {
-                    queue.select_successor_cause(queued, claim, runtime, wave, admission)?;
+                    queue.select_successor_cause(queued, claim, runtime, wave)?;
                 } else {
-                    let Some(selected) =
-                        queue.inspect_claim(queued, claim, runtime, wave, admission)?
-                    else {
+                    let Some(selected) = queue.inspect_claim(queued, claim, runtime, wave)? else {
                         frontier.members[index].state = MemberState::UnselectedClaim;
                         frontier.members[index].queued = None;
                         index += 1;
@@ -140,9 +135,7 @@ where
                 }
             }
             let inspection = performed.borrow().inspection();
-            admission
-                .charge_external_work(9)
-                .map_err(|_| work_denial())?;
+
             let required_by_member = frontier.members.iter().any(|member| {
                 matches!(member.state, MemberState::Waiting(upstream) if upstream == index)
             });
@@ -162,10 +155,7 @@ where
             } else {
                 &mut *queue_storage
             };
-            let installation_work = storage.reserve_one(&runtime.output_demands, admission)?;
-            let mut installation = admission
-                .reserve_external_work(Some(installation_work))
-                .map_err(admission_denial)?;
+            storage.reserve_one(&runtime.output_demands)?;
             let view = resolved.view_two(caller_storage.entries(), queue_storage.entries());
             let permission = super::super::super::refresh::permit_refresh(
                 if index == 0 && wave.target == RequiredWaveTarget::Caller {
@@ -190,15 +180,7 @@ where
                 contacts,
                 permission,
                 performed,
-                installation.admission(),
             );
-            installation
-                .settle(if matches!(&result, Ok(RequiredWaveStep::Fresh(_))) {
-                    installation_work
-                } else {
-                    0
-                })
-                .map_err(admission_denial)?;
             match result {
                 Ok(RequiredWaveStep::Current(proof)) => {
                     let storage = if caller {
@@ -222,14 +204,11 @@ where
                         resolved.clear();
                     }
                     if queued.is_none() || refresh || required_by_member {
-                        resolved.push(
-                            member.ready.selected().retain(admission)?,
-                            Arc::clone(proof.value()),
-                            admission,
-                        )?;
+                        resolved
+                            .push(member.ready.selected().retain()?, Arc::clone(proof.value()))?;
                     }
                     if let Some(queued) = queued {
-                        queue.acknowledge_root(queued, proof, admission)?;
+                        queue.acknowledge_root(queued, proof)?;
                         frontier.members[index].ready.finish_claim();
                         frontier.members[index].queued = None;
                     }
@@ -250,7 +229,6 @@ where
                         frontier.members[index].ready.selected(),
                         &wave.anchor_ready,
                         resolved,
-                        admission,
                     )? {
                         frontier.members[index].state = MemberState::Pending;
                         index += 1;
@@ -258,16 +236,15 @@ where
                     }
                     frontier.members[index].dependency_schedule =
                         DependencySchedule::PendingConsumed;
-                    let prerequisites = runtime.output_demands.declared_required_readmissions(
-                        frontier.members[index].ready.selected(),
-                        admission,
-                    )?;
+                    let prerequisites = runtime
+                        .output_demands
+                        .declared_required_readmissions(frontier.members[index].ready.selected())?;
                     for prerequisite in prerequisites {
                         // Declared membership schedules inspection; only the
                         // actual Upstream edge can ask the caller for work.
-                        frontier.insert(prerequisite, caller, None, admission)?;
+                        frontier.insert(prerequisite, caller, None)?;
                     }
-                    match frontier.require_upstream(ready, caller, admission)? {
+                    match frontier.require_upstream(ready, caller)? {
                         RequiredUpstream::Member(upstream) => {
                             frontier.wait_for(index, upstream);
                         }
@@ -309,35 +286,15 @@ where
                         index,
                         frontier.members[index].ready.selected(),
                         inspection,
-                        admission,
                     )?;
-                    let slot_bytes = std::mem::size_of::<(
-                        RequiredMemberKey,
-                        OwnerPlan<'owner, RequiredFreshProgress<Schema>, MemberStop>,
-                    )>();
+
                     if plans.len() == plans.capacity() {
                         let next = plans
                             .capacity()
                             .checked_mul(2)
                             .ok_or_else(capacity_denial)?
                             .max(1);
-                        let bytes = next.checked_mul(slot_bytes).ok_or_else(capacity_denial)?;
-                        admission
-                            .admit_read_scratch(
-                                u64::try_from(bytes).map_err(|_| capacity_denial())?,
-                            )
-                            .map_err(admission_denial)?;
-                        admission
-                            .charge_external_work(
-                                u64::try_from(
-                                    plans
-                                        .len()
-                                        .checked_mul(slot_bytes)
-                                        .ok_or_else(work_denial)?,
-                                )
-                                .map_err(|_| work_denial())?,
-                            )
-                            .map_err(|_| work_denial())?;
+
                         let mut replacement = Vec::new();
                         replacement
                             .try_reserve_exact(next)
@@ -350,7 +307,7 @@ where
                     }
                     plans.push((
                         key,
-                        plan.map_result(move |result, _| {
+                        plan.map_result(move |result| {
                             result.map_err(|stop| MemberStop::member(index, stop))
                         }),
                     ));
@@ -368,30 +325,7 @@ where
             break;
         }
     }
-    // Comparisons are charged before inspecting semantic producer/source keys.
-    // Once admission refuses, no further key comparison is made.
-    let mut refused = false;
-    plans.sort_unstable_by(|(left, _), (right, _)| {
-        if refused {
-            return std::cmp::Ordering::Equal;
-        }
-        if left
-            .comparison_work(right)
-            .and_then(|work| {
-                admission
-                    .charge_external_work(work)
-                    .map_err(|_| work_denial())
-            })
-            .is_err()
-        {
-            refused = true;
-            return std::cmp::Ordering::Equal;
-        }
-        left.cmp(right)
-    });
-    if refused {
-        return Err(work_denial());
-    }
+    plans.sort_unstable_by(|(left, _), (right, _)| left.cmp(right));
     Ok(CollectedRequiredWave::Live(PreparedRequiredWave {
         members: plans,
     }))

@@ -1,13 +1,11 @@
 use super::*;
-use crate::domain_computation::primary_graph::{
-    output_lineage::invalidation::InvalidationEditAdmission,
-    output_reuse::{
-        compare_retained_output_dependencies, compare_retained_output_witness,
-        require_installed_output_dependencies, retained_output_settlement_is_verified,
-        OutputDependencySelection,
-    },
-    WorthQueryApplicationBasisSelectionIdentity, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::output_reuse::compare_retained_output_dependencies;
+use crate::domain_computation::primary_graph::output_reuse::compare_retained_output_witness;
+use crate::domain_computation::primary_graph::output_reuse::require_installed_output_dependencies;
+use crate::domain_computation::primary_graph::output_reuse::retained_output_settlement_is_verified;
+use crate::domain_computation::primary_graph::output_reuse::OutputDependencySelection;
+use crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 type SelectedWithEntry<'a, Schema> = (
     WorthQuerySelectedApplicationProducer,
@@ -18,8 +16,8 @@ mod native_selection;
 mod recovered_candidates;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) mod retained_liveness;
 mod selected_basis;
+
 pub(super) use selected_basis::source_basis_is_admitted;
-use selected_basis::{charge, selection_budget_denial};
 
 #[cfg(test)]
 #[path = "selection/retained_basis_tests.rs"]
@@ -36,7 +34,6 @@ where
             <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
         >,
         profile_kind: &'static str,
-        maximum_work: Option<std::num::NonZeroUsize>,
     ) -> Result<WorthQuerySelectedApplicationProducer, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -44,26 +41,8 @@ where
         let execution = phase
             .execution_request_for(&self.product_runtime)
             .map_err(|cause| WorthQueryOutputDemandDenial::request_admission(cause.into()))?;
-        let limits = self.output_demand_resource_profile().limits();
-        let maximum_work = maximum_work
-            .map(std::num::NonZeroUsize::get)
-            .into_iter()
-            .chain(limits.source_currentness_work())
-            .min();
-        let mut admission = self
-            .primary_provider
-            .graph
-            .source_owner
-            .invalidation_owner
-            .edit_admission_with_work_limit(maximum_work);
-        self.select_output_producer_with_remaining::<Family>(
-            &execution,
-            source,
-            profile_kind,
-            &mut admission,
-            None,
-        )
-        .map(|(selected, _)| selected)
+        self.select_output_producer_with_remaining::<Family>(&execution, source, profile_kind, None)
+            .map(|(selected, _)| selected)
     }
 
     /// The admitted demand continues on this request's meter.
@@ -74,7 +53,7 @@ where
             <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
         >,
         profile_kind: &'static str,
-        admission: &mut InvalidationEditAdmission,
+
         retained_program_basis: Option<
             &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
         >,
@@ -82,14 +61,6 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        self.select_output_producer_with_remaining_core::<Family>(
-            execution,
-            source,
-            profile_kind,
-            admission,
-            retained_program_basis,
-            None,
-            &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire(),
-        )
+        self.select_output_producer_with_remaining_core::<Family>(execution, source, profile_kind, retained_program_basis, None, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
     }
 }

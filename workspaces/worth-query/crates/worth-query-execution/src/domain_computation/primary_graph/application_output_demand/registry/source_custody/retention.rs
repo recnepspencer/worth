@@ -37,11 +37,7 @@ impl WorthQueryOutputDemandRegistry {
                 "performed source is already retained",
             ));
         }
-        super::super::post_commit::custody_reader::prune_invisible_slot(
-            &mut state,
-            &commit,
-            &source.receipt,
-        );
+        super::super::post_commit::custody_reader::prune_invisible_slot(&mut state, &commit);
         let scope = source.receipt.principal_scope().scope();
         let direct_root = matches!(root_kind, PreparedOutputRootKind::Required(_));
         if direct_root

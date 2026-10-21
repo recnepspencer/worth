@@ -71,25 +71,24 @@ fn retirement_image(
         );
         let retire = || {
             assert_eq!(
-                owner.retire_settlements(
-                    std::slice::from_ref(&identity),
-                    &mut owner.edit_admission()
-                ),
+                owner.retire_settlements(std::slice::from_ref(&identity)),
                 vec![Arc::clone(&identity)]
             )
         };
+
         if retired_before_capture {
             retire();
         }
         let captured = owner
-            .capture_full_verification(runtime, &snapshot, &basis, &mut owner.edit_admission())
+            .capture_full_verification(runtime, &snapshot, &basis)
             .unwrap();
+
         if !retired_before_capture {
             retire();
         }
         let observed = OrdSet::unit(Arc::clone(&identity));
         assert_eq!(
-            captured.fence_semantic_image(&observed, &mut owner.edit_admission()),
+            captured.fence_semantic_image(&observed),
             if retired_before_capture {
                 Ok(())
             } else {
@@ -98,150 +97,10 @@ fn retirement_image(
         );
         register(owner, identity, Arc::from([]), &basis, OrdSet::new());
         assert_eq!(
-            captured.fence_semantic_image(&observed, &mut owner.edit_admission()),
+            captured.fence_semantic_image(&observed),
             Err(FullVerificationStop::ActorImageChanged)
         );
         drop(captured);
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
     });
-}
-
-#[test]
-fn shared_empty_images_still_fence_a_changed_native_position() {
-    let _oracle =
-        crate::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
-    let host_request = crate::test_request_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    use worth_foundational::facade::{AspectValue, InternedString};
-    use worth_relational::facade::{
-        mvcc::{RelationalPublicationOutcome, RelationalTransactionIntent},
-        transactions::{
-            AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
-            WorkerIntentBatch,
-        },
-    };
-    let world = super::marking_ceiling::world_installing(|defaults| {
-        crate::domain_computation::execution_runtime::WorthQueryInvalidationResourceInstallation {
-            maximum_retained_bytes: Some(128 * 1024 * 1024),
-            ..defaults
-        }
-    });
-    let entity = world
-        .application
-        .with_host_advancement(|phase| {
-            world
-                .selected_product(&phase.test_host_request())
-                .resolve_entity(
-                    &phase,
-                    AccountStatus::reference(),
-                    "open".to_owned(),
-                    &live_scope(),
-                    WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-        })
-        .expect("installed host call opens")
-        .unwrap()
-        .entity_id();
-    let graph = world.application.runtime.primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
-    let field = AccountLabel::reference();
-    let locator = graph
-        .layout()
-        .field_locator(field.entity(), field.aspect(), field.field())
-        .unwrap()
-        .clone();
-    let resources = &owner.resources;
-    let held = resources
-        .reserve_retained_capacity(
-            resources
-                .installation()
-                .maximum_retained_bytes
-                .expect("this court installs a finite retained ceiling")
-                - resources.retained_capacity_bytes(),
-        )
-        .unwrap();
-    handle.with_runtime_mut(request_execution, |runtime| {
-        write_field(
-            request_execution,
-            runtime,
-            entity,
-            locator.clone(),
-            "first-discard",
-        );
-        let (snapshot, basis) = snapshot(runtime);
-        let first = owner
-            .cell_for_read(&basis, &mut owner.edit_admission())
-            .unwrap()
-            .unwrap()
-            .read_image();
-        assert!(first.payload().current.settlements.is_empty());
-        let native_basis = runtime
-            .admit_branch_basis(&runtime.main_branch_identity())
-            .unwrap();
-        let mut transaction = runtime
-            .begin_branch_transaction(&native_basis, RelationalTransactionIntent::ordinary())
-            .unwrap();
-        transaction
-            .push_batch(
-                WorkerIntentBatch::new("second-discard").push(MutationIntent::Entity(
-                    EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                        entity_id: entity,
-                        fields: AspectFieldPatch::from(std::collections::BTreeMap::from([(
-                            locator,
-                            AspectValue::String(InternedString::Raw("second-discard".to_owned())),
-                        )])),
-                    }),
-                )),
-                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap();
-        // The first discard released its predecessor's retained history.
-        // Fill that new headroom so the second publication also discards.
-        let second_held = resources
-            .reserve_retained_capacity(
-                resources
-                    .installation()
-                    .maximum_retained_bytes
-                    .expect("this court installs a finite retained ceiling")
-                    - resources.retained_capacity_bytes(),
-            )
-            .unwrap();
-        let candidate = runtime
-            .prepare_branch_transaction(request_execution, transaction)
-            .unwrap();
-        let captured = owner
-            .capture_full_verification(runtime, &snapshot, &basis, &mut owner.edit_admission())
-            .unwrap();
-        let outcome = runtime
-            .publication_port()
-            .compare_and_publish(request_execution, candidate);
-        let RelationalPublicationOutcome::Performed(performed) = outcome else {
-            panic!("the second discard must publish: {outcome:?}");
-        };
-        let second = owner
-            .cell_for_read(&basis, &mut owner.edit_admission())
-            .unwrap()
-            .unwrap()
-            .read_image();
-        assert!(
-            Arc::ptr_eq(first.payload(), second.payload()),
-            "both discards share the funded vacant image"
-        );
-        assert_ne!(first.root_id(), second.root_id());
-        assert_eq!(
-            captured.fence_semantic_image(&OrdSet::new(), &mut owner.edit_admission()),
-            Err(FullVerificationStop::Alignment(
-                super::super::FullVerificationReason::RetainedDeliveryGap
-            )),
-            "exact Native position selection precedes the pointer fence"
-        );
-        drop(captured);
-        let committed = runtime.settle_performed_publication(performed).unwrap();
-        release_test_commit_snapshot(runtime, &committed);
-        runtime.snapshots().release_snapshot(&snapshot).unwrap();
-        drop(second_held);
-    });
-    drop(held);
 }

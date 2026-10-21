@@ -9,7 +9,7 @@ use worth_query_host::facade::primary_graph::WorthQueryInvalidationEquivalenceFo
 fn settled_checkpoint(
     rings: &mut [Ring],
 ) -> application_installation::WorthQueryApplicationCheckpoint {
-    let application = install(None, ring_world::seed::<3>, Retained::AMPLE);
+    let application = install(None, ring_world::seed::<3>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3d00);
@@ -34,7 +34,7 @@ fn a_restored_world_verifies_each_root_and_decides_each_consumer_once() {
     Reading::decisions();
     let checkpoint = settled_checkpoint(&mut rings);
 
-    let application = install(Some(checkpoint), ring_world::seed::<3>, Retained::AMPLE);
+    let application = install(Some(checkpoint), ring_world::seed::<3>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3d40);
@@ -94,23 +94,16 @@ fn a_restored_world_verifies_each_root_and_decides_each_consumer_once() {
 }
 
 #[test]
-fn marks_older_than_the_retained_window_are_verified_in_full() {
+fn unrelated_commits_preserve_far_members_without_source_recomputation() {
     let _equivalence = EquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(
-        None,
-        ring_world::seed::<3>,
-        Retained {
-            commit_positions: 2,
-            ..Retained::AMPLE
-        },
-    );
+    let application = install(None, ring_world::seed::<3>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3d80);
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
     Reading::decisions();
-    let at = "inside the retained window";
+    let at = "before unrelated history";
     let mut a = root!(court, rings[0].key("a"), at);
     let mut b = consumer!(court, rings[0].key("b"), at);
     let mut c = consumer!(court, rings[0].key("c"), at);
@@ -137,9 +130,8 @@ fn marks_older_than_the_retained_window_are_verified_in_full() {
         far_roots.map(|root| counts.get(&root).copied().unwrap_or(0))
     };
 
-    // The first ring's edit is followed by more commits than the window
-    // retains, all on another ring, before any open chain is demanded again.
-    let at = "outside the retained window";
+    // Actual commits on another ring must not erase coverage for untouched members.
+    let at = "after unrelated history";
     rings[0].a_y = 4;
     court.write_y(&rings[0].key("a"), 4, at);
     for y in [2, 3, 4, 5] {
@@ -178,15 +170,15 @@ fn marks_older_than_the_retained_window_are_verified_in_full() {
     );
     assert_eq!(
         after_c,
-        [1, 1],
-        "{at}: C's first advance verifies each far member once"
+        [0, 0],
+        "{at}: C's first advance preserves untouched far members without source reads"
     );
     court.judge_chain(&rings[0], at);
     let before_far_call = full_reads;
     let far = [interval_settled!(far_b), interval_settled!(far_a)];
     assert_eq!(
-        full_reads, [1, 1],
-        "{at}: each far member is verified once across every advance; after C/B/A={after_c:?}/{after_b:?}/{after_a:?}; before its calls: {:?}; per-call attribution: {far:?}",
+        full_reads, [0, 0],
+        "{at}: untouched far members require no source reads across every advance; after C/B/A={after_c:?}/{after_b:?}/{after_a:?}; before its calls: {:?}; per-call attribution: {far:?}",
         before_far_call
     );
     assert_eq!(
@@ -207,7 +199,7 @@ fn marks_older_than_the_retained_window_are_verified_in_full() {
     assert_eq!(
         far.map(|cost| (cost.producer_contacts, cost.source_queries)),
         [(0, 0), (0, 0)],
-        "{at}: the unedited chain is verified once in full and reaches no producer: {far:?}"
+        "{at}: the unedited chain stays clean and reaches no producer: {far:?}"
     );
     assert!(
         again
@@ -221,17 +213,10 @@ fn marks_older_than_the_retained_window_are_verified_in_full() {
 }
 
 #[test]
-fn an_output_demanded_inside_every_window_never_leaves_it() {
+fn an_untouched_output_stays_clean_across_repeated_unrelated_commits() {
     let _equivalence = EquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(
-        None,
-        ring_world::seed::<3>,
-        Retained {
-            commit_positions: 4,
-            ..Retained::AMPLE
-        },
-    );
+    let application = install(None, ring_world::seed::<3>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3dc0);
@@ -246,10 +231,7 @@ fn an_output_demanded_inside_every_window_never_leaves_it() {
     settled!(court, far_c, at);
     judge_decisions(&mut rings, at);
 
-    // Twenty-four commits on another ring rotate the four-position window
-    // six times. The untouched chain is demanded after every second one: a
-    // clean demand moves what it verified to the head, so no rotation leaves
-    // it behind and none costs a full verification.
+    // Repeated unrelated commits preserve the untouched chain's actual coverage.
     for round in 0..12_u64 {
         let at = format!("round {round}");
         for y in [2 + 2 * (round % 3), 3 + 2 * (round % 3)] {
@@ -263,7 +245,7 @@ fn an_output_demanded_inside_every_window_never_leaves_it() {
         ];
         assert!(
             clean.iter().all(Cost::is_free),
-            "{at}: the untouched chain is still inside the window: {clean:?}"
+            "{at}: the untouched chain remains clean: {clean:?}"
         );
     }
     let at = "after the commits";
@@ -289,7 +271,7 @@ fn a_restored_consumer_never_settles_over_a_stale_upstream() {
     Reading::decisions();
     let checkpoint = settled_checkpoint(&mut rings);
 
-    let application = install(Some(checkpoint), ring_world::seed::<3>, Retained::AMPLE);
+    let application = install(Some(checkpoint), ring_world::seed::<3>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3a40);
@@ -334,7 +316,7 @@ fn a_restored_chain_settles_through_its_last_consumer_alone() {
     Reading::decisions();
     let checkpoint = settled_checkpoint(&mut rings);
 
-    let application = install(Some(checkpoint), ring_world::seed::<3>, Retained::AMPLE);
+    let application = install(Some(checkpoint), ring_world::seed::<3>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3a80);

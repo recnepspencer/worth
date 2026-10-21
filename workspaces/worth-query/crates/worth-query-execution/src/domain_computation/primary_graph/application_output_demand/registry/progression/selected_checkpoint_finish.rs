@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use super::super::required_work::RequiredWorkMembership;
 use super::*;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 /// A stopped claim may already have restored its checkpoint. A moved claim
@@ -26,25 +26,7 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn prepare_selected_checkpoint_finish<'a>(
         &'a self,
         interest: &'a WorthQueryOutputDemandInterest,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedSelectedCheckpointFinish<'a>, WorthQueryOutputDemandDenial> {
-        const TERMINAL: usize = 55;
-        let terminal = TERMINAL + std::mem::size_of::<String>();
-        admission
-            .charge_external_work(terminal as u64)
-            .map_err(|_| empty_work_denial())?;
-        admission
-            .admit_read_scratch(terminal as u64)
-            .map_err(empty_admission_denial)?;
-        let fixed = 2 * std::mem::size_of::<PreparedSelectedCheckpointFinish<'_>>()
-            + 3 * std::mem::size_of::<WorthQueryOutputCheckpoint>()
-            + 2 * std::mem::size_of::<DemandState>()
-            + 2 * std::mem::size_of::<WorthQueryOutputDemandDenial>()
-            + 2 * std::mem::size_of::<Arc<RequiredWorkMembership>>()
-            + 64;
-        admission
-            .charge_external_work(fixed as u64)
-            .map_err(|_| empty_work_denial())?;
         if !Arc::ptr_eq(&self.state, &interest.owner.state) {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
@@ -55,12 +37,8 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.charge_record_lookup(&interest.key, admission)?;
-        // The installed finite row allowance covers the claim, finish, and
-        // terminal deferred-cleanup descents after this guard is released.
-        state.charge_maximum_record_lookup(&interest.key, admission)?;
-        state.charge_maximum_record_lookup(&interest.key, admission)?;
-        state.charge_maximum_record_lookup(&interest.key, admission)?;
+
+        // Pin the original required membership before moving its checkpoint.
         let record = state
             .records
             .get(&interest.key)
@@ -69,7 +47,7 @@ impl WorthQueryOutputDemandRegistry {
             .work_membership
             .as_ref()
             .cloned()
-            .ok_or_else(empty_work_denial)?;
+            .ok_or_else(|| empty_denial(WorthQueryOutputDemandDenialKind::ForeignDemand))?;
         Ok(PreparedSelectedCheckpointFinish {
             registry: self,
             interest,
@@ -170,7 +148,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 output.finish_stopped(retained_denial(&stopped));
                 record.wake.notify();
                 record.finish();
-                state.defer_terminal_cleanup(self.member.key_arc(), 0);
+                state.defer_terminal_cleanup(self.member.key_arc());
                 drop(state);
                 Err(SelectedCheckpointFinishStop::Restored(stopped))
             }
@@ -190,7 +168,7 @@ impl PreparedSelectedCheckpointFinish<'_> {
                 if terminal {
                     // Existing admitted cleanup destroys variable obligations
                     // and refunds their final owner after this guarded step.
-                    state.defer_terminal_cleanup(self.member.key_arc(), 0);
+                    state.defer_terminal_cleanup(self.member.key_arc());
                 }
                 drop(state);
                 Ok(())
@@ -211,21 +189,4 @@ fn retained_denial(source: &WorthQueryOutputDemandDenial) -> WorthQueryOutputDem
 
 fn empty_denial(kind: WorthQueryOutputDemandDenialKind) -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(kind, "")
-}
-
-fn empty_work_denial() -> WorthQueryOutputDemandDenial {
-    empty_denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
-}
-
-fn empty_admission_denial(
-    stop: worth_relational::facade::mvcc::CompanionPreflightStop,
-) -> WorthQueryOutputDemandDenial {
-    use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-    let kind = match stop {
-        Stop::WorkExhausted { .. }
-        | Stop::WorkExhaustedWithoutRequirement { .. }
-        | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        _ => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-    };
-    empty_denial(kind)
 }

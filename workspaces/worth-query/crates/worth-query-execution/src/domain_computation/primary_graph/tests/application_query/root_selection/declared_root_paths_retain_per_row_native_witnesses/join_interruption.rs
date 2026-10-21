@@ -59,14 +59,7 @@ pub(super) fn assert_original_join_cancellation(
                 .expect("a fresh original request retains the same complete groups");
             let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
             selected
-                .require_current_required_set(
-                    &phase,
-                    access,
-                    &request,
-                    std::iter::empty(),
-                    &joined,
-                    None,
-                )
+                .require_current_required_set(&phase, access, &request, std::iter::empty(), &joined)
                 .expect("the real joined proof remains current");
         })
         .unwrap();

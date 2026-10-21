@@ -72,7 +72,7 @@ pub(super) fn certification_fixture() -> CertificationFixture {
     let principal =
         block_on(runtime.authenticate_with(&authentication, TestCredential(identity), &request))
             .expect("the mapped compliance principal authenticates");
-    let controls = BankReadControls::current(request, 1, 20_000).unwrap();
+    let controls = BankReadControls::current(request, 1).unwrap();
     CertificationFixture {
         runtime,
         principal,

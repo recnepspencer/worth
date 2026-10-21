@@ -33,8 +33,8 @@ impl<R, E> Prefix<R, E> {
         limits: &RunLimits,
     ) -> Option<V> {
         let (result, owner) = outcome.result.into_parts(limits);
-        if owner == Some(NestedStopOwner::Request) {
-            self.owner = owner;
+        if owner == Some(NestedStopOwner::Request) || outcome.allocation_denial.is_some() {
+            self.owner = Some(NestedStopOwner::Request);
         }
         if self.stop.is_some() {
             self.discarded = self.discarded.saturating_add(outcome.work);
@@ -63,6 +63,12 @@ impl<R, E> Prefix<R, E> {
         }
         self.work += outcome.work;
         self.span = self.span.max(outcome.span);
+        if let Some(denial) = outcome.allocation_denial {
+            self.owner = Some(NestedStopOwner::Request);
+            self.stop = Some(BatchStop::Admission(denial));
+            self.boundary = Some(id);
+            return None;
+        }
         let cause = match result {
             Ok(value) => return Some(value),
             Err(cause) => cause,
@@ -81,5 +87,56 @@ impl<R, E> Prefix<R, E> {
         });
         self.boundary = Some(id);
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{backend::task_result::TaskResult, LeaseDenial};
+    #[test]
+    fn later_allocation_refusal_keeps_the_first_prefix_and_request_attribution() {
+        let limits = RunLimits::for_run(None, true);
+        for first_owner in [
+            NestedStopOwner::Request,
+            NestedStopOwner::Computation(
+                super::super::super::meter::NestedComputationStop::DomainFailure,
+            ),
+        ] {
+            let mut prefix = Prefix::<(), ()>::new(2);
+            let first = PartitionIdentity::new(1);
+            let later = PartitionIdentity::new(2);
+            assert!(prefix
+                .accept(
+                    first,
+                    TaskOutcome::<(), ()> {
+                        result: TaskResult::new(Err(KernelFailure::Domain(())), Some(first_owner)),
+                        allocation_denial: None,
+                        work: 1,
+                        span: 1,
+                    },
+                    &limits
+                )
+                .is_none());
+            assert!(prefix
+                .accept(
+                    later,
+                    TaskOutcome::<(), ()> {
+                        result: TaskResult::Capacity,
+                        allocation_denial: Some(LeaseDenial::ChargedBytesOverflow),
+                        work: 2,
+                        span: 2,
+                    },
+                    &limits
+                )
+                .is_none());
+            assert_eq!(prefix.owner, Some(NestedStopOwner::Request));
+            assert_eq!(prefix.boundary, Some(first));
+            assert!(
+                matches!(prefix.stop, Some(BatchStop::Failure { identity, cause: KernelFailure::Domain(()) }) if identity == first)
+            );
+            assert_eq!(prefix.work, 1);
+            assert_eq!(prefix.discarded, 2);
+        }
     }
 }

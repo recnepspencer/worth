@@ -85,9 +85,10 @@ pub(super) fn retain_commit_basis(
     let (_, basis) = runtime
         .observe_branch(&branch_identity)
         .expect("committed fixture basis remains owner-observable");
+
     let retention = runtime
         .retain_component_basis(&basis)
-        .expect("committed fixture basis stays within retention capacity");
+        .expect("the committed fixture's native basis remains available");
     provider
         .receipt_basis_retention
         .lock()

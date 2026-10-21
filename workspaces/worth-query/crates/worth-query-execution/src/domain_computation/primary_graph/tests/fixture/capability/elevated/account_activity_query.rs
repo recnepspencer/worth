@@ -2,11 +2,10 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
     ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
     ApplicationQueryInfluenceContract, ApplicationQueryLaneEligibility,
-    ApplicationQueryLiveCauseBinding, ApplicationQueryLiveResourceContract,
-    ApplicationQueryOrderingDirection, ApplicationQueryParameterRef, ApplicationQueryParameterSet,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-    ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
-    TypedApplicationQueryResultShape,
+    ApplicationQueryLiveCauseBinding, ApplicationQueryOrderingDirection,
+    ApplicationQueryParameterRef, ApplicationQueryParameterSet, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ForwardResultTraversal,
+    ManyResults, TypedApplicationQueryResultShape,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationEncodedScalarValue, ApplicationScalarValueBinding, StringApplicationValueBinding,
@@ -111,7 +110,6 @@ pub(in crate::domain_computation::primary_graph) fn elevated_account_activity_de
         .live_by::<Activity, ElevatedAccountActivityCause, _, _, _, _, _, _, _, _>(
             account_identity(),
             activity_identity(),
-            ApplicationQueryLiveResourceContract::bounded(4, 2_048, 4_096),
         )
         .build()
         .unwrap()

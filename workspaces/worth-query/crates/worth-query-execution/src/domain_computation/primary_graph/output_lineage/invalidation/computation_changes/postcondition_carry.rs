@@ -1,16 +1,16 @@
 //! Original/postcondition association issued by the exact retained record and mark image.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_attempt::retained_decision_facts::{StorageControl, StoreDenial},
-    application_checkpoint::facts::FactPayload,
-};
-use worth_execution::{ExecutionArray, ExecutionArrayBuilder, ExecutionMemoryReservation};
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use worth_execution::ChargedBytes;
+use worth_execution::ExecutionArray;
+use worth_execution::ExecutionArrayBuilder;
 use worth_relational::facade::history::RelationalDescriptiveTouchGraph;
 
 /// Candidate-derived coverage and its allocation custody move together.
 pub(in crate::domain_computation::primary_graph) struct SelectedPostconditionRebase {
     pub(in crate::domain_computation::primary_graph) ordinals: OrdSet<usize>,
-    pub(in crate::domain_computation::primary_graph) memory: Option<ExecutionMemoryReservation>,
     pub(in crate::domain_computation::primary_graph) basis:
         super::super::settlement::PostingRebaseBasis,
 }
@@ -83,15 +83,12 @@ impl PostconditionCarry {
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &SnapshotHandle,
-        admission: &mut super::super::InvalidationEditAdmission,
     ) -> Result<bool, CompanionPreflightStop> {
-        self.changes
-            .matches_publication_source(runtime, snapshot, admission)
+        self.changes.matches_publication_source(runtime, snapshot)
     }
     pub(in crate::domain_computation::primary_graph) fn unchanged_payload_bytes(
         &self,
         selected: &OrdSet<usize>,
-        admission: &mut super::super::InvalidationEditAdmission,
     ) -> Result<u64, CompanionPreflightStop> {
         let mut bytes = self.changes.payload_bytes;
         for ordinal in selected
@@ -100,11 +97,7 @@ impl PostconditionCarry {
             .filter(|ordinal| *ordinal < self.prefix)
             .chain(self.prefix..self.changes.postconditions.len())
         {
-            admission.charge_external_work(1)?;
-            let removed = super::super::fact_retention::fact_payload_bytes(
-                &self.changes.postconditions[ordinal],
-                admission,
-            )?;
+            let removed = self.changes.postconditions[ordinal].additional_charged_bytes();
             bytes = bytes
                 .checked_sub(removed)
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
@@ -156,12 +149,7 @@ impl PostconditionCarry {
                 Ok(())
             })?;
         }
-        let bytes = super::super::index_capacity::ordered_edit_bytes::<usize, ()>(maximum)
-            .and_then(|per| per.checked_mul(u64::try_from(maximum).ok()?))
-            .ok_or(StoreDenial::Representability)?;
-        let memory = control.policy().reserve_memory(bytes);
         control.check_live()?;
-        let memory = memory?;
         let mut selected = OrdSet::new();
         for ordinal in self
             .changes
@@ -195,7 +183,6 @@ impl PostconditionCarry {
         let basis = self.posting_basis(&selected);
         Ok(Some(SelectedPostconditionRebase {
             ordinals: selected,
-            memory,
             basis,
         }))
     }
@@ -205,23 +192,10 @@ fn visit(
     control: StorageControl<'_, '_>,
     mut emit: impl FnMut(super::super::fact_key::FactPostingKey) -> Result<(), StoreDenial>,
 ) -> Result<(), StoreDenial> {
-    let held = std::cell::RefCell::new(None);
-    super::super::touch_keys::visit(
-        touch,
-        |bytes| {
-            control.check_live()?;
-            let bytes = u64::try_from(bytes).map_err(|_| StoreDenial::Representability)?;
-            let grant = control.policy().reserve_memory(bytes);
-            control.check_live()?;
-            *held.borrow_mut() = grant?;
-            Ok(())
-        },
-        |key| {
-            crate::domain_computation::primary_graph::fact_verification_observation::rebase_touch_key();
-            control.check_live()?;
-            let result = emit(key);
-            held.borrow_mut().take();
-            result
-        },
-    )
+    control.check_live()?;
+    super::super::touch_keys::visit(touch, |key| {
+        crate::domain_computation::primary_graph::fact_verification_observation::rebase_touch_key();
+        control.check_live()?;
+        emit(key)
+    })
 }

@@ -12,7 +12,7 @@ use worth_proof::CanonicalUniqueVec;
 
 #[test]
 fn copied_node_refuses_at_its_own_exact_funding_boundary_before_any_kernel() {
-    let memory = SerialMemoryBudget::new(1_000_000);
+    let memory = SerialMemoryBudget::new(Some(1_000_000));
     let request = SerialRequest::from_memory(memory.clone(), crate::CancellationToken::new(), None);
     let map = ExecutionMap::<_, ()>::from_keyless_partitions(
         (1..=10)
@@ -32,7 +32,7 @@ fn copied_node_refuses_at_its_own_exact_funding_boundary_before_any_kernel() {
     let RetainedRunOutcome::Complete { run: prior, .. } = map
         .run_retained_run(
             ExecutionRequest::serial(&request),
-            ExecutionWorkCeiling::new(100),
+            ExecutionWorkCeiling::new(Some(100)),
             |v, context| {
                 context.checkpoint(1)?;
                 Ok::<_, MapKernelFailure<()>>(*v)
@@ -57,11 +57,13 @@ fn copied_node_refuses_at_its_own_exact_funding_boundary_before_any_kernel() {
         .unwrap();
     let node = PartitionIdentity::new(if root == 1 { 10 } else { 1 });
     let available = scope + prior.additional_charged_bytes() + node_bytes - 1;
-    let blocker = memory.reserve(memory.limit() - held - available).unwrap();
+    let blocker = memory
+        .reserve(memory.limit().expect("fixture installs finite memory") - held - available)
+        .unwrap();
     let effects = AtomicUsize::new(0);
     let attempt = prior.advance(
         ExecutionRequest::serial(&request),
-        ExecutionWorkCeiling::new(100),
+        ExecutionWorkCeiling::new(Some(100)),
         BTreeMap::from([(
             node,
             KeylessPartition {

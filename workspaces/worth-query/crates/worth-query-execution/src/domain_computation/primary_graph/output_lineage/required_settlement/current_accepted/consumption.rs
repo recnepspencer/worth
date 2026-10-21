@@ -4,10 +4,8 @@ use super::*;
 impl BoundCurrentAcceptedOutput<'_> {
     pub(in crate::domain_computation::primary_graph) fn retain_consumed(
         self,
-        owner: &SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputEvidence, ConsumedOutputVerificationStop> {
-        ConsumedOutputEvidence::retain_bound(self, owner, admission)
+        ConsumedOutputEvidence::retain_bound(self)
     }
 
     pub(in crate::domain_computation::primary_graph) fn consumed_identity(

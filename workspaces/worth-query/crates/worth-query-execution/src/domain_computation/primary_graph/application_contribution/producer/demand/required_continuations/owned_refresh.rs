@@ -9,10 +9,9 @@ impl<Schema: ApplicationSchema + 'static> RequiredContinuations<Schema> {
     pub(in super::super) fn refresh_position(
         &self,
         selected: &SelectedReadyReadmission,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<usize>, WorthQueryOutputDemandDenial> {
         for (index, entry) in self.entries.iter().enumerate().rev() {
-            if entry.predecessor().same_ready_cell(selected, admission)? {
+            if entry.predecessor().same_ready_cell(selected)? {
                 return Ok(Some(index));
             }
         }
@@ -31,7 +30,7 @@ pub(in super::super) fn resume_owned_refresh<Schema: ApplicationSchema + 'static
     branch: crate::basis::WorthQueryProductBranch,
     custody: held::ContinuationCustody<'_, Schema>,
     selected: &SelectedReadyReadmission,
-    admission: &mut InvalidationEditAdmission,
+
     performed: &std::cell::RefCell<PerformedMembers>,
 ) -> Result<Option<held::HeldUpstream>, OwnedRefreshStop> {
     let (custody, contacts) = match custody {
@@ -39,7 +38,7 @@ pub(in super::super) fn resume_owned_refresh<Schema: ApplicationSchema + 'static
         held::ContinuationCustody::Queue(custody) => (custody, None),
     };
     if custody
-        .refresh_position(selected, admission)
+        .refresh_position(selected)
         .map_err(OwnedRefreshStop::Selection)?
         .is_none()
     {
@@ -48,16 +47,16 @@ pub(in super::super) fn resume_owned_refresh<Schema: ApplicationSchema + 'static
     // A reopened attempt may have returned exactly the Ready it replaced.
     // Existing owner cleanup ends that entry before another claim of the Ready.
     custody
-        .end_restored(&runtime.output_demands, admission)
+        .end_restored(&runtime.output_demands)
         .map_err(OwnedRefreshStop::Selection)?;
     let Some(index) = custody
-        .refresh_position(selected, admission)
+        .refresh_position(selected)
         .map_err(OwnedRefreshStop::Selection)?
     else {
         return Ok(Some(held::HeldUpstream::GaveBack));
     };
     held::resume_local(
-        phase, runtime, principal, request, branch, custody, contacts, index, admission, performed,
+        phase, runtime, principal, request, branch, custody, contacts, index, performed,
     )
     .map(Some)
     .map_err(|stop| {

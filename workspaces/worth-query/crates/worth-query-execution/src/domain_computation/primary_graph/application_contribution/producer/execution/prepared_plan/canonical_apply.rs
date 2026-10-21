@@ -64,12 +64,8 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
     /// the cursor. A caller failure or request stop drops the inaccessible suffix.
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn apply(
         self,
-        admission: &mut InvalidationEditAdmission,
-        mut published: impl FnMut(
-            Key,
-            Result<Value, Stop>,
-            &mut InvalidationEditAdmission,
-        ) -> Result<(), Stop>,
+
+        mut published: impl FnMut(Key, Result<Value, Stop>) -> Result<(), Stop>,
         refused: impl FnOnce(
             Key,
             crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
@@ -85,8 +81,8 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
                 Ok(computed) => computed,
                 Err(denial) => return Err(refused(key, denial)),
             };
-            let outcome = computed.finish(|slots| (plan.complete)(slots, admission));
-            published(key, outcome, admission)?;
+            let outcome = computed.finish(|slots| (plan.complete)(slots));
+            published(key, outcome)?;
         }
         Ok(())
     }
@@ -95,15 +91,13 @@ impl<'owner, Key, Value, Stop> CanonicalApplyCursor<'owner, Key, Value, Stop> {
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::execution) fn run_one(
     plan: ProducerExecutionPlan<'_>,
     execution: &QueryRequestExecution<'_>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<ProducerExecutionOutcome, ProducerExecutionStop> {
     let keys = CanonicalUniqueVec::try_from_sorted_unique(vec![()])
         .unwrap_or_else(|_| unreachable!("the singleton key is canonical"));
     let cursor = CanonicalApplyCursor::compute(keys, vec![plan], execution);
     let mut outcome = None;
     cursor.apply(
-        admission,
-        |(), applied, _| {
+        |(), applied| {
             outcome = Some(applied?);
             Ok(())
         },

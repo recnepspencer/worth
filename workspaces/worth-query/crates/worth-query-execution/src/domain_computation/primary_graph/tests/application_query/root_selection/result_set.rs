@@ -188,14 +188,13 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
             assert!(!graph
                 .integration_handle()
                 .with_runtime(request_execution, |runtime| {
-                    fact.source_currentness_within(
+                    fact.source_currentness_in(
                         runtime,
                         &host_custody.borrowed_request_for_test(),
                         current.application_basis().snapshot_handle(),
-                        1,
                     )
                     .unwrap()
-                    .0
+                    .unwrap()
                     .movement()
                         == Movement::Unmoved
                 }))

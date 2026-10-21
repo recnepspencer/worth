@@ -119,12 +119,7 @@ fn install_selected_with_window(demand_key: &str, window: Arc<EnrollmentWindow>)
         configuration,
         // This journey holds historical deliveries and multiple original output
         // owners through ordinary publication.
-        support::limits_with_room(
-            64,
-            64,
-            256,
-            support::invalidation(256 * 1024 * 1024, Some(1_000_000), 64),
-        ),
+        support::limits_with_room(64, 64, 256, support::invalidation()),
         |_phase, graph, installed| {
             let binding = installed
                 .principal_binding(ConsumerPrincipalBinding::reference::<Schema>())

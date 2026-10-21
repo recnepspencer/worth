@@ -139,9 +139,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         view.state
             .requires_entry_refresh(key, product.selected_commit())?;
         self.admit_view_product(view, product)?;
-        let (first_result, _first_claim) =
-            first.into_parts_for(batch).ok_or(Denial::ForeignBatch)?;
-        let mut second_claim = None;
+        let first_result = first.into_result_for(batch).ok_or(Denial::ForeignBatch)?;
         let mut second_denial = None;
         let read = self.read_managed_entry_pair_from_result(
             view,
@@ -149,11 +147,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             key.root(),
             first_result,
             |row| match second_for(row, batch) {
-                Ok(result) => match result.into_parts_for(batch) {
-                    Some((result, claim)) => {
-                        second_claim = Some(claim);
-                        Ok(result)
-                    }
+                Ok(result) => match result.into_result_for(batch) {
+                    Some(result) => Ok(result),
                     None => {
                         second_denial = Some(Denial::ForeignBatch);
                         Err(super::Denial::QueryExecutionDenied)

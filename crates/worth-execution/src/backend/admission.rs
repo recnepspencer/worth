@@ -22,7 +22,7 @@ pub(crate) struct AdmittedBatch<T> {
 /// Immutable identity and capacity truth shared by both input modes.
 pub(crate) struct BatchDeclaration {
     identities: CanonicalUniqueVec<PartitionIdentity>,
-    max_result_bytes: Vec<u64>,
+    max_result_bytes: Option<Vec<u64>>,
     kernel_scratch_bytes: u64,
     declared_result_bytes: u64,
     access_memory_bytes: u64,
@@ -79,10 +79,36 @@ impl<T> AdmittedBatch<T> {
         Some(Self {
             declaration: BatchDeclaration {
                 identities,
-                max_result_bytes,
+                max_result_bytes: Some(max_result_bytes),
                 kernel_scratch_bytes,
                 declared_result_bytes,
                 access_memory_bytes,
+            },
+            values,
+        })
+    }
+
+    pub(crate) fn admit_measured(
+        identities: CanonicalUniqueVec<PartitionIdentity>,
+        values: Vec<T>,
+        access_memory_bytes: u64,
+    ) -> Option<Self> {
+        if identities.as_slice().len() != values.len() {
+            return None;
+        }
+        let holds = u64::try_from(
+            values
+                .len()
+                .checked_mul(size_of::<crate::ExecutionMemoryReservation>())?,
+        )
+        .ok()?;
+        Some(Self {
+            declaration: BatchDeclaration {
+                identities,
+                max_result_bytes: None,
+                kernel_scratch_bytes: 0,
+                declared_result_bytes: 0,
+                access_memory_bytes: access_memory_bytes.checked_add(holds)?,
             },
             values,
         })
@@ -128,7 +154,7 @@ impl Default for BatchDeclaration {
     fn default() -> Self {
         Self {
             identities: CanonicalUniqueVec::from_btree_set(Default::default()),
-            max_result_bytes: Vec::new(),
+            max_result_bytes: Some(Vec::new()),
             kernel_scratch_bytes: 0,
             declared_result_bytes: 0,
             access_memory_bytes: 0,
@@ -145,8 +171,13 @@ impl BatchDeclaration {
         self.identities.as_slice()
     }
 
-    pub(crate) fn result_capacity(&self, index: usize) -> u64 {
-        self.max_result_bytes[index]
+    pub(crate) fn result_capacity(&self, index: usize) -> Option<u64> {
+        self.max_result_bytes
+            .as_ref()
+            .map(|capacities| capacities[index])
+    }
+    pub(crate) fn measures_results(&self) -> bool {
+        self.max_result_bytes.is_none()
     }
 }
 
@@ -242,7 +273,11 @@ impl<T: ChargedBytes> AdmittedBatch<T> {
         values
             .additional_charged_bytes()
             .saturating_add((identities.capacity() * size_of::<PartitionIdentity>()) as u64)
-            .saturating_add(max_result_bytes.additional_charged_bytes())
+            .saturating_add(
+                max_result_bytes
+                    .as_ref()
+                    .map_or(0, ChargedBytes::additional_charged_bytes),
+            )
             .saturating_add(*access_memory_bytes)
     }
 }

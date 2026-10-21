@@ -35,7 +35,6 @@ impl Denial {
             Denial::ForeignRelationalRuntime
             | Denial::ForeignProductWorld
             | Denial::OriginalPublicationCommitMismatch
-            | Denial::BranchCoordinationCapacityExhausted
             | Denial::ProductAdmission
             | Denial::TerminalIndexUnavailable => Retry::PublicationRetryRequired,
         }

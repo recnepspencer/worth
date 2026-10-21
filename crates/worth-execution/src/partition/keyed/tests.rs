@@ -10,7 +10,7 @@ fn funded_group_move_keeps_historical_routes_and_releases_every_grant() {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, 2_000_000, 1_000_000),
+            ExecutionBudget::new(NonZeroUsize::MIN, Some(2_000_000), Some(1_000_000)),
         ),
         cancellation: CancellationToken::new(),
         deadline: None,
@@ -35,7 +35,12 @@ fn funded_group_move_keeps_historical_routes_and_releases_every_grant() {
     assert_eq!(lease.charged_memory_bytes(), held);
     let room = routing.charged_bytes().unwrap() / 3;
     let blocker = lease
-        .reserve_memory(lease.available_memory_bytes() - room)
+        .reserve_memory(
+            lease
+                .available_memory_bytes()
+                .expect("fixture installs finite memory")
+                - room,
+        )
         .unwrap();
     routing
         .upsert_in(
@@ -80,7 +85,11 @@ fn funded_group_move_keeps_historical_routes_and_releases_every_grant() {
     assert_eq!(lease.charged_memory_bytes(), before);
     drop(blocker);
     let blocker = lease
-        .reserve_memory(lease.available_memory_bytes())
+        .reserve_memory(
+            lease
+                .available_memory_bytes()
+                .expect("fixture installs finite memory"),
+        )
         .unwrap();
     assert!(routing
         .upsert_in(

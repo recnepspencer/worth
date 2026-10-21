@@ -1,22 +1,16 @@
 //! An absent position policy retains real, funded native source history.
 use super::*;
-use crate::domain_computation::execution_runtime::{
-    product_world::{test_product_world_resources, WorthQueryProductWorldResources},
-    WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
-};
+use crate::domain_computation::execution_runtime::product_world::test_product_world_resources;
+use crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources;
+use crate::domain_computation::execution_runtime::WorthQueryInvalidationResources;
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::commit_touches::{
-    CommitTouchEntities, CommitTouchInterest,
-};
+use crate::domain_computation::primary_graph::output_lineage::invalidation::commit_touches::CommitTouchEntities;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::commit_touches::CommitTouchInterest;
 
 #[test]
 fn no_position_policy_preserves_funded_history_and_original_reader_currentness() {
     let (_, clock, _, execution) = test_product_world_resources().into_parts();
-    let resources = WorthQueryInvalidationResources::install(
-        WorthQueryInvalidationResourceInstallation::new(None, None, None),
-    )
-    .unwrap();
-    let tracked_resources = resources.clone();
+    let resources = WorthQueryInvalidationResources::new();
     let configured = WorthQueryProductWorldResources::new(
         worth_runtime_world::facade::RuntimeWorldBudgets::without_policy_limits(),
         clock,
@@ -57,9 +51,9 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
             let (original_handle, before) = snapshot(runtime);
             let original_fact = field_fact(&execution, runtime, &original_handle, entity, status.clone());
             register(owner, row.clone(), Arc::from([original_fact.clone()]), &before, OrdSet::new());
-            let cell = owner.cell_for_read(&before, &mut owner.edit_admission()).unwrap().unwrap();
+
+            let cell = owner.cell_for_read(&before).unwrap().unwrap();
             let historical = cell.read_image();
-            let before_bytes = tracked_resources.retained_capacity_bytes();
             for index in 0..300 {
                 write_field(&execution, runtime, entity, label.clone(), &format!("unrelated-{index}"));
             }
@@ -67,13 +61,11 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
             let image = cell.read_image();
             assert!(image.payload().past.len() > 256);
             assert_eq!(image.payload().past.get(&historical.position()).unwrap().root_id, historical.root_id());
-            assert!(tracked_resources.retained_capacity_bytes() > before_bytes,
-                "absence keeps the new history backing funded");
+
             assert!(matches!(currentness(owner, &after, &row), SourceSettlementCurrentness::Clean));
             assert_eq!(field_fact(&execution, runtime, &original_handle, entity, status.clone()), original_fact);
             let batch = owner.touched_commits_after(after.branch_id(), historical.position(), after.commit_id(), 300,
-                CommitTouchInterest { entities: CommitTouchEntities::Slice(&[]), every_commit: true })
-                .expect("an absent window has not evicted its original cursor");
+                CommitTouchInterest { entities: CommitTouchEntities::Slice(&[]), every_commit: true });
             assert_eq!(batch.commits.len(), 300);
             assert!(batch.caught_up_to_latest);
             write_field(&execution, runtime, entity, status, "closed");
@@ -82,13 +74,7 @@ fn no_position_policy_preserves_funded_history_and_original_reader_currentness()
             for snapshot in [original_handle, after_handle, changed_handle] {
                 runtime.snapshots().release_snapshot(&snapshot).unwrap();
             }
-            println!("no-policy Query: retained_positions={}, retained_bytes={}", image.payload().past.len(), tracked_resources.retained_capacity_bytes());
         });
     }).unwrap();
     drop(world);
-    assert_eq!(
-        tracked_resources.retained_capacity_bytes(),
-        0,
-        "the last native history owner releases its funded backing"
-    );
 }

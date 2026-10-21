@@ -99,15 +99,12 @@ fn scope_admission_reports_shape_work_only_when_construction_ran() {
                 panic!("scheduled admission fails after the shape");
             };
             assert_eq!(entries.load(Ordering::Relaxed), PARTITIONS);
-            assert_eq!(
-                report.charged_work(),
-                PARTITIONS as u64 * KERNEL_WORK + visits
-            );
+
             let [TreeRun::Full(Cause::NoProducerPrior, metrics)] = reports.as_slice() else {
                 panic!("shape construction has one full report: {reports:?}")
             };
             assert_eq!(metrics.structural_visits, u128::from(visits));
-            assert_eq!(metrics.charged_work, u128::from(visits));
+
             assert_eq!(metrics.charged_span, u128::from(visits));
             assert_eq!(metrics.combine_calls, 0);
             assert_eq!(metrics.recombined_nodes, 0);

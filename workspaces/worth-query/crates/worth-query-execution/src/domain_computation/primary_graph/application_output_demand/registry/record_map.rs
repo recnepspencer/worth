@@ -1,7 +1,10 @@
 //! Demand rows and observation of whole-map traversal, at the map owner.
-use super::{DemandRecord, WorthQueryOutputDemandKey};
+use super::DemandRecord;
+use super::WorthQueryOutputDemandKey;
 use std::collections::BTreeMap;
-use std::ops::Bound::{Excluded, Included, Unbounded};
+use std::ops::Bound::Excluded;
+use std::ops::Bound::Included;
+use std::ops::Bound::Unbounded;
 mod mutation;
 pub(super) use mutation::RecordMutation;
 type Map = BTreeMap<WorthQueryOutputDemandKey, DemandRecord>;
@@ -216,22 +219,6 @@ impl DemandRecords {
             ));
         }
     }
-
-    /// One worst-case ordered node for each of the source index's two levels,
-    /// funded by each row even when its coordinate is shared with other rows.
-    pub(super) fn source_index_bytes(key: &WorthQueryOutputDemandKey) -> Option<usize> {
-        let coordinate=std::mem::size_of::<crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceCoordinate>();
-        let outer = 12
-            * (coordinate
-                + std::mem::size_of::<std::collections::BTreeSet<WorthQueryOutputDemandKey>>())
-            + 14 * std::mem::size_of::<usize>();
-        let inner = 12 * std::mem::size_of::<WorthQueryOutputDemandKey>()
-            + 14 * std::mem::size_of::<usize>();
-        outer
-            .checked_add(inner)?
-            .checked_add(super::publication_head::PublicationHeads::node_bytes())?
-            .checked_add(key.producer.len())
-    }
 }
 impl From<Map> for DemandRecords {
     fn from(map: Map) -> Self {
@@ -326,31 +313,23 @@ impl<'a, I: Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a mut DemandRecord
 }
 
 impl DemandRecords {
-    pub(super) fn admit_publication_head_insertion(
-        &self,
-        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
-    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial> {
-        self.3.admit_insertion(admission)
-    }
     pub(super) fn publication_counter(
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<
         std::sync::Arc<std::sync::atomic::AtomicUsize>,
         crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
     > {
-        self.3.counter(occurrence, admission)
+        self.3.counter(occurrence)
     }
     pub(super) fn publication_selection(
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<
         super::PublicationHeadSelection,
         crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
     > {
-        self.3.selection(occurrence, admission)
+        self.3.selection(occurrence)
     }
 }
 

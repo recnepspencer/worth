@@ -41,7 +41,7 @@ fn lease(bytes: u64, cancellation: CancellationToken) -> ExecutionResourceLease<
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, bytes, 1_000_000),
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(bytes), Some(1_000_000)),
         ),
         cancellation,
         deadline: None,

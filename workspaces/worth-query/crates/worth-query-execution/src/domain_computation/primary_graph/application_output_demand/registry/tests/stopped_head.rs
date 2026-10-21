@@ -49,7 +49,7 @@ fn stopped_head_is_released_by_every_finish_route() {
                 }
                 2 => {
                     let (finish, claim, checkpoint) = registry
-                        .prepare_selected_checkpoint_finish(&owner, &mut record_admission())
+                        .prepare_selected_checkpoint_finish(&owner)
                         .unwrap()
                         .claim()
                         .unwrap()

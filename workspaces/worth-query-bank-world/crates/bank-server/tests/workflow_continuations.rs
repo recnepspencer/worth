@@ -80,7 +80,7 @@ fn initiation_recovers_one_continuation_and_a_fresh_approver_starts_its_workflow
         .runtime
         .query(queries::pending_payments())
         .as_principal(&approver)
-        .controls(BankReadControls::current(request_scope(), 16, 10_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 16).unwrap())
         .execute()
         .unwrap();
     let summary = result
@@ -353,7 +353,7 @@ fn pending_continuation(
         .runtime
         .query(queries::pending_payments())
         .as_principal(principal)
-        .controls(BankReadControls::current(request_scope(), 16, 10_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 16).unwrap())
         .execute()
         .expect("pending payments must be readable");
     let summary = result

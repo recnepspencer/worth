@@ -1,6 +1,3 @@
-use super::super::refreshed_rejoin::infallible;
-use super::super::refreshed_rejoin::OccurrenceSearchCharge;
-use super::walk_charge::PostCommitSweep;
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
@@ -14,9 +11,10 @@ impl WorthQueryOutputDemandRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         // World already retired this incarnation; this entry carries no completion receipt.
-        let mut sweep = PostCommitSweep::after_effect();
+
         state.note_custody_changes(|_, custody| {
-            infallible(sweep.inspect_row());
+            #[cfg(test)]
+            super::retirement_observation::record_sweep_contact();
             if custody.occurrence == occurrence {
                 custody.retire(WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::Closed,
@@ -33,7 +31,8 @@ impl WorthQueryOutputDemandRegistry {
         // Mark retained rows terminal before draining their descendants. A
         // descendant can release the final framework pin during this walk.
         for mut record in state.records.values_mut() {
-            infallible(sweep.inspect_row());
+            #[cfg(test)]
+            super::retirement_observation::record_sweep_contact();
             if record.product_occurrence != occurrence
                 || (record.interests == 0
                     && record.framework_required_count == 0
@@ -53,46 +52,28 @@ impl WorthQueryOutputDemandRegistry {
             record.readmission_source.take();
             record.wake.notify();
         }
-        infallible(state.release_matching_prerequisites(
-            |_, record| record.product_occurrence == occurrence,
-            &mut sweep,
-        ));
-        let mut released_bytes = 0;
+        state.release_matching_prerequisites(|_, record| record.product_occurrence == occurrence);
         let DemandRegistryState {
             records,
             required_keys,
-            required_reserved_bytes,
             ..
         } = &mut *state;
         records.retain(|key, record| {
-            infallible(sweep.inspect_row());
+            #[cfg(test)]
+            super::retirement_observation::record_sweep_contact();
             if record.product_occurrence != occurrence {
                 return true;
             }
             if unheld_retired_row(record) {
-                released_bytes += record.obligation_reserved_bytes();
-                if let Some(member) = required_keys.take(key) {
-                    *required_reserved_bytes = required_reserved_bytes.saturating_sub(
-                        super::required_members::member_bytes(member.as_ref())
-                            .expect("admitted key charge fits"),
-                    );
-                }
+                required_keys.take(key);
                 return false;
             }
-            released_bytes += record.release_obligations();
-            if !record.is_required()
-                && let Some(member) = required_keys.take(key)
-            {
-                *required_reserved_bytes = required_reserved_bytes.saturating_sub(
-                    super::required_members::member_bytes(member.as_ref())
-                        .expect("admitted key charge fits"),
-                );
+            record.release_obligations();
+            if !record.is_required() {
+                required_keys.take(key);
             }
             true
         });
-        state.obligation_reserved_bytes = state
-            .obligation_reserved_bytes
-            .saturating_sub(released_bytes);
         drop(state);
         drop(retired_cursors);
     }
@@ -107,7 +88,9 @@ fn unheld_retired_row(record: &DemandRecord) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::super::super::tests::{key, record, record_admission};
+    use super::super::super::tests::key;
+    use super::super::super::tests::record;
+
     use super::*;
     use crate::domain_computation::primary_graph::tests::recoverable_commit_support;
     #[test]
@@ -136,10 +119,13 @@ mod tests {
             }
             Arc::clone(&state.records[&held].wake)
         };
-        let before = super::super::walk_charge::sweep_contacts();
+        let before = super::super::retirement_observation::sweep_contacts();
         registry.release_product_occurrence(receipt.product_branch().occurrence());
         // Four three-row passes; the owned notes are untouched by record retain.
-        assert_eq!(super::super::walk_charge::sweep_contacts() - before, 12);
+        assert_eq!(
+            super::super::retirement_observation::sweep_contacts() - before,
+            12
+        );
         {
             let state = registry.state.lock().unwrap();
             assert_eq!(state.records.len(), 1);
@@ -152,9 +138,7 @@ mod tests {
             notifications: WorthQueryOutputDemandNotifications { wake },
             owner: registry.clone(),
         });
-        registry
-            .drain_closed_cleanup_admitted(&mut record_admission())
-            .unwrap();
+        registry.drain_closed_cleanup_admitted().unwrap();
         let state = registry.state.lock().unwrap();
         assert!(state.records.is_empty());
         assert_eq!(state.closed_cleanup.len(), 0);
@@ -204,9 +188,9 @@ mod tests {
                 );
             }
             drop(state);
-            let before = super::super::walk_charge::sweep_contacts();
+            let before = super::super::retirement_observation::sweep_contacts();
             registry.release_product_occurrence(receipts[0].product_branch().occurrence());
-            contacts.push(super::super::walk_charge::sweep_contacts() - before);
+            contacts.push(super::super::retirement_observation::sweep_contacts() - before);
             assert!(registry
                 .state
                 .lock()

@@ -48,17 +48,8 @@ fn journey(
     take_decisions("diamond-join");
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    let application = support::install_program_with_seed::<program::ChainProgram>(
-        None,
-        profile,
-        4096,
-        128 * 1024 * 1024,
-        profile
-            .limits()
-            .source_currentness_work()
-            .map(|work| u64::try_from(work).unwrap()),
-        seed,
-    );
+    let application =
+        support::install_program_with_seed::<program::ChainProgram>(None, profile, 4096, seed);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut left = request
@@ -182,11 +173,6 @@ fn an_initial_consumer_finishes_the_requested_middle_before_its_own_decision() {
         None,
         profile,
         4096,
-        128 * 1024 * 1024,
-        profile
-            .limits()
-            .source_currentness_work()
-            .map(|work| u64::try_from(work).unwrap()),
         super::super::source_world::seed,
     );
     let (scope, principal) = authenticate(&application);
@@ -238,7 +224,7 @@ macro_rules! sibling_tree {
         let _guard = checkpoint_recovery_test_guard();
         take_all_decisions();
         let mut application = support::install_program_with_seed::<$program>(
-            None, Default::default(), 4096, 128 * 1024 * 1024, None,
+            None, Default::default(), 4096,
             super::super::source_world::seed,
         );
         let (scope, principal) = authenticate(&application);

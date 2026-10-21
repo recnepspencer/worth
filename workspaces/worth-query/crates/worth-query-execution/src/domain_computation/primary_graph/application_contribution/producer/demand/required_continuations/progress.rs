@@ -44,10 +44,6 @@ impl<'caller, Schema> PreparedRequiredContinuationSlot<'caller, Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in super::super) fn installation_work(&self) -> u64 {
-        self.installation_work
-    }
-
     /// Install `progress` as the last entry, ending any it supersedes.
     pub(super) fn push(
         mut self,
@@ -64,16 +60,11 @@ where
         // additional entry ends unused with its ticket.
         if self.caller.entries.len() < self.caller.entries.capacity() {
             drop(self.replacement.take());
-            drop(self.capacity.take());
         }
         if let Some(mut replacement) = self.replacement.take() {
             replacement.append(&mut self.caller.entries);
             let retired_entries = std::mem::replace(&mut self.caller.entries, replacement);
-            let retired_capacity =
-                std::mem::replace(&mut self.caller.capacity, self.capacity.take());
-            // The retired Vec backing dies before its final credit is refunded.
             drop(retired_entries);
-            drop(retired_capacity);
         }
         let caller = self.caller;
         caller.entries.push(progress);
@@ -92,14 +83,12 @@ where
         registry: &WorthQueryOutputDemandRegistry,
         requested: &crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead,
         selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         crate::domain_computation::primary_graph::application_output_demand::PendingUpstream,
         WorthQueryOutputDemandDenial,
     > {
         let mut claims = RequestedOutputReadClaims::default();
-        let upstream =
-            registry.requested_ready_readmission(requested, selected, admission, &mut claims)?;
+        let upstream = registry.requested_ready_readmission(requested, selected, &mut claims)?;
         self.entries
             .last_mut()
             .expect("Fresh refusal retains its installed typed successor")
@@ -117,13 +106,12 @@ where
     pub(super) fn end_restored(
         &mut self,
         registry: &WorthQueryOutputDemandRegistry,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let mut index = 0;
         while let Some(entry) = self.entries.get_mut(index) {
-            entry.successor.follow_refresh(registry, admission)?;
+            entry.successor.follow_refresh(registry)?;
             let restored = registry
-                .interest_ready_readmission(entry.interest(), admission)?
+                .interest_ready_readmission(entry.interest())?
                 .is_some_and(|ready| {
                     ready
                         .completion()
@@ -137,28 +125,6 @@ where
         }
         Ok(())
     }
-    /// End every entry. Whether one of them had published: its row answers
-    /// Ready on its own, and the predecessor Ready it kept for the wave is
-    /// custody the next advance does not hold. The stop of a lookup the
-    /// request cannot pay for keeps the entries.
-    pub(in super::super) fn end_all(
-        &mut self,
-        registry: &WorthQueryOutputDemandRegistry,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        let mut published = false;
-        for entry in &self.entries {
-            let ready = registry.interest_ready_readmission(entry.interest(), admission)?;
-            published |= ready.is_some_and(|ready| {
-                !ready
-                    .completion()
-                    .same_cell(entry.predecessor().completion())
-            });
-        }
-        drop(self.take_all());
-        Ok(published)
-    }
-
     /// A queue frame refused required custody does not wait holding it, as
     /// a caller does not: the refreshes this wave's frames carried end here.
     /// Each unpublished row goes back to the Ready it replaced, so every

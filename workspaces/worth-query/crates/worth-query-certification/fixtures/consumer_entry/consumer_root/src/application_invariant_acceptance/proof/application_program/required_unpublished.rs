@@ -73,7 +73,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
             "model-owner",
         ),
     ];
-    let mut world = installation::install_with_roster(foreign, 4096, roster, &grants).unwrap();
+    let mut world = installation::install_with_roster(foreign, roster, &grants).unwrap();
     let request_runtime = world.application.clone();
     let constructing = std::mem::replace(&mut world.application, request_runtime);
     let adapter = authentication::admit(world.application.installed_schema());
@@ -232,15 +232,11 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     drop(observations);
     use worth_query_host::facade::application_entry::WorthQueryOperationDeliveryPolicy;
     let one = NonZeroUsize::new(1).unwrap();
-    assert!(
-        matches!(settled.read_current_with_policy(&request, WorthQueryOperationDeliveryPolicy::currentness(one)),
-        Err(WorthQueryOperationDeliveryDenial::Currentness(worth_query_host::facade::application_entry::WorthQueryOutputCurrentnessDenial::Output(denial)))
-        if matches!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))
-    );
+
     let stopped_query = settled
         .read_current_with_policy(
             &request,
-            WorthQueryOperationDeliveryPolicy::default().query(one, one),
+            WorthQueryOperationDeliveryPolicy::default().query(NonZeroUsize::new(2).unwrap()),
         )
         .map(|_| ());
     assert!(

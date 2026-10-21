@@ -94,17 +94,13 @@ impl CompletedComputationRun {
                 .as_ref()
                 .and_then(|carried| carried.prior.checked_calls.as_ref()),
         );
-        let bytes = self
-            .typed_bytes
-            .zip(facts.charged_bytes())
-            .and_then(|(typed, facts)| typed.checked_add(facts));
+
         Ok(SealedComputationRetention::Produced(SealedComputationRun {
             state: RetainedComputation {
                 basis: self.basis,
                 typed: self.typed,
                 facts,
                 checked_calls,
-                bytes,
             },
             cloned_from: self.carried.map(|carried| carried.prior),
             tree_memory: RunTreeMemory {

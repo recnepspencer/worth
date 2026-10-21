@@ -1,20 +1,21 @@
 mod canonical_identity;
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 
-use worth_foundational::facade::{AspectFieldLocator, AspectValue, CanonicalDigestId};
-use worth_query_declaration::facade::application_schema::{
-    ApplicationMutationPreconditionFamily, TypedMutationPreconditions,
-};
-use worth_query_installation::facade::{
-    WorthQueryCanonicalWorkEvidence, WorthQueryCompiledApplicationOperationContracts,
-};
+use worth_foundational::facade::AspectFieldLocator;
+use worth_foundational::facade::AspectValue;
+use worth_foundational::facade::CanonicalDigestId;
+use worth_query_declaration::facade::application_schema::ApplicationMutationPreconditionFamily;
+use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
+use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
+use worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts;
 use worth_relational::facade::identity::EntityId;
-use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-use super::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
+use super::WorthQueryApplicationFactKey;
+use super::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
-use crate::domain_computation::primary_graph::InvalidationEditAdmission;
+
 use canonical_identity::prepare_precondition_identity;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -112,15 +113,7 @@ pub(in crate::domain_computation) fn bind_empty_mutation_preconditions_admitted<
     Scope,
 >(
     requested: TypedMutationPreconditions<Schema, Operation, Scope>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<WorthQueryBoundMutationPreconditions, EmptyMutationPreconditionAdmissionStop> {
-    let work = std::mem::size_of::<WorthQueryBoundMutationPreconditions>()
-        .checked_add(3)
-        .and_then(|n| u64::try_from(n).ok())
-        .ok_or(EmptyMutationPreconditionAdmissionStop::AccountingOverflow)?;
-    admission
-        .charge_external_work(work)
-        .map_err(EmptyMutationPreconditionAdmissionStop::Admission)?;
     if !requested.entries().is_empty() {
         return Err(EmptyMutationPreconditionAdmissionStop::Nonempty);
     }
@@ -129,8 +122,6 @@ pub(in crate::domain_computation) fn bind_empty_mutation_preconditions_admitted<
 
 #[derive(Debug)]
 pub(in crate::domain_computation) enum EmptyMutationPreconditionAdmissionStop {
-    Admission(CompanionPreflightStop),
-    AccountingOverflow,
     Nonempty,
 }
 

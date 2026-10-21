@@ -36,14 +36,6 @@ pub(super) fn workflow_read_denial(
     maximum_selection_work: usize,
 ) -> WorthQueryBranchAdoptionPreparationDenial {
     match denial {
-        WorkflowAdoptionReadDenial::Preparation(cause) => match cause {
-            worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause) =>
-                workflow_read_denial(WorkflowAdoptionReadDenial::ReadExecution(cause), maximum_selection_work),
-            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
-            | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. } =>
-                selection_limit(maximum_selection_work),
-            cause => WorthQueryBranchAdoptionPreparationDenial::WorkflowInventoryPreparation(cause),
-        },
         WorkflowAdoptionReadDenial::ReadExecution(cause) => {
             WorthQueryBranchAdoptionPreparationDenial::ReadExecution(
                 crate::facade::primary_graph::relational_execution_kind(cause, None),

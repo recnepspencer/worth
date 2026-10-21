@@ -13,9 +13,10 @@
 //! discloses. A recovery by the write's receipt then answers that the
 //! publication retains no output custody, and an ordinary demand serves it.
 
-use super::super::{DemandRegistryState, SourceCustody, WorthQueryPerformedOutputDemandSource};
-use super::cached_reclaim::work_denial;
-use crate::domain_computation::primary_graph::InvalidationEditAdmission;
+use super::super::DemandRegistryState;
+use super::super::SourceCustody;
+use super::super::WorthQueryPerformedOutputDemandSource;
+
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 /// What a released performed source kept. It drops after the registry lock
@@ -30,17 +31,7 @@ impl DemandRegistryState {
     /// and no demand of a row it admitted holds.
     pub(in super::super) fn release_unheld_performed_source(
         &mut self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ReleasedPerformedSource>, WorthQueryOutputDemandDenial> {
-        let mut charge = |work: usize| {
-            let work = u64::try_from(work).map_err(|_| work_denial())?;
-            admission
-                .charge_external_work(work)
-                .map_err(|_| work_denial())
-        };
-        // Commit order fixes which candidate comparisons are charged. After
-        // the oldest unheld source, later commits cannot replace it.
-        charge(self.source_custody.len())?;
         let mut oldest = None;
         for (commit, custody) in &self.source_custody {
             if custody.token_count != 0
@@ -49,7 +40,7 @@ impl DemandRegistryState {
             {
                 continue;
             }
-            charge(self.records.len())?;
+
             if !self.records.values().any(|record| {
                 record.source_commits.contains(commit)
                     && (record.interests != 0 || record.required_interests != 0)
@@ -60,7 +51,7 @@ impl DemandRegistryState {
         let Some(commit) = oldest.cloned() else {
             return Ok(None);
         };
-        charge(self.records.len())?;
+
         let custody = self
             .remove_custody(&commit)
             .expect("the selected source is retained");

@@ -38,7 +38,7 @@ fn automatic_sparse_frontier_uses_existing_workers_and_joins_native_settlement()
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 1 << 20, 100_000),
+                ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), Some(1 << 20), Some(100_000)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),
@@ -48,7 +48,7 @@ fn automatic_sparse_frontier_uses_existing_workers_and_joins_native_settlement()
     let RetainedRunOutcome::Complete { run: prior, .. } = map
         .run_retained_run(
             ExecutionRequest::leased(&lease),
-            ExecutionWorkCeiling::new(100_000),
+            ExecutionWorkCeiling::new(Some(100_000)),
             |value, context| {
                 context.checkpoint(5)?;
                 Ok::<_, MapKernelFailure<()>>(*value * 10)
@@ -66,7 +66,7 @@ fn automatic_sparse_frontier_uses_existing_workers_and_joins_native_settlement()
     } = prior
         .advance(
             ExecutionRequest::leased(&lease),
-            ExecutionWorkCeiling::new(100_000),
+            ExecutionWorkCeiling::new(Some(100_000)),
             entries([2, 99]),
             CanonicalUniqueVec::try_from_sorted_unique(Vec::new()).unwrap(),
             |value, context| {

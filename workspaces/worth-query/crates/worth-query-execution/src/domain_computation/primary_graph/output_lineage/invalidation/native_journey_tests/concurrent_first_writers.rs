@@ -126,17 +126,14 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
             .publication_companion_port()
             .begin_required_registration()
             .unwrap()
-            .activate(
-                Arc::new(FirstWriterGate {
-                    owner: Arc::clone(&owner),
-                    entered: AtomicUsize::new(0),
-                    first_ready,
-                    release_first: std::sync::Mutex::new(wait_release),
-                    second_ready,
-                    first_done: std::sync::Mutex::new(wait_done),
-                }),
-                owner.resources.preflight_budget(),
-            )
+            .activate(Arc::new(FirstWriterGate {
+                owner: Arc::clone(&owner),
+                entered: AtomicUsize::new(0),
+                first_ready,
+                release_first: std::sync::Mutex::new(wait_release),
+                second_ready,
+                first_done: std::sync::Mutex::new(wait_done),
+            }))
             .unwrap();
         let first = candidate(
             request_execution,

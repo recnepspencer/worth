@@ -39,9 +39,6 @@ where
             || delivery
                 .read()
                 .is_some_and(|read| read.limits().maximum_results() == 0)
-            || delivery
-                .read()
-                .is_some_and(|read| read.limits().maximum_work() == Some(0))
         {
             return Err(denial(
                 ApplicationProgramValidationDenialKind::InvalidActionDelivery,

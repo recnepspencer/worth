@@ -2,27 +2,25 @@
 
 use std::sync::Arc;
 
-use worth_relational::facade::{
-    mvcc::{
-        CompanionBranchCell, CompanionBranchImage, CompanionCellEditStop, CompanionPreflightStop,
-    },
-    runtime::{PositionedRelationalSnapshot, RelationalRuntime},
-    snapshots::SnapshotHandle,
-};
+use worth_relational::facade::mvcc::CompanionBranchCell;
+use worth_relational::facade::mvcc::CompanionBranchImage;
+use worth_relational::facade::mvcc::CompanionCellEditStop;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::super::RecordedSettlementIdentity;
-use super::{
-    admission::IndexAdmission,
-    derived::{
-        PreparedSettlementRegistration, SettlementRegistrationCleanup, SettlementRegistrationStop,
-        StoppedSettlementRegistration,
-    },
-    equality, index_capacity,
-    mark_state::{FullVerificationReason, MarkState, SettlementCurrentness},
-    read_basis_carry, retention,
-    source_alignment::{BranchMarkRoot, SnapshotAlignedMarkState},
-    InvalidationEditAdmission, SourceInvalidationOwner,
-};
+use super::derived::PreparedSettlementRegistration;
+use super::derived::SettlementRegistrationCleanup;
+use super::derived::SettlementRegistrationStop;
+use super::derived::StoppedSettlementRegistration;
+use super::equality;
+use super::mark_state::FullVerificationReason;
+use super::mark_state::SettlementCurrentness;
+use super::read_basis_carry;
+use super::source_alignment::BranchMarkRoot;
+use super::source_alignment::SnapshotAlignedMarkState;
+use super::SourceInvalidationOwner;
 
 pub(in crate::domain_computation::primary_graph) enum PreparedVerifiedCurrent {
     AlreadyCurrent {
@@ -112,14 +110,7 @@ impl SourceInvalidationOwner {
         selected: &PositionedRelationalSnapshot,
         identity: &Arc<RecordedSettlementIdentity>,
         expected_facts: &super::super::ComparableSourceFacts,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<PreparedVerifiedCurrent>, SettlementRegistrationStop> {
-        let branch_work = u64::try_from(selected.branch_id().0.len())
-            .ok()
-            .and_then(|len| len.checked_add(1))
-            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        admission.work(branch_work)?;
-        admission.bytes(selected.branch_id().0.len() as u64)?;
         let actual = runtime
             .read_truth()
             .positioned_snapshot(snapshot)
@@ -127,9 +118,11 @@ impl SourceInvalidationOwner {
         if &actual != selected || selected.runtime_instance_id() != self.runtime_instance_id {
             return Err(SettlementRegistrationStop::Foreign);
         }
-        let cell = self.cell_for_read(selected, admission)?.ok_or(
-            SettlementRegistrationStop::Alignment(FullVerificationReason::MissingSettlement),
-        )?;
+        let cell = self
+            .cell_for_read(selected)?
+            .ok_or(SettlementRegistrationStop::Alignment(
+                FullVerificationReason::MissingSettlement,
+            ))?;
         let image = cell.read_image();
         if image.root_id() != selected.root_id()
             || image.commit_id() != selected.commit_id()
@@ -137,15 +130,15 @@ impl SourceInvalidationOwner {
         {
             return Ok(None);
         }
-        admission.ordered_read(image.payload().past.len())?;
+
         let aligned = SnapshotAlignedMarkState::observe_image(&image, selected)
             .map_err(SettlementRegistrationStop::Alignment)?;
-        admission.ordered_read(aligned.settlement_count())?;
+
         if !matches!(aligned.currentness(identity), SettlementCurrentness::Clean) {
             return Ok(None);
         }
         let state = &image.payload().current;
-        admission.ordered_read(state.settlements.len())?;
+
         let Some(row) = state.settlements.get(identity) else {
             return Ok(None);
         };
@@ -158,16 +151,13 @@ impl SourceInvalidationOwner {
             return Ok(None);
         }
 
-        admission.ordered_read(state.downstream.len())?;
         let mut has_pending = false;
         if let Some(targets) = state.downstream.get(identity) {
             for target in targets {
-                admission.work(1)?;
-                admission.ordered_read(state.settlements.len())?;
                 let Some(target_row) = state.settlements.get(target) else {
                     continue;
                 };
-                admission.ordered_read(target_row.pending_upstream.len())?;
+
                 if target_row.pending_upstream.contains(identity) {
                     has_pending = true;
                     break;
@@ -184,35 +174,22 @@ impl SourceInvalidationOwner {
             }));
         }
 
-        let before = admission.index_checkpoint();
-        admission.bytes(
-            index_capacity::arc_bytes::<MarkState>()
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-        )?;
         let mut next = (**state).clone();
         if carried {
-            read_basis_carry::carry_row(
-                &mut next, &aligned, selected, &mut None, identity, admission,
-            )?;
+            read_basis_carry::carry_row(&mut next, &aligned, selected, &mut None, identity)?;
         }
         if has_pending {
-            equality::discharge_selected_downstream(&mut next, identity, admission)?;
+            equality::discharge_selected_downstream(&mut next, identity)?;
         }
-        let prepared = retention::admit_live_replacement(
-            image.payload(),
-            next,
-            before,
-            &self.resources,
-            admission,
-        )
-        .map_err(SettlementRegistrationStop::from)
-        .and_then(|root| self.prepare_root_replacement(cell, image, Arc::new(root), admission));
+        let prepared = Ok::<_, SettlementRegistrationStop>({
+            let mut root = (**image.payload()).clone();
+            root.current = Arc::new(next);
+            root
+        })
+        .and_then(|root| self.prepare_root_replacement(cell, image, Arc::new(root)));
         match prepared {
             Ok(prepared) => Ok(Some(PreparedVerifiedCurrent::LiveEdit(prepared))),
-            Err(stop) => {
-                self.evict_after_refused_edit(selected, &stop, admission);
-                Err(stop)
-            }
+            Err(stop) => Err(stop),
         }
     }
 }

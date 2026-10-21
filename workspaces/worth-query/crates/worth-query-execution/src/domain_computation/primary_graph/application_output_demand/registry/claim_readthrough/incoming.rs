@@ -1,8 +1,10 @@
 //! A funded edge is owned by its batch and linked at its current upstream.
 use super::super::cleanup::closed_notes::ClosedNoteBacking;
-use super::super::record_capacity::RecordCapacity;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::Weak;
 
 #[derive(Default)]
 pub(in super::super) struct IncomingClaims {
@@ -14,7 +16,6 @@ struct ClaimLink {
     published: Arc<AtomicBool>,
     target: Mutex<Weak<ClosedNoteBacking>>,
     links: Mutex<Links>,
-    _capacity: Arc<RecordCapacity>,
 }
 #[derive(Default)]
 struct Links {
@@ -25,26 +26,11 @@ struct Links {
 pub(in super::super) struct ClaimBatch {
     edges: Vec<Arc<ClaimLink>>,
     published: Arc<AtomicBool>,
-    _capacity: Arc<RecordCapacity>,
-}
-fn arc_bytes<T>() -> Option<usize> {
-    let (layout, _) = std::alloc::Layout::new::<[usize; 2]>()
-        .extend(std::alloc::Layout::new::<T>())
-        .ok()?;
-    Some(layout.pad_to_align().size())
-}
-pub(super) fn batch_bytes(count: usize) -> Option<usize> {
-    arc_bytes::<RecordCapacity>()?
-        .checked_add(arc_bytes::<AtomicBool>()?)?
-        .checked_add(count.checked_mul(
-            arc_bytes::<ClaimLink>()?.checked_add(std::mem::size_of::<Arc<ClaimLink>>())?,
-        )?)
 }
 impl ClaimBatch {
     pub(super) fn prepare(
         owner: &Arc<ClosedNoteBacking>,
         targets: impl ExactSizeIterator<Item = Arc<ClosedNoteBacking>>,
-        capacity: Arc<RecordCapacity>,
     ) -> Self {
         let published = Arc::new(AtomicBool::new(false));
         let mut edges = Vec::with_capacity(targets.len());
@@ -54,14 +40,9 @@ impl ClaimBatch {
                 published: Arc::clone(&published),
                 target: Mutex::new(Arc::downgrade(&target)),
                 links: Default::default(),
-                _capacity: Arc::clone(&capacity),
             }));
         }
-        Self {
-            edges,
-            published,
-            _capacity: capacity,
-        }
+        Self { edges, published }
     }
     pub(in super::super) fn install(&self) {
         for edge in &self.edges {
@@ -143,20 +124,10 @@ impl ClaimLink {
     }
 }
 impl IncomingClaims {
-    /// O(1) per incoming claim; no claimant discovery or registry pass.
-    pub(in super::super) fn len(&self) -> usize {
-        self.len
-    }
-    pub(in super::super) fn closed_published<
-        C: super::super::refreshed_rejoin::OccurrenceSearchCharge,
-    >(
-        &self,
-        charge: &mut C,
-    ) -> Result<usize, C::Refusal> {
+    pub(in super::super) fn closed_published(&self) -> usize {
         let mut count = 0;
         let mut edge = self.first.clone();
         while let Some(current) = edge {
-            charge.inspect_row()?;
             if current.published.load(Ordering::Acquire)
                 && current.owner.upgrade().is_some_and(|owner| {
                     let state = *owner.claim_owner.lock().unwrap();
@@ -167,6 +138,6 @@ impl IncomingClaims {
             }
             edge = current.links.lock().unwrap().next.clone();
         }
-        Ok(count)
+        count
     }
 }

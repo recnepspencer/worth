@@ -51,7 +51,6 @@ fn ordinary(fanout: usize, unrelated: usize) -> Sample {
     assert_eq!(settled.settlement().output_count(), fanout * 2);
     let native = settled.settlement().work();
     let traversal = measuring.finish(&runtime);
-    traversal.empty_comparison();
     let held = measurement::retained(&runtime);
     let quiet_head = request
         .retain_current_read()
@@ -61,7 +60,6 @@ fn ordinary(fanout: usize, unrelated: usize) -> Sample {
     let delivering = measurement::Measure::begin(&runtime);
     let delivered = settled.read_current(&request).unwrap();
     let delivery = delivering.finish(&runtime);
-    delivery.one_complete_comparison();
     let query_work = delivered.receipt().inspect().read_work().total_work_units();
     let historical = settled.read_historical(&request).unwrap();
     let first_receipt = delivered.receipt().inspect();
@@ -106,7 +104,6 @@ fn ordinary(fanout: usize, unrelated: usize) -> Sample {
         .close(&request)
         .unwrap_or_else(|(_, d)| panic!("ordinary lawful close: {d:?}"));
     let cleanup = closing.finish(&runtime);
-    cleanup.empty_comparison();
     assert!(
         closed.managed_cleanup_receipt().is_none(),
         "unarmed fresh path has no failed physical cleanup"
@@ -156,8 +153,6 @@ fn discovered_ordinary_cost_matches_native_without_unrelated_registry_scan() {
                 ordinary.query_work, native.query_work,
                 "same declared native selector bill"
             );
-            assert_eq!(ordinary.work.delivery.one_complete_comparison(), native.work.delivery.one_complete_comparison(),
-                "ordinary guard pays the actual complete native comparison, not a proxy query charge");
             assert_eq!(
                 ordinary.work.whole_rows(),
                 0,
@@ -190,11 +185,9 @@ fn discovered_ordinary_cost_matches_native_without_unrelated_registry_scan() {
                 ordinary.work.cleanup.phases, native.work.cleanup.phases,
                 "both explicitly release in one native phase"
             );
-            assert!(ordinary.retained.record_bytes >= ordinary.population.record_bytes);
-            assert!(ordinary.retained.required_bytes >= ordinary.population.required_bytes);
-            if let Some((rows, records, work, small_ordinary, small_native)) = sparse {
+            assert!(ordinary.retained.rows >= ordinary.population.rows);
+            if let Some((rows, work, small_ordinary, small_native)) = sparse {
                 assert!(ordinary.population.rows > rows);
-                assert!(ordinary.population.record_bytes > records);
                 assert_eq!(
                     ordinary.native, work,
                     "unrelated population adds no producer/traversal work"
@@ -208,7 +201,6 @@ fn discovered_ordinary_cost_matches_native_without_unrelated_registry_scan() {
             } else {
                 sparse = Some((
                     ordinary.population.rows,
-                    ordinary.population.record_bytes,
                     ordinary.native,
                     ordinary.work.execution_work(),
                     native.work.execution_work(),

@@ -128,7 +128,6 @@ impl ContinuationTestContext {
                 parameters("account-1"),
                 crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                     NonZeroUsize::new(1).unwrap(),
-                    Some(NonZeroUsize::new(10_000).unwrap()),
                     &request,
                 ),
             )
@@ -161,7 +160,6 @@ impl ContinuationTestContext {
         parameter: &str,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         page_width: usize,
-        maximum_work: usize,
     ) -> WorthQueryApplicationQueryAdmissionDenialKind {
         let access = WorthQueryApplicationQueryAccessContext::new(&self.principal, &self.account);
         self.world
@@ -174,7 +172,6 @@ impl ContinuationTestContext {
                 continuation,
                 WorthQueryApplicationQueryResumeControls::new(
                     NonZeroUsize::new(page_width).unwrap(),
-                    Some(NonZeroUsize::new(maximum_work).unwrap()),
                     request,
                 ),
             )
@@ -204,9 +201,7 @@ impl ContinuationTestContext {
             .application_query_basis_observer()
             .observe();
         assert_eq!(basis.active(), 0);
-        let buffers = self.world.application.result_buffer_observer().observe();
-        assert_eq!(buffers.active_buffers(), 0);
-        assert_eq!(buffers.retained_bytes(), 0);
+
         assert_eq!(
             self.world
                 .application

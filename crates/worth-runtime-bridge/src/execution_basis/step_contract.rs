@@ -63,11 +63,8 @@ impl BridgeManagedExecutionStepLimits {
 pub struct BridgeManagedExecutionStepContract {
     identity: BridgeManagedExecutionStepContractIdentity,
     safe_point_family: Arc<str>,
-    max_work_units_per_step: u64,
     queue_depth_ceiling: u64,
-    chunk_width_ceiling: u64,
-    scratch_bytes_ceiling: u64,
-    retained_bytes_ceiling: u64,
+    step_limits: Option<BridgeManagedExecutionStepLimits>,
     deadline_nanos: Option<u64>,
     partial_effects_may_remain: bool,
 }
@@ -116,14 +113,46 @@ impl BridgeManagedExecutionStepContract {
                 "bridge-managed-step-contract:sha256:{digest:x}"
             ))),
             safe_point_family,
-            max_work_units_per_step: limits.max_work_units_per_step,
             queue_depth_ceiling: limits.queue_depth_ceiling,
-            chunk_width_ceiling: limits.chunk_width_ceiling,
-            scratch_bytes_ceiling: limits.scratch_bytes_ceiling,
-            retained_bytes_ceiling: limits.retained_bytes_ceiling,
+            step_limits: Some(limits),
             deadline_nanos: limits.deadline_nanos,
             partial_effects_may_remain,
         })
+    }
+
+    /// A live queue retains managed request and occupancy custody, without
+    /// granting a bounded provider step or accepting work/memory estimates.
+    pub fn queue(
+        safe_point_family: impl Into<Arc<str>>,
+        capacity: u64,
+    ) -> Result<Self, &'static str> {
+        let safe_point_family = safe_point_family.into();
+        if safe_point_family.trim().is_empty()
+            || safe_point_family.trim() != safe_point_family.as_ref()
+            || safe_point_family.chars().any(char::is_control)
+        {
+            return Err("invalid-bridge-managed-safe-point-family");
+        }
+        if capacity == 0 {
+            return Err("zero-bridge-managed-queue-depth");
+        }
+        let canonical = format!(
+            "bridge-managed-queue-contract-v1|safe-point={safe_point_family}|queue={capacity}"
+        );
+        let digest = Sha256::digest(canonical.as_bytes());
+        Ok(Self {
+            identity: BridgeManagedExecutionStepContractIdentity(Arc::from(format!(
+                "bridge-managed-queue-contract:sha256:{digest:x}"
+            ))),
+            safe_point_family,
+            queue_depth_ceiling: capacity,
+            step_limits: None,
+            deadline_nanos: None,
+            partial_effects_may_remain: false,
+        })
+    }
+    pub const fn step_limits(&self) -> Option<&BridgeManagedExecutionStepLimits> {
+        self.step_limits.as_ref()
     }
 
     pub fn identity(&self) -> &str {
@@ -138,24 +167,8 @@ impl BridgeManagedExecutionStepContract {
         &self.safe_point_family
     }
 
-    pub const fn max_work_units_per_step(&self) -> u64 {
-        self.max_work_units_per_step
-    }
-
     pub const fn queue_depth_ceiling(&self) -> u64 {
         self.queue_depth_ceiling
-    }
-
-    pub const fn chunk_width_ceiling(&self) -> u64 {
-        self.chunk_width_ceiling
-    }
-
-    pub const fn scratch_bytes_ceiling(&self) -> u64 {
-        self.scratch_bytes_ceiling
-    }
-
-    pub const fn retained_bytes_ceiling(&self) -> u64 {
-        self.retained_bytes_ceiling
     }
 
     pub const fn deadline_nanos(&self) -> Option<u64> {
@@ -164,5 +177,20 @@ impl BridgeManagedExecutionStepContract {
 
     pub const fn partial_effects_may_remain(&self) -> bool {
         self.partial_effects_may_remain
+    }
+}
+
+impl BridgeManagedExecutionStepLimits {
+    pub const fn max_work_units_per_step(&self) -> u64 {
+        self.max_work_units_per_step
+    }
+    pub const fn chunk_width_ceiling(&self) -> u64 {
+        self.chunk_width_ceiling
+    }
+    pub const fn scratch_bytes_ceiling(&self) -> u64 {
+        self.scratch_bytes_ceiling
+    }
+    pub const fn retained_bytes_ceiling(&self) -> u64 {
+        self.retained_bytes_ceiling
     }
 }

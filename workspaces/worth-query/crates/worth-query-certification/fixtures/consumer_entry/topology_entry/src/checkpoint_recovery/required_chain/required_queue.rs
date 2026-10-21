@@ -96,20 +96,11 @@ fn chain_application() -> application_installation::WorthQueryProgramApplication
     CheckpointSchema,
     program::ChainProgram,
 > {
-    let profile =
-        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    chain_application_with_marking_work(
-        None,
-        profile
-            .limits()
-            .source_currentness_work()
-            .map(|work| u64::try_from(work).unwrap()),
-    )
+    chain_application_from_checkpoint(None)
 }
 
-fn chain_application_with_marking_work(
+fn chain_application_from_checkpoint(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
-    maximum_marking_work: Option<u64>,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<
     CheckpointSchema,
     program::ChainProgram,
@@ -120,8 +111,6 @@ fn chain_application_with_marking_work(
         checkpoint,
         profile,
         4_096,
-        128 * 1_024 * 1_024,
-        maximum_marking_work,
         source_world::seed,
     )
 }
@@ -162,8 +151,6 @@ macro_rules! chain_with_unrelated {
     }};
 }
 
-#[macro_use]
-mod capacity_setup;
 mod current_acknowledgement;
 mod owned_continuation;
 mod selection_at_inspection;
@@ -175,14 +162,12 @@ fn an_unrelated_required_advance_progresses_the_dirty_required_set() {
 }
 
 #[test]
-fn restored_required_demands_reenter_source_query_under_small_marking_work() {
+fn restored_required_demands_reenter_source_query() {
     let _guard = checkpoint_recovery_test_guard();
     let checkpoint = ready_chain_checkpoint();
-    // Keep the ordinary Query profile and reduce only invalidation marking.
-    // Retained source re-entry must use Query's own admitted preparation
-    // allowance, not this independent marking ceiling.
+    // The restored original demands must reenter their authentic source query.
     run_unrelated_required_advance(
-        chain_application_with_marking_work(Some(checkpoint), Some(65_536)),
+        chain_application_from_checkpoint(Some(checkpoint)),
         [0, 1, 1],
     );
 }
@@ -333,19 +318,10 @@ fn queued_required_work_stays_live_and_exact_across_cycles() {
     drop((a, b, c, d));
 }
 
-mod retention_installation;
-use retention_installation::limited_application;
-
-mod unfunded_refresh;
-
-mod custody_model;
-mod custody_stops;
-mod exhausted_index;
 mod pending_queue;
 mod recovery_isolation;
 mod reopened_dependent;
 mod request_stops;
-mod steady_retention;
 
 // Contact probes share this module's existing observer boundary.
 #[path = "performed_head_movement.rs"]

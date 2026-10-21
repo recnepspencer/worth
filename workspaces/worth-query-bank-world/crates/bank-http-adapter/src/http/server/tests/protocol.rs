@@ -31,7 +31,7 @@ async fn authenticated_account_summary_crosses_the_bounded_tcp_boundary() {
             "protocol": "v4", "request_id": "account-summary-1",
             "credential": credential_json(),
             "controls": { "deadline_milliseconds": 5_000,
-                "maximum_results": 1, "maximum_work": 20_000 },
+                "maximum_results": 1},
             "account": account.canonical_text()
         }))
         .send()

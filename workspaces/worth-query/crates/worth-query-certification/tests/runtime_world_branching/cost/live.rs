@@ -186,8 +186,7 @@ fn live_scope(
 fn live_controls(
     request: &WorthQueryRequestScope,
 ) -> primary_graph::WorthQueryApplicationLiveControls {
-    primary_graph::WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, Some(2_048))
-        .unwrap()
+    primary_graph::WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16).unwrap()
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

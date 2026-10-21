@@ -1,9 +1,8 @@
 //! Pre-effect selection from genuine native candidate touches, with explicit full reconstruction.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_attempt::retained_decision_facts::{StorageControl, StoreDenial},
-    output_lineage::invalidation::PostconditionCarry,
-};
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry;
 use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
 pub(super) enum Preparation {
     Full(FullSourceFactRebase),
@@ -61,7 +60,7 @@ impl PreparedSourceFactRebase {
         candidate: &PreparedRelationalCommitCandidate,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         before: &worth_relational::facade::snapshots::SnapshotHandle,
-        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+
         control: StorageControl<'_, '_>,
     ) -> Result<Self, PreparedRebaseDenial> {
         let preparation = match self.preparation {
@@ -84,7 +83,7 @@ impl PreparedSourceFactRebase {
         };
         control.check_live()?;
         if !carry
-            .matches_publication_source(runtime, before, admission)
+            .matches_publication_source(runtime, before)
             .map_err(PreparedRebaseDenial::Admission)?
         {
             crate::domain_computation::primary_graph::fact_verification_observation::native_completion_decline("postcondition-publication-source");
@@ -113,9 +112,7 @@ impl PreparedSourceFactRebase {
                 moved,
                 carry,
                 selection.ordinals,
-                selection.memory,
                 selection.basis,
-                admission,
                 control,
             )?),
         })
@@ -129,17 +126,16 @@ pub(super) fn rebase(
     prepared: PreparedSourceFactRebase,
     retired: &BTreeSet<EntityId>,
     producer: bool,
-    maximum: Option<usize>,
-    admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+
     control: StorageControl<'_, '_>,
 ) -> RebasedSourceFacts {
     match prepared.preparation {
-        Preparation::Full(full) => rebase_walk::rebase(
-            execution, runtime, snapshot, full, retired, producer, maximum, admission,
-        ),
-        Preparation::Selected(selected) => selected.rebase(
-            execution, runtime, snapshot, retired, producer, maximum, admission, control,
-        ),
+        Preparation::Full(full) => {
+            rebase_walk::rebase(execution, runtime, snapshot, full, retired, producer)
+        }
+        Preparation::Selected(selected) => {
+            selected.rebase(execution, runtime, snapshot, retired, producer, control)
+        }
         Preparation::Pending { .. } | Preparation::FullPayload { .. } => {
             unreachable!("native candidate selection precedes publication")
         }

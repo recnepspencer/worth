@@ -26,14 +26,14 @@ where
     /// use worth_query_publication::facade::application_entry::*;
     /// use worth_query_declaration::facade::{application_operation::*, application_program::*, application_schema::ApplicationSchema};
     /// use worth_query_execution::facade::primary_graph::{WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource};
-    /// fn deliver<S, I, P, R, A>(settled: &WorthQuerySettledFixedOperation<S, I, P, R, A>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, policy: WorthQueryOperationDeliveryPolicy)
+    /// fn deliver<S, I, P, R, A>(settled: &WorthQuerySettledFixedOperation<S, I, P, R, A>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>)
     /// where S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>, P: ApplicationProgramDefinition<S>,
     /// R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
     /// <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationRequiredOutputConnection<S>,
     /// I::Binding: WorthQueryApplicationRequiredOutputSource<S, <R::RootConnection as ApplicationConnectionShape<S>>::Binding>,
     /// A: ApplicationAction<S, I::Binding>,
     /// A::Delivery: ApplicationFixedActionDelivery<S, I::Binding, Root = R, Projection = ApplicationNoProjection> {
-    ///     let _ = settled.deliver_current(request, policy);
+    ///     let _ = settled.deliver_current(request);
     /// }
     /// ```
     /// A no-projection owner cannot issue a declared projected read.
@@ -41,7 +41,7 @@ where
     /// use worth_query_publication::facade::application_entry::*;
     /// use worth_query_declaration::facade::{application_operation::*, application_program::*, application_schema::ApplicationSchema};
     /// use worth_query_execution::facade::primary_graph::{WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource};
-    /// fn deliver<S, I, P, R, A>(settled: &WorthQuerySettledFixedOperation<S, I, P, R, A>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, policy: WorthQueryOperationDeliveryPolicy)
+    /// fn deliver<S, I, P, R, A>(settled: &WorthQuerySettledFixedOperation<S, I, P, R, A>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>)
     /// where S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>, P: ApplicationProgramDefinition<S>,
     /// R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
     /// <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationRequiredOutputConnection<S>,
@@ -54,8 +54,7 @@ where
     pub fn deliver_current(
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-        policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<WorthQueryApplicationReadObservation, WorthQueryOperationDeliveryDenial> {
-        self.delivery.deliver_current(request, policy)
+        self.delivery.deliver_current(request)
     }
 }

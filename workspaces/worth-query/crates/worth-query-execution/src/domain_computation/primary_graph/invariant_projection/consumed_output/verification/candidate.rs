@@ -17,7 +17,6 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         Self::observe_views(
             execution,
@@ -33,7 +32,6 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
-            admission,
         )
     }
 
@@ -49,7 +47,6 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         Self::verify_views(
             execution,
@@ -65,7 +62,6 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
-            admission,
         )
     }
 }

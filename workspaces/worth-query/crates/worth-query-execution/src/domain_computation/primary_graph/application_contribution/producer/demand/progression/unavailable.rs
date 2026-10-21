@@ -58,12 +58,11 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             disclosure,
             demand.installed_entry.edition,
         )?;
-        let mut admission = self.demand_request_admission();
+
         let result = self.output_demands.finish_unavailable_source(
             prepared,
             interest,
             &self.primary_provider.graph.source_owner.invalidation_owner,
-            &mut admission,
         )?;
         demand.close();
         Ok(result)

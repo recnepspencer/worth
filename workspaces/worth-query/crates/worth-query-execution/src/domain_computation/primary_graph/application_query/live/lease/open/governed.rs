@@ -74,7 +74,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                     )
                 })?,
             controls.maximum_materialized_record_count(),
-            controls.maximum_work_per_delivery(),
             controls.request(),
         );
         let pending =

@@ -112,15 +112,10 @@ impl ApplicationOutputActionDeliveryDeclaration {
             ]);
         };
         let result_limit = read.limits().maximum_results().to_string();
-        let work_limit = read
-            .limits()
-            .maximum_work()
-            .map_or_else(|| "host-policy".to_owned(), |limit| limit.to_string());
         let query_meaning = super::super::semantic_encoding::framed_parts(&[
             self.identity,
             &graph,
             &result_limit,
-            &work_limit,
             self.root_connection.identity(),
             self.root_connection.source_instance(),
             self.root_connection.source_feature(),

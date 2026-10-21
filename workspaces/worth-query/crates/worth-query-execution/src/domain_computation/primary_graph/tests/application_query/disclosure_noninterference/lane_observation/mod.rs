@@ -177,15 +177,7 @@ fn capture_lane(
     assert!(receipt.basis_released());
     assert_eq!(receipt.disclosure().disclosure_decision_count(), 5);
     assert_eq!(receipt.disclosure().omitted().len(), 1);
-    let buffer = receipt
-        .result_buffer()
-        .expect("every delivered lane is bounded");
-    assert!(buffer.released());
-    assert_eq!(
-        buffer.limit_bytes(),
-        None,
-        "ordinary result policy is absent while native storage stays counted"
-    );
+
     for row in &rows {
         assert_eq!(row.account(), "account-1");
         let WorthQueryApplicationDisclosed::Omitted(omission) = row.label() else {

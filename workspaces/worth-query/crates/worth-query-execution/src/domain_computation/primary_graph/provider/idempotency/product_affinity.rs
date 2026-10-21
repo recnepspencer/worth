@@ -13,12 +13,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryProductIdempot
 }
 
 impl WorthQueryProductIdempotencyAffinity {
-    pub(in crate::domain_computation::primary_graph::provider) fn comparison_name_len(
-        &self,
-    ) -> usize {
-        self.branch.name().as_str().len()
-    }
-
     pub(in crate::domain_computation::primary_graph) const fn incarnation(
         &self,
     ) -> ProductBranchIncarnation {

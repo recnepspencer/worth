@@ -1,11 +1,8 @@
 //! Close only an authentic, cleanup-free, prepublication domain refusal.
 use super::*;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::{
-    InvalidationEditAdmission, SourceInvalidationOwner,
-};
-use crate::domain_computation::primary_graph::{
-    WorthQueryOutputDemandDenialKind as Kind, WorthQueryPreparedRequiredOutputSource,
-};
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
+use crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource;
 
 impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn finish_unavailable_source(
@@ -13,7 +10,6 @@ impl WorthQueryOutputDemandRegistry {
         prepared: &WorthQueryPreparedRequiredOutputSource,
         interest: &WorthQueryOutputDemandInterest,
         owner: &SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenial> {
         if !Arc::ptr_eq(&self.state, &interest.owner.state)
             || !Arc::ptr_eq(&self.state, &prepared.owner.state)
@@ -22,12 +18,12 @@ impl WorthQueryOutputDemandRegistry {
         }
         // Terminal rows can still own queued prerequisite/settlement cleanup.
         // Only the existing admitted cleanup owner may discharge those claims.
-        self.drain_terminal_cleanup_admitted(owner, admission)?;
+        self.drain_terminal_cleanup_admitted(owner)?;
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.charge_record_lookup(&interest.key, admission)?;
+
         let record = state
             .records
             .get(&interest.key)
@@ -35,19 +31,7 @@ impl WorthQueryOutputDemandRegistry {
         let DemandState::Failed(denial) = &record.state else {
             return Err(refusal(Kind::SchedulingDeferred));
         };
-        let work = record
-            .source_commits
-            .len()
-            .checked_add(24)
-            .and_then(|n| n.checked_add(denial.subject().len()))
-            .and_then(|n| u64::try_from(n).ok())
-            .ok_or_else(|| refusal(Kind::WorkBudgetExceeded))?;
-        admission
-            .charge_external_work(work)
-            .map_err(|_| refusal(Kind::WorkBudgetExceeded))?;
-        admission
-            .admit_read_scratch(denial.subject().len() as u64)
-            .map_err(|_| refusal(Kind::RetentionBudgetExceeded))?;
+
         if denial.kind() != Kind::ProducerDomainDenied
             || denial.recovery_posture() != crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal
             || record.product_occurrence != prepared.product_occurrence

@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
-use crate::domain_computation::primary_graph::{
-    WorthQueryAuthenticatedPrincipal, WorthQueryPrimaryPrincipalBindingLayout,
-    WorthQueryPrincipalFreshnessEvidence,
-};
+use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryPrincipalBindingLayout;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalFreshnessEvidence;
 
 #[derive(Clone)]
 pub(in crate::domain_computation) struct WorthQueryPrincipalCurrentnessDependency {
@@ -66,12 +65,11 @@ impl WorthQueryPrincipalCurrentnessDependency {
 
     pub(super) fn source_query_facts(
         &self,
-        admission: &mut crate::domain_computation::primary_graph::InvalidationEditAdmission,
     ) -> Result<
         Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
         worth_relational::facade::mvcc::CompanionPreflightStop,
     > {
-        self.freshness.source_query_facts(&self.layout, admission)
+        self.freshness.source_query_facts(&self.layout)
     }
 
     pub(in crate::domain_computation) fn remains_current_in(

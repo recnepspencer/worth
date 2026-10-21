@@ -60,9 +60,9 @@ where
             .application_runtime()
             .request(self.principal.external(), self.controls.request())
             .query(self.query)
-            .limits(
+            .limit_results(
                 self.controls.maximum_result_count(),
-                self.controls.maximum_work(),
+
             )
             .execute()
             .map_err(BankApplicationQueryDenial::from_request_query)?;
@@ -161,10 +161,7 @@ impl BankReadyQuery<'_, '_, EstateCaseOverviewRequest> {
             .request(self.principal.external(), self.controls.request())
             .at(session.observation())
             .query(self.query)
-            .limits(
-                self.controls.maximum_result_count(),
-                self.controls.maximum_work(),
-            )
+            .limit_results(self.controls.maximum_result_count())
             .execute()
             .map_err(BankApplicationQueryDenial::from_request_query)
     }

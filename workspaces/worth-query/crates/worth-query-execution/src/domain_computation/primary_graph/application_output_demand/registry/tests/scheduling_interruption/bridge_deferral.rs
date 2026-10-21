@@ -8,7 +8,7 @@ impl WorthQueryOutputDemandRegistry {
         temporary: bool,
     ) {
         let fixture = Fixture::new(false);
-        let custody = fixture.custody();
+
         let WorthQueryOutputDemandAdvanceAdmission::Schedule(source) =
             fixture.registry.begin(&fixture.interest)
         else {
@@ -33,14 +33,14 @@ impl WorthQueryOutputDemandRegistry {
             assert!(state.records[&fixture.interest.key]
                 .performed_obligations
                 .is_empty());
-            assert_eq!(state.obligation_reserved_bytes, 0);
+
             return;
         }
         assert!(
             matches!(first, Ok(WorthQueryOutputSchedulingResult::Deferred)),
             "a busy native Signal slot must defer"
         );
-        assert_eq!(fixture.custody(), custody);
+
         {
             let state = fixture.registry.state.lock().unwrap();
             let row = &state.records[&fixture.interest.key];
@@ -64,7 +64,7 @@ impl WorthQueryOutputDemandRegistry {
         ));
         let finish = fixture
             .registry
-            .prepare_selected_execution_finish(&fixture.interest, &mut record_admission())
+            .prepare_selected_execution_finish(&fixture.interest)
             .unwrap();
         assert!(matches!(
             fixture.registry.begin(&fixture.interest),

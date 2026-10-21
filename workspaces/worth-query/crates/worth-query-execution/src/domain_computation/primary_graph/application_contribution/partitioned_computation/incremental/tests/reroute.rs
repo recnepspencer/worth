@@ -50,7 +50,7 @@ pub(super) fn moved_facts(sealed: SealedComputationRun, keys: bool) -> Computati
         let moved = WorthQueryApplicationObservedFact::SourceEntity { entity_id };
         state.facts.replace_fact(&key, moved);
     }
-    ComputationPrior::new(edition(), Ok(custodied_state_for_test(state)), None)
+    ComputationPrior::new(edition(), Ok(std::sync::Arc::new(state)), None)
 }
 
 /// The edits of the alphabet, each over the items' identities, keys and
@@ -240,8 +240,6 @@ fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
         (PriorAbsence::Republished, Cause::Republished),
         (PriorAbsence::NotProduced, Cause::NotProduced),
         (PriorAbsence::Unmeasured, Cause::Unmeasured),
-        (PriorAbsence::Moved, Cause::Moved),
-        (PriorAbsence::Evicted, Cause::Evicted),
         (PriorAbsence::Stopped, Cause::Stopped),
         (
             PriorAbsence::Suppressed(super::super::Suppression::Policy),

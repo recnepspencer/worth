@@ -3,22 +3,20 @@
 
 use std::sync::Arc;
 
-use worth_relational::facade::{
-    mvcc::CompanionPreflightStop,
-    runtime::{PositionedRelationalSnapshot, RelationalRuntime},
-    snapshots::SnapshotHandle,
-};
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
 
-use super::super::{RecordedSettlementIdentity, SealedNativeOutputWitness};
-use super::{
-    admission::{IndexAdmission, RetainedIndexAdmission},
-    index_capacity,
-    mark_state::{FullVerificationReason, MarkState, SettlementCurrentness, SettlementMarks},
-    source_alignment::{EqualOutputCurrentness, SnapshotAlignedMarkState},
-    verification::SettlementVerificationStop,
-    InvalidationEditAdmission, SettlementRegistration, SettlementRegistrationStop,
-    SourceInvalidationOwner,
-};
+use super::super::RecordedSettlementIdentity;
+use super::super::SealedNativeOutputWitness;
+use super::mark_state::FullVerificationReason;
+use super::mark_state::SettlementCurrentness;
+use super::source_alignment::EqualOutputCurrentness;
+use super::source_alignment::SnapshotAlignedMarkState;
+use super::verification::SettlementVerificationStop;
+use super::SettlementRegistration;
+use super::SettlementRegistrationStop;
+use super::SourceInvalidationOwner;
 
 impl SourceInvalidationOwner {
     /// A restored output has no row until it is verified on this runtime. It
@@ -32,34 +30,30 @@ impl SourceInvalidationOwner {
         identity: &Arc<RecordedSettlementIdentity>,
         facts: &super::super::ComparableSourceFacts,
         witness: &SealedNativeOutputWitness,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, SettlementRegistrationStop> {
-        let Some(cell) = self.cell_for_read(read_basis, admission)? else {
+        let Some(cell) = self.cell_for_read(read_basis)? else {
             return Ok(false);
         };
         let image = cell.read_image();
-        admission.ordered_read(image.payload().current.settlements.len())?;
+
         if image.payload().current.settlements.contains_key(identity) {
             return Ok(true);
         }
         drop(image);
-        let Some(output_facts) = self.prepare_performed_output_facts(witness, admission)? else {
+        let Some(output_facts) = self.prepare_performed_output_facts(witness)? else {
             return Ok(false);
         };
-        self.register_settlement(
-            SettlementRegistration {
-                computation: None,
-                work_membership: None,
-                identity: Arc::clone(identity),
-                facts: facts.retained(),
-                output_facts: Some(output_facts),
-                read_basis: read_basis.clone(),
-                stale_at_read_basis: im::OrdSet::new(),
-                requirement: None,
-                upstream: im::OrdSet::new(),
-            },
-            admission,
-        )?;
+        self.register_settlement(SettlementRegistration {
+            computation: None,
+            work_membership: None,
+            identity: Arc::clone(identity),
+            facts: facts.retained(),
+            output_facts: Some(output_facts),
+            read_basis: read_basis.clone(),
+            stale_at_read_basis: im::OrdSet::new(),
+            requirement: None,
+            upstream: im::OrdSet::new(),
+        })?;
         Ok(true)
     }
 
@@ -73,25 +67,21 @@ impl SourceInvalidationOwner {
         facts: &super::super::ComparableSourceFacts,
         witness: &SealedNativeOutputWitness,
         upstream: im::OrdSet<Arc<RecordedSettlementIdentity>>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), SettlementRegistrationStop> {
         let output_facts = self
-            .prepare_performed_output_facts(witness, admission)?
+            .prepare_performed_output_facts(witness)?
             .ok_or(SettlementRegistrationStop::SourceUnavailable)?;
-        self.register_settlement(
-            SettlementRegistration {
-                computation: None,
-                work_membership: None,
-                identity: Arc::clone(identity),
-                facts: facts.retained(),
-                output_facts: Some(output_facts),
-                read_basis: selected.clone(),
-                stale_at_read_basis: im::OrdSet::new(),
-                requirement: None,
-                upstream,
-            },
-            admission,
-        )
+        self.register_settlement(SettlementRegistration {
+            computation: None,
+            work_membership: None,
+            identity: Arc::clone(identity),
+            facts: facts.retained(),
+            output_facts: Some(output_facts),
+            read_basis: selected.clone(),
+            stale_at_read_basis: im::OrdSet::new(),
+            requirement: None,
+            upstream,
+        })
     }
 
     /// The caller fully compared this row's original source facts and its
@@ -107,11 +97,7 @@ impl SourceInvalidationOwner {
         selected: &PositionedRelationalSnapshot,
         identity: &Arc<RecordedSettlementIdentity>,
         verified_facts: &super::super::ComparableSourceFacts,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, SettlementVerificationStop> {
-        let branch_bytes = selected.branch_id().0.len() as u64;
-        admission.work(1 + branch_bytes)?;
-        admission.bytes(branch_bytes)?;
         let actual = runtime
             .read_truth()
             .positioned_snapshot(snapshot)
@@ -119,7 +105,7 @@ impl SourceInvalidationOwner {
         if &actual != selected || selected.runtime_instance_id() != self.runtime_instance_id {
             return Err(SettlementVerificationStop::Alignment);
         }
-        let Some(cell) = self.cell_for_read(selected, admission)? else {
+        let Some(cell) = self.cell_for_read(selected)? else {
             return Ok(false);
         };
         let image = cell.read_image();
@@ -130,11 +116,10 @@ impl SourceInvalidationOwner {
             // Historical states stay immutable.
             return Ok(false);
         }
-        admission.ordered_read(image.payload().past.len())?;
+
         let aligned = SnapshotAlignedMarkState::observe_image(&image, selected)
             .map_err(|_| SettlementVerificationStop::Alignment)?;
-        admission.ordered_read(aligned.settlement_count())?;
-        admission.ordered_read(image.payload().current.settlements.len())?;
+
         let Some(current_row) = image.payload().current.settlements.get(identity) else {
             return Ok(false);
         };
@@ -148,7 +133,7 @@ impl SourceInvalidationOwner {
                 drop(aligned);
                 drop(image);
                 let row = std::slice::from_ref(identity);
-                self.carry_read_basis(runtime, snapshot, selected, row, admission)?;
+                self.carry_read_basis(runtime, snapshot, selected, row)?;
                 return Ok(true);
             }
             SettlementCurrentness::FullVerificationRequired(_) => {}
@@ -161,7 +146,7 @@ impl SourceInvalidationOwner {
             }
         }
         let state = &image.payload().current;
-        admission.ordered_read(state.settlements.len())?;
+
         let Some(row) = state.settlements.get(identity) else {
             return Ok(false);
         };
@@ -181,12 +166,10 @@ impl SourceInvalidationOwner {
             return Ok(false);
         }
         for upstream in &row.consumed_upstream {
-            admission.work(1)?;
-            let equal = aligned.equal_output_currentness(upstream, admission)?;
+            let equal = aligned.equal_output_currentness(upstream)?;
             let clean = match equal {
                 EqualOutputCurrentness::CanonicallyEqualClean(_) => true,
                 EqualOutputCurrentness::NoConsequence => {
-                    admission.ordered_read(aligned.settlement_count())?;
                     matches!(aligned.currentness(upstream), SettlementCurrentness::Clean)
                 }
                 EqualOutputCurrentness::Pending
@@ -197,24 +180,6 @@ impl SourceInvalidationOwner {
             }
         }
 
-        let before = admission.index_checkpoint();
-        admission.bytes(
-            index_capacity::arc_bytes::<SettlementMarks>()
-                .and_then(|bytes| {
-                    bytes.checked_add(index_capacity::arc_bytes::<PositionedRelationalSnapshot>()?)
-                })
-                .and_then(|bytes| bytes.checked_add(index_capacity::arc_bytes::<MarkState>()?))
-                .and_then(|bytes| bytes.checked_add(branch_bytes))
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-        )?;
-        let basis_bytes = index_capacity::arc_bytes::<PositionedRelationalSnapshot>()
-            .and_then(|bytes| bytes.checked_add(branch_bytes))
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        admission.record_index_bytes(
-            index_capacity::arc_bytes::<SettlementMarks>()
-                .and_then(|bytes| bytes.checked_add(basis_bytes))
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-        )?;
         let mut replacement = (**row).clone();
         // Ordinary full verification cannot requalify original computation coverage.
         replacement.computation_frontier = None;
@@ -223,18 +188,16 @@ impl SourceInvalidationOwner {
         replacement.read_basis = Arc::new(selected.clone());
         replacement.verification_requirement = None;
         let mut next = (**state).clone();
-        next.maximum_basis_allocation_bytes = next.maximum_basis_allocation_bytes.max(basis_bytes);
+
         replacement.delivery_epoch = next.delivery_epoch;
         next.computation_dirty_ordinal_count -=
             row.computation_frontier.as_ref().map_or(0, im::OrdSet::len);
         next.dirty_ordinal_count -= row.dirty_ordinals.len();
         next.pending_edge_count -= row.pending_upstream.len();
-        admission.index_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
-            next.settlements.len(),
-        )?;
+
         next.settlements
             .insert(Arc::clone(identity), Arc::new(replacement));
-        self.install_live_state(cell, image, (next, before), admission)?;
+        self.install_live_state(cell, image, next)?;
         Ok(true)
     }
 }

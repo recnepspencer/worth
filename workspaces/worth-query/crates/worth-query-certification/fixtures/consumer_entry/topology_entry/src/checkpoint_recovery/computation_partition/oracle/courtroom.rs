@@ -17,7 +17,6 @@ mod correction_grant;
 mod equal_output;
 worth_execution::needs_os_threads! { mod interleaving; }
 mod lifecycle;
-mod request_work;
 mod tree;
 mod undo;
 mod wide;

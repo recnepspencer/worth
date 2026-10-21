@@ -6,9 +6,8 @@ pub(super) fn upstream_cycles(
     selected: &SelectedReadyReadmission,
     caller: &SelectedReadyReadmission,
     resolved: &ResolvedOnWave,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, WorthQueryOutputDemandDenial> {
-    Ok(upstream.same_record(selected, admission)?
-        || upstream.same_record(caller, admission)?
+    Ok(upstream.same_record(selected)?
+        || upstream.same_record(caller)?
         || resolved.contains(upstream))
 }

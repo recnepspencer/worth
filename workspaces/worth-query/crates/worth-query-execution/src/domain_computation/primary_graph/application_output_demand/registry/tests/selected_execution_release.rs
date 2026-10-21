@@ -1,90 +1,6 @@
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
-#[test]
-fn selected_release_refuses_before_running_then_releases_without_new_allowance() {
-    let demand_key = key("selected-request-rejection", 1, 1);
-    let product_occurrence = occurrence();
-    crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
-        let registry = WorthQueryOutputDemandRegistry::default();
-        let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
-        let admit = || {
-            registry
-                .admit(
-                    demand_key.clone(),
-                    None,
-                    scope,
-                    product_occurrence,
-                    super::super::DemandAdmissionKind::Ordinary,
-                    None,
-                    None,
-                    &mut record_admission(),
-                )
-                .expect("the registry creates and joins actual retained membership")
-                .0
-        };
-        let denied = admit();
-        let peer = admit();
-        assert!(matches!(
-            registry.begin(&denied),
-            super::super::WorthQueryOutputDemandAdvanceAdmission::Schedule(None)
-        ));
-        registry.finish_scheduling(
-            &denied,
-            None,
-            &mut Ok(WorthQueryOutputSchedulingResult::Scheduled),
-        );
-        let prior_wake = denied.notifications.generation();
-        let mut measured = record_admission();
-        drop(
-            registry
-                .prepare_selected_execution_finish(&denied, &mut measured)
-                .expect("the actual owner prepares release before Running"),
-        );
-        let full_work = measured.charged_work();
-        let budget = |work| {
-            InvalidationEditAdmission::new(CompanionPreflightBudget {
-                maximum_work_visits: Some(work),
-                maximum_preparation_bytes: None,
-            })
-        };
-        let mut short = budget(full_work - 1);
-        let refusal = registry
-            .prepare_selected_execution_finish(&denied, &mut short)
-            .err()
-            .expect("one short unit refuses before any execution-state change");
-        assert_eq!(
-            refusal.kind(),
-            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-        );
-        assert!(matches!(
-            registry.state.lock().unwrap().records[&demand_key].state,
-            DemandState::Scheduled
-        ));
-        assert_eq!(denied.notifications.generation(), prior_wake);
-
-        let mut exact = budget(full_work);
-        let release = registry
-            .prepare_selected_execution_finish(&denied, &mut exact)
-            .expect("the same retained membership retries with its exact allowance");
-        assert_eq!(exact.remaining_work(), Some(0));
-        assert!(matches!(
-            registry.begin(&denied),
-            super::super::WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: None }
-        ));
-        assert!(matches!(
-            registry.begin(&peer),
-            super::super::WorthQueryOutputDemandAdvanceAdmission::Pending
-        ));
-        release.relinquish();
-        assert_eq!(denied.notifications.generation(), prior_wake + 1);
-        assert!(matches!(
-            registry.begin(&peer),
-            super::super::WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: None }
-        ));
-    });
-}
-
 /// A selected execution that stops for its request leaves the shared row to
 /// the next claim; only a stop intrinsic to the row fails it for every peer.
 #[test]
@@ -113,16 +29,7 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
             let registry = WorthQueryOutputDemandRegistry::default();
             let admit = || {
                 registry
-                .admit(
-                    demand_key.clone(),
-                    None,
-                    crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1)),
-                    product_occurrence,
-                    super::super::DemandAdmissionKind::Ordinary,
-                    None,
-                    None,
-                    &mut record_admission(),
-                )
+                .admit(demand_key.clone(), None, crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1)), product_occurrence, super::super::DemandAdmissionKind::Ordinary, None, None)
                 .expect("the registry creates and joins actual retained membership").0
             };
             let running = admit();
@@ -137,7 +44,7 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
                 &mut Ok(WorthQueryOutputSchedulingResult::Scheduled),
             );
             let finish = registry
-                .prepare_selected_execution_finish(&running, &mut record_admission())
+                .prepare_selected_execution_finish(&running)
                 .expect("the owner prepares its finish before Running");
             assert!(matches!(
                 registry.begin(&running),
@@ -183,16 +90,7 @@ fn unauthorized_caller_leaves_the_row_for_an_authorized_peer_to_ready() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let admit = || {
         registry
-            .admit(
-                key("unauthorized-caller", 1, 1),
-                None,
-                crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1)),
-                occurrence(),
-                super::super::DemandAdmissionKind::Ordinary,
-                None,
-                None,
-                &mut record_admission(),
-            )
+            .admit(key("unauthorized-caller", 1, 1), None, crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1)), occurrence(), super::super::DemandAdmissionKind::Ordinary, None, None)
             .expect("the registry creates and joins actual retained membership").0
     };
     let unauthorized = admit();
@@ -207,7 +105,7 @@ fn unauthorized_caller_leaves_the_row_for_an_authorized_peer_to_ready() {
         &mut Ok(WorthQueryOutputSchedulingResult::Scheduled),
     );
     let finish = registry
-        .prepare_selected_execution_finish(&unauthorized, &mut record_admission())
+        .prepare_selected_execution_finish(&unauthorized)
         .expect("the unauthorized caller prepares its finish before Running");
     assert!(matches!(
         registry.begin(&unauthorized),
@@ -227,7 +125,7 @@ fn unauthorized_caller_leaves_the_row_for_an_authorized_peer_to_ready() {
     );
 
     let finish = registry
-        .prepare_selected_execution_finish(&authorized, &mut record_admission())
+        .prepare_selected_execution_finish(&authorized)
         .expect("the authorized peer prepares its finish on the rescheduled row");
     assert!(matches!(
         registry.begin(&authorized),

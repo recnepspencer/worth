@@ -1,19 +1,16 @@
 //! Currentness of one exact accepted output, without repeating its source query.
 
-use worth_relational::facade::{
-    runtime::{PositionedRelationalSnapshot, RelationalRuntime},
-    snapshots::SnapshotHandle,
-};
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
 
 use crate::basis::WorthQueryProductObservationLease;
-use crate::domain_computation::primary_graph::{
-    application_output_demand::ReadyCompletion,
-    invariant_projection::{
-        ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
-        SelectedPendingConsumedOutput,
-    },
-    SourceInvalidationOwner,
-};
+use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::invariant_projection::SelectedPendingConsumedOutput;
+use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 
 mod consumer_identity;
 mod consumption;
@@ -22,13 +19,10 @@ mod decision_input;
 mod own_write_recovery;
 mod recovery;
 
-use super::{
-    super::invalidation::{
-        FullVerificationReason, InvalidationEditAdmission, SettlementRegistrationStop,
-        VerifiedCurrentCleanup,
-    },
-    AcceptedCurrentCandidate,
-};
+use super::super::invalidation::FullVerificationReason;
+use super::super::invalidation::SettlementRegistrationStop;
+use super::super::invalidation::VerifiedCurrentCleanup;
+use super::AcceptedCurrentCandidate;
 
 pub(in crate::domain_computation::primary_graph) enum CurrentAcceptedResult<'basis> {
     Current(CurrentAcceptedOutput<'basis>),
@@ -72,11 +66,7 @@ impl<'basis> BoundCurrentAcceptedOutput<'basis> {
 impl<'basis> CurrentAcceptedOutput<'basis> {
     pub(in crate::domain_computation::primary_graph) fn bind_product(
         self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<BoundCurrentAcceptedOutput<'basis>>, CurrentAcceptedStop> {
-        admission.charge_external_work(3).map_err(|stop| {
-            CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(stop))
-        })?;
         let recorded = self.candidate.selected.recorded();
         let row = recorded
             .mutable
@@ -104,11 +94,9 @@ impl AcceptedCurrentCandidate {
     pub(in crate::domain_computation::primary_graph) fn matches_consumed_output(
         &self,
         pending: &SelectedPendingConsumedOutput<'_>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, worth_relational::facade::mvcc::CompanionPreflightStop> {
-        admission.charge_external_work(1)?;
         match self.selected.native_output_witness() {
-            Some(witness) => pending.matches_output_witness(witness, admission),
+            Some(witness) => pending.matches_output_witness(witness),
             None => Ok(false),
         }
     }
@@ -123,13 +111,12 @@ impl AcceptedCurrentCandidate {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &'selected PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<SelectedPendingConsumedOutput<'selected>>, ConsumedOutputVerificationStop>
     {
         if self.selected.recorded().consumed_outputs.is_empty() {
             return Ok(None);
         }
-        if !self.own_evidence_is_current(execution, runtime, snapshot, admission)? {
+        if !self.own_evidence_is_current(execution, runtime, snapshot)? {
             return Ok(None);
         }
         ConsumedOutputEvidence::select_exact_pending_dependency(
@@ -139,7 +126,6 @@ impl AcceptedCurrentCandidate {
             runtime,
             snapshot,
             selected,
-            admission,
         )
     }
 
@@ -148,14 +134,11 @@ impl AcceptedCurrentCandidate {
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, ConsumedOutputVerificationStop> {
         // An old dependency set cannot constrain a consumer whose own native
         // evidence has changed. Missing evidence cannot reject the old edges.
         // This only requests disclosure, never Current.
-        admission
-            .charge_external_work(3)
-            .map_err(|_| ConsumedOutputVerificationStop::WorkExhausted)?;
+
         let facts = self
             .selected
             .recorded()
@@ -180,7 +163,6 @@ impl AcceptedCurrentCandidate {
             witness,
             runtime,
             snapshot,
-            admission,
         ) {
             Ok(false) => Ok(false),
             Ok(true) | Err(ConsumedOutputVerificationStop::Unavailable) => Ok(true),
@@ -198,26 +180,10 @@ impl AcceptedCurrentCandidate {
         product: &'basis WorthQueryProductObservationLease,
         snapshot: &'basis SnapshotHandle,
         selected: &'basis PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<CurrentAcceptedResult<'basis>, CurrentAcceptedStop> {
         // Witness/row reads, the Arc pin, and the final guarded row comparison
         // are fixed selected visits. Reserve them before either row lock.
-        admission.charge_external_work(10).map_err(|stop| {
-            CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(stop))
-        })?;
-        let branch_work = u64::try_from(selected.branch_id().0.len())
-            .ok()
-            .and_then(|length| length.checked_add(3))
-            .ok_or({
-                CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(
-                    worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
-                ))
-            })?;
-        admission
-            .charge_external_work(branch_work)
-            .map_err(|stop| {
-                CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(stop))
-            })?;
+
         let descriptor = product.relational_basis_descriptor();
         if descriptor.runtime_instance_id() != selected.runtime_instance_id()
             || descriptor.branch_id() != selected.branch_id()
@@ -261,7 +227,6 @@ impl AcceptedCurrentCandidate {
                 snapshot,
                 selected,
                 facts.clone(),
-                admission,
             );
         }
         let restored = requirement == Some(FullVerificationReason::CheckpointRestore);
@@ -269,8 +234,7 @@ impl AcceptedCurrentCandidate {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
         }
         let (None, Some(facts)) = (requirement.filter(|_| !restored), facts) else {
-            return match self
-                .pending_consumed_output(execution, owner, runtime, snapshot, selected, admission)
+            return match self.pending_consumed_output(execution, owner, runtime, snapshot, selected)
             {
                 Ok(Some(pending)) => Ok(CurrentAcceptedResult::PendingExact(pending)),
                 Ok(None) | Err(ConsumedOutputVerificationStop::Unavailable) => {
@@ -286,12 +250,11 @@ impl AcceptedCurrentCandidate {
             runtime,
             snapshot,
             selected,
-            admission,
         ) {
             Ok(ConsumedOutputVerification::Current) => {}
             Ok(_) => {
                 if !self
-                    .own_evidence_is_current(execution, runtime, snapshot, admission)
+                    .own_evidence_is_current(execution, runtime, snapshot)
                     .map_err(CurrentAcceptedStop::Closure)?
                 {
                     return Ok(CurrentAcceptedResult::NeedsDisclosure);
@@ -303,7 +266,6 @@ impl AcceptedCurrentCandidate {
                     runtime,
                     snapshot,
                     selected,
-                    admission,
                 )
                 .map(|pending| match pending {
                     Some(pending) => CurrentAcceptedResult::PendingExact(pending),
@@ -313,7 +275,7 @@ impl AcceptedCurrentCandidate {
             }
             Err(ConsumedOutputVerificationStop::PendingUpstream) => {
                 if !self
-                    .own_evidence_is_current(execution, runtime, snapshot, admission)
+                    .own_evidence_is_current(execution, runtime, snapshot)
                     .map_err(CurrentAcceptedStop::Closure)?
                 {
                     return Ok(CurrentAcceptedResult::NeedsDisclosure);
@@ -325,7 +287,6 @@ impl AcceptedCurrentCandidate {
                     runtime,
                     snapshot,
                     selected,
-                    admission,
                 )
                 .map(|pending| match pending {
                     Some(pending) => CurrentAcceptedResult::PendingExact(pending),
@@ -342,7 +303,6 @@ impl AcceptedCurrentCandidate {
                 selected,
                 &recorded.settlement_identity,
                 &facts,
-                admission,
             )
             .map_err(CurrentAcceptedStop::Registration)?
         else {

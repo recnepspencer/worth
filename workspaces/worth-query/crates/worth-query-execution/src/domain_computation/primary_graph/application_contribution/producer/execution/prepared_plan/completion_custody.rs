@@ -2,7 +2,6 @@
 use super::*;
 use std::cell::Cell;
 use std::rc::Rc;
-use worth_relational::facade::mvcc::CompanionPreflightBudget;
 
 struct RunningClaim(Rc<Cell<bool>>);
 impl Drop for RunningClaim {
@@ -37,7 +36,7 @@ fn completion_closes_before_successor_custody_on_every_exit() {
             running: Rc::clone(&running),
             released: Rc::clone(&released),
         };
-        let plan = OwnerPlan::new(Vec::new(), move |slots, _| {
+        let plan = OwnerPlan::new(Vec::new(), move |slots| {
             assert!(slots.is_empty());
             if exit == 3 {
                 panic!("completion failure");
@@ -45,26 +44,23 @@ fn completion_closes_before_successor_custody_on_every_exit() {
             drop(claim);
             Ok::<(), ()>(())
         });
-        let plan = plan.complete_with(interest, move |completion, admission| {
+        let plan = plan.complete_with(interest, move |completion| {
             if exit == 1 {
                 drop(completion);
                 Err(())
             } else {
-                let (result, custody) = completion.finish(admission);
+                let (result, custody) = completion.finish();
                 drop(custody);
                 result
             }
         });
-        let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: Some(0),
-            maximum_preparation_bytes: None,
-        });
+
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             if exit == 0 {
                 drop(plan);
                 Ok(())
             } else {
-                (plan.complete)(Vec::new(), &mut admission)
+                (plan.complete)(Vec::new())
             }
         }));
         assert_eq!(result.is_err(), exit == 3);

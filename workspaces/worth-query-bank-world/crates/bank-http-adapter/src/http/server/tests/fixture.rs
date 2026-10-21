@@ -116,7 +116,7 @@ impl CausalHttpApplication {
         self.runtime
             .query(queries::estate_case(estate))
             .as_principal(&principal)
-            .controls(BankReadControls::current(scope, 16, 20_000).unwrap())
+            .controls(BankReadControls::current(scope, 16).unwrap())
             .execute()
             .expect("fixture specialist should read estate status")
             .rows()[0]

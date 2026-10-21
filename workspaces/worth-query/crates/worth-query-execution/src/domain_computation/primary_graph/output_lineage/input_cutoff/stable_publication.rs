@@ -11,23 +11,25 @@ pub(in crate::domain_computation::primary_graph::output_lineage) use performed_s
 pub(in crate::domain_computation::primary_graph) use source_registration::StableEqualityConsequence;
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::OnceLock;
 
 use worth_runtime_world::facade::ProductBranchObservation;
 
-use super::{RetainedInputCutoffCandidate, VerifiedInputCutoff};
+use super::RetainedInputCutoffCandidate;
+use super::VerifiedInputCutoff;
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
-use crate::domain_computation::primary_graph::{
-    output_lineage::{
-        invalidation::InvalidationEditAdmission,
-        prepared_slot::{arc_bytes, denial, tree_work},
-        retained_capacity::RetainedLineageCapacity,
-        ProductCoordinate, RecordedOutput, RecordedSettlementIdentity, SemanticSource,
-        WorthQueryApplicationOutputLineage,
-    },
-    provider::WorthQueryApplicationBranchCommitCoordination,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind as Kind,
-};
+
+use crate::domain_computation::primary_graph::output_lineage::prepared_slot::denial;
+use crate::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::output_lineage::RecordedOutput;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::output_lineage::SemanticSource;
+use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
+use crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
 
 /// This reserves preparation custody and a prospective address, not a published
 /// settlement. Borrowing the coordination proof keeps the exact occurrence
@@ -44,7 +46,6 @@ pub(in crate::domain_computation::primary_graph) struct PreparedStableLineageAdd
     pub(super) record_cell: Arc<OnceLock<RecordedOutput>>,
     pub(super) expected_record_count: usize,
     pub(super) verified: VerifiedInputCutoff<'selected>,
-    pub(super) retained_capacity: Option<RetainedLineageCapacity>,
     pub(super) _coordination: &'lane WorthQueryApplicationBranchCommitCoordination<'lane>,
 }
 
@@ -96,11 +97,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
     observation: &ProductBranchObservation,
     coordination: &'lane WorthQueryApplicationBranchCommitCoordination<'lane>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<PreparedStableLineageAddress<'lane, 'selected>, WorthQueryOutputDemandDenial> {
-    admission
-        .charge_external_work(6)
-        .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
     if !coordination.admits(observation) {
         return Err(denial(Kind::PublicationStale));
     }
@@ -127,17 +124,10 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
         occurrence: observation.lifecycle_incarnation(),
         generation: observation.reference_generation().get(),
     };
-    lineage.drain_cancelled_slots(admission)?;
+    lineage.drain_cancelled_slots()?;
     // History no retained reader selects is freed before this address extends it.
-    lineage.retire_unselected_generations(&source, coordinate.occurrence, admission)?;
     let actual = lineage
-        .prior_input_cutoff_candidate::<Binding>(
-            scope,
-            observation,
-            partition,
-            execution,
-            admission,
-        )
+        .prior_input_cutoff_candidate::<Binding>(scope, observation, partition, execution)
         .map_err(|stop| {
             crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
                 crate::domain_computation::primary_graph::output_reuse::preflight_stop(stop),
@@ -150,44 +140,14 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
     {
         return Err(denial(Kind::PublicationStale));
     }
-    admission
-        .charge_ordered_operations(
-            1,
-            tree_work::<SemanticSource>(lineage.by_source.len())
-                .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?,
-        )
-        .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
+
     let occurrences = lineage.by_source.get(&source);
-    admission
-        .charge_ordered_operations(
-            1,
-            tree_work::<worth_runtime_world::facade::ProductBranchIncarnation>(
-                occurrences.map_or(0, |rows| rows.len()),
-            )
-            .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?,
-        )
-        .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
+
     let history = occurrences.and_then(|rows| rows.get(&coordinate.occurrence));
-    admission
-        .charge_ordered_operations(
-            1,
-            tree_work::<u64>(history.map_or(0, |rows| rows.len()))
-                .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?,
-        )
-        .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
+
     let slot = history
         .and_then(|rows| rows.get(&coordinate.generation))
         .map_or(0, Vec::len);
-    let bytes = arc_bytes::<RecordedSettlementIdentity>()
-        .and_then(|bytes| bytes.checked_add(arc_bytes::<OnceLock<RecordedOutput>>()?))
-        .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
-    admission
-        .admit_read_scratch(bytes)
-        .map_err(|_| denial(Kind::RetentionBudgetExceeded))?;
-    admission
-        .charge_external_work(4)
-        .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
-    let retained_capacity = lineage.retention.reserve(bytes)?;
     let identity = RecordedSettlementIdentity::retain(&source, coordinate, slot);
     let record_cell = Arc::new(OnceLock::new());
     drop(lineage);
@@ -200,7 +160,6 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
         record_cell,
         expected_record_count: slot,
         verified,
-        retained_capacity: Some(retained_capacity),
         _coordination: coordination,
     })
 }

@@ -14,12 +14,7 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
     let source = prior_identity.source().clone();
     let (occurrence, generation, old_slot) = prior_identity.address();
     let captured = Arc::clone(&lineage.by_source[&source][&occurrence][&generation][old_slot]);
-    let retained = lineage.retain_computation(
-        sealed_run_for_lineage_test(),
-        None,
-        None,
-        lineage.prepay_computation_fork_scan_for_test(),
-    );
+    let retained = lineage.retain_computation(sealed_run_for_lineage_test());
     let RecordedComputation::Retained(state) = &retained else {
         panic!("prior retained");
     };
@@ -30,11 +25,10 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
         occurrence,
         generation: generation + 1,
     };
-    let prior_retained_bytes = lineage.retention.retained_bytes();
+
     // A private vacancy grants no publication authority. It is prepaid and
     // exercises the production slot's assignment and cancellation lifecycle.
-    const VACANCY_BYTES: u64 = 1024 * 1024;
-    let capacity = lineage.retention.reserve(VACANCY_BYTES).unwrap();
+
     let identity = RecordedSettlementIdentity::retain(&source, coordinate, 0);
     let record_cell = Arc::new(OnceLock::new());
     lineage
@@ -47,7 +41,7 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
     let partition_cell = lineage
         .partition_index
         .insert_vacancy(source.clone(), coordinate, None);
-    let computation_fork_scan_bound = lineage.prepay_computation_fork_scan_for_test();
+
     let output_binding_type = lineage.binding_type(&source.output_binding);
     let owner = Arc::new(Mutex::new(lineage));
     let mut prepared = PreparedOutputLineageSlot {
@@ -59,11 +53,10 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
         identity: Arc::clone(&identity),
         record_cell,
         partition_cell,
-        retained_capacity: Some(capacity),
+
         cancellation: Some(Box::new(CancelledLineageSlot {
             identity,
             partition: None,
-            retained_capacity: None,
             next: None,
         })),
         completed_handler_facts: None,
@@ -76,7 +69,6 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
         prior_computation: None,
         filled: false,
         computation: PreparedComputationCustody::Unassigned,
-        computation_fork_scan_bound,
     };
     prepared.retain_computation(
         SealedComputationRetention::Produced(sealed),
@@ -84,22 +76,17 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
             Arc::clone(&captured),
         )),
     );
-    let prepared_retained_bytes = owner.lock().unwrap().retention.retained_bytes();
+
     drop(prepared);
     let mut lineage = owner.lock().unwrap();
-    assert_eq!(
-        lineage.retention.retained_bytes(),
-        prepared_retained_bytes,
-        "the cancellation cue keeps its prepaid metadata, and the prior remains charged"
-    );
+
     assert!(matches!(
         captured.get().unwrap().mutable.lock().unwrap().computation,
         RecordedComputation::Retained(_)
     ));
     lineage.cancelled_slots.take();
-    assert_eq!(lineage.retention.retained_bytes(), prior_retained_bytes);
+
     lineage.by_source.clear();
     lineage.partition_index = Default::default();
     drop(captured);
-    assert_eq!(lineage.retention.retained_bytes(), 0);
 }

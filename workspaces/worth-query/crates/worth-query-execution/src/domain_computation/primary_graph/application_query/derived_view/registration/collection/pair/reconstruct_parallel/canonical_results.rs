@@ -41,6 +41,14 @@ impl CanonicalPairResults {
     pub(super) fn len(&self) -> usize {
         self.prefix.len()
     }
+    pub(super) fn retained_bytes(&self) -> Result<u64, Denial> {
+        use worth_execution::ChargedBytes;
+        self.prefix.iter().try_fold(0u64, |bytes, output| {
+            bytes
+                .checked_add(output.additional_charged_bytes())
+                .ok_or(Denial::ChargedBytesOverflow)
+        })
+    }
     pub(super) fn into_prefix(self) -> impl Iterator<Item = (EntityId, PairOutput)> {
         self.roots.into_keys().into_iter().zip(self.prefix)
     }

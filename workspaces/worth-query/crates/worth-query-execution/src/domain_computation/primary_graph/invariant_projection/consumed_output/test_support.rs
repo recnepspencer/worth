@@ -3,35 +3,22 @@ use std::sync::Arc;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use super::ConsumedOutputEvidence;
-use crate::domain_computation::primary_graph::{
-    output_lineage::{invalidation::FullVerificationReason, RecordedSettlementIdentity},
-    SourceInvalidationOwner,
-};
+use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 
 impl ConsumedOutputEvidence {
-    /// Test journeys use the same installed retention owner as real reads.
+    /// Test journeys retain the original identity, facts and selected native root.
     pub(in crate::domain_computation::primary_graph) fn retained_for_test(
-        owner: &SourceInvalidationOwner,
         identity: Arc<RecordedSettlementIdentity>,
         source_facts: impl Into<
             crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
         >,
-        mut upstream: Vec<Self>,
+        upstream: Vec<Self>,
         requirement: Option<FullVerificationReason>,
         selected: Arc<PositionedRelationalSnapshot>,
     ) -> Self {
         let source_facts = source_facts.into();
-        let mut admission = owner.edit_admission();
-        Self::admit_backing(&mut upstream, owner, &mut admission)
-            .expect("test carrier backing has installed capacity");
-        let capacity = owner
-            .retain_consumed_output(
-                &source_facts,
-                &selected,
-                Self::metadata_bytes(),
-                &mut admission,
-            )
-            .expect("test carrier has installed capacity");
+
         Self {
             _computation: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).certify_current().unwrap(),            identity,
             source_facts: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts).for_comparison().unwrap(),
@@ -39,8 +26,8 @@ impl ConsumedOutputEvidence {
             verification_requirement: requirement,
             native_output_witness: None,
             selected_native_root: selected,
-            _capacity: capacity,
-            backing_capacity: None,
+
+
         }
     }
 }
@@ -49,7 +36,6 @@ impl ConsumedOutputEvidence {
     /// The same retained consumption carrier, with an actual sealed Native
     /// witness supplied by the restored-root reader's full comparison.
     pub(in crate::domain_computation::primary_graph) fn restored_with_witness_for_test(
-        owner: &SourceInvalidationOwner,
         identity: Arc<RecordedSettlementIdentity>,
         source_facts: impl Into<
             crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
@@ -62,7 +48,6 @@ impl ConsumedOutputEvidence {
         >,
     ) -> Self {
         let mut retained = Self::retained_for_test(
-            owner,
             identity,
             source_facts,
             Vec::new(),

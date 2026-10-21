@@ -72,10 +72,8 @@ fn with_unmanaged_publications(
     let live_rows = |identities: &[&Identity]| {
         handle.with_runtime_mut(request_execution, |runtime| {
             let (basis_handle, basis) = snapshot(runtime);
-            let cell = owner
-                .cell_for_read(&basis, &mut owner.edit_admission())
-                .unwrap()
-                .unwrap();
+            let cell = owner.cell_for_read(&basis).unwrap().unwrap();
+
             let image = cell.read_image();
             let live = identities
                 .iter()
@@ -103,27 +101,5 @@ fn a_publication_without_prerequisites_retires_the_row_its_generation_displaces(
             [false, true],
             "the newer generation's publication retires the row it displaces"
         );
-    });
-}
-
-#[test]
-fn a_release_the_owner_could_not_admit_retires_at_the_next_release() {
-    let host_request = crate::test_request_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    with_unmanaged_publications(request_execution, |owner, publish, live_rows| {
-        let row = publish("open", "frozen", 31);
-        // An admission with no work left stops the release before any edit.
-        let mut exhausted = owner.edit_admission_with_work_limit(Some(1));
-        exhausted.charge_external_work(1).unwrap();
-        assert!(owner
-            .retire_released([Arc::clone(&row)], &mut exhausted)
-            .is_empty());
-        assert_eq!(live_rows(&[&row]), [true]);
-
-        // The next release names nothing new and still retires it.
-        let retired = owner.retire_released(std::iter::empty(), &mut owner.edit_admission());
-        assert_eq!(retired, [Arc::clone(&row)]);
-        assert_eq!(live_rows(&[&row]), [false]);
     });
 }

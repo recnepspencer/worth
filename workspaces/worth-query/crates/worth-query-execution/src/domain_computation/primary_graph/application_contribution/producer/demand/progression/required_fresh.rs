@@ -6,20 +6,19 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 use worth_query_installation::facade::ApplicationSchema;
-use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use super::super::disclosure::FreshOutputDisclosure;
 use super::super::disclosure::ValidatedOutputDisclosure;
-use super::super::{PreparedRequiredFreshSlot, RequiredFreshOutcome, RequiredFreshProgress};
+use super::super::PreparedRequiredFreshSlot;
+use super::super::RequiredFreshOutcome;
+use super::super::RequiredFreshProgress;
 use super::admission::SourceAdmissionSelection;
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_output_demand::{
-        DemandAdmissionKind, OutputRefreshPredecessor, SelectedRequiredRefreshClaim,
-    },
-    application_query::WorthQueryObservedSourceCloneStop,
-    product_operation::SharedSelectedProductOperation,
-};
+use crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind;
+use crate::domain_computation::primary_graph::application_output_demand::OutputRefreshPredecessor;
+use crate::domain_computation::primary_graph::application_output_demand::SelectedRequiredRefreshClaim;
+
+use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -41,7 +40,7 @@ where
         request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
         matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
-        admission: &mut InvalidationEditAdmission,
+
         performed: &'owner std::cell::RefCell<PerformedMembers>,
     ) -> Result<crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan<'owner, RequiredFreshProgress<Schema>, WorthQueryOutputDemandDenial>, WorthQueryOutputDemandDenial>
     where
@@ -62,18 +61,12 @@ where
                     "advancement phase",
                 )
             })?;
-        let mut slot = PreparedRequiredFreshSlot::<Schema, Family>::prepare(
-            &self.output_demands,
-            claim,
-            installed,
-            admission,
-        )?;
+        let mut slot = PreparedRequiredFreshSlot::<Schema, Family>::prepare(claim, installed)?;
         let mut successor = self.admit_required_fresh_successor::<Family>(
             &execution,
             &fresh,
             shared,
             slot.claim(),
-            admission,
         )?;
         // The mode was prepared from this exact claim before registration. It
         // must be on the real admitted demand before any scheduling or effect.
@@ -85,7 +78,6 @@ where
                 .as_ref()
                 .expect("admitted successor keeps its Interest")
                 .key(),
-            admission,
         );
         // The registry's custody handoff precedes the selected read: a Stable
         // join must observe the same predecessor ownership on every exit.
@@ -99,29 +91,20 @@ where
                             .as_ref()
                             .expect("an admitted successor has its issued Interest"),
                         Family::IDENTITY,
-                        admission,
                     )
                     .map(|()| readiness)
             })
             .and_then(|readiness| {
-                match u64::try_from(std::mem::size_of::<
-                    super::super::super::WorthQueryProducerCommitAuthority,
-                >())
-                .ok()
-                .and_then(|work| admission.charge_external_work(work).ok())
-                {
-                    Some(()) => {
-                        let mode = slot.claim().commit_authority().clone();
-                        let successor_entry = std::sync::Arc::clone(&successor.installed_entry);
-                        super::super::disclosure::validate_required_successor::<Schema, Family>(
-                            fresh,
-                            slot.claim(),
-                            installed,
-                            &successor,
-                            admission,
-                        )
-                        .and_then(|fresh| {
-                            self.prepare_validated_output_demand_with_schedule(
+                let mode = slot.claim().commit_authority().clone();
+                let successor_entry = std::sync::Arc::clone(&successor.installed_entry);
+                super::super::disclosure::validate_required_successor::<Schema, Family>(
+                    fresh,
+                    slot.claim(),
+                    installed,
+                    &successor,
+                )
+                .and_then(|fresh| {
+                    self.prepare_validated_output_demand_with_schedule(
                         phase,
                         &mut successor,
                         principal,
@@ -135,13 +118,9 @@ where
                             matched_predecessors,
                             readiness,
                         },
-                        admission,
                         performed,
                     )
-                        })
-                    }
-                    None => Err(work_denial()),
-                }
+                })
             });
         use crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan;
         let plan = match outcome {
@@ -153,8 +132,8 @@ where
                 OwnerPlan::immediate(Err(super::validated::CompletionRefusal::denied(stop)))
             }
         };
-        Ok(plan.complete_with((slot, successor), move |completion, admission| {
-            let (completed, (slot, mut successor)) = completion.finish(admission);
+        Ok(plan.complete_with((slot, successor), move |completion| {
+            let (completed, (slot, mut successor)) = completion.finish();
             let outcome = match completed {
                 Ok(_) => RequiredFreshOutcome::Advanced,
                 Err(refusal) => {
@@ -180,26 +159,15 @@ where
         >,
         shared: &SharedSelectedProductOperation<'_, Schema>,
         claim: &SelectedRequiredRefreshClaim,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         // Source accessor, selected Ready, program basis and authority are
         // inspected before the borrowed proof is copied or registration runs.
-        admission
-            .charge_external_work(4)
-            .map_err(|_| work_denial())?;
-        let retained_source = fresh
-            .source()
-            .clone_admitted(&mut |work, bytes| {
-                admission.charge_external_work(work)?;
-                admission.admit_read_scratch(bytes)
-            })
-            .map_err(observed_clone_denial)?;
-        admission
-            .charge_external_work(1)
-            .map_err(|_| work_denial())?;
+
+        let retained_source = fresh.source().clone();
+
         // A Ready row can originate in ordinary admission without an older
         // retained program basis. Preserve its authentic optional custody;
         // the selected RequiredFresh path separately binds the current
@@ -224,33 +192,8 @@ where
             Some(predecessor),
             retained_basis,
             SourceAdmissionSelection::RequiredFresh { shared, claim },
-            admission,
         )
     }
-}
-
-fn observed_clone_denial(
-    stop: WorthQueryObservedSourceCloneStop<CompanionPreflightStop>,
-) -> WorthQueryOutputDemandDenial {
-    match stop {
-        WorthQueryObservedSourceCloneStop::AccountingOverflow => work_denial(),
-        WorthQueryObservedSourceCloneStop::Admission(
-            CompanionPreflightStop::WorkExhausted { .. }
-            | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-            | CompanionPreflightStop::WorkCounterOverflow,
-        ) => work_denial(),
-        WorthQueryObservedSourceCloneStop::Admission(_) => denial(
-            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-            "required observed source cannot be retained",
-        ),
-    }
-}
-
-fn work_denial() -> WorthQueryOutputDemandDenial {
-    denial(
-        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        "required Fresh source exceeds carried request work",
-    )
 }
 
 #[cfg(test)]

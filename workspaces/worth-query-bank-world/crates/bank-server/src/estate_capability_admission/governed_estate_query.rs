@@ -294,5 +294,5 @@ fn assert_governance_denied(scenario: &str, grant: GrantSpec) {
 }
 
 fn controls() -> BankReadControls {
-    BankReadControls::current(request_scope(), 1, 20_000).unwrap()
+    BankReadControls::current(request_scope(), 1).unwrap()
 }

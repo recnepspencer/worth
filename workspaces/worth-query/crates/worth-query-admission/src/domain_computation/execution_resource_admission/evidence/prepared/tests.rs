@@ -13,11 +13,7 @@ fn carried_resource_basis_preserves_canonical_identity_and_changes_each_invocati
     )
     .unwrap();
     let ordinary = prepared.bind("invocation-a", counters);
-    let admitted = prepared
-        .bind_admitted("invocation-a", counters, &mut |_, _| Ok::<(), ()>(()))
-        .unwrap();
     let different = prepared.bind("invocation-b", counters);
-    assert_eq!(ordinary, admitted);
     assert_ne!(ordinary.identity(), different.identity());
     assert!(Arc::ptr_eq(&ordinary.basis, &different.basis));
 
@@ -40,30 +36,6 @@ fn carried_resource_basis_preserves_canonical_identity_and_changes_each_invocati
     let expected = format!("{:x}", oracle.finalize());
     assert_eq!(ordinary.identity(), expected);
     assert_eq!(ordinary.identity().len(), Sha256::output_size() * 2);
-}
-
-#[test]
-fn carried_basis_preserves_original_refusal_before_constructing_invocation() {
-    let (prepared, counters) = prepare_execution_resource_plan(
-        &tests::contract(8),
-        &tests::request(8),
-        support(),
-        Default::default(),
-    )
-    .unwrap();
-    let marker = Arc::new(());
-    let mut calls = 0;
-    let stop = prepared.bind_admitted("invocation", counters, &mut |_, _| {
-        calls += 1;
-        Err(Arc::clone(&marker))
-    });
-    match stop {
-        Err(PreparedResourcePlanAdmissionStop::Admission(original)) => {
-            assert!(Arc::ptr_eq(&marker, &original))
-        }
-        _ => panic!("the first preparation refusal must be preserved"),
-    }
-    assert_eq!(calls, 1);
 }
 
 fn support() -> WorthQueryExecutionResourceSupportSnapshot {

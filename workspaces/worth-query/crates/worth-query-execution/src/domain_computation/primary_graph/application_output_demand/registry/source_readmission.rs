@@ -5,21 +5,18 @@ use std::ops::Deref;
 use std::sync::Arc;
 mod cached_successor;
 
-use super::{
-    required_custody::RequiredOutputCustodyCapacity, WorthQueryOutputDemandInterest,
-    WorthQueryOutputDemandRegistry,
-};
+use super::WorthQueryOutputDemandInterest;
+use super::WorthQueryOutputDemandRegistry;
 use crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    WorthQueryObservedSource, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-};
+
+use crate::domain_computation::primary_graph::WorthQueryObservedSource;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 /// The observation is moved once. Its existing selector, parameter and source
 /// capacity tickets remain inside it; neither observer duplicates that backing.
 pub(in crate::domain_computation::primary_graph) struct RetainedOutputReadmissionSource<Query> {
     source: WorthQueryObservedSource<Query>,
-    _capacity: RequiredOutputCustodyCapacity,
 }
 
 impl<Query> Deref for RetainedOutputReadmissionSource<Query> {
@@ -75,19 +72,13 @@ impl WorthQueryOutputDemandRegistry {
         retained_program_basis: Option<
             Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>,
         >,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedOutputReadmissionSource<Query>, WorthQueryOutputDemandDenial> {
-        let bytes = retained_bytes().ok_or_else(capacity_denial)?;
         // This wrapper is registry custody. The producer's retained-output
         // limit governs its output, while the shared required registry limit
         // governs this readmission source. A cached Ready nothing holds
         // gives way to it.
-        self.reclaim_cached_rows(bytes, admission)?;
-        let capacity = self.reserve_required_custody_capacity(bytes)?;
-        let source = Arc::new(RetainedOutputReadmissionSource {
-            source,
-            _capacity: capacity,
-        });
+
+        let source = Arc::new(RetainedOutputReadmissionSource { source });
         let erased = Arc::clone(&source) as Arc<dyn Any + Send + Sync>;
         Ok(PreparedOutputReadmissionSource {
             owner: self.clone(),
@@ -165,56 +156,10 @@ impl<Query: 'static> PreparedOutputReadmissionSource<Query> {
         Ok(self.source)
     }
 }
-pub(super) fn retained_bytes() -> Option<usize> {
-    // The query marker has no backing; all concrete observations have this layout.
-    std::mem::size_of::<RetainedOutputReadmissionSource<()>>()
-        .checked_add(std::mem::size_of::<RequiredOutputReadmission>())
-        .and_then(|bytes| bytes.checked_add(4 * std::mem::size_of::<usize>()))
-}
-fn capacity_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-        "required output source readmission exceeds retained capacity",
-    )
-}
 
 fn source_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::ForeignSource,
         "required output readmission source does not match its admitted record",
     )
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::sync::atomic::Ordering;
-
-    #[test]
-    fn readmission_and_index_share_one_limit_and_final_owner_refunds_capacity() {
-        let registry = WorthQueryOutputDemandRegistry::with_budgets(Some(64), Some(64), Some(64));
-        registry.state.lock().unwrap().required_reserved_bytes = 40;
-        let first = Arc::new(registry.reserve_required_custody_capacity(16).unwrap());
-        let observer = Arc::clone(&first);
-        assert!(registry.reserve_required_custody_capacity(9).is_err());
-        assert!(!registry.state.lock().unwrap().has_required_capacity(49));
-
-        drop(first);
-        assert!(registry.reserve_required_custody_capacity(9).is_err());
-        drop(observer);
-        let replacement = registry.reserve_required_custody_capacity(24).unwrap();
-        assert!(registry.reserve_required_custody_capacity(1).is_err());
-        drop(replacement);
-        assert!(registry.state.lock().unwrap().has_required_capacity(64));
-        assert!(registry.reserve_required_custody_capacity(65).is_err());
-        assert_eq!(
-            registry
-                .state
-                .lock()
-                .unwrap()
-                .required_custody_retained_bytes
-                .load(Ordering::Acquire),
-            0
-        );
-    }
 }

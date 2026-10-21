@@ -1,7 +1,6 @@
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkAdmissionDenial;
 use worth_query_admission::integration::{
-    admit_prepared_application_operation_graph_work_admitted,
-    prepare_application_operation_graph_work, WorthQueryGraphWorkCapacityAdmissionStop,
+    admit_prepared_application_operation_graph_work, prepare_application_operation_graph_work,
 };
 
 use super::super::fixture::{installed_authorization_world, TouchAccountOperation};
@@ -28,42 +27,34 @@ fn installed_operation_template_keeps_exact_operation_and_support_authority() {
     let prepared = prepare_application_operation_graph_work(&operation, &request, current_support)
         .expect("the actual installed operation is supported");
 
-    let mut admit = |_, _| Ok::<(), ()>(());
-    let plan = admit_prepared_application_operation_graph_work_admitted(
+    let plan = admit_prepared_application_operation_graph_work(
         &operation,
         &prepared,
         "actual-invocation-1",
         current_support,
-        &mut admit,
     )
     .expect("matching installed operation and provider admit");
     drop(plan);
 
-    let foreign_operation = admit_prepared_application_operation_graph_work_admitted(
+    let foreign_operation = admit_prepared_application_operation_graph_work(
         &other_operation,
         &prepared,
         "foreign-invocation",
         current_support,
-        &mut admit,
     );
     assert!(matches!(
         foreign_operation,
-        Err(WorthQueryGraphWorkCapacityAdmissionStop::Denial(
-            WorthQueryGraphWorkAdmissionDenial::OperationAuthorityMismatch
-        ))
+        Err(WorthQueryGraphWorkAdmissionDenial::OperationAuthorityMismatch)
     ));
 
-    let foreign_provider = admit_prepared_application_operation_graph_work_admitted(
+    let foreign_provider = admit_prepared_application_operation_graph_work(
         &operation,
         &prepared,
         "foreign-provider-invocation",
         foreign_support,
-        &mut admit,
     );
     assert!(matches!(
         foreign_provider,
-        Err(WorthQueryGraphWorkCapacityAdmissionStop::Denial(
-            WorthQueryGraphWorkAdmissionDenial::ProviderSupportUnavailable
-        ))
+        Err(WorthQueryGraphWorkAdmissionDenial::ProviderSupportUnavailable)
     ));
 }

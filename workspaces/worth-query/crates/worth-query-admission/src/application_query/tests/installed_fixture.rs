@@ -67,9 +67,7 @@ pub(super) fn query_definition(
         .order_by(sequence, ApplicationQueryOrderingDirection::Ascending)
         .continue_by(activity_relation)
         .live_by::<Activity, live_lane::PlanningLiveCause, _, _, _, _, _, _, _, _>(
-            account_id,
-            sequence,
-            ApplicationQueryLiveResourceContract::bounded(4, 2_048, 4_096),
+            account_id, sequence,
         )
         .build()
         .unwrap()

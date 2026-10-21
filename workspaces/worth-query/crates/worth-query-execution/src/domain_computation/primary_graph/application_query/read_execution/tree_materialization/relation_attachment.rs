@@ -15,9 +15,8 @@ use super::{
     project_nodes, ActiveResultTreeCollectionSelection, ResultTreeWork, TargetedCollectionChild,
     WorthQueryApplicationProjectionNode, WorthQueryApplicationReadExecutionDenial,
 };
-use crate::domain_computation::primary_graph::application_query::{
-    read_execution::{read_execution_denial, WorthQueryApplicationReadExecutionDenialKind},
-    resource_lifecycle::WorthQueryApplicationResultBufferReservation,
+use crate::domain_computation::primary_graph::application_query::read_execution::{
+    read_execution_denial, WorthQueryApplicationReadExecutionDenialKind,
 };
 
 mod omitted_relation;
@@ -38,7 +37,6 @@ pub(super) fn attach_relation(
     parents: &mut [WorthQueryApplicationProjectionNode],
     work: &mut ResultTreeWork,
     collection_selection: &mut ActiveResultTreeCollectionSelection,
-    result_buffer: &mut WorthQueryApplicationResultBufferReservation,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
     let layout = graph
         .relation(relation.relation())
@@ -59,36 +57,16 @@ pub(super) fn attach_relation(
                 .is_some_and(|request| request.collection_path == relation.result_path()) =>
         {
             return attach_ordered_relation(
-                execution,
-                runtime,
-                projection,
-                graph,
-                contract,
-                governance,
-                parameters,
-                relation,
-                parents,
-                work,
-                window,
-                result_buffer,
+                execution, runtime, projection, graph, contract, governance, parameters, relation,
+                parents, work, window,
             );
         }
         ActiveResultTreeCollectionSelection::Targeted(target)
             if target.collection_path == relation.result_path() =>
         {
             return attach_targeted_relation(
-                execution,
-                runtime,
-                projection,
-                graph,
-                contract,
-                governance,
-                parameters,
-                relation,
-                parents,
-                work,
-                target,
-                result_buffer,
+                execution, runtime, projection, graph, contract, governance, parameters, relation,
+                parents, work, target,
             );
         }
         ActiveResultTreeCollectionSelection::Complete
@@ -102,14 +80,14 @@ pub(super) fn attach_relation(
                 execution,
                 &frontier,
                 layout.kind,
-                work.remaining_work(),
+                None,
             ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?,
         ApplicationQueryResultTraversalDirection::Reverse => projection
             .bounded_incoming_relations_for_frontier(
                 execution,
                 &frontier,
                 layout.kind,
-                work.remaining_work(),
+                None,
             ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?,
     }
     .map_err(|_| work_limit_denial(relation.result_path()))?;
@@ -186,7 +164,6 @@ pub(super) fn attach_relation(
         &child_ids,
         work,
         collection_selection,
-        result_buffer,
     )?;
     distribute_relation_rows(
         parents,
@@ -197,7 +174,6 @@ pub(super) fn attach_relation(
         governance,
         work,
         false,
-        result_buffer,
         predicate_counts,
         predicate_sources,
     )
@@ -216,7 +192,6 @@ fn attach_targeted_relation(
     parents: &mut [WorthQueryApplicationProjectionNode],
     work: &mut ResultTreeWork,
     target: &TargetedCollectionChild,
-    result_buffer: &mut WorthQueryApplicationResultBufferReservation,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
     let [parent] = parents else {
         return Err(traversal_denial(relation.result_path()));
@@ -232,14 +207,14 @@ fn attach_targeted_relation(
                 execution,
                 &frontier,
                 layout.kind,
-                work.remaining_work(),
+                None,
             ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?,
         ApplicationQueryResultTraversalDirection::Reverse => projection
             .bounded_outgoing_relations_for_frontier(
                 execution,
                 &frontier,
                 layout.kind,
-                work.remaining_work(),
+                None,
             ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?,
     }
     .map_err(|_| work_limit_denial(relation.result_path()))?;
@@ -293,7 +268,6 @@ fn attach_targeted_relation(
         &[target.child_entity_id],
         work,
         &mut nested_selection,
-        result_buffer,
     )?;
     distribute_relation_rows(
         parents,
@@ -304,7 +278,6 @@ fn attach_targeted_relation(
         governance,
         work,
         true,
-        result_buffer,
         vec![usize::from(relation.predicate().is_some())],
         relation
             .predicate()

@@ -33,7 +33,7 @@ fn completion_failure_charges_the_whole_dispatched_wave() {
             .map(|(rank, units)| {
                 OwnerPlan::new(
                     vec![PreparedCompute::declared_test_request(rank, units, false)],
-                    move |mut slots, _| {
+                    move |mut slots| {
                         let (actual_rank, _) = slots.pop().unwrap().into_value::<(usize, bool)>();
                         if actual_rank == FAILURE {
                             Err(actual_rank)
@@ -53,13 +53,9 @@ fn completion_failure_charges_the_whole_dispatched_wave() {
                     plans,
                     &execution,
                 );
-                let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                    maximum_work_visits: Some(0),
-                    maximum_preparation_bytes: None,
-                });
+
                 cursor.apply(
-                    &mut admission,
-                    |key, result, _| {
+                    |key, result| {
                         result?;
                         applied.push(key);
                         Ok(())

@@ -202,7 +202,6 @@ pub(super) type Request<'application, 'principal, 'scope> =
 pub(in super::super) const SCOPE: &str = "anchor-isolated";
 /// The scope's seeded ordinate, which names the even set, and the one that
 /// names the odd set.
-pub(super) const RETAINED_POSITIONS: usize = 4;
 pub(super) const EVEN_Y: u64 = 50;
 pub(super) const ODD_Y: u64 = 51;
 
@@ -243,24 +242,7 @@ pub(super) fn install_variant_with_observations<
     seed: impl FnOnce(&mut Graph),
 ) -> Application<REUSE, WORK, RUNS, MODE> {
     const RETAINED_COMMITS: u64 = 32;
-    let positions = RETAINED_POSITIONS;
-    // The scale host gives all retention owners the same ample ceiling;
-    // this proof judges request work rather than retained-capacity stops.
-    // Preparation can coexist with four complete images.
-    let retained_bytes = if additional_observations == 0 {
-        128 * 1024 * 1024
-    } else {
-        1 << 40
-    };
-    let invalidation = worth_query_host::facade::runtime::WorthQueryInvalidationResources::install(
-        worth_query_host::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
-            1_000_000,
-            4 * retained_bytes,
-            retained_bytes,
-            positions,
-        ),
-    )
-    .expect("four retained image bounds fit preparation");
+    let invalidation = worth_query_host::facade::runtime::WorthQueryInvalidationResources::new();
     let limits = support::observation::limits_with_history_room(
         RETAINED_COMMITS + additional_observations,
         16 + additional_observations,

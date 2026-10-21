@@ -287,7 +287,9 @@ fn topology_configuration(calls: &Arc<AtomicUsize>) -> TopologyConfiguration {
 fn limits() -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         super::resources::world_resources(),
-        runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
+        runtime::WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
+        ),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     )
 }

@@ -162,7 +162,7 @@ fn retained_reads_require_the_actual_installed_value_catalogue() {
         let first = first_run(&world, &installed);
         let mut state = first.sealed.unwrap().unwrap().state;
         state.basis = state.basis.with_value_bindings_for_test(catalogue);
-        let prior = ComputationPrior::new(edition(), Ok(custodied_state_for_test(state)), None);
+        let prior = ComputationPrior::new(edition(), Ok(std::sync::Arc::new(state)), None);
         *installed.owner.calls.lock().unwrap() = [0; 4];
         let next = attempt(&world, &installed, Some(prior));
         if same {

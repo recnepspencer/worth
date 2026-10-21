@@ -80,7 +80,7 @@ pub(crate) fn authorized_user_id(
         .runtime
         .query(queries::account_authorized_users(fixture.personal_account))
         .as_principal(owner)
-        .controls(BankReadControls::current(request_scope(), 16, 10_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 16).unwrap())
         .execute()
         .expect("owner should read authorized users");
     let [users] = users.rows() else {
@@ -103,7 +103,7 @@ pub(crate) fn activity_count(
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(owner)
-        .execute(BankReadControls::current(request_scope(), 64, 8_192).unwrap())
+        .execute(BankReadControls::current(request_scope(), 64).unwrap())
         .expect("owner should read installed account activity")
         .rows()[0]
         .entries()
@@ -160,7 +160,7 @@ pub(crate) fn live_controls_for(
     request: WorthQueryRequestScope,
     buffer_capacity: usize,
 ) -> WorthQueryApplicationLiveControls {
-    WorthQueryApplicationLiveControls::bounded(request, buffer_capacity, 8, Some(2_048)).unwrap()
+    WorthQueryApplicationLiveControls::bounded(request, buffer_capacity, 8).unwrap()
 }
 
 fn mutation_controls(key: &str) -> BankMutationControls {

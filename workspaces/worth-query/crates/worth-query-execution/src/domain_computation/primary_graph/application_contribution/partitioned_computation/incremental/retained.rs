@@ -22,7 +22,6 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
-use crate::domain_computation::primary_graph::output_lineage::CustodiedComputation;
 
 /// How one run of a partitioned computation ran.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -260,9 +259,6 @@ pub(in crate::domain_computation) struct RetainedComputation {
     pub(super) facts: SealedComputationFacts,
     pub(super) checked_calls:
         Option<crate::domain_computation::primary_graph::application_attempt::CheckedCallShape>,
-    /// What the state is charged on the lineage ledger, or `None` when the
-    /// sum has no value.
-    pub(super) bytes: Option<u64>,
 }
 
 impl RetainedComputation {
@@ -270,12 +266,6 @@ impl RetainedComputation {
         &self,
     ) -> crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload {
         self.facts.original_payload()
-    }
-    /// The completed state's payload charge. Custody adds its own Arc
-    /// allocation, and every holder shares that full ticket until final release.
-    /// `None` when the payload sum overflows: the incoming state is evicted.
-    pub(in crate::domain_computation::primary_graph) const fn retained_bytes(&self) -> Option<u64> {
-        self.bytes
     }
 }
 
@@ -285,7 +275,7 @@ pub(in crate::domain_computation) struct SealedComputationRun {
     /// The custodied prior an incremental run built from. Publication consumes
     /// this holder before testing whether its exact displaced record is sole
     /// and unpinned; shared or pinned prior custody remains intact.
-    pub(in crate::domain_computation::primary_graph) cloned_from: Option<Arc<CustodiedComputation>>,
+    pub(in crate::domain_computation::primary_graph) cloned_from: Option<Arc<RetainedComputation>>,
     /// The request memory the state's tree and routing hold until the
     /// lineage charges the state.
     pub(in crate::domain_computation::primary_graph) tree_memory: RunTreeMemory,
@@ -301,7 +291,7 @@ pub(in crate::domain_computation) struct RunTreeMemory {
 /// The owner calls a run carried from `prior` without making them.
 pub(super) struct CarriedCalls {
     pub(super) validated_at: Option<worth_relational::facade::snapshots::SnapshotHandle>,
-    pub(super) prior: Arc<CustodiedComputation>,
+    pub(super) prior: Arc<RetainedComputation>,
     pub(super) membership: bool,
     pub(super) items: CarriedItems,
     pub(super) partitions: super::carried_partitions::CarriedPartitions,
@@ -362,11 +352,4 @@ pub(in crate::domain_computation::primary_graph) struct CompletedComputationRun 
     /// The request memory a routing the run built holds, `None` when it
     /// built none.
     pub(super) routing_memory: Option<QueryMemoryReservation>,
-}
-
-#[cfg(test)]
-impl RetainedComputation {
-    pub(in crate::domain_computation::primary_graph) fn overflow_bytes_for_test(&mut self) {
-        self.bytes = None;
-    }
 }

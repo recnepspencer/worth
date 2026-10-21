@@ -19,6 +19,32 @@ pub struct KeylessPartition<T> {
 pub struct MapMemoryOverflow;
 
 impl<T, K: Ord + ChargedBytes> ExecutionMap<T, K> {
+    /// Native keyless dispatch of opaque results. No result byte estimate is
+    /// supplied; actual result backing is admitted after evaluation and held
+    /// through canonical settlement by the same run owner.
+    pub fn from_keyless_values(
+        partitions: BTreeMap<PartitionIdentity, T>,
+    ) -> Result<Self, MapMemoryOverflow> {
+        let identities = CanonicalUniqueVec::from_btree_set(partitions.keys().copied().collect());
+        let write_sets = DisjointKeySetFamily::with_empty_sets(&identities);
+        let read_sets: Vec<Vec<K>> = partitions.keys().map(|_| Vec::new()).collect();
+        let access = access_memory_bytes(
+            &read_sets,
+            read_sets.capacity(),
+            &write_sets,
+            write_sets.members().len(),
+        )
+        .ok_or(MapMemoryOverflow)?;
+        let values = partitions.into_values().collect();
+        let batch =
+            AdmittedBatch::admit_measured(identities, values, access).ok_or(MapMemoryOverflow)?;
+        Ok(Self {
+            batch,
+            _read_sets: read_sets,
+            _write_sets: write_sets,
+        })
+    }
+
     /// A map over partitions keyed by identity. A map's identities iterate in
     /// canonical order and sets with no keys cannot overlap or conflict, so
     /// the one refusal is a byte count that does not fit.

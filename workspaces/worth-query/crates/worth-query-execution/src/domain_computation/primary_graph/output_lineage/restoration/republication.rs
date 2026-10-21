@@ -2,20 +2,24 @@
 
 use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
+use std::sync::OnceLock;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-use super::super::{
-    input_cutoff::performed_fact_sequence, invalidation::InvalidationEditAdmission,
-    latest_output_matching, retained_capacity::RetainedLineageCapacity,
-    CompletedDecisionReuseProof, PreparedInputReuseKey, RecordedOutput, RecordedSettlementIdentity,
-    RecordedSourceIdentity, SealedNativeOutputWitness, SemanticSource,
-    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
-};
-use crate::domain_computation::primary_graph::{
-    application_attempt::CompletedHandlerFactBoundary, invariant_projection::ConsumedOutputEvidence,
-};
+use super::super::input_cutoff::performed_fact_sequence;
+use super::super::latest_output_matching;
+use super::super::CompletedDecisionReuseProof;
+use super::super::PreparedInputReuseKey;
+use super::super::RecordedOutput;
+use super::super::RecordedSettlementIdentity;
+use super::super::RecordedSourceIdentity;
+use super::super::SealedNativeOutputWitness;
+use super::super::SemanticSource;
+use super::super::WorthQueryApplicationOutputCorrespondence;
+use super::super::WorthQueryApplicationOutputLineage;
+use crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 
 /// What a restoration carries over from the retained performed record it
 /// republishes. Restoring a generated output re-creates that record's exact
@@ -27,7 +31,6 @@ pub(in crate::domain_computation::primary_graph) struct RepublishedOutput {
     computation_source: super::super::ComputationSourceEvidence,
     predecessor: Arc<RecordedSettlementIdentity>,
     facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
-    retained_capacity: Option<RetainedLineageCapacity>,
     consumed_outputs: Arc<[ConsumedOutputEvidence]>,
     completed_handler_facts: CompletedHandlerFactBoundary,
     completed_decision_reuse: Option<CompletedDecisionReuseProof>,
@@ -59,7 +62,6 @@ impl RepublishedOutput {
     /// its own: its witness covers the re-created entities.
     pub(super) fn continue_in(self, row: &mut RecordedOutput) {
         row.computation_source = self.computation_source;
-        row._retained_capacity = self.retained_capacity;
         row.consumed_outputs = self.consumed_outputs;
         row.completed_handler_facts = Some(self.completed_handler_facts);
         row.completed_decision_reuse = self.completed_decision_reuse;
@@ -97,7 +99,7 @@ impl WorthQueryApplicationOutputLineage {
         correspondence: &Arc<WorthQueryApplicationOutputCorrespondence>,
         suspended_facts: &super::super::RetainedSourceFacts,
         witness: Arc<OnceLock<SealedNativeOutputWitness>>,
-        admission: &mut InvalidationEditAdmission,
+
         control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
     ) -> Option<RepublishedOutput> {
         let source = SemanticSource {
@@ -134,20 +136,18 @@ impl WorthQueryApplicationOutputLineage {
         // staleness away.
         let decision = origin.completed_decision_reuse.as_ref();
         let key = suspended.prepared_input_reuse_key.as_ref();
-        let (facts, retained_capacity) = if suspended.performed_origin.is_none() {
-            (suspended_facts.postconditions().clone(), None)
+        let facts = if suspended.performed_origin.is_none() {
+            suspended_facts.postconditions().clone()
         } else {
             // A stable alias projects its origin's output into its facts. The
             // republished row seals its own witness instead.
-            let (facts, capacity) = performed_fact_sequence(
+
+            performed_fact_sequence(
                 suspended_facts.postconditions(),
                 &suspended.stable_fact_spans(suspended_facts.postconditions())?,
                 boundary.handler_fact_count(),
-                &self.retention,
-                admission,
                 control,
-            )?;
-            (facts, Some(capacity))
+            )?
         };
         if boundary.handler_fact_count() > facts.len() {
             return None;
@@ -156,7 +156,6 @@ impl WorthQueryApplicationOutputLineage {
             computation_source: suspended.computation_source,
             predecessor: Arc::clone(&suspended.settlement_identity),
             facts,
-            retained_capacity,
             consumed_outputs: Arc::clone(&origin.consumed_outputs),
             completed_handler_facts: boundary.continued_by_republication(),
             completed_decision_reuse: decision

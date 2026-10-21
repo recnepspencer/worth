@@ -34,14 +34,11 @@ fn normalization_deduplicates_revisited_native_dependencies() {
         root_selection: None,
     };
 
-    let retained_before = footprint.retained_bytes();
-    let released_bytes = normalize_source_footprint(&mut footprint);
+    normalize_source_footprint(&mut footprint);
 
     assert_eq!(footprint.entities, vec![entity]);
     assert_eq!(footprint.aspects.len(), 1);
     assert_eq!(footprint.adjacencies.len(), 2);
-    assert_eq!(released_bytes, retained_before - footprint.retained_bytes());
-    assert!(released_bytes > 0);
 }
 
 fn adjacency(

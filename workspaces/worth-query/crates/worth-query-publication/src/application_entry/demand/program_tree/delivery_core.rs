@@ -27,20 +27,18 @@ where
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         phase: &WorthQueryAdvancementPhase<'_>,
-        policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<WorthQueryApplicationReadObservation, WorthQueryOperationDeliveryDenial> {
         let observation = request
             .retain_read(phase)
             .map_err(WorthQueryOperationDeliveryDenial::Observation)?;
-        self.require_current_at(&request.at(&observation), phase, policy)?;
+        self.require_current_at(&request.at(&observation), phase)?;
         Ok(observation)
     }
-    /// The selected typed root, ceiling and complete original lineage at the pinned observation.
+    /// The selected typed root and complete original lineage at the pinned observation.
     fn require_current_at(
         &self,
         retained: &WorthQueryApplicationRetainedRequest<'_, '_, '_, S>,
         phase: &WorthQueryAdvancementPhase<'_>,
-        policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<(), WorthQueryOperationDeliveryDenial> {
         use WorthQueryOperationDeliveryDenial as Denial;
         self.runtime
@@ -50,26 +48,13 @@ where
                 &retained.retained_observation().retained,
             )
             .map_err(Denial::Program)?;
-        let installed = self
-            .runtime
-            .runtime()
-            .output_demand_resource_profile()
-            .limits()
-            .source_currentness_work();
-        let work = policy
-            .currentness_work
-            .map(std::num::NonZeroUsize::get)
-            .into_iter()
-            .chain(installed)
-            .min();
         retained
-            .require_current_program_output_in_advancement(phase, &self.settlement, work)
+            .require_current_program_output_in_advancement(phase, &self.settlement)
             .map_err(Denial::Currentness)
     }
     pub fn deliver_current(
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-        policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<WorthQueryApplicationReadObservation, WorthQueryOperationDeliveryDenial> {
         if !self.matches(request) {
             return Err(WorthQueryOperationDeliveryDenial::FreshRequestMismatch);
@@ -77,14 +62,13 @@ where
         request
             .application
             .with_application_advancement(request.scope, |phase| {
-                self.current_observation(request, &phase, policy)
+                self.current_observation(request, &phase)
             })
             .map_err(WorthQueryOperationDeliveryDenial::Execution)?
     }
     pub fn deliver_current_at(
         &self,
         retained: &WorthQueryApplicationRetainedRequest<'_, '_, '_, S>,
-        policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<(), WorthQueryOperationDeliveryDenial> {
         use WorthQueryOperationDeliveryDenial as Denial;
         let request = retained.base_request();
@@ -104,7 +88,7 @@ where
                         WorthQueryOutputCurrentnessDenial::ForeignBranch,
                     ));
                 }
-                self.require_current_at(retained, &phase, policy)
+                self.require_current_at(retained, &phase)
             })
             .map_err(Denial::Execution)?
     }
@@ -159,11 +143,11 @@ where
         request
             .application
             .with_application_advancement(request.scope, |phase| {
-                let observation = self.current_observation(request, &phase, policy)?;
+                let observation = self.current_observation(request, &phase)?;
                 let retained = request.at(&observation);
                 let query = retained.query(intent);
                 let query = match policy.query_limits {
-                    Some((results, work)) => query.limits(results, work),
+                    Some(results) => query.limit_results(results),
                     None => query,
                 };
                 query.execute_in_advancement(&phase).map_err(Denial::Query)

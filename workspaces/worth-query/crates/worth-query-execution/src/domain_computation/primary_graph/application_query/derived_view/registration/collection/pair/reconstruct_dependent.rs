@@ -99,8 +99,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                         first_for(&member, &mut read)?;
                         Ok((read.result.ok_or(Denial::QueryExecutionDenied)?, read.request_scope))
                     })?;
-                    let (first_result, _first_claim) = first.into_parts();
-                    let mut second_claim = None;
+                    let first_result = first.into_result();
                     let (key, value, dependencies) = stage::run(lease, |context| {
                         self.read_managed_entry_pair_from_result(
                             view, product, root, first_result,
@@ -113,9 +112,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                                     request_scope: first_scope, attempted: false, result: None,
                                 };
                                 second_for(row, &mut read)?;
-                                let (result, claim) = read.result.ok_or(Denial::QueryExecutionDenied)?.into_parts();
+                                let result = read.result.ok_or(Denial::QueryExecutionDenied)?.into_result();
                                 context.checkpoint(1).map_err(|stop| denial::kernel(stop, Some(root)))?;
-                                second_claim = Some(claim);
                                 Ok(result)
                             },
                             &first_link, &second_link, |first, second| project(first, second),

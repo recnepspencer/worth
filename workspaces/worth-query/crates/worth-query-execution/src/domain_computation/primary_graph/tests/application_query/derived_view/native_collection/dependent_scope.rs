@@ -3,7 +3,7 @@ use super::*;
 use std::cell::{Cell, RefCell};
 
 #[test]
-fn dependent_second_scope_reconstructs_atomically_with_live_batch_claims() {
+fn dependent_second_scope_reconstructs_atomically_with_original_read_results() {
     let world = installed_authorization_world(true);
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
@@ -72,22 +72,15 @@ fn dependent_second_scope_reconstructs_atomically_with_live_batch_claims() {
         let membership = world.application.execute_application_query_one_shot(
             &phase, selected.retain_selection(&execution).unwrap().admit_application_query(
                 &phase, &membership_query, &access, ApplicationQueryParameterSet::new(),
-                current_controls(&request),
+                crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&membership_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
             ).unwrap(),
         ).unwrap();
-        let nz = |n| std::num::NonZeroUsize::new(n).unwrap();
-        let batch = crate::domain_computation::primary_graph::WorthQueryApplicationQueryBatchAdmission::new(
-            crate::domain_computation::primary_graph::WorthQueryApplicationQueryBatchLimits::new(
-                nz(4), Some(nz(100_000)), nz(262_144), nz(4_096),
-            ),
-        );
-        let claims = RefCell::new(Vec::new());
+
+        let batch = std::cell::RefCell::new(world.application.application_query_batch_from_installed_reads(&[world.application.plan_installed_query_batch_reads(&entry_query, 4, std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract")).unwrap()]).unwrap());
         let second_root = Cell::new(None);
-        let first_memory = Cell::new(0);
         let first_key = RefCell::new(None);
         let projections = Cell::new(0);
-        let first = |selector: &String| {
-            claims.borrow_mut().clear();
+let first = |selector: &String| {
             let root = selected.resolve_entity(
                 &phase, AccountStatus::reference(), selector.clone(), &request,
                 WorthQueryPrincipalResolutionMode::Ordinary,
@@ -95,21 +88,21 @@ fn dependent_second_scope_reconstructs_atomically_with_live_batch_claims() {
             let access = WorthQueryApplicationQueryAccessContext::new(&principal, &root);
             let plan = selected.retain_selection(&execution).unwrap().admit_application_query(
                 &phase, &entry_query, &access, ApplicationQueryParameterSet::new(),
-                current_controls(&request),
+                crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
             ).unwrap();
             let issued = world.application.execute_application_query_one_shot_in_batch(
-                &phase, plan, &batch,
+                &phase, plan, &batch.borrow(),
             ).unwrap();
-            let (result, claim) = issued.into_parts();
+            let result = issued.into_result();
             *first_key.borrow_mut() = Some(result.observed_sources()[0].managed_derived_view_key());
-            claims.borrow_mut().push(claim);
-            first_memory.set(batch.observe().retained_bytes());
-            assert!(first_memory.get() > 0);
             Ok(result)
         };
-        let second = |row: &AccountSummaryResult| {
+
+
+
+
+let second = |row: &AccountSummaryResult| {
             assert_eq!(row.label(), "unrelated");
-            assert!(batch.observe().retained_bytes() >= first_memory.get());
             let root = selected.resolve_entity(
                 &phase, AccountStatus::reference(), row.label().to_owned(), &request,
                 WorthQueryPrincipalResolutionMode::Ordinary,
@@ -119,17 +112,16 @@ fn dependent_second_scope_reconstructs_atomically_with_live_batch_claims() {
             let access = WorthQueryApplicationQueryAccessContext::new(&principal, &root);
             let plan = selected.retain_selection(&execution).unwrap().admit_application_query(
                 &phase, &entry_query, &access, ApplicationQueryParameterSet::new(),
-                current_controls(&request),
+                crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
             ).unwrap();
             let issued = world.application.execute_application_query_one_shot_in_batch(
-                &phase, plan, &batch,
+                &phase, plan, &batch.borrow(),
             ).unwrap();
-            let (result, claim) = issued.into_parts();
+            let result = issued.into_result();
             assert_eq!(result.observed_sources()[0].source_root(), root.entity_id());
-            claims.borrow_mut().push(claim);
             Ok(result)
         };
-        let members = |row: &crate::domain_computation::primary_graph::tests::fixture::PublicAccountMembershipResult| {
+let members = |row: &crate::domain_computation::primary_graph::tests::fixture::PublicAccountMembershipResult| {
             row.members.iter().map(|root| (*root, row.tag.clone())).collect()
         };
         let failed = world.application.reconstruct_managed_derived_collection_pair_lazy(
@@ -143,20 +135,18 @@ fn dependent_second_scope_reconstructs_atomically_with_live_batch_claims() {
         assert_eq!(cold.selected_commit(), selected.product().selected_commit());
         assert_eq!(cold.get(first_key.borrow().as_ref().unwrap()).err(),
             Some(WorthQueryManagedDerivedViewDenial::ColdReconstructionRequired));
-        claims.borrow_mut().clear();
-        assert_eq!(batch.observe().retained_bytes(), 0);
+
+
+
+        *batch.borrow_mut() = world.application.application_query_batch_from_installed_reads(&[world.application.plan_installed_query_batch_reads(&entry_query, 2, std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract")).unwrap()]).unwrap();
         let keys = world.application.reconstruct_managed_derived_collection_pair_lazy(
             &phase, &view, selected.product(), &membership, members, &first, &second,
             |row| row.label().to_owned(), |row| row.status().to_owned(),
             |_, row| {
-                assert!(batch.observe().retained_bytes() > first_memory.get(),
-                    "both issued claims remain live during projection");
                 projections.set(projections.get() + 1);
                 SceneLabel(row.label().to_owned())
             },
         ).unwrap();
-        claims.borrow_mut().clear();
-        assert_eq!(batch.observe().retained_bytes(), 0);
         assert_eq!(keys.len(), 1);
         assert_eq!(keys[0].root(), first_scope.entity_id());
         assert!(second_root.get().is_some());

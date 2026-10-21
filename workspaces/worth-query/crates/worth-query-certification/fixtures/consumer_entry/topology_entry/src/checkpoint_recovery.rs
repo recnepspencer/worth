@@ -21,7 +21,6 @@ use worth_query_host::facade::{
 
 use super::*;
 mod advancement_currentness;
-mod cached_locator_checkpoint;
 mod clean_reuse;
 pub(crate) mod computation_partition;
 mod current_family_output;

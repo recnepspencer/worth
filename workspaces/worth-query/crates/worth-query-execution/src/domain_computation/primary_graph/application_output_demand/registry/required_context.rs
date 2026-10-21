@@ -1,16 +1,15 @@
 use std::sync::Arc;
 
-use super::{
-    ready_backing::PreparedReadyBacking, WorthQueryOutputDemandInterest, WorthQueryOutputDemandKey,
-    WorthQueryOutputDemandRegistry,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::{
-    CarriedRequestInvalidationAdmission, InvalidationEditAdmission, SourceInvalidationOwner,
-};
-use crate::domain_computation::primary_graph::{
-    application_attempt::CompletedHandlerFactBoundary, ComputationPrior,
-    SealedComputationRetention, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-};
+use super::ready_backing::PreparedReadyBacking;
+use super::WorthQueryOutputDemandInterest;
+use super::WorthQueryOutputDemandKey;
+use super::WorthQueryOutputDemandRegistry;
+use crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::ComputationPrior;
+use crate::domain_computation::primary_graph::SealedComputationRetention;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 /// The live demand record selected for a producer operation. This is a
 /// move-only carrier; the source epoch and installed producer are the registry
@@ -20,8 +19,7 @@ pub(in crate::domain_computation) struct RequiredOutputDemandContext {
     owner: WorthQueryOutputDemandRegistry,
     key: Arc<WorthQueryOutputDemandKey>,
     work_membership: Option<Arc<super::required_work::RequiredWorkMembership>>,
-    retained_bytes: usize,
-    request_admission: Option<CarriedRequestInvalidationAdmission>,
+
     ready_backing: Option<PreparedReadyBacking>,
     completed_handler_facts: Option<CompletedHandlerFactBoundary>,
     decision_context_use: Option<crate::domain_computation::primary_graph::DecisionContextUse>,
@@ -138,15 +136,6 @@ impl RequiredOutputDemandContext {
         assert!(self.decision_context_use.replace(use_mask).is_none());
     }
 
-    pub(in crate::domain_computation::primary_graph) fn take_request_admission(
-        &mut self,
-    ) -> InvalidationEditAdmission {
-        self.request_admission
-            .take()
-            .expect("required publication consumes request custody once")
-            .into_admission()
-    }
-
     pub(in crate::domain_computation::primary_graph) fn retain_computation_prior(
         &mut self,
         prior: ComputationPrior,
@@ -215,12 +204,6 @@ impl RequiredOutputDemandContext {
         &self.key
     }
 
-    pub(super) const fn retained_bytes(&self) -> usize {
-        self.retained_bytes
-    }
-    pub(super) fn transfer_custody_to_registry(&mut self) {
-        self.retained_bytes = 0;
-    }
     pub(in crate::domain_computation::primary_graph) fn registry(
         &self,
     ) -> &WorthQueryOutputDemandRegistry {
@@ -232,41 +215,22 @@ impl RequiredOutputDemandContext {
     }
 }
 
-impl Drop for RequiredOutputDemandContext {
-    fn drop(&mut self) {
-        let mut state = self
-            .owner
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.required_reserved_bytes = state
-            .required_reserved_bytes
-            .saturating_sub(self.retained_bytes);
-    }
-}
-
 impl WorthQueryOutputDemandInterest {
     pub(in crate::domain_computation::primary_graph) fn required_context(
         &self,
         family: &'static str,
         source_owner: &SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<RequiredOutputDemandContext, WorthQueryOutputDemandDenial> {
-        self.owner
-            .drain_terminal_cleanup_admitted(source_owner, admission)?;
-        self.owner.reclaim_cached_rows(
-            context_bytes(&self.key)?.saturating_add(PreparedReadyBacking::retained_bytes()),
-            admission,
-        )?;
+        self.owner.drain_terminal_cleanup_admitted(source_owner)?;
         let mut state = self
             .owner
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.drain_cancelled_settlement_vacancies(admission)?;
+        state.drain_cancelled_settlement_vacancies();
         // Selecting this demand's own record is registry navigation, charged
         // apart from the work the producer declares for its operation.
-        state.charge_record_lookup(&self.key, admission)?;
+
         let Some(record) = state.records.get(&self.key) else {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::Closed,
@@ -274,41 +238,15 @@ impl WorthQueryOutputDemandInterest {
             ));
         };
         let work_membership = record.work_membership.clone();
-        let bytes = context_bytes(&self.key)?;
-        let required = state
-            .required_reserved_bytes
-            .checked_add(bytes)
-            .ok_or_else(capacity_denial)?;
-        if !state.has_required_capacity(required) {
-            return Err(super::required_custody::full_custody_denial(
-                bytes,
-                state.required_budget_bytes,
-            ));
-        }
-        let ready_backing = PreparedReadyBacking::prepare(&state, admission, bytes)?;
-        admission
-            .admit_read_scratch(bytes as u64)
-            .map_err(|_| capacity_denial())?;
-        let request_admission = admission
-            .carry_for_publication(source_owner)
-            .map_err(|stop| match stop {
-                worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
-                    ..
-                } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-                | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
-                    work_denial()
-                }
-                _ => capacity_denial(),
-            })?;
+        let ready_backing = PreparedReadyBacking::new();
         let key = Arc::new(self.key.clone());
-        state.required_reserved_bytes = required;
+
         Ok(RequiredOutputDemandContext {
             family,
             owner: self.owner.clone(),
             key,
             work_membership,
-            retained_bytes: bytes,
-            request_admission: Some(request_admission),
+
             ready_backing: Some(ready_backing),
             completed_handler_facts: None,
             decision_context_use: None,
@@ -321,31 +259,4 @@ impl WorthQueryOutputDemandInterest {
             sealed_computation: HandlerComputationCustody::AwaitingHandler,
         })
     }
-}
-
-fn work_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        "required output context exceeds request work",
-    )
-}
-
-fn capacity_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-        "required output context exceeds registry custody capacity",
-    )
-}
-
-/// The Arc header, one owned key and the slot for the producer's actual
-/// resources are held through the precommit phase, beside the Ready cell the
-/// execution fills. SourceEpoch cloning shares its admitted meaning.
-fn context_bytes(key: &WorthQueryOutputDemandKey) -> Result<usize, WorthQueryOutputDemandDenial> {
-    minimum_context_bytes()
-        .checked_add(key.producer.len())
-        .ok_or_else(capacity_denial)
-}
-
-pub(super) const fn minimum_context_bytes() -> usize {
-    std::mem::size_of::<WorthQueryOutputDemandKey>() + 2 * std::mem::size_of::<usize>()
 }

@@ -1,19 +1,15 @@
 //! Principal-first capability admission, before any workflow existence lookup.
-use crate::domain_computation::authorization::{
-    WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryOperationAuthorizationDenial,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementPhase, WorthQueryPrincipalResolutionMode,
-    WorthQuerySelectedProductOperation,
-};
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
-use worth_query_declaration::facade::{
-    application_program::{ApplicationWorkflowReadBinding, ApplicationWorkflowSpec},
-    application_schema::ApplicationSchema,
-};
+use crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
+
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowReadBinding;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
+use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledWorkflowReadBinding;
 
 /// No absence/status payload is carried by an admission refusal.
@@ -50,7 +46,6 @@ pub(in crate::domain_computation::primary_graph) fn admit<Schema, Spec, B>(
     external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     input: B::Input,
     request: &WorthQueryRequestScope,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<
     WorthQueryAdmittedApplicationCapabilityAccess<Schema, B::Capability, B::Operation, B::Input>,
     WorthQueryWorkflowReadDenial,
@@ -83,7 +78,6 @@ where
             request,
             WorthQueryPrincipalResolutionMode::Ordinary,
             None,
-            admission,
         )
         .map_err(Denial::Principal)?;
     let access = selected

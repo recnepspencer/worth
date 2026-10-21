@@ -33,15 +33,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     ) {
         let graph = &self.primary_provider.graph;
         let owner = &graph.source_owner.invalidation_owner;
-        let mut admission = owner.edit_admission();
+
         let sealed = graph.with_runtime_mut(execution, |runtime| {
-            let prepared = PreparedNativeOutputWitness::prepare_republication(
-                &correspondence,
-                &graph.layout,
-                owner,
-                &mut admission,
-            )
-            .ok()??;
+            let prepared =
+                PreparedNativeOutputWitness::prepare_republication(&correspondence, &graph.layout)
+                    .ok()??;
             let committed = runtime
                 .snapshots()
                 .snapshot_for_observation(&observation.basis().relational_basis().observation())
@@ -67,7 +63,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 &correspondence,
                 &producer.observed_source_facts,
                 witness,
-                &mut admission,
                 crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), None),
             )?;
             Some((republished, read_basis))
@@ -130,7 +125,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             &record.consumed_outputs,
             witness,
             read_basis,
-            &mut admission,
         ) {
             graph
                 .output_lineage

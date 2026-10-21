@@ -4,18 +4,18 @@
 //! heads, and refuses unresolved reservations. A missing head alone never
 //! constructs a first-publication classification.
 
-use crate::domain_computation::primary_graph::{
-    application_contribution::QualifiedOutputSource, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind as Kind,
-};
+use crate::domain_computation::primary_graph::application_contribution::QualifiedOutputSource;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
 
 mod supporting_sources;
 
-use super::{
-    invalidation::InvalidationEditAdmission, partition_index::SourcePartitionPublication,
-    ProductCoordinate, RecordedSettlementIdentity, SemanticSource,
-    WorthQueryApplicationOutputLineage, WorthQueryCurrentOutputCandidate,
-};
+use super::partition_index::SourcePartitionPublication;
+use super::ProductCoordinate;
+use super::RecordedSettlementIdentity;
+use super::SemanticSource;
+use super::WorthQueryApplicationOutputLineage;
+use super::WorthQueryCurrentOutputCandidate;
 
 /// Namespace coverage is installed by the native output-family owner.
 /// Recovery invalidates it before admitting any restored publication.
@@ -99,30 +99,17 @@ impl WorthQueryApplicationOutputLineage {
     pub(in crate::domain_computation::primary_graph) fn covered_source_publication<'source>(
         &self,
         source: &'source QualifiedOutputSource,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<CoveredSourcePublication<'source>, WorthQueryOutputDemandDenial> {
-        charge(admission, 1)?;
         let address = source.address();
         let bindings = self
             .output_families
             .get(address.family())
             .ok_or_else(|| stop(Kind::ProducerUnavailable))?;
-        let bytes = bindings
-            .len()
-            .checked_mul(
-                std::mem::size_of::<std::sync::Arc<RecordedSettlementIdentity>>()
-                    + std::mem::size_of::<SemanticSource>(),
-            )
-            .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or_else(|| stop(Kind::RetentionBudgetExceeded))?;
-        admission
-            .admit_read_scratch(bytes)
-            .map_err(|_| stop(Kind::RetentionBudgetExceeded))?;
+
         let mut published = Vec::with_capacity(bindings.len());
         let mut publications = super::family_selection::PublicationHeads::default();
         let mut aliases = Vec::with_capacity(bindings.len());
         for (binding, role) in bindings {
-            charge(admission, 1)?;
             let native_source = SemanticSource {
                 runtime_authority: address.runtime(),
                 schema: address.schema().clone(),
@@ -138,12 +125,10 @@ impl WorthQueryApplicationOutputLineage {
             };
             let mut depth = 0usize;
             loop {
-                charge(admission, 1)?;
                 match self.source_partition_publication(
                     &native_source,
                     coordinate,
                     address.partition(),
-                    admission,
                 )? {
                     SourcePartitionPublication::Vacant => {}
                     SourcePartitionPublication::Prepared => {
@@ -151,7 +136,7 @@ impl WorthQueryApplicationOutputLineage {
                     }
                     SourcePartitionPublication::Published(head) => {
                         published.push(std::sync::Arc::clone(&head.recorded.settlement_identity));
-                        charge(admission, publications.admission_work() as u64)?;
+
                         publications.insert(Some(address.partition()), role, *binding, depth, head);
                         break;
                     }
@@ -183,7 +168,7 @@ impl WorthQueryApplicationOutputLineage {
         };
         let primary_alias_count = aliases.len();
         if let Some(candidate) = &candidate {
-            self.supporting_publication_sources(candidate, &mut aliases, admission)?;
+            self.supporting_publication_sources(candidate, &mut aliases)?;
         }
         Ok(CoveredSourcePublication {
             candidate,
@@ -197,15 +182,6 @@ impl WorthQueryApplicationOutputLineage {
             },
         })
     }
-}
-
-fn charge(
-    admission: &mut InvalidationEditAdmission,
-    work: u64,
-) -> Result<(), WorthQueryOutputDemandDenial> {
-    admission
-        .charge_external_work(work)
-        .map_err(|_| stop(Kind::WorkBudgetExceeded))
 }
 
 fn stop(kind: Kind) -> WorthQueryOutputDemandDenial {

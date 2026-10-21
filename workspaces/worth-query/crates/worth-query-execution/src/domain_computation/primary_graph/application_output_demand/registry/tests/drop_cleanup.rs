@@ -65,19 +65,9 @@ fn registry_interest_drop_leaves_custody_note_without_sweeping() {
     let mut state = registry.state.lock().unwrap();
     assert!(state.pending_custody_prune());
     assert!(state.source_custody[commit].cleanup.queued);
-    state
-        .drain_completed_custody(&mut record_admission())
-        .unwrap();
+    state.drain_completed_custody();
     assert!(!state.source_custody.contains_key(commit));
     assert!(!state.pending_custody_prune());
-    assert_eq!(state.required_reserved_bytes, 0);
-    assert_eq!(state.obligation_reserved_bytes, 0);
-    assert_eq!(
-        state
-            .required_custody_retained_bytes
-            .load(std::sync::atomic::Ordering::Acquire),
-        0
-    );
 }
 
 #[test]
@@ -92,17 +82,7 @@ fn registry_prepared_token_drop_leaves_custody_note_without_sweeping() {
     let mut state = registry.state.lock().unwrap();
     assert_eq!(state.source_custody[commit].token_count, 0);
     assert!(state.source_custody[commit].cleanup.queued);
-    state
-        .drain_completed_custody(&mut record_admission())
-        .unwrap();
+    state.drain_completed_custody();
     assert!(!state.source_custody.contains_key(commit));
     assert!(!state.pending_custody_prune());
-    assert_eq!(state.required_reserved_bytes, 0);
-    assert_eq!(state.obligation_reserved_bytes, 0);
-    assert_eq!(
-        state
-            .required_custody_retained_bytes
-            .load(std::sync::atomic::Ordering::Acquire),
-        0
-    );
 }

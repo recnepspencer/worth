@@ -117,13 +117,6 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
         }
     }
 
-    pub(super) const fn branch_coordination_capacity_exhausted() -> Self {
-        Self {
-            kind: WorthQueryApplicationIdempotencyResolutionDenialKind::RetentionCapacityExhausted,
-            authorization: None,
-        }
-    }
-
     pub(in crate::domain_computation::primary_graph) fn from_provider(denial: Provider) -> Self {
         let kind = match denial {
             Provider::ExecutionDenied(kind) => WorthQueryApplicationIdempotencyResolutionDenialKind::ExecutionDenied(kind),

@@ -33,7 +33,7 @@ fn lease(bytes: u64) -> ExecutionResourceLease<'static> {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, bytes, 1_000_000),
+            ExecutionBudget::new(NonZeroUsize::MIN, Some(bytes), Some(1_000_000)),
         ),
         cancellation: CancellationToken::new(),
         deadline: None,
@@ -61,7 +61,12 @@ fn shared_roots_keep_direct_grants_and_only_new_paths_need_room() {
     // path still fits. The actual lease, not a descriptor callback, decides.
     let room = map.retained_bytes() / 2;
     let blocker = lease
-        .reserve_memory(lease.available_memory_bytes() - room)
+        .reserve_memory(
+            lease
+                .available_memory_bytes()
+                .expect("fixture installs finite memory")
+                - room,
+        )
         .unwrap();
     let grown = "changed".repeat(512);
     map.insert_cloned_in(&70, &grown, policy).unwrap();

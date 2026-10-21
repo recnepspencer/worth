@@ -1,7 +1,6 @@
 //! Route retained successor custody before inspecting its stopped predecessor.
-use super::super::super::super::required_continuations::{
-    PreparedContinuationWave, RequiredContinuations,
-};
+use super::super::super::super::required_continuations::PreparedContinuationWave;
+use super::super::super::super::required_continuations::RequiredContinuations;
 use super::super::frontier::RequiredMember;
 use super::*;
 
@@ -9,13 +8,12 @@ pub(super) fn defer<Schema: ApplicationSchema + 'static>(
     member: &mut RequiredMember,
     caller: &PreparedContinuationWave<'_, Schema>,
     queue: &PreparedContinuationWave<'_, Schema>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, WorthQueryOutputDemandDenial> {
     let Some(selected) = member.ready.bound_ready() else {
         return Ok(false);
     };
     let storage = if member.caller { caller } else { queue };
-    if !storage.retains_refresh(selected, admission)? {
+    if !storage.retains_refresh(selected)? {
         return Ok(false);
     }
     member.state = MemberState::RetainedRefresh;
@@ -28,14 +26,13 @@ pub(super) fn preserves_selection<Schema: ApplicationSchema + 'static>(
     member: &RequiredMember,
     caller: &RequiredContinuations<Schema>,
     queue: &RequiredContinuations<Schema>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, WorthQueryOutputDemandDenial> {
     let Some(selected) = member.ready.bound_ready() else {
         return Ok(false);
     };
     let storage = if member.caller { caller } else { queue };
     storage
-        .refresh_position(selected, admission)
+        .refresh_position(selected)
         .map(|position| position.is_some())
 }
 

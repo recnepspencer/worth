@@ -2,18 +2,17 @@
 
 use std::sync::Arc;
 
-use worth_relational::facade::mvcc::{
-    CompanionBranchCell, CompanionBranchImage, CompanionCellEditStop,
-    CompanionDerivedImageRetention, CompanionDerivedRootAdmission, CompanionDerivedRootCleanup,
-    CompanionDerivedRootCost, CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped,
-    CompanionPreflightStop, PreparedCompanionDerivedRoot,
-};
+use worth_relational::facade::mvcc::CompanionBranchCell;
+use worth_relational::facade::mvcc::CompanionBranchImage;
+use worth_relational::facade::mvcc::CompanionCellEditStop;
+use worth_relational::facade::mvcc::CompanionDerivedRootCleanup;
+use worth_relational::facade::mvcc::CompanionDerivedRootPreparationStop;
+use worth_relational::facade::mvcc::CompanionDerivedRootStopped;
+use worth_relational::facade::mvcc::PreparedCompanionDerivedRoot;
 
 use super::super::super::RecordedSettlementIdentity;
-use super::super::{
-    admission::IndexAdmission, retention, source_alignment::BranchMarkRoot,
-    InvalidationEditAdmission, SourceInvalidationOwner,
-};
+use super::super::source_alignment::BranchMarkRoot;
+use super::super::SourceInvalidationOwner;
 use super::SettlementRegistrationStop;
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
 
@@ -118,80 +117,16 @@ impl PreparedSettlementRegistration {
     }
 }
 
-impl CompanionDerivedRootAdmission for InvalidationEditAdmission {
-    type Stop = CompanionPreflightStop;
-
-    fn admit_derived_root(&mut self, cost: CompanionDerivedRootCost) -> Result<(), Self::Stop> {
-        self.work(cost.work)?;
-        self.bytes(cost.allocation_bytes)
-    }
-}
-
 impl SourceInvalidationOwner {
-    /// Retention refusal ends this edit, but must not strand the optional live
-    /// index. Attempt its paid empty image at the same exact Native position.
-    /// The caller still returns the original typed refusal; no output is certified.
-    pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn evict_after_refused_edit(
-        &self,
-        selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
-        stop: &SettlementRegistrationStop,
-        admission: &mut InvalidationEditAdmission,
-    ) {
-        if !matches!(
-            stop,
-            SettlementRegistrationStop::Admission(
-                CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }
-            )
-        ) {
-            return;
-        }
-        let Ok(Some(cell)) = self.cell_for_read(selected, admission) else {
-            return;
-        };
-        let image = cell.read_image();
-        if image.root_id() != selected.root_id()
-            || image.commit_id() != selected.commit_id()
-            || image.position() != selected.position()
-        {
-            return;
-        }
-        let vacant = self
-            .branches
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .vacant
-            .as_ref()
-            .cloned();
-        let Some(vacant) = vacant else {
-            return;
-        };
-        // The original retention refusal remains the answer if eviction stops.
-        if let Ok(prepared) = self.prepare_root_replacement(cell, image, vacant, admission) {
-            match prepared.install() {
-                Ok(cleanup) => drop(cleanup),
-                Err(stopped) => drop(stopped),
-            }
-        }
-    }
-
     pub(in crate::domain_computation::primary_graph::output_lineage::invalidation) fn prepare_root_replacement(
         &self,
         cell: CompanionBranchCell<BranchMarkRoot>,
         image: CompanionBranchImage<BranchMarkRoot>,
         root: Arc<BranchMarkRoot>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedSettlementRegistration, SettlementRegistrationStop> {
-        // Native image lifetime differs from the payload's. Even a shared
-        // payload needs one new ticket for this newly allocated native image.
-        let bytes = CompanionBranchCell::<BranchMarkRoot>::derived_root_cost().retained_image_bytes;
-        let ticket = retention::reserve_live_image(bytes, &self.resources, admission)?;
-        let retention = CompanionDerivedImageRetention::from_prepared_owner(ticket);
         let native = cell
-            .prepare_derived_root_at_same_position(image, root, retention, admission)
+            .prepare_derived_root_at_same_position(image, root)
             .map_err(|stop| match stop {
-                CompanionDerivedRootPreparationStop::Admission { reason, .. } => {
-                    SettlementRegistrationStop::Admission(reason)
-                }
                 CompanionDerivedRootPreparationStop::Cell { reason, .. } => {
                     SettlementRegistrationStop::Edit(reason)
                 }

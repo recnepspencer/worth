@@ -6,9 +6,8 @@ pub(super) fn marked_facts_permit_reuse<'fact>(
     facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
-    currentness: &mut InvalidationEditAdmission,
 ) -> Result<bool, InputCutoffVerificationStop> {
-    match facts_are_current(execution, facts, runtime, snapshot, currentness) {
+    match facts_are_current(execution, facts, runtime, snapshot) {
         Ok(current) => Ok(current),
         Err(
             InputCutoffVerificationStop::WorkExhausted
@@ -31,11 +30,9 @@ pub(super) fn facts_are_current<'fact>(
     facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
-    currentness: &mut InvalidationEditAdmission,
 ) -> Result<bool, InputCutoffVerificationStop> {
     for fact in facts {
-        currentness.charge_external_work(1)?;
-        if !fact_is_current(execution, fact, runtime, snapshot, currentness)? {
+        if !fact_is_current(execution, fact, runtime, snapshot)? {
             return Ok(false);
         }
     }
@@ -47,9 +44,8 @@ fn fact_is_current(
     fact: &WorthQueryApplicationObservedFact,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, InputCutoffVerificationStop> {
-    match fact.source_currentness_in(runtime, execution, snapshot, admission)? {
+    match fact.source_currentness_in(runtime, execution, snapshot)? {
         Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => {
             Err(InputCutoffVerificationStop::OutputObservation(stop))
         }

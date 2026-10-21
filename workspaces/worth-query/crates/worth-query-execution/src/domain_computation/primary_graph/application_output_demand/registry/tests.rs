@@ -1,60 +1,44 @@
-mod cleanup_oracle;
-pub(super) use cleanup_oracle::OracleWalk;
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::Arc;
+use std::sync::Condvar;
+use std::sync::Mutex;
 
-use super::record_capacity::fixture_capacity as test_record_capacity;
 use super::supersession::supersede_predecessors;
-use super::{
-    DemandRecord, DemandRegistryState, DemandState, DemandWake, WorthQueryOutputDemandInterest,
-    WorthQueryOutputDemandKey, WorthQueryOutputDemandNotifications, WorthQueryOutputDemandRegistry,
-    WorthQueryOutputSchedulingResult,
-};
-use crate::domain_computation::primary_graph::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-};
-use worth_relational::facade::mvcc::CompanionPreflightBudget;
+use super::DemandRecord;
+use super::DemandRegistryState;
+use super::DemandState;
+use super::DemandWake;
+use super::WorthQueryOutputDemandInterest;
+use super::WorthQueryOutputDemandKey;
+use super::WorthQueryOutputDemandNotifications;
+use super::WorthQueryOutputDemandRegistry;
+use super::WorthQueryOutputSchedulingResult;
 
-pub(super) fn record_admission() -> InvalidationEditAdmission {
-    InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(1_000_000),
-        maximum_preparation_bytes: None,
-    })
-}
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 mod awaited_claim;
 mod awaited_publication;
-mod caller_chain;
 pub(super) mod closed_retirement;
 mod completed_custody_stages;
 
 mod consumer_custody;
 mod consumption_guards;
 mod current_successor;
-mod custody_drain;
 mod custody_note;
 mod custody_reader;
 mod delivery_binding;
 mod demand_key;
-mod discarded_successor;
-mod drained_cleanup;
+
 mod drop_cascade;
 mod drop_claim_release;
 mod drop_cleanup;
 mod eager_debt;
 
-mod local_work;
-mod occurrence_search;
-mod payer_cleanup;
-mod payer_mutation;
-mod payer_publication;
 mod performed_release;
-mod prepaid_passes;
 mod prerequisite_retry;
 mod published_retirement;
 mod published_take;
 mod ready_reuse;
-mod record_capacity;
 mod recovery_posture;
 mod refusal_row;
 mod release_walk;
@@ -65,24 +49,22 @@ mod required_stop;
 mod required_work;
 mod reservation_baseline;
 mod retirement_refusal;
-mod row_work_refusal;
-mod unquoted_policy;
 
 mod scheduling_interruption;
 mod selected_execution_release;
 mod semantic_epoch;
-mod settlement_work;
+
 pub(super) mod source_custody;
 mod stopped_head;
 mod supersession_refund;
 pub(super) mod walk_bounds;
-mod walk_denial;
-mod walk_refusal;
 mod wave_admission;
 
 mod support;
+pub(super) use support::key;
+pub(super) use support::occurrence;
+pub(super) use support::record;
 use support::*;
-pub(super) use support::{key, occurrence, record};
 
 #[test]
 fn stale_successor_is_denied_without_mutating_newer_or_unrelated_records() {
@@ -98,9 +80,8 @@ fn stale_successor_is_denied_without_mutating_newer_or_unrelated_records() {
         record(occurrence, DemandState::Admitted, 0),
     );
 
-    let denial =
-        supersede_predecessors(&mut state, &key("producer", 7, 3), &mut record_admission())
-            .expect_err("an older revision cannot supersede an admitted newer revision");
+    let denial = supersede_predecessors(&mut state, &key("producer", 7, 3))
+        .expect_err("an older revision cannot supersede an admitted newer revision");
 
     assert_eq!(denial.kind(), WorthQueryOutputDemandDenialKind::Superseded);
     assert_eq!(state.records.len(), 2);
@@ -126,7 +107,7 @@ fn newer_successor_supersedes_only_its_older_occurrence() {
         record(occurrence, DemandState::Admitted, 1),
     );
 
-    supersede_predecessors(&mut state, &key("producer", 8, 3), &mut record_admission())
+    supersede_predecessors(&mut state, &key("producer", 8, 3))
         .expect("a newer revision supersedes its predecessor");
 
     assert!(matches!(
@@ -147,15 +128,12 @@ fn scheduling_failure_is_terminal_and_last_interest_releases_the_record() {
     let occurrence = occurrence();
     let demand_key = key("producer", 5, 1);
     let wake = Arc::new(DemandWake {
-        _record_capacity: test_record_capacity(),
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
     registry.state.lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
-            _record_capacity: test_record_capacity(),
-            source_commit_capacity: None,
             wake: Arc::clone(&wake),
             ..record(occurrence, DemandState::Scheduling, 1)
         },
@@ -188,15 +166,12 @@ fn required_failure_is_released_with_its_last_interest() {
     let occurrence = occurrence();
     let demand_key = key("required", 5, 1);
     let wake = Arc::new(DemandWake {
-        _record_capacity: test_record_capacity(),
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
     registry.state.lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
-            _record_capacity: test_record_capacity(),
-            source_commit_capacity: None,
             required_interests: 1,
             wake: Arc::clone(&wake),
             ..record(occurrence, DemandState::Scheduling, 1)
@@ -228,15 +203,12 @@ fn retiring_occurrence_closes_live_work_and_completion_cannot_resurrect_it() {
     let occurrence = occurrence();
     let demand_key = key("producer", 5, 1);
     let wake = Arc::new(DemandWake {
-        _record_capacity: test_record_capacity(),
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
     registry.state.lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
-            _record_capacity: test_record_capacity(),
-            source_commit_capacity: None,
             wake: Arc::clone(&wake),
             ..record(occurrence, DemandState::Scheduling, 1)
         },
@@ -349,15 +321,12 @@ fn denied_executor_releases_the_shared_claim_for_its_peer() {
     let occurrence = occurrence();
     let demand_key = key("shared-authorization", 1, 1);
     let wake = Arc::new(DemandWake {
-        _record_capacity: test_record_capacity(),
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
     registry.state.lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
-            _record_capacity: test_record_capacity(),
-            source_commit_capacity: None,
             wake: Arc::clone(&wake),
             ..record(occurrence, DemandState::Scheduled, 2)
         },
@@ -379,5 +348,3 @@ fn denied_executor_releases_the_shared_claim_for_its_peer() {
         super::WorthQueryOutputDemandAdvanceAdmission::Execute { successor_of: None }
     ));
 }
-
-mod cleanup_resumption;

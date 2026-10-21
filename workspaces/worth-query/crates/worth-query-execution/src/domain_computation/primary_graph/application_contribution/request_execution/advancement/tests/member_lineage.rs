@@ -93,7 +93,6 @@ fn wave_and_member_descendants_share_the_advancements_work_ceiling() {
         } if identity == PartitionIdentity::new(2)));
         let reports = observation::advancement_requests_on_this_thread_for_test();
         assert_eq!(reports.len(), 1, "one request owns every descendant");
-        assert_eq!(reports[0].as_ref().unwrap().charged_work(), 2 * UNITS);
     }
 }
 #[test]

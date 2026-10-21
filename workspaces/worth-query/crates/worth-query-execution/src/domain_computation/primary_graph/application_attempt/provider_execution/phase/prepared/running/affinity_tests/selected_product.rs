@@ -175,7 +175,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
             .unwrap();
         let refused = reports();
         assert_eq!(refused.len(), 1);
-        assert_eq!(refused[0].as_ref().unwrap().charged_work(), 0);
+
         a.application
             .with_application_advancement(&scope, |phase| {
                 let before = reads();

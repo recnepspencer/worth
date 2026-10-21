@@ -3,23 +3,20 @@
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts;
 
-use super::super::{DirtyReverification, InvalidationEditAdmission, SettlementVerificationStop};
+use super::super::DirtyReverification;
+use super::super::SettlementVerificationStop;
 use super::*;
-#[path = "dirty_clearance_funding.rs"]
-mod funding;
-use crate::domain_computation::primary_graph::tests::fixture::{
-    AccountBlocked, PrincipalIdentityField,
-};
-use funding::assert_carriage_funding;
-use worth_relational::facade::{
-    identity::PartitionId,
-    mvcc::{CompanionPreflightBudget, CompanionPreflightStop},
-    symbols::ClientKey,
-    transactions::{
-        CreateIntent, CreatedRelationRef, DeleteRelationIntent, EntityReference,
-        RelationMutationIntent, RelationSpec,
-    },
-};
+use crate::domain_computation::primary_graph::tests::fixture::AccountBlocked;
+use crate::domain_computation::primary_graph::tests::fixture::PrincipalIdentityField;
+use worth_relational::facade::identity::PartitionId;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::symbols::ClientKey;
+use worth_relational::facade::transactions::CreateIntent;
+use worth_relational::facade::transactions::CreatedRelationRef;
+use worth_relational::facade::transactions::DeleteRelationIntent;
+use worth_relational::facade::transactions::EntityReference;
+use worth_relational::facade::transactions::RelationMutationIntent;
+use worth_relational::facade::transactions::RelationSpec;
 
 #[test]
 fn native_reverification_clears_only_the_verified_live_image_with_admitted_work() {
@@ -111,7 +108,7 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                     work_membership: None, identity: identity.clone(), facts: tracked_facts.clone(),
                     output_facts: None, read_basis: basis.clone(), stale_at_read_basis: OrdSet::new(),
                     requirement: None, upstream: OrdSet::new(),
-                }, &mut owner.edit_admission()).unwrap();
+                }).unwrap();
                 let created = CreatedRelationRef {
                     partition_id: PartitionId::main(),
                     kind_id: kind,
@@ -143,8 +140,7 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                             runtime,
                             &changed_handle,
                             &changed,
-                            &identity,
-                            &mut owner.edit_admission()
+                            &identity
                         )
                         .unwrap(),
                     DirtyReverification::ChangedOrdinal(0)
@@ -162,18 +158,14 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                 );
                 release_test_commit_snapshot(runtime, &deleted);
                 let (restored_handle, restored) = snapshot(runtime);
-                let mut short = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                    maximum_work_visits: Some(0),
-                    maximum_preparation_bytes: None,
-                });
+
                 assert!(matches!(
                     owner.reverify_dirty(
                         &host_custody.borrowed_request_for_test(),
                         runtime,
                         &restored_handle,
                         &restored,
-                        &identity,
-                        &mut short
+                        &identity
                     ),
                     Err(SettlementVerificationStop::Admission(
                         CompanionPreflightStop::WorkExhausted { .. }
@@ -184,14 +176,7 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                     SourceSettlementCurrentness::Dirty(_)
                 ));
                 let DirtyReverification::Verified(verified) = owner
-                    .reverify_dirty(
-                        &host_custody.borrowed_request_for_test(),
-                        runtime,
-                        &restored_handle,
-                        &restored,
-                        &identity,
-                        &mut owner.edit_admission(),
-                    )
+                    .reverify_dirty(&host_custody.borrowed_request_for_test(), runtime, &restored_handle, &restored, &identity)
                     .unwrap()
                 else {
                     panic!("the actual restored relation set verifies at the live root");
@@ -205,7 +190,7 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                 );
                 assert!(
                     matches!(
-                        owner.clear_verified_dirty(verified, &mut owner.edit_admission()),
+                        owner.clear_verified_dirty(verified),
                         Err(SettlementVerificationStop::Edit(_))
                     ),
                     "a native head move must invalidate old clearing authority"
@@ -223,45 +208,26 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                                 runtime,
                                 &restored_handle,
                                 &restored,
-                                &identity,
-                                &mut owner.edit_admission()
+                                &identity
                             )
                             .unwrap(),
                         DirtyReverification::HistoricalCurrent
                     ),
                     "a historical native comparison grants only a view witness"
                 );
-                let mut admission = owner.edit_admission();
+
                 let DirtyReverification::Verified(verified) = owner
-                    .reverify_dirty(
-                        &host_custody.borrowed_request_for_test(),
-                        runtime,
-                        &latest_handle,
-                        &latest,
-                        &identity,
-                        &mut admission,
-                    )
+                    .reverify_dirty(&host_custody.borrowed_request_for_test(), runtime, &latest_handle, &latest, &identity)
                     .unwrap()
                 else {
                     panic!("fresh exact native comparison grants live clearing");
                 };
-                let diagnostic_image = owner
-                    .capture_full_verification(
-                        runtime,
-                        &latest_handle,
-                        &latest,
-                        &mut owner.edit_admission(),
-                    )
-                    .unwrap();
-                owner
-                    .clear_verified_dirty(verified, &mut admission)
-                    .unwrap();
+
+                let diagnostic_image = owner.capture_full_verification(runtime, &latest_handle, &latest).unwrap();
+                owner.clear_verified_dirty(verified).unwrap();
                 {
                     diagnostic_image
-                        .fence_semantic_image(
-                            &OrdSet::unit(identity.clone()),
-                            &mut owner.edit_admission(),
-                        )
+                        .fence_semantic_image(&OrdSet::unit(identity.clone()))
                         .unwrap();
                     drop(diagnostic_image);
                 }
@@ -276,7 +242,8 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                     ),
                     "live clearing cannot rewrite a retained dirty image"
                 );
-                let changes = owner.computation_changes(runtime, &latest_handle, &identity, &tracked_facts, &mut owner.edit_admission()).unwrap().expect("ordinary clear preserves original computation frontier");
+
+                let changes = owner.computation_changes(runtime, &latest_handle, &identity, &tracked_facts).unwrap().expect("ordinary clear preserves original computation frontier");
                 assert_eq!(changes.at_snapshot(runtime, &latest_handle).unwrap().iter().copied().collect::<Vec<_>>(), [0]);
                 assert!(changes.at_snapshot(runtime, &basis_handle).is_none(), "later evidence cannot bless an earlier source snapshot");
                 let original = tracked_facts.for_comparison().unwrap().facts().clone();
@@ -290,25 +257,26 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                 let foreign = Arc::<[WorthQueryApplicationObservedFact]>::from(original.iter().cloned().collect::<Vec<_>>()).into();
                 assert!(changes.carry(&foreign, 1, &OrdSet::new(), &latest_handle, control).unwrap().is_none(), "equal data cannot substitute original backing");
                 assert!(changes.carry(&original, 1, &OrdSet::new(), &basis_handle, control).unwrap().is_none(), "original body does not substitute the selected native pin");
-                assert_carriage_funding(owner, &latest, &changes, &original, &latest_handle);
+
                 let (reader_handle, reader_position) = snapshot(runtime);
                 assert_ne!(reader_handle, latest_handle, "a new reader owns a new native pin");
                 assert_eq!(reader_position, latest);
                 assert!(changes.carry(&original, 1, &OrdSet::new(), &reader_handle, control).unwrap().is_none(), "raw cutoff custody cannot substitute the reader pin");
                 let reader_changes = changes.for_snapshot(runtime, &reader_handle).unwrap();
                 assert_eq!(reader_changes.ordinals(), changes.ordinals());
-                assert!(reader_changes.matches_publication_source(runtime, &reader_handle, &mut owner.edit_admission()).unwrap());
-                assert!(!reader_changes.matches_publication_source(runtime, &basis_handle, &mut owner.edit_admission()).unwrap(), "provider readmission cannot carry revisions across a different native position");
-                let mut no_work = InvalidationEditAdmission::new(CompanionPreflightBudget { maximum_work_visits: Some(0), maximum_preparation_bytes: Some(64 * 1024) });
-                assert!(matches!(reader_changes.matches_publication_source(runtime, &reader_handle, &mut no_work), Err(CompanionPreflightStop::WorkExhausted { .. })), "the real publication source check cannot skip native admission");
+                assert!(reader_changes.matches_publication_source(runtime, &reader_handle).unwrap());
+                assert!(!reader_changes.matches_publication_source(runtime, &basis_handle).unwrap(), "provider readmission cannot carry revisions across a different native position");
+
                 assert!(reader_changes.carry(&original, 1, &OrdSet::new(), &reader_handle, control).unwrap().is_some(), "the marking owner's actual position validation carries exact reader custody");
                 assert!(changes.for_snapshot(runtime, &basis_handle).is_none());
                 runtime.snapshots().release_snapshot(&reader_handle).unwrap();
-                let old = owner.computation_changes(runtime, &basis_handle, &identity, &tracked_facts, &mut owner.edit_admission()).unwrap().unwrap();
+let old = owner.computation_changes(runtime, &basis_handle, &identity, &tracked_facts).unwrap().unwrap();
+
+
                 assert!(old.at_snapshot(runtime, &basis_handle).unwrap().is_empty(), "historical native frontier stays immutable");
                 let different_backing = RetainedSourceFacts::for_test(false, Arc::from([]));
                 assert!(owner.computation_changes(runtime, &latest_handle, &identity,
-                    &different_backing, &mut owner.edit_admission()).unwrap().is_none(),
+                    &different_backing).unwrap().is_none(),
                     "a source-current row cannot lend its frontier to foreign fact backing");
                 for snapshot in [basis_handle, changed_handle, restored_handle, latest_handle] {
                     runtime.snapshots().release_snapshot(&snapshot).unwrap();

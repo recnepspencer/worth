@@ -94,8 +94,6 @@ pub(super) fn operation_definition() -> domain::WorthQueryDomainOperationDefinit
         canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("counted-readiness").unwrap(),
-        128,
-        128,
         "counted-readiness-v1",
     )
     .semantic_reads([output_change_projection()])

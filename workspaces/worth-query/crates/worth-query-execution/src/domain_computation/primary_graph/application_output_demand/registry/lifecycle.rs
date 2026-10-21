@@ -1,9 +1,9 @@
 pub(in crate::domain_computation::primary_graph) use selected_execution_finish::RunningSelectedExecution;
 mod cached_reclaim;
-pub(super) mod cleanup_price;
+
 mod closed_retirement;
 pub(super) mod completed_custody;
-mod joined_ready;
+
 mod performed_release;
 pub(super) mod release;
 mod selected_execution_finish;
@@ -158,6 +158,7 @@ impl WorthQueryOutputDemandRegistry {
             })
     }
 
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn relinquish_execution(
         &self,
         interest: &WorthQueryOutputDemandInterest,

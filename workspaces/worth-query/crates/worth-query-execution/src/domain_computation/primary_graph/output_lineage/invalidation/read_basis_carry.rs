@@ -4,23 +4,20 @@
 
 use std::sync::Arc;
 
-use worth_relational::facade::{
-    mvcc::{CompanionBranchCell, CompanionBranchImage, CompanionPreflightStop},
-    runtime::{PositionedRelationalSnapshot, RelationalRuntime},
-    snapshots::SnapshotHandle,
-};
+use worth_relational::facade::mvcc::CompanionBranchCell;
+use worth_relational::facade::mvcc::CompanionBranchImage;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::super::RecordedSettlementIdentity;
-use super::{
-    admission::{IndexAdmission, RetainedIndexAdmission},
-    edit_admission::RetainedIndexCheckpoint,
-    index_capacity,
-    mark_state::{MarkState, SettlementCurrentness, SettlementMarks},
-    retention,
-    source_alignment::{BranchMarkRoot, SnapshotAlignedMarkState},
-    verification::SettlementVerificationStop,
-    InvalidationEditAdmission, SourceInvalidationOwner,
-};
+use super::mark_state::MarkState;
+use super::mark_state::SettlementCurrentness;
+use super::source_alignment::BranchMarkRoot;
+use super::source_alignment::SnapshotAlignedMarkState;
+use super::verification::SettlementVerificationStop;
+use super::SourceInvalidationOwner;
 
 /// Moves one row of `next` to the live image `aligned` observed at `selected`
 /// and returns whether the row changed. A row that requires full verification
@@ -32,10 +29,7 @@ pub(super) fn carry_row(
     selected: &PositionedRelationalSnapshot,
     basis: &mut Option<Arc<PositionedRelationalSnapshot>>,
     identity: &Arc<RecordedSettlementIdentity>,
-    admission: &mut impl RetainedIndexAdmission,
 ) -> Result<bool, CompanionPreflightStop> {
-    admission.work(1)?;
-    admission.ordered_read(next.settlements.len())?;
     let Some(row) = next.settlements.get(identity) else {
         return Ok(false);
     };
@@ -49,41 +43,15 @@ pub(super) fn carry_row(
     }
     let basis = match basis {
         Some(basis) => Arc::clone(basis),
-        None => {
-            let bytes = index_capacity::arc_bytes::<PositionedRelationalSnapshot>()
-                .and_then(|bytes| bytes.checked_add(selected.branch_id().0.len() as u64))
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-            admission.index_bytes(bytes)?;
-            next.maximum_basis_allocation_bytes = next.maximum_basis_allocation_bytes.max(bytes);
-            Arc::clone(basis.insert(Arc::new(selected.clone())))
-        }
+        None => Arc::clone(basis.insert(Arc::new(selected.clone()))),
     };
-    admission.index_bytes(
-        index_capacity::arc_bytes::<SettlementMarks>()
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-    )?;
+
     let mut replacement = (**row).clone();
     replacement.read_basis = basis;
-    admission.index_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
-        next.settlements.len(),
-    )?;
+
     next.settlements
         .insert(Arc::clone(identity), Arc::new(replacement));
     Ok(true)
-}
-
-/// One carried row owns its new basis, marks, and copied index path.
-pub fn carried_read_basis_custody_for_test(branch_bytes: usize, rows: usize) -> u64 {
-    index_capacity::arc_bytes::<PositionedRelationalSnapshot>()
-        .and_then(|bytes| bytes.checked_add(branch_bytes as u64))
-        .and_then(|bytes| bytes.checked_add(index_capacity::arc_bytes::<SettlementMarks>()?))
-        .and_then(|bytes| {
-            bytes.checked_add(index_capacity::ordered_edit_bytes::<
-                Arc<RecordedSettlementIdentity>,
-                Arc<SettlementMarks>,
-            >(rows)?)
-        })
-        .expect("the fixture's one-row carry fits its custody counter")
 }
 
 impl SourceInvalidationOwner {
@@ -97,14 +65,11 @@ impl SourceInvalidationOwner {
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
         identities: &[Arc<RecordedSettlementIdentity>],
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), SettlementVerificationStop> {
         if identities.is_empty() {
             return Ok(());
         }
-        let branch_bytes = selected.branch_id().0.len() as u64;
-        admission.work(1 + branch_bytes)?;
-        admission.bytes(branch_bytes)?;
+
         let actual = runtime
             .read_truth()
             .positioned_snapshot(snapshot)
@@ -112,7 +77,7 @@ impl SourceInvalidationOwner {
         if &actual != selected || selected.runtime_instance_id() != self.runtime_instance_id {
             return Err(SettlementVerificationStop::Alignment);
         }
-        let Some(cell) = self.cell_for_read(selected, admission)? else {
+        let Some(cell) = self.cell_for_read(selected)? else {
             return Ok(());
         };
         let image = cell.read_image();
@@ -122,28 +87,21 @@ impl SourceInvalidationOwner {
         {
             return Ok(());
         }
-        admission.ordered_read(image.payload().past.len())?;
+
         let aligned = SnapshotAlignedMarkState::observe_image(&image, selected)
             .map_err(|_| SettlementVerificationStop::Alignment)?;
-        let before = admission.index_checkpoint();
-        admission.bytes(
-            index_capacity::arc_bytes::<MarkState>()
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-        )?;
+
         let mut next = (*image.payload().current).clone();
         let mut basis = None;
         let mut carried = false;
         for identity in identities {
-            admission.ordered_read(image.payload().past.len())?;
-            carried |= carry_row(
-                &mut next, &aligned, selected, &mut basis, identity, admission,
-            )?;
+            carried |= carry_row(&mut next, &aligned, selected, &mut basis, identity)?;
         }
         drop(aligned);
         if !carried {
             return Ok(());
         }
-        self.install_live_state(cell, image, (next, before), admission)
+        self.install_live_state(cell, image, next)
     }
 
     /// Replaces the live mark state of the image it was prepared against.
@@ -152,18 +110,15 @@ impl SourceInvalidationOwner {
         &self,
         cell: CompanionBranchCell<BranchMarkRoot>,
         image: CompanionBranchImage<BranchMarkRoot>,
-        (next, before): (MarkState, RetainedIndexCheckpoint),
-        admission: &mut InvalidationEditAdmission,
+        next: MarkState,
     ) -> Result<(), SettlementVerificationStop> {
-        let root = retention::admit_live_replacement(
-            image.payload(),
-            next,
-            before,
-            &self.resources,
-            admission,
-        )?;
+        let root = {
+            let mut root = (**image.payload()).clone();
+            root.current = Arc::new(next);
+            root
+        };
         let prepared = self
-            .prepare_root_replacement(cell, image, Arc::new(root), admission)
+            .prepare_root_replacement(cell, image, Arc::new(root))
             .map_err(SettlementVerificationStop::from)?;
         let cleanup = prepared
             .install()

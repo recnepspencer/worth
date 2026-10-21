@@ -95,10 +95,11 @@ fn run_case(checked: bool, work: bool, ceiling: Option<u64>, cancel_in_preparati
         1,
         "the installed caller funds the whole attempt"
     );
-    let work = match &requests[0] {
-        Ok(report) => Some(report.charged_work()),
-        Err(_) => None,
-    };
+
+    let work = requests[0]
+        .as_ref()
+        .ok()
+        .map(|report| report.charged_work());
     let after = contacts.snapshot();
     Case {
         outcome: outcome.expect("the public commit door ran"),

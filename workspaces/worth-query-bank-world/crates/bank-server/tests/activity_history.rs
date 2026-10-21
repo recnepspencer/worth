@@ -250,7 +250,7 @@ fn paged_and_one_shot_activity_have_identical_result_meaning() {
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(&owner)
-        .execute(BankReadControls::current(one_shot_request, 64, 8_192).unwrap())
+        .execute(BankReadControls::current(one_shot_request, 64).unwrap())
         .expect("one-shot activity must execute");
     let expected = one_shot.rows()[0].entries().to_vec();
 
@@ -349,18 +349,14 @@ fn activity_order_follows_committed_account_sequence_not_derived_identity() {
 }
 
 fn page_controls(request: &WorthQueryRequestScope, page_width: usize) -> BankReadControls {
-    BankReadControls::current(request.clone(), page_width, 4_096).unwrap()
+    BankReadControls::current(request.clone(), page_width).unwrap()
 }
 
 fn resume_controls<'a>(
     request: &'a WorthQueryRequestScope,
     page_width: usize,
 ) -> WorthQueryApplicationQueryResumeControls<'a> {
-    WorthQueryApplicationQueryResumeControls::new(
-        NonZeroUsize::new(page_width).unwrap(),
-        Some(NonZeroUsize::new(4_096).unwrap()),
-        request,
-    )
+    WorthQueryApplicationQueryResumeControls::new(NonZeroUsize::new(page_width).unwrap(), request)
 }
 
 fn authorized_user_id(
@@ -373,7 +369,7 @@ fn authorized_user_id(
         .runtime
         .query(queries::account_authorized_users(fixture.personal_account))
         .as_principal(owner)
-        .controls(BankReadControls::current(request_scope(), 16, 10_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 16).unwrap())
         .execute()
         .expect("owner should read authorized users");
     let [users] = users.rows() else {

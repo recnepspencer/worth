@@ -1,20 +1,19 @@
 //! Original complete query consumption, retained without exposing native facts.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementPhase, WorthQueryApplicationOutputDemandSource,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-    WorthQuerySelectedProductOperation,
-};
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use crate::publication_boundary::WorthQueryProgramPublicationAccess;
-use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
+use worth_execution::ExecutionArray;
+use worth_execution::ExecutionArrayBuilder;
 use worth_query_installation::facade::ApplicationSchema;
 
 mod comparison;
 mod coverage;
-pub(in crate::domain_computation::primary_graph) use comparison::observation::RequiredSetComparisonObservations;
 use coverage::RetainedQuerySource;
-#[cfg(test)]
-mod cumulative_court;
+
 #[cfg(test)]
 mod storage_court;
 
@@ -114,10 +113,10 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .ok_or_else(|| {
                 source_denial(WorthQuerySourceExpectationDenialKind::PreparationMemoryExceeded)
             })?;
-        let mut admission = self.dependency_retention_admission();
+
         for observed in std::iter::once(set.source()).chain(source.observed_sources()) {
             check_request(&execution)?;
-            admit_descriptor(&mut admission, observed)?;
+
             self.validate_dependency(observed, true)?;
             let original = set.source();
             if observed.query_identifier != original.query_identifier
@@ -141,7 +140,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     relational,
                     std::iter::once(set.source()).chain(source.observed_sources()),
                     count,
-                    &mut admission,
                 )
             })
     }
@@ -160,12 +158,10 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let execution = phase
             .checked_execution_request_for(&self.application().product_runtime)
             .map_err(execution_denial)?;
-        let mut admission = self.dependency_retention_admission();
+
         let count = parts.clone().try_fold(0usize, |count, part| {
             check_request(&execution)?;
-            admission.charge_external_work(1).map_err(|_| {
-                source_denial(WorthQuerySourceExpectationDenialKind::WorkBudgetExceeded)
-            })?;
+
             count.checked_add(part.sources.len()).ok_or_else(|| {
                 source_denial(WorthQuerySourceExpectationDenialKind::PreparationMemoryExceeded)
             })
@@ -177,7 +173,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     .allocation_policy()
                     .check_live()
                     .map_err(storage)?;
-                admit_descriptor(&mut admission, &source.source)?;
+
                 self.validate_dependency(&source.source, false)?;
             }
         }
@@ -186,16 +182,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             count,
             &execution,
         )
-    }
-
-    fn dependency_retention_admission(&self) -> crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission{
-        let maximum = self
-            .application()
-            .runtime
-            .output_demand_resource_profile()
-            .limits()
-            .source_currentness_work();
-        self.request_admission(maximum)
     }
 
     fn validate_dependency<Query>(
@@ -229,33 +215,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         }
         Ok(())
     }
-}
-
-fn admit_descriptor<Query>(
-    admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
-    source: &WorthQueryObservedSource<Query>,
-) -> Result<(), WorthQueryRequiredSetCurrentnessDenial> {
-    // Fixed digest/runtime/model/selection axes and Arc custody plus the
-    // complete variable query name and Relational branch name comparisons.
-    // Canonical query installation is already sealed; no catalog search occurs.
-    let product_branch_bytes = match &source.selection {
-        WorthQueryApplicationBasisSelectionIdentity::Product(product) => {
-            product.branch_identity().name().as_str().len()
-        }
-        WorthQueryApplicationBasisSelectionIdentity::Relational => 0,
-    };
-    let work = source
-        .query_identifier
-        .len()
-        .checked_add(source.branch.as_ref().0.len())
-        .and_then(|n| n.checked_add(product_branch_bytes))
-        .and_then(|n| n.checked_mul(2))
-        .and_then(|n| n.checked_add(160))
-        .and_then(|n| u64::try_from(n).ok())
-        .ok_or_else(|| source_denial(WorthQuerySourceExpectationDenialKind::WorkBudgetExceeded))?;
-    admission
-        .charge_external_work(work)
-        .map_err(|_| source_denial(WorthQuerySourceExpectationDenialKind::WorkBudgetExceeded))
 }
 
 // Only validated native descriptors reach this storage owner. Original complete

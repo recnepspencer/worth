@@ -105,7 +105,7 @@ pub(super) fn reuse_exact_product(
 pub(super) fn controls(
     request: &WorthQueryRequestScope,
 ) -> primary_graph::WorthQueryProductQueryControls<'_> {
-    primary_graph::WorthQueryProductQueryControls::new(NonZeroUsize::new(8).unwrap(), None, request)
+    primary_graph::WorthQueryProductQueryControls::new(NonZeroUsize::new(8).unwrap(), request)
 }
 
 pub(super) fn product_identity(

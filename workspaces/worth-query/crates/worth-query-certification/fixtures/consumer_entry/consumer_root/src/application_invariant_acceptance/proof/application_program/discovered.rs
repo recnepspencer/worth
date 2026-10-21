@@ -13,9 +13,7 @@ use crate::application_program::discovered_delivery::{
 use std::num::NonZeroUsize;
 use worth_query_consumer_values::{PlanarAdjustment, PlanarOperation};
 use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
-use worth_query_host::facade::application_entry::{
-    WorthQueryOperationAdvance, WorthQueryOperationDeliveryPolicy,
-};
+use worth_query_host::facade::application_entry::WorthQueryOperationAdvance;
 
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
 use worth_query_topology_entry::{
@@ -47,7 +45,6 @@ pub(super) fn performed_source_discovers_required_root(
     ];
     let world = installation::install_selected_program(
         foreign,
-        4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),
         &grants,
@@ -174,7 +171,6 @@ pub(super) fn isolated_source_settles_without_roots(
     ];
     let world = installation::install_selected_program(
         foreign,
-        4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),
         &grants,
@@ -223,9 +219,7 @@ pub(super) fn isolated_source_settles_without_roots(
             panic!("ordinary empty discovery: {denial:?}")
         }
     });
-    let current = settled
-        .deliver_current(&request, WorthQueryOperationDeliveryPolicy::default())
-        .unwrap();
+    let current = settled.deliver_current(&request).unwrap();
     assert_eq!(
         current.selected_commit(),
         settled.settlement().observation().selected_commit()

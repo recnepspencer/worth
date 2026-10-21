@@ -14,11 +14,6 @@ fn one_caller_advance_rebinds_chain_after_actual_upstream_publication() {
         None,
         profile,
         32,
-        128 * 1_024 * 1_024,
-        profile
-            .limits()
-            .source_currentness_work()
-            .map(|work| u64::try_from(work).unwrap()),
         support::seed_cycle,
     );
     let (scope, principal) = authenticate(&application);

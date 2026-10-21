@@ -58,15 +58,7 @@ fn actual_companion_cutover_resolves_only_its_prepared_observer() {
             retained_drops: Arc::clone(&retained_drops),
             stop_after_prepare,
         });
-        let registration = pending
-            .activate(
-                participant.clone(),
-                CompanionPreflightBudget {
-                    maximum_work_visits: Some(64),
-                    maximum_preparation_bytes: None,
-                },
-            )
-            .unwrap();
+        let registration = pending.activate(participant.clone()).unwrap();
         let mut transaction = test_owner_begin_transaction_for_main(&runtime);
         transaction
             .push_batch(

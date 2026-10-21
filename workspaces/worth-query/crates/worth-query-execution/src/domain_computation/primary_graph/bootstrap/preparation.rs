@@ -100,17 +100,6 @@ impl WorthQueryExecutionInstallationAuthority {
                 "execution runtime already owns a primary graph",
             ));
         }
-        if let Some((retained_positions, retained_commits)) =
-            product_world_resources.invalidation_window_past_history()
-        {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::InvalidationWindowExceedsHistory {
-                    retained_positions,
-                    retained_commits,
-                },
-                "the invalidation window retains more positions than the World retains commits",
-            ));
-        }
         runtime
             .installed_packages()
             .validate_application_schema(installed_schema)

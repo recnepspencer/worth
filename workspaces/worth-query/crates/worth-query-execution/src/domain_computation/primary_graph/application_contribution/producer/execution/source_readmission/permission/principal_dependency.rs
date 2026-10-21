@@ -12,7 +12,6 @@ pub(super) fn capture<Schema, Binding>(
         BoundPrincipalIdentity<Schema, Binding>,
     >,
     session: WorthQueryGraphWorkSessionIdentity,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<WorthQueryPrincipalCurrentnessDependency, ProducerExecutionStop>
 where
     Schema: ApplicationSchema + 'static,
@@ -27,9 +26,7 @@ where
         .layout
         .principal_lookup_work(binding)
         .ok_or_else(|| work_denial::<Schema, Binding>())?;
-    admission
-        .charge_external_work(lookup_work)
-        .map_err(|_| work_denial::<Schema, Binding>())?;
+
     let layout = graph
         .layout
         .principal_binding(binding)
@@ -45,11 +42,7 @@ where
             sum.checked_add(locator.field_path().fields().len())
         })
         .ok_or_else(|| work_denial::<Schema, Binding>())?;
-    admission
-        .charge_external_work(
-            u64::try_from(field_visits).map_err(|_| work_denial::<Schema, Binding>())?,
-        )
-        .map_err(|_| work_denial::<Schema, Binding>())?;
+
     let (layout_work, layout_bytes) = locators
         .iter()
         .try_fold((0usize, 0usize), |(work, bytes), locator| {
@@ -85,12 +78,7 @@ where
         .and_then(|bytes| bytes.checked_add(freshness_bytes))
         .and_then(|bytes| bytes.checked_add(u64::try_from(binding_bytes).ok()?))
         .ok_or_else(|| work_denial::<Schema, Binding>())?;
-    admission
-        .charge_external_work(copy_work)
-        .map_err(|_| work_denial::<Schema, Binding>())?;
-    admission
-        .admit_read_scratch(copy_bytes)
-        .map_err(|stop| resource_denial::<Schema, Binding>(stop))?;
+
     Ok(WorthQueryPrincipalCurrentnessDependency::capture(
         session, principal, layout,
     ))

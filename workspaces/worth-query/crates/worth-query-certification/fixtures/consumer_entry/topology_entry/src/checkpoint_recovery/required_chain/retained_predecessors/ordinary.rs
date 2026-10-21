@@ -149,20 +149,10 @@ fn ordinary_complete_tree_escapes_scope_resumes_reads_current_and_closes() {
             )
             .unwrap();
         assert_eq!(read.rows()[0].value, length(11));
-        let observation = settled
-            .deliver_current(
-                &request,
-                WorthQueryOperationDeliveryPolicy::currentness(
-                    NonZeroUsize::new(1_000_000).unwrap(),
-                ),
-            )
-            .unwrap();
+        let observation = settled.deliver_current(&request).unwrap();
         request
             .at(&observation)
-            .require_current_program_output(
-                settled.settlement(),
-                Some((NonZeroUsize::new(1_000_000).unwrap()).get()),
-            )
+            .require_current_program_output(settled.settlement())
             .unwrap();
         drop((read, observation));
         settled

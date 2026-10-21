@@ -1,25 +1,24 @@
 //! Law 2, scope: verification reads only its runtime's receiver-owned arm.
 //! The thread-bound factory applies solely while a receiver is being constructed.
-use super::execution_runtime::source_invalidation::{
-    InvalidationRetentionLedger, WorthQueryInvalidationResources,
-};
-use std::{
-    cell::RefCell,
-    rc::{Rc, Weak as LocalWeak},
-    sync::{atomic::Ordering, Arc},
-};
+use super::execution_runtime::source_invalidation::InvalidationOracleReceiver;
+use super::execution_runtime::source_invalidation::WorthQueryInvalidationResources;
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::rc::Weak as LocalWeak;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
 #[derive(Default)]
 // The guard retains accounting/recording cells, never a runtime, image or ticket.
 // Counts include receivers whose actual runtime has already been retired.
 struct ConstructionFactory {
-    receivers: RefCell<Vec<Arc<InvalidationRetentionLedger>>>,
+    receivers: RefCell<Vec<Arc<InvalidationOracleReceiver>>>,
 }
 thread_local! {
  static FACTORIES: RefCell<Vec<LocalWeak<ConstructionFactory>>> = const { RefCell::new(Vec::new()) };
 }
 enum OwnedArm {
     Construction(Rc<ConstructionFactory>),
-    Receiver(Arc<InvalidationRetentionLedger>),
+    Receiver(Arc<InvalidationOracleReceiver>),
 }
 /// Owns differential verification on the runtime receivers it armed.
 /// This grants no execution, publication or installation authority.
@@ -41,7 +40,7 @@ impl WorthQueryInvalidationEquivalenceForTest {
     pub fn arm_for_invalidation_resources_for_test(
         resources: &WorthQueryInvalidationResources,
     ) -> Self {
-        let receiver = Arc::clone(resources.retention_receiver());
+        let receiver = Arc::clone(resources.oracle_receiver());
         receiver.oracle_guards.fetch_add(1, Ordering::AcqRel);
         Self {
             arm: OwnedArm::Receiver(receiver),
@@ -81,7 +80,7 @@ impl Drop for WorthQueryInvalidationEquivalenceForTest {
 }
 /// Cold construction only. No verification or row path reads thread ambient state.
 pub(in crate::domain_computation) fn attach_constructed_receiver(
-    receiver: &Arc<InvalidationRetentionLedger>,
+    receiver: &Arc<InvalidationOracleReceiver>,
 ) {
     FACTORIES.with(|factories| {
         let mut factories = factories.borrow_mut();
@@ -102,7 +101,7 @@ pub(in crate::domain_computation) fn attach_constructed_receiver(
 mod scope_tests {
     use super::*;
     fn resources() -> WorthQueryInvalidationResources {
-        let resources = WorthQueryInvalidationResources::install(super::super::execution_runtime::source_invalidation::WorthQueryInvalidationResourceInstallation::bounded(1, 1, 17, 1)).unwrap();
+        let resources = WorthQueryInvalidationResources::new();
         resources.attach_runtime_observations();
         resources
     }
@@ -125,7 +124,7 @@ mod scope_tests {
     #[test]
     fn resources_installed_here_carry_the_arm_into_worker_construction() {
         let guard = WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
-        let resources = WorthQueryInvalidationResources::install(super::super::execution_runtime::source_invalidation::WorthQueryInvalidationResourceInstallation::bounded(1, 1, 17, 1)).unwrap();
+        let resources = WorthQueryInvalidationResources::new();
         let worker = resources.clone();
         assert!(std::thread::spawn(move || {
             worker.attach_runtime_observations();

@@ -9,8 +9,7 @@ pub(in crate::domain_computation) enum PriorAbsence {
     Republished,
     NotProduced,
     Unmeasured,
-    Moved,
-    Evicted,
+
     Suppressed(Suppression),
     Stopped,
 }
@@ -23,8 +22,6 @@ impl PriorAbsence {
             Self::Republished => Cause::Republished,
             Self::NotProduced => Cause::NotProduced,
             Self::Unmeasured => Cause::Unmeasured,
-            Self::Moved => Cause::Moved,
-            Self::Evicted => Cause::Evicted,
             Self::Suppressed(Suppression::Policy) => Cause::RetentionPolicy,
             Self::Suppressed(Suppression::Several) => Cause::SeveralComputations,
             Self::Suppressed(Suppression::Collision) => Cause::CollisionSuppressed,

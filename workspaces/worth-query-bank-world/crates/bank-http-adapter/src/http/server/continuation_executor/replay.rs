@@ -28,8 +28,7 @@ pub(super) fn revalidate_replay<A>(
 where
     A: BankHttpApplicationAuthenticator,
 {
-    let controls = BankReadControls::current(scope.clone(), 1, controls.maximum_work)
-        .map_err(|_| malformed())?;
+    let controls = BankReadControls::current(scope.clone(), 1).map_err(|_| malformed())?;
     application
         .runtime()
         .account_activity(account)

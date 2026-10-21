@@ -9,8 +9,6 @@ fn two_owners_deliver_only_their_own_awaited_row() {
         None,
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard(),
         4096,
-        128 * 1024 * 1024,
-        Some(1_000_000),
         diamond::seed,
     ));
     let (scope, principal) = authenticate(&application);

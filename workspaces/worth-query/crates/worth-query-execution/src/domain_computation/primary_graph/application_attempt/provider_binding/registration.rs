@@ -26,7 +26,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     >,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    indexed_rebase_work_budget: Option<usize>,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:
@@ -167,10 +166,6 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             preimage_demand: preimage_demand.as_ref(),
             aftermath_causality: context.aftermath_causality(&inspection).cloned(),
             conditional_definition,
-            indexed_rebase_work_budget: context
-                .admission(&inspection)
-                .allowed_graph_contract()
-                .projection_work_budget(),
             retain_output_demand_observation,
             retain_client_observation,
             producer_required_invariants,
@@ -184,30 +179,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             staged,
             expected_steps,
         )),
-        Err(RegistrationStop::Execution(cause)) => {
-            let _ = staged.abort();
-            use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
-            let cause = crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None);
-            Err(match cause {
-                Err(Control::Cancelled) => WorthQueryProviderProgressionOutcome::Cancelled,
-                Err(Control::TimedOut) => WorthQueryProviderProgressionOutcome::TimedOut,
-                Ok(kind) => WorthQueryProviderProgressionOutcome::Denied(
-                    super::super::WorthQueryApplicationCommitDenial::provider_execution_denied(
-                        DenialStage::ProviderPlan,
-                        Ok(kind),
-                        "consumed output backing request stopped",
-                    ),
-                ),
-            })
-        }
-        Err(RegistrationStop::Interrupted(interruption)) => {
-            use worth_relational::facade::mvcc::RelationalOperationInterruption as Interruption;
-            let _ = staged.abort();
-            Err(match interruption {
-                Interruption::Cancelled => WorthQueryProviderProgressionOutcome::Cancelled,
-                Interruption::TimedOut => WorthQueryProviderProgressionOutcome::TimedOut,
-            })
-        }
+
         Err(RegistrationStop::Rejected(_)) => abort_registration(staged, DenialStage::ProviderPlan),
     }
 }

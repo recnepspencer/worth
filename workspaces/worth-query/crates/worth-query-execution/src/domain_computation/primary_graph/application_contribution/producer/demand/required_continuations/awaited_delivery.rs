@@ -1,8 +1,7 @@
 //! Only caller-owned continuation custody can lend an awaited delivery.
 use super::*;
-use crate::domain_computation::primary_graph::application_output_demand::{
-    OutputRowStage, WorthQueryOutputDemandKey,
-};
+use crate::domain_computation::primary_graph::application_output_demand::OutputRowStage;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey;
 
 /// This borrow is the actual successor, not a key naming someone else's row.
 pub(in super::super) struct AwaitedDelivery<'a, Schema: ApplicationSchema> {
@@ -22,14 +21,10 @@ impl<Schema: ApplicationSchema + 'static> RequiredContinuations<Schema> {
     pub(super) fn awaited_delivery(
         &mut self,
         registry: &WorthQueryOutputDemandRegistry,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<AwaitedDelivery<'_, Schema>>, WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work(u64::try_from(self.entries.len()).map_err(|_| work_denial())?)
-            .map_err(|_| work_denial())?;
         for index in 0..self.entries.len() {
             if matches!(
-                registry.row_stage_admitted(self.entries[index].interest(), admission)?,
+                registry.row_stage_admitted(self.entries[index].interest())?,
                 OutputRowStage::Published
             ) {
                 return Ok(Some(AwaitedDelivery {
@@ -52,24 +47,12 @@ impl<Schema: ApplicationSchema + 'static> AwaitedDelivery<'_, Schema> {
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
         contacts: Option<&mut usize>,
-        admission: &mut InvalidationEditAdmission,
+
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<Option<DeliveredAwaited>, WorthQueryOutputDemandDenial> {
-        let result = self.entries[0].resume(
-            phase, runtime, principal, request, branch, admission, performed,
-        );
+        let result = self.entries[0].resume(phase, runtime, principal, request, branch, performed);
         self.entries[0].report_caller_contacts(contacts);
-        if matches!(result, Ok(Some(_))) || result.is_err() {
-            let work = self
-                .entries
-                .len()
-                .checked_mul(std::mem::size_of::<RequiredFreshProgress<Schema>>())
-                .and_then(|work| u64::try_from(work).ok())
-                .ok_or_else(work_denial)?;
-            admission
-                .charge_external_work(work)
-                .map_err(|_| work_denial())?;
-        }
+
         match result {
             Ok(Some(ready)) => {
                 runtime.output_demands.clear_required_stop(self.key());

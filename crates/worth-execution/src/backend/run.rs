@@ -168,12 +168,18 @@ where
     // allocation; the returned values leave the lease at this boundary.
     let outcomes: Vec<Mutex<Option<TaskOutcome<R, E>>>> =
         (0..batch.len()).map(|_| Mutex::new(None)).collect();
+    let result_memory = Mutex::new(Vec::with_capacity(if batch.measures_results() {
+        batch.len()
+    } else {
+        0
+    }));
     let execute = |(index, input)| {
         let (outcome, receipt, result_heap) = evaluation::evaluate(
             input,
             lease,
             &limits,
             batch.result_capacity(index),
+            batch.measures_results().then_some(&result_memory),
             records.map(|records| records.storage()),
             kernel,
         );
@@ -214,6 +220,9 @@ where
     } else {
         0
     };
+    custody.result_memory = result_memory
+        .into_inner()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let outcome = settlement::settle(
         batch,
         outcomes,

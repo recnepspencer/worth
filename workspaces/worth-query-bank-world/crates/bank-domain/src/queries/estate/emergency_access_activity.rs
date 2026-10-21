@@ -3,8 +3,7 @@ use worth_query_decl::facade::{
         ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
         ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
         ApplicationQueryInfluenceContract, ApplicationQueryLaneEligibility,
-        ApplicationQueryLiveResourceContract, ApplicationQueryObservableInfluence,
-        ApplicationQueryOrderingDirection,
+        ApplicationQueryObservableInfluence, ApplicationQueryOrderingDirection,
     },
     worth_query_application_query,
 };
@@ -154,7 +153,7 @@ worth_query_decl::facade::worth_query_query_binding!(
         worth_query_decl::facade::application_schema::NoApplicationUnit,
     field crate::schema::EstateCaseIdentityField::reference(),
     value EstateEmergencyAccessActivityRequest::estate,
-    limits results 1_024, work 100_000
+    limits results 1_024
 );
 
 impl worth_query_decl::facade::application_query::ApplicationLiveQueryIntent<BankSchema>
@@ -246,7 +245,6 @@ pub fn estate_emergency_access_activity_definition() -> ApplicationQueryDefiniti
         .live_by::<EmergencyAccess, EstateEmergencyAccessActivityLiveCause, _, _, _, _, _, _, _, _>(
             estate_id(),
             access_id(),
-            ApplicationQueryLiveResourceContract::bounded(64, 2_048, 4_096),
         )
         .build()
         .expect("estate emergency-access activity query is statically canonical")

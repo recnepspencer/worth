@@ -327,21 +327,4 @@ mod tests {
             Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
         );
     }
-
-    #[test]
-    fn a_projection_capacity_stop_is_not_a_failed_producer_output() {
-        let (handler, projection) = crate::domain_computation::primary_graph::tests::fixture::retained_output_capacity::project_at_full_ledger();
-        assert_eq!(handler, crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenialKind::RetentionCapacityExhausted);
-        let stopped = execution_failed(
-            "full ledger",
-            MutationHandlerExecutionDenial::Projection(projection),
-        );
-        let ProducerExecutionStop::ExecutionStopped(denial) = stopped else {
-            panic!("this is the caller's stop");
-        };
-        assert_eq!(
-            denial.kind(),
-            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
-        );
-    }
 }

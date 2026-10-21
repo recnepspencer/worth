@@ -9,17 +9,11 @@ impl WorthQueryApplicationOutputLineage {
         &self,
         candidate: &WorthQueryCurrentOutputCandidate,
         aliases: &mut Vec<(SemanticSource, [u8; 32])>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let mut pending = Vec::new();
         let mut visited = OrdSet::new();
-        self.push_supports(&candidate.consumed_outputs, &mut pending, admission)?;
+        self.push_supports(&candidate.consumed_outputs, &mut pending)?;
         while let Some(evidence) = pending.pop() {
-            charge(admission, 1)?;
-            crate::domain_computation::primary_graph::output_reuse::owner_read(
-                admission.admit_visited_settlement(visited.len()),
-                "availability dependency visit",
-            )?;
             if visited.contains(evidence.identity()) {
                 continue;
             }
@@ -29,7 +23,7 @@ impl WorthQueryApplicationOutputLineage {
             let identity = evidence.identity();
             let (occurrence, generation, slot) = identity.address();
             let source = identity.source();
-            charge(admission, 3)?;
+
             let record = self
                 .by_source
                 .get(source)
@@ -45,7 +39,6 @@ impl WorthQueryApplicationOutputLineage {
             let mut family = None;
             for bindings in self.output_families.values() {
                 for (binding, _) in bindings {
-                    charge(admission, 1)?;
                     if self.binding_identity(*binding).as_ref() == Some(&source.output_binding)
                         && family.replace(bindings).is_some()
                     {
@@ -55,8 +48,7 @@ impl WorthQueryApplicationOutputLineage {
             }
             let family = family.ok_or_else(|| stop(Kind::ProducerUnavailable))?;
             for (binding, _) in family {
-                charge(admission, 1)?;
-                crate::domain_computation::primary_graph::invariant_projection::consumed_output::reserve_pending(aliases, 1, admission)
+                crate::domain_computation::primary_graph::invariant_projection::consumed_output::reserve_pending(aliases, 1)
                     .map_err(|stop| crate::domain_computation::primary_graph::output_reuse::verification_denial(stop, "availability completion aliases"))?;
                 let mut alias = source.clone();
                 alias.output_binding = self
@@ -64,7 +56,7 @@ impl WorthQueryApplicationOutputLineage {
                     .ok_or_else(|| stop(Kind::ProducerUnavailable))?;
                 aliases.push((alias, partition));
             }
-            self.push_supports(evidence.upstream(), &mut pending, admission)?;
+            self.push_supports(evidence.upstream(), &mut pending)?;
         }
         Ok(())
     }
@@ -72,10 +64,8 @@ impl WorthQueryApplicationOutputLineage {
         &self,
         values: &'a [crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence],
         pending: &mut Vec<EvidenceView<'a>>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        charge(admission, values.len() as u64)?;
-        crate::domain_computation::primary_graph::invariant_projection::consumed_output::reserve_pending(pending, values.len(), admission)
+        crate::domain_computation::primary_graph::invariant_projection::consumed_output::reserve_pending(pending, values.len())
             .map_err(|stop| crate::domain_computation::primary_graph::output_reuse::verification_denial(stop, "availability support closure"))?;
         pending.extend(values.iter().map(EvidenceView::from));
         Ok(())

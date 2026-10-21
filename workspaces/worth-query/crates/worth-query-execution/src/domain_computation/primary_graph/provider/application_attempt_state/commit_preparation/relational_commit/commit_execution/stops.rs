@@ -22,21 +22,6 @@ pub(super) fn native_output_witness_stop(
     )
 }
 
-pub(super) fn touched_record_preparation_stop(
-    stop: worth_relational::facade::mvcc::CompanionPreflightStop,
-) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
-    crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(
-        crate::domain_computation::WorthQueryProviderSessionCommitDeferred::new(
-            crate::domain_computation::WorthQueryProviderSessionCommitDeferredKind::RelationalDeferred(
-                worth_relational::facade::mvcc::RelationalPublicationDeferred::CompanionPreflight(
-                    stop,
-                ),
-            ),
-            "touched-record receipt storage denied before publication",
-        ),
-    )
-}
-
 pub(super) fn index_preparation_stop(
     denial: worth_relational::facade::indexes::DerivedIndexMaintenanceDenial,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {

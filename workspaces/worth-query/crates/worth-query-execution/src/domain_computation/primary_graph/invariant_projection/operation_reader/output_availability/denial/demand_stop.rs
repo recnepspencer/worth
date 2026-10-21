@@ -53,13 +53,9 @@ fn meter(
 
 fn query_stop(stop: &QueryStop) -> WorthQueryOutputDemandDenial {
     use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop as Basis;
-    use worth_query_installation::facade::WorthQueryInstalledQueryBindingAdmissionStop as Installation;
+
     let kind = match stop {
-        QueryStop::Installation(Installation::Admission(stop)) => return meter(*stop),
-        QueryStop::Installation(Installation::Installation(stop)) => {
-            Kind::SourceQueryInstallation(stop.kind())
-        }
-        QueryStop::Installation(Installation::AccountingOverflow) => Kind::WorkBudgetExceeded,
+        QueryStop::Installation(stop) => Kind::SourceQueryInstallation(stop.kind()),
         QueryStop::Principal(stop) => Kind::of_principal_resolution(stop.kind()),
         QueryStop::Scope(stop) => Kind::of_scope_resolution(stop.kind()),
         QueryStop::Admission(stop) | QueryStop::Preparation { cause: stop, .. } => {

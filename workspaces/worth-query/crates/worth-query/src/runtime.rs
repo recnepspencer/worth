@@ -84,7 +84,6 @@ pub use worth_query_execution::facade::integration::{
     RuntimeWorldCustodyBudgetInstallation, RuntimeWorldHistoryBudgetInstallation,
     RuntimeWorldObservationBudgetInstallation, RuntimeWorldPublicationBudgetInstallation,
     RuntimeWorldRecoveryBudgetInstallation, RuntimeWorldRetentionBudgetInstallation,
-    WorthQueryInvalidationResourceDenial, WorthQueryInvalidationResourceInstallation,
     WorthQueryInvalidationResources, WorthQueryProductRelationalInstallation,
     WorthQueryProductWorldClock, WorthQueryProductWorldResources,
     WorthQueryRelationalSourceInstallationDenial, WorthQueryRelationalSourceOwner,

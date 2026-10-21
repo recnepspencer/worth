@@ -576,3 +576,14 @@ retain this law. Native producer births with absent payload require every actual
 binding to be a supported Optional EntityField struct; Required and Defaulted
 aspects do not acquire absence permission. Tracked reads retain Optional whole-aspect absence independently of field absence; another field materializing that aspect invalidates the read. See the compiled `optional_aspects.rs`
 example in [build guidance](build-an-application.md#whole-aspect-absence).
+
+Ordinary Query reads use installed result cardinality and fresh per-read admission;
+`request.query(intent).limit_results(n).execute()` narrows that cardinality.
+`request.query_batch(intents).execute(&phase)` issues exact installed read slots
+without caller work or byte estimates. Slots carry no authentication or currentness.
+Live declarations name cause/binding/effect/scope/target meaning without a resource
+contract. Request Live controls retain channel buffer capacity and materialized-record
+cardinality; their managed queue occupancy is released on delivery or normal close.
+`WorthQueryOutputReadinessContractBuilder::new` takes identity, node identity,
+native projection, canonical query, projection role, strategy and lowering family;
+readiness is synchronous, effect-free native execution with no work/byte quotation.

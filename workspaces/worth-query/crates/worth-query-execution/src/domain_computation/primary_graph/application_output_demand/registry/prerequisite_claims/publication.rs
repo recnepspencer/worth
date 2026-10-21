@@ -8,11 +8,10 @@ impl PreparedPrerequisiteClaims {
     pub(in crate::domain_computation::primary_graph) fn reserve_identity(
         &mut self,
         identity: &Arc<RecordedSettlementIdentity>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         assert!(self.reserved_identity.is_none());
         let owner = WorthQueryOutputDemandRegistry::clone(self.context.registry());
-        let (posting, cleanup) = owner.reserve_settlement_vacancy(identity, admission)?;
+        let (posting, cleanup) = owner.reserve_settlement_vacancy(identity)?;
         self.reserved_identity = Some(Arc::clone(identity));
         self.reserved_posting = Some(posting);
         self.reserved_cleanup = Some(cleanup);
@@ -25,10 +24,9 @@ impl PreparedPrerequisiteClaims {
     pub(in crate::domain_computation::primary_graph) fn replace_reserved_identity_for_recovery(
         &mut self,
         identity: &Arc<RecordedSettlementIdentity>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let owner = WorthQueryOutputDemandRegistry::clone(self.context.registry());
-        let (posting, cleanup) = owner.reserve_settlement_vacancy(identity, admission)?;
+        let (posting, cleanup) = owner.reserve_settlement_vacancy(identity)?;
         let mut state = owner
             .state
             .lock()
@@ -73,9 +71,7 @@ impl PreparedPrerequisiteClaims {
         assert_eq!(record.prepared_prerequisite_claims, 1);
         record.prepared_prerequisite_claims = 0;
         assert!(record.settlements.len() < record.settlements.capacity());
-        record
-            .settlements
-            .push((Arc::clone(&identity), self.context.retained_bytes()));
+        record.settlements.push(Arc::clone(&identity));
         crate::domain_computation::primary_graph::fact_verification_observation::registry_custody(
             crate::domain_computation::primary_graph::WorthQueryRegistryCustodyTransitionForTest::SettlementPublished,
             record.settlements.len(), self.predecessors.len(),
@@ -96,7 +92,7 @@ impl PreparedPrerequisiteClaims {
             self.checkpoint_predecessors.take(),
         );
         record.finish();
-        let released_slots = old.capacity() * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
+
         for upstream in &old {
             let mut prior = state
                 .records
@@ -105,22 +101,18 @@ impl PreparedPrerequisiteClaims {
             prior.framework_required_count -= 1;
             prior.finish();
             if !state.records[upstream].pending_cleanup_queued
-                && !state.defer_terminal_cleanup(upstream, 0)
+                && !state.defer_terminal_cleanup(upstream)
             {
-                super::super::post_commit::release_published_member(
-                    &mut state, upstream, &identity,
-                );
+                super::super::post_commit::release_published_member(&mut state, upstream);
             }
         }
         for upstream in &old {
-            state.defer_terminal_cleanup(upstream, 0);
+            state.defer_terminal_cleanup(upstream);
         }
-        state.defer_terminal_cleanup(self.context.key_arc(), 0);
-        state.required_reserved_bytes =
-            state.required_reserved_bytes.saturating_sub(released_slots);
+        state.defer_terminal_cleanup(self.context.key_arc());
+
         // The context's owned key is now held by the exact-settlement index.
-        self.context.transfer_custody_to_registry();
-        self.predecessor_slots_bytes = 0;
+
         self.reserved_cleanup.take();
         self.published = true;
         drop(state);

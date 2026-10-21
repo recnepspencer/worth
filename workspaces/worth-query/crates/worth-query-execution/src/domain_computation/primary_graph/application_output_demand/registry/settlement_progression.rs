@@ -1,13 +1,14 @@
 use std::sync::Arc;
 
-use super::{
-    DemandState, SelectedReadyReadmission, WorthQueryAcceptedOutputAuthority,
-    WorthQueryOutputCheckpoint, WorthQueryOutputDemandInterest, WorthQueryOutputDemandRegistry,
-};
-use crate::domain_computation::primary_graph::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-};
+use super::DemandState;
+use super::SelectedReadyReadmission;
+use super::WorthQueryAcceptedOutputAuthority;
+use super::WorthQueryOutputCheckpoint;
+use super::WorthQueryOutputDemandInterest;
+use super::WorthQueryOutputDemandRegistry;
+
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 impl WorthQueryOutputDemandRegistry {
     /// Discharge the caller's exact selected Ready without rediscovering its
@@ -16,19 +17,9 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         interest: &WorthQueryOutputDemandInterest,
         selected: &SelectedReadyReadmission,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        fn work_denial() -> WorthQueryOutputDemandDenial {
-            WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                "",
-            )
-        }
-        admission
-            .charge_external_work(4)
-            .map_err(|_| work_denial())?;
         if !Arc::ptr_eq(&self.state, &interest.owner.state)
-            || !selected.matches_interest(interest, admission)?
+            || !selected.matches_interest(interest)?
         {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
@@ -41,12 +32,7 @@ impl WorthQueryOutputDemandRegistry {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         // The selected pin and still-live interest keep the required member.
         // Pay the immutable Ready lookup and mutable obligation lookup.
-        for _ in 0..2 {
-            state.charge_record_lookup(&interest.key, admission)?;
-        }
-        admission
-            .charge_external_work(16)
-            .map_err(|_| work_denial())?;
+
         let record = state.records.get(&interest.key).ok_or_else(|| {
             WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::Closed, "")
         })?;
@@ -59,35 +45,15 @@ impl WorthQueryOutputDemandRegistry {
                 "",
             ));
         }
-        let slot = std::mem::size_of::<super::PerformedOutputObligation>();
-        let destruction = record
-            .performed_obligations
-            .len()
-            .checked_mul(slot)
-            .and_then(|work| {
-                work.checked_add(std::mem::size_of::<Vec<super::PerformedOutputObligation>>() + 8)
-            })
-            .ok_or_else(work_denial)?;
-        admission
-            .charge_external_work(u64::try_from(destruction).map_err(|_| work_denial())?)
-            .map_err(|_| work_denial())?;
+
         let mut record = state
             .records
             .get_mut(&interest.key)
             .expect("selected Ready row retained");
-        let obligation_bytes = record.obligation_reserved_bytes();
         let obligations = std::mem::take(&mut record.performed_obligations);
         record.finish();
         drop(state);
-        // Keep the retained charge until the Vec and its owned sources die.
         drop(obligations);
-        let mut state = self
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.obligation_reserved_bytes = state
-            .obligation_reserved_bytes
-            .saturating_sub(obligation_bytes);
         Ok(())
     }
 
@@ -98,13 +64,12 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn peek_ready(
         &self,
         interest: &WorthQueryOutputDemandInterest,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<super::ReadyCompletion>, WorthQueryOutputDemandDenial> {
         let state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.charge_record_lookup(&interest.key, admission)?;
+
         let Some(record) = state.records.get(&interest.key) else {
             return Ok(None);
         };
@@ -120,12 +85,7 @@ impl WorthQueryOutputDemandRegistry {
         let Some(WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint else {
             return Ok(None);
         };
-        admission.charge_external_work(1).map_err(|_| {
-            WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                "ready completion pin exhausted demand work",
-            )
-        })?;
+
         Ok(Some(completion.clone()))
     }
 
@@ -161,10 +121,9 @@ impl WorthQueryOutputDemandRegistry {
                 "output changed before its settlement was accepted",
             ));
         }
-        let released = record.release_obligations();
+        record.release_obligations();
         record.finish();
-        state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        super::post_commit::release_settled_member(&mut state, &interest.key, accepted);
+        super::post_commit::release_settled_member(&mut state, &interest.key);
         Ok(())
     }
 }

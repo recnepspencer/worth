@@ -1,5 +1,6 @@
 //! Full-entry eligibility is independent of the noted order.
-use super::super::super::refreshed_rejoin::{refresh_order, superseded};
+use super::super::super::refreshed_rejoin::refresh_order;
+use super::super::super::refreshed_rejoin::superseded;
 use super::*;
 use std::cmp::Ordering;
 use worth_runtime_world::facade::CompositeCommitIdentity;
@@ -63,9 +64,7 @@ fn assert_noted(registry: &WorthQueryOutputDemandRegistry, step: &str, seed: u64
     }
 }
 fn eager(registry: &WorthQueryOutputDemandRegistry) {
-    registry
-        .drain_closed_cleanup_admitted(&mut record_admission())
-        .unwrap();
+    registry.drain_closed_cleanup_admitted().unwrap();
     let mut state = registry.state.lock().unwrap();
     let removed: Vec<_> = state
         .source_custody
@@ -132,18 +131,7 @@ pub(in super::super::super) fn value(
             )
         })
         .collect();
-    (
-        records,
-        custody,
-        state.required_keys.clone(),
-        [
-            state.required_reserved_bytes,
-            state.obligation_reserved_bytes,
-            state
-                .required_custody_retained_bytes
-                .load(std::sync::atomic::Ordering::Acquire),
-        ],
-    )
+    (records, custody, state.required_keys.clone())
 }
 
 #[test]
@@ -191,8 +179,7 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
             let member = Arc::clone(state.required_keys.get(&newest).unwrap());
             let mut other = record(occurrence(), copy_ready(&ready), 0);
             other.prerequisites.push(member);
-            state.required_reserved_bytes += other.prerequisites.capacity()
-                * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
+
             state
                 .records
                 .insert(key("other-dependent", seed + 1, 3), other);
@@ -207,7 +194,7 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
             retain_owned_key(&mut state, &predecessor);
             state.records.get_mut(&predecessor).unwrap().state = copy_ready(&ready);
             assert!(!superseded(&state.records[&predecessor]));
-            supersede_predecessors(&mut state, &newest, &mut record_admission()).unwrap();
+            supersede_predecessors(&mut state, &newest).unwrap();
             assert!(superseded(&state.records[&predecessor]));
         }
         assert_noted(&registry, "supersede", seed);
@@ -215,11 +202,7 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
         drop(eager_owner);
         eager(&reference);
         assert_noted(&registry, "owner drop", seed);
-        registry
-            .state
-            .lock()
-            .unwrap()
-            .drain_foreign_custody_quota(&mut record_admission());
+        registry.state.lock().unwrap().drain_next_foreign_custody();
         eager(&reference);
         assert_noted(&registry, "admission while held", seed);
         let step = (seed % 4) as usize;
@@ -237,12 +220,7 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
                             WorthQueryOutputDemandDenialKind::NoEffect,
                             "done",
                         ));
-                    super::super::super::refreshed_rejoin::infallible(
-                        state.release_record_prerequisites(
-                            &dependent.key,
-                            &mut OracleWalk::after_effect(),
-                        ),
-                    );
+                    state.release_record_prerequisites(&dependent.key);
                 }
                 drop(dependent);
                 drop(eager_dependent);
@@ -280,20 +258,12 @@ fn registry_custody_note_full_entry_oracle_covers_held_unhold_steps() {
             eager(&reference);
             assert_noted(&registry, "token drop", seed);
         }
-        registry
-            .drain_closed_cleanup_admitted(&mut record_admission())
-            .unwrap();
+        registry.drain_closed_cleanup_admitted().unwrap();
         assert_noted(&registry, "paid claim transfer", seed);
         let remaining = registry.state.lock().unwrap().custody_cleanup.len;
-        for _ in 0..remaining
-            .div_ceil(super::super::super::cleanup::custody::FOREIGN_CUSTODY_DRAIN_QUOTA)
-        {
-            registry
-                .state
-                .lock()
-                .unwrap()
-                .drain_foreign_custody_quota(&mut record_admission());
-            assert_noted(&registry, "quiescent admission", seed);
+        for _ in 0..remaining {
+            registry.state.lock().unwrap().drain_next_foreign_custody();
+            assert_noted(&registry, "quiescent cleanup", seed);
         }
         eager(&reference);
         assert!(!registry.state.lock().unwrap().pending_custody_prune());

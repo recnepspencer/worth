@@ -18,9 +18,7 @@ use crate::domain_computation::primary_graph::application_query::{
 };
 use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
 use std::collections::BTreeMap;
-use worth_execution::{
-    ExecutionMap, ExecutionMemoryReservation, ExecutionRequest, KeylessPartition,
-};
+use worth_execution::{ExecutionMap, ExecutionMemoryReservation, ExecutionRequest};
 use worth_foundational::PartitionIdentity;
 use worth_proof::CanonicalUniqueVec;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
@@ -150,25 +148,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         Ok(())
                     })?;
                     let mut pinned_sides = Default::default();
-                    let partitions = plans
-                        .iter_mut()
-                        .zip(roots.as_slice())
-                        .enumerate()
-                        .map(|(index, (pair, root))| {
-                            let capacity = pair.result_capacity()?;
-                            Ok((
-                                PartitionIdentity::new(index as u64 + 1),
-                                KeylessPartition {
-                                    value: pair.worker_with_pins(&request, self, *root, &mut pinned_sides)?,
-                                    kernel_scratch_bytes: 0,
-                                    max_result_bytes: capacity,
-                                },
-                            ))
-                        })
+                    let partitions = plans.iter_mut().zip(roots.as_slice()).enumerate()
+                        .map(|(index, (pair, root))| Ok((
+                            PartitionIdentity::new(index as u64 + 1),
+                            pair.worker_with_pins(&request, *root, &mut pinned_sides)?,
+                        )))
                         .collect::<Result<BTreeMap<_, _>, Denial>>()?;
-                    let map = ExecutionMap::<_, ()>::from_keyless_partitions(partitions).map_err(
-                        |worth_execution::MapMemoryOverflow| Denial::ChargedBytesOverflow,
-                    )?;
+                    let map = ExecutionMap::<_, ()>::from_keyless_values(partitions)
+                        .map_err(|worth_execution::MapMemoryOverflow| Denial::ChargedBytesOverflow)?;
                     let (outputs, stop) = canonical_results::CanonicalPairResults::settle(
                         roots,
                         map.run_owned(lease, |pair, context| pair.run(&request, context)),
@@ -176,15 +163,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     // The map releases its result allowance at settlement. Admit the
                     // returned prefix for owner staging before projection; these two
                     // phases never reserve the same result allowance simultaneously.
-                    let staged_bytes =
-                        plans
-                            .iter()
-                            .take(outputs.len())
-                            .try_fold(0_u64, |bytes, pair| {
-                                bytes
-                                    .checked_add(pair.result_capacity()?)
-                                    .ok_or(Denial::ChargedBytesOverflow)
-                            })?;
+                    let staged_bytes = outputs.retained_bytes()?;
                     let output_bytes = owner_hold
                         .bytes()
                         .checked_add(staged_bytes)
@@ -201,23 +180,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             outputs.into_prefix().zip(plans).zip(authorization)
                         {
                             context
-                                .checkpoint(
-                                    pair.projection_work()?
-                                        .checked_add(1)
-                                        .ok_or(Denial::WorkCounterOverflow)?,
-                                )
+                                .checkpoint(1)
                                 .map_err(|stop| denial::kernel(stop, Some(root)))?;
                             // Keep shared-loan row custody through both finalizations
                             // and the owner-thread projection of this canonical pair.
                             let _batch_rows = (output.first.batch_rows, output.second.batch_rows);
-                            let batch = pair.batch;
-                            let read_denied = |denial| match batch
-                                .as_ref()
-                                .and_then(|batch| batch.memory_denial())
-                            {
-                                Some(denial) => Denial::BatchResource { root, denial },
-                                None => Denial::ReadDenied { root, denial },
-                            };
+                            let read_denied = |denial| Denial::ReadDenied { root, denial };
                             let first_proof = pair
                                 .first
                                 .graph_work
@@ -236,9 +204,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                 pair.first,
                                 output.first.raw,
                                 first_work,
-                                first_proof,
-                                None,
-                            )
+                                first_proof)
                             .map_err(read_denied)?;
                             let second = finalize_one_shot_with_decode(
                                 &request,
@@ -247,9 +213,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                 pair.second,
                                 output.second.raw,
                                 second_work,
-                                second_proof,
-                                None,
-                            )
+                                second_proof)
                             .map_err(read_denied)?;
                             let (key, value, dependencies) = self
                                 .read_managed_entry_pair_from_result(

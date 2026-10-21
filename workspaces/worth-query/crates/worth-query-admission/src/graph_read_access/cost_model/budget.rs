@@ -75,26 +75,6 @@ impl WorthQueryGraphReadBudget {
         WorthQueryGraphReadBudgetCheck::new(self, estimate, class)
     }
 
-    pub(crate) fn check_supported_cost_admitted<Stop>(
-        &self,
-        estimate: &WorthQueryGraphReadAccessCostEstimate,
-        mut admit: impl FnMut(u64, u64) -> Result<(), Stop>,
-    ) -> Result<WorthQueryGraphReadBudgetCheck, AdmittedDigestTextStop<Stop>> {
-        let budget = self.digest().as_str();
-        let cost = estimate.digest().as_str();
-        admit(3, 0).map_err(AdmittedDigestTextStop::Admission)?;
-        for value in [budget, cost] {
-            let bytes = u64::try_from(value.len())
-                .map_err(|_| AdmittedDigestTextStop::AccountingOverflow)?;
-            admit(bytes, bytes).map_err(AdmittedDigestTextStop::Admission)?;
-        }
-        Ok(WorthQueryGraphReadBudgetCheck::new(
-            self,
-            estimate,
-            self.classify_supported_cost(estimate),
-        ))
-    }
-
     fn classify_supported_cost(
         &self,
         estimate: &WorthQueryGraphReadAccessCostEstimate,
@@ -300,4 +280,3 @@ impl WorthQueryGraphReadInlineEphemeralAllowance {
         Self { kind }
     }
 }
-use crate::graph_read_access::digest_text::AdmittedDigestTextStop;

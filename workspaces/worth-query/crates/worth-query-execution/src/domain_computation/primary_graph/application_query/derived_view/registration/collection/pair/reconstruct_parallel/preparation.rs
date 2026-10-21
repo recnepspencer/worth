@@ -9,12 +9,11 @@ use crate::domain_computation::primary_graph::application_query::{
         WorthQueryAuthorizedApplicationReadDenial,
     },
     one_shot::{
-        map_authorized_read_denial,
-        pair_plans::WorthQueryDerivedPairReadPlans,
-        plan_admission::{reserve_one_shot_result_buffer_in_batch, validate_one_shot_plan},
+        map_authorized_read_denial, pair_plans::WorthQueryDerivedPairReadPlans,
+        plan_admission::validate_one_shot_plan,
     },
     read_execution::{
-        prepared_pair::{batch::PreparedBatchRead, PreparedPair, PreparedRead},
+        prepared_pair::{batch::admit_batch_read, PreparedPair, PreparedRead},
         read_plan::ReadPlan,
     },
     WorthQueryApplicationAuthorizationWorkEvidence,
@@ -108,15 +107,15 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
     pub(super) fn worker(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+
         root: EntityId,
     ) -> Result<PreparedPair<'_>, Denial> {
-        self.worker_with_pins(execution, application, root, &mut Default::default())
+        self.worker_with_pins(execution, root, &mut Default::default())
     }
     pub(super) fn worker_with_pins(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+
         root: EntityId,
         pins: &mut crate::domain_computation::primary_graph::application_query::one_shot::pair_plans::WorthQueryPairReadPins,
     ) -> Result<PreparedPair<'_>, Denial> {
@@ -139,12 +138,6 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
                         )
             })
             .ok_or(Denial::IncompleteDependencies)?;
-        let first_buffer =
-            reserve_one_shot_result_buffer_in_batch(application, &self.first, self.batch.as_ref())
-                .map_err(|denial| Denial::ReadDenied { root, denial })?;
-        let second_buffer =
-            reserve_one_shot_result_buffer_in_batch(application, &self.second, self.batch.as_ref())
-                .map_err(|denial| Denial::ReadDenied { root, denial })?;
         let first = match pins.first.as_ref() {
             Some(pin) => self.first.graph_work.prepare_query_read_from_pin(
                 self.first.basis.identity(),
@@ -190,13 +183,13 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
             first: PreparedRead {
                 plan: ReadPlan::public_worker(&self.first),
                 session: first,
-                buffer: first_buffer,
+
                 batch: first_batch,
             },
             second: PreparedRead {
                 plan: ReadPlan::public_worker(&self.second),
                 session: second,
-                buffer: second_buffer,
+
                 batch: second_batch,
             },
             binding_slot: slot.slot_type(),
@@ -217,81 +210,24 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
             })
             .ok_or(Denial::ChargedBytesOverflow)?;
         let mut bytes = parameters;
-        // Native plan custody carries its admitted index allowance and proof
-        // estimate. Shared installed contracts and pinned truth are borrowed.
-        for (review, graph, provider) in [
+        // Shared installed contracts and pinned truth remain borrowed. Only
+        // already-owned parameter and name backing accompanies these plans.
+        for (graph, provider) in [
             (
-                self.first.graph_read_plan(),
                 &self.first.graph_authority_identity,
                 &self.first.provider_identity,
             ),
             (
-                self.second.graph_read_plan(),
                 &self.second.graph_authority_identity,
                 &self.second.provider_identity,
             ),
         ] {
             bytes = bytes
-                .checked_add(
-                    review
-                        .budget_check()
-                        .max_inline_index_bytes()
-                        .unwrap_or_else(|| review.cost_estimate().supported().index_bytes()),
-                )
-                .and_then(|bytes| {
-                    bytes.checked_add(review.cost_estimate().supported().proof_bytes())
-                })
-                .and_then(|bytes| bytes.checked_add(graph.capacity()))
+                .checked_add(graph.capacity())
                 .and_then(|bytes| bytes.checked_add(provider.capacity()))
                 .ok_or(Denial::ChargedBytesOverflow)?;
         }
         u64::try_from(bytes).map_err(|_| Denial::ChargedBytesOverflow)
-    }
-
-    pub(super) fn projection_work(&self) -> Result<u64, Denial> {
-        use crate::domain_computation::primary_graph::application_query::one_shot::custody_work::RetainedCustodyWork;
-        let first = RetainedCustodyWork::of(
-            self.first.scope.identity_locator(),
-            self.first.scope.identity_value(),
-            self.first.query.name(),
-            self.first.basis.identity().branch_id(),
-        )
-        .and_then(RetainedCustodyWork::total);
-        let second = RetainedCustodyWork::of(
-            self.second.scope.identity_locator(),
-            self.second.scope.identity_value(),
-            self.second.query.name(),
-            self.second.basis.identity().branch_id(),
-        )
-        .and_then(RetainedCustodyWork::total);
-        first
-            .and_then(|first| second.and_then(|second| first.checked_add(second)))
-            .and_then(|units| u64::try_from(units).ok())
-            .ok_or(Denial::WorkCounterOverflow)
-    }
-
-    pub(super) fn result_capacity(&self) -> Result<u64, Denial> {
-        let first = self
-            .first
-            .graph_read_plan()
-            .budget_check()
-            .max_inline_result_bytes();
-        let second = self
-            .second
-            .graph_read_plan()
-            .budget_check()
-            .max_inline_result_bytes();
-        let (first, second) = self.batch.as_ref().map_or((first, second), |batch| {
-            (
-                batch.inline_result_bytes(first),
-                batch.inline_result_bytes(second),
-            )
-        });
-        first
-            .ok_or(Denial::MissingPreparedResultCapacity)?
-            .checked_add(second.ok_or(Denial::MissingPreparedResultCapacity)?)
-            .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or(Denial::CapacityOverflow)
     }
 
     fn admit_batch_reads(&mut self, root: EntityId) -> Result<(), Denial> {
@@ -301,10 +237,8 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
             return Err(denied(Resource::ForeignPlan));
         }
         if let Some(batch) = &self.batch {
-            self.first_batch =
-                Some(PreparedBatchRead::admit(&mut self.first, batch).map_err(denied)?);
-            self.second_batch =
-                Some(PreparedBatchRead::admit(&mut self.second, batch).map_err(denied)?);
+            self.first_batch = Some(admit_batch_read(&mut self.first, batch).map_err(denied)?);
+            self.second_batch = Some(admit_batch_read(&mut self.second, batch).map_err(denied)?);
         } else if self.first.planned_batch_item.is_some()
             || self.second.planned_batch_item.is_some()
         {

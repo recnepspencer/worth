@@ -1,29 +1,25 @@
 //! Fresh Query permission retained across a Clean probe or one graph read.
 
-use worth_query_declaration::facade::{
-    application_query::ApplicationQueryDisclosurePosture, application_schema::ApplicationSchema,
-};
-use worth_query_installation::facade::{
-    WorthQueryInstalledApplicationQuery, WorthQueryInstalledApplicationQueryAuthorization,
-};
-use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_query_declaration::facade::application_query::ApplicationQueryDisclosurePosture;
+use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
+use worth_query_installation::facade::WorthQueryInstalledApplicationQueryAuthorization;
 
-use super::super::{
-    basis::WorthQueryApplicationQueryBasisCustody,
-    controls::WorthQueryAdmittedApplicationQueryControls,
-    disclosure::{compile_disclosure_contract, WorthQueryAdmittedApplicationDisclosureContract},
-    WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-};
+use super::super::basis::WorthQueryApplicationQueryBasisCustody;
+use super::super::controls::WorthQueryAdmittedApplicationQueryControls;
+use super::super::disclosure::compile_disclosure_contract;
+use super::super::disclosure::WorthQueryAdmittedApplicationDisclosureContract;
+use super::super::WorthQueryApplicationAuthorizationWorkEvidence;
+use super::super::WorthQueryApplicationQueryAccessContext;
+use super::super::WorthQueryApplicationQueryAdmissionDenial;
+use super::super::WorthQueryApplicationQueryAdmissionDenialKind;
 use super::source_readmission::PreparedApplicationQuerySourceReadmission;
-use crate::domain_computation::authorization::{
-    AdmittedQueryAuthorizationStop, WorthQueryRetainedAuthorizationDecisionFacts,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    WorthQueryIssuedSelectedPrincipal, WorthQueryIssuedSelectedScope,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
-};
+use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
+
+use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedPrincipal;
+use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedScope;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use crate::domain_computation::provider_session::WorthQueryPreparedQuerySessionIdentity;
 
 mod current_ready;
@@ -102,7 +98,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             PrincipalIdentity,
         >,
         issued_scope: &'a WorthQueryIssuedSelectedScope<'_, '_, Schema, Scope>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         PreparedApplicationQueryPermission<
             'a,
@@ -128,7 +123,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             request,
             issued_principal,
             issued_scope,
-            admission,
             &mut super::super::ApplicationQueryNativeAccess::acquire(),
         )
     }
@@ -146,15 +140,4 @@ fn work_denial() -> WorthQueryApplicationQueryAdmissionDenial {
         WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
         String::new(),
     )
-}
-
-fn resource_denial(stop: CompanionPreflightStop) -> WorthQueryApplicationQueryAdmissionDenial {
-    let kind = match stop {
-        CompanionPreflightStop::PreparationMemoryExhausted { .. }
-        | CompanionPreflightStop::PreparationMemoryCounterOverflow => {
-            WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted
-        }
-        _ => WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
-    };
-    WorthQueryApplicationQueryAdmissionDenial::new(kind, String::new())
 }

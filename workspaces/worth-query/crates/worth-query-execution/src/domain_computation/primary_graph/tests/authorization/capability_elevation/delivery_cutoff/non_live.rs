@@ -1,7 +1,7 @@
 use super::super::super::super::fixture::{
     elevated_account_activity_parameters, AuthorizationWorld,
 };
-use super::context::{assert_resources_released, buffer_limit, context, one};
+use super::context::{assert_resources_released, context, one};
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOneShotDenialKind, WorthQueryApplicationQueryAccessContext,
@@ -39,7 +39,6 @@ fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
                     elevated_account_activity_parameters("account-1"),
                     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                         one(),
-                        Some(buffer_limit()),
                         &context.request,
                     ),
                 )
@@ -95,11 +94,7 @@ fn revocation_after_cursor_denies_the_next_page_from_current_truth() {
                     pending,
                     elevated_account_activity_parameters("account-1"),
                     continuation,
-                    WorthQueryApplicationQueryResumeControls::new(
-                        one(),
-                        Some(buffer_limit()),
-                        &context.request,
-                    ),
+                    WorthQueryApplicationQueryResumeControls::new(one(), &context.request),
                 )
                 .err()
                 .expect("revocation after the cursor must deny readmission")
@@ -146,7 +141,6 @@ fn revocation_after_selected_plan_denies_before_result_delivery() {
                     elevated_account_activity_parameters("account-1"),
                     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                         one(),
-                        Some(buffer_limit()),
                         &context.request,
                     ),
                 )

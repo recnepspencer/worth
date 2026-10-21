@@ -381,7 +381,6 @@ fn controls(
 ) -> crate::domain_computation::primary_graph::WorthQueryProductQueryControls<'_> {
     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
         NonZeroUsize::new(4).unwrap(),
-        Some(NonZeroUsize::new(512).unwrap()),
         request,
     )
 }

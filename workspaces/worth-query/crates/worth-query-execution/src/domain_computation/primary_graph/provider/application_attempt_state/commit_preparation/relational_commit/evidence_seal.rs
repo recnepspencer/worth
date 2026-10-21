@@ -72,7 +72,7 @@ pub(super) fn seal(
         .producer_dependency_identity()
         .is_some();
     let request = committed.attempt().affinity().publication_request().clone();
-    let (committed_result, indexed_rebase_width, admission) = committed.rebase_parts();
+    let committed_result = committed.committed();
     let observed_source_facts = provider.graph.with_runtime(execution, |runtime| {
         postcommit_currentness::rebase_output(
             execution,
@@ -82,8 +82,6 @@ pub(super) fn seal(
             &output_correspondence,
             &committed_result.changed_records,
             producer_output,
-            indexed_rebase_width,
-            admission,
             crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), Some(&request)),
         )
     });

@@ -1,27 +1,23 @@
 //! Diagnostic verification of authoritative facts, independent of mark decisions.
 
-use std::{mem::size_of, sync::Arc};
+use std::sync::Arc;
 
 use im::OrdSet;
-use worth_relational::facade::{
-    mvcc::CompanionPreflightStop,
-    runtime::{
-        PositionedRelationalSnapshot, RelationalRuntime, RelationalSnapshotPositionAdmissionStop,
-    },
-    snapshots::SnapshotHandle,
-};
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
 
-use super::{
-    admission::IndexAdmission,
-    mark_state::{MarkState, OutputFactCoverage},
-    source_alignment::SnapshotAlignedMarkState,
-    FullVerificationReason, InvalidationEditAdmission, SourceInvalidationOwner,
-};
-use crate::domain_computation::primary_graph::{
-    application_attempt::{Movement, WorthQuerySourceCurrentnessFailure},
-    output_lineage::{RecordedSettlementIdentity, SealedNativeOutputWitness},
-    WorthQueryApplicationObservedFact,
-};
+use super::mark_state::MarkState;
+use super::mark_state::OutputFactCoverage;
+use super::source_alignment::SnapshotAlignedMarkState;
+use super::FullVerificationReason;
+use super::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::application_attempt::Movement;
+use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
+use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
 
 mod equality;
 mod image_fence;
@@ -71,34 +67,19 @@ impl SourceInvalidationOwner {
         runtime: &'selected RelationalRuntime,
         snapshot: &'selected SnapshotHandle,
         selected: &'selected PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<FullVerificationImage<'selected>, FullVerificationStop> {
         let actual = runtime
             .read_truth()
-            .positioned_snapshot_admitted(snapshot, |work, bytes| {
-                admission.work(work)?;
-                admission.bytes(bytes)
-            })
-            .map_err(|stop| match stop {
-                RelationalSnapshotPositionAdmissionStop::Admission(stop) => {
-                    FullVerificationStop::Admission(stop)
-                }
-                RelationalSnapshotPositionAdmissionStop::AccountingOverflow => {
-                    FullVerificationStop::Admission(CompanionPreflightStop::WorkCounterOverflow)
-                }
-                RelationalSnapshotPositionAdmissionStop::Position(_) => {
-                    FullVerificationStop::SourceUnavailable
-                }
-            })?;
-        admission.work(1 + selected.branch_id().0.len() as u64)?;
+            .positioned_snapshot(snapshot)
+            .map_err(|_| FullVerificationStop::SourceUnavailable)?;
+
         if &actual != selected || selected.runtime_instance_id() != self.runtime_instance_id {
             return Err(FullVerificationStop::Foreign);
         }
-        let cell = self.cell_for_read(selected, admission)?;
+        let cell = self.cell_for_read(selected)?;
         let aligned = if let Some(cell) = cell {
-            admission.work(3)?;
             let image = cell.read_image();
-            admission.ordered_read(image.payload().past.len())?;
+
             SnapshotAlignedMarkState::select_image(image, selected).ok()
         } else {
             None
@@ -107,10 +88,6 @@ impl SourceInvalidationOwner {
         let state = if let Some(aligned) = aligned {
             aligned.into_full_verification_state()
         } else {
-            admission.bytes(
-                super::index_capacity::arc_bytes::<MarkState>()
-                    .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-            )?;
             Arc::new(MarkState::initial())
         };
         Ok(FullVerificationImage {
@@ -129,22 +106,18 @@ impl FullVerificationImage<'_> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: EvidenceView<'_>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<FullVerificationDecision, FullVerificationStop> {
-        admission.ordered_read(self.state.settlements.len())?;
-        admission.ordered_read(self.state.equal_links.len())?;
         if self.native_only
             || (!self.state.settlements.contains_key(root.identity())
                 && !self.state.equal_links.contains_key(root.identity()))
         {
-            return self.verify_native_evidence(execution, root, admission);
+            return self.verify_native_evidence(execution, root);
         }
         self.verify_root_evidence(
             execution,
             root.identity(),
             root.native_output_witness(),
             Some(root),
-            admission,
         )
     }
 
@@ -154,15 +127,8 @@ impl FullVerificationImage<'_> {
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &Arc<RecordedSettlementIdentity>,
         fallback_witness: Option<&SealedNativeOutputWitness>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<FullVerificationDecision, FullVerificationStop> {
-        self.verify_root_evidence(
-            request_execution,
-            identity,
-            fallback_witness,
-            None,
-            admission,
-        )
+        self.verify_root_evidence(request_execution, identity, fallback_witness, None)
     }
 
     fn verify_root_evidence(
@@ -171,7 +137,6 @@ impl FullVerificationImage<'_> {
         identity: &Arc<RecordedSettlementIdentity>,
         fallback_witness: Option<&SealedNativeOutputWitness>,
         root_source: Option<EvidenceView<'_>>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<FullVerificationDecision, FullVerificationStop> {
         let mut observed_rows = OrdSet::new();
         let result = self.verify_closure(
@@ -180,9 +145,8 @@ impl FullVerificationImage<'_> {
             fallback_witness,
             root_source,
             &mut observed_rows,
-            admission,
         )?;
-        self.fence_semantic_image(&observed_rows, admission)?;
+        self.fence_semantic_image(&observed_rows)?;
         Ok(result)
     }
 
@@ -193,30 +157,29 @@ impl FullVerificationImage<'_> {
         fallback_witness: Option<&SealedNativeOutputWitness>,
         root_source: Option<EvidenceView<'_>>,
         observed_rows: &mut OrdSet<Arc<RecordedSettlementIdentity>>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<FullVerificationDecision, FullVerificationStop> {
         let mut pending = Vec::new();
         let mut visited = OrdSet::new();
-        reserve_pending(&mut pending, 1, admission)?;
-        admission.work(1)?;
+        reserve_pending(&mut pending, 1)?;
+
         pending.push((Arc::clone(identity), true));
         while let Some((original, direct)) = pending.pop() {
-            image_fence::observe_row(observed_rows, &original, admission)?;
-            let terminal = equality::terminal(&self.state, &original, admission)?;
-            image_fence::observe_row(observed_rows, terminal, admission)?;
+            image_fence::observe_row(observed_rows, &original)?;
+            let terminal = equality::terminal(&self.state, &original)?;
+            image_fence::observe_row(observed_rows, terminal)?;
             let source = root_source.filter(|_| direct && Arc::ptr_eq(&original, terminal));
             if let Some(source) = source {
-                if !self.root_source_is_current(execution, source, admission)? {
+                if !self.root_source_is_current(execution, source)? {
                     return Ok(FullVerificationDecision::Changed);
                 }
-                self.require_complete_root_upstream(source, terminal, admission)?;
+                self.require_complete_root_upstream(source, terminal)?;
             }
-            admission.admit_visited_settlement(visited.len())?;
+
             if visited.contains(terminal) {
                 continue;
             }
             visited.insert(Arc::clone(terminal));
-            admission.ordered_read(self.state.settlements.len())?;
+
             let row =
                 self.state
                     .settlements
@@ -224,7 +187,7 @@ impl FullVerificationImage<'_> {
                     .ok_or(FullVerificationStop::Alignment(
                         FullVerificationReason::MissingSettlement,
                     ))?;
-            admission.work(1 + row.read_basis.branch_id().0.len() as u64)?;
+
             if row.read_basis.runtime_instance_id() != self.selected.runtime_instance_id()
                 || row.read_basis.branch_id() != self.selected.branch_id()
                 || row.read_basis.version_id() > self.selected.version_id()
@@ -236,27 +199,26 @@ impl FullVerificationImage<'_> {
                 return Ok(FullVerificationDecision::Changed);
             };
             for fact in facts.iter() {
-                if !fact_is_current(execution, fact, self.runtime, self.snapshot, admission)? {
+                if !fact_is_current(execution, fact, self.runtime, self.snapshot)? {
                     return Ok(FullVerificationDecision::Changed);
                 }
             }
-            let projection =
-                equality::output_projection(&self.state, terminal, observed_rows, admission)?;
+            let projection = equality::output_projection(&self.state, terminal, observed_rows)?;
             if let Some(projection) = projection {
                 for fact in projection.facts.iter() {
-                    if !fact_is_current(execution, fact, self.runtime, self.snapshot, admission)? {
+                    if !fact_is_current(execution, fact, self.runtime, self.snapshot)? {
                         return Ok(FullVerificationDecision::Changed);
                     }
                 }
             } else if let Some(witness) = fallback_witness.filter(|_| direct) {
-                if !witness.unchanged_in(self.runtime, self.snapshot, admission)? {
+                if !witness.unchanged_in(self.runtime, self.snapshot)? {
                     return Ok(FullVerificationDecision::Changed);
                 }
             } else {
                 return Err(FullVerificationStop::OutputEvidenceUnavailable);
             }
-            reserve_pending(&mut pending, row.consumed_upstream.len(), admission)?;
-            admission.work(row.consumed_upstream.len() as u64)?;
+            reserve_pending(&mut pending, row.consumed_upstream.len())?;
+
             pending.extend(
                 row.consumed_upstream
                     .iter()
@@ -272,19 +234,14 @@ fn fact_is_current(
     fact: &WorthQueryApplicationObservedFact,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, FullVerificationStop> {
     let movement = fact
-        .source_currentness_in(runtime, execution, snapshot, admission)?
+        .source_currentness_in(runtime, execution, snapshot)?
         .map_err(FullVerificationStop::SourceRead)?;
     Ok(movement.movement() == Movement::Unmoved)
 }
 
-fn reserve_pending<T>(
-    pending: &mut Vec<T>,
-    additional: usize,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<(), FullVerificationStop> {
+fn reserve_pending<T>(pending: &mut Vec<T>, additional: usize) -> Result<(), FullVerificationStop> {
     let needed = pending
         .len()
         .checked_add(additional)
@@ -294,12 +251,7 @@ fn reserve_pending<T>(
     }
     // Doubling keeps admitted growth within twice the final backing.
     let target = needed.max(pending.capacity().saturating_mul(2));
-    let bytes = target
-        .checked_mul(size_of::<T>())
-        .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-    admission.bytes(bytes)?;
-    admission.work(pending.len() as u64)?;
+
     pending
         .try_reserve_exact(target - pending.len())
         .map_err(|_| FullVerificationStop::OutputEvidenceUnavailable)

@@ -1,11 +1,11 @@
 //! Finite host execution policy, consumed by ordinary installation and requests.
-use worth_foundational::{
-    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
-};
-use worth_query_host::facade::{
-    application_installation::WorthQueryInMemoryApplicationLimits,
-    primary_graph::SignalConditionalEvaluationBudget, runtime::*,
-};
+use worth_foundational::DeterminismContract;
+use worth_foundational::ExecutionBudget;
+use worth_foundational::ExecutionPosture;
+use worth_foundational::ExecutionRequestPolicy;
+use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits;
+use worth_query_host::facade::primary_graph::SignalConditionalEvaluationBudget;
+use worth_query_host::facade::runtime::*;
 
 pub fn limits(work: u64) -> WorthQueryInMemoryApplicationLimits {
     let policy = ExecutionRequestPolicy::new(
@@ -45,15 +45,7 @@ pub fn limits(work: u64) -> WorthQueryInMemoryApplicationLimits {
             },
         },
         WorthQueryProductWorldClock::start(),
-        WorthQueryInvalidationResources::install(
-            WorthQueryInvalidationResourceInstallation::bounded(
-                1_000_000,
-                64 * 1024 * 1024,
-                128 * 1024 * 1024,
-                64,
-            ),
-        )
-        .unwrap(),
+        WorthQueryInvalidationResources::new(),
         policy,
     )
     .unwrap();
@@ -61,7 +53,9 @@ pub fn limits(work: u64) -> WorthQueryInMemoryApplicationLimits {
         resources,
         WorthQueryApplicationCandidateResourceProfile::policy(Some(1024), Some(1024 * 1024))
             .unwrap(),
-        WorthQueryApplicationQueryResourceProfile::bounded(5120, 16 * 1024, 64, 32).unwrap(),
+        WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
+        ),
         SignalConditionalEvaluationBudget::development(),
     )
 }

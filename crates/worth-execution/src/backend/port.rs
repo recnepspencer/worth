@@ -21,6 +21,7 @@ pub(crate) enum BackendKind {
 }
 
 pub(crate) struct TaskOutcome<R, E> {
+    pub(crate) allocation_denial: Option<LeaseDenial>,
     pub(crate) result: super::task_result::TaskResult<R, E>,
     pub(crate) work: u64,
     pub(crate) span: u64,

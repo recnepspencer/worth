@@ -9,7 +9,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
         >,
         profile_kind: &'static str,
-        admission: &mut InvalidationEditAdmission,
+
         retained_program_basis: Option<
             &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
         >,
@@ -46,13 +46,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         };
         if let Some(retained_basis) = retained_program_basis {
             if let Some(shared) = selected_override {
-                if !selected_basis::historical_basis_matches(
-                    self,
-                    retained_basis,
-                    shared,
-                    admission,
-                    Family::IDENTITY,
-                )? {
+                if !selected_basis::historical_basis_matches(self, retained_basis, shared)? {
                     return Err(WorthQueryOutputDemandDenial::new(
                         WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                         Family::IDENTITY,
@@ -85,13 +79,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             }
         }
         if let Some(shared) = selected_override {
-            selected_basis::require_fresh_source(
-                self,
-                observation,
-                shared,
-                admission,
-                Family::IDENTITY,
-            )?;
+            selected_basis::require_fresh_source(self, observation, Family::IDENTITY, shared)?;
         }
         let output_bindings = self.installed_producers.family_output_bindings::<Family>();
         let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root());
@@ -118,7 +106,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 &output_bindings,
                 source.partition_identity(),
                 execution,
-                admission,
             )
             .map_err(|stop| selected_basis::selection_lookup_denial(stop, Family::IDENTITY))?;
         drop(lineage);
@@ -134,11 +121,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         if !live_candidates.is_empty() {
             // Debit basis admission and lifecycle visits before entering that
             // phase. The caller's remainder survives all subsequent failures.
-            let required_work = live_candidates
-                .len()
-                .checked_add(1)
-                .ok_or_else(|| selection_budget_denial(Family::IDENTITY))?;
-            charge(admission, required_work, Family::IDENTITY)?;
+
             let newly_selected = if selected_override.is_none() {
                 Some(
                     self.on_branch(observation.product_branch())
@@ -195,7 +178,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                         )
                     })?;
                 let mut current = Vec::with_capacity(live_candidates.len());
-                use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity;
                 for (candidate, entity) in &live_candidates {
                     let live=retained_liveness::read(execution,&view,*entity)?;
                     let identity_current = candidate.source_identity.is_some_and(|identity| {
@@ -221,14 +204,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                             Some(RecordedSourceIdentity::Checkpoint(_)) => true,
                             _ => {
                                 witness.is_some()
-                                    && retained_output_settlement_is_verified(
-                                        runtime,
-                                        selected.application_basis().snapshot_handle(),
-                                        candidate.verification_requirement,
-                                        &candidate.settlement_identity,
-                                        owner,
-                                        admission,
-                                    )?
+                                    && retained_output_settlement_is_verified(runtime, selected.application_basis().snapshot_handle(), candidate.verification_requirement, &candidate.settlement_identity, owner)?
                             }
                         };
                     let facts_current = proven
@@ -238,7 +214,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                                 selected.application_basis().snapshot_handle(),
                                 identity_current,
                                 candidate.observed_source_facts.as_deref(),
-                                admission,
                             )?,
                             OutputDependencySelection::Reuse
                         )
@@ -247,7 +222,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                                 runtime,
                                 selected.application_basis().snapshot_handle(),
                                 witness,
-                                admission,
                             )?,
                             OutputDependencySelection::Reuse
                         );
@@ -262,10 +236,9 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     continue;
                 }
                 if facts_current {
-                    let (mut selected, entry) = self.installed_producers.select_exact::<Family>(
-                        candidate.binding,
-                        selected_override.map(|_| &mut *admission),
-                    )?;
+                    let (mut selected, entry) = self
+                        .installed_producers
+                        .select_exact::<Family>(candidate.binding)?;
                     // A runtime record reaches the input cutoff and needs its
                     // declared decision proof. A current checkpoint record is
                     // readmitted through its complete recovered facts instead.
@@ -292,16 +265,13 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                         profile_kind,
                         WorthQueryProducerLifecyclePosture::Preserve,
                     ),
-                    selected_override.map(|_| &mut *admission),
                 );
             }
         }
-        self.installed_producers.select::<Family>(
-            WorthQueryProducerApplicability::new(
+        self.installed_producers
+            .select::<Family>(WorthQueryProducerApplicability::new(
                 profile_kind,
                 WorthQueryProducerLifecyclePosture::Initial,
-            ),
-            selected_override.map(|_| &mut *admission),
-        )
+            ))
     }
 }

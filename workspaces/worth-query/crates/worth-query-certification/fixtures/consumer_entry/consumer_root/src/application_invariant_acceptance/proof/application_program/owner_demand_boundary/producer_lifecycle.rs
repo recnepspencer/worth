@@ -35,32 +35,6 @@ pub(super) fn live_output_and_stale_head_selection(
         WorthQueryProducerLifecyclePosture::Initial,
         "an unchanged live source retains its exact initial producer",
     );
-    let exhausted = world
-        .application
-        .with_host_advancement(|host_phase| {
-            application
-                .select_output_producer::<PlanarOutputFamily>(
-                    &host_phase,
-                    &exact.observed_sources()[0],
-                    "planar",
-                    std::num::NonZeroUsize::new(1),
-                )
-                .expect_err("the live-output lookup refuses the caller's explicit work limit")
-        })
-        .expect("installed host call opens");
-    assert_eq!(
-        exhausted.kind(),
-        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-    );
-    assert_eq!(
-        exhausted.recovery_posture(),
-        WorthQueryOutputDemandRecoveryPosture::Retryable,
-    );
-    assert_eq!(
-        selected_lifecycle(application, &exact),
-        WorthQueryProducerLifecyclePosture::Initial,
-        "the same original source selects without a caller ceiling after refusal",
-    );
     let stale = source(application, &principal, &scope, "anchor-a");
     adjust(
         &request,
@@ -79,7 +53,6 @@ pub(super) fn live_output_and_stale_head_selection(
                     &host_phase,
                     &stale.observed_sources()[0],
                     "planar",
-                    None,
                 )
                 .expect_err(
                     "a moved head cannot grant output lifecycle authority from an old source",
@@ -173,7 +146,6 @@ fn selected_lifecycle(
                     &host_phase,
                     &disclosed.observed_sources()[0],
                     "planar",
-                    None,
                 )
                 .expect("the installed producer selects for the real source")
                 .applicability()

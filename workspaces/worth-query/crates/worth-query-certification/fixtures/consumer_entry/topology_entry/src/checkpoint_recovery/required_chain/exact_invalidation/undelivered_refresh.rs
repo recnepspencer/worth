@@ -12,7 +12,7 @@ fn a_settled_demand_follows_its_output_past_an_undelivered_refresh() {
     let _equivalence =
         primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
+    let application = install(None, ring_world::seed::<1>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3e40);
@@ -69,7 +69,7 @@ fn a_never_settled_stop_leaves_an_undelivered_refresh_to_its_settled_holder() {
         primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
     for unsettled_first in [true, false] {
-        let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
+        let application = install(None, ring_world::seed::<1>);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let court = Court::new(&application, &request, 0x9176_3e60);
@@ -141,7 +141,7 @@ fn a_never_settled_stop_leaves_an_undelivered_refresh_to_its_settled_holder() {
 #[test]
 fn a_pending_caller_delivers_before_draining_independent_work() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None, ring_world::seed::<2>, Retained::AMPLE);
+    let application = install(None, ring_world::seed::<2>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_4440);

@@ -149,7 +149,6 @@ fn cancellation_and_deadline_are_typed_before_projection() {
             cancellation.token(),
         ),
         8,
-        10_000,
     )
     .unwrap();
     assert!(matches!(
@@ -171,7 +170,6 @@ fn cancellation_and_deadline_are_typed_before_projection() {
     let expired = BankReadControls::current(
         WorthQueryRequestScope::new(Some(Instant::now()), deadline_source.token()),
         8,
-        10_000,
     )
     .unwrap();
     assert!(matches!(
@@ -209,5 +207,5 @@ fn payment_summary(
 }
 
 fn controls(maximum_results: usize) -> BankReadControls {
-    BankReadControls::current(request_scope(), maximum_results, 10_000).unwrap()
+    BankReadControls::current(request_scope(), maximum_results).unwrap()
 }

@@ -35,17 +35,8 @@ fn a_dropped_prerequisite_is_inspected_after_the_earlier_requested_output_resolv
     let _guard = checkpoint_recovery_test_guard();
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    let application = support::install_program_with_seed::<program::ChainProgram>(
-        None,
-        profile,
-        4096,
-        128 * 1024 * 1024,
-        profile
-            .limits()
-            .source_currentness_work()
-            .map(|work| u64::try_from(work).unwrap()),
-        tail_seed,
-    );
+    let application =
+        support::install_program_with_seed::<program::ChainProgram>(None, profile, 4096, tail_seed);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut left = request

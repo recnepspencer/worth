@@ -6,7 +6,7 @@ fn post_effect_rebase_door_preserves_stops_at_every_consult() {
         let (entity, locator) = account_note(&phase, &world, "account-1");
         let kind = world.application.runtime.primary_graph().unwrap().layout.entity_kind(AccountIdentity::reference().entity()).unwrap();
         let fact = WorthQueryApplicationObservedFact::AbsentField { entity_id: entity, kind, locator: planned(&locator) };
-        crate::test_read_stops::every_consult_under(&phase.borrowed_request_for_test(),|execution| match rebase_result_within(&phase, execution, &world, vec![fact.clone()], 64) {
+        crate::test_read_stops::every_consult_under(&phase.borrowed_request_for_test(),|execution| match rebase_result_at_current(&phase, execution, &world, vec![fact.clone()]) {
             RebasedSourceFacts::Exact(_) => Ok(true),
             RebasedSourceFacts::VerificationRequired { reason: RebaseVerificationReason::Execution(cause), .. } => Err(cause),
             other => panic!("a native stop must keep its cause: {other:?}"),
@@ -47,11 +47,11 @@ fn selected_native_rebase_preserves_stops_at_every_consult() {
                 }
                 Err(cause) => panic!("unexpected preparation refusal: {cause:?}"),
             };
-            let result = world.application.runtime.primary_graph().unwrap().integration_handle().with_runtime(execution, |runtime| {
-                prepared.rebase(execution, runtime, snapshot, &BTreeSet::new(), true, Some(64),
-                    &mut world.application.primary_provider.graph.source_owner.invalidation_owner.edit_admission(),
-                    StorageControl::new(execution.allocation_policy(), None))
+let result = world.application.runtime.primary_graph().unwrap().integration_handle().with_runtime(execution, |runtime| {
+                prepared.rebase(execution, runtime, snapshot, &BTreeSet::new(), true, StorageControl::new(execution.allocation_policy(), None))
             });
+
+
             match result {
                 RebasedSourceFacts::Cached { facts, .. } => {
                     assert_eq!(facts.len(), 2);

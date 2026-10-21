@@ -1,6 +1,5 @@
 use super::WorthQueryGraphIndexSupportRow;
 use crate::graph_read_access::WorthQueryGraphReadAccessRequirementKind;
-use std::convert::Infallible;
 
 mod admitted;
 
@@ -38,9 +37,24 @@ impl WorthQueryGraphIndexInventory {
         )
     }
 
-    pub fn from_rows(rows: Vec<WorthQueryGraphIndexSupportRow>) -> Self {
-        Self::from_rows_admitted(rows, &mut |_, _| Ok::<(), Infallible>(()))
-            .expect("ordinary inventory construction has no resource refusal")
+    pub fn from_rows(mut rows: Vec<WorthQueryGraphIndexSupportRow>) -> Self {
+        rows.sort_by(|a, b| {
+            a.requirement_kind()
+                .as_str()
+                .cmp(b.requirement_kind().as_str())
+                .then_with(|| a.digest().cmp(b.digest()))
+        });
+        rows.dedup_by(|a, b| a.digest() == b.digest());
+        let mut parts = Vec::with_capacity(rows.len() + 1);
+        parts.push("worth_query_graph_index_inventory_v1".to_owned());
+        for row in &rows {
+            let mut part = String::new();
+            row.write_digest_part(&mut part)
+                .expect("String formatting cannot fail");
+            parts.push(part);
+        }
+        let digest = crate::admission_digest::hash_parts(&parts);
+        Self { digest, rows }
     }
 }
 

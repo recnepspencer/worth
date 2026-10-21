@@ -68,15 +68,7 @@ fn original_request_cancellation_dominates_companion_result_and_preserves_retry(
             calls: AtomicUsize::new(0),
             domain_refusal,
         });
-        let _registration = pending
-            .activate(
-                participant.clone(),
-                CompanionPreflightBudget {
-                    maximum_work_visits: Some(64),
-                    maximum_preparation_bytes: Some(8192),
-                },
-            )
-            .unwrap();
+        let _registration = pending.activate(participant.clone()).unwrap();
         let candidate = prepare_create(&runtime, execution);
         let outcome = runtime
             .publication_port()

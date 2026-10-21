@@ -41,12 +41,11 @@ fn a_failed_rebase_carries_out_what_its_effect_did_to_its_source_reads() {
                 locator.aspect().aspect_key().clone(),
                 CanonicalFieldPath::single(FieldKey::new("undeclared").unwrap()),
             ));
-            let own_effect = |facts, visits| match rebase_result_within(
+            let own_effect = |facts| match rebase_result_at_current(
                 &host_custody.phase_for_application(&world.application),
                 execution,
                 &world,
                 facts,
-                visits,
             ) {
                 RebasedSourceFacts::VerificationRequired { own_effect, .. } => own_effect,
                 other => panic!("the rebase must fail: {other:?}"),
@@ -55,20 +54,10 @@ fn a_failed_rebase_carries_out_what_its_effect_did_to_its_source_reads() {
             let past = vec![unrebasable.clone(), source_read.clone()];
             let unmoved = OwnEffectOnReads(OwnEffect::Unmoved);
             let moved = OwnEffectOnReads(OwnEffect::Moved);
-            assert_eq!(own_effect(before.clone(), 64), unmoved);
-            assert_eq!(own_effect(past.clone(), 64), unmoved);
-            let stopped = own_effect(past.clone(), 1);
+            assert_eq!(own_effect(before.clone()), unmoved);
+            assert_eq!(own_effect(past.clone()), unmoved);
             assert_eq!(
-                stopped, moved,
-                "a source read the walk's meter stopped it asking about counts as moved"
-            );
-            assert_eq!(
-                stopped.at_own_publication(true),
-                FactlessCurrentness::Superseded,
-                "at its own publication it refreshes on a later meter, never a Terminal denial"
-            );
-            assert_eq!(
-                own_effect(vec![unrebasable], 0),
+                own_effect(vec![unrebasable]),
                 unmoved,
                 "a denied walk that left no source read undecided moved none"
             );
@@ -80,9 +69,9 @@ fn a_failed_rebase_carries_out_what_its_effect_did_to_its_source_reads() {
                 locator,
                 "moved",
             );
-            assert_eq!(own_effect(before, 64), moved);
+            assert_eq!(own_effect(before), moved);
             assert_eq!(
-                own_effect(past, 64),
+                own_effect(past),
                 moved,
                 "a source read past the failure is still decided"
             );

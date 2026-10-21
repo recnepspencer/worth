@@ -25,7 +25,7 @@ mod lifecycle_mutations;
 mod observed_source_fixture;
 mod optional_result_presence;
 mod ordering_support;
-mod planning_budget;
+
 mod result_projection;
 mod root_guard_basis;
 mod root_selection;
@@ -135,7 +135,6 @@ fn current_controls(
 ) -> crate::domain_computation::primary_graph::WorthQueryProductQueryControls<'_> {
     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
         NonZeroUsize::new(10).unwrap(),
-        Some(NonZeroUsize::new(10_000).unwrap()),
         request,
     )
 }
@@ -221,12 +220,6 @@ fn execution_runtime_mints_plan_from_exact_mapped_principal_and_typed_scope() {
     assert!(plan.graph_work_managed_run_identity().as_u64() > 0);
     assert!(plan.graph_work_decision_fact_count() > 0);
     assert!(!plan.graph_work_provider().is_empty());
-    assert_eq!(
-        plan.graph_read_plan()
-            .budget_check()
-            .max_inline_intermediate_set_size(),
-        Some(10_000)
-    );
 
     let result = world
         .application

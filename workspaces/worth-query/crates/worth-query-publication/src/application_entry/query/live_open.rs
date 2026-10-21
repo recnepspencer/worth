@@ -67,30 +67,23 @@ where
             .map_err(
                 super::super::WorthQueryApplicationLiveOpenRequestDenial::BindingInstallation,
             )?;
-        let controls = worth_query_execution::facade::primary_graph::WorthQueryApplicationLiveControls::bounded(
-            self.scope.clone(),
-            live_limits.buffer_capacity,
-            live_limits.maximum_results,
-            live_limits.maximum_work,
-        )
+        let controls = worth_query_execution::facade::primary_graph::WorthQueryApplicationLiveControls::bounded(self.scope.clone(), live_limits.buffer_capacity, live_limits.maximum_results)
         .map_err(super::super::WorthQueryApplicationLiveOpenRequestDenial::Controls)?;
         let maximum_results = NonZeroUsize::new(live_limits.maximum_results)
             .expect("validated live controls reject zero result limits");
-        let maximum_work = live_limits.maximum_work.map(|work| {
-            NonZeroUsize::new(work).expect("validated live controls reject zero work limits")
-        });
+
         let binding_limits = match self.limits {
-            Some((results, work)) => self
+            Some(results) => self
                 .application
                 .resolve_application_query_limits(binding.limits())
-                .narrow(results, Some(work))
+                .narrow(results)
                 .map_err(super::super::WorthQueryApplicationLiveOpenRequestDenial::Limit)?,
             None => self
                 .application
                 .resolve_application_query_limits(binding.limits()),
         };
         binding_limits
-            .narrow(maximum_results, maximum_work)
+            .narrow(maximum_results)
             .map_err(super::super::WorthQueryApplicationLiveOpenRequestDenial::Limit)?;
         let selected = self
             .application

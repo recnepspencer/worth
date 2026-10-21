@@ -1,14 +1,14 @@
 //! One selected candidate verified at the reader's own snapshot.
 
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
+use std::sync::OnceLock;
 
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use super::*;
-use crate::domain_computation::primary_graph::output_lineage::{
-    invalidation::FullVerificationReason, SealedNativeOutputWitness,
-    WorthQueryCurrentOutputCandidate,
-};
+use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
+use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
+use crate::domain_computation::primary_graph::output_lineage::WorthQueryCurrentOutputCandidate;
 
 pub(super) enum VerifiedCandidate {
     Current {
@@ -53,10 +53,7 @@ where
         if sealed.is_none() && !restored {
             return Ok(None);
         }
-        let mut admission = self
-            .reader
-            .invalidation_owner
-            .edit_admission_with_work_limit(self.reader.work_budget.remaining());
+
         let verification = match sealed {
             Some(witness) => ConsumedOutputEvidence::verify_at_observation(
                 execution,
@@ -69,7 +66,6 @@ where
                 self.reader.runtime,
                 self.reader.snapshot,
                 selected,
-                &mut admission,
             )
             .map(|verification| {
                 Some(match verification {
@@ -85,10 +81,8 @@ where
                 &candidate.correspondence,
                 &facts,
                 self.reader.layout,
-                &self.reader.invalidation_owner,
                 self.reader.runtime,
                 self.reader.snapshot,
-                &mut admission,
             )
             .map(|witness| {
                 let witness = self
@@ -100,28 +94,6 @@ where
                 Some(VerifiedCandidate::Current { facts, witness })
             }),
         };
-        let accounting = usize::try_from(admission.charged_work())
-            .map_err(|_| {
-                self.reader.work_budget.mark_overflowed();
-                self.current_output_work_exhausted(subject)
-            })
-            .and_then(|charged| {
-                self.charge_current_output_work(charged, subject)?;
-                Ok(charged)
-            });
-        match accounting {
-            Ok(charged) => self.reader.work.record_output_lineage_selection(charged),
-            Err(denial) => {
-                if let Err(
-                    stop @ (ConsumedOutputVerificationStop::Execution(_)
-                    | ConsumedOutputVerificationStop::Interrupted(_)),
-                ) = verification
-                {
-                    return Err(super::verification_denial::from_stop(stop, subject));
-                }
-                return Err(denial);
-            }
-        }
         verification.map_err(|stop| {
             if stop == ConsumedOutputVerificationStop::WorkExhausted {
                 self.reader.work_budget.mark_exceeded();
@@ -130,7 +102,7 @@ where
                 matches!(stop, ConsumedOutputVerificationStop::CapacityExhausted(_));
             let mut denial = super::verification_denial::from_stop(stop, subject);
             if stop == ConsumedOutputVerificationStop::PendingUpstream {
-                match self.retain_requested_output(candidate, selected, subject) {
+                match self.retain_requested_output(candidate, selected) {
                     Ok(read) => denial.requested_output = Some(read),
                     Err(stopped) => return stopped,
                 }
@@ -142,44 +114,14 @@ where
         &mut self,
         candidate: &WorthQueryCurrentOutputCandidate,
         selected: &PositionedRelationalSnapshot,
-        subject: &str,
     ) -> Result<
         crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead,
         WorthQueryCurrentOutputDenial,
     > {
         use crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead;
-        let mut admission = self
-            .reader
-            .invalidation_owner
-            .edit_admission_with_work_limit(self.reader.work_budget.remaining());
-        let bytes = std::mem::size_of::<RequestedOutputRead>() as u64;
-        let result = admission
-            .charge_external_work(bytes + selected.branch_id().0.len() as u64)
-            .and_then(|_| {
-                self.reader.invalidation_owner.retain_requested_output(
-                    selected,
-                    bytes,
-                    &mut admission,
-                )
-            });
-        let charged = usize::try_from(admission.charged_work()).map_err(|_| {
-            self.reader.work_budget.mark_overflowed();
-            self.current_output_work_exhausted(subject)
-        })?;
-        self.charge_current_output_work(charged, subject)?;
-        self.reader.work.record_output_lineage_selection(charged);
-        let capacity = result.map_err(|stop| {
-            let stop = crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop(stop);
-            if stop == ConsumedOutputVerificationStop::WorkExhausted {
-                self.reader.work_budget.mark_exceeded();
-            }
-            self.reader.retention_exhausted |= matches!(stop, ConsumedOutputVerificationStop::CapacityExhausted(_));
-            super::verification_denial::from_stop(stop, subject)
-        })?;
         Ok(RequestedOutputRead::new(
             Arc::clone(&candidate.settlement_identity),
             selected.clone(),
-            capacity,
         ))
     }
 }

@@ -19,15 +19,6 @@ pub(in crate::domain_computation::primary_graph::output_lineage) struct Publicat
 }
 
 impl<'a> PublicationHeads<'a> {
-    /// One role lookup plus the finite balanced-tree comparison bound.
-    /// Storage and selection scale with offered heads, never older history.
-    pub(in crate::domain_computation::primary_graph::output_lineage) fn admission_work(
-        &self,
-    ) -> usize {
-        let levels = usize::BITS as usize - self.members.len().max(1).leading_zeros() as usize;
-        1 + 11 * levels
-    }
-
     pub(in crate::domain_computation::primary_graph::output_lineage) fn insert(
         &mut self,
         partition: Option<[u8; 32]>,

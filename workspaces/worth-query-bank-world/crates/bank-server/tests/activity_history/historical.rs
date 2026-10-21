@@ -37,7 +37,7 @@ fn account_activity_reads_one_real_prior_bank_commit() {
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(&owner)
-        .execute(bank_server::BankReadControls::current(request_scope(), 16, 2_048).unwrap())
+        .execute(bank_server::BankReadControls::current(request_scope(), 16).unwrap())
         .expect("the current account activity must execute");
 
     assert_eq!(historical.rows()[0].entries().len(), 3);
@@ -138,8 +138,8 @@ fn historical_read_rechecks_current_account_authorization() {
             .historical(
                 &commit,
                 NonZeroUsize::new(16).unwrap(),
-                NonZeroUsize::new(2_048).unwrap(),
-                request,
+
+                NonZeroUsize::new(2_048).unwrap(), request,
             )
     };
     assert!(read(&request_scope()).is_ok());

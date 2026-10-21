@@ -1,10 +1,10 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::{
-    WorthQueryInstalledApplicationProducerRegistry, WorthQueryProducerApplicability,
-    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
-};
+use super::WorthQueryInstalledApplicationProducerRegistry;
+use super::WorthQueryProducerApplicability;
+use super::WorthQueryProducerLifecyclePosture;
+use super::WorthQueryProducerOutputFamily;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 
 type FamilySource<Schema, Family> = <Family as WorthQueryProducerOutputFamily<Schema>>::Source;
@@ -13,38 +13,41 @@ type FamilySourceValue<Schema, Family> =
 type FamilySourceQuery<Schema, Family> =
     <FamilySource<Schema, Family> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query;
 
-pub(in crate::domain_computation::primary_graph) use progression::{CurrentBasis, CurrentProof};
+pub(in crate::domain_computation::primary_graph) use progression::CurrentBasis;
+pub(in crate::domain_computation::primary_graph) use progression::CurrentProof;
 mod bridge_denial;
 mod checkpoint_delivery;
 mod denial_diagnostic;
 mod denial_posture;
 pub(super) mod disclosure;
 mod progression;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::{DecisionInput, PerformedMembers, SelectedDecisionInput};
-pub(in crate::domain_computation::primary_graph) use progression::{
-    MatchedRequiredPredecessors, ReboundConsumedOutput, ResolvedRequiredPredecessors,
-};
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::DecisionInput;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::PerformedMembers;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use progression::SelectedDecisionInput;
+pub(in crate::domain_computation::primary_graph) use progression::MatchedRequiredPredecessors;
+pub(in crate::domain_computation::primary_graph) use progression::ReboundConsumedOutput;
+pub(in crate::domain_computation::primary_graph) use progression::ResolvedRequiredPredecessors;
 mod readiness;
 mod required_continuations;
 mod required_provenance;
 mod scheduling_progression;
 mod selected_source;
 mod selection;
+pub(in crate::domain_computation::primary_graph) use required_continuations::PreparedRequiredFreshSlot;
 use required_continuations::RequiredContinuations;
-pub(in crate::domain_computation::primary_graph) use required_continuations::{
-    PreparedRequiredFreshSlot, RequiredFreshOutcome, RequiredFreshProgress,
-};
+pub(in crate::domain_computation::primary_graph) use required_continuations::RequiredFreshOutcome;
+pub(in crate::domain_computation::primary_graph) use required_continuations::RequiredFreshProgress;
 use required_provenance::DemandProgressionProvenance;
 
 mod denial;
 pub(in crate::domain_computation::primary_graph) use denial::ProducerPublicationStale;
 mod managed_cleanup;
 mod read_close;
-pub use denial::{
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-    WorthQueryOutputDemandRecoveryPosture,
-};
-pub use read_close::{WorthQueryOutputReadCleanup, WorthQueryOutputReadCloseDenial};
+pub use denial::WorthQueryOutputDemandDenial;
+pub use denial::WorthQueryOutputDemandDenialKind;
+pub use denial::WorthQueryOutputDemandRecoveryPosture;
+pub use read_close::WorthQueryOutputReadCleanup;
+pub use read_close::WorthQueryOutputReadCloseDenial;
 
 /// The one installed producer chosen for an output family and source, with the
 /// applicability it was chosen for.
@@ -81,9 +84,7 @@ where
     limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
 
     producer_contacts_in_this_demand: usize,
-    checkpoint_readmission_work_units: u64,
-    checkpoint_readmission_work_bound: u64,
-    checkpoint_readmission_charged_preparation_bytes: u64,
+
     // Whether an advance of this demand has settled. Until one does, a cached
     // Ready it joined at its start is still cache: see `caller_custody`.
     settled: bool,
@@ -117,28 +118,6 @@ where
     Schema: ApplicationSchema,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
-    /// Charged owner work comparing this demand's checkpoint output before reuse.
-    pub const fn checkpoint_readmission_work_units(&self) -> u64 {
-        self.checkpoint_readmission_work_units
-    }
-
-    /// Saturating sum of owner-computed charged-work ceilings for accepted
-    /// checkpoint readmissions; excludes decoding, rejected candidates and
-    /// adoption. `u64::MAX` marks saturation, not a finite aggregate guarantee.
-    pub const fn checkpoint_readmission_work_bound(&self) -> u64 {
-        self.checkpoint_readmission_work_bound
-    }
-
-    /// Largest admitted scratch bound among this demand's accepted checkpoint
-    /// readmissions. This is not measured allocation or resident memory.
-    pub const fn checkpoint_readmission_charged_preparation_bytes(&self) -> u64 {
-        self.checkpoint_readmission_charged_preparation_bytes
-    }
-
-    fn currentness_work_limit(&self) -> Option<usize> {
-        self.limits.source_currentness_work()
-    }
-
     pub fn observed_source(&self) -> &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>> {
         &self.observed_source
     }
@@ -217,9 +196,6 @@ where
     pub(super) fn select<Family>(
         &self,
         applicability: WorthQueryProducerApplicability,
-        remaining_work: Option<
-            &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
-        >,
     ) -> Result<
         (
             WorthQuerySelectedApplicationProducer,
@@ -231,7 +207,6 @@ where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
         let selected = self.select_entry::<Family>(
-            remaining_work,
             |entry| {
                 entry.declaration.output_family == Family::IDENTITY
                     && entry.declaration.output_family_type == TypeId::of::<Family>()

@@ -27,14 +27,7 @@ fn authentication_expiry_denies_resume_without_a_basis() {
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
-            context.readmit_denial(
-                &host_custody,
-                continuation,
-                "account-1",
-                &request,
-                1,
-                10_000,
-            )
+            context.readmit_denial(&host_custody, continuation, "account-1", &request, 1)
         })
         .expect("the fixture read owns its installed host call");
 
@@ -80,7 +73,6 @@ fn stale_principal_and_scope_deny_and_release_readmission_bases() {
                 "account-1",
                 &principal_request,
                 1,
-                10_000,
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -127,7 +119,6 @@ fn stale_principal_and_scope_deny_and_release_readmission_bases() {
                 "account-1",
                 &scope_request,
                 1,
-                10_000,
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -172,7 +163,6 @@ fn cancellation_and_deadline_deny_resume_before_basis_acquisition() {
                 "account-1",
                 &cancelled_request,
                 1,
-                10_000,
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -210,7 +200,6 @@ fn cancellation_and_deadline_deny_resume_before_basis_acquisition() {
                 "account-1",
                 &deadline_request,
                 1,
-                10_000,
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -250,14 +239,7 @@ fn foreign_continuation_basis_denies_without_registering_a_lease() {
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
-            context.readmit_denial(
-                &host_custody,
-                continuation,
-                "account-1",
-                &request,
-                1,
-                10_000,
-            )
+            context.readmit_denial(&host_custody, continuation, "account-1", &request, 1)
         })
         .expect("the fixture read owns its installed host call");
 
@@ -293,7 +275,6 @@ fn page_and_work_exhaustion_mint_no_resumed_plan_or_basis() {
                 "account-1",
                 &width_request,
                 257,
-                10_000,
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -325,7 +306,6 @@ fn page_and_work_exhaustion_mint_no_resumed_plan_or_basis() {
                 work_continuation,
                 "account-1",
                 &work_request,
-                1,
                 1,
             )
         })

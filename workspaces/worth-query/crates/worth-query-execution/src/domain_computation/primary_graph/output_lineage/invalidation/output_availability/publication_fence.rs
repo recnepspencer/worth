@@ -1,9 +1,9 @@
 //! Pin the original image before full validation and carry it through publication.
 use super::super::source_alignment::BranchMarkRoot;
 use super::*;
-use worth_relational::facade::mvcc::{
-    CompanionBranchCell, CompanionBranchImage, PreparedRelationalCommitCandidate,
-};
+use worth_relational::facade::mvcc::CompanionBranchCell;
+use worth_relational::facade::mvcc::CompanionBranchImage;
+use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
 
 pub(in crate::domain_computation::primary_graph) struct SourcePublicationReadFence {
     cell: CompanionBranchCell<BranchMarkRoot>,
@@ -28,13 +28,12 @@ impl SourceInvalidationOwner {
         &self,
         observations: &[Arc<ObservedSourcePublication>],
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<SourcePublicationReadFence, CompanionPreflightStop> {
         let cell = self
-            .cell_for_read(selected, admission)?
+            .cell_for_read(selected)?
             .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
         let image = cell.read_image();
-        admission.charge_external_work(4)?;
+
         if image.root_id() != selected.root_id()
             || image.commit_id() != selected.commit_id()
             || image.position() != selected.position()
@@ -42,8 +41,6 @@ impl SourceInvalidationOwner {
             return Err(CompanionPreflightStop::SelectedSourceMismatch);
         }
         for observed in observations {
-            admission.charge_external_work(1)?;
-            admission.ordered_read(image.payload().current.source_publications.len())?;
             let current = image
                 .payload()
                 .current

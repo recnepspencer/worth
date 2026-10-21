@@ -229,7 +229,6 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
                     &host_phase,
                     &restored_source.observed_sources()[0],
                     "planar-final",
-                    std::num::NonZeroUsize::new(4_096),
                 )
                 .unwrap_or_else(|denial| {
                     panic!("the restored output must keep its exact producer profile: {denial:?}")

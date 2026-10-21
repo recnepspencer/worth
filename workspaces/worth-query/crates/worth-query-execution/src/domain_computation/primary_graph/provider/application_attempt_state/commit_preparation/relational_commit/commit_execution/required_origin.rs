@@ -1,13 +1,13 @@
 //! Bind complete installed-family publication at the actual precommit image.
 use super::*;
+use crate::domain_computation::primary_graph::PreparedPrerequisiteClaims;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture as Posture;
-use crate::domain_computation::primary_graph::{
-    output_lineage::invalidation::InvalidationEditAdmission, PreparedPrerequisiteClaims,
-};
-use worth_relational::facade::mvcc::{
-    CompanionPreflightStop, RequiredOutputPublication, RequiredOutputPublicationMeaning,
-    RequiredOutputRolePosture, RequiredOutputRoleTarget, ValidatedRelationalProposal,
-};
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::mvcc::RequiredOutputPublication;
+use worth_relational::facade::mvcc::RequiredOutputPublicationMeaning;
+use worth_relational::facade::mvcc::RequiredOutputRolePosture;
+use worth_relational::facade::mvcc::RequiredOutputRoleTarget;
+use worth_relational::facade::mvcc::ValidatedRelationalProposal;
 use worth_relational::facade::transactions::EntityReference;
 
 pub(super) fn bind(
@@ -17,7 +17,6 @@ pub(super) fn bind(
     provider: &WorthQueryPrimaryGraphProvider,
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
     required: Option<&PreparedPrerequisiteClaims>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<
     ValidatedRelationalProposal,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -44,14 +43,10 @@ pub(super) fn bind(
     let product = attempt.affinity().product_publication().observation();
     let native_basis = product.basis().relational_basis();
     provider.graph.with_runtime(execution, |runtime| {
-        let positioned = runtime.read_truth().positioned_snapshot_admitted(before, |work, bytes| {
-            admission.charge_external_work(work)?;
-            admission.admit_read_scratch(bytes)
-        }).map_err(|stop| {
-            use worth_relational::facade::runtime::RelationalSnapshotPositionAdmissionStop as Stop;
-            match stop { Stop::Admission(stop) => native_output_witness_stop(stop),
-                Stop::AccountingOverflow => overflow(), Stop::Position(_) => mismatch() }
-        })?;
+        let positioned = runtime
+            .read_truth()
+            .positioned_snapshot(before)
+            .map_err(|_| mismatch())?;
         if positioned.root_id() != native_basis.descriptor().root_identity()
             || positioned.runtime_instance_id() != native_basis.descriptor().runtime_instance_id()
             || positioned.branch_id() != native_basis.descriptor().branch_id()
@@ -73,36 +68,9 @@ pub(super) fn bind(
             product.lifecycle_incarnation(),
             product.reference_generation().get(),
             partition,
-            admission,
         )
         .map_err(native_output_witness_stop)?;
     let (producer, source_epoch) = required.native_prior_checkpoint_input();
-    let bytes = targets.clone().try_fold(
-        targets
-            .len()
-            .checked_mul(std::mem::size_of::<RequiredOutputRoleTarget>())
-            .ok_or_else(overflow)?,
-        |bytes, (role, _, name, target)| {
-            bytes
-                .checked_add(role.len())
-                .and_then(|n| n.checked_add(name.len()))
-                .and_then(|n| {
-                    n.checked_add(match target {
-                        EntityReference::Created(target) => {
-                            target.client_key.as_raw_str().map_or(0, str::len)
-                        }
-                        _ => 0,
-                    })
-                })
-                .ok_or_else(overflow)
-        },
-    )?;
-    admission
-        .admit_read_scratch(bytes as u64)
-        .map_err(native_output_witness_stop)?;
-    admission
-        .charge_external_work(bytes as u64 + targets.len() as u64)
-        .map_err(native_output_witness_stop)?;
     let mut roles = Vec::with_capacity(targets.len());
     let mut all_created = true;
     for (role, posture, name, target) in targets {
@@ -172,27 +140,12 @@ pub(super) fn bind(
         } else {
             let prior = head
                 .ok_or_else(mismatch)?
-                .cold_predecessor(admission)
+                .cold_predecessor()
                 .map_err(native_output_witness_stop)?;
             let views = prior.correspondence.native_witness_roles();
-            let width = views
-                .len()
-                .checked_mul(std::mem::size_of::<RequiredOutputRoleTarget>())
-                .ok_or_else(overflow)?;
-            admission
-                .admit_read_scratch(width as u64)
-                .map_err(native_output_witness_stop)?;
-            admission
-                .charge_external_work(views.len() as u64)
-                .map_err(native_output_witness_stop)?;
+
             let mut prior_roles = Vec::with_capacity(views.len());
             for (role, posture, name, id) in views {
-                admission
-                    .admit_read_scratch((role.len() + name.len()) as u64)
-                    .map_err(native_output_witness_stop)?;
-                admission
-                    .charge_external_work((role.len() + name.len()) as u64)
-                    .map_err(native_output_witness_stop)?;
                 prior_roles.push(RequiredOutputRoleTarget {
                     role: role.to_owned(),
                     entity_name: name.to_owned(),
@@ -209,12 +162,7 @@ pub(super) fn bind(
                     target: EntityReference::Existing(id),
                 });
             }
-            admission
-                .admit_read_scratch(meaning.family.len() as u64)
-                .map_err(native_output_witness_stop)?;
-            admission
-                .charge_external_work(meaning.family.len() as u64)
-                .map_err(native_output_witness_stop)?;
+
             // This is the performed epoch, not the new demand's source epoch.
             let prior_meaning = RequiredOutputPublicationMeaning {
                 family: meaning.family.clone(),

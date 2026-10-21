@@ -2,17 +2,19 @@
 
 use std::sync::Arc;
 
-use super::super::{
-    progression::{execution_failure_is_retryable, execution_failure_reschedules},
-    required_work::RequiredWorkMembership,
-    DemandRecord, DemandState, WorthQueryOutputCheckpoint, WorthQueryOutputDemandInterest,
-    WorthQueryOutputDemandRegistry, WorthQueryOutputProgress,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-    WorthQueryOutputDemandRecoveryPosture,
-};
+use super::super::progression::execution_failure_is_retryable;
+use super::super::progression::execution_failure_reschedules;
+use super::super::required_work::RequiredWorkMembership;
+use super::super::DemandRecord;
+use super::super::DemandState;
+use super::super::WorthQueryOutputCheckpoint;
+use super::super::WorthQueryOutputDemandInterest;
+use super::super::WorthQueryOutputDemandRegistry;
+use super::super::WorthQueryOutputProgress;
+
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
 
 /// Prepared before Running and consumed by exactly one execution outcome.
 pub(in crate::domain_computation::primary_graph) struct PreparedSelectedExecutionFinish<'a> {
@@ -69,31 +71,15 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn prepare_selected_execution_finish<'a>(
         &'a self,
         interest: &WorthQueryOutputDemandInterest,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedSelectedExecutionFinish<'a>, WorthQueryOutputDemandDenial> {
         // The existing ordered lookup owner may allocate one subject of at
         // most 55 bytes. A refusal of this first envelope stays allocation free.
-        let terminal = 55 + std::mem::size_of::<String>();
-        admission
-            .charge_external_work(terminal as u64)
-            .map_err(|_| empty_work_denial())?;
-        admission
-            .admit_read_scratch(terminal as u64)
-            .map_err(empty_admission_denial)?;
+
         // The largest later phase takes two record descents, one fixed
         // checkpoint/state move, an empty retained denial, and an Arc key
         // retain for deferred terminal cleanup. Its variable diagnostic
         // stays with the immediate caller.
-        let fixed = 2 * std::mem::size_of::<RunningSelectedExecution<'_>>()
-            + 2 * std::mem::size_of::<DemandState>()
-            + std::mem::size_of::<WorthQueryOutputProgress>()
-            + std::mem::size_of::<WorthQueryOutputDemandDenial>()
-            + std::mem::size_of::<WorthQueryOutputCheckpoint>()
-            + 2 * std::mem::size_of::<Arc<RequiredWorkMembership>>()
-            + 64;
-        admission
-            .charge_external_work(fixed as u64)
-            .map_err(|_| empty_work_denial())?;
+
         if !Arc::ptr_eq(&self.state, &interest.owner.state) {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
@@ -104,12 +90,10 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.charge_record_lookup(&interest.key, admission)?;
+
         // Other demands may grow the tree during execution. Its installed
         // finite record allowance bounds the finish lookup and, on terminal
         // failure, deferred-cleanup lookup before any effects.
-        state.charge_maximum_record_lookup(&interest.key, admission)?;
-        state.charge_maximum_record_lookup(&interest.key, admission)?;
         let record = state
             .records
             .get(&interest.key)
@@ -121,7 +105,7 @@ impl WorthQueryOutputDemandRegistry {
             .ok_or_else(empty_work_denial)?;
         let publication_head = state
             .records
-            .publication_counter(record.product_occurrence, admission)?;
+            .publication_counter(record.product_occurrence)?;
         Ok(PreparedSelectedExecutionFinish {
             registry: self,
             key: Arc::clone(member.key_arc()),
@@ -228,31 +212,20 @@ impl PreparedSelectedExecutionFinish<'_> {
         {
             return;
         }
-        let (released_bytes, obligations) = if rescheduled {
+        let obligations = if rescheduled {
             record.leave_refresh_unclaimed(DemandState::Scheduled);
-            (0, Vec::new())
+            Vec::new()
         } else {
             record.state = DemandState::Failed(retained_denial(denial));
-            let bytes = record.obligation_reserved_bytes();
-            (bytes, std::mem::take(&mut record.performed_obligations))
+            std::mem::take(&mut record.performed_obligations)
         };
         record.wake.notify();
         record.finish();
         if !rescheduled {
-            state.defer_terminal_cleanup(self.member.key_arc(), 0);
+            state.defer_terminal_cleanup(self.member.key_arc());
         }
         drop(state);
         drop(obligations);
-        if released_bytes != 0 {
-            let mut state = self
-                .registry
-                .state
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            state.obligation_reserved_bytes = state
-                .obligation_reserved_bytes
-                .saturating_sub(released_bytes);
-        }
     }
 }
 
@@ -278,17 +251,4 @@ pub(super) fn relinquish_record(record: &mut DemandRecord) {
 
 fn empty_work_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "")
-}
-
-fn empty_admission_denial(
-    stop: worth_relational::facade::mvcc::CompanionPreflightStop,
-) -> WorthQueryOutputDemandDenial {
-    use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-    let kind = match stop {
-        Stop::WorkExhausted { .. }
-        | Stop::WorkExhaustedWithoutRequirement { .. }
-        | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        _ => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-    };
-    WorthQueryOutputDemandDenial::new(kind, "")
 }

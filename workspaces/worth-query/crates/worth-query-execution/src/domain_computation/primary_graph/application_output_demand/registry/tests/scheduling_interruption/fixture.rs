@@ -37,7 +37,6 @@ impl Fixture {
                     DemandAdmissionKind::Ordinary,
                     None,
                     predecessor,
-                    &mut record_admission(),
                 )
                 .unwrap()
                 .0
@@ -52,8 +51,7 @@ impl Fixture {
             // registry fixtures; their physical Vec backings are accounted.
             for (reader, input) in [(&interest, &upstream), (&dependent, &interest)] {
                 let claims = vec![Arc::new(input.key.clone())];
-                state.required_reserved_bytes +=
-                    claims.capacity() * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
+
                 state.records.get_mut(&reader.key).unwrap().prerequisites = claims;
                 state
                     .records
@@ -66,12 +64,10 @@ impl Fixture {
             } else {
                 vec![&upstream]
             } {
-                let ready = PreparedReadyBacking::prepare(&state, &mut record_admission(), 0)
-                    .unwrap()
-                    .complete(WorthQueryCompletedOutputDemand {
-                        authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
-                        readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test(),
-                    });
+                let ready = PreparedReadyBacking::new().complete(WorthQueryCompletedOutputDemand {
+                    authority: WorthQueryAcceptedOutputAuthority::Committed(receipt.clone()),
+                    readiness: WorthQueryOutputReadinessDeliveryEvidence::for_test(),
+                });
                 if input.key == interest.key {
                     ready_identity = std::ptr::from_ref(&*ready).cast::<()>();
                 }
@@ -111,9 +107,8 @@ impl Fixture {
                 source_commit: commit.clone(),
                 source: interest.key.source.clone(),
             }];
-            let bytes = row.obligation_reserved_bytes();
+
             row.finish();
-            state.obligation_reserved_bytes += bytes;
         }
         Self {
             registry,
@@ -127,18 +122,6 @@ impl Fixture {
         }
     }
 
-    pub(super) fn custody(&self) -> (usize, usize, usize, usize) {
-        let state = self.registry.state.lock().unwrap();
-        (
-            state.obligation_reserved_bytes,
-            state.required_reserved_bytes,
-            state
-                .required_custody_retained_bytes
-                .load(Ordering::Acquire),
-            state.record_retained_bytes.load(Ordering::Acquire),
-        )
-    }
-
     pub(super) fn next_interest(&self, reopened: bool) -> WorthQueryOutputDemandInterest {
         self.registry
             .admit(
@@ -149,7 +132,6 @@ impl Fixture {
                 DemandAdmissionKind::Ordinary,
                 None,
                 reopened.then_some(OutputRefreshPredecessor::Committed(&self.receipt)),
-                &mut record_admission(),
             )
             .unwrap()
             .0

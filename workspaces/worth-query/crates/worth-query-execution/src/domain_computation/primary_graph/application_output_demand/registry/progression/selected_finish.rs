@@ -69,21 +69,20 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
             return;
         }
         let terminal_cleanup = terminal_kind.is_some() && !interrupted;
-        let (released_bytes, obligations) = if interrupted {
+        let obligations = if interrupted {
             // Interruption before execution leaves the exact reopened Ready
             // with its owners, including its claims and retained custody.
             record.performed_source = performed_source.take();
             record.leave_refresh_unclaimed(DemandState::Admitted);
-            (0, Vec::new())
+            Vec::new()
         } else if let Some(kind) = terminal_kind {
             let mut retained = WorthQueryOutputDemandDenial::new(kind, "");
             retained.recovery_posture =
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal;
             record.state = DemandState::Failed(retained);
             record.performed_source = None;
-            let bytes = record.obligation_reserved_bytes();
-            let obligations = std::mem::take(&mut record.performed_obligations);
-            (bytes, obligations)
+
+            std::mem::take(&mut record.performed_obligations)
         } else {
             record.state = match result {
                 Ok(WorthQueryOutputSchedulingResult::Scheduled) => DemandState::Scheduled,
@@ -93,15 +92,12 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
                 }
                 Ok(WorthQueryOutputSchedulingResult::NoEffect(_)) | Err(_) => unreachable!(),
             };
-            (0, Vec::new())
+            Vec::new()
         };
         record.wake.notify();
         record.finish();
-        state.obligation_reserved_bytes = state
-            .obligation_reserved_bytes
-            .saturating_sub(released_bytes);
         if terminal_cleanup {
-            state.defer_terminal_cleanup(self.member.key_arc(), 0);
+            state.defer_terminal_cleanup(self.member.key_arc());
         }
         drop(state);
         drop(obligations);

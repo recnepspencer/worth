@@ -2,21 +2,27 @@ use super::*;
 
 #[test]
 fn context_fallback_and_invalid_membership_refuse_before_effect_and_preserve_prior() {
-    let memory = SerialMemoryBudget::new(1_000_000);
+    let memory = SerialMemoryBudget::new(Some(1_000_000));
     let request = serial(&memory);
     let map = ExecutionMap::<_, ()>::from_keyless_partitions(entries([1, 2])).unwrap();
     let (prior, _) = complete(
         map.run_retained_run(
             ExecutionRequest::serial(&request),
-            ExecutionWorkCeiling::new(100),
-            |_, context| Ok::<_, MapKernelFailure<()>>(context.remaining_work()),
+            ExecutionWorkCeiling::new(Some(100)),
+            |_, context| {
+                Ok::<_, MapKernelFailure<()>>(
+                    context
+                        .remaining_work()
+                        .expect("fixture installs finite work"),
+                )
+            },
         )
         .unwrap(),
     );
     let effects = AtomicUsize::new(0);
     let cause = prior.advance(
         ExecutionRequest::serial(&request),
-        ExecutionWorkCeiling::new(100),
+        ExecutionWorkCeiling::new(Some(100)),
         entries([2]),
         empty_ids(),
         |v, context| {
@@ -34,7 +40,7 @@ fn context_fallback_and_invalid_membership_refuse_before_effect_and_preserve_pri
         prior
             .advance(
                 ExecutionRequest::serial(&request),
-                ExecutionWorkCeiling::new(100),
+                ExecutionWorkCeiling::new(Some(100)),
                 entries([1, 2]),
                 empty_ids(),
                 kernel,
@@ -47,7 +53,7 @@ fn context_fallback_and_invalid_membership_refuse_before_effect_and_preserve_pri
     assert!(matches!(
         fresh.advance(
             ExecutionRequest::serial(&request),
-            ExecutionWorkCeiling::new(100),
+            ExecutionWorkCeiling::new(Some(100)),
             entries([1]),
             removed,
             kernel
@@ -62,15 +68,17 @@ fn context_fallback_and_invalid_membership_refuse_before_effect_and_preserve_pri
 
 #[test]
 fn tight_new_node_funding_preserves_original_and_clone_until_final_drop() {
-    let memory = SerialMemoryBudget::new(1_000_000);
+    let memory = SerialMemoryBudget::new(Some(1_000_000));
     let request = serial(&memory);
     let prior = seed(10, &request);
     let held = memory.charged_memory_bytes();
-    let blocker = memory.reserve(memory.limit() - held - 128).unwrap();
+    let blocker = memory
+        .reserve(memory.limit().expect("fixture installs finite memory") - held - 128)
+        .unwrap();
     let calls = AtomicUsize::new(0);
     let refused = prior.advance(
         ExecutionRequest::serial(&request),
-        ExecutionWorkCeiling::new(100),
+        ExecutionWorkCeiling::new(Some(100)),
         entries([5]),
         empty_ids(),
         |v, context| {
@@ -90,7 +98,7 @@ fn tight_new_node_funding_preserves_original_and_clone_until_final_drop() {
         prior
             .advance(
                 ExecutionRequest::serial(&request),
-                ExecutionWorkCeiling::new(100),
+                ExecutionWorkCeiling::new(Some(100)),
                 entries([5]),
                 empty_ids(),
                 kernel,
@@ -112,14 +120,14 @@ fn tight_new_node_funding_preserves_original_and_clone_until_final_drop() {
 
 #[test]
 fn cancelled_changed_suffix_remains_request_owned_and_fresh_retry_succeeds() {
-    let memory = SerialMemoryBudget::new(1_000_000);
+    let memory = SerialMemoryBudget::new(Some(1_000_000));
     let request = serial(&memory);
     let prior = seed(4, &request);
     let cancellation = crate::CancellationSource::new();
     let cancelled = SerialRequest::from_memory(memory.clone(), cancellation.token(), None);
     let result = prior.advance(
         ExecutionRequest::serial(&cancelled),
-        ExecutionWorkCeiling::new(100),
+        ExecutionWorkCeiling::new(Some(100)),
         entries([1, 4]),
         empty_ids(),
         |value, context| {
@@ -141,7 +149,7 @@ fn cancelled_changed_suffix_remains_request_owned_and_fresh_retry_succeeds() {
         prior
             .advance(
                 ExecutionRequest::serial(&request),
-                ExecutionWorkCeiling::new(100),
+                ExecutionWorkCeiling::new(Some(100)),
                 entries([1, 4]),
                 empty_ids(),
                 kernel,

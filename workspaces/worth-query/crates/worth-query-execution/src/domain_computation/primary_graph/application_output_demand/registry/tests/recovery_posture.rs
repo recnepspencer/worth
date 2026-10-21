@@ -16,15 +16,12 @@ fn retryable_publication_stale_does_not_keep_a_closed_required_interest() {
     let occurrence = occurrence();
     let demand_key = key("required", 6, 1);
     let wake = Arc::new(DemandWake {
-        _record_capacity: test_record_capacity(),
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
     registry.state.lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
-            _record_capacity: test_record_capacity(),
-            source_commit_capacity: None,
             required_interests: 1,
             wake: Arc::clone(&wake),
             ..record(occurrence, DemandState::Running, 1)
@@ -62,15 +59,12 @@ fn running_budget_failure_stays_with_its_request_and_leaves_the_row_claimable() 
     let registry = WorthQueryOutputDemandRegistry::default();
     let demand_key = key("required", 7, 1);
     let wake = Arc::new(DemandWake {
-        _record_capacity: test_record_capacity(),
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
     registry.state.lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
-            _record_capacity: test_record_capacity(),
-            source_commit_capacity: None,
             required_interests: 1,
             wake: Arc::clone(&wake),
             ..record(occurrence(), DemandState::Running, 1)
@@ -105,15 +99,12 @@ fn no_change_checkpoint_keeps_its_real_receipt_across_claims() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let demand_key = key("no-change", 8, 1);
     let wake = Arc::new(DemandWake {
-        _record_capacity: test_record_capacity(),
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
     registry.state.lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
-            _record_capacity: test_record_capacity(),
-            source_commit_capacity: None,
             required_interests: 1,
             wake: Arc::clone(&wake),
             ..record(
@@ -181,15 +172,12 @@ fn closed_occurrence_stops_a_claim_without_losing_published_identity() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let demand_key = key("required", 9, 1);
     let wake = Arc::new(DemandWake {
-        _record_capacity: test_record_capacity(),
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
     registry.state.lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
-            _record_capacity: test_record_capacity(),
-            source_commit_capacity: None,
             required_interests: 1,
             wake: Arc::clone(&wake),
             ..record(

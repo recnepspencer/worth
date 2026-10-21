@@ -1,17 +1,13 @@
 //! Native revision dependencies of an already authenticated principal.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationObservedFact as Fact, InvalidationEditAdmission,
-};
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 impl WorthQueryPrincipalFreshnessEvidence {
     pub(in crate::domain_computation) fn source_query_facts(
         &self,
         layout: &WorthQueryPrimaryPrincipalBindingLayout,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Vec<Fact>, CompanionPreflightStop> {
-        admission.charge_external_work(8)?;
         let locators = [
             &layout.identity_locator,
             &layout.status_locator,
@@ -21,19 +17,11 @@ impl WorthQueryPrincipalFreshnessEvidence {
             .checked_mul(std::mem::size_of::<Fact>())
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
         for locator in locators {
-            admission.charge_external_work(
-                u64::try_from(locator.field_path().fields().len())
-                    .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?
-                    .saturating_add(1),
-            )?;
             bytes = bytes
                 .checked_add(locator.owned_allocation_capacity_bytes())
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
         }
-        admission.admit_read_scratch(
-            u64::try_from(bytes)
-                .map_err(|_| CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-        )?;
+
         Ok(vec![
             Fact::Entity { entity_id: self.mapping.entity_id, kind: self.mapping.kind_id },
             Fact::Entity { entity_id: self.target.target, kind: self.target.principal_kind },

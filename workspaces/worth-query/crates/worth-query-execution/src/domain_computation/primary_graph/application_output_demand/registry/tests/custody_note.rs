@@ -1,5 +1,7 @@
 //! A held custody note survives rotation until the last stale claim leaves.
-use super::super::{BoundOutputSource, PreparedOutputRootKind, SourceCustody};
+use super::super::BoundOutputSource;
+use super::super::PreparedOutputRootKind;
+use super::super::SourceCustody;
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 use crate::equality_type_id::EqualityTypeId;
@@ -48,8 +50,7 @@ fn fixture(
     };
     let mut row = row;
     row.required_interests = 1;
-    state.required_reserved_bytes +=
-        row.prerequisites.capacity() * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
+
     let wake = Arc::clone(&row.wake);
     state.records.insert(dependent.clone(), row);
     let member = state.prepare_required_member(&newest).unwrap();
@@ -94,11 +95,7 @@ fn registry_custody_note_survives_a_held_drain_and_claim_transfer() {
     );
     let commit = receipt.committed_product_publication().composite_commit();
     drop(owner);
-    registry
-        .state
-        .lock()
-        .unwrap()
-        .drain_foreign_custody_quota(&mut record_admission());
+    registry.state.lock().unwrap().drain_next_foreign_custody();
     {
         let state = registry.state.lock().unwrap();
         assert!(
@@ -111,12 +108,10 @@ fn registry_custody_note_survives_a_held_drain_and_claim_transfer() {
         );
     }
     drop(dependent);
-    registry
-        .drain_closed_cleanup_admitted(&mut record_admission())
-        .unwrap();
+    registry.drain_closed_cleanup_admitted().unwrap();
     let mut state = registry.state.lock().unwrap();
     assert_eq!(state.records[&newest].framework_required_count, 1);
-    state.drain_foreign_custody_quota(&mut record_admission());
+    state.drain_next_foreign_custody();
     assert!(!state.source_custody.contains_key(commit));
     super::super::post_commit::custody_reader::resolve_before_binding(&mut state, &receipt);
     assert!(

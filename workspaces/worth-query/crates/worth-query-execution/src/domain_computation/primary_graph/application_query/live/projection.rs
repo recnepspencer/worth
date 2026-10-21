@@ -51,7 +51,7 @@ where
     Schema: ApplicationSchema,
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
 {
-    let RawLiveKernelOutcome { raw, result_buffer } = kernel;
+    let RawLiveKernelOutcome { raw } = kernel;
     let basis_identity = plan.basis.identity().clone();
     let basis_version = plan.basis.version_id();
     let basis_release = plan.basis.release();
@@ -83,7 +83,6 @@ where
     let result = projected
         .map_err(|denial| WorthQueryLiveProjectionFinalizationDenial::Projection(denial.kind()))?;
     drop(raw.rows);
-    let result_buffer = result_buffer.release();
     let read_completion = plan
         .graph_work
         .complete_query_read(
@@ -130,7 +129,7 @@ where
             result_count: 1,
             truncation_count: 0,
             total_work_units: raw.actual_work,
-            result_buffer: Some(result_buffer),
+
             basis_released: released,
             disclosure: plan.governance.receipt(),
         },

@@ -17,8 +17,8 @@ pub(super) fn request(cancellation: CancellationToken) -> LeaseRequest {
             DeterminismContract::CanonicalBitwise,
             ExecutionBudget::new(
                 std::num::NonZeroUsize::new(1).unwrap(),
-                128 * 1024 * 1024,
-                16_000_000,
+                Some(128 * 1024 * 1024),
+                Some(16_000_000),
             ),
         ),
         deadline: None,
@@ -129,9 +129,12 @@ fn original_request_consumed_parent_work_refuses_actual_transition_then_fresh_re
         .unwrap();
     let original = ExecutionRequest::leased(&lease);
     let mut authored = false;
-    let (denial, _) = ExecutionWorkCeiling::new(1024)
+    let (denial, _) = ExecutionWorkCeiling::new(Some(1024))
         .run_with_checkpoint(Some(&lease), None, |context| {
-            let prefix = context.remaining_work() - 1;
+            let prefix = context
+                .remaining_work()
+                .expect("this native fixture installs a finite work ceiling")
+                - 1;
             context.checkpoint_cost(prefix, prefix).unwrap();
             transition_original(original, source.clone(), predecessor, |_, _| {
                 authored = true;

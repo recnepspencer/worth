@@ -18,7 +18,6 @@ use super::super::{
 };
 use super::validation::{
     open_admission_denial, open_denial, subscription_capacity_denial, validate_live_binding,
-    validate_live_resource_controls,
 };
 use super::WorthQueryApplicationLiveLease;
 use crate::domain_computation::primary_graph::{
@@ -194,7 +193,6 @@ where
                     )
                 })?,
             controls.maximum_materialized_record_count(),
-            controls.maximum_work_per_delivery(),
             controls.request(),
         );
         let pending =
@@ -279,16 +277,9 @@ where
                     request.query.name(),
                 )
             })?;
-        let live = validate_live_binding::<
-            Schema,
-            Query,
-            Parameters,
-            QueryResult,
-            Scope,
-            Target,
-            Binding,
-        >(&request.query)?;
-        validate_live_resource_controls(live, &request.controls, request.query.name())?;
+        validate_live_binding::<Schema, Query, Parameters, QueryResult, Scope, Target, Binding>(
+            &request.query,
+        )?;
         let retained_product = request.product.retained_clone();
         let access =
             WorthQueryApplicationQueryAccessContext::new(request.principal, &request.scope);
@@ -296,7 +287,6 @@ where
             request.product.read_lease(),
             request.application_basis,
             request.controls.maximum_materialized_record_count(),
-            request.controls.maximum_work_per_delivery(),
             request.controls.request(),
         );
         let (admitted_parameters, query_controls) = self
@@ -320,7 +310,7 @@ where
         let initial_read = execute_live_initial_read(&execution, self, plan, request.query.name())?;
         let basis = admit_live_managed_basis(
             self,
-            live,
+            request.controls.buffer_capacity(),
             &initial_read.graph_work,
             request.query.name(),
             execution,

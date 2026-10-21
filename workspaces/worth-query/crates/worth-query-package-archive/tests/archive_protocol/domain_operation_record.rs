@@ -11,7 +11,7 @@ use worth_query_package_archive::facade::*;
 use fixture::{collection_operation_package, operation_package};
 
 #[test]
-fn version_nine_domain_operation_frame_matches_and_decodes_the_frozen_vector() {
+fn version_ten_domain_operation_frame_matches_and_decodes_the_frozen_vector() {
     let original =
         decode_hex(include_str!("domain_operation_record/domain_operation_v6.hex").trim());
     let denial =
@@ -46,7 +46,8 @@ fn version_nine_domain_operation_frame_matches_and_decodes_the_frozen_vector() {
         .find(|view| view.family() == Family::DomainOperation)
         .unwrap();
     let bytes = encode_record_frame(operation, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
-    let golden = decode_hex(include_str!("domain_operation_record/domain_operation_v9.hex").trim());
+    let golden =
+        decode_hex(include_str!("domain_operation_record/domain_operation_v10.hex").trim());
     assert_eq!(bytes, golden);
     let decoded =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)

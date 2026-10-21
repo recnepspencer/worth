@@ -105,8 +105,6 @@ fn operation_definition() -> domain::WorthQueryDomainOperationDefinition<
         domain::WorthQueryOperationProjectionRole::new("assessment").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("approved-payment-assessment-readiness")
             .unwrap(),
-        32,
-        32,
         "approved-payment-assessment-readiness-v1",
     )
     .semantic_reads([payment_status_projection()])

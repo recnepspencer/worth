@@ -81,7 +81,7 @@ impl worth_execution::ChargedBytes for WorthQueryOutputAvailabilityDenial {
  Cause::SourceQuery(Query::Read(crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop::Execution(stop)))=>stop.additional_charged_bytes(),
  // Installation diagnostics remain owned by Installation, which does not yet
  // expose a resident-error quote. They refuse retained error storage.
- Cause::SourceQuery(Query::Installation(worth_query_installation::facade::WorthQueryInstalledQueryBindingAdmissionStop::Installation(_)))=>u64::MAX,
+ Cause::SourceQuery(Query::Installation(_))=>u64::MAX,
  Cause::ContextUnavailable|Cause::SourceMismatch|Cause::Verification(_)|Cause::Registration(_)|Cause::SourceQuery(_)=>0,
  };
         (std::mem::size_of::<Cause>() as u64).saturating_add(payload)

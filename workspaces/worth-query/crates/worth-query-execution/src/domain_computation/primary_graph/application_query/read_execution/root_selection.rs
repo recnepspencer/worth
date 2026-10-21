@@ -43,10 +43,10 @@ pub(super) fn select_bounded_roots(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
-    result_buffer: &mut super::super::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
+
     capture_result_set: bool,
     spent: Option<&OneShotReadWorkObservation<'_>>,
-    maximum_work: Option<usize>,
+
     interruption: super::ReadInterruption<'_>,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     interruption.checkpoint(plan.name)?;
@@ -58,10 +58,8 @@ pub(super) fn select_bounded_roots(
             graph,
             plan,
             contract.root_paths(),
-            result_buffer,
             capture_result_set,
             spent,
-            maximum_work,
             interruption,
         );
     }
@@ -74,7 +72,7 @@ pub(super) fn select_bounded_roots(
             let result_set_source = if capture_result_set {
                 let mut source = RootPathSourceBuilder::default();
                 source.observe_entity(plan.root);
-                Some(source.finish(result_buffer)?)
+                Some(source.finish()?)
             } else {
                 None
             };
@@ -97,10 +95,8 @@ pub(super) fn select_bounded_roots(
             graph,
             plan,
             predicate,
-            result_buffer,
             capture_result_set,
             spent,
-            maximum_work,
             interruption,
         ),
         _ => Err(read_execution_denial(
@@ -116,10 +112,10 @@ fn select_indexed_root(
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
     predicate: &worth_query_installation::facade::WorthQueryInstalledGraphPredicate,
-    result_buffer: &mut super::super::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
+
     capture_result_set: bool,
     spent: Option<&OneShotReadWorkObservation<'_>>,
-    maximum_work: Option<usize>,
+
     interruption: super::ReadInterruption<'_>,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let (entity, aspect, field) = predicate.field();
@@ -189,7 +185,7 @@ fn select_indexed_root(
                 field,
             )
         })?;
-    let mut work = RootSelectionWork::new(maximum_work, interruption, spent);
+    let mut work = RootSelectionWork::new(interruption, spent);
     work.charge_predicate(lookup.examined_entry_count(), 0, field)?;
     interruption.checkpoint(field)?;
     let scoped = lookup
@@ -227,7 +223,7 @@ fn select_indexed_root(
         None
     };
     let result_set_source = capture_result_set
-        .then(|| set_source.finish(result_buffer))
+        .then(|| set_source.finish())
         .transpose()?;
     Ok(BoundedRootSelection {
         candidates: scoped.into_iter().collect(),

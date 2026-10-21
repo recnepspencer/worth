@@ -1,24 +1,25 @@
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::{
-    endpoints::AdmittedAdjacencyEndpoints, StorageControl,
-};
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints;
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
-use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationAdjacencyDirection,
-    output_reuse::{compare_retained_output_dependencies, OutputDependencySelection},
-    tests::fixture::{
-        installed_authorization_world, live_scope, publish_relational_mutation, AccountAllActivity,
-        AccountIdentity, AccountNote, AuthorizationWorld,
-    },
-    WorthQueryPrincipalResolutionMode,
-};
-use worth_query_declaration::facade::application_schema::{
-    ApplicationScalarValueBinding, StringApplicationValueBinding,
-};
-use worth_relational::facade::{
-    identity::KindId,
-    transactions::{DeleteEntityIntent, EntityMutationIntent, MutationIntent, WorkerIntentBatch},
-};
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection;
+use crate::domain_computation::primary_graph::output_reuse::compare_retained_output_dependencies;
+use crate::domain_computation::primary_graph::output_reuse::OutputDependencySelection;
+use crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world;
+use crate::domain_computation::primary_graph::tests::fixture::live_scope;
+use crate::domain_computation::primary_graph::tests::fixture::publish_relational_mutation;
+use crate::domain_computation::primary_graph::tests::fixture::AccountAllActivity;
+use crate::domain_computation::primary_graph::tests::fixture::AccountIdentity;
+use crate::domain_computation::primary_graph::tests::fixture::AccountNote;
+use crate::domain_computation::primary_graph::tests::fixture::AuthorizationWorld;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
+use worth_query_declaration::facade::application_schema::ApplicationScalarValueBinding;
+use worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
+use worth_relational::facade::identity::KindId;
+use worth_relational::facade::transactions::DeleteEntityIntent;
+use worth_relational::facade::transactions::EntityMutationIntent;
+use worth_relational::facade::transactions::MutationIntent;
+use worth_relational::facade::transactions::WorkerIntentBatch;
 
 mod own_retirement_preserves_each_read_locator_and_checkpoint_curren;
 
@@ -279,15 +280,7 @@ fn normal_rebase(
         .unwrap()
         .integration_handle()
         .with_runtime(execution, |runtime| {
-            exact(super::super::rebase(execution,
-                runtime,
-                selected.application_basis().snapshot_handle(),
-                super::super::PreparedSourceFactRebase::admit(facts, [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(),
-                &BTreeSet::new(),
-                true,
-                Some(64),
-                &mut admission(),
-            ))
+            exact(super::super::rebase(execution, runtime, selected.application_basis().snapshot_handle(), super::super::PreparedSourceFactRebase::admit(facts, [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &BTreeSet::new(), true))
         })
 }
 
@@ -298,17 +291,6 @@ fn exact(
     rebased
         .retain_exact()
         .unwrap_or_else(|| std::sync::Arc::<[Fact]>::from([]).into())
-}
-
-fn admission(
-) -> crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission
-{
-    crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(
-        worth_relational::facade::mvcc::CompanionPreflightBudget {
-            maximum_work_visits: Some(64),
-            maximum_preparation_bytes: None,
-        },
-    )
 }
 
 fn selection(
@@ -332,13 +314,6 @@ fn selection(
                     selected.application_basis().snapshot_handle(),
                     true,
                     Some(facts),
-                    &mut world
-                        .application
-                        .primary_provider
-                        .graph
-                        .source_owner
-                        .invalidation_owner
-                        .edit_admission_with_work_limit(Some(64)),
                 )
                 .unwrap(),
                 OutputDependencySelection::Reuse

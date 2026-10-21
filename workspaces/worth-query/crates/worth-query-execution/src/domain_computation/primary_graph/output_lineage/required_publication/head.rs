@@ -1,8 +1,7 @@
 //! Pin the selected Query head; native route admission decides whether cold custody is required.
 use super::*;
-use worth_relational::facade::mvcc::{
-    CompanionPreflightStop as Stop, RelationalRequiredOutputPublication,
-};
+use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
+use worth_relational::facade::mvcc::RelationalRequiredOutputPublication;
 
 #[cfg(test)]
 mod tests;
@@ -54,7 +53,6 @@ impl SelectedRequiredPublicationHead {
 
     pub(in crate::domain_computation::primary_graph) fn cold_predecessor(
         &self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<RequiredPublicationPredecessor, Stop> {
         let origin = self.origin();
         let locator = origin
@@ -64,8 +62,7 @@ impl SelectedRequiredPublicationHead {
         let dependency = origin
             .producer_dependency_identity
             .ok_or(Stop::SelectedSourceMismatch)?;
-        admission.admit_read_scratch(locator.producer().len() as u64)?;
-        admission.charge_external_work(locator.producer().len() as u64)?;
+
         Ok(RequiredPublicationPredecessor {
             correspondence: Arc::clone(&origin.correspondence),
             producer: locator.producer().to_owned(),

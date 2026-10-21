@@ -3,25 +3,28 @@
 mod refusal;
 mod stable_apply;
 use super::*;
-use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::{
-    self as observation, Gate, Outcome,
-};
-use crate::domain_computation::primary_graph::{
-    application_contribution::InstalledProducerEdition,
-    application_query::PreparedObservedSourceExpectation,
-    output_lineage::{
-        prepare_stable_address, InputCutoffVerificationStop, OwnedInputCutoffDecision,
-        PreparedDecisionReuseContext, PreparedInputCutoffBasis, PreparedInputReuseKey,
-        PublishedStableLineage,
-    },
-    ComputationPrior, WorthQueryAdmittedApplicationOperation, WorthQuerySelectedProductOperation,
-};
-use refusal::{cutoff_admission_denial, cutoff_basis_denial, cutoff_denial};
+use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
+use crate::domain_computation::primary_graph::application_query::PreparedObservedSourceExpectation;
+use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff as observation;
+use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::Gate;
+use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::Outcome;
+use crate::domain_computation::primary_graph::output_lineage::prepare_stable_address;
+use crate::domain_computation::primary_graph::output_lineage::InputCutoffVerificationStop;
+use crate::domain_computation::primary_graph::output_lineage::OwnedInputCutoffDecision;
+use crate::domain_computation::primary_graph::output_lineage::PreparedDecisionReuseContext;
+use crate::domain_computation::primary_graph::output_lineage::PreparedInputCutoffBasis;
+use crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey;
+use crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage;
+use crate::domain_computation::primary_graph::ComputationPrior;
+use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
+use refusal::cutoff_admission_denial;
+use refusal::cutoff_basis_denial;
+use refusal::cutoff_denial;
 
 type StablePublication<'owner, Schema, OperationType, Input, Scope> = Box<
     dyn FnOnce(
             &WorthQueryAdmittedApplicationOperation<Schema, OperationType, Input, Scope>,
-            &mut InvalidationEditAdmission,
         ) -> Result<PublishedStableLineage, ProducerExecutionStop>
         + 'owner,
 >;
@@ -82,8 +85,6 @@ pub(super) fn advance_input_cutoff<'owner, Schema, Binding, OperationType, Input
     context: Option<PreparedDecisionReuseContext>,
     matched_predecessors: Option<super::super::demand::MatchedRequiredPredecessors<'_>>,
     edition: InstalledProducerEdition,
-    admission: &mut InvalidationEditAdmission,
-    currentness: &mut InvalidationEditAdmission,
 ) -> Result<
     ProducerInputProgression<'owner, Schema, OperationType, Input, Scope>,
     ProducerExecutionStop,
@@ -124,7 +125,6 @@ where
                 source.partition_identity(),
                 edition,
                 &execution,
-                admission,
             )
             .map_err(cutoff_admission_denial)?;
         handle
@@ -133,7 +133,6 @@ where
                     source_owner,
                     relational,
                     selected.application_basis().snapshot_handle(),
-                    admission,
                 )
             })
             .map_err(cutoff_admission_denial)?;
@@ -161,9 +160,7 @@ where
         }
     };
     observation::reach(Gate::Candidate);
-    admission
-        .charge_external_work(4)
-        .map_err(cutoff_admission_denial)?;
+
     let candidate = handle
         .output_lineage
         .lock()
@@ -173,7 +170,6 @@ where
             observation,
             source.partition_identity(),
             &execution,
-            admission,
         )
         .map_err(cutoff_admission_denial)?;
     let Some(candidate) = candidate else {
@@ -198,14 +194,12 @@ where
     let settlement = candidate.settlement_identity();
     if !candidate.consumed_outputs().is_empty()
         && settlement.address().0 == observation.lifecycle_incarnation()
-        && !required_output
-            .registry()
-            .posts_settlement(settlement, admission)?
+        && !required_output.registry().posts_settlement(settlement)?
     {
         observation::reach(Gate::PredecessorHandoff);
         let handed_off = match matched_predecessors.as_ref() {
             Some(matched) => matched
-                .matches_consumer(settlement, admission)
+                .matches_consumer(settlement)
                 .map_err(cutoff_admission_denial)?,
             None => false,
         };
@@ -229,7 +223,6 @@ where
             PreparedInputCutoffBasis::prepare(
                 relational,
                 selected.application_basis().snapshot_handle(),
-                admission,
             )
         })
         .map_err(cutoff_basis_denial)?;
@@ -243,8 +236,6 @@ where
                 relational,
                 basis,
                 source_owner,
-                admission,
-                currentness,
             )
         })
         .map_err(cutoff_denial)?;
@@ -268,7 +259,7 @@ where
         .map_err(|error| failed(Binding::IDENTITY, error))?;
     observation::finish(Outcome::Eligible);
     Ok(ProducerInputProgression::StablePrepared(Box::new(
-        move |operation, admission| {
+        move |operation| {
             let _observation =
                 observation::Scope::begin(Binding::IDENTITY, Gate::PublicationSelection);
             // Completion uses the current head after earlier canonical slots
@@ -288,7 +279,6 @@ where
                     PreparedInputCutoffBasis::prepare(
                         relational,
                         current.application_basis().snapshot_handle(),
-                        admission,
                     )
                 })
                 .map_err(cutoff_basis_denial)?;
@@ -300,7 +290,6 @@ where
                         basis,
                         source_owner,
                         fresh.source_facts(),
-                        admission,
                     )
                 })
                 .map_err(cutoff_denial)?;
@@ -314,7 +303,6 @@ where
                     fresh,
                     verified,
                     required_output,
-                    admission,
                 )
             });
             if result.is_ok() {

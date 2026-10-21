@@ -66,7 +66,6 @@ fn publish_retained(
         required_prerequisites,
         mut prepared_lineage_slot,
         prepared_output_witness,
-        publication_admission,
         ..
     } = committed;
     if let (Some(slot), Some(publisher)) = (
@@ -115,7 +114,6 @@ fn publish_retained(
             application,
             required_prerequisites,
             prepared_lineage_slot,
-            publication_admission,
         ),
     )?;
     Ok(WorthQueryPublishedApplicationCommit { _private: () })

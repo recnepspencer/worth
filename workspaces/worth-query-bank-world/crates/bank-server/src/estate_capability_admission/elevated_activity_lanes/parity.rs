@@ -56,13 +56,9 @@ fn exact_activity_meaning_survives_every_public_lane() {
     assert_eq!(paged, expected);
     assert!(preview_session.discard().unwrap().discarded());
 
-    let live_controls = WorthQueryApplicationLiveControls::bounded(
-        super::super::fixture::request_scope(),
-        4,
-        8,
-        Some(2_048),
-    )
-    .unwrap();
+    let live_controls =
+        WorthQueryApplicationLiveControls::bounded(super::super::fixture::request_scope(), 4, 8)
+            .unwrap();
     let first_requested = take_first_requested(&mut world);
     let mut live = ready(&world, controls(8))
         .subscribe_with_approved_elevation(&world.approved, live_controls)
@@ -142,7 +138,6 @@ fn collect_pages(
                 next,
                 WorthQueryApplicationQueryResumeControls::new(
                     std::num::NonZeroUsize::new(1).unwrap(),
-                    Some(std::num::NonZeroUsize::new(20_000).unwrap()),
                     &super::super::fixture::request_scope(),
                 ),
             )

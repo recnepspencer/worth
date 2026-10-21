@@ -7,8 +7,6 @@ pub(super) fn rebase(
     prepared: FullSourceFactRebase,
     retired: &BTreeSet<EntityId>,
     producer_output: bool,
-    maximum_indexed_rebase_work: Option<usize>,
-    admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> RebasedSourceFacts {
     let FullSourceFactRebase {
         facts,
@@ -21,10 +19,7 @@ pub(super) fn rebase(
     let mut endpoints = endpoints.into_iter().peekable();
     // The width the decision declared for its indexed selections, metered
     // across the walk.
-    let mut indexed_width = crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::with_work_limit(
-        maximum_indexed_rebase_work.map(|work| u64::try_from(work).expect("native work fits u64")),
-        None,
-    );
+
     let mut failure = None;
     let mut own_effect = OwnEffectOnReads::NONE_ASKED;
     if !moved_by_own_effect.is_empty() {
@@ -45,8 +40,6 @@ pub(super) fn rebase(
             fact,
             retired,
             producer_output,
-            admission,
-            &mut indexed_width,
             endpoints
                 .next_if(|(prepared_ordinal, _)| *prepared_ordinal == ordinal)
                 .map(|(_, payload)| payload),
@@ -140,10 +133,9 @@ pub(super) fn storage_stopped(
     cause: worth_execution::ExecutionAllocationDenial,
     own_effect: OwnEffectOnReads,
 ) -> RebasedSourceFacts {
-    use worth_execution::{
-        ExecutionAllocationDenialClass as Class, MapKernelStop as Stop,
-        WorkCeilingDenial as Request,
-    };
+    use worth_execution::ExecutionAllocationDenialClass as Class;
+    use worth_execution::MapKernelStop as Stop;
+    use worth_execution::WorkCeilingDenial as Request;
     use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
     let reason = match cause.classify() {
         Class::Request(Request::Stopped(Stop::Cancelled)) => {

@@ -1,18 +1,8 @@
 //! Real committed output read with all remaining invalidation capacity held.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_contribution::{WorthQueryProducerApplicability, WorthQueryProducerOutputFamily},
-    tests::application_attempt::{
-        authenticated_principal, idempotency,
-        preimage_evidence::{retained_status_program, RetentionMutationBreadth, RetentionOutputs},
-        resolved_account,
-    },
-    WorthQueryApplicationCommitOutcome, WorthQueryCurrentOutputDenialKind,
-    WorthQueryOperationProjectionDenial,
+use crate::domain_computation::primary_graph::application_contribution::{
+    WorthQueryProducerApplicability, WorthQueryProducerOutputFamily,
 };
-use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::collections::BTreeMap;
-use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
 
 // This operation isolates retained capacity. Work remains absent at both the
 // installed operation and native marking owner, independently of retained bytes.
@@ -47,111 +37,4 @@ impl WorthQueryProducerOutputFamily<IdentityExecutionSchema> for RetainedFamily 
     fn profile_kind(_: &AccountSummaryResult) -> &'static str {
         "retained"
     }
-}
-
-pub(in crate::domain_computation::primary_graph) fn project_at_full_ledger() -> (
-    WorthQueryCurrentOutputDenialKind,
-    WorthQueryOperationProjectionDenial,
-) {
-    let product_resources =
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources_with_retained_capacity_for_test(128 * 1024 * 1024);
-    let resources = product_resources.invalidation_resources();
-    let world = installed_authorization_world_with_product_resources(product_resources);
-    let request = live_scope();
-    let program = world
-        .application
-        .with_application_advancement(&request, |phase| {
-            let custody = phase.test_host_request();
-            let phase_custody = &custody;
-            let principal = authenticated_principal(phase_custody, &world, &request);
-            let account = resolved_account(phase_custody, &world, "open", &request);
-            retained_status_program(
-                phase_custody,
-                &world,
-                &principal,
-                &account,
-                &request,
-                "open",
-                RetentionMutationBreadth::Narrow,
-            )
-            .with_output_demand_observation()
-        })
-        .expect("the prerequisite materialization owns its host call");
-    let identity = idempotency(233, 233)
-        .bind_source(Some(&[17; 32]))
-        .bind_source_partition(&[13; 32])
-        .bind_producer_dependency(&[19; 32]);
-    assert!(matches!(
-        world.application.compare_and_commit_application(
-            program,
-            identity,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation
-        ),
-        WorthQueryApplicationCommitOutcome::Committed(_)
-    ));
-    let graph = world.application.runtime.primary_graph().unwrap();
-    let handle = graph.integration_handle();
-    // A concrete binding/role registry is the reader boundary's installation.
-    // The correspondence and sealed witness came from the real World effect.
-    handle
-        .output_lineage
-        .lock()
-        .unwrap()
-        .install_output_families(BTreeMap::from([(
-            RetainedFamily::IDENTITY.to_owned().into(),
-            vec![(
-                TypeId::of::<RetentionOutputs>(),
-                "retained-account".to_owned(),
-            )],
-        )]));
-    world
-        .application
-        .with_application_advancement(&request, |phase| {
-            let custody = phase.test_host_request();
-            let phase_custody = &custody;
-            let principal = authenticated_principal(phase_custody, &world, &request);
-            let account = resolved_account(phase_custody, &world, "open", &request);
-            let operation = world
-                .application
-                .installed_schema()
-                .installed_operation(ReadRetainedAccount::reference())
-                .unwrap();
-            let admitted = world
-                .selected_product(phase_custody)
-                .authorize_operation(
-                    &phase_custody.phase_for_application(&world.application),
-                    &principal,
-                    &account,
-                    &operation,
-                    TypedMutationPreconditions::new(),
-                    &request,
-                )
-                .unwrap();
-            let maximum = resources.installation().maximum_retained_bytes.expect("this court installs a finite retained ceiling");
-            let held = resources
-                .reserve_retained_capacity(maximum - resources.retained_capacity_bytes())
-                .unwrap();
-            let mut seen = None;
-            let projected = world.invariant.project_admitted_operation(
-                &phase_custody.phase_for_application(&world.application),
-                &admitted,
-                |reader, root| {
-                    let denied = reader
-                        .current_output::<RetainedFamily, Account>(root)
-                        .err()
-                        .expect("the full ledger cannot retain the consumed edge");
-                    seen = Some(denied.kind());
-                },
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            );
-            assert_eq!(resources.retained_capacity_bytes(), maximum);
-            drop(held);
-            (
-                seen.expect("the handler ran"),
-                projected
-                    .err()
-                    .expect("the projection returns its capacity stop"),
-            )
-        })
-        .expect("the capacity projection owns its host call")
 }

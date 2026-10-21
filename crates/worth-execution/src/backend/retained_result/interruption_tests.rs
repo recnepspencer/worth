@@ -18,7 +18,7 @@ impl ChargedBytes for CancelWhenSized<'_> {
 #[test]
 fn interruption_observed_after_inner_settlement_cannot_be_swallowed_by_the_invoking_kernel() {
     let cancellation = crate::CancellationSource::new();
-    let memory = SerialMemoryBudget::new(100_000);
+    let memory = SerialMemoryBudget::new(Some(100_000));
     let parent = SerialRequest::from_memory(memory.clone(), crate::CancellationToken::new(), None);
     let child = parent.clone().with_cancellation(cancellation.token());
     let map = ExecutionMap::<_, u64>::from_keyless_partitions(BTreeMap::from([(
@@ -30,11 +30,17 @@ fn interruption_observed_after_inner_settlement_cannot_be_swallowed_by_the_invok
         },
     )]))
     .unwrap();
-    let outer =
-        crate::backend::scope::run_scope_within(None, 0, 0, true, 100, Some(&parent), |context| {
+    let outer = crate::backend::scope::run_scope_within(
+        None,
+        0,
+        0,
+        true,
+        Some(100),
+        Some(&parent),
+        |context| {
             let refused = map.run_retained(
                 ExecutionRequest::serial(&child),
-                ExecutionWorkCeiling::new(100),
+                ExecutionWorkCeiling::new(Some(100)),
                 |_, _| Ok::<_, KernelFailure<()>>(CancelWhenSized(&cancellation)),
             );
             assert!(matches!(
@@ -50,7 +56,8 @@ fn interruption_observed_after_inner_settlement_cannot_be_swallowed_by_the_invok
             );
             // Intentionally swallow the returned error and make no further poll.
             Ok::<_, KernelFailure<()>>(())
-        });
+        },
+    );
     assert!(matches!(
         outer.result,
         Err(crate::backend::scope::ScopeStop::Failure(
@@ -63,7 +70,7 @@ fn interruption_observed_after_inner_settlement_cannot_be_swallowed_by_the_invok
 #[test]
 fn cancellation_at_the_last_combine_releases_the_rejected_tree_target_before_fresh_retry() {
     let cancellation = crate::CancellationSource::new();
-    let memory = SerialMemoryBudget::new(100_000);
+    let memory = SerialMemoryBudget::new(Some(100_000));
     let parent = SerialRequest::from_memory(memory.clone(), crate::CancellationToken::new(), None);
     let child = parent.clone().with_cancellation(cancellation.token());
     let map = ExecutionMap::<_, u64>::from_keyless_partitions(BTreeMap::from([(
@@ -79,7 +86,7 @@ fn cancellation_at_the_last_combine_releases_the_rejected_tree_target_before_fre
     let mut target = memory.reserve(0).unwrap();
     let outcome = map.run_reduce_retained_holding(
         ExecutionRequest::serial(&child),
-        ExecutionWorkCeiling::new(100),
+        ExecutionWorkCeiling::new(Some(100)),
         None,
         Some(&mut target),
         |input, context| {
@@ -122,7 +129,7 @@ fn cancellation_at_the_last_combine_releases_the_rejected_tree_target_before_fre
     assert!(memory.reserve(100_000).is_ok());
     let fresh = map.run_reduce_retained_holding(
         ExecutionRequest::serial(&parent),
-        ExecutionWorkCeiling::new(100),
+        ExecutionWorkCeiling::new(Some(100)),
         None,
         Some(&mut target),
         |input, context| {
@@ -139,14 +146,14 @@ fn cancellation_at_the_last_combine_releases_the_rejected_tree_target_before_fre
     assert!(target.bytes() > 0);
     let prior_bytes = target.bytes();
     let foreign = SerialRequest::from_memory(
-        SerialMemoryBudget::new(100_000),
+        SerialMemoryBudget::new(Some(100_000)),
         crate::CancellationToken::new(),
         None,
     );
     let entered = std::sync::atomic::AtomicUsize::new(0);
     let refused = map.run_reduce_retained_holding(
         ExecutionRequest::serial(&foreign),
-        ExecutionWorkCeiling::new(100),
+        ExecutionWorkCeiling::new(Some(100)),
         None,
         Some(&mut target),
         |input, _| {

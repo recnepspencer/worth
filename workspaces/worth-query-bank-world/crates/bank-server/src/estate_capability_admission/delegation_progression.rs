@@ -98,7 +98,7 @@ fn public_delegation_creates_the_exact_narrowed_child_and_retries_idempotently()
         .runtime
         .query(crate::queries::estate_governance_context(ESTATE))
         .as_principal(&approver)
-        .controls(BankReadControls::current(request_scope(), 1, 20_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 1).unwrap())
         .execute()
         .expect("the delegated administration view must govern public readback");
     let child = result.rows()[0]
@@ -300,7 +300,7 @@ fn governance_readback(
         .runtime
         .query(crate::queries::estate_governance_context(ESTATE))
         .as_principal(principal)
-        .controls(BankReadControls::current(request_scope(), 1, 20_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 1).unwrap())
         .execute()
         .expect("the principal's current governance grant must admit public readback")
 }
@@ -310,7 +310,7 @@ fn assert_governance_denied(fixture: &CapabilityFixture, principal: &BankAuthent
         .runtime
         .query(crate::queries::estate_governance_context(ESTATE))
         .as_principal(principal)
-        .controls(BankReadControls::current(request_scope(), 1, 20_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 1).unwrap())
         .execute()
     {
         Ok(_) => panic!("revoked lineage must deny ordinary public Query admission"),

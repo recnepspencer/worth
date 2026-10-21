@@ -1,14 +1,16 @@
+use super::admission::accepts_semantic_join;
+use super::admission::interest;
+use super::admission::newest_semantic_key;
 use super::ready_backing::PreparedReadyBacking;
-use super::{
-    admission::{accepts_semantic_join, interest, newest_semantic_key},
-    supersede_predecessors, DemandState, WorthQueryOutputDemandInterest, WorthQueryOutputDemandKey,
-    WorthQueryOutputDemandRegistry,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use super::supersede_predecessors;
+use super::DemandState;
+use super::WorthQueryOutputDemandInterest;
+use super::WorthQueryOutputDemandKey;
+use super::WorthQueryOutputDemandRegistry;
+
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
-use crate::domain_computation::primary_graph::{
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-};
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 #[derive(Clone)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryRestoredAcceptedOutput {
@@ -57,22 +59,16 @@ impl WorthQueryOutputDemandRegistry {
         admission_kind: super::DemandAdmissionKind,
         restored: super::WorthQueryRestoredAcceptedOutput,
         settlement: &std::sync::Arc<RecordedSettlementIdentity>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(WorthQueryOutputDemandInterest, bool), WorthQueryOutputDemandDenial> {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let key = newest_semantic_key(&state, &requested_key, admission, accepts_semantic_join)?
+        let key = newest_semantic_key(&state, &requested_key, accepts_semantic_join)?
             .unwrap_or_else(|| requested_key.clone());
-        admission.charge_external_work(4).map_err(|_| {
-            WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                "required work activation exceeds request work",
-            )
-        })?;
+
         let required_member = state.prepare_required_member(&key)?;
-        state.charge_record_lookup(&key, admission)?;
+
         // Move the issued key only in the existing-row branch. The mutation
         // guard finishes inside this closure, before registry membership edits.
         let mut existing_key = Some(key);
@@ -106,21 +102,11 @@ impl WorthQueryOutputDemandRegistry {
             return Ok((interest, false));
         }
         let key = existing_key.expect("a new row still owns its key");
-        let pending_member = required_member
-            .as_ref()
-            .map_or(0, |member| member.reserved_bytes());
-        let prepared_ready = PreparedReadyBacking::prepare(&state, admission, pending_member)?;
-        let mut prepared_record = state.prepare_new_record(
-            &key,
-            None,
-            product_occurrence,
-            source_scope,
-            None,
-            admission,
-        )?;
-        state.charge_record_lookup_after_insert(&key, admission)?;
-        let posting = state.prepare_restored_posting(&key, settlement, admission)?;
-        if let Err(denial) = supersede_predecessors(&mut state, &requested_key, admission) {
+        let prepared_ready = PreparedReadyBacking::new();
+        let mut prepared_record =
+            state.prepare_new_record(&key, None, product_occurrence, source_scope, None)?;
+        let posting = state.prepare_restored_posting(settlement)?;
+        if let Err(denial) = supersede_predecessors(&mut state, &requested_key) {
             state.defer_cancelled_settlement_vacancy(posting.cleanup);
             return Err(denial);
         }
@@ -135,7 +121,7 @@ impl WorthQueryOutputDemandRegistry {
         );
         prepared_record.record.settlements = posting.settlements;
         state.install_prepared_record(prepared_record);
-        state.required_reserved_bytes += posting.retained_bytes;
+
         super::settlement_index::SettlementIndex::fill_prepared(
             &posting.posting,
             settlement,
@@ -156,8 +142,7 @@ impl WorthQueryOutputDemandRegistry {
 struct PreparedRestoredPosting {
     posting: super::settlement_index::Posting,
     cleanup: Box<super::settlement_index::PendingVacancyCleanup>,
-    settlements: Vec<(std::sync::Arc<RecordedSettlementIdentity>, usize)>,
-    retained_bytes: usize,
+    settlements: Vec<std::sync::Arc<RecordedSettlementIdentity>>,
 }
 
 impl super::DemandRegistryState {
@@ -166,9 +151,7 @@ impl super::DemandRegistryState {
     /// claims a published one, and retiring the row retires its marks.
     fn prepare_restored_posting(
         &mut self,
-        key: &WorthQueryOutputDemandKey,
         settlement: &std::sync::Arc<RecordedSettlementIdentity>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedRestoredPosting, WorthQueryOutputDemandDenial> {
         let capacity = || {
             WorthQueryOutputDemandDenial::new(
@@ -176,54 +159,14 @@ impl super::DemandRegistryState {
                 "restored output posting exceeds registry custody capacity",
             )
         };
-        // The index holds one owned key behind an Arc header.
-        let key_bytes = std::mem::size_of::<WorthQueryOutputDemandKey>()
-            .checked_add(2 * std::mem::size_of::<usize>())
-            .and_then(|bytes| bytes.checked_add(key.producer.len()))
-            .ok_or_else(capacity)?;
         let mut settlements = Vec::new();
         settlements.try_reserve_exact(1).map_err(|_| capacity())?;
-        let retained_bytes = settlements
-            .capacity()
-            .checked_mul(std::mem::size_of::<(
-                std::sync::Arc<RecordedSettlementIdentity>,
-                usize,
-            )>())
-            .and_then(|bytes| bytes.checked_add(key_bytes))
-            .ok_or_else(capacity)?;
-        admission
-            .charge_external_work(4)
-            .and_then(|()| admission.admit_read_scratch(retained_bytes as u64))
-            .map_err(|stop| match stop {
-                worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
-                    ..
-                } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-                | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
-                    WorthQueryOutputDemandDenial::new(
-                        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                        "restored output posting exceeds request work",
-                    )
-                }
-                _ => capacity(),
-            })?;
-        let (posting, cleanup) = self.reserve_settlement_vacancy(settlement, admission)?;
-        let within = self
-            .required_reserved_bytes
-            .checked_add(retained_bytes)
-            .is_some_and(|required| self.has_required_capacity(required));
-        if !within {
-            self.defer_cancelled_settlement_vacancy(cleanup);
-            return Err(super::required_custody::full_custody_denial(
-                retained_bytes,
-                self.required_budget_bytes,
-            ));
-        }
-        settlements.push((std::sync::Arc::clone(settlement), key_bytes));
+        let (posting, cleanup) = self.reserve_settlement_vacancy(settlement)?;
+        settlements.push(std::sync::Arc::clone(settlement));
         Ok(PreparedRestoredPosting {
             posting,
             cleanup,
             settlements,
-            retained_bytes,
         })
     }
 }

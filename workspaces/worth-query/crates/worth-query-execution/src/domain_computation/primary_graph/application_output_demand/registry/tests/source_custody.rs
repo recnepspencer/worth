@@ -161,12 +161,7 @@ fn custody_wait(superseded: bool, token: bool) {
         state.records.insert(selected.clone(), active);
     }
     registry.complete_prepared_source(&receipt);
-    registry
-        .state
-        .lock()
-        .unwrap()
-        .drain_completed_custody(&mut record_admission())
-        .unwrap();
+    registry.state.lock().unwrap().drain_completed_custody();
     {
         let state = registry.state.lock().unwrap();
         assert_eq!(state.source_custody.len(), 1);
@@ -178,12 +173,7 @@ fn custody_wait(superseded: bool, token: bool) {
         let notifications = Arc::clone(&registry.state.lock().unwrap().records[&selected].wake);
         drop(interest(&registry, selected.clone(), notifications));
     }
-    registry
-        .state
-        .lock()
-        .unwrap()
-        .drain_completed_custody(&mut record_admission())
-        .unwrap();
+    registry.state.lock().unwrap().drain_completed_custody();
     let state = registry.state.lock().unwrap();
     assert!(state.source_custody.is_empty());
     assert!(state

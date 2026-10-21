@@ -16,7 +16,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAccessReceipt, WorthQueryApplicationQueryBasisPosture,
     WorthQueryApplicationQueryConsistency, WorthQueryApplicationQueryFreshness,
     WorthQueryApplicationQueryOmissionPosture, WorthQueryApplicationQueryWorkEvidence,
-    WorthQueryApplicationResultBufferEvidence,
 };
 use crate::domain_computation::provider_session::{
     WorthQueryGraphReadCompletion, WorthQueryGraphReadDependencyEvidence,
@@ -56,7 +55,7 @@ pub(super) struct StableReceiptObservation {
     total_work_units: usize,
     omission_posture: WorthQueryApplicationQueryOmissionPosture,
     disclosure: StableDisclosureObservation,
-    result_buffer: Option<WorthQueryApplicationResultBufferEvidence>,
+
     basis_released: bool,
 }
 
@@ -171,7 +170,6 @@ impl StableReceiptObservation {
             total_work_units: receipt.total_work_units(),
             omission_posture: receipt.omission_posture(),
             disclosure: StableDisclosureObservation::capture(receipt.disclosure()),
-            result_buffer: receipt.result_buffer(),
             basis_released: receipt.basis_released(),
         }
     }
@@ -240,7 +238,6 @@ impl StableReceiptObservation {
         assert_eq!(self.total_work_units, other.total_work_units);
         assert_eq!(self.omission_posture, other.omission_posture);
         assert_eq!(self.disclosure, other.disclosure, "disclosure");
-        assert_eq!(self.result_buffer, other.result_buffer, "result buffer");
         assert_eq!(self.basis_released, other.basis_released);
     }
 }

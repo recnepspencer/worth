@@ -14,12 +14,8 @@ impl PerformedMembers {
         &self,
         key: &WorthQueryOutputDemandKey,
         inspected: InspectionStamp,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ReinspectionCredit>, WorthQueryOutputDemandDenial> {
         for entry in &self.entries {
-            admission
-                .charge_external_work(entry.comparison_work()?)
-                .map_err(admission_denial)?;
             if entry.published_at > inspected.0 && !entry.names(key) {
                 return Ok(Some(ReinspectionCredit {
                     _publication: self.inspection(),

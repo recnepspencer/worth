@@ -114,7 +114,7 @@ impl<S: TopologySchemaBinding> ApplicationQueryBinding<S> for OutputReadBinding<
     type PrincipalIdentity = u64;
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "quote-total.read";
-    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::bounded(1, 128);
+    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
     fn scope_field() -> ApplicationFieldRef<
         S,
         Body,

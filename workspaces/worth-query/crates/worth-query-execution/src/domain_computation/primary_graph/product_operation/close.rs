@@ -43,10 +43,7 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
         let commit_lane = self
             .application
             .primary_provider
-            .application_branch_commit_lane_for_occurrence(occurrence)
-            .map_err(|_| {
-                WorthQueryApplicationProductBranchCloseDenial::BranchCoordinationCapacityExhausted
-            })?;
+            .application_branch_commit_lane_for_occurrence(occurrence);
         let _coordination = commit_lane.enter();
         self.application
             .primary_provider

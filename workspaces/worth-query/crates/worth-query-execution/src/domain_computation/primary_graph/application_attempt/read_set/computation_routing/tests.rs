@@ -186,9 +186,8 @@ fn ordinal_alignment_includes_handler_gaps_and_retains_shared_call_keys() {
     reads.record(key(2), partition(7));
     reads.record(key(2), partition(9));
     reads.record(key(4), ComputationRead::Membership);
-    let quote = reads.index_bytes().unwrap();
     let sealed = SealedComputationFacts::at_seal(reads, &observed);
-    assert!(quote >= sealed.index.charged_bytes().unwrap());
+
     assert!(
         sealed.at_ordinal(0).is_none(),
         "a handler-only ordinal is not a computation fact"

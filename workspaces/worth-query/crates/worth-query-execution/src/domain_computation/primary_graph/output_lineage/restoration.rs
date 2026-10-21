@@ -190,7 +190,6 @@ impl WorthQueryApplicationOutputLineage {
                 .map(super::native_prior_checkpoint::NativePriorCheckpointLocator::Recovered),
             computation_source,
             performed_origin: None,
-            _retained_capacity: None,
             consumed_outputs: Arc::from([]),
             completed_handler_facts: None,
             completed_decision_reuse: None,
@@ -285,7 +284,7 @@ impl WorthQueryApplicationOutputLineage {
         // publication than one already retained for this partition.
         if self
             .partition_index
-            .latest_unbudgeted(
+            .latest(
                 &source,
                 super::ProductCoordinate {
                     occurrence,
@@ -322,7 +321,6 @@ impl WorthQueryApplicationOutputLineage {
                 .map(super::native_prior_checkpoint::NativePriorCheckpointLocator::Recovered),
             computation_source: super::ComputationSourceEvidence::unavailable(),
             performed_origin: None,
-            _retained_capacity: None,
             consumed_outputs: Arc::from([]),
             completed_handler_facts: None,
             completed_decision_reuse: None,

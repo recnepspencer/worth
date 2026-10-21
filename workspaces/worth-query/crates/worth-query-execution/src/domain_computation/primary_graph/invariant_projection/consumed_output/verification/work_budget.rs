@@ -65,20 +65,9 @@ pub(in crate::domain_computation::primary_graph) fn map_verification_stop(
     }
 }
 
-pub(super) fn charge_external(
-    admission: &mut InvalidationEditAdmission,
-    units: usize,
-) -> Result<(), ConsumedOutputVerificationStop> {
-    let units = u64::try_from(units).map_err(|_| ConsumedOutputVerificationStop::WorkExhausted)?;
-    admission
-        .charge_external_work(units)
-        .map_err(map_admission_stop)
-}
-
 pub(in crate::domain_computation::primary_graph) fn reserve_pending<T>(
     pending: &mut Vec<T>,
     additional: usize,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<(), ConsumedOutputVerificationStop> {
     let unrepresentable = ConsumedOutputVerificationStop::CapacityExhausted(
         VerificationCapacityStop::ScratchSizeOverflow,
@@ -98,10 +87,7 @@ pub(in crate::domain_computation::primary_graph) fn reserve_pending<T>(
         .checked_mul(size_of::<T>())
         .and_then(|bytes| u64::try_from(bytes).ok())
         .ok_or(unrepresentable)?;
-    admission
-        .admit_read_scratch(bytes)
-        .map_err(map_admission_stop)?;
-    charge_external(admission, pending.len())?;
+
     pending
         .try_reserve_exact(target - pending.len())
         .map_err(|_| {
@@ -116,10 +102,9 @@ pub(super) fn fact_is_current(
     fact: &WorthQueryApplicationObservedFact,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, ConsumedOutputVerificationStop> {
     match fact
-        .source_currentness_in(runtime, execution, snapshot, admission)
+        .source_currentness_in(runtime, execution, snapshot)
         .map_err(map_admission_stop)?
     {
         Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => Err(stop),
@@ -138,9 +123,9 @@ pub(super) fn fact_is_current(
 
 #[cfg(test)]
 mod tests {
-    use worth_relational::facade::mvcc::{
-        RelationalCancellationSource, RelationalInterruptionBoundary, RelationalOperationControl,
-    };
+    use worth_relational::facade::mvcc::RelationalCancellationSource;
+    use worth_relational::facade::mvcc::RelationalInterruptionBoundary;
+    use worth_relational::facade::mvcc::RelationalOperationControl;
 
     use super::*;
 
@@ -175,61 +160,21 @@ mod tests {
         }
     }
 
-    /// A worklist growth the meter refuses reports the meter's amounts; one
-    /// whose size is not representable is not reported as the meter's.
     #[test]
-    fn worklist_growth_distinguishes_the_meter_from_an_unrepresentable_size() {
-        let mut admission = InvalidationEditAdmission::new(
-            worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: None,
-                maximum_preparation_bytes: Some(8),
-            },
-        );
+    fn worklist_growth_preserves_rows_and_refuses_unrepresentable_sizes() {
         let mut pending = Vec::<u64>::new();
+        for row in 0..1_000 {
+            reserve_pending(&mut pending, 1).unwrap();
+            pending.push(row);
+        }
+        assert_eq!(pending, (0..1_000).collect::<Vec<_>>());
         assert_eq!(
-            reserve_pending(&mut pending, 2, &mut admission),
-            Err(ConsumedOutputVerificationStop::CapacityExhausted(
-                VerificationCapacityStop::Meter(
-                    CompanionPreflightStop::PreparationMemoryExhausted {
-                        required: 16,
-                        maximum: 8,
-                    }
-                )
-            ))
-        );
-        assert_eq!(
-            reserve_pending(&mut pending, usize::MAX, &mut admission),
+            reserve_pending(&mut pending, usize::MAX),
             Err(ConsumedOutputVerificationStop::CapacityExhausted(
                 VerificationCapacityStop::ScratchSizeOverflow
             ))
         );
-        assert_eq!(
-            admission.charged_bytes(),
-            0,
-            "a refused growth admits nothing"
-        );
-    }
-
-    /// A walk pushing one row at a time admits each doubled backing once:
-    /// 1, 2, 4, ..., 1024 slots for 1000 rows. Exact growth to each length
-    /// would need n(n + 1)/2 slots and stop this meter long before the end.
-    #[test]
-    fn one_row_pushes_admit_growth_linear_in_the_final_length() {
-        let rows = 1_000usize;
-        let slot = size_of::<u64>() as u64;
-        let mut admission = InvalidationEditAdmission::new(
-            worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: None,
-                maximum_preparation_bytes: Some(4 * rows as u64 * slot),
-            },
-        );
-        let mut pending = Vec::<u64>::new();
-        for row in 0..rows as u64 {
-            reserve_pending(&mut pending, 1, &mut admission).unwrap();
-            pending.push(row);
-        }
-        assert_eq!(pending.len(), rows);
-        assert_eq!(admission.charged_bytes(), ((1 << 11) - 1) * slot);
+        assert_eq!(pending.len(), 1_000);
     }
 
     /// An interrupted verification is the request's interruption. Read as

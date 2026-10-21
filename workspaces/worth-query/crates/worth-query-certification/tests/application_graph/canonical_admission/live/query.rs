@@ -87,11 +87,7 @@ pub fn definition(
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())
         .public()
-        .live_root_by::<LiveCause, _, _, _, _, _, _, _, _>(
-            identity_field(),
-            identity_field(),
-            ApplicationQueryLiveResourceContract::bounded(4, 5_120, 1_024),
-        )
+        .live_root_by::<LiveCause, _, _, _, _, _, _, _, _>(identity_field(), identity_field())
         .build()
         .unwrap()
 }

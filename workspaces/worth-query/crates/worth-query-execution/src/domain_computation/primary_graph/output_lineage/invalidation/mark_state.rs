@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
-use im::{OrdMap, OrdSet};
-use worth_relational::facade::{history::CommitId, runtime::PositionedRelationalSnapshot};
+use im::OrdMap;
+use im::OrdSet;
+use worth_relational::facade::history::CommitId;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
@@ -81,7 +83,7 @@ pub(super) struct SettlementMarks {
     /// Changes since retained computation, preserved by ordinary dirty clearing.
     pub(super) computation_frontier: Option<OrdSet<usize>>,
     pub(super) work_membership: Option<Arc<RequiredWorkMembership>>,
-    pub(super) _fact_capacity: super::fact_retention::RetainedFactCapacity,
+
     pub(super) posting_projection: Arc<super::settlement::PostingProjection>,
     pub(super) consumed_upstream: OrdSet<Arc<RecordedSettlementIdentity>>,
     pub(super) facts: super::super::RetainedSourceFacts,
@@ -137,14 +139,14 @@ pub(super) struct MarkState {
     pub(super) source_publication_postings: OrdMap<super::output_availability::PublicationSourceKey, OrdSet<Arc<crate::domain_computation::primary_graph::application_contribution::OutputSourceAddress>>>,
     pub(super) source_publication_posting_count: usize,
     pub(super) source_publication_head_count: usize,
-    pub(super) retained_capacity: Option<Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>>,
+
     pub(super) posting_count: usize,
-    pub(super) key_payload_bytes: u64,
+
     pub(super) next_posting_projection: u64,
     pub(super) posting_bindings: OrdMap<u64, Arc<super::settlement::PostingBindings>>,
     /// Whole-index upper bound for carried basis allocations. Registration's
     /// initial basis has its own fact ticket; a carried clone is index-owned.
-    pub(super) maximum_basis_allocation_bytes: u64,
+
     pub(super) downstream_edge_count: usize,
     pub(super) dirty_ordinal_count: usize,
     pub(super) computation_dirty_ordinal_count: usize,
@@ -174,12 +176,12 @@ impl MarkState {
             source_publication_postings: OrdMap::new(),
             source_publication_posting_count: 0,
             source_publication_head_count: 0,
-            retained_capacity: None,
+
             posting_count: 0,
-            key_payload_bytes: 0,
+
             next_posting_projection: 0,
             posting_bindings: OrdMap::new(),
-            maximum_basis_allocation_bytes: 0,
+
             downstream_edge_count: 0,
             dirty_ordinal_count: 0,
             computation_dirty_ordinal_count: 0,

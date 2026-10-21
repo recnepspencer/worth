@@ -77,14 +77,6 @@ impl WorthQueryOutputDemandKey {
             && self.source.same_semantic_source(&other.source)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn comparison_work(&self) -> Option<usize> {
-        self.producer
-            .len()
-            .checked_add(self.family.as_str().len())?
-            .checked_add(self.applicability.profile_kind().len())?
-            .checked_add(10)
-    }
-
     pub(super) fn replacement_order(&self, other: &Self) -> Option<Ordering> {
         #[cfg(test)]
         observe_row_comparison();

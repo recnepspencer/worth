@@ -1,10 +1,14 @@
 //! Native comparison of a retained source slot; no scheduling or producer work.
 
-use std::{fmt, sync::Arc};
+use std::fmt;
+use std::sync::Arc;
 
-use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHandle};
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
 
-use super::{ObservedSourcePublication, OutputSourceAddress, SourceInvalidationOwner};
+use super::ObservedSourcePublication;
+use super::OutputSourceAddress;
+use super::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Stop;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
@@ -18,8 +22,7 @@ pub(super) trait SourcePublicationReader: Send + Sync {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
         positioned: &PositionedRelationalSnapshot,
-        maximum_work: Option<usize>,
-    ) -> Result<(bool, usize), Stop>;
+    ) -> Result<bool, Stop>;
 }
 
 pub(super) fn bind_owner(
@@ -124,8 +127,7 @@ impl ObservedSourcePublication {
         runtime: &RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
-        maximum_work: Option<usize>,
-    ) -> Result<(bool, usize), crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure>{
+    ) -> Result<bool, crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure>{
         use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Stop;
         let positioned = runtime
             .read_truth()
@@ -142,7 +144,6 @@ impl ObservedSourcePublication {
             execution,
             snapshot,
             &positioned,
-            maximum_work,
         )
     }
 }
@@ -155,17 +156,12 @@ impl SourcePublicationReader for SourceInvalidationOwner {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &SnapshotHandle,
         positioned: &PositionedRelationalSnapshot,
-        maximum_work: Option<usize>,
-    ) -> Result<(bool, usize), Stop> {
-        use super::super::admission::IndexAdmission;
-        let mut admission = self.edit_admission_with_work_limit(maximum_work);
-        let cell = self.cell_for_read(positioned, &mut admission)
+    ) -> Result<bool, Stop> {
+        let cell = self.cell_for_read(positioned)
             .map_err(|stop| Stop::OutputObservation(crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop(stop)))?
             .ok_or(Stop::Unavailable)?;
         let image = cell.read_image();
-        admission
-            .ordered_read(image.payload().past.len())
-            .map_err(|_| Stop::WorkBudgetExceeded)?;
+
         let state = if image.root_id() == positioned.root_id()
             && image.commit_id() == positioned.commit_id()
             && image.position() == positioned.position()
@@ -182,13 +178,7 @@ impl SourcePublicationReader for SourceInvalidationOwner {
                 .ok_or(Stop::Unavailable)?
                 .state
         };
-        let work =
-            super::super::index_capacity::ordered_navigation_work(state.source_publications.len())
-                .and_then(|work| work.checked_mul(8 + 4 * 32))
-                .ok_or(Stop::WorkBudgetExceeded)?;
-        admission
-            .charge_external_work(work)
-            .map_err(|_| Stop::WorkBudgetExceeded)?;
+
         let actual = state
             .source_publications
             .get(&observed.address)
@@ -197,30 +187,17 @@ impl SourcePublicationReader for SourceInvalidationOwner {
         if equal {
             observed
                 .read_closure
-                .validate_for_publication(execution, runtime, snapshot, &mut admission)
+                .validate_for_publication(execution, runtime, snapshot)
                 .map_err(Stop::OutputObservation)?;
-            equal = observed.read_closure.source_facts_current(
-                execution,
-                runtime,
-                snapshot,
-                &mut admission,
-            )?;
+            equal = observed
+                .read_closure
+                .source_facts_current(execution, runtime, snapshot)?;
         }
         if equal && let Some(candidate) = &observed.candidate {
             equal = candidate
-                .remains_in(
-                    execution,
-                    self,
-                    runtime,
-                    snapshot,
-                    positioned,
-                    &mut admission,
-                )
+                .remains_in(execution, self, runtime, snapshot, positioned)
                 .map_err(Stop::OutputObservation)?;
         }
-        Ok((
-            equal,
-            usize::try_from(admission.charged_work()).map_err(|_| Stop::WorkBudgetExceeded)?,
-        ))
+        Ok(equal)
     }
 }

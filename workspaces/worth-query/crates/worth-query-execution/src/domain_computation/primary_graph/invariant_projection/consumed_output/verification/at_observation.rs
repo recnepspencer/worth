@@ -30,7 +30,6 @@ impl ConsumedOutputEvidence {
         direct: bool,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ConsumedOutputVerification>, ConsumedOutputVerificationStop> {
         Self::compare_facts(
             execution,
@@ -40,7 +39,6 @@ impl ConsumedOutputEvidence {
             direct,
             runtime,
             snapshot,
-            admission,
         )
     }
 
@@ -52,10 +50,9 @@ impl ConsumedOutputEvidence {
         direct: bool,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ConsumedOutputVerification>, ConsumedOutputVerificationStop> {
         for (ordinal, fact) in source_facts.iter().enumerate() {
-            if !fact_is_current(execution, fact, runtime, snapshot, admission)? {
+            if !fact_is_current(execution, fact, runtime, snapshot)? {
                 return Ok(Some(if direct {
                     ConsumedOutputVerification::ChangedDirectFact(ordinal)
                 } else {
@@ -65,7 +62,7 @@ impl ConsumedOutputEvidence {
         }
         if let Some(output_facts) = output_facts {
             for fact in output_facts {
-                if !fact_is_current(execution, fact, runtime, snapshot, admission)? {
+                if !fact_is_current(execution, fact, runtime, snapshot)? {
                     return Ok(Some(ConsumedOutputVerification::ChangedOutput));
                 }
             }
@@ -74,7 +71,7 @@ impl ConsumedOutputEvidence {
                 .get()
                 .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
             if !witness
-                .unchanged_in(runtime, snapshot, admission)
+                .unchanged_in(runtime, snapshot)
                 .map_err(map_admission_stop)?
             {
                 return Ok(Some(ConsumedOutputVerification::ChangedOutput));
@@ -94,31 +91,29 @@ impl ConsumedOutputEvidence {
         witness: &SealedNativeOutputWitness,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, ConsumedOutputVerificationStop> {
         for fact in facts.iter() {
             let mut child_content = false;
             for child in consumed {
-                charge_external(admission, 1)?;
                 let witness = child
                     .native_output_witness
                     .as_ref()
                     .and_then(|cell| cell.get())
                     .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
                 if witness
-                    .covers_content_fact(fact, admission)
+                    .covers_content_fact(fact)
                     .map_err(map_admission_stop)?
                 {
                     child_content = true;
                     break;
                 }
             }
-            if !child_content && !fact_is_current(execution, fact, runtime, snapshot, admission)? {
+            if !child_content && !fact_is_current(execution, fact, runtime, snapshot)? {
                 return Ok(false);
             }
         }
         witness
-            .unchanged_in(runtime, snapshot, admission)
+            .unchanged_in(runtime, snapshot)
             .map_err(map_admission_stop)
     }
 
@@ -138,7 +133,6 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         Self::observe_at_observation(
             execution,
@@ -151,7 +145,6 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
-            admission,
         )?
         .driving()
     }
@@ -167,7 +160,6 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         let marked = Self::observe_candidate_at(
             execution,
@@ -181,7 +173,6 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
-            admission,
         );
         if marked != Err(ConsumedOutputVerificationStop::Unavailable) {
             return marked;
@@ -200,7 +191,6 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
-            admission,
         )
     }
 
@@ -210,17 +200,13 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         let mut pending = Vec::new();
         let mut visited = OrdSet::new();
-        charge_external(admission, 1)?;
-        reserve_pending(&mut pending, 1, admission)?;
+
+        reserve_pending(&mut pending, 1)?;
         pending.push((root, true));
         while let Some((evidence, direct)) = pending.pop() {
-            admission
-                .admit_visited_settlement(visited.len())
-                .map_err(map_admission_stop)?;
             if visited.contains(evidence.identity) {
                 continue;
             }
@@ -228,13 +214,12 @@ impl ConsumedOutputEvidence {
             if !reads_at_or_after(selected, evidence.selected_native_root) {
                 return Ok(ConsumedOutputVerification::Unaligned);
             }
-            let changed =
-                Self::compare_own(execution, evidence, direct, runtime, snapshot, admission)?;
+            let changed = Self::compare_own(execution, evidence, direct, runtime, snapshot)?;
             if let Some(changed) = changed {
                 return Ok(changed);
             }
-            charge_external(admission, evidence.upstream.len())?;
-            reserve_pending(&mut pending, evidence.upstream.len(), admission)?;
+
+            reserve_pending(&mut pending, evidence.upstream.len())?;
             pending.extend(
                 evidence
                     .upstream

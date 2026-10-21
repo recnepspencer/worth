@@ -1,7 +1,7 @@
 use worth_foundational::facade::CanonicalBasisEntry;
 
 use super::{
-    entry::{boolean, null, text, unsigned_u64, unsigned_usize},
+    entry::{boolean, null, text, unsigned_usize},
     prepare_artifact,
     result_shape::{append_result_shape, cardinality_name, traversal_direction_name},
     ApplicationQueryCanonicalArtifact,
@@ -244,18 +244,6 @@ fn append_live_cause(
                 super::super::ApplicationQueryLiveTargetMode::Root => "root",
                 super::super::ApplicationQueryLiveTargetMode::Collection => "collection",
             },
-        ),
-        unsigned_u64(
-            "live-cause.maximum-buffered-causes",
-            live.resources().maximum_buffered_causes(),
-        ),
-        unsigned_u64(
-            "live-cause.maximum-work-per-delivery",
-            live.resources().maximum_work_per_delivery(),
-        ),
-        unsigned_u64(
-            "live-cause.maximum-retained-payload-bytes",
-            live.resources().maximum_retained_payload_bytes(),
         ),
     ]);
 }

@@ -109,18 +109,6 @@ macro_rules! link {
         )
     };
 }
-fn comparison_work(
-    application: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<
-        MembershipSchema,
-        MembershipProgram,
-    >,
-) -> Option<usize> {
-    application
-        .runtime()
-        .output_demand_resource_profile()
-        .limits()
-        .source_currentness_work()
-}
 
 fn stale(result: Result<(), WorthQueryOutputCurrentnessDenial>) {
     assert!(
@@ -159,10 +147,7 @@ fn discovered_currentness_original_membership_and_empty_negative_facts() {
         for tree in [&aggregate, &other] {
             request
                 .at(&common)
-                .require_current_discovered_program_outputs(
-                    tree,
-                    comparison_work(&world.application),
-                )
+                .require_current_discovered_program_outputs(tree)
                 .unwrap();
         }
         let clean =
@@ -172,22 +157,16 @@ fn discovered_currentness_original_membership_and_empty_negative_facts() {
             "clean original discovery and both complete trees: {clean:?}"
         );
         println!("clean discovery body={body} roots={count}: {clean:?}");
-        let window = crate::application_invariant_acceptance::resources::INVALIDATION_INSTALLATION
-            .maximum_retained_positions
-            .expect("this continuity fixture explicitly installs a finite window");
+
         unrelated::assert_initial(&request);
-        let mut repeat_work = None;
-        for step in 0..=window {
+        for (step, next_value) in [62, 61, 62].into_iter().enumerate() {
             unrelated::publish(
                 &world.application,
                 &request,
                 key + 1000 + step as u64,
-                if step % 2 == 0 { 62 } else { 61 },
+                next_value,
             );
             let selected = request.retain_current_read().unwrap();
-            let _ = world
-                .application
-                .take_required_set_comparison_work_for_test();
             let _ =
                 worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test(
                 );
@@ -195,10 +174,7 @@ fn discovered_currentness_original_membership_and_empty_negative_facts() {
                 for tree in [&aggregate, &other] {
                     request
                         .at(&selected)
-                        .require_current_discovered_program_outputs(
-                            tree,
-                            comparison_work(&world.application),
-                        )
+                        .require_current_discovered_program_outputs(tree)
                         .unwrap();
                 }
             }
@@ -207,29 +183,8 @@ fn discovered_currentness_original_membership_and_empty_negative_facts() {
                 );
             assert_eq!(
                 facts.source_currentness_visits, 0,
-                "clean continuity step={step} window={window}: {facts:?}"
+                "clean continuity step={step}: {facts:?}"
             );
-            let work = world
-                .application
-                .take_required_set_comparison_work_for_test();
-            assert_eq!(
-                work.len(),
-                4,
-                "each actual complete-set gate records its own charge"
-            );
-            assert!(
-                work[0] >= work[2] && work[1] >= work[3],
-                "repeat cannot need an older-history replay: {work:?}"
-            );
-            match &repeat_work {
-                None => repeat_work = Some(work[2..].to_vec()),
-                Some(expected) => assert_eq!(
-                    &work[2..],
-                    expected,
-                    "fixed-shape repeated gate depends on old history at step={step}"
-                ),
-            }
-            println!("discovery continuity body={body} step={step} window={window} charges={work:?} fact_visits={}", facts.source_currentness_visits);
         }
         let before = request
             .query(PlanarDiscoveryRead {
@@ -276,7 +231,7 @@ fn discovered_currentness_original_membership_and_empty_negative_facts() {
         for (_, root) in aggregate.root_outputs() {
             request
                 .at(&current)
-                .require_current_output_demand(root, comparison_work(&world.application))
+                .require_current_output_demand(root)
                 .unwrap();
         }
         let _ =
@@ -284,10 +239,7 @@ fn discovered_currentness_original_membership_and_empty_negative_facts() {
         stale(
             request
                 .at(&current)
-                .require_current_discovered_program_outputs(
-                    &aggregate,
-                    comparison_work(&world.application),
-                ),
+                .require_current_discovered_program_outputs(&aggregate),
         );
         let dirty =
             worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test();
@@ -298,16 +250,9 @@ fn discovered_currentness_original_membership_and_empty_negative_facts() {
         println!("dirty discovery body={body}: {dirty:?}");
         request
             .at(historical)
-            .require_current_discovered_program_outputs(
-                &aggregate,
-                comparison_work(&world.application),
-            )
+            .require_current_discovered_program_outputs(&aggregate)
             .unwrap();
-        // A genuine unrelated native publication drops derived coverage. Neither
-        // original roots nor query selectors may turn missing history into Clean.
-        world
-            .application
-            .exhaust_next_source_delivery_capacity_for_test();
+        // An unrelated native publication preserves the original trees' coverage.
         unrelated::publish(&world.application, &request, key + 10, 63);
         let full_image = request.retain_current_read().unwrap();
         let _ =
@@ -315,19 +260,16 @@ fn discovered_currentness_original_membership_and_empty_negative_facts() {
         request
             .at(&full_image)
             .require_current_discovered_program_outputs(
-                &other,
-                comparison_work(&world.application),
-            )
+                &other)
             .expect(
-                "unchanged second original tree and discovery remain verifiable after real index eviction",
+                "unchanged second original tree and discovery remain current without resource estimates",
             );
         let full =
             worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test();
-        assert!(
-            full.source_currentness_visits > 0,
-            "missing native coverage requires full verification: {full:?}"
+        assert_eq!(
+            full.source_currentness_visits, 0,
+            "unrelated publication preserves native coverage: {full:?}"
         );
-        println!("missing coverage body={body}: {full:?}");
         assert_eq!(
             world.application.retained_source_custody_count_for_test(),
             0
@@ -343,7 +285,7 @@ fn discovered_currentness_foreign_runtime_preserves_owner() {
     let current = request.retain_current_read().unwrap();
     request
         .at(&current)
-        .require_current_discovered_program_outputs(&aggregate, comparison_work(&world.application))
+        .require_current_discovered_program_outputs(&aggregate)
         .unwrap();
     let other = membership::install();
     let adapter = authentication::admit(other.application.installed_schema());
@@ -357,17 +299,14 @@ fn discovered_currentness_foreign_runtime_preserves_owner() {
     let other_read = other_request.retain_current_read().unwrap();
     let refused = other_request
         .at(&other_read)
-        .require_current_discovered_program_outputs(
-            &aggregate,
-            comparison_work(&other.application),
-        );
+        .require_current_discovered_program_outputs(&aggregate);
     assert!(
         matches!(refused, Err(WorthQueryOutputCurrentnessDenial::Output(ref cause)) if cause.kind() == WorthQueryOutputDemandDenialKind::ForeignSettlement),
         "foreign runtime cannot borrow original settlement authority: {refused:?}"
     );
     request
         .at(&current)
-        .require_current_discovered_program_outputs(&aggregate, comparison_work(&world.application))
+        .require_current_discovered_program_outputs(&aggregate)
         .unwrap();
     for (key, expected) in [("sibling-b", 22), ("sibling-c", 31), ("remote-b", 42)] {
         assert_eq!(

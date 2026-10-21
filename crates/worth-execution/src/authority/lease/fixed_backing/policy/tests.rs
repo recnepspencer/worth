@@ -14,7 +14,7 @@ fn owned_payload_reservation_keeps_real_funding_and_typed_refusal_until_drop() {
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,
         DeterminismContract::CanonicalBitwise,
-        ExecutionBudget::new(NonZeroUsize::MIN, 128, 100),
+        ExecutionBudget::new(NonZeroUsize::MIN, Some(128), Some(100)),
     );
     let parent = ExecutionResourceLease::serial(LeaseRequest {
         policy,

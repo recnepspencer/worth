@@ -31,7 +31,7 @@ pub(in crate::checkpoint_recovery::required_chain) fn install(
             support::limits(
                 32,
                 // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.
-                support::invalidation(128 * 1_024 * 1_024, Some(1_000_000), 32),
+                support::invalidation(),
             ),
             checkpoint,
         )
@@ -43,7 +43,7 @@ pub(in crate::checkpoint_recovery::required_chain) fn install(
             support::limits(
                 32,
                 // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.
-                support::invalidation(128 * 1_024 * 1_024, Some(1_000_000), 32),
+                support::invalidation(),
             ),
             |_phase, graph, installed| {
                 let principal = installed

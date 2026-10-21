@@ -1,21 +1,18 @@
 //! Exact-data locator shared by original-intent discovery and indexed enumeration.
-use super::{
-    admission::{admit, WorthQueryWorkflowReadDenial as Denial},
-    original_intent::OriginalWorkflowCandidate,
-    view::WorthQueryWorkflowReadBasis,
-};
-use crate::domain_computation::primary_graph::{
-    application_attempt::{observe_adjacency, WorthQueryApplicationAdjacencyDirection},
-    output_lineage::invalidation::InvalidationEditAdmission,
-    WorthQueryAdvancementPhase, WorthQuerySelectedProductOperation,
-};
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
-use worth_query_declaration::facade::application_program::{
-    ApplicationWorkflowReadBinding, ApplicationWorkflowSpec,
-};
-use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledWorkflowReadBinding};
+use super::admission::admit;
+use super::admission::WorthQueryWorkflowReadDenial as Denial;
+use super::original_intent::OriginalWorkflowCandidate;
+use super::view::WorthQueryWorkflowReadBasis;
+use crate::domain_computation::primary_graph::application_attempt::observe_adjacency;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowReadBinding;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
+use worth_query_installation::facade::ApplicationSchema;
+use worth_query_installation::facade::WorthQueryInstalledWorkflowReadBinding;
 use worth_relational::facade::identity::EntityId;
 /// Opaque non-serializable locator, never a disclosure permit or a command authority.
 /// ```
@@ -66,7 +63,6 @@ impl WorthQueryWorkflowReadTarget {
         principal: &WorthQueryAuthenticatedExternalPrincipal<S>,
         input: B::Input,
         request: &WorthQueryRequestScope,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         (
             OriginalWorkflowCandidate<'d, 'r, S>,
@@ -85,9 +81,7 @@ impl WorthQueryWorkflowReadTarget {
         B: ApplicationWorkflowReadBinding<S>,
     {
         // Fresh security precedes even locator affinity and existence-dependent reads.
-        let access = admit(
-            current, phase, binding, principal, input, request, admission,
-        )?;
+        let access = admit(current, phase, binding, principal, input, request)?;
         if !self
             .basis
             .0

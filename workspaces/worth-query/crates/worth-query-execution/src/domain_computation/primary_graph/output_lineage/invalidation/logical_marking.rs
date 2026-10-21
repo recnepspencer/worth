@@ -32,12 +32,6 @@ pub struct WorthQueryNativeMarkingWork {
 pub enum WorthQueryNativeMarkingPrecision {
     Exact(WorthQueryNativeMarkingWork),
     DeclaredChangeUnavailable,
-    /// Matched fan-out exceeded the installed marking ceiling. Preparation
-    /// falls back to a discontinuity; counts record the work spent before it.
-    MarkingCeilingExceeded(WorthQueryNativeMarkingWork),
-    /// The marked version exceeded the installed retained capacity.
-    /// Preparation falls back to a discontinuity after the counted marking.
-    RetainedCapacityExhausted(WorthQueryNativeMarkingWork),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

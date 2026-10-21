@@ -196,7 +196,9 @@ where
                         } else {
                             compute()
                         }?;
-                        let charged = computed.charged_work();
+let charged = computed.charged_work();
+
+
                         Ok((computed.complete()?, charged))
                     })());
                 },

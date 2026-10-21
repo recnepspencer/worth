@@ -134,17 +134,11 @@ impl<E: Example> ApplicationProgramDefinition<S> for Program<E> {
 fn first_run<E: Example>() -> Reduced {
     let _guard = checkpoint_recovery_test_guard();
     RESULTS.with(|results| results.borrow_mut().clear());
-    let application = support::install_program_with_seed::<Program<E>>(
-        None,
-        Default::default(),
-        32,
-        128 * 1_024 * 1_024,
-        Some(1_000_000),
-        |graph| {
+    let application =
+        support::install_program_with_seed::<Program<E>>(None, Default::default(), 32, |graph| {
             support::seed_cycle(graph);
             facts::seed(graph, &[("example", &[])]);
-        },
-    );
+        });
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let observed = request

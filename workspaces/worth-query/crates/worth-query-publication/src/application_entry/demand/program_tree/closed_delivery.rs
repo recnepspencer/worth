@@ -36,20 +36,18 @@ where
     pub fn deliver_current(
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-        policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<WorthQueryApplicationReadObservation, WorthQueryOperationDeliveryDenial> {
-        self.delivery.deliver_current(request, policy)
+        self.delivery.deliver_current(request)
     }
-    /// Validates the selected typed root, installed ceiling and all original
+    /// Validates the selected typed root and all original
     /// settlements/discovery at the caller's pinned observation, so several closed
     /// owners can be shown current at one common basis. The scope is checked afresh;
     /// refusal retains this carrier and replays no source, demand or cleanup.
     pub fn deliver_current_at(
         &self,
         retained: &WorthQueryApplicationRetainedRequest<'_, '_, '_, S>,
-        policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<(), WorthQueryOperationDeliveryDenial> {
-        self.delivery.deliver_current_at(retained, policy)
+        self.delivery.deliver_current_at(retained)
     }
     /// Validates original complete membership and reads at that same basis/phase.
     /// Refusal retains this already-closed carrier without creating new work.

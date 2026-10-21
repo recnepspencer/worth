@@ -88,8 +88,6 @@ fn operation_definition() -> domain::WorthQueryDomainOperationDefinition<
         crate::readiness::canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("replacement").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("mixed-replacement-readiness").unwrap(),
-        128,
-        128,
         "mixed-replacement-readiness-v1",
     )
     .semantic_reads([crate::readiness::output_change_projection()])

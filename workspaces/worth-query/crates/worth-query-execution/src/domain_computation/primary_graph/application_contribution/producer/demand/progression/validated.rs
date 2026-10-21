@@ -16,8 +16,10 @@ enum ExecutionPreparation<'owner, Query, Value> {
     Planned(crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan<'owner, CheckpointProgress, CompletionRefusal>),
 }
 
+use schedule_progression::CheckpointProgress;
 pub(super) use schedule_progression::OwnPublication;
-use schedule_progression::{CheckpointProgress, OwnStages, ScheduleProgression};
+use schedule_progression::OwnStages;
+use schedule_progression::ScheduleProgression;
 use source_guard::SourceGuard;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -38,7 +40,7 @@ where
         >,
         entry: &InstalledProducerProvider<Schema>,
         commit_authority: WorthQueryProducerCommitAuthority,
-        request_admission: &mut InvalidationEditAdmission,
+
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<
         OwnStages<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
@@ -59,7 +61,6 @@ where
             entry,
             commit_authority,
             ScheduleProgression::Ordinary,
-            request_admission,
             performed,
         )?;
         match prepared {

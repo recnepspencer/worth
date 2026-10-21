@@ -6,72 +6,46 @@ use worth_relational::facade::history::BranchId;
 use worth_relational::facade::mvcc::CompanionPublicationCompletionObserver;
 
 use super::RequiredWorkMembership;
-use crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity;
 
 pub(in crate::domain_computation::primary_graph) struct NativeHint {
     pub(super) observer: CompanionPublicationCompletionObserver,
-    pub(super) branch: Arc<FundedNativeBranch>,
+    pub(super) branch: Arc<NativeBranch>,
     // The selection version at which this publication was seen installed
     // (or aborted) before a head check. Only such a hint is covered.
     pub(super) seen_settled_at: Option<u64>,
     pub(super) next: Option<Box<NativeHint>>,
-    _capacity: Arc<RetainedInvalidationCapacity>,
 }
 
 /// The final selected Arc, not the hint node, owns branch text and control
 /// block capacity. A stale selected worker can outlive an acknowledged node.
-pub(in crate::domain_computation::primary_graph) struct FundedNativeBranch {
+pub(in crate::domain_computation::primary_graph) struct NativeBranch {
     branch: BranchId,
-    _capacity: Arc<RetainedInvalidationCapacity>,
 }
 
-impl FundedNativeBranch {
+impl NativeBranch {
     pub(in crate::domain_computation::primary_graph) fn branch_id(&self) -> &BranchId {
         &self.branch
     }
 }
 
 impl RequiredWorkMembership {
-    pub(in crate::domain_computation::primary_graph) const fn native_hint_bytes() -> u64 {
-        std::mem::size_of::<NativeHint>() as u64
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn native_branch_retained_bytes(
-        branch_name_bytes: usize,
-    ) -> Option<u64> {
-        let (layout, _) = std::alloc::Layout::new::<[usize; 2]>()
-            .extend(std::alloc::Layout::new::<FundedNativeBranch>())
-            .ok()?;
-        let bytes = layout
-            .pad_to_align()
-            .size()
-            .checked_add(branch_name_bytes)?;
-        u64::try_from(bytes).ok()
-    }
-
     pub(in crate::domain_computation::primary_graph) fn prepared_native_branch(
         branch: BranchId,
-        capacity: Arc<RetainedInvalidationCapacity>,
-    ) -> Arc<FundedNativeBranch> {
-        Arc::new(FundedNativeBranch {
-            branch,
-            _capacity: capacity,
-        })
+    ) -> Arc<NativeBranch> {
+        Arc::new(NativeBranch { branch })
     }
 
     /// Construction happens only after native preflight pays the Box and
     /// retained ticket. Installation only links this already-owned node.
     pub(in crate::domain_computation::primary_graph) fn prepared_native_hint(
         observer: CompanionPublicationCompletionObserver,
-        branch: Arc<FundedNativeBranch>,
-        capacity: Arc<RetainedInvalidationCapacity>,
+        branch: Arc<NativeBranch>,
     ) -> Box<NativeHint> {
         Box::new(NativeHint {
             observer,
             branch,
             seen_settled_at: None,
             next: None,
-            _capacity: capacity,
         })
     }
 }
@@ -90,22 +64,4 @@ impl Drop for NativeHint {
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
-    /// Declared hint, branch, completion allocations including their capacity tickets.
-    #[doc(hidden)]
-    pub fn native_required_hint_layout_for_test(branch_name_bytes: usize) -> [u64; 3] {
-        let ticket = native_ticket_bytes().unwrap();
-        [
-            RequiredWorkMembership::native_hint_bytes() + ticket,
-            RequiredWorkMembership::native_branch_retained_bytes(branch_name_bytes).unwrap()
-                + ticket,
-            CompanionPublicationCompletionObserver::retained_bytes() + ticket,
-        ]
-    }
-}
-
-fn native_ticket_bytes() -> Option<u64> {
-    let (layout, _) = std::alloc::Layout::new::<[usize; 2]>()
-        .extend(std::alloc::Layout::new::<RetainedInvalidationCapacity>())
-        .ok()?;
-    Some(layout.pad_to_align().size() as u64)
 }

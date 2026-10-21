@@ -34,7 +34,7 @@ fn earlier_completion_failure_does_not_refund_the_later_request_boundary() {
                         units,
                         rank == 2,
                     )],
-                    move |mut slots, _| {
+                    move |mut slots| {
                         let rank = slots.pop().unwrap().into_value::<(usize, bool)>().0;
                         if rank == 0 {
                             Err(rank)
@@ -58,30 +58,18 @@ fn earlier_completion_failure_does_not_refund_the_later_request_boundary() {
                     Err(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
                         crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted
                     ))), "the later root stops on the request's refused charge");
-                let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                    maximum_work_visits: Some(0),
-                    maximum_preparation_bytes: None,
-                });
+
                 (
-                    cursor.apply(
-                        &mut admission,
-                        |key, result, _| {
+                    cursor.apply(|key, result| {
                             result?;
                             completed.push(key);
                             Ok(())
-                        },
-                        |key, _| key,
-                    ),
+                        }, |key, _| key),
                     (),
                 )
             })
             .unwrap();
         assert_eq!(result, Err(0), "the earlier owner failure wins");
         assert!(completed.is_empty(), "no failed member or suffix publishes");
-        assert_eq!(
-            report.charged_work(),
-            CHARGES[..2].iter().sum::<u64>(),
-            "settled compute is never refunded"
-        );
     }
 }

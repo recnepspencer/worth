@@ -56,8 +56,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         use crate::domain_computation::primary_graph::invariant_projection::{
             ConsumedOutputEvidence, ConsumedOutputVerification,
         };
-        let mut exhausted = owner.edit_admission_with_work_limit(Some(1));
-        exhausted.charge_external_work(1).unwrap();
+
         assert_eq!(
             ConsumedOutputEvidence::verify_many_with_admission(
                 request_execution,
@@ -65,8 +64,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
                 owner,
                 runtime,
                 &old_handle,
-                &old_basis,
-                &mut exhausted
+                &old_basis
             ),
             Ok(ConsumedOutputVerification::Current),
             "an empty closure needs no actor image or fact authority"
@@ -85,20 +83,11 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
             OrdSet::new(),
         );
         let old = owner
-            .capture_full_verification(
-                runtime,
-                &old_handle,
-                &old_basis,
-                &mut owner.edit_admission(),
-            )
+            .capture_full_verification(runtime, &old_handle, &old_basis)
             .unwrap();
+
         assert_eq!(
-            old.verify_root(
-                request_execution,
-                &identity,
-                None,
-                &mut owner.edit_admission()
-            ),
+            old.verify_root(request_execution, &identity, None),
             Err(FullVerificationStop::OutputEvidenceUnavailable),
             "source-only test registration cannot manufacture full output evidence"
         );
@@ -112,20 +101,11 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         );
         let (changed_handle, changed_basis) = snapshot(runtime);
         let captured = owner
-            .capture_full_verification(
-                runtime,
-                &changed_handle,
-                &changed_basis,
-                &mut owner.edit_admission(),
-            )
+            .capture_full_verification(runtime, &changed_handle, &changed_basis)
             .unwrap();
+
         assert_eq!(
-            captured.verify_root(
-                request_execution,
-                &identity,
-                None,
-                &mut owner.edit_admission()
-            ),
+            captured.verify_root(request_execution, &identity, None),
             Ok(FullVerificationDecision::Changed)
         );
         // A later same-position registration replaces the actor's row. The
@@ -148,40 +128,21 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
             SourceSettlementCurrentness::Clean
         ));
         assert_eq!(
-            captured.verify_root(
-                request_execution,
-                &identity,
-                None,
-                &mut owner.edit_admission()
-            ),
+            captured.verify_root(request_execution, &identity, None),
             Err(FullVerificationStop::ActorImageChanged),
             "an intervening actor edit cannot manufacture an equivalence mismatch"
         );
         let fresh = owner
-            .capture_full_verification(
-                runtime,
-                &changed_handle,
-                &changed_basis,
-                &mut owner.edit_admission(),
-            )
+            .capture_full_verification(runtime, &changed_handle, &changed_basis)
             .unwrap();
+
         assert_eq!(
-            fresh.verify_root(
-                request_execution,
-                &identity,
-                None,
-                &mut owner.edit_admission()
-            ),
+            fresh.verify_root(request_execution, &identity, None),
             Err(FullVerificationStop::OutputEvidenceUnavailable)
         );
         assert!(
             owner
-                .capture_full_verification(
-                    runtime,
-                    &old_handle,
-                    &changed_basis,
-                    &mut owner.edit_admission()
-                )
+                .capture_full_verification(runtime, &old_handle, &changed_basis)
                 .is_err(),
             "Native and actor provenance cannot be substituted"
         );

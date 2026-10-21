@@ -4885,28 +4885,29 @@ owner. Explicit finite step controls return `Progressed` at their boundary;
 only `Settled` carries settlement authority.
 
 Ordinary `WorthQueryOutputDemandResourceProfile::standard()` (also `Default`)
-installs no currentness-work, settlement-step, registry-obligation,
-registry-record, required-custody or lineage-byte policy. `new` and `bounded`
-retain explicit finite currentness-work and settlement controls; the named registry and
-lineage setters install only the requested finite policy. Counts, byte ledgers,
-preparation, backing grants, sharing and final-drop accounting remain active.
+advances native `Progressed` outcomes until settlement or genuine waiting.
+`new(settlement_attempts)` supplies an explicit finite convenience-step policy.
+Native identity, checked counts, backing ownership, cancellation and normal close
+remain at their owners; ordinary admission does not prebill byte or work forecasts.
 
 Ordinary mutation preparation does not require a candidate quote, retained-byte
 estimate or producer dependency ceiling. The prepared decision carries actual
 values and native targets into the installed writer; mutation authority, required
 output roles/families, cancellation, checked growth and atomic publication remain.
 
-`WorthQueryApplicationQueryResourceProfile::default()` omits index, result and
-intermediate policies. Native result owners claim concrete vector/value storage before copying; cost
-estimates are not substituted for absent policy ceilings. Bounded parallel kernels
-still require an explicitly admitted finite result bound before dispatch. Use the
-existing `WorthQueryDerivedPairReadPlans::in_batch` with a caller-derived finite
-`WorthQueryApplicationQueryBatchLimits` for those kernels; no-policy estimates do
-not manufacture that contract. Explicit finite
-`bounded` profiles and request restrictions still intersect. Query batch loans
-keep real checked live-byte claims; no-policy schedules admit the concrete read
-quote at its owner instead of inventing a per-root quota. Native graph-work
-concurrency remains a physical scheduling contract.
+`WorthQueryApplicationQueryResourceProfile::new(maximum_concurrent_graph_work)`
+controls actual native graph-work concurrency. Query reads require fresh installed
+admission and semantic result cardinality, with no caller work or byte estimate.
+`request.query_batch(intents).execute(&phase)` issues exact installed read slots;
+foreign plans, unscheduled reads and a second planning extension still refuse.
+Each read receives fresh authorization. A result's shared backing or schedule
+association grants no source permission or currentness.
+
+Cold parallel pair reads use native `the native parallel executor` dispatch.
+Its existing run owner admits actual materialized result backing and preserves
+native interruption, first-stop and canonical prefix semantics. Explicit finite
+`from_keyless_partitions` host contracts remain available to callers that have
+such contracts. Ordinary Query does not manufacture a forecast to use them.
 
 `SignalConditionalEvaluationBudget::development()` omits slot, byte and attempt
 quotas; the default temporal budget omits owner-wide partition and wake quotas.

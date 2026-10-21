@@ -118,7 +118,6 @@ pub fn definition() -> ApplicationQueryDefinition<
         .live_root_by::<super::cause::LiveCause, _, _, _, _, _, _, _, _>(
             root_identity(),
             root_identity(),
-            ApplicationQueryLiveResourceContract::bounded(4, 65_536, 1_024),
         )
         .build()
         .unwrap()

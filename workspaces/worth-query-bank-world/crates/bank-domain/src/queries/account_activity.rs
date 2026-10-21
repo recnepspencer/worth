@@ -3,10 +3,10 @@ use worth_query_decl::facade::{
     application_query::{
         ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
         ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
-        ApplicationQueryLaneEligibility, ApplicationQueryLiveResourceContract,
-        ApplicationQueryOrderingDirection, ApplicationQueryResultFieldRef,
-        ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ExactlyOneResult,
-        ManyResults, OptionalOneResult, ReverseResultTraversal,
+        ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
+        ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+        ApplicationQueryResultShapeBuilder, ExactlyOneResult, ManyResults, OptionalOneResult,
+        ReverseResultTraversal,
     },
     application_schema::{
         DeclaredApplicationUnit, EqualityPredicate, NoApplicationUnit, NoEqualityPredicate,
@@ -265,7 +265,6 @@ pub fn account_activity_definition() -> ApplicationQueryDefinition<
         .live_by::<Posting, AccountActivityLiveCause, _, _, _, _, _, _, _, _>(
             account_identity(),
             posting_identity(),
-            ApplicationQueryLiveResourceContract::bounded(64, 2_048, 4_096),
         )
         .build()
         .expect("bank account activity query is statically canonical")

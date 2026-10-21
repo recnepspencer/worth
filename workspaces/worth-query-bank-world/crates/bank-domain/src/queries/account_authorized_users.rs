@@ -84,7 +84,7 @@ worth_query_decl::facade::worth_query_query_binding!(
         ReadOnly, NoApplicationUnit,
     field crate::schema::AccountIdentity::reference(),
     value AccountAuthorizedUsersRequest::account,
-    limits results 1_024, work 100_000
+    limits results 1_024
 
 );
 

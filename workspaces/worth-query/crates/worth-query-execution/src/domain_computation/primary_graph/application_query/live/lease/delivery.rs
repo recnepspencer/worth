@@ -57,7 +57,6 @@ where
             product,
             application_basis,
             self.controls.maximum_materialized_record_count(),
-            self.controls.maximum_work_per_delivery(),
             self.controls.request(),
         );
         let governance = std::mem::replace(
@@ -83,21 +82,10 @@ where
             let _ = plan.basis.release();
             return WorthQueryApplicationLiveOutcome::Unavailable;
         };
-        let result_buffer = self.runtime.result_buffers.reserve(
-            plan.graph_read_plan()
-                .budget_check()
-                .max_inline_result_bytes(),
-        );
+
         let (raw, authorization_work, read_proof) =
             match execute_authorized_read(execution, self.runtime, &plan, |runtime, graph, plan| {
-                read_live_target(
-                    runtime,
-                    execution,
-                    graph,
-                    plan,
-                    target_identity,
-                    result_buffer,
-                )
+                read_live_target(runtime, execution, graph, plan, target_identity)
             }) {
                 Ok(raw) => raw,
                 Err(denial) => {

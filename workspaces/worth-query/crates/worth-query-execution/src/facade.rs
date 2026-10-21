@@ -119,10 +119,7 @@ pub mod integration {
         WorthQueryProductWorldClock, WorthQueryProductWorldResources,
         WorthQueryRelationalSourceInstallationDenial, WorthQueryRelationalSourceOwner,
     };
-    pub use crate::domain_computation::execution_runtime::{
-        WorthQueryInvalidationResourceDenial, WorthQueryInvalidationResourceInstallation,
-        WorthQueryInvalidationResources,
-    };
+    pub use crate::domain_computation::execution_runtime::WorthQueryInvalidationResources;
     pub use worth_execution::{ExecutionAuthority, ExecutionAuthorityConfig};
     pub use worth_foundational::{
         DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,

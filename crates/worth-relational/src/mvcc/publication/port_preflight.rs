@@ -98,7 +98,7 @@ impl PreparedCanonicalBranchMovement {
                     RelationalPublicationDeferred::CompanionRegistrationPending,
                 ))
             }
-            Ok(Some((generation, participant, budget))) => {
+            Ok(Some((generation, participant))) => {
                 let envelope = movement.root.canonical_envelope().ok_or_else(|| {
                     RelationalPublicationOutcome::failed(RelationalPublicationFailure::new(
                         RelationalPublicationFailureKind::PreparedRootMismatch,
@@ -135,7 +135,6 @@ impl PreparedCanonicalBranchMovement {
                     binding.clone(),
                     envelope,
                     &control,
-                    budget,
                 );
                 let prepared = participant.prepare(&mut context);
                 // A companion cannot hide an original request stop behind

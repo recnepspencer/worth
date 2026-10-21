@@ -95,12 +95,6 @@ impl ChargedBytes for SealedComputationFact {
 }
 
 impl SealedComputationFacts {
-    /// What retaining the facts holds: every entry's key, fact and readers
-    /// inline, and what each owns beyond that. `None` when the sum overflows.
-    pub(in crate::domain_computation::primary_graph) fn charged_bytes(&self) -> Option<u64> {
-        self.charged
-    }
-
     pub(super) fn calculate_charged_bytes(&self) -> Option<u64> {
         let backing = self.original.retained_resident_bytes()?.checked_add(
             self.content

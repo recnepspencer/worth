@@ -20,7 +20,7 @@ use worth_relational::facade::storage::RecordLifecycleState;
 pub(in crate::domain_computation::primary_graph) enum WorkflowAdoptionReadDenial {
     /// The caller's read request stopped.
     ReadExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
-    Preparation(worth_relational::facade::mvcc::CompanionPreflightStop),
+
     SelectedIndexUnavailable,
     /// Native mechanical maintenance exhausted its own declared bound.
     IndexMaintenanceWorkLimit,

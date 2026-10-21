@@ -21,13 +21,7 @@ fn register(
         .publication_companion_port()
         .begin_required_registration()
         .expect("required registration begins")
-        .activate(
-            participant,
-            CompanionPreflightBudget {
-                maximum_work_visits: Some(16),
-                maximum_preparation_bytes: None,
-            },
-        )
+        .activate(participant)
         .expect("the participant is active")
 }
 
@@ -70,16 +64,10 @@ fn companion_root_mismatch_after_a_same_head_winner_reports_the_stale_head() {
         .expect("the cell belongs to the selected source");
     let calls = Arc::new(AtomicUsize::new(0));
     let _registration = pending
-        .activate(
-            Arc::new(CountingCompanion {
-                cell: cell.clone(),
-                calls: Arc::clone(&calls),
-            }),
-            CompanionPreflightBudget {
-                maximum_work_visits: Some(16),
-                maximum_preparation_bytes: None,
-            },
-        )
+        .activate(Arc::new(CountingCompanion {
+            cell: cell.clone(),
+            calls: Arc::clone(&calls),
+        }))
         .expect("the participant is active");
 
     let winner = prepare_on_main(execution, &runtime, "same-head-winner");

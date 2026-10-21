@@ -109,18 +109,10 @@ fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
                 })
                 .unwrap()
                 .unwrap();
-            let capacity = plans.result_capacity().unwrap();
             let input = plans
-                .worker(execution, &world.application, root.entity_id())
+                .worker(execution,  root.entity_id())
                 .unwrap();
-            let map = ExecutionMap::<_, ()>::from_keyless_partitions(BTreeMap::from([(
-                PartitionIdentity::new(1),
-                KeylessPartition {
-                    value: input,
-                    kernel_scratch_bytes: 0,
-                    max_result_bytes: capacity,
-                },
-            )]))
+            let map = ExecutionMap::<_, ()>::from_keyless_values(BTreeMap::from([(PartitionIdentity::new(1), input)]))
             .unwrap();
             let memory_before = execution
                 .in_scope(|lease| lease.unwrap().charged_memory_bytes())

@@ -1,9 +1,9 @@
 //! Caller-owned required-wave progression before ordinary Ready acceptance.
 
 use super::super::super::required_continuations::RequiredContinuations;
-use super::super::{
-    WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
-};
+use super::super::WorthQueryAdmittedOutputDemand;
+use super::super::WorthQueryOutputDemandAdvance;
+use super::super::WorthQueryProducerOutputFamily;
 use super::drive::drive_required_wave;
 use super::queued::QueuedRequiredRoots;
 use super::*;
@@ -31,20 +31,16 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     branch: WorthQueryProductBranch,
     commit_authority: &WorthQueryProducerCommitAuthority,
     performed: &std::cell::RefCell<performed::PerformedMembers>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
-    admission
-        .charge_external_work(4)
-        .map_err(|_| work_denial())?;
     let interest = demand
         .interest
         .as_ref()
         .expect("caller admission checked its live Interest");
-    let Some(wave) = select_required_wave(execution, runtime, interest, branch, admission)? else {
+    let Some(wave) = select_required_wave(execution, runtime, interest, branch)? else {
         return Ok(None);
     };
     // A restored output takes its mode here, before any wave can select it.
@@ -54,7 +50,7 @@ where
     // outputs they consumed are current. An authentic
     // Clean recorded row uses the selected Current proof without a source read;
     // only Dirty/Pending marks can extend the dependency closure.
-    preclaim_required_settlement_arguments(admission)?;
+
     let candidate = runtime
         .primary_provider
         .graph
@@ -65,7 +61,6 @@ where
             runtime.runtime.authority_identity().as_u64(),
             &runtime.installed_schema.binding_identity(),
             wave.anchor_ready.completion(),
-            admission,
         );
     // A reason withholds the candidate: the caller's Ready is verified in
     // full.
@@ -76,15 +71,13 @@ where
     let Some(candidate) = candidate else {
         return Ok(None);
     };
-    admission
-        .charge_external_work(2)
-        .map_err(|_| work_denial())?;
+
     let posture = runtime
         .primary_provider
         .graph
         .source_owner
         .invalidation_owner
-        .currentness(&wave.positioned, candidate.recorded_identity(), admission)
+        .currentness(&wave.positioned, candidate.recorded_identity())
         .map_err(admission_denial)?;
     if matches!(posture, SourceSettlementCurrentness::Foreign) {
         return Err(foreign_denial());
@@ -106,7 +99,6 @@ where
                 relational,
                 snapshot,
                 &wave.positioned,
-                admission,
             )
         });
         // A commit that kept no fact gives the verifier nothing to establish.
@@ -182,7 +174,6 @@ where
         &mut queue,
         &mut frame_custody,
         performed,
-        admission,
     );
     frame_custody.hold_unfinished(&runtime.output_demands);
     queue.conclude(result)
@@ -204,7 +195,6 @@ pub(super) fn finish_current_caller<Schema, Family>(
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     caller: CurrentCaller<'_>,
     proof: performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<
     Option<performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>>,
     WorthQueryOutputDemandDenial,
@@ -222,9 +212,7 @@ where
     } = caller;
     // A Clean caller retains its lifetime contact count.
     // Promotion pays the actual demand, continuation and provenance moves.
-    admission
-        .charge_external_work(5)
-        .map_err(|_| work_denial())?;
+
     match demand
         .required_continuations
         .promote_caller_successor::<Family>(
@@ -232,7 +220,6 @@ where
             anchor_ready,
             selected,
             continues_caller,
-            admission,
         )? {
         Some(mut successor) => {
             // The successor completed under its own issued mode. This is a
@@ -259,7 +246,7 @@ where
         .expect("Current caller retains its Interest");
     runtime
         .output_demands
-        .finish_settlement_admitted(interest, selected, admission)?;
+        .finish_settlement_admitted(interest, selected)?;
     drop(demand.required_continuations.take_all());
     Ok(Some(proof))
 }

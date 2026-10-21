@@ -21,5 +21,4 @@ fn heap_input_is_counted_before_the_real_wave_runs() {
     let (mut settled, report) = run(None, vec![member]);
     let mut slots = settled.pop().unwrap().unwrap().into_slots();
     assert_eq!(slots.pop().unwrap().into_value::<usize>(), 14);
-    assert_eq!(report.charged_work(), 1);
 }

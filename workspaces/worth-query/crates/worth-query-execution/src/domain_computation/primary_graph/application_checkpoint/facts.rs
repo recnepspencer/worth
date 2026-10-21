@@ -3,13 +3,17 @@
 
 use std::sync::Arc;
 
-use worth_foundational::facade::{
-    AspectFieldLocator, AspectKey, CanonicalFieldPath, FieldKey, LocatorAuthority,
-};
-use worth_relational::facade::{
-    identity::{EntityId, KindId, VersionId},
-    runtime::{RelationalAdjacencyDirection, RelationalFieldPresence, RelationalFieldRevision},
-};
+use worth_foundational::facade::AspectFieldLocator;
+use worth_foundational::facade::AspectKey;
+use worth_foundational::facade::CanonicalFieldPath;
+use worth_foundational::facade::FieldKey;
+use worth_foundational::facade::LocatorAuthority;
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::identity::KindId;
+use worth_relational::facade::identity::VersionId;
+use worth_relational::facade::runtime::RelationalAdjacencyDirection;
+use worth_relational::facade::runtime::RelationalFieldPresence;
+use worth_relational::facade::runtime::RelationalFieldRevision;
 
 use super::CheckpointCursor;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
@@ -22,14 +26,13 @@ pub(in crate::domain_computation::primary_graph) use encoding::encode_funded;
 use encoding::FactBytes;
 mod payload;
 mod record;
-mod retention;
-pub(in crate::domain_computation::primary_graph) use payload::{
-    CodecPayloadReservation, FactPayload, FactSequence, NativeFactPatchBuilder,
-    NativeFactPayloadBuilder,
-};
-pub(in crate::domain_computation::primary_graph) use retention::{
-    FactRetentionAllocation, FactRetentionStorage,
-};
+
+pub(in crate::domain_computation::primary_graph) use payload::CodecPayloadReservation;
+pub(in crate::domain_computation::primary_graph) use payload::FactPayload;
+pub(in crate::domain_computation::primary_graph) use payload::FactSequence;
+pub(in crate::domain_computation::primary_graph) use payload::NativeFactPatchBuilder;
+pub(in crate::domain_computation::primary_graph) use payload::NativeFactPayloadBuilder;
+
 mod stream;
 pub(in crate::domain_computation::primary_graph) use stream::FactDecoder;
 

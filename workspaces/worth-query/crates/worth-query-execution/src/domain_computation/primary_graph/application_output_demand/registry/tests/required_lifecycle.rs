@@ -20,7 +20,6 @@ fn an_open_ordinary_interest_is_required_until_its_last_handle_closes() {
                 super::super::DemandAdmissionKind::Ordinary,
                 None,
                 None,
-                &mut record_admission(),
             )
             .unwrap()
             .0
@@ -38,7 +37,6 @@ fn an_open_ordinary_interest_is_required_until_its_last_handle_closes() {
     let state = registry.state.lock().unwrap();
     assert!(!state.records.contains_key(&output));
     assert!(state.required_keys.is_empty());
-    assert_eq!(state.required_reserved_bytes, 0);
 }
 
 #[test]
@@ -55,7 +53,6 @@ fn closing_a_required_interest_removes_it_from_the_required_set() {
             super::super::DemandAdmissionKind::Required,
             None,
             None,
-            &mut record_admission(),
         )
         .expect("a source-backed required interest admits")
         .0;
@@ -71,7 +68,6 @@ fn closing_a_required_interest_removes_it_from_the_required_set() {
         let state = registry.state.lock().unwrap();
         assert!(!state.records.contains_key(&output));
         assert!(state.required_keys.is_empty());
-        assert_eq!(state.required_reserved_bytes, 0);
     }
 
     let reopened = registry
@@ -83,7 +79,6 @@ fn closing_a_required_interest_removes_it_from_the_required_set() {
             super::super::DemandAdmissionKind::Required,
             None,
             None,
-            &mut record_admission(),
         )
         .expect("closing an interest permits exact reopening")
         .0;
@@ -139,39 +134,8 @@ fn performed_source_obligation_survives_handle_close_until_occurrence_retirement
             },
         )
         .expect("the exact output source is bound");
-    registry.state.lock().unwrap().obligation_budget_bytes =
-        Some(std::mem::size_of::<super::super::PerformedOutputObligation>() - 1);
-    let denial = match registry.admit_performed(
-        output.clone(),
-        &commit,
-        scope,
-        occurrence,
-        &mut record_admission(),
-    ) {
-        Ok(_) => panic!("insufficient registry custody must deny before consuming the source"),
-        Err(denial) => denial,
-    };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
-    );
-    {
-        let state = registry.state.lock().unwrap();
-        assert!(state.source_custody[&commit].available(&output.source, scope));
-        assert!(!state.records.contains_key(&output));
-        assert_eq!(state.obligation_reserved_bytes, 0);
-    }
-    registry.state.lock().unwrap().obligation_budget_bytes =
-        crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile::standard()
-            .registry_obligation_retained_bytes();
     let interest = registry
-        .admit_performed(
-            output.clone(),
-            &commit,
-            scope,
-            occurrence,
-            &mut record_admission(),
-        )
+        .admit_performed(output.clone(), &commit, scope, occurrence)
         .expect("the bound performed source admits one output obligation");
     assert_eq!(
         registry.state.lock().unwrap().records[&output]
@@ -194,41 +158,8 @@ fn performed_source_obligation_survives_handle_close_until_occurrence_retirement
     registry.release_product_occurrence(occurrence);
     let state = registry.state.lock().unwrap();
     assert!(!state.records.contains_key(&output));
-    assert_eq!(state.obligation_reserved_bytes, 0);
-    assert!(state.required_keys.is_empty());
-    assert_eq!(state.required_reserved_bytes, 0);
-}
 
-#[test]
-fn required_index_capacity_denies_before_an_interest_is_installed() {
-    let registry = WorthQueryOutputDemandRegistry::with_budgets(
-        Some(4 * 1_024 * 1_024),
-        Some(64 * 1_024 * 1_024),
-        Some(1),
-    );
-    let output = key("required-capacity", 1, 1);
-    let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
-    let denial = match registry.admit(
-        output.clone(),
-        None,
-        scope,
-        occurrence(),
-        super::super::DemandAdmissionKind::Required,
-        None,
-        None,
-        &mut record_admission(),
-    ) {
-        Ok(_) => panic!("the separate registry index limit must deny before demand effects"),
-        Err(denial) => denial,
-    };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
-    );
-    let state = registry.state.lock().unwrap();
-    assert!(!state.records.contains_key(&output));
     assert!(state.required_keys.is_empty());
-    assert_eq!(state.required_reserved_bytes, 0);
 }
 
 #[test]
@@ -258,12 +189,11 @@ fn settlement_releases_only_the_ready_authority_it_accepted() {
             .clone(),
         source: output.source.clone(),
     }];
-    let retained_bytes = retained.obligation_reserved_bytes();
+
     let wake = Arc::clone(&retained.wake);
     let registry = WorthQueryOutputDemandRegistry::default();
     {
         let mut state = registry.state.lock().unwrap();
-        state.obligation_reserved_bytes = retained_bytes;
         state.records.insert(output.clone(), retained);
     }
     let interest = interest(&registry, output.clone(), wake);
@@ -282,5 +212,4 @@ fn settlement_releases_only_the_ready_authority_it_accepted() {
         .expect("the exact accepted Ready authority may settle its obligation");
     let state = registry.state.lock().unwrap();
     assert!(state.records[&output].performed_obligations.is_empty());
-    assert_eq!(state.obligation_reserved_bytes, 0);
 }

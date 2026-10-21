@@ -1,12 +1,12 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
-use worth_query_declaration::facade::application_query::{
-    ApplicationQueryBinding, ApplicationQueryScopeBinding,
-};
+use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
+use worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding;
 use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
-use worth_query_installation::facade::{
-    ApplicationEntityRef, ApplicationOperationDecisionReadTarget, ApplicationSchema, OperationReads,
-};
+use worth_query_installation::facade::ApplicationEntityRef;
+use worth_query_installation::facade::ApplicationOperationDecisionReadTarget;
+use worth_query_installation::facade::ApplicationSchema;
+use worth_query_installation::facade::OperationReads;
 
 #[path = "resolution/candidate_verification.rs"]
 mod candidate_verification;
@@ -20,22 +20,21 @@ mod source_liveness;
 #[cfg(test)]
 mod tests;
 mod verification_denial;
-use cardinality::{classify_current_entities, CurrentOutputCardinality};
+use cardinality::classify_current_entities;
+use cardinality::CurrentOutputCardinality;
 use decision_plan_denial::decision_plan_denial;
 
-use super::{
-    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
-    WorthQueryCurrentOutputSelection,
-};
-use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationObservedFact,
-    application_contribution::WorthQueryProducerOutputFamily,
-    invariant_projection::consumed_output::{
-        ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
-    },
-    WorthQueryApplicationOperationInvariantProjectionReader,
-    WorthQueryApplicationOutputCorrespondence, WorthQueryInvariantEntityIdentity,
-};
+use super::WorthQueryCurrentOutputDenial;
+use super::WorthQueryCurrentOutputDenialKind;
+use super::WorthQueryCurrentOutputSelection;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerOutputFamily;
+use crate::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
+use crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity;
 
 impl<'reader, 'runtime, Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>
@@ -176,7 +175,6 @@ where
                 Family::IDENTITY,
                 occurrence,
                 generation,
-                self.reader.work_budget.remaining(),
             )
             .map_err(|stop| {
                 if let worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause) = stop {
@@ -189,10 +187,6 @@ where
                     Family::IDENTITY,
                 )
             })?;
-        self.charge_current_output_work(resolution.selection_work, Family::IDENTITY)?;
-        self.reader
-            .work
-            .record_output_lineage_selection(resolution.selection_work);
         if !resolution.family_installed {
             return Err(WorthQueryCurrentOutputDenial::new(
                 WorthQueryCurrentOutputDenialKind::FamilyUnavailable,
@@ -241,29 +235,6 @@ where
                     witness,
                 } => {
                     let computation = facts.computation();
-                    let mut admission = self.reader.invalidation_owner
-                        .edit_admission_with_work_limit(self.reader.work_budget.remaining());
-                    let capacity = self.reader.invalidation_owner.retain_consumed_output(
-                        facts.facts(),
-                        &selected_native_root,
-                        ConsumedOutputEvidence::metadata_bytes(),
-                        &mut admission,
-                    );
-                    let charged = usize::try_from(admission.charged_work())
-                        .map_err(|_| {
-                            self.reader.work_budget.mark_overflowed();
-                            self.current_output_work_exhausted(Family::IDENTITY)
-                        })?;
-                    self.charge_current_output_work(charged, Family::IDENTITY)?;
-                    self.reader.work.record_output_lineage_selection(charged);
-                    let capacity = capacity.map_err(|stop| {
-                        let stop = crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop(stop);
-                        if stop == ConsumedOutputVerificationStop::WorkExhausted {
-                            self.reader.work_budget.mark_exceeded();
-                        }
-                        self.reader.retention_exhausted |= matches!(stop, ConsumedOutputVerificationStop::CapacityExhausted(_));
-                        verification_denial::from_stop(stop, Family::IDENTITY)
-                    })?;
                     let evidence = ConsumedOutputEvidence::new(
                         computation,
                         std::sync::Arc::clone(&candidate.settlement_identity),
@@ -274,7 +245,6 @@ where
                         std::sync::Arc::clone(retained_selected_native_root.get_or_insert_with(
                             || std::sync::Arc::new(selected_native_root.clone()),
                         )),
-                        capacity,
                     );
                     self.reader
                         .consumed_outputs
@@ -294,18 +264,12 @@ where
                         obsolete = true;
                     } else {
                         stale = true;
-                        requested_output = Some(self.retain_requested_output(
-                            &candidate,
-                            &selected_native_root,
-                            Family::IDENTITY,
-                        )?);
+                        requested_output = Some(self.retain_requested_output(&candidate, &selected_native_root)?);
                     }
                 }
                 candidate_verification::VerifiedCandidate::Changed(_) => {
                     stale = true;
-                    requested_output = Some(self.retain_requested_output(
-                        &candidate, &selected_native_root, Family::IDENTITY,
-                    )?);
+                    requested_output = Some(self.retain_requested_output(&candidate, &selected_native_root)?);
                 }
             }
         }

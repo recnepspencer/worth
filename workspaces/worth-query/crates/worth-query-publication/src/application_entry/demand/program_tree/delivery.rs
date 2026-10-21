@@ -10,9 +10,8 @@ where
     pub fn deliver_current(
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-        policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<WorthQueryApplicationReadObservation, WorthQueryOperationDeliveryDenial> {
-        self.delivery.deliver_current(request, policy)
+        self.delivery.deliver_current(request)
     }
     pub fn read_current<I>(
         &self,

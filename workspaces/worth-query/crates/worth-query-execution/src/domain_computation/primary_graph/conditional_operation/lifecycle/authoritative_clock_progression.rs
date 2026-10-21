@@ -8,7 +8,6 @@ use super::{
     WorthQueryConditionalTruthBasis,
 };
 use crate::domain_computation::primary_graph::conditional_operation::signal_decision_reentry::WorthQueryRetainedConditionalWake;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::CommitTouchesStop;
 
 pub(super) struct AuthoritativeClockWork<'a, Schema> {
     pub(super) runtime:
@@ -42,12 +41,6 @@ pub(super) struct AuthoritativeClockProgress {
 
 /// Why authoritative progression stopped before the clock advance.
 pub(super) enum AuthoritativeClockStop {
-    /// The cursor fell behind the subscription's retained window; truth at the
-    /// selected ceiling must be reconstructed, then progress resumes after
-    /// `resume_after`.
-    Lagging {
-        resume_after: Option<worth_relational::facade::publication::PatchStreamPosition>,
-    },
     Failed(ErasedClockObservationOutcome),
 }
 
@@ -63,12 +56,7 @@ pub(super) fn reconsider_authoritative_clock_work<Schema>(
         *work.cursor,
         work.maximum_commits,
         work.interest,
-    )
-    .map_err(|stop| match stop {
-        CommitTouchesStop::RequiresReconstruction { resume_after } => {
-            AuthoritativeClockStop::Lagging { resume_after }
-        }
-    })?;
+    );
     let commit_count = commits.commit_count();
     let delivered = super::super::authoritative_reconsideration::deliver_authoritative_commits(
         phase,
@@ -93,16 +81,6 @@ pub(super) fn reconsider_authoritative_clock_work<Schema>(
         work_remaining: delivered.work_remaining,
         caught_up_to_latest: delivered.caught_up_to_latest,
     })
-}
-
-/// In-observation reconstruction was itself denied.
-pub(super) fn reconstruction_failure(
-    denial: super::super::installation::WorthQueryConditionalRuntimeInstallationDenial,
-) -> ErasedClockObservationOutcome {
-    ErasedClockObservationOutcome::Failed {
-        kind: WorthQueryConditionalClockObservationFailureKind::ReconstructionDenied(denial.kind()),
-        detail: denial.subject().to_string(),
-    }
 }
 
 pub(super) fn runtime_rejection(detail: String) -> ErasedClockObservationOutcome {

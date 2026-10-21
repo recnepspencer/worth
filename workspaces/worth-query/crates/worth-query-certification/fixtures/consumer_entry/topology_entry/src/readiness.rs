@@ -87,8 +87,6 @@ pub(super) fn operation_definition() -> domain::WorthQueryDomainOperationDefinit
         canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("planar-readiness").unwrap(),
-        128,
-        128,
         "planar-readiness-v1",
     )
     .semantic_reads([output_change_projection()])

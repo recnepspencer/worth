@@ -24,14 +24,7 @@ fn changed_parameter_denies_before_basis_acquisition() {
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
-            context.readmit_denial(
-                &host_custody,
-                continuation,
-                "account-2",
-                &request,
-                1,
-                10_000,
-            )
+            context.readmit_denial(&host_custody, continuation, "account-2", &request, 1)
         })
         .expect("the fixture read owns its installed host call");
 
@@ -63,14 +56,7 @@ fn stale_installed_generation_denies_before_basis_reacquisition() {
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
-            context.readmit_denial(
-                &host_custody,
-                continuation,
-                "account-1",
-                &request,
-                1,
-                10_000,
-            )
+            context.readmit_denial(&host_custody, continuation, "account-1", &request, 1)
         })
         .expect("the fixture read owns its installed host call");
 
@@ -104,14 +90,7 @@ fn wrong_provider_descriptor_denies_before_fresh_admission() {
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
-            context.readmit_denial(
-                &host_custody,
-                continuation,
-                "account-1",
-                &request,
-                1,
-                10_000,
-            )
+            context.readmit_denial(&host_custody, continuation, "account-1", &request, 1)
         })
         .expect("the fixture read owns its installed host call");
 
@@ -144,14 +123,7 @@ fn changed_continuation_contract_denies_as_stale_meaning() {
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
-            context.readmit_denial(
-                &host_custody,
-                continuation,
-                "account-1",
-                &request,
-                1,
-                10_000,
-            )
+            context.readmit_denial(&host_custody, continuation, "account-1", &request, 1)
         })
         .expect("the fixture read owns its installed host call");
 

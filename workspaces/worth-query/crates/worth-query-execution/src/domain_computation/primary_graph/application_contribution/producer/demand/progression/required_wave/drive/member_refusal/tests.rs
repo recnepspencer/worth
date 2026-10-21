@@ -8,15 +8,8 @@ fn a_queue_refusal_uses_its_advance_custody_not_the_rows_caller_tag() {
         let (_interest, ready) = registry.fixture_refusing_ready();
         let key = ready.key().clone();
         let mut frontier = RequiredFrontier::new();
-        let mut admission = InvalidationEditAdmission::new(
-            worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: Some(1_000_000),
-                maximum_preparation_bytes: None,
-            },
-        );
-        frontier
-            .insert(ready, caller_tag, None, &mut admission)
-            .unwrap();
+
+        frontier.insert(ready, caller_tag, None).unwrap();
         let mut queue = QueuedRequiredRoots::new();
         queue.defer_caller();
         let mut custody = RequiredContinuations::<IdentityExecutionSchema>::default();
@@ -31,7 +24,6 @@ fn a_queue_refusal_uses_its_advance_custody_not_the_rows_caller_tag() {
             WorthQueryOutputDemandDenial::new(kind.clone(), "the queued member's own stop"),
             StopRecording::member(),
             &mut queue,
-            &mut admission,
         );
         match result {
             Ok(end @ RefusalEnd::Held) => {
@@ -58,12 +50,8 @@ fn a_queue_budget_refusal_returns_its_typed_end() {
     let registry = WorthQueryOutputDemandRegistry::default();
     let (_interest, ready) = registry.fixture_refusing_ready();
     let mut frontier = RequiredFrontier::new();
-    let mut admission =
-        InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget {
-            maximum_work_visits: Some(1_000_000),
-            maximum_preparation_bytes: None,
-        });
-    frontier.insert(ready, false, None, &mut admission).unwrap();
+
+    frontier.insert(ready, false, None).unwrap();
     let mut queue = QueuedRequiredRoots::new();
     queue.defer_caller();
     let mut custody = RequiredContinuations::<IdentityExecutionSchema>::default();
@@ -80,7 +68,6 @@ fn a_queue_budget_refusal_returns_its_typed_end() {
         ),
         StopRecording::member(),
         &mut queue,
-        &mut admission,
     );
     let end = result.unwrap_or_else(|_| panic!("queue custody returns its budget end"));
     let mut finished = false;
@@ -105,12 +92,8 @@ fn a_caller_refusal_returns_its_stop_even_for_a_queue_origin_row() {
     let (_interest, ready) = registry.fixture_refusing_ready();
     let key = ready.key().clone();
     let mut frontier = RequiredFrontier::new();
-    let mut admission =
-        InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget {
-            maximum_work_visits: Some(1_000_000),
-            maximum_preparation_bytes: None,
-        });
-    frontier.insert(ready, false, None, &mut admission).unwrap();
+
+    frontier.insert(ready, false, None).unwrap();
     let mut queue = QueuedRequiredRoots::new();
     let kind = WorthQueryOutputDemandDenialKind::ProducerUnavailable;
     let result = RefusingMember::<IdentityExecutionSchema> {
@@ -123,7 +106,6 @@ fn a_caller_refusal_returns_its_stop_even_for_a_queue_origin_row() {
         WorthQueryOutputDemandDenial::new(kind.clone(), "the caller's own refusal"),
         StopRecording::member(),
         &mut queue,
-        &mut admission,
     );
     let mut finished = false;
     let result = result.map(|end| {

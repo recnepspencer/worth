@@ -265,7 +265,7 @@ fn account_activity(
         .runtime
         .account_activity(account)
         .as_principal(principal)
-        .execute(BankReadControls::current(request_scope(), 16, 1_024).unwrap())
+        .execute(BankReadControls::current(request_scope(), 16).unwrap())
         .expect("an exact account owner should read authoritative activity")
         .rows()[0]
         .entries()
@@ -289,7 +289,7 @@ fn account_revision(
         .runtime
         .query(queries::account_summary(account))
         .as_principal(principal)
-        .controls(BankReadControls::current(request_scope(), 1, 1_024).unwrap())
+        .controls(BankReadControls::current(request_scope(), 1).unwrap())
         .execute()
         .expect("the exact account owner should read the authoritative revision")
         .rows()[0]

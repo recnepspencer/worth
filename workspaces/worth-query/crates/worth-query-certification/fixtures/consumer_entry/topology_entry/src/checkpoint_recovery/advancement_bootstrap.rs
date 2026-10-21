@@ -50,13 +50,7 @@ fn bootstrap_opens_once_before_its_registry_reader_and_seeding() {
                     Some(if zero_memory { 8_000_000 } else { 0 }),
                 ),
             );
-            let limits = support::limits_with_policy(
-                32,
-                16,
-                64,
-                support::invalidation(128 * 1_024 * 1_024, Some(1_000_000), 32),
-                policy,
-            );
+            let limits = support::limits_with_policy(32, 16, 64, support::invalidation(), policy);
             let checkpoint = restored.then(|| {
                 application.runtime().with_host_advancement(|host_phase| application
                     .runtime()

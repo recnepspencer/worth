@@ -23,10 +23,7 @@ pub(super) fn install<const MODE: u8>() -> Result<
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },),
-        support::limits(
-            32,
-            support::invalidation(128 * 1_024 * 1_024, Some(1_000_000), 32),
-        ),
+        support::limits(32, support::invalidation()),
         |_phase, graph, installed| support::bind_model_owner(graph, installed),
     )
 }

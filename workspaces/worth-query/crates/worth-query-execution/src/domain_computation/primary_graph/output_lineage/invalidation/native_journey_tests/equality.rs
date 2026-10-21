@@ -107,12 +107,9 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         assert_pending(owner, &changed, &b, &a0);
         assert_pending(owner, &changed, &c, &b);
         assert_pending(owner, &changed, &c, &other);
-        let historical_image = owner
-            .cell_for_read(&changed, &mut owner.edit_admission())
-            .unwrap()
-            .unwrap()
-            .read_image();
 
+
+        let historical_image = owner.cell_for_read(&changed).unwrap().unwrap().read_image();
         register_alias(request_execution, owner, runtime, &changed_handle, &changed, entity, status.clone(), &a0, &a1);
         assert!(matches!(currentness(owner, &changed, &b), SourceSettlementCurrentness::Clean));
         assert_pending(owner, &changed, &c, &b);
@@ -150,7 +147,6 @@ request_execution,                &a0,
                 runtime,
                 &later_handle,
                 &later,
-                &mut owner.edit_admission(),
             ),
             Ok(ConsumedOutputVerification::ChangedDirectFact(0)),
         );
@@ -226,13 +222,12 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
         // The successor's status changes; the predecessor's label never changes.
         write_field(request_execution, runtime, entity, status, "changed-output");
         let (later_handle, later) = snapshot(runtime);
-        assert!(matches!(owner.consumed_output_currentness(&later, &a0, &mut owner.edit_admission()).unwrap(),
+        assert!(matches!(owner.consumed_output_currentness(&later, &a0).unwrap(),
             crate::domain_computation::primary_graph::output_lineage::invalidation::ConsumedOutputCurrentness::PendingEqualSuccessor));
         assert_eq!(ConsumedOutputEvidence::verify_candidate_with_admission(
 request_execution,            &a0,
             &RetainedSourceFacts::for_test(false, Arc::from([unchanged_fact])).for_comparison().unwrap(),
             &[], None, &before, owner, runtime, &later_handle, &later,
-            &mut owner.edit_admission(),
         ), Err(crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::PendingUpstream));
         for handle in [before_handle, alias_handle, later_handle] {
             runtime.snapshots().release_snapshot(&handle).unwrap();
@@ -274,9 +269,9 @@ fn register_alias(
             },
             selected,
             relation,
-            &mut owner.edit_admission(),
         )
         .expect("the exact selected alias prepares");
+
     let cleanup = match prepared.install() {
         Ok(cleanup) => cleanup,
         Err(_) => panic!("the exact selected source image must install"),
@@ -308,23 +303,19 @@ fn assert_source_only_alias_verification(
 ) {
     let verify = || {
         ConsumedOutputEvidence::verify_candidate_with_admission(
-        execution,
-        old_identity,
-        &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(
-            false,
-            Arc::from([old_fact.clone()]),
+            execution,
+            old_identity,
+            &RetainedSourceFacts::for_test(false, Arc::from([old_fact.clone()]))
+                .for_comparison()
+                .unwrap(),
+            &[],
+            None,
+            observed,
+            owner,
+            runtime,
+            handle,
+            selected,
         )
-        .for_comparison()
-        .unwrap(),
-        &[],
-        None,
-        observed,
-        owner,
-        runtime,
-        handle,
-        selected,
-        &mut owner.edit_admission(),
-    )
     };
     assert_eq!(verify(), Ok(ConsumedOutputVerification::Current));
     let _oracle =

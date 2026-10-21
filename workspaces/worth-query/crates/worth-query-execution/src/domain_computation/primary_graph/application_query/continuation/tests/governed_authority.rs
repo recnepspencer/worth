@@ -205,7 +205,6 @@ fn issue(
             governed_live_account_parameters("account-1"),
             crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 NonZeroUsize::new(1).unwrap(),
-                Some(NonZeroUsize::new(10_000).unwrap()),
                 request,
             ),
         )
@@ -225,9 +224,5 @@ fn issue(
 fn resume_controls(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> WorthQueryApplicationQueryResumeControls<'_> {
-    WorthQueryApplicationQueryResumeControls::new(
-        NonZeroUsize::new(1).unwrap(),
-        Some(NonZeroUsize::new(10_000).unwrap()),
-        request,
-    )
+    WorthQueryApplicationQueryResumeControls::new(NonZeroUsize::new(1).unwrap(), request)
 }

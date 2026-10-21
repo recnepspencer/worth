@@ -70,7 +70,6 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
     let admitted_session = plan.graph_work_session_identity();
     let admitted_basis = plan.basis_identity().clone();
 
-    let buffer_observer = world.application.result_buffer_observer();
     let outcome = world
         .application
         .with_host_advancement(|phase| {
@@ -79,12 +78,7 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
                 .execute_application_query_one_shot(&phase, plan)
         })
         .expect("the fixture read owns its installed host call");
-    assert!(
-        outcome.is_ok(),
-        "nested projection outcome: {:?}; buffer observation: {:?}",
-        outcome.err(),
-        buffer_observer.observe()
-    );
+
     let result = outcome.unwrap();
 
     assert_eq!(result.rows().len(), 1);
@@ -111,22 +105,7 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
         WorthQueryApplicationQueryOmissionPosture::NoOmission
     );
     assert!(result.receipt().total_work_units() <= 10_000);
-    let buffer = world
-        .application
-        .with_host_advancement(|_phase| {
-            result
-                .receipt()
-                .result_buffer()
-                .expect("one-shot execution owns bounded result-buffer evidence")
-        })
-        .expect("the fixture read owns its installed host call");
-    assert!(buffer.released());
-    assert!(buffer.peak_bytes() > 0);
-    assert_eq!(
-        buffer.limit_bytes(),
-        None,
-        "ordinary result policy is absent while native storage stays counted"
-    );
+
     assert!(result
         .receipt()
         .graph_read_plan()
@@ -164,15 +143,6 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
         dependencies.projected_fields(),
         result.receipt().projected_field_count()
     );
-    assert_eq!(buffer_observer.observe().active_buffers(), 0);
-    assert!(
-        buffer_observer.observe().retained_bytes() > 0,
-        "the returned observed sources keep their funded custody alive"
-    );
-    assert_eq!(
-        buffer_observer.observe().peak_observed_bytes(),
-        buffer.peak_bytes()
-    );
+
     drop(result);
-    assert_eq!(buffer_observer.observe().retained_bytes(), 0);
 }

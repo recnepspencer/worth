@@ -176,10 +176,6 @@ fn room() -> MutexGuard<'static, RegionRoom> {
     ROOM.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-pub(super) fn take_outcomes() -> Vec<RegionOutcome> {
-    std::mem::take(&mut room().outcomes)
-}
-
 /// A kernel says it was entered.
 pub(super) fn enter_kernel() {
     room().kernels += 1;
@@ -213,8 +209,6 @@ pub(super) fn with_totals<Binding: RegionTotalsBinding>(
         None,
         Default::default(),
         32,
-        128 * 1_024 * 1_024,
-        Some(1_000_000),
         |graph| {
             support::seed_cycle(graph);
             facts::seed(graph, sets);

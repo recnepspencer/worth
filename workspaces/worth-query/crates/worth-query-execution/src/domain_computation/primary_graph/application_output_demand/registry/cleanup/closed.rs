@@ -1,8 +1,7 @@
 //! Closed-row Drop debt: a quoted claimant pass, optional for foreign work.
-use super::super::refreshed_rejoin::{occurrence_rows, OccurrenceSearchCharge};
+use super::super::refreshed_rejoin::occurrence_rows;
 use super::*;
 
-pub(in super::super) const FOREIGN_CLOSED_DRAIN_QUOTA: usize = 1;
 pub(in super::super) struct RetiredForeignCleanup {
     rows: RetiredClosedRows,
     terminal: Option<super::RetiredTerminalCleanup>,
@@ -20,17 +19,10 @@ impl RetiredForeignCleanup {
             terminal: Some(terminal),
         }
     }
-    fn destroy(self) -> (usize, usize) {
+    fn destroy(self) {
         let Self { rows, terminal } = self;
-        let refund = terminal.as_ref().map_or((0, 0), |retired| {
-            (
-                retired.refund_required_bytes,
-                retired.refund_obligation_bytes,
-            )
-        });
         drop(rows);
         drop(terminal);
-        refund
     }
 }
 type RetiredClosedRows = (Vec<DemandRecord>, Vec<Arc<WorthQueryOutputDemandKey>>);
@@ -39,11 +31,9 @@ impl DemandRegistryState {
     pub(in super::super) fn take_closed_cleanup_step(
         &mut self,
         note: super::closed_notes::QueuedClosedRow,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<RetiredClosedRows, WorthQueryOutputDemandDenial> {
         let key = note.key();
         if !note.names(&self.records) {
-            admission.inspect_row()?;
             return Ok(self
                 .take_closed_note(note)
                 .prune(|_| (Vec::new(), Vec::new())));
@@ -53,51 +43,39 @@ impl DemandRegistryState {
         let count = self.records.len();
         let mut producer = 0usize;
         let mut rows = 0usize;
-        for (candidate, _) in occurrence_rows(&self.records, &key, admission)? {
-            admission.inspect_row()?;
+        for (candidate, _) in occurrence_rows(&self.records, &key) {
             producer = producer.max(candidate.producer.len());
             rows = rows.checked_add(1).ok_or_else(work_denial)?;
         }
         // One root buffer for the cascade and one for its post-cascade members.
-        let slot = std::mem::size_of::<WorthQueryOutputDemandKey>()
-            .checked_add(producer)
-            .ok_or_else(work_denial)?;
-        let scratch = rows
-            .checked_mul(2)
-            .and_then(|rows| rows.checked_mul(slot))
-            .ok_or_else(work_denial)?;
-        admission
-            .admit_read_scratch(u64::try_from(scratch).map_err(|_| work_denial())?)
-            .map_err(|_| empty_capacity_denial())?;
+
         let mut roots = Vec::with_capacity(rows);
-        for (candidate, _) in occurrence_rows(&self.records, &key, admission)? {
-            admission.inspect_row()?;
+        for (candidate, _) in occurrence_rows(&self.records, &key) {
             roots.push(candidate.clone());
         }
         debug_assert!(roots.len() <= count);
-        Ok(
-            super::super::lifecycle::cleanup_price::price_closed_cascade(self, admission, &roots)?
-                .complete(|priced| Ok(priced.prune_closed_note(note, roots))),
-        )
+        Ok({
+            let priced: &mut DemandRegistryState = &mut *self;
+            {
+                priced.prune_closed_note(note, roots)
+            }
+        })
     }
 
     /// One foreign attempt after the request's own edit is fully admitted.
     /// A pause has a holder: the head, unchanged because its quote refused.
     pub(in super::super) fn take_optional_closed_cleanup(
         &mut self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Option<RetiredForeignCleanup> {
-        if self.pending_cleanup_head.is_some()
-            && let Some(retired) = admission.optional_cleanup_quote(|admission| {
-                self.take_terminal_cleanup_step(admission, false)
-            })
-        {
-            return retired.map(RetiredForeignCleanup::terminal);
+        if self.pending_cleanup_head.is_some() {
+            return self
+                .take_terminal_cleanup_step()
+                .ok()
+                .flatten()
+                .map(RetiredForeignCleanup::terminal);
         }
-        debug_assert_eq!(FOREIGN_CLOSED_DRAIN_QUOTA, 1);
         let note = self.closed_cleanup.front()?;
-        let retired = admission
-            .optional_cleanup_quote(|admission| self.take_closed_cleanup_step(note, admission));
+        let retired = self.take_closed_cleanup_step(note).ok();
         if retired.is_none() {
             self.closed_cleanup.rotate_front();
         }
@@ -107,17 +85,14 @@ impl DemandRegistryState {
 
 impl WorthQueryOutputDemandRegistry {
     /// The own edit is complete before optional foreign maintenance starts.
-    pub(in super::super) fn drain_foreign_cleanup(
-        &self,
-        admission: &mut InvalidationEditAdmission,
-    ) {
+    pub(in super::super) fn drain_foreign_cleanup(&self) {
         let retired = {
             let mut state = self
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            let retired = state.take_optional_closed_cleanup(admission);
-            state.drain_foreign_custody_quota(admission);
+            let retired = state.take_optional_closed_cleanup();
+            state.drain_next_foreign_custody();
             retired
         };
         self.finish_foreign_cleanup(retired);
@@ -125,21 +100,13 @@ impl WorthQueryOutputDemandRegistry {
 
     pub(in super::super) fn finish_foreign_cleanup(&self, retired: Option<RetiredForeignCleanup>) {
         if let Some(retired) = retired {
-            let (required, obligations) = retired.destroy();
-            let mut state = self
-                .state
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            state.required_reserved_bytes = state.required_reserved_bytes.saturating_sub(required);
-            state.obligation_reserved_bytes =
-                state.obligation_reserved_bytes.saturating_sub(obligations);
+            retired.destroy();
         }
     }
 
     #[cfg(test)]
     pub(in super::super) fn drain_closed_cleanup_admitted(
         &self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let visits = self.state.lock().unwrap().closed_cleanup.len();
         for pass in 0..=visits {
@@ -147,7 +114,7 @@ impl WorthQueryOutputDemandRegistry {
                 let retired = {
                     let mut state = self.state.lock().unwrap();
                     if state.pending_cleanup_head.is_some() {
-                        state.take_terminal_cleanup_step(admission, false)?
+                        state.take_terminal_cleanup_step()?
                     } else {
                         None
                     }
@@ -165,7 +132,7 @@ impl WorthQueryOutputDemandRegistry {
                 let Some(note) = state.closed_cleanup.front() else {
                     break;
                 };
-                state.take_closed_cleanup_step(note, admission)?
+                state.take_closed_cleanup_step(note)?
             };
             self.finish_foreign_cleanup(Some(RetiredForeignCleanup::closed(retired)));
         }

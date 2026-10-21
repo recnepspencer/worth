@@ -75,13 +75,8 @@ fn check(case: usize) {
                 .installed_schema()
                 .certification_query(PublicScopedAccountSummaryQuery::reference())
                 .unwrap();
-            let controls = || {
-                WorthQueryProductQueryControls::new(
-                    NonZeroUsize::new(10).unwrap(),
-                    Some(NonZeroUsize::new(10000).unwrap()),
-                    &scope,
-                )
-            };
+            let controls =
+                || WorthQueryProductQueryControls::new(NonZeroUsize::new(10).unwrap(), &scope);
             let admit = || {
                 old.retain_selection(&execution)
                     .unwrap()

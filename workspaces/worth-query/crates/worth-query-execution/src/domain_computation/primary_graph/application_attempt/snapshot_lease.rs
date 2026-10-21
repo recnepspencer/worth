@@ -1,13 +1,9 @@
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::super::WorthQueryPrimaryGraphIntegrationHandle;
-use crate::domain_computation::primary_graph::{
-    application_query::resource_lifecycle::{
-        WorthQueryApplicationBasisLease, WorthQueryApplicationBasisReleaseOutcome,
-    },
-    output_lineage::invalidation::InvalidationEditAdmission,
-    product_operation::SharedSelectedProductOperation,
-};
+use crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisLease;
+use crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisReleaseOutcome;
+use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -180,19 +176,17 @@ impl WorthQueryApplicationSnapshotLease {
         Schema: worth_query_installation::facade::ApplicationSchema,
     >(
         shared: &SharedSelectedProductOperation<'_, Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Self, CompanionPreflightStop> {
-        admission.charge_external_work(2)?;
         let selected = shared.selected();
         let graph = selected
             .application()
             .runtime
             .primary_graph()
             .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
-        let basis = selected.application_basis().retain_shared(admission)?;
+        let basis = selected.application_basis().retain_shared()?;
         // Publication binding, two World observation Arc pairs, optional
         // guard, Bridge Arc and layout Arc are all shallow fixed copies.
-        admission.charge_external_work(13)?;
+
         Ok(Self {
             custody: Some(SnapshotCustody::Shared(basis)),
             product: selected.product().retained_clone(),

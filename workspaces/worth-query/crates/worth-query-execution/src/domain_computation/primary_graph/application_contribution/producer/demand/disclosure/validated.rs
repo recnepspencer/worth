@@ -1,20 +1,10 @@
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 use super::super::super::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryRequestAffinity;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
-use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_runtime_world::facade::ProductBranchObservation;
-
-use crate::domain_computation::primary_graph::InvalidationEditAdmission;
-
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) enum FreshDisclosureAdmissionStop
-{
-    Admission(CompanionPreflightStop),
-    AccountingOverflow,
-}
 
 // Construction stays in disclosure validation. In particular, no arbitrary
 // value paired with a descriptive observation can mint either predecessor.
@@ -69,59 +59,6 @@ impl<Query, Value> ValidatedOutputDisclosure<Query, Value> {
 }
 
 impl<Query, Value> FreshOutputDisclosure<Query, Value> {
-    /// Recheck the actual selected execution operands under its carried meter.
-    /// The original disclosure acceptance remains the sole semantic check.
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn admits_selected_admitted<
-        Schema,
-    >(
-        &self,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        request: &WorthQueryRequestScope,
-        selected: &ProductBranchObservation,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, FreshDisclosureAdmissionStop> {
-        use FreshDisclosureAdmissionStop as Stop;
-        admission.charge_external_work(6).map_err(Stop::Admission)?;
-        let metadata = self
-            .0
-            .affinity
-            .comparison_metadata_visits(principal)
-            .ok_or(Stop::AccountingOverflow)?;
-        admission
-            .charge_external_work(metadata)
-            .map_err(Stop::Admission)?;
-        let affinity = self
-            .0
-            .affinity
-            .comparison_work(principal)
-            .ok_or(Stop::AccountingOverflow)?;
-        // `matches_observation` compares both branch-name operands and the
-        // fixed read-identity axes. World current-head pricing only covers one
-        // name, so admit this selected disclosure comparison independently.
-        let product = match &self.0.source.selection {
-            crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Relational => 1,
-            crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(disclosed) => {
-                let names = disclosed.branch_identity().name().as_str().len()
-                    .checked_add(selected.branch_identity().name().as_str().len())
-                    .ok_or(Stop::AccountingOverflow)?;
-                let fixed = std::mem::size_of::<crate::basis::WorthQueryProductBranchReadIdentity>()
-                    .checked_mul(2)
-                    .and_then(|n| n.checked_add(8))
-                    .ok_or(Stop::AccountingOverflow)?;
-                u64::try_from(names.checked_add(fixed).ok_or(Stop::AccountingOverflow)?)
-                    .map_err(|_| Stop::AccountingOverflow)?
-            }
-        };
-        let total = affinity
-            .checked_add(product)
-            .and_then(|work| work.checked_add(4))
-            .ok_or(Stop::AccountingOverflow)?;
-        admission
-            .charge_external_work(total)
-            .map_err(Stop::Admission)?;
-        Ok(self.admits(principal, request, selected))
-    }
-
     /// Borrow the same owner-issued disclosure while its observed source is
     /// retained for required successor admission. The proof itself remains
     /// intact for the later Scheduleâ†’Execute transition.

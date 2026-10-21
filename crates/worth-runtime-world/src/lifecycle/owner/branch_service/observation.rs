@@ -6,7 +6,6 @@ use crate::branch::{
 use crate::identity::{ProductBranchIdentity, ProductBranchIncarnation};
 
 use super::super::RuntimeWorldOwnerRoot;
-use crate::lifecycle::ports::RuntimeWorldCurrentnessAdmissionStop as Stop;
 
 impl<D, I, E, Ctx, T> crate::lifecycle::ports::RuntimeWorldObservationService
     for RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
@@ -15,40 +14,28 @@ where
     I: Copy + Ord + Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    fn admit_product_branch_currentness_with_work<'selected>(
+    fn admit_product_branch_currentness<'selected>(
         &self,
         expected: &'selected ProductBranchObservation,
-        prepare: &mut dyn FnMut(u64) -> bool,
-    ) -> Result<crate::branch::ProductBranchCurrentnessScope<'selected>, Stop> {
+    ) -> Result<
+        crate::branch::ProductBranchCurrentnessScope<'selected>,
+        RuntimeWorldBranchAdmissionDenial,
+    > {
         crate::lifecycle::read_observation::record_read();
         if expected.owner_identity() != self.owner_identity() {
-            return Err(Stop::Native(
-                RuntimeWorldBranchAdmissionDenial::ForeignOwner,
-            ));
+            return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
         }
         if !self.branch_service_is_available() {
-            return Err(Stop::Native(
-                RuntimeWorldBranchAdmissionDenial::OwnerUnavailable,
-            ));
+            return Err(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable);
         }
         let operation = self
             .reserve_creation_operation()
-            .map_err(|()| Stop::Native(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable))?;
+            .map_err(|()| RuntimeWorldBranchAdmissionDenial::OwnerUnavailable)?;
         let cell = self
             .state
             .branches
-            .branch_cell_by_lifecycle_admitted(expected.lifecycle_incarnation(), prepare)
-            .map_err(|stop| match stop {
-                crate::branch::registry::ProductBranchCurrentnessLookupStop::AdmissionRefused => {
-                    Stop::Preparation
-                }
-                crate::branch::registry::ProductBranchCurrentnessLookupStop::AccountingOverflow => {
-                    Stop::Native(RuntimeWorldBranchAdmissionDenial::CurrentnessAccountingOverflow)
-                }
-            })?
-            .ok_or(Stop::Native(
-                RuntimeWorldBranchAdmissionDenial::RetiredBranch,
-            ))?;
+            .branch_cell_by_lifecycle(expected.lifecycle_incarnation())
+            .ok_or(RuntimeWorldBranchAdmissionDenial::RetiredBranch)?;
         Ok(crate::branch::ProductBranchCurrentnessScope::owner_issued(
             cell,
             expected,

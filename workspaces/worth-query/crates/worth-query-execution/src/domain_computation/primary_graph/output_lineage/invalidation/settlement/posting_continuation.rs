@@ -1,10 +1,8 @@
 //! Completed selected native rebase, paired with its exact normalized body.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_attempt::retained_decision_facts::{StorageControl, StoreDenial},
-    application_checkpoint::facts::FactPayload,
-};
-use worth_execution::ExecutionMemoryReservation;
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) struct PostingRebaseBasis {
@@ -31,23 +29,14 @@ impl PostingRebaseBasis {
         self,
         body: FactPayload,
         after: PositionedRelationalSnapshot,
-        selection_memory: Option<ExecutionMemoryReservation>,
         control: StorageControl<'_, '_>,
     ) -> Result<PostingContinuation, StoreDenial> {
         control.check_live()?;
-        let bytes = index_capacity::arc_bytes::<CompletedPostingRebase>()
-            .and_then(|bytes| {
-                bytes.checked_add(u64::try_from(after.branch_id().0.capacity()).ok()?)
-            })
-            .ok_or(StoreDenial::Representability)?;
-        let memory = control.policy().reserve_memory(bytes);
         control.check_live()?;
         Ok(PostingContinuation(Arc::new(CompletedPostingRebase {
             basis: self,
             body,
             after,
-            _selection_memory: selection_memory,
-            _memory: memory?,
         })))
     }
 }
@@ -56,8 +45,6 @@ struct CompletedPostingRebase {
     basis: PostingRebaseBasis,
     body: FactPayload,
     after: PositionedRelationalSnapshot,
-    _selection_memory: Option<ExecutionMemoryReservation>,
-    _memory: Option<ExecutionMemoryReservation>,
 }
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct PostingContinuation(
@@ -79,13 +66,12 @@ impl PostingContinuation {
         facts: &super::super::super::RetainedSourceFacts,
         output: Option<&RegisteredOutputFacts>,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<Arc<PostingProjection>>, CompanionPreflightStop> {
         let completed = &self.0;
         if completed.after != *selected || !completed.body.same_backing(facts.postconditions()) {
             return Ok(None);
         }
-        admission.ordered_read(state.settlements.len())?;
+
         let Some(prior) = state.settlements.get(&completed.basis.prior) else {
             return Ok(None);
         };
@@ -103,14 +89,14 @@ impl PostingContinuation {
         {
             return Ok(None);
         }
-        admission.ordered_read(state.posting_bindings.len())?;
+
         let Some(binding) = state.posting_bindings.get(&projection.id) else {
             return Ok(None);
         };
         let Some(binding) = binding.settlements() else {
             return Ok(None);
         };
-        admission.ordered_read(binding.settlements.len())?;
+
         if !Arc::ptr_eq(&binding.projection, projection)
             || !binding.settlements.contains(&completed.basis.prior)
         {
@@ -123,7 +109,7 @@ impl PostingContinuation {
             ) else {
                 return Ok(None);
             };
-            if !same_addresses(old, new, admission)? {
+            if !same_addresses(old, new)? {
                 return Ok(None);
             }
         }
@@ -137,7 +123,7 @@ impl PostingContinuation {
             return Ok(None);
         }
         for (old, new) in old_output.iter().zip(new_output) {
-            if !same_addresses(old, new, admission)? {
+            if !same_addresses(old, new)? {
                 return Ok(None);
             }
         }
@@ -148,23 +134,17 @@ impl PostingContinuation {
 fn same_addresses(
     old: &crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact,
     new: &crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, CompanionPreflightStop> {
-    let Some(old) = addresses(old, admission)? else {
+    let Some(old) = addresses(old)? else {
         return Ok(false);
     };
-    let Some(new) = addresses(new, admission)? else {
+    let Some(new) = addresses(new)? else {
         return Ok(false);
     };
     if old.len() != new.len() {
         return Ok(false);
     }
     for (old, new) in old.iter().zip(new.iter()) {
-        admission.work(
-            old.comparison_work_bound()
-                .and_then(|work| work.checked_add(new.comparison_work_bound()?))
-                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
-        )?;
         if old != new {
             return Ok(false);
         }
@@ -173,29 +153,13 @@ fn same_addresses(
 }
 fn addresses(
     fact: &crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<OrdSet<Arc<FactPostingKey>>>, CompanionPreflightStop> {
     crate::domain_computation::primary_graph::fact_verification_observation::posting_fact();
-    let meter = std::cell::RefCell::new(admission);
     let mut keys = OrdSet::new();
-    let result = super::super::fact_keys::visit(
-        fact,
-        |work, bytes| {
-            let mut meter = meter.borrow_mut();
-            meter.work(work as u64)?;
-            meter.bytes(bytes as u64)
-        },
-        |key| {
-            let mut meter = meter.borrow_mut();
-            meter.fresh_key_insert::<Arc<FactPostingKey>, ()>(&key, keys.len())?;
-            meter.bytes(
-                index_capacity::arc_bytes::<FactPostingKey>()
-                    .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-            )?;
-            keys.insert(Arc::new(key));
-            Ok(())
-        },
-    );
+    let result = super::super::fact_keys::visit(fact, |key| {
+        keys.insert(Arc::new(key));
+        Ok(())
+    });
     match result {
         Ok(()) => Ok(Some(keys)),
         Err(super::super::fact_keys::FactKeyProjectionStop::Admission(stop)) => Err(stop),

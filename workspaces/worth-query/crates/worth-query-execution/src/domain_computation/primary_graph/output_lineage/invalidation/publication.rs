@@ -1,18 +1,18 @@
 use std::sync::Arc;
 
-use worth_relational::facade::{
-    mvcc::CompanionPreflightStop, runtime::RelationalRuntime, snapshots::SnapshotHandle,
-};
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
 
-use crate::domain_computation::primary_graph::provider::{
-    RebaseVerificationReason, WorthQueryPrimaryGraphCommittedApplication,
-};
+use crate::domain_computation::primary_graph::provider::RebaseVerificationReason;
+use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication;
 
-use super::super::{RecordedSettlementIdentity, WorthQueryApplicationOutputLineage};
-use super::{
-    FullVerificationReason, SettlementRegistration, SettlementRegistrationStop,
-    SourceInvalidationOwner,
-};
+use super::super::RecordedSettlementIdentity;
+use super::super::WorthQueryApplicationOutputLineage;
+use super::FullVerificationReason;
+use super::SettlementRegistration;
+use super::SettlementRegistrationStop;
+use super::SourceInvalidationOwner;
 
 /// Both performed and stable publications retain the same exact upstream
 /// identities through the invalidation owner's admitted ordered set. The set
@@ -21,13 +21,9 @@ pub(in crate::domain_computation::primary_graph) fn collect_consumed_output_upst
     consumed_outputs: impl IntoIterator<
         Item = &'a crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
     >,
-    admission: &mut super::InvalidationEditAdmission,
 ) -> Result<im::OrdSet<Arc<RecordedSettlementIdentity>>, CompanionPreflightStop> {
-    use super::admission::IndexAdmission;
     let mut upstream = im::OrdSet::new();
     for consumed in consumed_outputs {
-        admission.work(1)?;
-        admission.fresh_insert::<Arc<RecordedSettlementIdentity>, ()>(upstream.len())?;
         upstream.insert(Arc::clone(consumed.identity()));
     }
     Ok(upstream)
@@ -50,7 +46,6 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
     identity: Arc<RecordedSettlementIdentity>,
     work_membership: Option<Arc<crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership>>,
     output_witness: Option<&super::super::SealedNativeOutputWitness>,
-    admission: &mut super::InvalidationEditAdmission,
 ) -> Result<(), FullVerificationReason> {
     let facts = application
         .commit_evidence()
@@ -65,18 +60,15 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
         .map_err(|_| registration_reason(SettlementRegistrationStop::SourceUnavailable))?;
     let output_witness = output_witness.ok_or(FullVerificationReason::NativeRevisionUnavailable)?;
     let output_facts = owner
-        .prepare_performed_output_facts(output_witness, admission)
+        .prepare_performed_output_facts(output_witness)
         .map_err(stopped)?
         .ok_or(FullVerificationReason::NativeRevisionUnavailable)?;
-    let upstream =
-        collect_consumed_output_upstream(consumed_outputs, admission).map_err(stopped)?;
+    let upstream = collect_consumed_output_upstream(consumed_outputs).map_err(stopped)?;
     // A publication may have evicted its full index. The consumed Native
     // evidence remains authoritative: compare it after the effect, then
     // establish its missing rows upstream-first before posting this consumer.
-    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence::establish_missing(execution,
-        owner, consumed_outputs, runtime, snapshot, &read_basis, admission,
-    )?;
-    let stale_at_read_basis = own_effect_stale_ordinals(application, admission).map_err(stopped)?;
+    crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence::establish_missing(execution, owner, consumed_outputs, runtime, snapshot, &read_basis)?;
+    let stale_at_read_basis = own_effect_stale_ordinals(application).map_err(stopped)?;
     owner
         .register_completed_settlement(
             SettlementRegistration {
@@ -94,7 +86,6 @@ pub(in crate::domain_computation::primary_graph) fn register_completed(
                 .commit_evidence()
                 .idempotency()
                 .source_partition_identity(),
-            admission,
         )
         .map_err(registration_reason)
 }
@@ -114,12 +105,11 @@ pub(in crate::domain_computation::primary_graph) fn register_republished(
     consumed_outputs: &[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence],
     output_witness: &super::super::SealedNativeOutputWitness,
     read_basis: worth_relational::facade::runtime::PositionedRelationalSnapshot,
-    admission: &mut super::InvalidationEditAdmission,
 ) -> Result<(), FullVerificationReason> {
     use super::SourceSettlementCurrentness as Currentness;
     use FullVerificationReason as Reason;
     let requirement = match owner
-        .currentness(&read_basis, predecessor, admission)
+        .currentness(&read_basis, predecessor)
         .map_err(stopped)?
     {
         // No row here continues into the republication's. A foreign source
@@ -134,26 +124,22 @@ pub(in crate::domain_computation::primary_graph) fn register_republished(
         }
     };
     let output_facts = owner
-        .prepare_performed_output_facts(output_witness, admission)
+        .prepare_performed_output_facts(output_witness)
         .map_err(stopped)?
         .ok_or(Reason::NativeRevisionUnavailable)?;
-    let upstream =
-        collect_consumed_output_upstream(consumed_outputs, admission).map_err(stopped)?;
+    let upstream = collect_consumed_output_upstream(consumed_outputs).map_err(stopped)?;
     owner
-        .register_settlement(
-            SettlementRegistration {
-                computation: None,
-                work_membership: None,
-                identity,
-                facts,
-                output_facts: Some(output_facts),
-                read_basis,
-                stale_at_read_basis: im::OrdSet::new(),
-                requirement: Some(requirement),
-                upstream,
-            },
-            admission,
-        )
+        .register_settlement(SettlementRegistration {
+            computation: None,
+            work_membership: None,
+            identity,
+            facts,
+            output_facts: Some(output_facts),
+            read_basis,
+            stale_at_read_basis: im::OrdSet::new(),
+            requirement: Some(requirement),
+            upstream,
+        })
         .map_err(registration_reason)
 }
 
@@ -204,16 +190,12 @@ fn stopped(stop: CompanionPreflightStop) -> FullVerificationReason {
 /// Its set is created empty here and never shared while it grows.
 fn own_effect_stale_ordinals(
     application: &WorthQueryPrimaryGraphCommittedApplication,
-    admission: &mut super::InvalidationEditAdmission,
 ) -> Result<im::OrdSet<usize>, worth_relational::facade::mvcc::CompanionPreflightStop> {
-    use super::admission::IndexAdmission;
     let mut stale = im::OrdSet::new();
     for ordinal in application
         .commit_evidence()
         .source_facts_superseded_by_own_effect()
     {
-        admission.work(1)?;
-        admission.fresh_insert::<usize, ()>(stale.len())?;
         stale.insert(ordinal);
     }
     Ok(stale)

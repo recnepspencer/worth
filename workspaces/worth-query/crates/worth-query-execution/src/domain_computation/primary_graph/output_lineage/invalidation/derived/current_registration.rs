@@ -2,15 +2,16 @@
 
 use std::sync::Arc;
 
-use worth_relational::facade::{
-    mvcc::CompanionCellEditStop, runtime::PositionedRelationalSnapshot,
-};
+use worth_relational::facade::mvcc::CompanionCellEditStop;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
-use super::{
-    InvalidationEditAdmission, PreparedSettlementRegistration, RegistrationReadBasis,
-    SettlementRegistration, SettlementRegistrationCleanup, SettlementRegistrationStop,
-    SourceInvalidationOwner, StoppedSettlementRegistration,
-};
+use super::PreparedSettlementRegistration;
+use super::RegistrationReadBasis;
+use super::SettlementRegistration;
+use super::SettlementRegistrationCleanup;
+use super::SettlementRegistrationStop;
+use super::SourceInvalidationOwner;
+use super::StoppedSettlementRegistration;
 use crate::domain_computation::primary_graph::output_lineage::input_cutoff::StableEqualityConsequence;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 
@@ -93,13 +94,12 @@ impl SourceInvalidationOwner {
         &self,
         registration: SettlementRegistration,
         selected: &'selected PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedCurrentSettlementRegistration<'selected>, SettlementRegistrationStop> {
         let visits = u64::try_from(selected.branch_id().0.len())
             .ok()
             .and_then(|bytes| bytes.checked_add(7))
             .ok_or(worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow)?;
-        admission.charge_external_work(visits)?;
+
         if registration.read_basis != *selected {
             return Err(SettlementRegistrationStop::Foreign);
         }
@@ -109,7 +109,6 @@ impl SourceInvalidationOwner {
             RegistrationReadBasis::CurrentOnly,
             None,
             None,
-            admission,
         )?;
         Ok(PreparedCurrentSettlementRegistration {
             prepared,
@@ -127,9 +126,7 @@ impl SourceInvalidationOwner {
         registration: SettlementRegistration,
         selected: &'selected PositionedRelationalSnapshot,
         equality: StableEqualityConsequence<'selected>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedCurrentSettlementRegistration<'selected>, SettlementRegistrationStop> {
-        admission.charge_external_work(2)?;
         if registration.read_basis != *selected
             || !std::ptr::eq(selected, equality.selected())
             || !Arc::ptr_eq(&registration.identity, equality.successor())
@@ -137,17 +134,12 @@ impl SourceInvalidationOwner {
             return Err(SettlementRegistrationStop::Foreign);
         }
         let identity = Arc::clone(&registration.identity);
-        let prepared = self
-            .prepare_settlement_at_basis(
-                registration,
-                RegistrationReadBasis::CurrentOnly,
-                Some(&equality),
-                equality.partition(),
-                admission,
-            )
-            .inspect_err(|stop| {
-                self.evict_after_refused_edit(selected, stop, admission);
-            })?;
+        let prepared = self.prepare_settlement_at_basis(
+            registration,
+            RegistrationReadBasis::CurrentOnly,
+            Some(&equality),
+            equality.partition(),
+        )?;
         Ok(PreparedCurrentSettlementRegistration {
             prepared,
             identity,

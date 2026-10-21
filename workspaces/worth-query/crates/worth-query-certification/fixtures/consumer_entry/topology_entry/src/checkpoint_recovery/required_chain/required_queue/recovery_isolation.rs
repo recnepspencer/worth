@@ -70,7 +70,6 @@ fn scenario(direct: bool) {
                     primary_graph::WorthQueryApplicationQueryAccessContext::new(&actor, &entity);
                 let controls = primary_graph::WorthQueryProductQueryControls::new(
                     limits.maximum_results(),
-                    limits.maximum_work(),
                     &scope,
                 );
                 let plan = selected

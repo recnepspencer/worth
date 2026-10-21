@@ -1,4 +1,4 @@
-//! Observation-pressure release follows declared commit order, including work.
+//! Observation-pressure release follows declared commit order, with native custody.
 
 use super::super::{PreparedOutputRootKind, SourceCustody, WorthQueryPerformedOutputDemandSource};
 use super::*;
@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::tests::{fixture, recoverable_commi
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
-fn unheld_performed_sources_release_the_oldest_with_commit_order_work() {
+fn unheld_performed_sources_release_the_oldest_in_commit_order() {
     let world = fixture::installed_authorization_world(true);
     let mut sources = Vec::new();
     let mut current = "open".to_owned();
@@ -62,10 +62,8 @@ fn unheld_performed_sources_release_the_oldest_with_commit_order_work() {
         row.source_commits.push(oldest.clone());
         state.records.insert(key("release-proof", 1, slot), row);
     }
-    let mut admission = record_admission();
-    let released = state
-        .release_unheld_performed_source(&mut admission)
-        .unwrap();
+
+    let released = state.release_unheld_performed_source().unwrap();
     assert!(released.is_some());
     assert!(!state.source_custody.contains_key(&oldest));
     assert_eq!(state.source_custody.len(), 7);
@@ -73,11 +71,4 @@ fn unheld_performed_sources_release_the_oldest_with_commit_order_work() {
         .records
         .values()
         .all(|row| !row.source_commits.contains(&oldest)));
-    let charged = admission.charged_work();
-    // Eight source visits, one candidate's three row comparisons, and three
-    // row visits releasing that candidate; later commits cannot replace it.
-    assert_eq!(
-        charged, 14,
-        "release work must follow declared commit order"
-    );
 }

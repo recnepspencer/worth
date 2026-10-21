@@ -191,11 +191,7 @@ fn source_query_work(
             ApplicationQueryParameterSet::new()
                 .bind(status_parameter(), "open".to_owned())
                 .expect("the source parameter is canonical"),
-            WorthQueryProductQueryControls::new(
-                NonZeroUsize::new(10).unwrap(),
-                Some(NonZeroUsize::new(10_000).unwrap()),
-                request,
-            ),
+            WorthQueryProductQueryControls::new(NonZeroUsize::new(10).unwrap(), request),
         )
         .expect("the source query admits at every population scale");
     let result = world

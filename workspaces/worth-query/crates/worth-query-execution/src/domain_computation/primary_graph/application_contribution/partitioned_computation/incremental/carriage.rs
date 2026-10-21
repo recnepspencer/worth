@@ -3,9 +3,8 @@
 use super::retained::SealedComputationRun;
 use super::retained::WorthQueryPartitionedComputationFullCause;
 use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
-use crate::domain_computation::primary_graph::output_lineage::{
-    CustodiedComputation, PriorComputationRecord,
-};
+use crate::domain_computation::primary_graph::application_contribution::RetainedComputation;
+use crate::domain_computation::primary_graph::output_lineage::PriorComputationRecord;
 use std::sync::Arc;
 /// What a producer hands the partitioned computation its handler runs: the
 /// installed edition, the state the selected record retained, and that
@@ -14,7 +13,7 @@ use std::sync::Arc;
 pub(in crate::domain_computation) struct ComputationPrior {
     pub(super) edition: InstalledProducerEdition,
     pub(super) retained:
-        Result<Arc<CustodiedComputation>, WorthQueryPartitionedComputationFullCause>,
+        Result<Arc<RetainedComputation>, WorthQueryPartitionedComputationFullCause>,
     record: Option<PriorComputationRecord>,
     changes: Option<
         crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges,
@@ -24,7 +23,7 @@ pub(in crate::domain_computation) struct ComputationPrior {
 impl ComputationPrior {
     pub(in crate::domain_computation::primary_graph) const fn new(
         edition: InstalledProducerEdition,
-        retained: Result<Arc<CustodiedComputation>, WorthQueryPartitionedComputationFullCause>,
+        retained: Result<Arc<RetainedComputation>, WorthQueryPartitionedComputationFullCause>,
         record: Option<PriorComputationRecord>,
     ) -> Self {
         Self {
@@ -40,10 +39,9 @@ impl ComputationPrior {
         owner: &crate::domain_computation::primary_graph::SourceInvalidationOwner,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<(), worth_relational::facade::mvcc::CompanionPreflightStop> {
         if let (Some(record), Ok(state)) = (&self.record, &self.retained) {
-            self.changes = record.changes(state, owner, runtime, snapshot, admission)?;
+            self.changes = record.changes(state, owner, runtime, snapshot)?;
         }
         Ok(())
     }

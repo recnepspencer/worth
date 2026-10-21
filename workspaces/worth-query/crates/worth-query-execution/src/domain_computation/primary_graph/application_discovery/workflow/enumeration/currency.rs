@@ -1,22 +1,18 @@
 //! Only the selected page index may enter explicitly budgeted native cold work.
 use super::*;
-use crate::domain_computation::primary_graph::index_currency::selected_index_is_current_admitted;
-use worth_relational::facade::{
-    branch::AdmittedRelationalBranchBasis,
-    indexes::{DerivedIndexBuildRequest, DerivedIndexId},
-    runtime::RelationalRuntime,
-};
+use crate::domain_computation::primary_graph::index_currency::selected_index_is_current;
+use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
+use worth_relational::facade::indexes::DerivedIndexBuildRequest;
+use worth_relational::facade::indexes::DerivedIndexId;
+use worth_relational::facade::runtime::RelationalRuntime;
 pub(in crate::domain_computation::primary_graph::application_discovery::workflow) fn prepare(
     runtime: &RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     basis: &AdmittedRelationalBranchBasis,
     index: DerivedIndexId,
     mode: WorthQueryWorkflowIndexRead,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<(), Denial> {
-    if selected_index_is_current_admitted(runtime, basis, index, admission)
-        .map_err(Denial::Preparation)?
-    {
+    if selected_index_is_current(runtime, basis, index) {
         return Ok(());
     }
     let WorthQueryWorkflowIndexRead::Reconstruct(requested) = mode else {
@@ -43,11 +39,7 @@ pub(in crate::domain_computation::primary_graph::application_discovery::workflow
     let observation = basis.observation();
     let commit = observation.commit_id().ok_or(Denial::BasisUnavailable)?;
     let branch = observation.identity().branch_id();
-    let bytes = (branch.0.len() + std::mem::size_of::<DerivedIndexId>()) as u64;
-    admission
-        .admit_read_scratch(bytes)
-        .and_then(|()| admission.charge_external_work(branch.0.len() as u64 + 2))
-        .map_err(Denial::Preparation)?;
+
     runtime
         .index_authority()
         .refresh_for_basis(
@@ -62,9 +54,7 @@ pub(in crate::domain_computation::primary_graph::application_discovery::workflow
             execution,
         )
         .map_err(Denial::Reconstruction)?;
-    if !selected_index_is_current_admitted(runtime, basis, index, admission)
-        .map_err(Denial::Preparation)?
-    {
+    if !selected_index_is_current(runtime, basis, index) {
         return Err(Denial::SelectedIndexUnavailable);
     }
     Ok(())

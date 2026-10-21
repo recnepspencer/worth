@@ -5,12 +5,10 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_runtime_world::facade::PlannedProductReferenceSuccessor;
 
-use super::{denial, PreparedOutputLineageSlot};
+use super::PreparedOutputLineageSlot;
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-};
+
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 /// Completed read proofs and the sealed computation move across a World recovery plan. The cancelled address
 /// and its retained capacity stay with the original slot's Drop path.
@@ -35,11 +33,7 @@ impl PreparedOutputLineageSlot {
         output_binding: TypeId,
         partition: Option<[u8; 32]>,
         planned: &PlannedProductReferenceSuccessor,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work(12)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))?;
         Ok(!self.filled
             && self.record_cell.get().is_none()
             && self.partition_cell.get().is_none()
@@ -92,18 +86,18 @@ impl PreparedOutputLineageSlot {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain_computation::primary_graph::application_contribution::sealed_run_for_lineage_test;
+    use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
+    use crate::domain_computation::primary_graph::application_contribution::SealedComputationRetention;
     use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
-    use crate::domain_computation::primary_graph::{
-        application_contribution::{
-            sealed_run_for_lineage_test, PriorAbsence, SealedComputationRetention,
-        },
-        output_lineage::{
-            ProductCoordinate, RecordedSettlementIdentity, SemanticSource,
-            WorthQueryApplicationOutputLineage,
-        },
-        tests::fixture::installed_authorization_world,
-    };
-    use std::sync::{Arc, Mutex, OnceLock};
+    use crate::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+    use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+    use crate::domain_computation::primary_graph::output_lineage::SemanticSource;
+    use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
+    use crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world;
+    use std::sync::Arc;
+    use std::sync::Mutex;
+    use std::sync::OnceLock;
 
     #[test]
     fn world_recovery_metadata_carries_the_original_computation_and_absence() {
@@ -130,6 +124,7 @@ mod tests {
         // These are private vacant addresses, never publication authority.
         // Reserve their ledger custody before constructing their test slots.
         let generation = std::cell::Cell::new(coordinate.generation);
+
         let slot = || {
             let coordinate = ProductCoordinate {
                 generation: generation.get(),
@@ -137,7 +132,6 @@ mod tests {
             };
             generation.set(generation.get() + 1);
             let mut lineage = owner.lock().unwrap();
-            let capacity = lineage.retention.reserve(1_024 * 1_024).unwrap();
             let identity = RecordedSettlementIdentity::retain(&source, coordinate, 0);
             let record_cell = Arc::new(OnceLock::new());
             lineage
@@ -160,11 +154,9 @@ mod tests {
                 identity: Arc::clone(&identity),
                 record_cell,
                 partition_cell,
-                retained_capacity: Some(capacity),
                 cancellation: Some(Box::new(super::super::CancelledLineageSlot {
                     identity,
                     partition: None,
-                    retained_capacity: None,
                     next: None,
                 })),
                 completed_handler_facts: None,
@@ -176,7 +168,6 @@ mod tests {
                 prior_computation: None,
                 filled: false,
                 computation: PreparedComputationCustody::Unassigned,
-                computation_fork_scan_bound: lineage.prepay_computation_fork_scan_for_test(),
             }
         };
         for computation in [

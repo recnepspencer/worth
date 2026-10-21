@@ -29,8 +29,6 @@ impl RetainedInputCutoffCandidate {
         runtime: &RelationalRuntime,
         basis: PreparedInputCutoffBasis<'_>,
         owner: &SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
-        currentness: &mut InvalidationEditAdmission,
     ) -> Result<OwnedInputCutoffDecision, InputCutoffVerificationStop> {
         match self.verify_for_reuse(
             execution,
@@ -40,8 +38,6 @@ impl RetainedInputCutoffCandidate {
             runtime,
             &basis,
             owner,
-            admission,
-            currentness,
         )? {
             InputCutoffDecision::Fresh { key, context } => {
                 Ok(OwnedInputCutoffDecision::Fresh { key, context })
@@ -79,16 +75,10 @@ impl OwnedVerifiedInputCutoff {
         basis: PreparedInputCutoffBasis<'_>,
         owner: &SourceInvalidationOwner,
         source_facts: &(impl FactSequence + ?Sized),
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Self, InputCutoffVerificationStop> {
         observation::reach(Gate::PublicationSource);
-        let (snapshot, selected) = basis.in_runtime(runtime, admission)?;
-        admission.charge_external_work(
-            u64::try_from(self.selected.branch_id().0.len())
-                .map_err(|_| InputCutoffVerificationStop::WorkExhausted)?
-                .checked_add(8)
-                .ok_or(InputCutoffVerificationStop::WorkExhausted)?,
-        )?;
+        let (snapshot, selected) = basis.in_runtime(runtime)?;
+
         if self.selected == *selected {
             return Ok(self);
         }
@@ -111,7 +101,6 @@ impl OwnedVerifiedInputCutoff {
                     .chain(source_facts.iter()),
                 runtime,
                 snapshot,
-                admission,
             )?
         {
             return Err(InputCutoffVerificationStop::CurrentnessRaced);
@@ -126,7 +115,6 @@ impl OwnedVerifiedInputCutoff {
             runtime,
             snapshot,
             selected,
-            admission,
         )
         .map_err(|stop| match stop {
             stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_) => {
@@ -160,7 +148,7 @@ impl OwnedVerifiedInputCutoff {
             .candidate
             .native_output_witness()
             .ok_or(InputCutoffVerificationStop::CurrentnessRaced)?
-            .unchanged_in(runtime, snapshot, admission)?
+            .unchanged_in(runtime, snapshot)?
         {
             return Err(InputCutoffVerificationStop::CurrentnessRaced);
         }

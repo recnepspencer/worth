@@ -56,12 +56,7 @@ pub fn world_no_effect_retains_conditional_provenance(
             &principal,
             scope,
             ApplicationQueryParameterSet::new(),
-            primary_graph::WorthQueryApplicationLiveControls::bounded(
-                request.clone(),
-                4,
-                16,
-                Some(2_048),
-            )
+            primary_graph::WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16)
             .unwrap(),
         )
         .unwrap()
@@ -165,12 +160,7 @@ pub fn live_query_receives_conditional_world_publication(
             &principal,
             scope,
             ApplicationQueryParameterSet::new(),
-            primary_graph::WorthQueryApplicationLiveControls::bounded(
-                request.clone(),
-                4,
-                16,
-                Some(2_048),
-            )
+            primary_graph::WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16)
             .unwrap(),
         )
         .unwrap()

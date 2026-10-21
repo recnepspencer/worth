@@ -3,11 +3,11 @@ pub(in crate::domain_computation::primary_graph) mod relational_execution_denial
 pub(in crate::domain_computation) use aftermath_causality::WorthQueryAftermathCausalityReadDenial;
 mod application_attempt_state;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::publish_recovered;
+pub(in crate::domain_computation::primary_graph) use application_attempt_state::FactlessCurrentness;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::ManagedUnpublishedAttempt;
+pub(in crate::domain_computation::primary_graph) use application_attempt_state::OwnEffectOnReads;
+pub(in crate::domain_computation::primary_graph) use application_attempt_state::RebaseVerificationReason;
 pub(in crate::domain_computation) use application_attempt_state::RegisteredPrimaryRead;
-pub(in crate::domain_computation::primary_graph) use application_attempt_state::{
-    FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,
-};
 mod application_attempt_work;
 mod application_decision_fact;
 mod application_touch_admission;
@@ -27,34 +27,28 @@ mod inbound_completion;
 mod inbound_cost;
 pub(in crate::domain_computation::primary_graph) mod managed_cleanup_control;
 pub(in crate::domain_computation::primary_graph) mod publication_fault_control;
+pub(in crate::domain_computation::primary_graph) use inbound_completion::WorthQueryCanonicalCompletionRow;
 pub(in crate::domain_computation::primary_graph) use inbound_completion::WorthQueryInboundCompletionPreparationDenial;
-pub(in crate::domain_computation::primary_graph) use inbound_completion::{
-    WorthQueryCanonicalCompletionRow, WorthQueryInboundCompletionReadDenial,
-};
+pub(in crate::domain_computation::primary_graph) use inbound_completion::WorthQueryInboundCompletionReadDenial;
 mod inbound_terminal_index;
-pub(in crate::domain_computation) use inbound_terminal_index::{
-    WorthQueryCanonicalInboundCompletion, WorthQueryInboundTerminalIndexDenial,
-};
+pub(in crate::domain_computation) use inbound_terminal_index::WorthQueryCanonicalInboundCompletion;
+pub(in crate::domain_computation) use inbound_terminal_index::WorthQueryInboundTerminalIndexDenial;
 mod installation;
 mod invariant_execution;
 pub(in crate::domain_computation::primary_graph) mod invariant_execution_failure;
 mod managed_application_recovery;
 pub(in crate::domain_computation::primary_graph) mod recovered_program_source_delivery;
-pub use recovered_program_source_delivery::{
-    WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
-    WorthQueryRecoveredProgramSourceDeliveryForTest,
-};
+pub use recovered_program_source_delivery::WorthQueryRecoveredProgramSourceDeliveryDenialForTest;
+pub use recovered_program_source_delivery::WorthQueryRecoveredProgramSourceDeliveryForTest;
 mod mutation_work;
-pub use managed_application_recovery::{
-    WorthQueryManagedApplicationRecoveryDenial, WorthQueryManagedApplicationRecoveryOutcome,
-    WorthQueryManagedApplicationRecoveryPerformed,
-};
+pub use managed_application_recovery::WorthQueryManagedApplicationRecoveryDenial;
+pub use managed_application_recovery::WorthQueryManagedApplicationRecoveryOutcome;
+pub use managed_application_recovery::WorthQueryManagedApplicationRecoveryPerformed;
 mod output_readiness_fault;
 mod outstanding_dispatch;
+pub(in crate::domain_computation::primary_graph) use outstanding_dispatch::OutstandingDispatchInFlightLease;
+pub(in crate::domain_computation::primary_graph) use outstanding_dispatch::WorthQueryOutstandingInFlightDenial;
 pub(in crate::domain_computation) use outstanding_dispatch::WorthQueryTerminalDispatchReleaseDenial;
-pub(in crate::domain_computation::primary_graph) use outstanding_dispatch::{
-    OutstandingDispatchInFlightLease, WorthQueryOutstandingInFlightDenial,
-};
 mod pending_application_publication;
 pub(in crate::domain_computation::primary_graph) use outstanding_dispatch::OutstandingDispatchReservation;
 pub(in crate::domain_computation::primary_graph) use pending_application_publication::WorthQueryApplicationPublicationRecoveryReservation;
@@ -76,31 +70,31 @@ pub(super) use super::application_attempt::WorthQueryPrimaryGraphApplicationAtte
 use super::WorthQueryPrimaryGraphIntegrationHandle;
 pub(super) use application_attempt_state::WorthQueryPrimaryGraphCommittedApplication;
 pub(crate) use application_attempt_work::WorthQueryApplicationAttemptWorkSnapshot;
-pub(in crate::domain_computation) use application_decision_fact::{
-    ApplicationFactTable, CompletedApplicationFacts, WorthQueryPrimaryGraphApplicationDecisionFact,
-};
+pub(in crate::domain_computation) use application_decision_fact::ApplicationFactTable;
+pub(in crate::domain_computation) use application_decision_fact::CompletedApplicationFacts;
+pub(in crate::domain_computation) use application_decision_fact::WorthQueryPrimaryGraphApplicationDecisionFact;
 #[cfg(test)]
-pub(in crate::domain_computation) use committed_dispatch_outbox::{
-    commit_distinct_records_and_admit_fixture, commit_observe_and_admit_fixture,
-    commit_observe_and_admit_twice_fixture,
-};
-pub use committed_dispatch_outbox::{
-    WorthQueryCommittedDispatchOutboxObservation, WorthQueryCommittedDispatchOutboxReadDenial,
-    WorthQueryCommittedDispatchOutboxReadWork,
-};
+pub(in crate::domain_computation) use committed_dispatch_outbox::commit_distinct_records_and_admit_fixture;
+#[cfg(test)]
+pub(in crate::domain_computation) use committed_dispatch_outbox::commit_observe_and_admit_fixture;
+#[cfg(test)]
+pub(in crate::domain_computation) use committed_dispatch_outbox::commit_observe_and_admit_twice_fixture;
+pub use committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxObservation;
+pub use committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial;
+pub use committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadWork;
+pub(super) use idempotency::WorthQueryProductIdempotencyAffinity;
 pub(in crate::domain_computation::primary_graph) use idempotency::WorthQueryProviderGuardedWorkflowOperationCustody;
-pub(super) use idempotency::{
-    WorthQueryProductIdempotencyAffinity, WorthQueryProviderIdempotencyResolution,
-    WorthQueryProviderIdempotencyResolutionDenial,
-};
-pub use mutation_work::{WorthQueryPrimaryMutationWorkEvidence, WorthQueryTouchedRecordIdentity};
+pub(super) use idempotency::WorthQueryProviderIdempotencyResolution;
+pub(super) use idempotency::WorthQueryProviderIdempotencyResolutionDenial;
+pub use mutation_work::WorthQueryPrimaryMutationWorkEvidence;
+pub use mutation_work::WorthQueryTouchedRecordIdentity;
 pub(in crate::domain_computation) use session_commit::WorthQueryCommittedDispatchOutboxBinding;
+pub(super) use session_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
+pub(super) use session_commit::WorthQueryCommittedDispatchOutboxReceiptSeal;
+pub(super) use session_commit::WorthQueryRetainedApplicationCommitBasis;
 pub(crate) use session_commit::WorthQueryRetainedPreImageSeal;
-pub(super) use session_commit::{
-    WorthQueryCommittedDispatchOutboxBindingDenial, WorthQueryCommittedDispatchOutboxReceiptSeal,
-    WorthQueryRetainedApplicationCommitBasis,
-};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::Mutex;
 
 pub(crate) struct WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) managed_cleanup_control: Arc<managed_cleanup_control::ManagedCleanupControl>,
@@ -128,10 +122,8 @@ pub(crate) struct WorthQueryPrimaryGraphProvider {
 
 pub use branch_commit_coordination::WorthQueryApplicationBranchCommitContentionForTest;
 
-pub(crate) use branch_commit_coordination::{
-    WorthQueryApplicationBranchCommitCoordination, WorthQueryApplicationBranchCommitLane,
-    WorthQueryBranchCommitLaneDenial,
-};
+pub(crate) use branch_commit_coordination::WorthQueryApplicationBranchCommitCoordination;
+pub(crate) use branch_commit_coordination::WorthQueryApplicationBranchCommitLane;
 
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn reserve_outstanding_dispatch(
@@ -245,23 +237,14 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation) fn application_branch_commit_lane(
         &self,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
-    ) -> Result<Arc<WorthQueryApplicationBranchCommitLane>, WorthQueryBranchCommitLaneDenial> {
+    ) -> Arc<WorthQueryApplicationBranchCommitLane> {
         self.branch_commit_coordination.lane_for(observation)
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn admitted_application_branch_commit_lane(
-        &self,
-        observation: &worth_runtime_world::facade::ProductBranchObservation,
-        admission: &mut super::output_lineage::invalidation::InvalidationEditAdmission,
-    ) -> Result<Arc<WorthQueryApplicationBranchCommitLane>, WorthQueryBranchCommitLaneDenial> {
-        self.branch_commit_coordination
-            .lane_for_admitted(observation, admission)
     }
 
     pub(crate) fn application_branch_commit_lane_for_occurrence(
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-    ) -> Result<Arc<WorthQueryApplicationBranchCommitLane>, WorthQueryBranchCommitLaneDenial> {
+    ) -> Arc<WorthQueryApplicationBranchCommitLane> {
         self.branch_commit_coordination
             .lane_for_occurrence(occurrence)
     }
@@ -317,14 +300,12 @@ impl WorthQueryPrimaryGraphProvider {
 pub(super) struct WorthQueryPrimaryLogicalGraph;
 
 #[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use inbound_completion::{
-    completion_preparation_denial, completion_validation_denial,
-};
+pub(in crate::domain_computation::primary_graph) use inbound_completion::completion_preparation_denial;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use inbound_completion::completion_validation_denial;
 
-pub(in crate::domain_computation::primary_graph) use application_attempt_state::{
-    PreparedRebaseDenial, PreparedSourceFactRebase,
-};
+pub(in crate::domain_computation::primary_graph) use application_attempt_state::PreparedRebaseDenial;
+pub(in crate::domain_computation::primary_graph) use application_attempt_state::PreparedSourceFactRebase;
 
-pub use managed_cleanup_control::{
-    WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,
-};
+pub use managed_cleanup_control::WorthQueryManagedCleanupRegistrationDenial;
+pub use managed_cleanup_control::WorthQueryManagedCleanupScheduleForTest;

@@ -252,6 +252,7 @@ fn supplied_native_counter_failure_is_normalized_and_its_metrics_are_carried() {
                 ..Default::default()
             },
         }));
+
     let reported = native.finish_edits::<u32>().resolve(|| {
         TreeAttempt::<(), ReductionRunFailure<worth_execution::MapKernelStop>>::native(Ok((
             (),

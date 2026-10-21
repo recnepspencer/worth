@@ -33,15 +33,13 @@ impl PreparedPublicationCompanionEffect {
     pub fn attach_completion_observer(
         &mut self,
         context: &mut PublicationCompanionPreflight<'_>,
-        retained: Arc<dyn Send + Sync>,
     ) -> Result<CompanionPublicationCompletionObserver, CompanionPreflightStop> {
         assert!(
             self.completion.is_none(),
             "one observer per prepared cutover"
         );
-        context.claim_work(2)?;
-        context.claim_bytes(CompanionPublicationCompletionObserver::retained_bytes())?;
-        let observer = CompanionPublicationCompletionObserver::new(retained);
+        context.checkpoint()?;
+        let observer = CompanionPublicationCompletionObserver::new();
         self.completion = Some(observer.clone());
         Ok(observer)
     }

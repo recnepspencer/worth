@@ -106,8 +106,6 @@ fn operation_definition() -> domain::WorthQueryDomainOperationDefinition<
         canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("assessment").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("retention-assessment-readiness").unwrap(),
-        32,
-        32,
         "retention-assessment-readiness-v1",
     )
     .semantic_reads([retention_projection()])

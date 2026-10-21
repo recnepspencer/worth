@@ -94,7 +94,7 @@ where
             "own exact publication remains selected"
         );
         let refusal = current
-            .require_current_output_receipts(phase, [receipt], self.currentness_work_limit())
+            .require_current_output_receipts(phase, [receipt])
             .unwrap_err();
         assert_eq!(refusal.kind(), WorthQueryOutputDemandDenialKind::Superseded);
         inspect(receipt);

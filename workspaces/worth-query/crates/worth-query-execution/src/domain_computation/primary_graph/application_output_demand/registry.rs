@@ -1,7 +1,10 @@
 pub(in crate::domain_computation::primary_graph) use lifecycle::RunningSelectedExecution;
-mod key_comparison;
-use std::collections::{BTreeMap, HashMap};
-use std::sync::{Arc, Condvar, Mutex};
+
+use std::collections::BTreeMap;
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::Condvar;
+use std::sync::Mutex;
 
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
@@ -130,19 +133,18 @@ pub struct WorthQueryOutputDemandNotifications {
 mod accepted_checkpoint;
 mod accepted_checkpoint_identity;
 pub(in crate::domain_computation::primary_graph) use accepted_checkpoint::AcceptedCheckpointFactSource;
-pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identity::{
-    CheckpointOutputSlot, WorthQueryAcceptedOutputCheckpointIdentity,
-    WorthQueryAcceptedOutputCheckpointPosture,
-};
+pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identity::CheckpointOutputSlot;
+pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointIdentity;
+pub(in crate::domain_computation::primary_graph) use accepted_checkpoint_identity::WorthQueryAcceptedOutputCheckpointPosture;
 mod admission;
 mod checkpoint;
 mod cleanup;
 mod disposition;
 mod publication_head;
-use disposition::{IdleRowDisposition, RowRetirement};
-pub(in crate::domain_computation::primary_graph) use publication_head::{
-    LivePublicationHead, PublicationHeadSelection,
-};
+use disposition::IdleRowDisposition;
+use disposition::RowRetirement;
+pub(in crate::domain_computation::primary_graph) use publication_head::LivePublicationHead;
+pub(in crate::domain_computation::primary_graph) use publication_head::PublicationHeadSelection;
 mod held_successor;
 mod read_close;
 mod successor_release;
@@ -152,46 +154,38 @@ mod notifications;
 mod obligations;
 mod post_commit;
 mod prerequisite_claims;
-mod prerequisite_work;
 mod progression;
 mod unavailable;
-pub(in crate::domain_computation::primary_graph) use progression::{
-    PreparedSelectedCheckpointFinish, SelectedCheckpointFinishStop,
-};
-mod custody_layout_observation;
-mod ready_backing;
-pub use custody_layout_observation::{
-    required_custody_layout_for_test, RequiredCustodyLayoutForTest,
-};
+pub(in crate::domain_computation::primary_graph) use progression::PreparedSelectedCheckpointFinish;
+pub(in crate::domain_computation::primary_graph) use progression::SelectedCheckpointFinishStop;
 mod claim_readthrough;
 mod custody_visibility;
+mod ready_backing;
 
 pub(in crate::domain_computation::primary_graph) mod join_observation;
-mod record_capacity;
 mod record_map;
+mod record_preparation;
 mod refresh_predecessor;
 mod refreshed_rejoin;
 mod required_context;
-mod required_custody;
+
 mod required_members;
 mod required_stop;
 mod required_work;
 pub(in crate::domain_computation::primary_graph) use admission::SelectedOutputAdmission;
 pub(in crate::domain_computation::primary_graph) use held_successor::HeldRequiredSuccessor;
+pub(in crate::domain_computation::primary_graph) use required_work::AdmittedRequiredWave;
 pub(in crate::domain_computation::primary_graph) use required_work::PendingUpstream;
+pub(in crate::domain_computation::primary_graph) use required_work::PreparedRequiredInputs;
 pub(in crate::domain_computation::primary_graph) use required_work::ReplacedRequiredWorkHint;
 pub(in crate::domain_computation::primary_graph) use required_work::RequestedOutputReadClaims;
+pub(in crate::domain_computation::primary_graph) use required_work::RequiredRefreshRejection;
 pub(in crate::domain_computation::primary_graph) use required_work::RequiredWorkClaim;
 pub(in crate::domain_computation::primary_graph) use required_work::RequiredWorkMembership;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedReadyReadmission;
+pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredRefreshClaim;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredWork;
 pub(in crate::domain_computation::primary_graph) use required_work::SelectedRequiredWorkKind;
-pub(in crate::domain_computation::primary_graph) use required_work::{
-    AdmittedRequiredWave, PreparedRequiredInputs,
-};
-pub(in crate::domain_computation::primary_graph) use required_work::{
-    RequiredRefreshRejection, SelectedRequiredRefreshClaim,
-};
 mod restoration;
 pub(in crate::domain_computation::primary_graph) use restoration::WorthQueryRestoredAcceptedOutput;
 mod consumer_custody;
@@ -209,27 +203,24 @@ pub(in crate::domain_computation::primary_graph) use source_readmission::Retaine
 mod supersession;
 #[cfg(test)]
 mod tests;
-use checkpoint::{WorthQueryOutputAdvancement, WorthQueryOutputProgress};
-pub(in crate::domain_computation::primary_graph) use checkpoint::{
-    WorthQueryOutputCheckpoint, WorthQueryOutputClaimIdentity, WorthQueryPendingOutputDelivery,
-};
+use checkpoint::WorthQueryOutputAdvancement;
+pub(in crate::domain_computation::primary_graph) use checkpoint::WorthQueryOutputCheckpoint;
+pub(in crate::domain_computation::primary_graph) use checkpoint::WorthQueryOutputClaimIdentity;
+use checkpoint::WorthQueryOutputProgress;
+pub(in crate::domain_computation::primary_graph) use checkpoint::WorthQueryPendingOutputDelivery;
 pub(in crate::domain_computation::primary_graph) use prerequisite_claims::PreparedPrerequisiteClaims;
 pub(in crate::domain_computation::primary_graph) use ready_backing::PreparedReadyBacking;
 pub(in crate::domain_computation::primary_graph) use ready_backing::ReadyCompletion;
-pub use ready_backing::{
-    required_handoff_custody_bytes_for_test, required_ready_custody_bytes_for_test,
-};
+
 pub(in crate::domain_computation::primary_graph) use refresh_predecessor::OutputRefreshPredecessor;
-pub(in crate::domain_computation) use required_context::{
-    RequiredOutputDemandContext, RequiredOutputExecution,
-};
-pub(in crate::domain_computation::primary_graph) use required_custody::RequiredOutputCustodyCapacity;
+pub(in crate::domain_computation) use required_context::RequiredOutputDemandContext;
+pub(in crate::domain_computation) use required_context::RequiredOutputExecution;
+
 use supersession::supersede_predecessors;
 
 struct DemandWake {
     generation: Mutex<u64>,
     changed: Condvar,
-    _record_capacity: record_capacity::RecordCapacity,
 }
 
 enum DemandState {
@@ -255,7 +246,7 @@ impl DemandAdmissionKind {
 }
 
 struct DemandRecord {
-    _record_capacity: record_capacity::RecordCapacity,
+    closed_cleanup: cleanup::ClosedCleanupLinks,
     work_membership: Option<Arc<required_work::RequiredWorkMembership>>,
     interests: usize,
     required_interests: usize,
@@ -267,17 +258,14 @@ struct DemandRecord {
     prepared_prerequisite_claims: usize,
     pending_cleanup_next: Option<Arc<WorthQueryOutputDemandKey>>,
     pending_cleanup_queued: bool,
-    closed_cleanup: cleanup::ClosedCleanupLinks,
-    pending_cleanup_key_bytes: usize,
-    settlements: Vec<(
+
+    settlements: Vec<
         Arc<crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity>,
-        usize,
-    )>,
+    >,
     product_occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     source_scope:
         Option<crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding>,
     source_commits: Vec<worth_runtime_world::facade::CompositeCommitIdentity>,
-    source_commit_capacity: Option<record_capacity::RecordCapacity>,
     state: DemandState,
     performed_source: Option<WorthQueryPerformedOutputDemandSource>,
     readmission_source: Option<Arc<source_readmission::RequiredOutputReadmission>>,
@@ -307,17 +295,9 @@ struct DemandRegistryState {
     )>,
     records: record_map::DemandRecords,
     // May remain after the last row is removed until the map itself drops.
-    _empty_root_capacity: Option<record_capacity::RecordCapacity>,
-    record_budget_bytes: Option<usize>,
-    record_retained_bytes: Arc<std::sync::atomic::AtomicUsize>,
-    obligation_budget_bytes: Option<usize>,
-    obligation_reserved_bytes: usize,
     required_keys: std::collections::BTreeSet<Arc<WorthQueryOutputDemandKey>>,
     required_work_queue: Option<Arc<required_work::RequiredWorkQueue>>,
     discontinuity_cursors: required_work::DiscontinuityCursors,
-    required_budget_bytes: Option<usize>,
-    required_reserved_bytes: usize,
-    required_custody_retained_bytes: Arc<std::sync::atomic::AtomicUsize>,
     settlement_keys: settlement_index::SettlementIndex,
     pending_cleanup_head: Option<Arc<WorthQueryOutputDemandKey>>,
     closed_cleanup: cleanup::ClosedCleanupQueue,
@@ -336,17 +316,9 @@ impl Default for DemandRegistryState {
             last_selection_frozen: None,
 
             join_pause: None,
-            _empty_root_capacity: None,
-            record_budget_bytes: crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile::standard().registry_record_retained_bytes(),
-            record_retained_bytes: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
-            obligation_budget_bytes: crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile::standard().registry_obligation_retained_bytes(),
-            obligation_reserved_bytes: 0,
             required_keys: std::collections::BTreeSet::new(),
             required_work_queue: None,
             discontinuity_cursors: required_work::DiscontinuityCursors::default(),
-            required_budget_bytes: crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile::standard().registry_required_retained_bytes(),
-            required_reserved_bytes: 0,
-            required_custody_retained_bytes: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             settlement_keys: settlement_index::SettlementIndex::default(),
             pending_cleanup_head: None,
             closed_cleanup,
@@ -390,6 +362,5 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRequiredOutput
 mod advance_admission;
 pub(in crate::domain_computation::primary_graph) use advance_admission::WorthQueryOutputDemandAdvanceAdmission;
 
-pub use source_custody::{
-    WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
-};
+pub use source_custody::WorthQueryDiscoveredRetentionControlDenial;
+pub use source_custody::WorthQueryDiscoveredRetentionReservationForTest;

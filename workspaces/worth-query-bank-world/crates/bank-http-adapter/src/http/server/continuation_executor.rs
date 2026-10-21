@@ -317,12 +317,7 @@ fn page_controls(
     controls: &BankHttpRequestControls,
     scope: &WorthQueryRequestScope,
 ) -> Option<BankReadControls> {
-    BankReadControls::current(
-        scope.clone(),
-        controls.maximum_results,
-        controls.maximum_work,
-    )
-    .ok()
+    BankReadControls::current(scope.clone(), controls.maximum_results).ok()
 }
 
 fn resume_controls<'a>(
@@ -331,7 +326,6 @@ fn resume_controls<'a>(
 ) -> Option<WorthQueryApplicationQueryResumeControls<'a>> {
     Some(WorthQueryApplicationQueryResumeControls::new(
         NonZeroUsize::new(controls.maximum_results)?,
-        Some(NonZeroUsize::new(controls.maximum_work)?),
         scope,
     ))
 }

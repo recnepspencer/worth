@@ -25,7 +25,6 @@ pub(in crate::domain_computation::primary_graph::application_query) fn finalize_
     kernel: RawNonLiveKernelOutcome,
     authorization_work: WorthQueryApplicationAuthorizationWorkEvidence,
     read_proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
-    spent: Option<&OneShotReadWorkObservation<'_>>,
 ) -> Result<
     WorthQueryApplicationOneShotResult<Query, QueryResult>,
     WorthQueryApplicationOneShotDenial,
@@ -43,7 +42,6 @@ where
         kernel,
         authorization_work,
         read_proof,
-        spent,
     )
 }
 
@@ -72,7 +70,6 @@ pub(in crate::domain_computation::primary_graph::application_query) fn finalize_
     kernel: RawNonLiveKernelOutcome,
     authorization_work: WorthQueryApplicationAuthorizationWorkEvidence,
     read_proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
-    spent: Option<&OneShotReadWorkObservation<'_>>,
 ) -> Result<
     WorthQueryApplicationOneShotResult<Query, QueryResult>,
     WorthQueryApplicationOneShotDenial,
@@ -89,7 +86,6 @@ where
         kernel,
         authorization_work,
         read_proof,
-        spent,
     )
     .map(|completed| completed.read)
 }
@@ -118,7 +114,6 @@ pub(in crate::domain_computation::primary_graph::application_query) fn complete_
     kernel: RawNonLiveKernelOutcome,
     authorization_work: WorthQueryApplicationAuthorizationWorkEvidence,
     read_proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
-    spent: Option<&OneShotReadWorkObservation<'_>>,
 ) -> Result<CompletedOneShotRead<Query, QueryResult>, WorthQueryApplicationOneShotDenial>
 where
     Schema: ApplicationSchema,
@@ -133,6 +128,5 @@ where
         kernel,
         authorization_work,
         read_proof,
-        spent,
     )
 }

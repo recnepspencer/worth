@@ -34,9 +34,6 @@ where
         None,
         profile,
         4096,
-        128 * 1024 * 1024,
-        // This fixture explicitly bounds invalidation independently of source proof.
-        Some(1_000_000),
         |graph| {
             diamond::seed(graph);
             ring_world::seed::<1>(graph);

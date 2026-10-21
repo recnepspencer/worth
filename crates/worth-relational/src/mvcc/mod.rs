@@ -16,9 +16,8 @@ pub use publication::RelationalInstalledApplicationPublicationAuthority;
 pub(crate) use publication::{origin_denial, RequiredOutputPublicationAdmission};
 pub use publication::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,
-    CompanionDerivedImageRetention, CompanionDerivedRootAdmission, CompanionDerivedRootCleanup,
-    CompanionDerivedRootCost, CompanionDerivedRootInstalled, CompanionDerivedRootPreparationStop,
-    CompanionDerivedRootStopped, CompanionPreflightBudget, CompanionPreflightStop,
+    CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
+    CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
     DiscardedRelationalCommitCandidate, PendingCompanionRegistration, PerformedRelationalCommit,
     PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,

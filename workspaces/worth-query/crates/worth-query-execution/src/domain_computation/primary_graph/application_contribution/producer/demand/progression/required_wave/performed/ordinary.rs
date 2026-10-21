@@ -20,10 +20,9 @@ impl<Schema: ApplicationSchema + 'static> DecisionInput<'_, '_, '_, Schema> {
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         input: &AcceptedCurrentCandidate,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, ProducerExecutionStop> {
         match self {
-            Self::Selected(selected) => selected.changed(request_execution, input, admission),
+            Self::Selected(selected) => selected.changed(request_execution, input),
             Self::Ordinary { runtime, branch } => {
                 // Only a performed member with captured input needs a comparison.
                 // A first attempt never buys a redundant selected observation.
@@ -31,14 +30,13 @@ impl<Schema: ApplicationSchema + 'static> DecisionInput<'_, '_, '_, Schema> {
                     request_execution,
                     runtime,
                     *branch,
-                    admission,
                 )?;
                 SelectedDecisionInput {
                     shared: &shared,
                     positioned: &positioned,
                     runtime,
                 }
-                .changed(request_execution, input, admission)
+                .changed(request_execution, input)
             }
         }
     }
@@ -53,16 +51,12 @@ impl PerformedMembers {
         key: &WorthQueryOutputDemandKey,
         completion: &crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         for entry in &mut self.entries {
-            admission
-                .charge_external_work(entry.comparison_work()?)
-                .map_err(admission_denial)?;
             if !entry.names(key) || !entry.performed || !entry.input.is_uncaptured() {
                 continue;
             }
-            super::super::preclaim_required_settlement_arguments(admission)?;
+
             let candidate = runtime
                 .primary_provider
                 .graph
@@ -73,7 +67,6 @@ impl PerformedMembers {
                     runtime.runtime.authority_identity().as_u64(),
                     &runtime.installed_schema.binding_identity(),
                     completion,
-                    admission,
                 )
                 .map_err(super::super::required_settlement_denial)?;
             entry.input = CapturedDecisionInput::from_result(candidate);
@@ -90,14 +83,12 @@ impl PerformedMembers {
         source: WorthQueryObservedSourceEpoch,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         branch: WorthQueryProductBranch,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<PublicationReadiness>, WorthQueryOutputDemandDenial> {
         self.fresh(
             request_execution,
             key,
             source,
             &DecisionInput::Ordinary { runtime, branch },
-            admission,
         )
         .map(|permission| {
             permission.map(|permission| PublicationReadiness {

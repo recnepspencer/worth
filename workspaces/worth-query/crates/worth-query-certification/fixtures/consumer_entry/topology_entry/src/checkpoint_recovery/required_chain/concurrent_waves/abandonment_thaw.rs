@@ -6,8 +6,6 @@ fn case(cancel: bool, owner_name: &str, dirty_name: &str) {
         None,
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard(),
         4096,
-        128 * 1024 * 1024,
-        Some(1_000_000),
         diamond::seed,
     );
     let (scope, principal) = authenticate(&application);
@@ -166,8 +164,6 @@ fn a_checkpoint_of_a_frozen_head_restores_truth_without_a_publication_hold() {
         None,
         Default::default(),
         4096,
-        128 * 1024 * 1024,
-        Some(1_000_000),
         source_world::seed,
     );
     let (scope, principal) = authenticate(&application);
@@ -252,8 +248,6 @@ fn a_checkpoint_of_a_frozen_head_restores_truth_without_a_publication_hold() {
         Some(checkpoint),
         Default::default(),
         4096,
-        128 * 1024 * 1024,
-        Some(1_000_000),
         source_world::seed,
     );
     let (scope, principal) = authenticate(&restored);

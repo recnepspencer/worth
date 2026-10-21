@@ -59,7 +59,6 @@ fn continuation_ordering_must_be_a_direct_child_field() {
         .live_by::<Posting, AccountActivityLiveCause, _, _, _, _, _, _, _, _>(
             account_identity(),
             posting_identity(),
-            ApplicationQueryLiveResourceContract::bounded(64, 2_048, 4_096),
         )
         .build()
         .unwrap_err();

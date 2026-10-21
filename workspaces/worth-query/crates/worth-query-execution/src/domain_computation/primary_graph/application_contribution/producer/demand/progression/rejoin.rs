@@ -2,9 +2,8 @@
 //! refresh: it rejoins the newest row of its occurrence and settles there.
 
 use super::*;
-use crate::domain_computation::primary_graph::application_output_demand::{
-    DemandAdmissionKind, RetainedOutputReadmissionSource,
-};
+use crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind;
+use crate::domain_computation::primary_graph::application_output_demand::RetainedOutputReadmissionSource;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 impl<Schema, Family> WorthQueryAdmittedOutputDemand<Schema, Family>
@@ -21,7 +20,6 @@ where
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) fn rejoin_refreshed_output(
         &mut self,
         registry: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let demand = self;
         if demand.admission_kind == DemandAdmissionKind::Recovery {
@@ -31,7 +29,7 @@ where
             .interest
             .as_ref()
             .expect("caller admission checked its live Interest");
-        let Some((rejoined, readmission)) = registry.rejoin_refreshed(stale, admission)? else {
+        let Some((rejoined, readmission)) = registry.rejoin_refreshed(stale)? else {
             return Ok(());
         };
         let source = std::sync::Arc::clone(&readmission.source)

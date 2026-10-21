@@ -1,8 +1,5 @@
 use super::WorthQueryApplicationProjectionNode;
-use crate::domain_computation::primary_graph::application_query::{
-    disclosure::WorthQueryApplicationQueryGovernance,
-    resource_lifecycle::WorthQueryApplicationResultBufferReservation,
-};
+use crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance;
 use worth_relational::facade::identity::EntityId;
 
 pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryApplicationWorkingProjectionTree
@@ -32,10 +29,9 @@ impl WorthQueryApplicationWorkingProjectionTree {
     pub(in crate::domain_computation::primary_graph::application_query) fn into_disclosed(
         mut self,
         governance: &WorthQueryApplicationQueryGovernance,
-        result_buffer: &mut WorthQueryApplicationResultBufferReservation,
     ) -> WorthQueryApplicationDisclosedProjectionTree {
-        let released_bytes = strip_undisclosed_nodes(&mut self.rows, governance);
-        result_buffer.release_temporary(released_bytes);
+        strip_undisclosed_nodes(&mut self.rows, governance);
+
         WorthQueryApplicationDisclosedProjectionTree { rows: self.rows }
     }
 }
@@ -45,12 +41,6 @@ impl WorthQueryApplicationDisclosedProjectionTree {
         &self,
     ) -> &[WorthQueryApplicationProjectionNode] {
         &self.rows
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_query) fn capacity(
-        &self,
-    ) -> usize {
-        self.rows.capacity()
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn iter(
@@ -111,36 +101,18 @@ impl<'a> WorthQueryApplicationDisclosedProjectionNode<'a> {
 fn strip_undisclosed_nodes(
     nodes: &mut [WorthQueryApplicationProjectionNode],
     governance: &WorthQueryApplicationQueryGovernance,
-) -> usize {
-    nodes.iter_mut().fold(0, |released, node| {
-        released.saturating_add(strip_undisclosed_node(node, governance))
-    })
-}
-
-fn strip_undisclosed_node(
-    node: &mut WorthQueryApplicationProjectionNode,
-    governance: &WorthQueryApplicationQueryGovernance,
-) -> usize {
-    let mut released = 0usize;
-    node.fields.retain(|field| {
-        if governance.is_disclosed(field.slot_key.as_ref()) {
+) {
+    for node in nodes {
+        node.fields
+            .retain(|field| governance.is_disclosed(field.slot_key.as_ref()));
+        node.relations.retain_mut(|relation| {
+            if !governance.is_disclosed(relation.slot_key.as_ref()) {
+                return false;
+            }
+            strip_undisclosed_nodes(&mut relation.rows, governance);
             true
-        } else {
-            released = released.saturating_add(field.retained_bytes());
-            false
-        }
-    });
-    node.relations.retain_mut(|relation| {
-        if governance.is_disclosed(relation.slot_key.as_ref()) {
-            released =
-                released.saturating_add(strip_undisclosed_nodes(&mut relation.rows, governance));
-            true
-        } else {
-            released = released.saturating_add(relation.retained_bytes());
-            false
-        }
-    });
-    released
+        });
+    }
 }
 
 impl worth_execution::ChargedBytes for WorthQueryApplicationDisclosedProjectionTree {

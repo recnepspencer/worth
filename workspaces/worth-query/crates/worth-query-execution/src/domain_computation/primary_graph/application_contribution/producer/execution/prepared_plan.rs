@@ -1,17 +1,15 @@
 //! Sealed computes travel; producer completion and publication stay on the owner.
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) mod canonical_apply;
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::{
-    ComputedSlot, PreparedCompute,
-};
+use crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot;
+use crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) type ProducerExecutionPlan<
     'owner,
 > = OwnerPlan<'owner, ProducerExecutionOutcome, ProducerExecutionStop>;
 
-type OwnerCallback<'owner, Value, Stop> = Box<
-    dyn FnOnce(Vec<ComputedSlot>, &mut InvalidationEditAdmission) -> Result<Value, Stop> + 'owner,
->;
+type OwnerCallback<'owner, Value, Stop> =
+    Box<dyn FnOnce(Vec<ComputedSlot>) -> Result<Value, Stop> + 'owner>;
 
 pub(in crate::domain_computation::primary_graph) struct OwnerPlan<'owner, Value, Stop> {
     requests: Vec<PreparedCompute>,
@@ -43,12 +41,11 @@ impl<Value, Stop, Custody> OwnerCompletion<'_, Value, Stop, Custody> {
 
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn finish(
         mut self,
-        admission: &mut InvalidationEditAdmission,
     ) -> (Result<Value, Stop>, Custody) {
         // Keep custody in self while completion runs: on an unwind the running
         // claim in the callback closes before self releases its interest.
         let complete = self.complete.take().expect("completion is consumed once");
-        let outcome = complete(std::mem::take(&mut self.slots), admission);
+        let outcome = complete(std::mem::take(&mut self.slots));
         (outcome, self.custody)
     }
 }
@@ -57,7 +54,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn immediate(
         outcome: Result<Value, Stop>,
     ) -> Self {
-        Self::new(Vec::new(), move |slots, _| {
+        Self::new(Vec::new(), move |slots| {
             assert!(
                 slots.is_empty(),
                 "an immediate owner plan has no compute slots"
@@ -67,8 +64,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
     }
     pub(in crate::domain_computation::primary_graph) fn new(
         requests: Vec<PreparedCompute>,
-        complete: impl FnOnce(Vec<ComputedSlot>, &mut InvalidationEditAdmission) -> Result<Value, Stop>
-            + 'owner,
+        complete: impl FnOnce(Vec<ComputedSlot>) -> Result<Value, Stop> + 'owner,
     ) -> Self {
         Self {
             requests,
@@ -102,10 +98,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
     >(
         self,
         custody: Custody,
-        apply: impl FnOnce(
-                OwnerCompletion<'owner, Value, Stop, Custody>,
-                &mut InvalidationEditAdmission,
-            ) -> Result<Next, NextStop>
+        apply: impl FnOnce(OwnerCompletion<'owner, Value, Stop, Custody>) -> Result<Next, NextStop>
             + 'owner,
     ) -> OwnerPlan<'owner, Next, NextStop> {
         let Self {
@@ -119,9 +112,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
             complete: Some(complete),
             custody,
         };
-        let mut plan = OwnerPlan::new(requests, move |slots, admission| {
-            apply(completion.with_slots(slots), admission)
-        });
+        let mut plan = OwnerPlan::new(requests, move |slots| apply(completion.with_slots(slots)));
         plan.inputs = inputs;
         plan
     }
@@ -131,8 +122,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
         NextStop: 'owner,
     >(
         self,
-        finish: impl FnOnce(Result<Value, Stop>, &mut InvalidationEditAdmission) -> Result<Next, NextStop>
-            + 'owner,
+        finish: impl FnOnce(Result<Value, Stop>) -> Result<Next, NextStop> + 'owner,
     ) -> OwnerPlan<'owner, Next, NextStop> {
         let Self {
             requests,
@@ -140,9 +130,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
             inputs,
             complete,
         } = self;
-        let mut plan = OwnerPlan::new(requests, move |slots, admission| {
-            finish(complete(slots, admission), admission)
-        });
+        let mut plan = OwnerPlan::new(requests, move |slots| finish(complete(slots)));
         plan.inputs = inputs;
         plan
     }

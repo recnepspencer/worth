@@ -9,7 +9,7 @@ use super::signal_decision_reentry::{
     reconsider_retained_wake, WorthQueryConditionalTruthBasis, WorthQueryRetainedConditionalWake,
 };
 use crate::domain_computation::primary_graph::output_lineage::invalidation::{
-    CommitTouchInterest, CommitTouchesStop, TouchedCommits,
+    CommitTouchInterest, TouchedCommits,
 };
 
 /// Commits selected from the canonical subscription's retained touches. Any
@@ -38,14 +38,14 @@ pub(super) fn relevant_authoritative_commits<Schema>(
     cursor: Option<PatchStreamPosition>,
     maximum_commits: usize,
     interest: CommitTouchInterest<'_>,
-) -> Result<WorthQueryRelevantAuthoritativeCommits, CommitTouchesStop> {
-    runtime
+) -> WorthQueryRelevantAuthoritativeCommits {
+    let batch = runtime
         .primary_provider
         .graph
         .source_owner
         .invalidation_owner
-        .touched_commits_after(branch, cursor, commit_ceiling, maximum_commits, interest)
-        .map(|batch| WorthQueryRelevantAuthoritativeCommits { batch })
+        .touched_commits_after(branch, cursor, commit_ceiling, maximum_commits, interest);
+    WorthQueryRelevantAuthoritativeCommits { batch }
 }
 
 /// Delivers each relevant commit to Signal-hosted nodes and reconsiders the

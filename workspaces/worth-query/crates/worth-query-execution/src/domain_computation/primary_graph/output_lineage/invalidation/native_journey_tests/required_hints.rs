@@ -1,33 +1,36 @@
 //! One registered native participant prepares on two distinct branch cells.
 
 use std::fmt;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+use std::sync::Mutex;
 
-use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
-use worth_relational::facade::{
-    history::BranchId,
-    mvcc::{
-        CompanionBranchCell, CompanionPreflightBudget, CompanionPreflightStop,
-        CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
-        PreparedPublicationCompanionEffect, PreparedRelationalCommitCandidate,
-        PublicationCompanionPreflight, RelationalPublicationCompanion,
-        RelationalPublicationDeferred, RelationalPublicationOutcome,
-    },
-    transactions::{
-        AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
-        WorkerIntentBatch,
-    },
-};
+use worth_foundational::facade::AspectFieldLocator;
+use worth_foundational::facade::AspectValue;
+use worth_foundational::facade::InternedString;
+use worth_relational::facade::history::BranchId;
+use worth_relational::facade::mvcc::CompanionBranchCell;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::mvcc::CompanionPublicationCompletion;
+use worth_relational::facade::mvcc::CompanionPublicationCompletionObserver;
+use worth_relational::facade::mvcc::PreparedPublicationCompanionEffect;
+use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
+use worth_relational::facade::mvcc::PublicationCompanionPreflight;
+use worth_relational::facade::mvcc::RelationalPublicationCompanion;
+use worth_relational::facade::mvcc::RelationalPublicationDeferred;
+use worth_relational::facade::mvcc::RelationalPublicationOutcome;
+use worth_relational::facade::transactions::AspectFieldPatch;
+use worth_relational::facade::transactions::EntityMutationIntent;
+use worth_relational::facade::transactions::MutationIntent;
+use worth_relational::facade::transactions::UpdateEntityFieldsIntent;
+use worth_relational::facade::transactions::WorkerIntentBatch;
 
 use super::*;
-use crate::domain_computation::execution_runtime::source_invalidation::{
-    RetainedInvalidationCapacity, WorthQueryInvalidationResourceInstallation,
-    WorthQueryInvalidationResources,
-};
-use crate::domain_computation::primary_graph::application_output_demand::{
-    RequiredWorkMembership, SelectedRequiredWorkKind, WorthQueryOutputDemandRegistry,
-};
+use crate::domain_computation::execution_runtime::source_invalidation::WorthQueryInvalidationResources;
+use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
+use crate::domain_computation::primary_graph::application_output_demand::SelectedRequiredWorkKind;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry;
 
 #[path = "required_hints/gate.rs"]
 mod gate;
@@ -62,7 +65,7 @@ impl RelationalPublicationCompanion for TwoCellHints {
         let reserved = cell.reserve_preflight(context)?;
         let mut effect = context.seal_replacement(reserved, Arc::new(index as u64 + 1))?;
         let retained: Arc<dyn Send + Sync> = self.retained.clone();
-        let observer = effect.attach_completion_observer(context, retained)?;
+        let observer = effect.attach_completion_observer(context)?;
         {
             let mut observers = self.observers.lock().unwrap();
             observers.push(observer.clone());
@@ -74,48 +77,21 @@ impl RelationalPublicationCompanion for TwoCellHints {
                 self.saw_two_prepared.store(true, Ordering::Relaxed);
             }
         }
-        let branch_bytes = context.branch_id().0.len() as u64;
+
         if index == 1 {
             self.gate.main_linked.wait()?;
         }
-        let hint_bytes = RequiredWorkMembership::native_hint_bytes();
-        let retained_branch_bytes =
-            RequiredWorkMembership::native_branch_retained_bytes(context.branch_id().0.len())
-                .unwrap();
-        let prepared = (|| {
-            context.claim_bytes(hint_bytes)?;
-            context.claim_bytes(retained_branch_bytes)?;
-            context.claim_work(branch_bytes + 7)?;
-            let hint_capacity =
-                super::super::retention::reserve(&self.resources, hint_bytes, context)?;
-            let branch_capacity =
-                super::super::retention::reserve(&self.resources, retained_branch_bytes, context)?;
-            let branch = RequiredWorkMembership::prepared_native_branch(
-                context.branch_id().clone(),
-                branch_capacity,
-            );
-            Ok::<_, CompanionPreflightStop>(RequiredWorkMembership::prepared_native_hint(
-                observer,
-                branch,
-                hint_capacity,
-            ))
-        })();
-        let stop = match prepared {
-            Ok(hint) => {
-                self.member.prepare_hint(hint);
-                None
-            }
-            Err(stop) => Some(stop),
-        };
+        let branch = RequiredWorkMembership::prepared_native_branch(context.branch_id().clone());
+        self.member
+            .prepare_hint(RequiredWorkMembership::prepared_native_hint(
+                observer, branch,
+            ));
         if index == 0 {
             self.gate.main_linked.open();
         }
         // Both successful hints are linked before either branch may install.
         // A denied second preparation still releases the other branch.
         self.gate.meet()?;
-        if let Some(stop) = stop {
-            return Err(stop);
-        }
         if index == 1 {
             self.gate.main_published.wait()?;
         }
@@ -128,12 +104,12 @@ mod prepare_update;
 use prepare_update::prepare_update;
 
 #[test]
-fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
+fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     {
-        for allowed_hints in [1_u64, 2] {
+        for allowed_hints in [2_u64] {
             let world = installed_authorization_world(true);
             let (entity, product) = world
                 .application
@@ -165,28 +141,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                 .application
                 .with_host_advancement(|phase| {
                     let host_custody = phase.test_host_request();
-                    let hint_header = RequiredWorkMembership::native_hint_bytes();
-                    let ticket_bytes =
-                        super::super::index_capacity::arc_bytes::<RetainedInvalidationCapacity>()
-                            .unwrap();
-                    let main_hint = hint_header
-                        + RequiredWorkMembership::native_branch_retained_bytes("main".len())
-                            .unwrap()
-                        + 2 * ticket_bytes;
-                    let fork_hint = hint_header
-                        + RequiredWorkMembership::native_branch_retained_bytes("hint-fork".len())
-                            .unwrap()
-                        + 2 * ticket_bytes;
-                    let one_hint = fork_hint;
-                    let resources = WorthQueryInvalidationResources::install(
-                        WorthQueryInvalidationResourceInstallation::bounded(
-                            1_000_000,
-                            8 * 1024 * 1024,
-                            one_hint * allowed_hints,
-                            8,
-                        ),
-                    )
-                    .unwrap();
+                    let resources = WorthQueryInvalidationResources::new();
                     let graph = world.application.runtime.primary_graph().unwrap();
                     let handle = graph.integration_handle();
                     let owner = &handle.source_owner.invalidation_owner;
@@ -234,13 +189,7 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                     retained: Arc::new(()),
                 });
                 let registration = pending
-                    .activate(
-                        participant,
-                        CompanionPreflightBudget {
-                            maximum_work_visits: Some(1_000_000),
-                            maximum_preparation_bytes: None,
-                        },
-                    )
+                    .activate(participant)
                     .unwrap();
                 let main_candidate = prepare_update(execution, runtime, &main, entity, locator.clone());
                 let fork_candidate = prepare_update(execution, runtime, &fork, entity, locator.clone());
@@ -298,20 +247,20 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                     }
                 }
                 assert_eq!(performed, allowed_hints);
-                assert_eq!(
-                    resources.retained_capacity_bytes(),
-                    main_hint + fork_hint * (allowed_hints - 1)
-                );
-                let mut selected_main = registry
+
+let mut selected_main = registry
                     .next_required_claim_for_selected(
                         product.read_lease_ref(),
                         &main_root,
                         owner,
-                        &mut owner.edit_admission(),
                     )
                     .unwrap()
                     .expect("main-cell hint remains selectable behind fork-cell hint");
-                let selected_main = registry.select_required_claim(&mut selected_main, &main_root, &mut owner.edit_admission()).unwrap().expect("the inspected main-branch claim selects its current cause");
+
+
+
+                let selected_main = registry.select_required_claim(&mut selected_main, &main_root)
+                    .unwrap().expect("the main branch claim selects its actual native hint");
                 assert!(matches!(
                     selected_main.kind(),
                     SelectedRequiredWorkKind::Native { branch, .. } if branch.branch_id() == &main
@@ -319,55 +268,53 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                 assert!(selected_main.acknowledge_fixture().is_some());
                 port.remove_required(&registration).unwrap();
             });
-                    assert_eq!(
-                        resources.retained_capacity_bytes(),
-                        fork_hint * (allowed_hints - 1)
-                    );
+
                     if allowed_hints == 2 {
-                        let first = registry
-                            .next_required_work(owner, &mut owner.edit_admission())
+
+
+let first = registry
+                            .next_required_work(owner)
                             .unwrap()
                             .expect("fork-cell hint remains after main acknowledgement");
-                        assert!(matches!(
+assert!(matches!(
                             first.kind(),
                             SelectedRequiredWorkKind::Native { branch, .. }
                                 if branch.branch_id() == &BranchId("hint-fork".to_owned())
                         ));
                         registry.fixture_requeue_admitted_work(&interest);
-                        let stale = registry
-                            .next_required_work(owner, &mut owner.edit_admission())
+let stale = registry
+                            .next_required_work(owner)
                             .unwrap()
                             .expect("one native hint can have two selected readers");
+
+
                         assert!(matches!(
                             stale.kind(),
                             SelectedRequiredWorkKind::Native { branch, .. }
                                 if branch.branch_id() == &BranchId("hint-fork".to_owned())
                         ));
                         assert!(first.acknowledge_fixture().is_some());
-                        assert_eq!(
-                            resources.retained_capacity_bytes(),
-                            RequiredWorkMembership::native_branch_retained_bytes("hint-fork".len())
-                                .unwrap()
-                                + ticket_bytes
-                        );
+
                         drop(stale);
-                        assert_eq!(resources.retained_capacity_bytes(), 0);
+
                     }
-                    let initial = registry
-                        .next_required_work(owner, &mut owner.edit_admission())
+
+
+let initial = registry
+                        .next_required_work(owner)
                         .unwrap()
                         .expect("the original required interest is unresolved");
-                    assert!(matches!(
+assert!(matches!(
                         initial.kind(),
                         SelectedRequiredWorkKind::UnresolvedInitial
                     ));
                     assert!(initial.acknowledge_fixture().is_some());
                     assert!(registry
-                        .next_required_work(owner, &mut owner.edit_admission())
+                        .next_required_work(owner)
                         .unwrap()
                         .is_none());
                     drop(interest);
-                    assert_eq!(resources.retained_capacity_bytes(), 0);
+
                 })
                 .expect("the required-hints journey owns its installed host call");
         }

@@ -32,7 +32,7 @@ fn lease() -> ExecutionResourceLease<'static> {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), BUDGET, u64::MAX),
+                ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), Some(BUDGET), Some(u64::MAX)),
             ),
             deadline: None,
             cancellation: CancellationToken::new(),
@@ -70,7 +70,9 @@ fn derived_input_storage_refuses_before_kernel_and_oversized_output_refuses_publ
             ..
         } => {
             assert!(completed_prefix.is_empty());
-            assert!(denial.requested > denial.admitted);
+            assert!(
+                matches!(denial, worth_execution::MemoryLimitDenial::Capacity { requested, admitted, .. } if requested > admitted)
+            );
         }
         _ => panic!("nested input allocation must refuse admission"),
     }
@@ -115,7 +117,7 @@ fn funded_nested_work_stops_and_fresh_retry_hands_tree_charge_to_callers_hold() 
         result.total = total;
         Ok::<_, MapKernelFailure<()>>(result)
     };
-    let (stopped, _) = ExecutionWorkCeiling::new(2)
+    let (stopped, _) = ExecutionWorkCeiling::new(Some(2))
         .run(&lease, || input.run(Some(&lease), kernel))
         .unwrap();
     assert!(
@@ -146,7 +148,9 @@ fn funded_nested_work_stops_and_fresh_retry_hands_tree_charge_to_callers_hold() 
     assert_eq!(held.bytes(), expected);
     assert!(expected > 128);
     let denial = lease.reserve_memory(BUDGET).unwrap_err();
-    assert_eq!(denial.admitted, BUDGET - held.bytes());
+    assert!(
+        matches!(denial, worth_execution::MemoryLimitDenial::Capacity { admitted, .. } if admitted == BUDGET - held.bytes())
+    );
     drop(tree);
     drop(held);
     assert_eq!(lease.reserve_memory(BUDGET).unwrap().bytes(), BUDGET);

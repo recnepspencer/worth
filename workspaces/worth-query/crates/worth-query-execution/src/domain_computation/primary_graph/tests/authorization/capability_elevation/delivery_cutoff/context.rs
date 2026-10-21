@@ -141,9 +141,7 @@ pub(super) fn assert_resources_released(world: &AuthorizationWorld) {
             .active(),
         0
     );
-    let buffers = world.application.result_buffer_observer().observe();
-    assert_eq!(buffers.active_buffers(), 0);
-    assert_eq!(buffers.retained_bytes(), 0);
+
     assert_eq!(
         world.application.provider_session_resource_count_for_test(),
         0

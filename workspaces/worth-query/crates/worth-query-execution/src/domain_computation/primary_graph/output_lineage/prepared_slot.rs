@@ -11,17 +11,20 @@ use computation::PreparedComputationCustody;
 mod preparation;
 mod recovery;
 use crate::domain_computation::primary_graph::application_contribution::SealedComputationRetention;
-pub(super) use capacity::{arc_bytes, denial};
-pub(in crate::domain_computation::primary_graph) use capacity::{tree_insert_bytes, tree_work};
+pub(super) use capacity::denial;
+
 pub(in crate::domain_computation::primary_graph) use preparation::prepare;
 pub(in crate::domain_computation::primary_graph) use recovery::PreparedLineageRecoveryMetadata;
 
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::OnceLock;
 
-use super::{
-    ProductCoordinate, RecordedOutput, RecordedSettlementIdentity, SemanticSource,
-    WorthQueryApplicationOutputLineage,
-};
+use super::ProductCoordinate;
+use super::RecordedOutput;
+use super::RecordedSettlementIdentity;
+use super::SemanticSource;
+use super::WorthQueryApplicationOutputLineage;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication;
 
 /// The identity stays invisible until the actual performed product head and
@@ -38,7 +41,6 @@ pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlo
     pub(super) identity: Arc<RecordedSettlementIdentity>,
     pub(super) record_cell: Arc<OnceLock<RecordedOutput>>,
     pub(super) partition_cell: Arc<OnceLock<usize>>,
-    retained_capacity: Option<super::retained_capacity::RetainedLineageCapacity>,
     cancellation: Option<Box<CancelledLineageSlot>>,
     pub(super) completed_handler_facts: Option<
         crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary,
@@ -50,7 +52,6 @@ pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlo
     /// came from. World recovery carries both unchanged to its replacement slot.
     pub(super) computation: PreparedComputationCustody,
     /// A pre-publication work allowance; a larger current fork set is not scanned.
-    computation_fork_scan_bound: usize,
     pub(super) prior_computation: Option<super::PriorComputationRecord>,
     pub(super) native_prior_checkpoint:
         Option<super::native_prior_checkpoint::NativePriorCheckpointLocator>,
@@ -60,7 +61,6 @@ pub(in crate::domain_computation::primary_graph) struct PreparedOutputLineageSlo
 pub(super) struct CancelledLineageSlot {
     identity: Arc<RecordedSettlementIdentity>,
     partition: Option<[u8; 32]>,
-    retained_capacity: Option<super::retained_capacity::RetainedLineageCapacity>,
     pub(super) next: Option<Box<Self>>,
 }
 
@@ -172,10 +172,6 @@ impl PreparedOutputLineageSlot {
         let completed_decision_reuse = self.completed_decision_reuse.take();
         let prepared_input_reuse_key = self.prepared_input_reuse_key.take();
         let native_prior_checkpoint = self.native_prior_checkpoint.take();
-        let retained_capacity = self
-            .retained_capacity
-            .take()
-            .expect("prepared lineage retains host custody through publication");
         let (identity, displaced) = {
             let mut lineage = self
                 .owner
@@ -186,12 +182,7 @@ impl PreparedOutputLineageSlot {
             });
             let sealed = self.computation.take();
             let computation = match sealed {
-                SealedComputationRetention::Produced(sealed) => lineage.retain_computation(
-                    sealed,
-                    self.prior_computation.as_ref(),
-                    displaced.as_ref(),
-                    self.computation_fork_scan_bound,
-                ),
+                SealedComputationRetention::Produced(sealed) => lineage.retain_computation(sealed),
                 SealedComputationRetention::Absent(absence) => {
                     super::retained_computation::RecordedComputation::Absent(absence)
                 }
@@ -204,7 +195,6 @@ impl PreparedOutputLineageSlot {
                 completed_decision_reuse,
                 prepared_input_reuse_key,
                 native_prior_checkpoint,
-                retained_capacity,
                 computation,
             );
             (identity, displaced)
@@ -245,7 +235,6 @@ impl Drop for PreparedOutputLineageSlot {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut cancellation = self.cancellation.take().expect("prepared cancellation cue");
-        cancellation.retained_capacity = self.retained_capacity.take();
         cancellation.next = lineage.cancelled_slots.take();
         lineage.cancelled_slots = Some(cancellation);
     }
@@ -263,7 +252,6 @@ impl WorthQueryApplicationOutputLineage {
         native_prior_checkpoint: Option<
             super::native_prior_checkpoint::NativePriorCheckpointLocator,
         >,
-        retained_capacity: super::retained_capacity::RetainedLineageCapacity,
         computation: super::retained_computation::RecordedComputation,
     ) -> Arc<RecordedSettlementIdentity> {
         self.record_inner(
@@ -275,7 +263,6 @@ impl WorthQueryApplicationOutputLineage {
             completed_decision_reuse,
             prepared_input_reuse_key,
             native_prior_checkpoint,
-            Some(retained_capacity),
         )
         .expect("a prepared output slot has a sealed output binding")
     }

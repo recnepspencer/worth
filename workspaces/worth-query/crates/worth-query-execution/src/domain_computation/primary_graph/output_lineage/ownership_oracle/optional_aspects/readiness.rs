@@ -20,8 +20,6 @@ fn definition<Schema: BirthSchema>(
         query,
         domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("optional-aspect-readiness").unwrap(),
-        128,
-        128,
         "optional-aspect-readiness-v1",
     )
     .semantic_reads([projection])

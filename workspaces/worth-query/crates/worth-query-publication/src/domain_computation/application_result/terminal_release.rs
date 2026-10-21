@@ -10,23 +10,9 @@ pub enum WorthQueryPublishedApplicationQueryReleasePosture {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryPublishedApplicationQueryResultBufferRelease {
-    Missing,
-    Released {
-        limit_bytes: Option<usize>,
-        peak_bytes: usize,
-    },
-    ReleaseFailed {
-        limit_bytes: Option<usize>,
-        peak_bytes: usize,
-    },
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryPublishedApplicationQueryTerminalRelease {
     application_basis: WorthQueryPublishedApplicationQueryReleasePosture,
     graph_read_basis: WorthQueryPublishedApplicationQueryReleasePosture,
-    result_buffer: WorthQueryPublishedApplicationQueryResultBufferRelease,
     released_graph_capacity_reservation_count: usize,
 }
 
@@ -40,21 +26,6 @@ impl WorthQueryPublishedApplicationQueryTerminalRelease {
                     WorthQueryPublishedApplicationQueryReleasePosture::SharedCustodyRetained
                 }
                 outcome => release_posture(outcome.released()),
-            },
-            result_buffer: match terminal.result_buffer() {
-                None => WorthQueryPublishedApplicationQueryResultBufferRelease::Missing,
-                Some(buffer) if buffer.released() => {
-                    WorthQueryPublishedApplicationQueryResultBufferRelease::Released {
-                        limit_bytes: buffer.limit_bytes(),
-                        peak_bytes: buffer.peak_bytes(),
-                    }
-                }
-                Some(buffer) => {
-                    WorthQueryPublishedApplicationQueryResultBufferRelease::ReleaseFailed {
-                        limit_bytes: buffer.limit_bytes(),
-                        peak_bytes: buffer.peak_bytes(),
-                    }
-                }
             },
             released_graph_capacity_reservation_count: completion
                 .release()
@@ -70,10 +41,6 @@ impl WorthQueryPublishedApplicationQueryTerminalRelease {
         self.graph_read_basis
     }
 
-    pub const fn result_buffer(self) -> WorthQueryPublishedApplicationQueryResultBufferRelease {
-        self.result_buffer
-    }
-
     pub const fn released_graph_capacity_reservation_count(self) -> usize {
         self.released_graph_capacity_reservation_count
     }
@@ -85,9 +52,6 @@ impl WorthQueryPublishedApplicationQueryTerminalRelease {
         ) && matches!(
             self.graph_read_basis,
             WorthQueryPublishedApplicationQueryReleasePosture::Released
-        ) && matches!(
-            self.result_buffer,
-            WorthQueryPublishedApplicationQueryResultBufferRelease::Released { .. }
         ) && self.released_graph_capacity_reservation_count == 1
     }
 }

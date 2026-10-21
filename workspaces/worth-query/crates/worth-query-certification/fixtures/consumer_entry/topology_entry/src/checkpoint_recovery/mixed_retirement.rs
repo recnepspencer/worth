@@ -100,7 +100,7 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
         crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     request
         .at(&retained)
-        .require_current_program_output(&settled, Some((NonZeroUsize::new(4096).unwrap()).get()))
+        .require_current_program_output(&settled)
         .unwrap();
 
     assert!(
@@ -159,13 +159,13 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
         let changed =
             crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         assert!(
-            matches!(request.at(&changed).require_current_program_output(&settled, Some((NonZeroUsize::new(4096).unwrap()).get())),
+            matches!(request.at(&changed).require_current_program_output(&settled),
             Err(WorthQueryOutputCurrentnessDenial::Output(denial)) if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded)
         );
     }
     request
         .at(&retained)
-        .require_current_program_output(&settled, Some((NonZeroUsize::new(4096).unwrap()).get()))
+        .require_current_program_output(&settled)
         .expect("the original retained observation remains exact");
     drop(retained);
     drop(settled);

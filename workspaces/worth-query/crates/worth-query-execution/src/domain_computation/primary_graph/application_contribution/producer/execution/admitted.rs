@@ -5,7 +5,6 @@ pub(super) fn execute_fresh<Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
     installed: &TypedInstalledProducer<Schema, Binding>,
-
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
@@ -16,8 +15,6 @@ pub(super) fn execute_fresh<Schema, Binding>(
     successor_of: Option<[u8; 32]>,
     commit_authority: WorthQueryProducerCommitAuthority,
     edition: super::super::InstalledProducerEdition,
-    limits: WorthQueryOutputDemandLimits,
-    request_admission: &mut InvalidationEditAdmission,
     producer_contacts: &mut usize,
 ) -> Result<ProducerExecutionOutcome, ProducerExecutionStop>
 where
@@ -92,7 +89,7 @@ where
         )
         .map_err(|error| request_authority_denied(Binding::IDENTITY, error))?;
     let shared = selected
-        .prepare_shared_query_basis(request_admission)
+        .prepare_shared_query_basis()
         .map_err(|(_, stop)| source_readmission::ready_resource_denial(Binding::IDENTITY, stop))?;
     post_authorization::execute_authorized::<Schema, Binding>(
         phase,
@@ -111,8 +108,6 @@ where
         successor_of,
         commit_authority,
         edition,
-        limits,
-        request_admission,
         producer_contacts,
     )
 }

@@ -135,8 +135,7 @@ impl<'a> Observer<'a> {
                     .query(queries::account_summary(*account))
                     .as_principal(&principal)
                     .controls(
-                        BankReadControls::current(crate::support::request_scope(), 1, 10000)
-                            .unwrap(),
+                        BankReadControls::current(crate::support::request_scope(), 1).unwrap(),
                     )
                     .execute()
                     .unwrap();
@@ -174,7 +173,7 @@ pub(super) fn journal_from(
     let result = runtime
         .query(queries::institution_audit(institution))
         .as_principal(auditor)
-        .controls(BankReadControls::current(crate::support::request_scope(), 16, 10000).unwrap())
+        .controls(BankReadControls::current(crate::support::request_scope(), 16).unwrap())
         .execute()
         .unwrap();
     let postings = result.rows()[0]

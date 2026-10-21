@@ -40,7 +40,7 @@ pub struct WorthQueryApplicationQueryRequest<'application, 'principal, 'scope, S
         >,
     >,
     intent: Intent,
-    limits: Option<(NonZeroUsize, NonZeroUsize)>,
+    limits: Option<NonZeroUsize>,
 }
 
 impl<'application, 'principal, 'scope, Schema, Intent>
@@ -90,8 +90,8 @@ where
 
     /// Requests narrower ceilings. Values above the installed binding ceiling
     /// are denied before admission.
-    pub fn limits(mut self, maximum_results: NonZeroUsize, maximum_work: NonZeroUsize) -> Self {
-        self.limits = Some((maximum_results, maximum_work));
+    pub fn limit_results(mut self, maximum_results: NonZeroUsize) -> Self {
+        self.limits = Some(maximum_results);
         self
     }
 
@@ -153,10 +153,10 @@ where
             .installed_query_binding::<Intent::Binding>()
             .map_err(WorthQueryApplicationRequestQueryDenial::BindingInstallation)?;
         let limits = match self.limits {
-            Some((maximum_results, maximum_work)) => self
+            Some(maximum_results) => self
                 .application
                 .resolve_application_query_limits(binding.limits())
-                .narrow(maximum_results, Some(maximum_work))
+                .narrow(maximum_results)
                 .map_err(WorthQueryApplicationRequestQueryDenial::Limit)?,
             None => self
                 .application
@@ -199,9 +199,8 @@ where
         let query_maximum = NonZeroUsize::new(binding.query().read_graph().maximum_result_count())
             .unwrap_or(NonZeroUsize::MAX);
         let maximum_results = limits.maximum_results().min(query_maximum);
-        let maximum_work = limits.maximum_work();
-        let controls =
-            WorthQueryProductQueryControls::new(maximum_results, maximum_work, self.scope);
+
+        let controls = WorthQueryProductQueryControls::new(maximum_results, self.scope);
         let plan = match retained {
             Some(retained) => selected.admit_retained_application_query(
                 phase,

@@ -59,7 +59,7 @@ worth_query_decl::facade::worth_query_query_binding!(
         crate::model::BankPrincipalId, worth_query_decl::facade::application_schema::ReadOnly,
         worth_query_decl::facade::application_schema::NoApplicationUnit,
     principal_field crate::schema::PrincipalIdentityField::reference(),
-    limits results 1_024, work 100_000
+    limits results 1_024
 
 );
 

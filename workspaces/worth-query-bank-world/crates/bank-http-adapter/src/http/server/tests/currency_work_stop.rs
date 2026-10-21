@@ -47,7 +47,7 @@ async fn one_unit_short_at_currency_has_the_execution_http_status() {
         .runtime
         .account_activity(account)
         .as_principal(&principal)
-        .execute(BankReadControls::current(scope, 16, 20_000).unwrap())
+        .execute(BankReadControls::current(scope, 16).unwrap())
         .err()
         .expect("one short cannot rebuild currency");
     match &denied {

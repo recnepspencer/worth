@@ -92,7 +92,7 @@ pub struct WorthQueryFactVerificationForTest {
     pub effect_index_fact_visits: u64,
     pub posting_fact_visits: u64,
     pub posting_registration_visits: u64,
-    pub retained_fact_size_visits: u64,
+
     pub rebase_touch_key_visits: u64,
     /// Postcommit resolution walk, before skipping facts after a failure.
     pub rebase_resolution_visits: u64,
@@ -101,9 +101,6 @@ pub struct WorthQueryFactVerificationForTest {
     /// Entries into native source-currentness comparison, including refusal
     /// before a probe. The fact is counted before eligibility filtering.
     pub source_currentness_visits: u64,
-    /// Net work charged by the existing invalidation meter in those calls,
-    /// including stopped comparisons. Not the whole request's semantic bill.
-    pub source_currentness_work: u64,
     /// Entries into ordinary value/revision equality comparison.
     pub value_comparison_visits: u64,
     /// Retained fact keys walked to establish the observation work bound.
@@ -132,8 +129,8 @@ thread_local! {
         completed_fact_moves: 0, completed_fact_chunks: 0, completed_fact_joins: 0,
         carried_call_records: 0, fresh_read_key_records: 0, handler_read_key_records: 0, carried_key_expansion_visits: 0, fallback_carried_metadata_visits: 0,
         completion_call_roster_visits: 0, completion_fresh_key_visits: 0, native_completion_last_decline: None,
-        source_admission_visits: 0, source_currentness_visits: 0, source_currentness_work: 0,
-        provider_application_fact_visits: 0, effect_index_fact_visits: 0, posting_fact_visits: 0, posting_registration_visits: 0, retained_fact_size_visits: 0, rebase_touch_key_visits: 0,
+        source_admission_visits: 0, source_currentness_visits: 0,
+        provider_application_fact_visits: 0, effect_index_fact_visits: 0, posting_fact_visits: 0, posting_registration_visits: 0, rebase_touch_key_visits: 0,
         rebase_preparation_visits: 0, rebase_resolution_visits: 0, rebase_unanswered_visits: 0,
         value_comparison_visits: 0, retained_bound_visits: 0,
         retained_computation_visits: 0, retained_native_visits: 0, carried_seal_visits: 0,
@@ -282,10 +279,6 @@ pub(super) fn source_currentness() {
     record(|observed| add(&mut observed.source_currentness_visits, 1));
 }
 
-pub(super) fn source_currentness_work(work: u64) {
-    record(|observed| add(&mut observed.source_currentness_work, work));
-}
-
 pub(super) fn value_comparison() {
     record(|observed| add(&mut observed.value_comparison_visits, 1));
 }
@@ -349,9 +342,7 @@ pub(super) fn effect_index_fact() {
 pub(super) fn posting_fact() {
     record(|observed| add(&mut observed.posting_fact_visits, 1));
 }
-pub(super) fn retained_fact_size() {
-    record(|observed| add(&mut observed.retained_fact_size_visits, 1));
-}
+
 pub(super) fn rebase_touch_key() {
     record(|observed| add(&mut observed.rebase_touch_key_visits, 1));
 }

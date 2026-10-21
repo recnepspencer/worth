@@ -22,20 +22,11 @@ fn run(workers: usize) -> Vec<String> {
     ));
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    let application = support::install_program_with_seed::<application::Program>(
-        None,
-        profile,
-        4096,
-        128 * 1024 * 1024,
-        profile
-            .limits()
-            .source_currentness_work()
-            .map(|work| work as u64),
-        |graph| {
+    let application =
+        support::install_program_with_seed::<application::Program>(None, profile, 4096, |graph| {
             diamond::seed(graph);
             support::seed_cycle(graph);
-        },
-    );
+        });
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     macro_rules! start {

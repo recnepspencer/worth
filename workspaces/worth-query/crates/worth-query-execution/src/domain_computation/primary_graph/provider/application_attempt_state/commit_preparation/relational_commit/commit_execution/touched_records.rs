@@ -1,15 +1,12 @@
 use std::sync::Arc;
 
-use worth_execution::{ExecutionAllocationPolicy, ExecutionArray, ExecutionArrayBuilder};
-use worth_relational::facade::{
-    mvcc::{CompanionPreflightStop, PreparedRelationalCommitCandidate},
-    transactions::RecordRef,
-};
+use worth_execution::ExecutionAllocationPolicy;
+use worth_execution::ExecutionArray;
+use worth_execution::ExecutionArrayBuilder;
+use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
+use worth_relational::facade::transactions::RecordRef;
 
-use crate::domain_computation::primary_graph::{
-    output_lineage::invalidation::InvalidationEditAdmission,
-    provider::mutation_work::WorthQueryTouchedRecordIdentity,
-};
+use crate::domain_computation::primary_graph::provider::mutation_work::WorthQueryTouchedRecordIdentity;
 use crate::domain_computation::WorthQueryProviderSessionCommitStop;
 
 /// Exact prepared native identities, physically admitted and sealed before any
@@ -22,21 +19,11 @@ pub(in crate::domain_computation::primary_graph::provider) struct PreparedTouche
 impl PreparedTouchedRecords {
     pub(super) fn prepare(
         candidate: &PreparedRelationalCommitCandidate,
-        admission: &mut InvalidationEditAdmission,
+
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, WorthQueryProviderSessionCommitStop> {
-        admission
-            .charge_external_work(1)
-            .map_err(super::stops::touched_record_preparation_stop)?;
         candidate
             .with_prepared_changed_records(|exact| {
-                admission
-                    .charge_external_work(
-                        u64::try_from(exact.len())
-                            .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)
-                            .map_err(super::stops::touched_record_preparation_stop)?,
-                    )
-                    .map_err(super::stops::touched_record_preparation_stop)?;
                 let mut records = ExecutionArrayBuilder::allocate(exact.len(), allocation_policy)
                     .map_err(allocation_denied)?;
                 for record in exact {

@@ -8,10 +8,7 @@ fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes()
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let world = world_installing(|defaults| WorthQueryInvalidationResourceInstallation {
-        maximum_retained_bytes: Some(MAXIMUM_RETAINED_BYTES),
-        ..defaults
-    });
+    let world = installed_authorization_world(true);
     let entity = world
         .application
         .with_host_advancement(|phase| {
@@ -29,12 +26,7 @@ fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes()
         .unwrap()
         .clone();
     let fork = BranchId("stale-preflight-fork".to_owned());
-    let held = owner
-        .resources
-        .reserve_retained_capacity(
-            MAXIMUM_RETAINED_BYTES - owner.resources.retained_capacity_bytes(),
-        )
-        .unwrap();
+
     handle.with_runtime_mut(request_execution, |runtime| {
         let (_, source) = runtime
             .observe_fork_source(runtime.main_branch_identity().branch_id())
@@ -93,6 +85,5 @@ fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes()
         };
         let committed = runtime.settle_performed_publication(performed).unwrap();
         release_test_commit_snapshot(runtime, &committed);
-        assert!(owner.resources.retained_capacity_bytes() <= MAXIMUM_RETAINED_BYTES);
     });
 }

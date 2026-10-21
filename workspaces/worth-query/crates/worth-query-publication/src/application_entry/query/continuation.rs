@@ -51,7 +51,6 @@ where
     pub fn page(
         self,
         page_width: NonZeroUsize,
-        maximum_work: Option<NonZeroUsize>,
     ) -> Result<Page<Schema, Intent>, WorthQueryApplicationRequestQueryDenial> {
         let application = self.application;
         let request_scope = self.scope;
@@ -69,7 +68,70 @@ where
                     .map_err(WorthQueryApplicationRequestQueryDenial::BindingInstallation)?;
                 self.application
                     .resolve_application_query_limits(binding.limits())
-                    .narrow(page_width, maximum_work)
+                    .narrow(page_width)
+                    .map_err(WorthQueryApplicationRequestQueryDenial::Limit)?;
+                let selected = self
+                    .application
+                    .on_branch(self.branch)
+                    .select(&phase)
+                    .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?;
+                let principal = selected
+                    .resolve_authenticated_principal(
+                        &phase,
+                        binding.principal_binding(),
+                        self.principal,
+                        self.scope,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .map_err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution)?;
+                let (scope_field, scope_value) =
+                    scope_binding.into_field_parts(principal.principal_identity());
+                let scope = selected
+                    .resolve_entity(
+                        &phase,
+                        scope_field,
+                        scope_value,
+                        self.scope,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .map_err(WorthQueryApplicationRequestQueryDenial::ScopeResolution)?;
+                let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
+                let query = binding.into_query();
+                let controls = WorthQueryProductQueryControls::new(page_width, self.scope);
+                let plan = selected
+                    .admit_application_query_continuation(
+                        &phase, &query, &access, parameters, controls,
+                    )
+                    .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
+                self.application
+                    .execute_application_query_continuation_page(&phase, plan)
+                    .map_err(WorthQueryApplicationRequestQueryDenial::ContinuationExecution)
+            })
+            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
+    }
+
+    pub fn resume(
+        self,
+        continuation: Continuation<Schema, Intent>,
+        page_width: NonZeroUsize,
+    ) -> Result<Page<Schema, Intent>, WorthQueryApplicationRequestQueryDenial> {
+        let application = self.application;
+        let request_scope = self.scope;
+        application
+            .with_application_advancement(request_scope, |phase| {
+                if self.retained.is_some() || self.limits.is_some() {
+                    return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
+                }
+                let parameters = self.intent.parameters();
+                let scope_binding = self.intent.into_scope();
+                let binding = self
+                    .application
+                    .installed_schema()
+                    .installed_query_binding::<Intent::Binding>()
+                    .map_err(WorthQueryApplicationRequestQueryDenial::BindingInstallation)?;
+                self.application
+                    .resolve_application_query_limits(binding.limits())
+                    .narrow(page_width)
                     .map_err(WorthQueryApplicationRequestQueryDenial::Limit)?;
                 let selected = self
                     .application
@@ -99,75 +161,7 @@ where
                 let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
                 let query = binding.into_query();
                 let controls =
-                    WorthQueryProductQueryControls::new(page_width, maximum_work, self.scope);
-                let plan = selected
-                    .admit_application_query_continuation(
-                        &phase, &query, &access, parameters, controls,
-                    )
-                    .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
-                self.application
-                    .execute_application_query_continuation_page(&phase, plan)
-                    .map_err(WorthQueryApplicationRequestQueryDenial::ContinuationExecution)
-            })
-            .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
-    }
-
-    pub fn resume(
-        self,
-        continuation: Continuation<Schema, Intent>,
-        page_width: NonZeroUsize,
-        maximum_work: Option<NonZeroUsize>,
-    ) -> Result<Page<Schema, Intent>, WorthQueryApplicationRequestQueryDenial> {
-        let application = self.application;
-        let request_scope = self.scope;
-        application
-            .with_application_advancement(request_scope, |phase| {
-                if self.retained.is_some() || self.limits.is_some() {
-                    return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
-                }
-                let parameters = self.intent.parameters();
-                let scope_binding = self.intent.into_scope();
-                let binding = self
-                    .application
-                    .installed_schema()
-                    .installed_query_binding::<Intent::Binding>()
-                    .map_err(WorthQueryApplicationRequestQueryDenial::BindingInstallation)?;
-                self.application
-                    .resolve_application_query_limits(binding.limits())
-                    .narrow(page_width, maximum_work)
-                    .map_err(WorthQueryApplicationRequestQueryDenial::Limit)?;
-                let selected = self
-                    .application
-                    .on_branch(self.branch)
-                    .select(&phase)
-                    .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?;
-                let principal = selected
-                    .resolve_authenticated_principal(
-                        &phase,
-                        binding.principal_binding(),
-                        self.principal,
-                        self.scope,
-                        WorthQueryPrincipalResolutionMode::Ordinary,
-                    )
-                    .map_err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution)?;
-                let (scope_field, scope_value) =
-                    scope_binding.into_field_parts(principal.principal_identity());
-                let scope = selected
-                    .resolve_entity(
-                        &phase,
-                        scope_field,
-                        scope_value,
-                        self.scope,
-                        WorthQueryPrincipalResolutionMode::Ordinary,
-                    )
-                    .map_err(WorthQueryApplicationRequestQueryDenial::ScopeResolution)?;
-                let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
-                let query = binding.into_query();
-                let controls = WorthQueryApplicationQueryResumeControls::new(
-                    page_width,
-                    maximum_work,
-                    self.scope,
-                );
+                    WorthQueryApplicationQueryResumeControls::new(page_width, self.scope);
                 let plan = self
                     .application
                     .readmit_application_query_continuation(

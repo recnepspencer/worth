@@ -14,6 +14,7 @@ use crate::authority::{ExecutionMemoryReservation, ResourceReservation};
 /// On unwind the entry releases after `limits`, which was declared after custody.
 pub(super) struct RunCustody<I: InputMode> {
     pub(super) inputs: Option<I>,
+    pub(super) result_memory: Vec<ExecutionMemoryReservation>,
     pub(super) reservation: Option<ResourceReservation>,
     pub(super) serial_reservation: Option<ExecutionMemoryReservation>,
     pub(super) taken: Option<ExecutionMemoryReservation>,
@@ -28,6 +29,7 @@ impl<I: InputMode> RunCustody<I> {
     ) -> Self {
         Self {
             inputs: Some(inputs),
+            result_memory: Vec::new(),
             reservation: None,
             serial_reservation: None,
             taken,
@@ -51,6 +53,7 @@ impl<I: InputMode> RunCustody<I> {
         // Release normal-run guards before local meter contexts disappear.
         // Prepared resources remain last.
         drop(self.inputs.take());
+        self.result_memory.clear();
         drop(self.reservation.take());
         drop(self.serial_reservation.take());
         drop(self.taken.take());

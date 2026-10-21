@@ -1,7 +1,10 @@
 //! Native leaf custody and the exhaustive cost of a NEW deep Fact clone.
-use super::{Fact, FactPayload, FactStorage};
+use super::Fact;
+use super::FactPayload;
+use super::FactStorage;
 use std::sync::OnceLock;
-use worth_execution::{ExecutionArray, ExecutionMemoryReservation};
+use worth_execution::ExecutionArray;
+use worth_execution::ExecutionMemoryReservation;
 
 #[derive(Debug)]
 pub(super) struct NativeFactChunk {
@@ -38,10 +41,13 @@ impl FactPayload {
                 .resident_heaps
                 .and_then(|sum| sum.checked_add(fact.additional_charged_bytes()));
         }
-        let storage_bytes =
-            crate::domain_computation::primary_graph::output_lineage::invalidation::arc_bytes::<
-                NativeFactChunk,
-            >()
+        let storage_bytes = (|| {
+            u64::try_from(
+                std::mem::size_of::<NativeFactChunk>()
+                    .checked_add(2 * std::mem::size_of::<usize>())?
+                    .checked_add(std::mem::align_of::<NativeFactChunk>())?,
+            )
+            .ok()
             .and_then(|bytes| {
                 bytes.checked_add(u64::try_from(length.checked_mul(size_of::<Fact>())?).ok()?)
             })
@@ -56,7 +62,8 @@ impl FactPayload {
                     )
                     .ok()?,
                 )
-            });
+            })
+        })();
         let resident_bytes = storage_bytes
             .zip(chunk.resident_heaps)
             .and_then(|(storage, heaps)| storage.checked_add(heaps));
@@ -67,7 +74,6 @@ impl FactPayload {
             storage_bytes,
             resident_bytes,
             height: 0,
-            retention: super::FactRetentionStorage::default(),
         }
     }
 }

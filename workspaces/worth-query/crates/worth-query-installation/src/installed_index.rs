@@ -14,9 +14,7 @@ mod index_identity;
 mod rebuild_report;
 mod relation;
 
-pub use application_schema::{
-    WorthQueryCurrentRetainedMutationBinding, WorthQueryRetainedMutationBindingAdmissionStop,
-};
+pub use application_schema::WorthQueryCurrentRetainedMutationBinding;
 pub use application_schema::{
     WorthQueryPrincipalBindingValidationAdmissionStop, WorthQueryValidatedPrincipalBinding,
 };

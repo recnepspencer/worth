@@ -5,7 +5,6 @@ use super::{RawNonLiveKernelOutcome, RawOneShotRows};
 use crate::domain_computation::primary_graph::application_query::{
     WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
     WorthQueryApplicationProjectionDenialKind, WorthQueryApplicationProjectionRow,
-    WorthQueryApplicationResultBufferEvidence,
 };
 
 pub(in crate::domain_computation::primary_graph::application_query) struct ProjectedNonLiveKernelOutcome<
@@ -20,8 +19,6 @@ pub(in crate::domain_computation::primary_graph::application_query) struct NonLi
     pub(in crate::domain_computation::primary_graph::application_query) read: RawOneShotRows,
     pub(in crate::domain_computation::primary_graph::application_query) result_count: usize,
     pub(in crate::domain_computation::primary_graph::application_query) truncation_count: usize,
-    pub(in crate::domain_computation::primary_graph::application_query) result_buffer:
-        WorthQueryApplicationResultBufferEvidence,
 }
 
 impl<QueryResult> ProjectedNonLiveKernelOutcome<QueryResult> {
@@ -63,10 +60,7 @@ where
     Schema: ApplicationSchema,
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
 {
-    let RawNonLiveKernelOutcome {
-        mut raw,
-        result_buffer,
-    } = kernel;
+    let RawNonLiveKernelOutcome { mut raw } = kernel;
     let projected = decode.run(execution, |session| {
         let mut rows = Vec::with_capacity(raw.rows.raw_rows().len());
         for node in raw.rows.iter() {
@@ -104,7 +98,6 @@ where
             read: raw,
             result_count,
             truncation_count,
-            result_buffer: result_buffer.release(),
         },
     })
 }

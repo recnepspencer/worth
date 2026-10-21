@@ -44,14 +44,13 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         let crate::domain_computation::primary_graph::application_output_demand::OutputRowStage::Ready(completion) = self.output_demands.row_stage(interest) else {
             panic!("the direct-door probe must join the exact Ready before refreshing");
         };
-        let mut admission = self.demand_request_admission();
+
         self.refresh_output_demand(
             &execution,
             &mut demand,
             &value,
             source,
             Some(&completion.authority),
-            &mut admission,
         )
     }
 }

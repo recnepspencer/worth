@@ -30,8 +30,8 @@ fn native_receipt_matches_fresh_work_span_and_every_tight_checkpoint_prefix() {
     let receipt = receipt(&lease);
     assert_eq!(receipt.charged_work(), 7);
     for ceiling in 0..=9 {
-        let fresh = run_scope_within(Some(&lease), 0, 0, true, ceiling, None, kernel);
-        let carried = run_scope_within(Some(&lease), 0, 0, true, ceiling, None, |context| {
+        let fresh = run_scope_within(Some(&lease), 0, 0, true, Some(ceiling), None, kernel);
+        let carried = run_scope_within(Some(&lease), 0, 0, true, Some(ceiling), None, |context| {
             context.carry_kernel(&receipt)?;
             Ok::<_, KernelFailure<()>>(73_u64)
         });
@@ -63,7 +63,7 @@ fn context_questions_and_handled_nested_failures_do_not_issue_a_receipt() {
             Ok::<_, KernelFailure<()>>(context.remaining_work())
         });
         assert!(receipt.is_none());
-        assert_eq!(result.unwrap(), 100);
+        assert_eq!(result.unwrap(), Some(100));
         let (result, receipt) = context.record_kernel(&storage, |context| {
             Ok::<_, KernelFailure<()>>(context.take_nested_computation_stop())
         });

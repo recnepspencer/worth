@@ -97,7 +97,7 @@ impl ApplicationQueryBinding<Schema> for Binding {
     type PrincipalIdentity = u64;
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "availability-quantity-read";
-    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::bounded(1, 1024);
+    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Quantity,

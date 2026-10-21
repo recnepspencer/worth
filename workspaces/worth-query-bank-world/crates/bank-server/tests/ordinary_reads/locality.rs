@@ -72,7 +72,7 @@ fn activity_limit_is_enforced_and_reported_by_the_public_result() {
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(&owner)
-        .page(BankReadControls::current(request_scope(), 1, 4_096).unwrap())
+        .page(BankReadControls::current(request_scope(), 1).unwrap())
         .expect("account activity page should execute");
 
     assert_eq!(activity.rows()[0].entries().len(), 1);
@@ -103,7 +103,7 @@ fn account_discovery_result_limit_denies_before_projecting_an_oversized_union() 
 fn account_discovery_root_union_stops_when_dynamic_frontier_work_exhausts() {
     let fixture = over_budget_discovery_world("read-root-union-work-budget", 250);
     let actor = fixture.authenticate();
-    let controls = BankReadControls::current(request_scope(), 250, 1_153)
+    let controls = BankReadControls::current(request_scope(), 250)
         .expect("the exact installed estimate should be a lawful control");
     let outcome = fixture
         .world
@@ -121,5 +121,5 @@ fn account_discovery_root_union_stops_when_dynamic_frontier_work_exhausts() {
 }
 
 fn controls(maximum_results: usize) -> BankReadControls {
-    BankReadControls::current(request_scope(), maximum_results, 10_000).unwrap()
+    BankReadControls::current(request_scope(), maximum_results).unwrap()
 }

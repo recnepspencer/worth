@@ -1,15 +1,17 @@
 //! The exact prior record alone pairs retained state with its native frontier.
-use super::super::invalidation::{ComputationChanges, SourceInvalidationOwner};
+use super::super::invalidation::ComputationChanges;
+use super::super::invalidation::SourceInvalidationOwner;
 use super::*;
-use worth_relational::facade::{runtime::RelationalRuntime, snapshots::SnapshotHandle};
+use crate::domain_computation::primary_graph::application_contribution::RetainedComputation;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
 impl PriorComputationRecord {
     pub(in crate::domain_computation::primary_graph) fn changes(
         &self,
-        state: &Arc<CustodiedComputation>,
+        state: &Arc<RetainedComputation>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ComputationChanges>, CompanionPreflightStop> {
         let Some(record) = self.cell.get() else {
             return Ok(None);
@@ -27,13 +29,7 @@ impl PriorComputationRecord {
             return Ok(None);
         };
         owner
-            .computation_changes(
-                runtime,
-                snapshot,
-                &record.settlement_identity,
-                &facts,
-                admission,
-            )
+            .computation_changes(runtime, snapshot, &record.settlement_identity, &facts)
             .map(|changes| changes.map(|changes| changes.bind_original(state.original_facts())))
     }
     pub(in crate::domain_computation::primary_graph) fn matches_changes(

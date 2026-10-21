@@ -34,10 +34,7 @@ fn reusable_request_executes_fresh_published_reads_through_installed_principal_b
         .query(TemporalIntentReadRequest {
             identity: "intent-1".into(),
         })
-        .limits(
-            NonZeroUsize::new(2).unwrap(),
-            NonZeroUsize::new(64).unwrap(),
-        )
+        .limit_results(NonZeroUsize::new(2).unwrap())
         .execute()
     {
         Ok(_) => panic!("a widened installed limit must be denied"),

@@ -1,15 +1,16 @@
 //! Prior-only checkpoint locators for the selected live product occurrence.
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
+use std::collections::HashMap;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::identity::EntityId;
 use worth_runtime_world::facade::ProductBranchIncarnation;
 
-use super::super::{
-    invalidation::InvalidationEditAdmission, ProductCoordinate, WorthQueryApplicationOutputLineage,
-};
+use super::super::ProductCoordinate;
+use super::super::WorthQueryApplicationOutputLineage;
 
 mod denial;
 mod materialization;
@@ -63,26 +64,14 @@ impl WorthQueryApplicationOutputLineage {
         schema: &ApplicationSchemaBindingIdentity,
         occurrence: ProductBranchIncarnation,
         generation: u64,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Vec<NativePriorCheckpointOutput<'_>>, Denial> {
         let mut installed = HashMap::<TypeId, (&str, &str)>::new();
         for (family, bindings) in &self.output_families {
-            admission
-                .charge_external_work(1)
-                .map_err(|stop| Denial::admission("head inventory visit", stop))?;
             for (binding, role) in bindings {
-                admission
-                    .charge_external_work(1)
-                    .map_err(|stop| Denial::admission("head inventory visit", stop))?;
                 if installed.contains_key(binding) {
                     return Err(Denial::Structural(Structure::DuplicateInstalledBinding));
                 }
-                admission
-                    .admit_read_scratch(
-                        u64::try_from(std::mem::size_of::<(TypeId, (&str, &str))>())
-                            .map_err(|_| Denial::arithmetic("installed binding row width"))?,
-                    )
-                    .map_err(|stop| Denial::admission("installed binding scratch", stop))?;
+
                 installed
                     .try_reserve(1)
                     .map_err(|error| Denial::allocation("installed binding scratch", error))?;
@@ -92,9 +81,6 @@ impl WorthQueryApplicationOutputLineage {
 
         let mut publications = BTreeMap::new();
         for source in self.by_source.keys() {
-            admission
-                .charge_external_work(1)
-                .map_err(|stop| Denial::admission("head inventory visit", stop))?;
             if source.runtime_authority != runtime_authority || &source.schema != schema {
                 continue;
             }
@@ -105,16 +91,7 @@ impl WorthQueryApplicationOutputLineage {
                 continue;
             };
             let group = (family, role, source.scope);
-            if !publications.contains_key(&group) {
-                let bytes = std::mem::size_of::<(&str, &str, super::PublicationHeads<'_>)>();
-                admission
-                    .admit_read_scratch(
-                        u64::try_from(bytes).map_err(|_| {
-                            Denial::arithmetic("checkpoint size or work conversion")
-                        })?,
-                    )
-                    .map_err(|stop| Denial::admission("family publication group scratch", stop))?;
-            }
+
             let heads = publications
                 .entry(group)
                 .or_insert_with(super::PublicationHeads::default);
@@ -126,54 +103,19 @@ impl WorthQueryApplicationOutputLineage {
             let mut ancestry_depth = 0usize;
             let mut seen_partitions = BTreeSet::new();
             loop {
-                let remaining = admission.remaining_work();
-                let (partition_heads, work) = self
-                    .family_partition_heads_budgeted(execution, source, coordinate, remaining)
+                let partition_heads = self
+                    .family_partition_heads(execution, source, coordinate)
                     .map_err(|stop| Denial::admission("partition head traversal", stop))?;
-                admission
-                    .charge_external_work(
-                        u64::try_from(work).map_err(|_| {
-                            Denial::arithmetic("checkpoint size or work conversion")
-                        })?,
-                    )
-                    .map_err(|stop| Denial::admission("partition traversal work", stop))?;
+
                 for (partition, publication) in partition_heads {
-                    admission
-                        .charge_external_work(1)
-                        .map_err(|stop| Denial::admission("head inventory visit", stop))?;
                     if seen_partitions.contains(&partition) {
                         continue;
                     }
-                    let set_bytes = u64::try_from(std::mem::size_of::<Option<[u8; 32]>>() + 32)
-                        .map_err(|_| Denial::arithmetic("partition set entry width"))?;
-                    admission
-                        .admit_read_scratch(set_bytes)
-                        .map_err(|stop| Denial::admission("partition visited set scratch", stop))?;
+
                     if !seen_partitions.insert(partition) {
                         return Err(Denial::Structural(Structure::DuplicatePartition));
                     }
-                    let member_bytes = std::mem::size_of::<(
-                        Option<[u8; 32]>,
-                        &str,
-                        EntityId,
-                        std::cmp::Reverse<usize>,
-                        u64,
-                        TypeId,
-                        ProductCoordinate,
-                        usize,
-                        &super::super::RecordedOutput,
-                        bool,
-                    )>();
-                    admission
-                        .admit_read_scratch(u64::try_from(member_bytes).map_err(|_| {
-                            Denial::arithmetic("checkpoint size or work conversion")
-                        })?)
-                        .map_err(|stop| Denial::admission("family head scratch", stop))?;
-                    admission
-                        .charge_external_work(u64::try_from(heads.admission_work()).map_err(
-                            |_| Denial::arithmetic("checkpoint size or work conversion"),
-                        )?)
-                        .map_err(|stop| Denial::admission("family head comparison work", stop))?;
+
                     heads.insert(
                         partition,
                         role,
@@ -189,9 +131,6 @@ impl WorthQueryApplicationOutputLineage {
                 ancestry_depth = ancestry_depth
                     .checked_add(1)
                     .ok_or(Denial::arithmetic("occurrence ancestry depth"))?;
-                admission
-                    .charge_external_work(1)
-                    .map_err(|stop| Denial::admission("head inventory visit", stop))?;
             }
         }
 
@@ -205,9 +144,7 @@ impl WorthQueryApplicationOutputLineage {
                 if role != role_name {
                     return Err(Denial::Structural(Structure::UnexpectedOutputRole));
                 }
-                admission
-                    .charge_external_work(1)
-                    .map_err(|stop| Denial::admission("head inventory visit", stop))?;
+
                 let binding = recorded
                     .correspondence
                     .binding_type()
@@ -231,36 +168,10 @@ impl WorthQueryApplicationOutputLineage {
                     }
                     None => None,
                 };
-                let family_role_bytes = family
-                    .len()
-                    .checked_add(role_name.len())
-                    .and_then(|bytes| bytes.checked_add(std::mem::size_of::<OutputFamilyRole>()))
-                    .ok_or(Denial::arithmetic("family role text layout"))?;
-                admission
-                    .admit_read_scratch(
-                        u64::try_from(family_role_bytes).map_err(|_| {
-                            Denial::arithmetic("checkpoint size or work conversion")
-                        })?,
-                    )
-                    .map_err(|stop| Denial::admission("family role text scratch", stop))?;
-                admission
-                    .charge_external_work(
-                        u64::try_from(family_role_bytes).map_err(|_| {
-                            Denial::arithmetic("checkpoint size or work conversion")
-                        })?,
-                    )
-                    .map_err(|stop| Denial::admission("family role text copy work", stop))?;
+
                 let family = copy_text(family)?;
                 let role_name = copy_text(role_name)?;
-                admission
-                    .admit_read_scratch(
-                        u64::try_from(std::mem::size_of::<NativePriorCheckpointOutput>())
-                            .map_err(|_| Denial::arithmetic("selected head row width"))?,
-                    )
-                    .map_err(|stop| Denial::admission("selected head row scratch", stop))?;
-                admission
-                    .charge_external_work(1)
-                    .map_err(|stop| Denial::admission("head inventory visit", stop))?;
+
                 selected
                     .try_reserve(1)
                     .map_err(|error| Denial::allocation("selected head rows", error))?;

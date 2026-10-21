@@ -134,14 +134,13 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
             assert!(!graph
                 .integration_handle()
                 .with_runtime(request_execution, |runtime| {
-                    fact.source_currentness_within(
+                    fact.source_currentness_in(
                         runtime,
                         &host_custody.borrowed_request_for_test(),
                         current.application_basis().snapshot_handle(),
-                        1,
                     )
                     .unwrap()
-                    .0
+                    .unwrap()
                     .movement()
                         == Movement::Unmoved
                 }))
@@ -195,14 +194,13 @@ fn empty_indexed_root_set_stales_when_its_scoped_guard_becomes_a_match() {
             assert!(!graph
                 .integration_handle()
                 .with_runtime(request_execution, |runtime| {
-                    fact.source_currentness_within(
+                    fact.source_currentness_in(
                         runtime,
                         &host_custody.borrowed_request_for_test(),
                         reopened.application_basis().snapshot_handle(),
-                        1,
                     )
                     .unwrap()
-                    .0
+                    .unwrap()
                     .movement()
                         == Movement::Unmoved
                 }))

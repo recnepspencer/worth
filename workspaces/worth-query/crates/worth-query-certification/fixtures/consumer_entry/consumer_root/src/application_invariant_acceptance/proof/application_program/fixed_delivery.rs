@@ -51,7 +51,7 @@ macro_rules! settle {
 }
 
 #[test]
-fn fixed_delivery_finite_retry_unrelated_progress_and_consumed_fact_history() {
+fn fixed_delivery_result_contract_retry_unrelated_progress_and_consumed_fact_history() {
     let world = installation::install(&crate::installed_schema());
     let adapter = authentication::admit(world.application.installed_schema());
     let scope = authentication::request_scope();
@@ -81,19 +81,8 @@ fn fixed_delivery_finite_retry_unrelated_progress_and_consumed_fact_history() {
         .clone();
     let one = NonZeroUsize::new(1).unwrap();
     let policy = WorthQueryOperationDeliveryPolicy::default();
-    assert!(matches!(
-        settled.read_current_with_policy(
-            &request,
-            WorthQueryOperationDeliveryPolicy::currentness(one)
-        ),
-        Err(WorthQueryOperationDeliveryDenial::Currentness(_))
-    ));
-    assert!(matches!(
-        settled.read_current_with_policy(&request, policy.query(one, one)),
-        Err(WorthQueryOperationDeliveryDenial::Query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::Admission(denial)))
-        if matches!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded)
-    ));
-    assert!(matches!(settled.read_current_with_policy(&request, policy.query(one, NonZeroUsize::new(129).unwrap())), Err(WorthQueryOperationDeliveryDenial::Query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::Limit(_)))));
+
+    assert!(matches!(settled.read_current_with_policy(&request, policy.query(NonZeroUsize::new(2).unwrap())), Err(WorthQueryOperationDeliveryDenial::Query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::Limit(_)))));
     let fresh_scope = authentication::request_scope();
     let fresh_principal = authentication::block_on(adapter.authenticate(
         authentication::LocalCredential::issued_for_model_owner(),
@@ -173,7 +162,6 @@ fn fixed_delivery_no_projection_settles_real_required_outputs() {
     ];
     let world = installation::install_selected_program(
         &crate::installed_schema(),
-        4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),
         &grants,
@@ -209,9 +197,7 @@ fn fixed_delivery_no_projection_settles_real_required_outputs() {
     let before =
         worth_query_host::facade::primary_graph::query_read_kernel_entries_on_this_thread_for_test(
         );
-    let observation = settled
-        .deliver_current(&request, WorthQueryOperationDeliveryPolicy::default())
-        .unwrap();
+    let observation = settled.deliver_current(&request).unwrap();
     assert_eq!(
         worth_query_host::facade::primary_graph::query_read_kernel_entries_on_this_thread_for_test(
         ),
@@ -250,7 +236,6 @@ fn fixed_prepared_source_receipts_distinguish_shared_scope_publications() {
         .unwrap();
     let mut world = installation::install_selected_program(
         &crate::installed_schema(),
-        4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),
         &source::deployment_grants(),

@@ -90,9 +90,7 @@ fn recorded_settlements(
     let identities = partitions
         .iter()
         .map(|partition| {
-            let (recorded, _) = lineage
-                .latest_output_in_partition_budgeted(&source, coordinate, *partition, Some(1))
-                .expect("recorded output is selectable");
+            let recorded = lineage.latest_output_in_partition(&source, coordinate, *partition);
             Arc::clone(
                 &recorded
                     .expect("restored output has one actual lineage slot")

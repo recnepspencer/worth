@@ -5,7 +5,7 @@ use super::*;
 fn a_forked_branch_verifies_what_its_parent_settled() {
     let _equivalence = EquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None, ring_world::seed::<3>, Retained::AMPLE);
+    let application = install(None, ring_world::seed::<3>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3dc0);

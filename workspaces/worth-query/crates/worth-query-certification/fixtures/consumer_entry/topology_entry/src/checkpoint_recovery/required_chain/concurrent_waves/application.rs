@@ -178,17 +178,8 @@ fn compiled_examples_parallel_advancement() {
     let _reset = Reset;
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    let application = support::install_program_with_seed::<Program>(
-        None,
-        profile,
-        4096,
-        128 * 1024 * 1024,
-        profile
-            .limits()
-            .source_currentness_work()
-            .map(|work| work as u64),
-        diamond::seed,
-    );
+    let application =
+        support::install_program_with_seed::<Program>(None, profile, 4096, diamond::seed);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut left = request

@@ -2,20 +2,17 @@
 
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use worth_relational::facade::identity::EntityId;
-use worth_relational::facade::indexes::{
-    BoundedEntityFieldLookupAdmissionStop, BoundedEntityFieldLookupDenialKind,
-    BoundedIndexParityMode,
-};
-use worth_relational::facade::mvcc::CompanionPreflightStop;
-use worth_relational::facade::runtime::{RelationalRuntime, VisibilityProjectionView};
+use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;
+use worth_relational::facade::indexes::BoundedIndexParityMode;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::runtime::VisibilityProjectionView;
 
-use super::super::output_lineage::invalidation::InvalidationEditAdmission;
 use super::super::WorthQueryPrincipalResolutionDenialKind;
-use super::{WorthQueryPrincipalResolutionMode, WorthQueryPrincipalSnapshotResolution};
+use super::WorthQueryPrincipalResolutionMode;
+use super::WorthQueryPrincipalSnapshotResolution;
 
 #[derive(Debug)]
 pub(super) enum AdmittedPrincipalLookupStop {
-    Admission(CompanionPreflightStop),
     Index(BoundedEntityFieldLookupDenialKind),
     Semantic(WorthQueryPrincipalResolutionDenialKind),
 }
@@ -58,7 +55,6 @@ pub(super) fn resolve_unique_mapping_candidate<'view, 'resolution, 'identity>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &'view VisibilityProjectionView,
     resolution: &'resolution WorthQueryPrincipalSnapshotResolution<'identity>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<CheckedMappingCandidate<'view, 'resolution, 'identity>, AdmittedPrincipalLookupStop> {
     use AdmittedPrincipalLookupStop as Stop;
     let parity = match resolution.mode {
@@ -75,21 +71,11 @@ pub(super) fn resolve_unique_mapping_candidate<'view, 'resolution, 'identity>(
                 &resolution.layout.identity_locator,
                 resolution.expected_identity,
                 2,
-                |work, bytes| admission.charge_selected_index_read(work, bytes),
             ),
             parity,
             execution,
         )
-        .map_err(|denial| match denial {
-            BoundedEntityFieldLookupAdmissionStop::Lookup(denial) => Stop::Index(denial.kind()),
-            BoundedEntityFieldLookupAdmissionStop::Admission(denial) => Stop::Admission(denial),
-            BoundedEntityFieldLookupAdmissionStop::AccountingOverflow => {
-                Stop::Admission(CompanionPreflightStop::WorkCounterOverflow)
-            }
-            BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired => {
-                Stop::Index(BoundedEntityFieldLookupDenialKind::SnapshotUnavailable)
-            }
-        })?;
+        .map_err(|denial| Stop::Index(denial.kind()))?;
     if lookup.overflowed() || lookup.candidate_entity_ids().len() > 1 {
         return Err(Stop::Semantic(
             WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::AmbiguousPrincipal),
@@ -102,11 +88,7 @@ pub(super) fn resolve_unique_mapping_candidate<'view, 'resolution, 'identity>(
         .ok_or(Stop::Semantic(
             WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::UnknownPrincipal),
         ))?;
-    let carrier = u64::try_from(std::mem::size_of::<CheckedMappingCandidate<'_, '_, '_>>())
-        .map_err(|_| Stop::Admission(CompanionPreflightStop::WorkCounterOverflow))?;
-    admission
-        .charge_external_work(carrier)
-        .map_err(Stop::Admission)?;
+
     Ok(CheckedMappingCandidate {
         view,
         resolution,

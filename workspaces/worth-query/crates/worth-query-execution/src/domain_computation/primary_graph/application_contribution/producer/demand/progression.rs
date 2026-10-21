@@ -1,36 +1,40 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::WorthQueryProducerCommitAuthority;
 use super::disclosure::validate_disclosure;
 #[cfg(test)]
-use super::own_effect_observation::{self, Stage};
-use super::{
-    FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
-    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-    WorthQueryProducerOutputFamily,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use super::own_effect_observation;
+#[cfg(test)]
+use super::own_effect_observation::Stage;
+use super::FamilySourceQuery;
+use super::FamilySourceValue;
+use super::WorthQueryAdmittedOutputDemand;
+use super::WorthQueryOutputDemandAdvance;
+use super::WorthQueryOutputDemandDenial;
+use super::WorthQueryOutputDemandDenialKind;
+use super::WorthQueryProducerOutputFamily;
+
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-pub(in crate::domain_computation::primary_graph) use required_wave::{CurrentBasis, CurrentProof};
+pub(in crate::domain_computation::primary_graph) use required_wave::CurrentBasis;
+pub(in crate::domain_computation::primary_graph) use required_wave::CurrentProof;
 mod admission;
-mod caller_custody;
 mod caller_pass;
 use caller_pass::CallerPass;
 mod refresh;
 mod rejoin;
 mod required_fresh;
 mod required_wave;
-pub(super) use required_wave::admission_denial;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::{DecisionInput, PerformedMembers, SelectedDecisionInput};
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::DecisionInput;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::PerformedMembers;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use required_wave::performed::SelectedDecisionInput;
 mod retained_read;
-pub(in crate::domain_computation::primary_graph) use required_wave::{
-    MatchedRequiredPredecessors, ReboundConsumedOutput, ResolvedRequiredPredecessors,
-};
+pub(in crate::domain_computation::primary_graph) use required_wave::MatchedRequiredPredecessors;
+pub(in crate::domain_computation::primary_graph) use required_wave::ReboundConsumedOutput;
+pub(in crate::domain_computation::primary_graph) use required_wave::ResolvedRequiredPredecessors;
 mod selected_program;
 mod source_recovery;
 mod unavailable;
@@ -40,21 +44,6 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
-    /// Framework preparation and every producer one advance runs share this
-    /// structurally bounded request meter. Neither demand lane funds it:
-    /// currentness verification spends the source-currentness lane on its own
-    /// meter, and the producer-work lane bounds each producer's declared work
-    /// and source reads.
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn demand_request_admission(
-        &self,
-    ) -> InvalidationEditAdmission {
-        self.primary_provider
-            .graph
-            .source_owner
-            .invalidation_owner
-            .request_admission()
-    }
-
     /// A required caller settles first; the request work it leaves over is
     /// spent progressing other dirty required records from the shared queue.
     pub fn advance_output_demand<Family>(
@@ -83,7 +72,7 @@ where
                     "foreign advancement phase",
                 )
             })?;
-        self.advance_as_caller(demand, |demand, admission, performed| {
+        self.advance_as_caller(demand, |demand, performed| {
             self.advance_output_demand_with_commit_authority(
                 &execution,
                 phase,
@@ -93,7 +82,6 @@ where
                 delivery_branch,
                 disclosure,
                 WorthQueryProducerCommitAuthority::Ordinary,
-                admission,
                 performed,
             )
         })
@@ -127,7 +115,7 @@ where
                     "foreign advancement phase",
                 )
             })?;
-        self.advance_as_caller(demand, |demand, admission, performed| {
+        self.advance_as_caller(demand, |demand, performed| {
             self.advance_retained_with_commit_authority(
                 &execution,
                 phase,
@@ -136,7 +124,6 @@ where
                 request_scope,
                 delivery_branch,
                 WorthQueryProducerCommitAuthority::Ordinary,
-                admission,
                 performed,
             )
         })
@@ -154,7 +141,7 @@ where
         request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
         commit_authority: WorthQueryProducerCommitAuthority,
-        admission: &mut InvalidationEditAdmission,
+
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
@@ -173,7 +160,7 @@ where
             principal,
             request_scope,
             delivery_branch,
-            |retained, admission| {
+            |retained| {
                 retained_read::read_retained_source::<Schema, Family>(
                     execution,
                     self,
@@ -181,12 +168,10 @@ where
                     principal,
                     request_scope,
                     delivery_branch,
-                    admission,
                 )
                 .map(Some)
             },
             commit_authority,
-            admission,
             performed,
         )
     }
@@ -218,7 +203,7 @@ where
                     "the phase belongs to another installed runtime",
                 )
             })?;
-        self.advance_as_caller(demand, |demand, admission, performed| {
+        self.advance_as_caller(demand, |demand, performed| {
             self.advance_output_demand_with_commit_authority(
                 execution,
                 phase,
@@ -228,7 +213,6 @@ where
                 delivery_branch,
                 disclosure,
                 WorthQueryProducerCommitAuthority::ProgramOutput,
-                admission,
                 performed,
             )
         })
@@ -242,7 +226,6 @@ where
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         advance: impl FnOnce(
             &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
-            &mut InvalidationEditAdmission,
             &std::cell::RefCell<PerformedMembers>,
         )
             -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>,
@@ -250,21 +233,17 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        let mut admission = self.demand_request_admission();
         let performed = std::cell::RefCell::new(PerformedMembers::start());
-        let stop = match advance(demand, &mut admission, &performed) {
+        let stop = match advance(demand, &performed) {
             Ok(progress) => {
                 demand.settled |= matches!(progress, WorthQueryOutputDemandAdvance::Settled(_));
-                caller_pass_observation::observe_request_work(&admission);
                 return Ok(progress);
             }
             Err(stop) => stop,
         };
-        let stop = self.caller_custody_stop(demand, stop, &mut admission);
         if stop.has_read_cleanup() {
             let diagnostic = stop.clone();
             demand.terminal_caller_denial = Some(stop);
-            caller_pass_observation::observe_request_work(&admission);
             return Err(diagnostic);
         }
         if matches!(
@@ -276,7 +255,6 @@ where
                 .terminal_caller_denial
                 .get_or_insert_with(|| stop.clone());
         }
-        caller_pass_observation::observe_request_work(&admission);
         Err(stop)
     }
 
@@ -296,7 +274,7 @@ where
             FamilySourceValue<Schema, Family>,
         >,
         commit_authority: WorthQueryProducerCommitAuthority,
-        request_admission: &mut InvalidationEditAdmission,
+
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
@@ -312,9 +290,8 @@ where
             principal,
             request_scope,
             delivery_branch,
-            |_, _| Ok(disclosure.take()),
+            |_| Ok(disclosure.take()),
             commit_authority,
-            request_admission,
             performed,
         )
     }

@@ -1,51 +1,17 @@
-use super::refreshed_rejoin::OccurrenceSearchCharge;
 use std::sync::Arc;
 
-use super::{DemandRegistryState, WorthQueryOutputDemandKey};
-use crate::domain_computation::primary_graph::{
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-};
+use super::DemandRegistryState;
+use super::WorthQueryOutputDemandKey;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 #[derive(Default)]
 pub(super) struct DetachedRequiredMember {
     pub(super) _source: Option<Arc<super::source_readmission::RequiredOutputReadmission>>,
     pub(super) _key: Option<Arc<WorthQueryOutputDemandKey>>,
-    pub(super) refund_required_bytes: usize,
-}
-
-/// One ordered-tree node per member covers splits without charging unrelated
-/// registry records. The Arc owns a second key; SourceEpoch's clone shares its
-/// already admitted meaning, while producer text is copied into the new key.
-pub(super) fn member_bytes(key: &WorthQueryOutputDemandKey) -> Option<usize> {
-    minimum_member_bytes()?.checked_add(key.producer.len())
-}
-
-pub(super) fn minimum_member_bytes() -> Option<usize> {
-    let tree_node = 12usize
-        .checked_mul(std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>())?
-        .checked_add(14usize.checked_mul(std::mem::size_of::<usize>())?)?;
-    std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>()
-        .checked_add(std::mem::size_of::<WorthQueryOutputDemandKey>())?
-        .checked_add(2 * std::mem::size_of::<usize>())?
-        .checked_add(tree_node)
-}
-
-fn capacity_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-        "required output index has no retained capacity",
-    )
 }
 
 pub(super) struct PreparedRequiredMember {
     key: Arc<WorthQueryOutputDemandKey>,
-    bytes: usize,
-}
-
-impl PreparedRequiredMember {
-    pub(super) const fn reserved_bytes(&self) -> usize {
-        self.bytes
-    }
 }
 
 impl DemandRegistryState {
@@ -55,7 +21,6 @@ impl DemandRegistryState {
     pub(super) fn queued_member_released(
         &self,
         key: &WorthQueryOutputDemandKey,
-        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         let Some(_) = self
             .records
@@ -64,14 +29,7 @@ impl DemandRegistryState {
         else {
             return Ok(false);
         };
-        let observation = super::claim_readthrough::observe_row(
-            &self.records,
-            key,
-            &mut super::refreshed_rejoin::WalkAdmission::new(
-                admission,
-                super::refreshed_rejoin::WalkKind::RequiredMember,
-            ),
-        )?;
+        let observation = super::claim_readthrough::observe_row(&self.records, key);
         Ok(!observation.required && !observation.awaited)
     }
 
@@ -82,20 +40,8 @@ impl DemandRegistryState {
         if self.required_keys.contains(key) {
             return Ok(None);
         }
-        let bytes = member_bytes(key).ok_or_else(capacity_denial)?;
-        if self
-            .required_reserved_bytes
-            .checked_add(bytes)
-            .is_none_or(|required| !self.has_required_capacity(required))
-        {
-            return Err(super::required_custody::full_custody_denial(
-                bytes,
-                self.required_budget_bytes,
-            ));
-        }
         Ok(Some(PreparedRequiredMember {
             key: Arc::new(key.clone()),
-            bytes,
         }))
     }
 
@@ -107,43 +53,33 @@ impl DemandRegistryState {
                 .get(prepared.key.as_ref())
                 .and_then(|record| record.work_membership.as_ref())
                 .cloned();
-            if self.required_keys.insert(prepared.key) {
-                self.required_reserved_bytes += prepared.bytes;
-            }
+            self.required_keys.insert(prepared.key);
             if let Some(membership) = membership {
                 membership.set_required(true);
             }
         }
     }
 
-    pub(super) fn remove_required_member_if_released<C: OccurrenceSearchCharge>(
-        &mut self,
-        key: &WorthQueryOutputDemandKey,
-        charge: &mut C,
-    ) -> Result<(), C::Refusal> {
-        let retired = self.remove_required_member_if_released_detached(key, charge)?;
-        let refund = retired.refund_required_bytes;
+    pub(super) fn remove_required_member_if_released(&mut self, key: &WorthQueryOutputDemandKey) {
+        let retired = self.remove_required_member_if_released_detached(key);
         drop(retired);
-        self.required_reserved_bytes = self.required_reserved_bytes.saturating_sub(refund);
-        Ok(())
     }
 
     /// Selected terminal cleanup carries the real readmission source out of
     /// the registry guard before its final Arc can be destroyed.
-    pub(super) fn remove_required_member_if_released_detached<C: OccurrenceSearchCharge>(
+    pub(super) fn remove_required_member_if_released_detached(
         &mut self,
         key: &WorthQueryOutputDemandKey,
-        charge: &mut C,
-    ) -> Result<DetachedRequiredMember, C::Refusal> {
+    ) -> DetachedRequiredMember {
         if self
             .records
             .get(key)
             .is_some_and(|record| record.is_required())
         {
-            return Ok(DetachedRequiredMember::default());
+            return DetachedRequiredMember::default();
         }
-        let awaited = super::refreshed_rejoin::awaited_by_stale_owner(&self.records, key, charge)?;
-        Ok(self.remove_required_member_with_awaited(key, awaited))
+        let awaited = super::refreshed_rejoin::awaited_by_stale_owner(&self.records, key);
+        self.remove_required_member_with_awaited(key, awaited)
     }
 
     pub(super) fn remove_required_member_with_awaited(
@@ -174,14 +110,9 @@ impl DemandRegistryState {
             }
         }
         let removed_key = self.required_keys.take(key);
-        let refund_required_bytes = removed_key
-            .as_ref()
-            .map(|member| member_bytes(member.as_ref()).expect("admitted key charge fits"))
-            .unwrap_or(0);
         DetachedRequiredMember {
             _source: retired_source,
             _key: removed_key,
-            refund_required_bytes,
         }
     }
 }

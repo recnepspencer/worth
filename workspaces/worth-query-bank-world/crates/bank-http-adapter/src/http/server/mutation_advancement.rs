@@ -134,17 +134,13 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
             record.custody = custody;
             describe(&command.request_id, &command.custody_id, &record, refusal)
         }
-        MoneyCommand::Read {
-            maximum_results,
-            maximum_work,
-        } => retained_read(
+        MoneyCommand::Read { maximum_results } => retained_read(
             runtime,
             &principal,
             &scope,
             &command,
             &record,
             maximum_results,
-            maximum_work,
         ),
         MoneyCommand::ResumeSource => {
             refused(&command, denial(BankHttpDenialKind::MalformedRequest))
@@ -248,12 +244,11 @@ fn retained_read(
     command: &AdmittedMoneyCommand,
     record: &MoneyRecord,
     maximum_results: usize,
-    maximum_work: usize,
 ) -> BankHttpMutationOutcome {
     let Some(observation) = record.custody.observation() else {
         return refused(command, denial(BankHttpDenialKind::Unavailable));
     };
-    let controls = match BankReadControls::current(scope.clone(), maximum_results, maximum_work) {
+    let controls = match BankReadControls::current(scope.clone(), maximum_results) {
         Ok(controls) => controls,
         Err(_) => return refused(command, denial(BankHttpDenialKind::MalformedRequest)),
     };

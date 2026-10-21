@@ -2,7 +2,7 @@
 use super::*;
 
 pub(in crate::application_invariant_acceptance) fn install_selected_program<Program>(
-    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>, query_bytes: usize,
+    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
     roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
     deployment_grants: &[crate::program_deployment::ConsumerDeploymentGrantSeed],
     program: worth_query_decl::facade::application_program::ValidatedApplicationProgram<ConsumerSchema, Program>,
@@ -10,19 +10,12 @@ pub(in crate::application_invariant_acceptance) fn install_selected_program<Prog
 where Program: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema,
     Contributions = <ConsumerProgram as worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>>::Contributions>,
 Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema>{
-    install_selected_program_with_isolated_cycle(
-        foreign,
-        query_bytes,
-        roster,
-        deployment_grants,
-        false,
-        program,
-    )
+    install_selected_program_with_isolated_cycle(foreign, roster, deployment_grants, false, program)
 }
 
 
 pub(in crate::application_invariant_acceptance) fn install_selected_program_with_isolated_cycle<Program>(
-    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>, query_bytes: usize,
+    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
     roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
     deployment_grants: &[crate::program_deployment::ConsumerDeploymentGrantSeed],
     isolated_cycle: bool,
@@ -47,7 +40,7 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
         Arc::clone(&parameter_calls),
         (),
     );
-    let limits = resources::application_limits(query_bytes);
+    let limits = resources::application_limits();
     let deployment_scopes: std::collections::BTreeSet<_> = std::iter::once(*program.revision())
         .chain(deployment_grants.iter().map(|grant| grant.source()))
         .collect();

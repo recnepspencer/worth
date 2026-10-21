@@ -31,7 +31,7 @@ pub(super) struct ConsumerWorld<Program = ConsumerProgram> {
 pub(super) fn install(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
 ) -> ConsumerWorld {
-    install_with_resource_bytes(foreign, 4096)
+    install_configuration(foreign)
         .expect("the contributed configuration and initial state publish one application")
 }
 
@@ -49,7 +49,9 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
-        runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
+        runtime::WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
+        ),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     );
     let result = installation::in_memory_program(
@@ -96,7 +98,9 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
-        runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
+        runtime::WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
+        ),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     );
     let result = installation::in_memory_program(
@@ -144,7 +148,9 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
-        runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
+        runtime::WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
+        ),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     );
     let program = ApplicationProgramAuthoring::<
@@ -245,21 +251,11 @@ pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWor
     external_input::assert_external_inputs(world);
 }
 
-pub(super) fn install_with_query_bytes(
+fn install_configuration(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
-    query_bytes: usize,
-) -> ConsumerWorld {
-    install_with_resource_bytes(foreign, query_bytes)
-        .expect("the contributed configuration and initial state publish one application")
-}
-
-fn install_with_resource_bytes(
-    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
-    query_bytes: usize,
 ) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
     install_with_roster(
         foreign,
-        query_bytes,
         installation::WorthQueryApplicationProgramRoster::new(),
         &[],
     )
@@ -267,13 +263,12 @@ fn install_with_resource_bytes(
 
 pub(super) fn install_with_roster(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
-    query_bytes: usize,
+
     roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
     deployment_grants: &[crate::program_deployment::ConsumerDeploymentGrantSeed],
 ) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
     install_selected_program(
         foreign,
-        query_bytes,
         roster,
         deployment_grants,
         crate::application_program::validated_program()

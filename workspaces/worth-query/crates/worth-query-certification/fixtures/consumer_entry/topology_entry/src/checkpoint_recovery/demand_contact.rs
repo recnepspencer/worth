@@ -46,8 +46,7 @@ fn restored_output_reuses_under_receiving_host_policy_without_provider_contact()
 
     let restored = support::install_with_demand_profile(
         Some(checkpoint),
-        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::bounded(
-            NonZeroUsize::new(4_096).unwrap(),
+        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::new(
             NonZeroUsize::new(32).unwrap(),
         ),
     );

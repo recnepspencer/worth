@@ -1,8 +1,5 @@
-pub(super) mod capacity_region;
 mod execution_policy;
-pub(super) use execution_policy::currentness_work_limit;
 pub(super) mod observation;
-pub(super) mod retained_inventory;
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize},
     Arc,
@@ -45,8 +42,7 @@ pub(super) fn install_with_domain_denial(domain_denial: Arc<AtomicBool>) -> Appl
     installation::try_install_program_with_limits_and_domain_denial::<CheckpointProgram>(
         None,
         Default::default(),
-        // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.
-        limits(32, invalidation(128 * 1_024 * 1_024, None, 32)),
+        limits(32, invalidation()),
         seed_cycle,
         domain_denial,
     )
@@ -72,14 +68,13 @@ where
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
-    install_program_with_history::<Program>(checkpoint, profile, 32, 128 * 1_024 * 1_024)
+    install_program_with_history::<Program>(checkpoint, profile, 32)
 }
 
 pub(super) fn install_program_with_history<Program>(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     retained_composite_commits: u64,
-    retained_invalidation_bytes: u64,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
 where
     Program: ApplicationProgramDefinition<CheckpointSchema>,
@@ -93,8 +88,6 @@ where
         checkpoint,
         profile,
         retained_composite_commits,
-        retained_invalidation_bytes,
-        None,
         seed_cycle,
     )
 }
@@ -103,8 +96,6 @@ pub(super) fn install_program_with_seed<Program>(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     retained_composite_commits: u64,
-    retained_invalidation_bytes: u64,
-    maximum_invalidation_work: Option<u64>,
     seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
 ) -> application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>
 where
@@ -115,17 +106,11 @@ where
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
-    // The invalidation window keeps no more positions than the World retains.
-    let kept = usize::try_from(retained_composite_commits.min(128)).unwrap();
-    let limits = limits(
-        retained_composite_commits,
-        invalidation(retained_invalidation_bytes, maximum_invalidation_work, kept),
-    );
+    let limits = limits(retained_composite_commits, invalidation());
     install_program_with_limits::<Program>(checkpoint, profile, limits, seed)
 }
 
-/// Installs with caller-built limits, so a test can keep the invalidation
-/// resources it observes.
+/// Installs with caller-built World limits and receiver-scoped invalidation controls.
 pub(super) fn install_program_with_limits<Program>(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
@@ -228,29 +213,8 @@ pub(super) fn length(value: u64) -> PositiveLength {
     PositiveLength::new(value).unwrap()
 }
 
-pub(super) fn invalidation(
-    retained_invalidation_bytes: u64,
-    maximum_invalidation_work: Option<u64>,
-    retained_positions: usize,
-) -> worth_query_host::facade::runtime::WorthQueryInvalidationResources {
-    use worth_query_host::facade::runtime::{
-        WorthQueryInvalidationResourceInstallation as Installation, WorthQueryInvalidationResources,
-    };
-    let installation = match maximum_invalidation_work {
-        Some(work) => Installation::bounded(
-            work,
-            64 * 1_024 * 1_024,
-            retained_invalidation_bytes,
-            retained_positions,
-        ),
-        None => Installation::new(
-            None,
-            Some(retained_invalidation_bytes),
-            Some(retained_positions),
-        ),
-    };
-    WorthQueryInvalidationResources::install(installation)
-        .expect("the Query invalidation installation is valid")
+pub(super) fn invalidation() -> worth_query_host::facade::runtime::WorthQueryInvalidationResources {
+    worth_query_host::facade::runtime::WorthQueryInvalidationResources::new()
 }
 
 pub(super) fn limits(
@@ -336,7 +300,9 @@ pub(super) fn limits_with_history_and_policy(
             policy,
         )
         .unwrap(),
-        WorthQueryApplicationQueryResourceProfile::bounded(4_096, 4_096, 4_096, 32).unwrap(),
+        WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
+        ),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     )
 }

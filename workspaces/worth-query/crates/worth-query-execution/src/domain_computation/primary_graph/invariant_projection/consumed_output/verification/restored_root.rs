@@ -7,9 +7,8 @@
 //! demand readmits the output by.
 
 use super::*;
-use crate::domain_computation::primary_graph::{
-    schema_layout::WorthQueryPrimaryGraphLayout, WorthQueryApplicationOutputCorrespondence,
-};
+use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
 
 impl ConsumedOutputEvidence {
     /// The witness of a restored output whose facts and output are unchanged
@@ -20,30 +19,22 @@ impl ConsumedOutputEvidence {
         correspondence: &WorthQueryApplicationOutputCorrespondence,
         source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
         layout: &WorthQueryPrimaryGraphLayout,
-        owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<Arc<OnceLock<SealedNativeOutputWitness>>>, ConsumedOutputVerificationStop>
     {
-        SealedNativeOutputWitness::from_checkpoint_facts(
-            correspondence,
-            layout,
-            source_facts,
-            owner,
-            admission,
-        )
-        .map_err(map_admission_stop)
-        .and_then(|witness| {
-            let Some(witness) = witness else {
-                return Ok(None);
-            };
-            let current = witness
-                .get()
-                .expect("checkpoint constructor sealed its witness")
-                .checkpoint_facts_current_in(execution, runtime, snapshot, source_facts, admission)
-                .map_err(map_verification_stop)?;
-            Ok(current.then_some(witness))
-        })
+        SealedNativeOutputWitness::from_checkpoint_facts(correspondence, layout, source_facts)
+            .map_err(map_admission_stop)
+            .and_then(|witness| {
+                let Some(witness) = witness else {
+                    return Ok(None);
+                };
+                let current = witness
+                    .get()
+                    .expect("checkpoint constructor sealed its witness")
+                    .checkpoint_facts_current_in(execution, runtime, snapshot, source_facts)
+                    .map_err(map_verification_stop)?;
+                Ok(current.then_some(witness))
+            })
     }
 }

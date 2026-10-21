@@ -3,9 +3,6 @@ use super::{
     WorthQueryExecutionCapacityReservation, WorthQueryExecutionResourceSupport,
 };
 
-mod admitted_direct;
-pub(crate) use admitted_direct::reserve_execution_resource_plan_admitted;
-
 pub struct WorthQueryCapacityReservedExecutionResourcePlan {
     resources: WorthQueryAdmittedExecutionResourcePlan,
     provider_reservations: Vec<Box<dyn WorthQueryExecutionCapacityReservation>>,
@@ -119,15 +116,17 @@ impl WorthQueryExecutionCapacityReleaseReceipt {
 }
 
 pub fn reserve_execution_resource_plan(
-    resources: WorthQueryAdmittedExecutionResourcePlan,
+    mut resources: WorthQueryAdmittedExecutionResourcePlan,
 ) -> Option<WorthQueryCapacityReservedExecutionResourcePlan> {
-    match reserve_execution_resource_plan_admitted(resources, &mut |_, _| {
-        Ok::<(), std::convert::Infallible>(())
-    }) {
-        Ok(reserved) => reserved,
-        Err(WorthQueryCapacityReservationAdmissionStop::Admission(never)) => match never {},
-        Err(WorthQueryCapacityReservationAdmissionStop::AccountingOverflow) => None,
-    }
+    let release_identity = resources.identity().to_owned();
+    resources.record_capacity_reservation_check();
+    let provider_reservations = reserve_plans(std::iter::once(&resources))?;
+    resources.record_capacity_reservation();
+    Some(WorthQueryCapacityReservedExecutionResourcePlan {
+        resources,
+        provider_reservations,
+        release_identity,
+    })
 }
 
 pub fn reserve_workflow_resource_plan(

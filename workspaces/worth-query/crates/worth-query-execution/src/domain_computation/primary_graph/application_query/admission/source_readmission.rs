@@ -1,15 +1,15 @@
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
-use worth_query_installation::facade::{
-    WorthQueryInstalledApplicationQuery, WorthQueryInstalledApplicationQueryIdentity,
-};
+use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
+use worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity;
 
-use super::super::{
-    WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-    WorthQueryApplicationQueryControls, WorthQueryObservedSource,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use super::super::WorthQueryAdmittedApplicationQueryPlan;
+use super::super::WorthQueryApplicationQueryAccessContext;
+use super::super::WorthQueryApplicationQueryAdmissionDenial;
+use super::super::WorthQueryApplicationQueryAdmissionDenialKind;
+use super::super::WorthQueryApplicationQueryControls;
+use super::super::WorthQueryObservedSource;
+
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 /// The original selector and parameters have passed fresh installed-query,
@@ -75,7 +75,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         >,
         observed: &WorthQueryObservedSource<Query>,
         controls: WorthQueryApplicationQueryControls<'a, Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         WorthQueryAdmittedApplicationQueryPlan<
             'a,
@@ -89,13 +88,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         >,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
-        let prepared = self.prepare_application_query_from_observed(
-            query, access, observed, controls, admission,
-        )?;
+        let prepared =
+            self.prepare_application_query_from_observed(query, access, observed, controls)?;
         let (parameters, controls) = prepared.into_parts();
-        self.finish_application_query_readmission(
-            execution, query, access, parameters, controls, admission,
-        )
+        self.finish_application_query_readmission(execution, query, access, parameters, controls)
     }
 
     pub(in crate::domain_computation::primary_graph) fn prepare_application_query_from_observed<
@@ -124,37 +120,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         >,
         observed: &WorthQueryObservedSource<Query>,
         controls: WorthQueryApplicationQueryControls<'a, Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         PreparedApplicationQuerySourceReadmission<'a, Schema>,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
         let selector = observed.retained_scope_selector();
-        let selector_visits = selector
-            .locator()
-            .field_path()
-            .fields()
-            .len()
-            .checked_add(4)
-            .and_then(|n| u64::try_from(n).ok())
-            .ok_or_else(source_work_denial)?;
-        admission
-            .charge_external_work(selector_visits)
-            .map_err(|_| source_work_denial())?;
-        let selector_work = selector
-            .initialized_copy_work()
-            .and_then(|n| u64::try_from(n).ok())
-            .ok_or_else(source_work_denial)?;
-        admission
-            .charge_external_work(selector_work)
-            .map_err(|_| source_work_denial())?;
-        let name_bytes = u64::try_from(query.name().len()).map_err(|_| source_work_denial())?;
-        admission
-            .charge_external_work(name_bytes)
-            .map_err(|_| source_work_denial())?;
-        admission
-            .admit_read_scratch(name_bytes)
-            .map_err(source_resource_denial)?;
+
         if observed.runtime_authority != self.runtime.authority_identity().as_u64()
             || observed.query_identity != *query.identity()
             || observed.schema_binding != *query.binding_identity()
@@ -179,7 +150,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             access,
             &observed.parameters,
             controls,
-            admission,
         )?;
         Ok(PreparedApplicationQuerySourceReadmission {
             query_identity: query.identity().clone(),
@@ -187,24 +157,4 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             controls,
         })
     }
-}
-
-fn source_work_denial() -> WorthQueryApplicationQueryAdmissionDenial {
-    WorthQueryApplicationQueryAdmissionDenial::new(
-        WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
-        String::new(),
-    )
-}
-
-fn source_resource_denial(
-    stop: worth_relational::facade::mvcc::CompanionPreflightStop,
-) -> WorthQueryApplicationQueryAdmissionDenial {
-    use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-    let kind = match stop {
-        Stop::PreparationMemoryExhausted { .. } | Stop::PreparationMemoryCounterOverflow => {
-            WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted
-        }
-        _ => WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
-    };
-    WorthQueryApplicationQueryAdmissionDenial::new(kind, String::new())
 }

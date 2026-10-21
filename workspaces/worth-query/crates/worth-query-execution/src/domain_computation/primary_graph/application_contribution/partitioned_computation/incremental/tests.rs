@@ -3,7 +3,6 @@
 //! and keeps the run seal retains; a moved fact is the retained fact standing
 //! in for an older one.
 
-use crate::domain_computation::primary_graph::output_lineage::custodied_state_for_test;
 use crate::facade::primary_graph::WorthQueryExecutionObservation as QueryObservation;
 use std::sync::{Arc, Mutex};
 
@@ -331,7 +330,7 @@ fn prior_of(first: Attempt, moved: bool) -> ComputationPrior {
             WorthQueryApplicationObservedFact::SourceEntity { entity_id },
         );
     }
-    ComputationPrior::new(edition(), Ok(custodied_state_for_test(state)), None)
+    ComputationPrior::new(edition(), Ok(std::sync::Arc::new(state)), None)
 }
 
 fn first_run(world: &AuthorizationWorld, installed: &Installed) -> Attempt {

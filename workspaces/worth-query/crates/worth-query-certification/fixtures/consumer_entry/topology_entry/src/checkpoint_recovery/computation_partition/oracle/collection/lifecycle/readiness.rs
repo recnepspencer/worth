@@ -90,11 +90,12 @@ fn definition<const CONFLICT: bool, const ORPHAN: u8>(
         crate::readiness::canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
         domain::WorthQueryExecutionStrategyName::new(identity).unwrap(),
-        128,
-        // Same authored identity, different resource meaning: identity-only
-        // composition would incorrectly absorb this conflicting definition.
-        if CONFLICT { 129 } else { 128 },
-        identity,
+        // Same authored identity, different native lowering meaning must not coalesce.
+        if CONFLICT {
+            "collection-conflicting-readiness-v1"
+        } else {
+            identity
+        },
     )
     .semantic_reads([crate::readiness::output_change_projection()])
     .dependencies([dependency.clone()])

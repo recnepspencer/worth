@@ -2,9 +2,8 @@
 //! is applied once, before the row is begun, so nothing is claimed.
 
 use super::*;
-use crate::domain_computation::primary_graph::application_output_demand::{
-    OutputRowStage, WorthQueryAcceptedOutputAuthority as Authority,
-};
+use crate::domain_computation::primary_graph::application_output_demand::OutputRowStage;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority as Authority;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 
 /// Whether the disclosed source is still the one the demand names.
@@ -25,7 +24,6 @@ where
         &self,
         demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
         source: &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -37,13 +35,7 @@ where
         // SourceEpoch compares fixed owner-issued source coordinates and their
         // sealed meaning identity. This neither reads the graph nor establishes
         // equality/currentness for any retained output.
-        let work = (2 * std::mem::size_of_val(interest.key().source_epoch()) + 4 * 32 + 4) as u64;
-        admission.charge_external_work(work).map_err(|_| {
-            denial(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                "released source identity",
-            )
-        })?;
+
         let epoch = source.output_source_epoch().ok_or_else(|| {
             denial(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -54,8 +46,7 @@ where
             return Ok(false);
         }
         Ok(matches!(
-            self.output_demands
-                .row_stage_admitted(interest, admission)?,
+            self.output_demands.row_stage_admitted(interest)?,
             OutputRowStage::BeforeReady
         ))
     }
@@ -67,22 +58,19 @@ where
         commit_authority: &WorthQueryProducerCommitAuthority,
         entry: &InstalledProducerProvider<Schema>,
         progression: &ScheduleProgression<'_, '_, '_, Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<SourceGuard, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        demand.progression_provenance.validate_for_execution(
-            commit_authority,
-            &entry.edition,
-            admission,
-        )?;
+        demand
+            .progression_provenance
+            .validate_for_execution(commit_authority, &entry.edition)?;
         demand
             .interest
             .as_ref()
             .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY))?;
         let named = if progression.is_selected() {
-            demand.matches_observed_source_admitted(source, admission)?
+            demand.matches_observed_source_admitted(source)?
         } else {
             demand.matches_observed_source(source)
         };
@@ -117,7 +105,6 @@ where
             FamilySourceValue<Schema, Family>,
         >,
         selected: bool,
-        request_admission: &mut InvalidationEditAdmission,
     ) -> Result<
         OwnStages<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
         WorthQueryOutputDemandDenial,
@@ -131,9 +118,9 @@ where
             .interest
             .as_ref()
             .expect("progression entry checked live Interest");
-        let mut end_row = || {
+        let end_row = || {
             self.output_demands
-                .finish_superseded(interest, Family::IDENTITY, request_admission)
+                .finish_superseded(interest, Family::IDENTITY)
         };
         if selected {
             return Err(end_row()?);
@@ -172,16 +159,13 @@ where
                 None => end_row()?,
             });
         }
-        request_admission
-            .charge_external_work(std::mem::size_of_val(disclosure.source()) as u64)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
+
         self.refresh_output_demand(
             execution,
             demand,
             disclosure.value(),
             disclosure.source().clone(),
             held,
-            request_admission,
         )?;
         // Carry source custody unchanged; the admitted successor supplies its seal.
         Ok(OwnStages::Refreshed(disclosure))

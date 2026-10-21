@@ -173,10 +173,7 @@ fn installation_refusal<Binding: RegionTotalsBinding>(
     let installed = support::try_install_program_with_limits::<RegionTotalsProgram<Binding>>(
         None,
         Default::default(),
-        support::limits(
-            32,
-            support::invalidation(128 * 1_024 * 1_024, Some(1_000_000), 32),
-        ),
+        support::limits(32, support::invalidation()),
         support::seed_cycle,
     );
     match installed.err().map(|denial| *denial) {

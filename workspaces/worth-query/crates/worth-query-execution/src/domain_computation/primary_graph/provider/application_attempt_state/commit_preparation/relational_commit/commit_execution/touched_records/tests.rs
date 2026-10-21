@@ -1,25 +1,33 @@
 //! Real prepared native records, pre-effect refusal and shared physical custody.
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
-use crate::domain_computation::primary_graph::tests::fixture::{
-    installed_authorization_world, live_scope, Account, AccountIdentity, AccountLabel,
-    AccountStatus,
-};
-use std::{alloc::Layout, collections::BTreeMap, num::NonZeroUsize};
-use worth_execution::{
-    CancellationToken, ExecutionAllocationDenialKind, ExecutionAuthority, ExecutionAuthorityConfig,
-    LeaseDenial, LeaseRequest,
-};
-use worth_foundational::{
-    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
-};
-use worth_query_declaration::facade::application_schema::{
-    ApplicationScalarValueBinding, StringApplicationValueBinding,
-};
-use worth_relational::facade::{
-    mvcc::{CompanionPreflightBudget, RelationalTransactionIntent},
-    transactions::{AspectFieldPatch, CreateIntent, EntitySpec, MutationIntent, WorkerIntentBatch},
-};
+use crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world;
+use crate::domain_computation::primary_graph::tests::fixture::live_scope;
+use crate::domain_computation::primary_graph::tests::fixture::Account;
+use crate::domain_computation::primary_graph::tests::fixture::AccountIdentity;
+use crate::domain_computation::primary_graph::tests::fixture::AccountLabel;
+use crate::domain_computation::primary_graph::tests::fixture::AccountStatus;
+use std::alloc::Layout;
+use std::collections::BTreeMap;
+use std::num::NonZeroUsize;
+use worth_execution::CancellationToken;
+use worth_execution::ExecutionAllocationDenialKind;
+use worth_execution::ExecutionAuthority;
+use worth_execution::ExecutionAuthorityConfig;
+use worth_execution::LeaseDenial;
+use worth_execution::LeaseRequest;
+use worth_foundational::DeterminismContract;
+use worth_foundational::ExecutionBudget;
+use worth_foundational::ExecutionPosture;
+use worth_foundational::ExecutionRequestPolicy;
+use worth_query_declaration::facade::application_schema::ApplicationScalarValueBinding;
+use worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
+use worth_relational::facade::mvcc::RelationalTransactionIntent;
+use worth_relational::facade::transactions::AspectFieldPatch;
+use worth_relational::facade::transactions::CreateIntent;
+use worth_relational::facade::transactions::EntitySpec;
+use worth_relational::facade::transactions::MutationIntent;
+use worth_relational::facade::transactions::WorkerIntentBatch;
 
 fn request(bytes: u64) -> LeaseRequest {
     LeaseRequest {
@@ -31,13 +39,6 @@ fn request(bytes: u64) -> LeaseRequest {
         deadline: None,
         cancellation: CancellationToken::new(),
     }
-}
-
-fn admission() -> InvalidationEditAdmission {
-    InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(1_000),
-        maximum_preparation_bytes: None,
-    })
 }
 
 #[test]
@@ -164,7 +165,6 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
         let zero = authority.request_lease(request(0)).unwrap();
         let denied = match PreparedTouchedRecords::prepare(
             &candidate,
-            &mut admission(),
             ExecutionAllocationPolicy::Execution(&zero),
         ) {
             Err(WorthQueryProviderSessionCommitStop::PreEffectDenied(failure)) => failure,
@@ -208,7 +208,6 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
         stop.cancel();
         let cancelled = match PreparedTouchedRecords::prepare(
             &candidate,
-            &mut admission(),
             ExecutionAllocationPolicy::Execution(&stopped),
         ) {
             Err(WorthQueryProviderSessionCommitStop::PreEffectDenied(failure)) => failure,
@@ -238,7 +237,6 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
         let child = parent.child(request(quote)).unwrap();
         let prepared = PreparedTouchedRecords::prepare(
             &candidate,
-            &mut admission(),
             ExecutionAllocationPolicy::Execution(&child),
         )
         .unwrap_or_else(|_| panic!("exact layout fits"));

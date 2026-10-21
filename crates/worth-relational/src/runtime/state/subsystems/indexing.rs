@@ -7,7 +7,6 @@ mod admitted_selection;
 mod prepared_publication;
 pub(crate) use prepared_publication::PreparedGenerationBatch;
 mod discard;
-pub(crate) use admitted_selection::ExactLookupInputs;
 mod generation_catalog;
 #[cfg(test)]
 mod query_generation_routing;

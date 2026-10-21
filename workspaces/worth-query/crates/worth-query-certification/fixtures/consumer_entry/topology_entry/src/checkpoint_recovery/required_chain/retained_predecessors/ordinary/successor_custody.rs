@@ -32,11 +32,6 @@ fn changed_native_membership_still_refuses_after_genuine_consumer_handoff() {
         None,
         profile,
         32,
-        128 * 1_024 * 1_024,
-        profile
-            .limits()
-            .source_currentness_work()
-            .map(|work| u64::try_from(work).unwrap()),
         super::super::super::source_world::seed,
     );
     let (scope, principal) = authenticate(&application);
@@ -166,7 +161,7 @@ fn changed_native_membership_still_refuses_after_genuine_consumer_handoff() {
     let current = request.retain_current_read().unwrap();
     request
         .at(&current)
-        .require_current_output_demand(&refreshed, Some(1_000_000))
+        .require_current_output_demand(&refreshed)
         .unwrap();
     let output = request
         .query(PlanarOutputRead {

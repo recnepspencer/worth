@@ -5,23 +5,19 @@ use crate::domain_computation::primary_graph::output_lineage::RetainedSourceFact
 use std::sync::OnceLock;
 
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_attempt::{
-        WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputPosture,
-        WorthQueryCheckpointOutputRole,
-    },
-    invariant_projection::{
-        ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
-    },
-    output_lineage::{
-        invalidation::{FullVerificationReason, InvalidationEditAdmission},
-        RetainedOutputCurrentnessRead, SealedNativeOutputWitness,
-    },
-    tests::fixture::{publish_relational_mutation, AuthorizationWorld},
-};
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputCorrespondence;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
+use crate::domain_computation::primary_graph::output_lineage::RetainedOutputCurrentnessRead;
+use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
+use crate::domain_computation::primary_graph::tests::fixture::publish_relational_mutation;
+use crate::domain_computation::primary_graph::tests::fixture::AuthorizationWorld;
 
 #[test]
-fn a_demand_records_the_row_it_verified_on_its_own_meter() {
+fn a_demand_records_the_row_it_genuinely_verified() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -48,21 +44,22 @@ fn a_demand_records_the_row_it_verified_on_its_own_meter() {
             consumed_nothing: true,
             verification_requirement: None,
         };
-        let recorded = || {
+let recorded = || {
             matches!(
-                owner.currentness(&positioned, &identity, &mut owner.edit_admission()),
+                owner.currentness(&positioned, &identity),
                 Ok(SourceSettlementCurrentness::Clean)
             )
         };
+
+
         assert!(!recorded());
         // Neither absence nor an empty comparison may replace the original
         // own-publication gate. These reads hold no receipt and cannot mark.
         for facts in [None, RetainedSourceFacts::for_test(false, Arc::from([])).for_comparison()] {
             read.facts = facts;
-            let stopped = selected.require_current_read(
-                &host_custody.borrowed_request_for_test(), runtime, &read, None,
-                &mut owner.edit_admission(),
-            ).unwrap_err();
+
+            let stopped = selected.require_current_read(&host_custody.borrowed_request_for_test(),
+                runtime, &read, None).unwrap_err();
             assert_eq!(stopped.kind(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::Superseded);
             assert!(!recorded(), "factless refusal cannot establish a verified row");
         }
@@ -70,29 +67,15 @@ fn a_demand_records_the_row_it_verified_on_its_own_meter() {
         let locator = graph.layout().field_locator(label.entity(), label.aspect(), label.field()).unwrap().clone();
         let fact = field_fact(&host_custody.borrowed_request_for_test(), runtime, snapshot, entity, locator);
         read.facts = RetainedSourceFacts::for_test(false, Arc::from([fact])).for_comparison();
-        // Search the smallest explicit caller restriction on the same row;
-        // the installed default has no finite upper bound.
-        let least = (1usize..)
-            .find(|&work| {
-                let mut request = owner.edit_admission_with_work_limit(Some(work));
-                selected
-                    .require_current_read(&host_custody.borrowed_request_for_test(), runtime, &read, None, &mut request)
-                    .is_ok()
-            })
-            .expect("some meter verifies the output");
-        assert!(
-            !recorded(),
-            "the least meter that answers ({least}) has nothing left to record the row"
-        );
         assert!(selected
-            .require_current_read(&host_custody.borrowed_request_for_test(), runtime, &read, None, &mut owner.edit_admission())
+            .require_current_read(&host_custody.borrowed_request_for_test(), runtime, &read, None)
             .is_ok());
-        assert!(recorded(), "a meter with room records the verified row");
+        assert!(recorded(), "the genuine native verification registers the row");
     }) }).expect("the fixture read owns its installed host call");
 }
 
 #[test]
-fn a_verification_records_the_row_it_compared_on_its_own_meter() {
+fn a_verification_records_the_row_it_compared() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -114,8 +97,7 @@ fn a_verification_records_the_row_it_compared_on_its_own_meter() {
         let witness = account_witness(&host_custody.borrowed_request_for_test(), &world, runtime, snapshot, entity);
         let facts: Arc<[WorthQueryApplicationObservedFact]> = Arc::from([]);
         owner
-            .register_settlement(
-                SettlementRegistration {
+            .register_settlement(SettlementRegistration {
                     computation: None,
                     work_membership: None,
                     identity: Arc::clone(&identity),
@@ -125,53 +107,30 @@ fn a_verification_records_the_row_it_compared_on_its_own_meter() {
                     stale_at_read_basis: OrdSet::new(),
                     requirement: Some(FullVerificationReason::DeclaredChangeUnavailable),
                     upstream: OrdSet::new(),
-                },
-                &mut owner.edit_admission(),
-            )
+                })
             .expect("the row requires verification at the selected source");
-        let verify = |admission: &mut InvalidationEditAdmission| {
-            ConsumedOutputEvidence::verify_at_observation(&host_custody.borrowed_request_for_test(),
-                &identity,
-                &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(),
-                &[],
-                None,
-                &witness,
-                owner,
-                runtime,
-                snapshot,
-                &positioned,
-                admission,
-            )
+        let verify = || {
+            ConsumedOutputEvidence::verify_at_observation(&host_custody.borrowed_request_for_test(), &identity, &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(), &[], None, &witness, owner, runtime, snapshot, &positioned)
         };
-        let recorded = || {
+let recorded = || {
             matches!(
-                owner.currentness(&positioned, &identity, &mut owner.edit_admission()),
+                owner.currentness(&positioned, &identity),
                 Ok(SourceSettlementCurrentness::Clean)
             )
         };
+
+
         assert!(!recorded());
-        // Search the smallest explicit caller restriction on the same row;
-        // the installed default has no finite upper bound.
-        let least = (1usize..)
-            .find(|&work| {
-                let mut request = owner.edit_admission_with_work_limit(Some(work));
-                verify(&mut request) == Ok(ConsumedOutputVerification::Current)
-            })
-            .expect("some meter verifies the output");
-        assert!(
-            !recorded(),
-            "the least meter that answers ({least}) has nothing left to record the row"
-        );
         assert_eq!(
-            verify(&mut owner.edit_admission()),
+            verify(),
             Ok(ConsumedOutputVerification::Current)
         );
-        assert!(recorded(), "a meter with room records the verified row");
+        assert!(recorded(), "the genuine native verification registers the row");
     }) }).expect("the fixture read owns its installed host call");
 }
 
 #[test]
-fn a_commit_meter_that_cannot_record_a_restored_output_stops_the_commit() {
+fn a_restored_output_registers_before_commit() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -185,34 +144,18 @@ fn a_commit_meter_that_cannot_record_a_restored_output_stops_the_commit() {
     let owner = &handle.source_owner.invalidation_owner;
     let (head_handle, head) = handle.with_runtime(request_execution, snapshot);
     let restored = ConsumedOutputEvidence::retained_for_test(
-        owner,
         identity,
         Arc::from([]),
         Vec::new(),
         Some(FullVerificationReason::CheckpointRestore),
         Arc::new(head),
     );
-    let mut exhausted = owner.edit_admission_with_work_limit(Some(1));
-    exhausted.charge_external_work(1).unwrap();
+
     assert_eq!(
-        restored.establish_restored_before_commit(
-            request_execution,
-            &handle.source_owner,
-            &mut exhausted
-        ),
-        Err(ConsumedOutputVerificationStop::WorkExhausted),
-        "the commit's answer reads the row, so its meter pays to record it"
-    );
-    let mut request = owner.edit_admission();
-    assert_eq!(
-        restored.establish_restored_before_commit(
-            request_execution,
-            &handle.source_owner,
-            &mut request
-        ),
+        restored.establish_restored_before_commit(request_execution, &handle.source_owner),
         Ok(())
     );
-    assert!(request.charged_work() > 0);
+
     handle.with_runtime_mut(request_execution, |runtime| {
         runtime.snapshots().release_snapshot(&head_handle).unwrap();
     });
@@ -259,15 +202,9 @@ pub(super) fn account_witness(
         execution,
     )
     .unwrap();
-    SealedNativeOutputWitness::from_checkpoint_facts(
-        &correspondence,
-        layout,
-        &facts,
-        owner,
-        &mut owner.edit_admission(),
-    )
-    .unwrap()
-    .expect("complete native facts reconstruct the witness")
+    SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &facts)
+        .unwrap()
+        .expect("complete native facts reconstruct the witness")
 }
 
 /// Publishes through the World so the companion has a selected cell at the

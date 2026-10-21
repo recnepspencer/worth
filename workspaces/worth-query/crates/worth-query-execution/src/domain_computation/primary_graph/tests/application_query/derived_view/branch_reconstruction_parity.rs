@@ -178,7 +178,6 @@ fn members_admitted_on_another_branch_are_foreign_after_the_reads() {
                 answer,
                 Err(WorthQueryManagedDerivedViewDenial::ForeignBranch)
             );
-            assert!(work.charged_work() > 0);
         })
         .unwrap();
 }

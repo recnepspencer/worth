@@ -11,7 +11,6 @@ use std::{collections::BTreeMap, sync::Arc};
 
 #[cfg(test)]
 mod commit_tests;
-mod field_pinning;
 mod frontier_reads;
 mod pinning;
 mod record_reads;
@@ -90,10 +89,6 @@ impl RelationalPinnedRead {
 }
 
 impl<Snapshot> RelationalPinnedRead<Snapshot> {
-    pub(crate) fn selected_index_count(&self) -> usize {
-        self.indexes.len()
-    }
-
     /// Immutable schema carried by the selected root, never current configuration.
     pub fn schema(&self) -> &RelationalSchemaRegistry {
         self.basis.root().schema_authority().registry()

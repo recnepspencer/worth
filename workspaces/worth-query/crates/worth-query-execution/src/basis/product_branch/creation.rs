@@ -103,12 +103,9 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
             application_provider,
             source_program_resolver,
         } = self;
-        let application_commit_lane = application_provider
-            .map(|provider| {
-                provider.application_branch_commit_lane_for_occurrence(source.occurrence())
-            })
-            .transpose()
-            .map_err(|_| WorthQueryProductBranchCreateError::BranchCoordinationCapacityExhausted)?;
+        let application_commit_lane = application_provider.map(|provider| {
+            provider.application_branch_commit_lane_for_occurrence(source.occurrence())
+        });
         let _coordination = application_commit_lane.as_ref().map(|lane| lane.enter());
         let components = intent
             .ok_or(WorthQueryProductBranchCreateError::ComponentsIncomplete)?

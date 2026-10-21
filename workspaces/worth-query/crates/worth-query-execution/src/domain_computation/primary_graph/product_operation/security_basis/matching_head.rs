@@ -1,16 +1,12 @@
 //! Reuse one already issued Query basis only while its World head is current.
 
-use worth_relational::facade::mvcc::CompanionPreflightStop;
-use worth_runtime_world::facade::{
-    CurrentProductHead, ProductBranchCurrentnessFailure, RuntimeWorldBranchAdmissionDenial,
-    RuntimeWorldServiceDenial,
-};
+use worth_runtime_world::facade::ProductBranchCurrentnessFailure;
+use worth_runtime_world::facade::RuntimeWorldBranchAdmissionDenial;
+use worth_runtime_world::facade::RuntimeWorldServiceDenial;
 
 use super::*;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 
 pub(in crate::domain_computation::primary_graph) enum SelectedPermissionSecurityStop {
-    Admission(CompanionPreflightStop),
     World,
     AccountingOverflow,
 }
@@ -42,13 +38,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         product: &crate::basis::WorthQueryProductObservationLease,
         query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
         prepared: &PreparedSelectedReadIndexes,
-        admission: &mut InvalidationEditAdmission,
+
         native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
     ) -> Result<Option<SelectedPreparedReadSecurityBasis<'basis>>, SelectedPermissionSecurityStop>
     {
-        admission
-            .charge_external_work(2)
-            .map_err(SelectedPermissionSecurityStop::Admission)?;
         if !prepared.matches_basis(product.relational_basis()) {
             return Ok(None);
         }
@@ -56,7 +49,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             execution,
             product,
             query_basis,
-            admission,
             native,
         )
         .map(|sealed| {
@@ -76,15 +68,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::basis::WorthQueryProductObservationLease,
         query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         Option<WorthQuerySelectedPermissionSecurityBasis<'basis>>,
         SelectedPermissionSecurityStop,
     > {
-        self.admit_matching_head_query_permission_basis_with_native_access(
-            execution, product, query_basis, admission,
-            &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire(),
-        )
+        self.admit_matching_head_query_permission_basis_with_native_access(execution, product, query_basis, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
     }
 
     pub(in crate::domain_computation::primary_graph) fn admit_matching_head_query_permission_basis_with_native_access<
@@ -94,30 +82,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::basis::WorthQueryProductObservationLease,
         query_basis: &'basis WorthQueryApplicationQueryBasisCustody,
-        admission: &mut InvalidationEditAdmission,
+
         native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
     ) -> Result<
         Option<WorthQuerySelectedPermissionSecurityBasis<'basis>>,
         SelectedPermissionSecurityStop,
     > {
         let expected = product.observation();
-        let comparison = u64::try_from(CurrentProductHead::comparison_work_bound(expected))
-            .map_err(|_| SelectedPermissionSecurityStop::AccountingOverflow)?;
+
         // The optional security guard, Query basis, and World head each
         // compare the initialized Product identity. Fund every reached
         // comparison, plus the fixed owner/runtime/live probes, up front.
-        let comparisons = if product.current_security_guard().is_some() {
-            3_u64
-        } else {
-            2_u64
-        };
-        let work = comparison
-            .checked_mul(comparisons)
-            .and_then(|work| work.checked_add(5))
-            .ok_or(SelectedPermissionSecurityStop::AccountingOverflow)?;
-        admission
-            .charge_external_work(work)
-            .map_err(SelectedPermissionSecurityStop::Admission)?;
+
         let guard_matches = product
             .current_security_guard()
             .is_none_or(|guard| guard == expected);
@@ -142,44 +118,23 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let Some(snapshot) = query_basis.reusable_permission_snapshot() else {
             return Ok(None);
         };
-        let mut admission_stop = None;
         let current = self
             .product_runtime
             .owner
             .observation_port()
-            .while_product_branch_current_admitted(
-                expected,
-                (),
-                &mut |work| match admission.charge_external_work(work) {
-                    Ok(()) => true,
-                    Err(stop) => {
-                        admission_stop = Some(stop);
-                        false
-                    }
-                },
-                |(), _head| true,
-            );
+            .while_product_branch_current(expected, (), |(), _head| true);
         match current {
-            Ok(true) => {
-                admission
-                    .charge_external_work(2)
-                    .map_err(SelectedPermissionSecurityStop::Admission)?;
-                Ok(Some(WorthQuerySelectedPermissionSecurityBasis {
-                    basis: WorthQueryProductSecurityBasis {
-                        _observation: expected.clone(),
-                        application_basis: SecurityApplicationBasis::Reused(snapshot),
-                        _selected_program: None,
-                    },
-                }))
-            }
+            Ok(true) => Ok(Some(WorthQuerySelectedPermissionSecurityBasis {
+                basis: WorthQueryProductSecurityBasis {
+                    _observation: expected.clone(),
+                    application_basis: SecurityApplicationBasis::Reused(snapshot),
+                    _selected_program: None,
+                },
+            })),
             Ok(false) | Err(ProductBranchCurrentnessFailure::ExpectedHeadUnavailable(())) => {
                 Ok(None)
             }
-            Err(ProductBranchCurrentnessFailure::PreparationDenied(())) => {
-                Err(SelectedPermissionSecurityStop::Admission(
-                    admission_stop.expect("owner preparation refusal retains its typed stop"),
-                ))
-            }
+
             Err(ProductBranchCurrentnessFailure::AdmissionDenied { denial, .. }) => match denial {
                 RuntimeWorldServiceDenial::Denied(
                     RuntimeWorldBranchAdmissionDenial::CurrentnessAccountingOverflow,

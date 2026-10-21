@@ -5,14 +5,14 @@ mod content_rule;
 mod content_tree;
 mod output_postcondition;
 
-use super::retained_decision_facts::{StorageControl, StoreDenial};
+use super::retained_decision_facts::StorageControl;
+use super::retained_decision_facts::StoreDenial;
 pub(super) use canonical_encoding::authentication_observation_identity;
 use canonical_encoding::lineage_identity;
 #[cfg(test)]
 use content_tree::dependency_identity;
-pub(in crate::domain_computation::primary_graph) use content_tree::{
-    CompletedFactRoutes, FactContent,
-};
+pub(in crate::domain_computation::primary_graph) use content_tree::CompletedFactRoutes;
+pub(in crate::domain_computation::primary_graph) use content_tree::FactContent;
 use output_postcondition::complete_content_currentness_facts;
 #[cfg(test)]
 use output_postcondition::normalized_output_facts;
@@ -41,7 +41,7 @@ impl<Schema, Operation, Input, Scope>
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         declared_key: [u8; 32],
         successor_of: Option<[u8; 32]>,
-        request_admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<([u8; 32], [u8; 32]), WorthQueryProducerIdentityDenial>
     where
@@ -105,7 +105,6 @@ impl<Schema, Operation, Input, Scope>
                 self.read_set.lease.product().observation(),
                 partition,
                 execution,
-                request_admission,
             )
             .map_err(|stop| match stop {
                 worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause) => {
@@ -137,7 +136,7 @@ impl<Schema, Operation, Input, Scope>
             let unposted = (head.claims_upstream || !replays)
                 && !runtime
                     .output_demands
-                    .posts_settlement(&head.settlement, request_admission)
+                    .posts_settlement(&head.settlement)
                     .map_err(|_| WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded)?;
             if replays && !unposted {
                 return Ok((head.idempotency_key_identity, dependency));

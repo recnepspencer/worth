@@ -41,7 +41,6 @@ fn journey(result_set: bool, movement: u8) {
         .unwrap();
     let world = installation::install_selected_program(
         &crate::installed_schema(),
-        4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),
         &[],

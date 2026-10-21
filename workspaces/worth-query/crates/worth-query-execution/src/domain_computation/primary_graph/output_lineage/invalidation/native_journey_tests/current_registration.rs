@@ -91,11 +91,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
         upstream: OrdSet::new(),
     };
     let prepared = owner
-        .prepare_current_settlement(
-            registration(Arc::clone(&identity)),
-            &before,
-            &mut owner.edit_admission(),
-        )
+        .prepare_current_settlement(registration(Arc::clone(&identity)), &before)
         .expect("the exact current native source can prepare");
     assert!(Arc::ptr_eq(prepared.identity(), &identity));
     assert!(std::ptr::eq(prepared.selected_source(), &before));
@@ -113,11 +109,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
     });
     let (after_handle, after) = handle.with_runtime(request_execution, snapshot);
     let next = RecordedSettlementIdentity::retain(&source, coordinate, 1);
-    let stopped = owner.prepare_current_settlement(
-        registration(Arc::clone(&next)),
-        &before,
-        &mut owner.edit_admission(),
-    );
+    let stopped = owner.prepare_current_settlement(registration(Arc::clone(&next)), &before);
     assert!(matches!(
         stopped,
         Err(SettlementRegistrationStop::Edit(
@@ -133,7 +125,7 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
     // An ordinary post-effect registration must still replay deliveries from
     // its retained basis rather than pretending its old fact is current.
     owner
-        .register_settlement(registration(Arc::clone(&next)), &mut owner.edit_admission())
+        .register_settlement(registration(Arc::clone(&next)))
         .unwrap();
     match currentness(owner, &after, &next) {
         SourceSettlementCurrentness::Dirty(ordinals) => assert!(ordinals.contains(&0)),
@@ -143,15 +135,12 @@ fn current_source_registration_rejects_native_movement_while_ordinary_replay_rem
     // is not clean at the post-effect basis: no later delivery marks it.
     let born_stale = RecordedSettlementIdentity::retain(&source, coordinate, 2);
     owner
-        .register_settlement(
-            SettlementRegistration {
-                computation: None,
-                read_basis: after.clone(),
-                stale_at_read_basis: OrdSet::unit(0),
-                ..registration(Arc::clone(&born_stale))
-            },
-            &mut owner.edit_admission(),
-        )
+        .register_settlement(SettlementRegistration {
+            computation: None,
+            read_basis: after.clone(),
+            stale_at_read_basis: OrdSet::unit(0),
+            ..registration(Arc::clone(&born_stale))
+        })
         .unwrap();
     match currentness(owner, &after, &born_stale) {
         SourceSettlementCurrentness::Dirty(ordinals) => assert_eq!(ordinals, OrdSet::unit(0)),

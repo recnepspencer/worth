@@ -273,9 +273,7 @@ pub mod facade {
     pub use crate::installed_handle_denial::{
         WorthQueryDomainHandleDenial, WorthQueryDomainHandleDenialKind,
     };
-    pub use crate::installed_index::{
-        WorthQueryCurrentRetainedMutationBinding, WorthQueryRetainedMutationBindingAdmissionStop,
-    };
+    pub use crate::installed_index::WorthQueryCurrentRetainedMutationBinding;
     pub use crate::installed_index::{
         WorthQueryInstalledPackageAuthority, WorthQueryInstalledPackageIndex,
         WorthQueryInstalledPackageIndexCounters, WorthQueryInstalledPackageIndexDenial,

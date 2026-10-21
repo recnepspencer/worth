@@ -5,10 +5,10 @@ use super::{
 use crate::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinitionBuilder,
     ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-    ApplicationQueryLiveCauseBinding, ApplicationQueryLiveResourceContract,
-    ApplicationQueryOrderingDirection, ApplicationQueryReference, ApplicationQueryResultFieldRef,
-    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder,
-    ErasedApplicationQueryDefinition, ForwardResultTraversal, ManyResults,
+    ApplicationQueryLiveCauseBinding, ApplicationQueryOrderingDirection, ApplicationQueryReference,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
+    ApplicationQueryResultShapeBuilder, ErasedApplicationQueryDefinition, ForwardResultTraversal,
+    ManyResults,
 };
 pub(super) struct Schema;
 struct Root;
@@ -257,9 +257,7 @@ fn collection_definition(continuation: bool) -> ErasedApplicationQueryDefinition
         .into_erased()
 }
 
-fn live_definition<Binding>(
-    resources: ApplicationQueryLiveResourceContract,
-) -> ErasedApplicationQueryDefinition
+fn live_definition<Binding>() -> ErasedApplicationQueryDefinition
 where
     Binding: ApplicationQueryLiveCauseBinding<
         Schema,
@@ -301,11 +299,7 @@ where
             ApplicationQueryOrderingDirection::Ascending,
         )
         .continue_by(children())
-        .live_by::<Child, Binding, _, _, _, _, _, _, _, _>(
-            root_identity(),
-            child_identity(),
-            resources,
-        )
+        .live_by::<Child, Binding, _, _, _, _, _, _, _, _>(root_identity(), child_identity())
         .build()
         .expect("live identity fixture must be lawful")
         .into_erased()

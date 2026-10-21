@@ -1,29 +1,30 @@
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::InstalledProducerEdition;
-use super::{
-    FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind, WorthQueryProducerOutputFamily,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    product_operation::SharedSelectedProductOperation, WorthQueryApplicationBasisSelectionIdentity,
-    WorthQueryApplicationOutputDemandSource, WorthQueryObservedSource,
-    WorthQueryPrimaryGraphApplicationRuntime,
-};
+use super::FamilySourceQuery;
+use super::FamilySourceValue;
+use super::WorthQueryAdmittedOutputDemand;
+use super::WorthQueryOutputDemandDenial;
+use super::WorthQueryOutputDemandDenialKind;
+use super::WorthQueryProducerOutputFamily;
+
+use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
+use crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource;
+use crate::domain_computation::primary_graph::WorthQueryObservedSource;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 mod producer_input;
 mod required_successor;
 mod validated;
 pub(super) use required_successor::validate_required_successor;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use producer_input::ValidatedProducerInput;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) use validated::{
-    FreshDisclosureAdmissionStop, FreshOutputDisclosure, ValidatedOutputDisclosure,
-};
-use validated::{AdmittedDisclosure, RetainedProgramOutputDisclosure};
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use validated::FreshOutputDisclosure;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use validated::ValidatedOutputDisclosure;
+use validated::AdmittedDisclosure;
+use validated::RetainedProgramOutputDisclosure;
 
 pub(super) fn validate_disclosure<Schema, Family>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -76,7 +77,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     branch: crate::basis::WorthQueryProductBranch,
     source: WorthQueryApplicationOutputDemandSource<Query, Value>,
     edition: InstalledProducerEdition,
-    admission: &mut InvalidationEditAdmission,
+
     subject: &'static str,
 ) -> Result<FreshOutputDisclosure<Query, Value>, WorthQueryOutputDemandDenial>
 where
@@ -92,7 +93,7 @@ where
         false,
         source,
         edition,
-        DisclosureSelection::RetainedRoot(admission),
+        DisclosureSelection::RetainedRoot,
         subject,
     )? {
         ValidatedOutputDisclosure::Fresh(proof) => Ok(proof),
@@ -119,18 +120,12 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     shared: &SharedSelectedProductOperation<'_, Schema>,
     source: WorthQueryApplicationOutputDemandSource<Query, Value>,
     edition: InstalledProducerEdition,
-    admission: &mut InvalidationEditAdmission,
+
     subject: &'static str,
 ) -> Result<FreshOutputDisclosure<Query, Value>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
 {
-    admission.charge_external_work(2).map_err(|_| {
-        denial(
-            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-            subject,
-        )
-    })?;
     if !std::ptr::eq(runtime, shared.selected().application())
         || shared
             .selected()
@@ -156,7 +151,6 @@ where
         source,
         edition,
         DisclosureSelection::RetainedSelected(
-            admission,
             shared.selected().product().read_lease_ref().observation(),
         ),
         subject,
@@ -170,11 +164,8 @@ where
 
 enum DisclosureSelection<'a> {
     Single,
-    RetainedRoot(&'a mut InvalidationEditAdmission),
-    RetainedSelected(
-        &'a mut InvalidationEditAdmission,
-        &'a worth_runtime_world::facade::ProductBranchObservation,
-    ),
+    RetainedRoot,
+    RetainedSelected(&'a worth_runtime_world::facade::ProductBranchObservation),
 }
 
 fn validate_source<Schema, Query, Value>(
@@ -195,36 +186,6 @@ where
 {
     let (rows, disclosure) = source.into_parts();
     let (sources, affinity, receipt) = disclosure.into_parts();
-    if let (Some(affinity), DisclosureSelection::RetainedSelected(admission, _)) =
-        (affinity.as_ref(), &mut selection)
-    {
-        let metadata = affinity
-            .comparison_metadata_visits(principal)
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    subject,
-                )
-            })?;
-        admission.charge_external_work(metadata).map_err(|_| {
-            denial(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                subject,
-            )
-        })?;
-        let comparison = affinity.comparison_work(principal).ok_or_else(|| {
-            denial(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                subject,
-            )
-        })?;
-        admission.charge_external_work(comparison).map_err(|_| {
-            denial(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                subject,
-            )
-        })?;
-    }
     let affinity = affinity
         .filter(|affinity| affinity.admits(principal, request))
         .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Superseded, subject))?;
@@ -238,16 +199,6 @@ where
     }
     let mut found = None;
     for (value, source) in rows.into_iter().zip(sources) {
-        if let DisclosureSelection::RetainedRoot(admission)
-        | DisclosureSelection::RetainedSelected(admission, _) = &mut selection
-        {
-            admission.charge_external_work(4).map_err(|_| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    subject,
-                )
-            })?;
-        }
         if (matches!(selection, DisclosureSelection::Single)
             || source.source_root() == retained.source_root())
             && found.replace((value, source)).is_some()
@@ -261,8 +212,8 @@ where
     let (value, source) =
         found.ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Superseded, subject))?;
     let selected = match &selection {
-        DisclosureSelection::RetainedSelected(_, _) => None,
-        DisclosureSelection::Single | DisclosureSelection::RetainedRoot(_) => Some(
+        DisclosureSelection::RetainedSelected(_) => None,
+        DisclosureSelection::Single | DisclosureSelection::RetainedRoot => Some(
             runtime
                 .on_branch(branch)
                 .select_with_request(execution)
@@ -275,8 +226,8 @@ where
         ),
     };
     let selected_current = match &selection {
-        DisclosureSelection::RetainedSelected(_, current) => Some(*current),
-        DisclosureSelection::Single | DisclosureSelection::RetainedRoot(_) => None,
+        DisclosureSelection::RetainedSelected(current) => Some(*current),
+        DisclosureSelection::Single | DisclosureSelection::RetainedRoot => None,
     };
     let current = selected_current.unwrap_or_else(|| {
         selected
@@ -297,41 +248,9 @@ where
             subject,
         ));
     };
-    if let DisclosureSelection::RetainedSelected(admission, _) = &mut selection {
+    if let DisclosureSelection::RetainedSelected(_) = &mut selection {
         // Metadata reads precede the variable-width source comparisons. The
         // same exact observation is then checked by the original validator.
-        admission.charge_external_work(10).map_err(|_| {
-            denial(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                subject,
-            )
-        })?;
-        let disclosed_name = disclosed.branch_identity().name().as_str().len();
-        let current_name = current.branch_identity().name().as_str().len();
-        let original_name = original.branch_identity().name().as_str().len();
-        let comparison = disclosed_name
-            .checked_mul(3)
-            .and_then(|work| work.checked_add(current_name.checked_mul(2)?))
-            .and_then(|work| work.checked_add(original_name))
-            .and_then(|work| work.checked_add(source.query_identifier.len()))
-            .and_then(|work| work.checked_add(retained.query_identifier.len()))
-            // Two schema digests and two Query-identity comparisons read 128
-            // fixed bytes; the remaining 32 visits cover source, receipt,
-            // Product generation/commit/basis and root axes.
-            .and_then(|work| work.checked_add(160))
-            .and_then(|work| u64::try_from(work).ok())
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    subject,
-                )
-            })?;
-        admission.charge_external_work(comparison).map_err(|_| {
-            denial(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                subject,
-            )
-        })?;
     }
     if source.runtime_authority != runtime.runtime.authority_identity().as_u64()
         || source.schema_binding != runtime.installed_schema.binding_identity()

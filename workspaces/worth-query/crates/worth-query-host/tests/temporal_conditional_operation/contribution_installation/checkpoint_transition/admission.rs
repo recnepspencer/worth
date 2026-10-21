@@ -284,9 +284,11 @@ fn original_request_deferred_repair_returns_same_custody_on_entry_and_work_stops
         .request_lease(super::original_request::request(CancellationToken::new()))
         .unwrap();
     let execution = ExecutionRequest::leased(&exhausted);
-    let (pending, _) = ExecutionWorkCeiling::new(1024)
+    let (pending, _) = ExecutionWorkCeiling::new(Some(1024))
         .run_with_checkpoint(Some(&exhausted), None, |context| {
-            let remaining = context.remaining_work();
+            let remaining = context
+                .remaining_work()
+                .expect("this native fixture installs a finite work ceiling");
             context.checkpoint_cost(remaining, remaining).unwrap();
             assert!(context.checkpoint_cost(1, 1).is_err());
             pending

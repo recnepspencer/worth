@@ -88,8 +88,6 @@ pub(super) fn definition(name: &str, lowering: &str) -> Definition {
         canonical,
         domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("composition-readiness").unwrap(),
-        128,
-        128,
         lowering,
     )
     .semantic_reads([projection])

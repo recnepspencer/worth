@@ -42,7 +42,7 @@ fn settled_native_result_carries_its_actual_value_and_every_tight_prefix() {
     let MapOutcome::Complete { mut values, .. } = source
         .run_retained(
             ExecutionRequest::leased(&lease),
-            ExecutionWorkCeiling::new(100),
+            ExecutionWorkCeiling::new(Some(100)),
             kernel,
         )
         .unwrap()
@@ -57,11 +57,11 @@ fn settled_native_result_carries_its_actual_value_and_every_tight_prefix() {
     );
     assert_eq!(prior.identity(), PartitionIdentity::new(1));
     for ceiling in 0..=9 {
-        let fresh = ExecutionWorkCeiling::new(ceiling)
+        let fresh = ExecutionWorkCeiling::new(Some(ceiling))
             .run(&lease, || source.run(Some(&lease), kernel))
             .unwrap()
             .0;
-        let carried = ExecutionWorkCeiling::new(ceiling)
+        let carried = ExecutionWorkCeiling::new(Some(ceiling))
             .run(&lease, || {
                 source.run(Some(&lease), |_, context| {
                     prior
@@ -109,13 +109,13 @@ fn settled_native_result_carries_its_actual_value_and_every_tight_prefix() {
 #[test]
 fn context_fallback_capacity_and_swallowed_cancellation_issue_no_false_carry() {
     let _lock = TEST_LOCK.lock().unwrap();
-    let memory = SerialMemoryBudget::new(64_000);
+    let memory = SerialMemoryBudget::new(Some(64_000));
     let serial = SerialRequest::from_memory(memory.clone(), crate::CancellationToken::new(), None);
     let source = map(1, 0);
     let MapOutcome::Complete { mut values, .. } = source
         .run_retained(
             ExecutionRequest::serial(&serial),
-            ExecutionWorkCeiling::new(100),
+            ExecutionWorkCeiling::new(Some(100)),
             |_, context| Ok::<_, KernelFailure<()>>(context.remaining_work()),
         )
         .unwrap()
@@ -123,7 +123,7 @@ fn context_fallback_capacity_and_swallowed_cancellation_issue_no_false_carry() {
         panic!("observed context still computes")
     };
     let observed = values.pop().unwrap();
-    let actual = ExecutionWorkCeiling::new(10)
+    let actual = ExecutionWorkCeiling::new(Some(10))
         .run_serial(&serial, || {
             source.run(None, |_, context| {
                 assert!(observed.try_carry(context).is_none());
@@ -141,7 +141,7 @@ fn context_fallback_capacity_and_swallowed_cancellation_issue_no_false_carry() {
     let capacity = source
         .run_retained(
             ExecutionRequest::serial(&serial),
-            ExecutionWorkCeiling::new(100),
+            ExecutionWorkCeiling::new(Some(100)),
             |_, _| Ok::<_, KernelFailure<()>>(String::from("not admitted")),
         )
         .unwrap();
@@ -153,7 +153,7 @@ fn context_fallback_capacity_and_swallowed_cancellation_issue_no_false_carry() {
     let cancelled = serial.clone().with_cancellation(cancellation.token());
     let stopped = source.run_retained(
         ExecutionRequest::serial(&cancelled),
-        ExecutionWorkCeiling::new(100),
+        ExecutionWorkCeiling::new(Some(100)),
         |_, context| {
             cancellation.cancel();
             let _ = context.checkpoint(1);
@@ -169,7 +169,7 @@ fn context_fallback_capacity_and_swallowed_cancellation_issue_no_false_carry() {
     let fresh = source
         .run_retained(
             ExecutionRequest::serial(&serial),
-            ExecutionWorkCeiling::new(100),
+            ExecutionWorkCeiling::new(Some(100)),
             kernel,
         )
         .unwrap();
@@ -202,13 +202,13 @@ impl Drop for Payload {
 #[test]
 fn each_result_owns_only_its_payload_and_final_clone_holds_the_grant() {
     let _lock = TEST_LOCK.lock().unwrap();
-    let memory = SerialMemoryBudget::new(64_000);
+    let memory = SerialMemoryBudget::new(Some(64_000));
     let serial = SerialRequest::from_memory(memory.clone(), crate::CancellationToken::new(), None);
     let drops = Arc::new(AtomicUsize::new(0));
     let MapOutcome::Complete { mut values, .. } = map(2, 4_100)
         .run_retained(
             ExecutionRequest::serial(&serial),
-            ExecutionWorkCeiling::new(100),
+            ExecutionWorkCeiling::new(Some(100)),
             |_, context| {
                 context.checkpoint(1)?;
                 Ok::<_, KernelFailure<()>>(Payload {
@@ -231,13 +231,13 @@ fn each_result_owns_only_its_payload_and_final_clone_holds_the_grant() {
         "unrelated result is not a hidden batch parent"
     );
     assert_eq!(clone.value().bytes.len(), 4_000);
-    let tight_memory = SerialMemoryBudget::new(2_000);
+    let tight_memory = SerialMemoryBudget::new(Some(2_000));
     let tight =
         SerialRequest::from_memory(tight_memory.clone(), crate::CancellationToken::new(), None);
     let entered = AtomicUsize::new(0);
     let refused = map(2, 4_100).run_retained(
         ExecutionRequest::serial(&tight),
-        ExecutionWorkCeiling::new(100),
+        ExecutionWorkCeiling::new(Some(100)),
         |_, _| {
             entered.fetch_add(1, Ordering::Relaxed);
             Ok::<_, KernelFailure<()>>(0_u64)
@@ -268,11 +268,17 @@ fn each_result_owns_only_its_payload_and_final_clone_holds_the_grant() {
 fn speculative_suffix_request_stop_keeps_native_ownership_after_earlier_domain_failure() {
     let _lock = TEST_LOCK.lock().unwrap();
     let cancellation = CancellationSource::new();
-    let memory = SerialMemoryBudget::new(64_000);
+    let memory = SerialMemoryBudget::new(Some(64_000));
     let serial = SerialRequest::from_memory(memory.clone(), cancellation.token(), None);
     let source = crate::tests::batch(&[1, 2], 0);
-    let outcome =
-        crate::backend::scope::run_scope_within(None, 0, 0, true, 100, Some(&serial), |context| {
+    let outcome = crate::backend::scope::run_scope_within(
+        None,
+        0,
+        0,
+        true,
+        Some(100),
+        Some(&serial),
+        |context| {
             let stopped =
                 run_retained_batch(None, &source, BackendKind::Serial, None, &|value, child| {
                     child.checkpoint(1)?;
@@ -304,7 +310,8 @@ fn speculative_suffix_request_stop_keeps_native_ownership_after_earlier_domain_f
             );
             assert_eq!(context.checkpoint(0), Err(KernelStop::Cancelled));
             Ok::<_, KernelFailure<()>>(())
-        });
+        },
+    );
     assert!(matches!(
         outcome.result,
         Err(crate::backend::scope::ScopeStop::Failure(

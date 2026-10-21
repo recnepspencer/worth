@@ -1,9 +1,8 @@
 //! Lifecycle order does not collapse exact rows or cross output families.
-use super::super::refreshed_rejoin::infallible;
+
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::{
-    WorthQueryProducerApplicability, WorthQueryProducerLifecyclePosture,
-};
+use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerApplicability;
+use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::cmp::Ordering;
 
@@ -92,14 +91,11 @@ fn incomparable_preserve_bindings_do_not_pick_a_successor_by_iteration_order() {
     let mut right = left.clone();
     right.producer = "right-preserve".into();
     for candidates in [[&left, &right], [&right, &left]] {
-        assert!(
-            infallible(super::super::refreshed_rejoin::newest_lawful_successor(
-                candidates.into_iter(),
-                &initial,
-                &mut OracleWalk::after_effect()
-            ))
-            .is_none()
-        );
+        assert!(super::super::refreshed_rejoin::newest_lawful_successor(
+            candidates.into_iter(),
+            &initial
+        )
+        .is_none());
     }
 }
 

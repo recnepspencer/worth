@@ -64,7 +64,7 @@ impl<Ready> MemberInput<Ready> {
 impl MemberInput<SelectedReadyReadmission> {
     pub(in super::super) fn rebind_checkpoint(
         &mut self,
-        paid: super::super::super::super::required_continuations::PaidCheckpointReady,
+        paid: super::super::super::super::required_continuations::CheckpointReady,
     ) {
         self.bind(paid.into_readmission());
     }
@@ -82,9 +82,8 @@ impl RequiredFrontier {
         &mut self,
         claim: RequiredWorkClaim,
         queued: usize,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        self.reserve_slot(admission)?;
+        self.reserve_slot()?;
         self.members.push(RequiredMember {
             ready: MemberInput::Queued { claim, ready: None },
             caller: false,

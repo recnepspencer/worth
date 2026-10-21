@@ -141,17 +141,8 @@ fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
     take_decisions("diamond-join");
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    let application = support::install_program_with_seed::<program::ChainProgram>(
-        None,
-        profile,
-        4_096,
-        128 * 1_024 * 1_024,
-        profile
-            .limits()
-            .source_currentness_work()
-            .map(|work| u64::try_from(work).unwrap()),
-        seed,
-    );
+    let application =
+        support::install_program_with_seed::<program::ChainProgram>(None, profile, 4_096, seed);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut left = request

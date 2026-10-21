@@ -133,10 +133,7 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
         .application
         .with_host_advancement(|phase| relational_head(&phase, &world))
         .expect("the fixture read owns its installed host call");
-    assert_eq!(
-        after, before,
-        "retention denial must precede Relational commit"
-    );
+    assert_eq!(after, before, "a refused inverse preimage commits nothing");
 }
 
 #[path = "preimage_retention/two_field_cross_record_retention_denial_commits_nothing.rs"]

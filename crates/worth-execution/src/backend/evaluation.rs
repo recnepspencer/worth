@@ -11,7 +11,8 @@ pub(super) fn evaluate<I, R, E, F>(
     input: I,
     lease: Option<&ExecutionResourceLease<'_>>,
     limits: &RunLimits,
-    result_capacity: u64,
+    result_capacity: Option<u64>,
+    result_memory: Option<&std::sync::Mutex<Vec<crate::ExecutionMemoryReservation>>>,
     capture: Option<&super::ExecutionKernelReceiptStorage>,
     kernel: &F,
 ) -> (
@@ -66,20 +67,58 @@ where
         result
     };
     let mut result_heap = None;
+    let mut allocation_denial = None;
     let result = match result {
         Ok(value) => {
             let heap = value.additional_charged_bytes();
-            if heap > result_capacity {
+            if result_capacity.is_some_and(|maximum| heap > maximum) {
                 Err(KernelFailure::ResultCapacityExceeded)
             } else {
                 result_heap = Some(heap);
                 Ok(value)
             }
         }
-        Err(KernelFailure::Domain(error)) if error.additional_charged_bytes() > result_capacity => {
+        Err(KernelFailure::Domain(error))
+            if result_capacity
+                .is_some_and(|maximum| error.additional_charged_bytes() > maximum) =>
+        {
             Err(KernelFailure::ResultCapacityExceeded)
         }
         other => other,
+    };
+    let result = if result_capacity.is_none()
+        && (lease.is_some() || limits.serial_memory().is_some())
+    {
+        let heap = match &result {
+            Ok(value) => Some(value.additional_charged_bytes()),
+            Err(KernelFailure::Domain(error)) => Some(error.additional_charged_bytes()),
+            Err(_) => None,
+        };
+        match heap.map(|heap| crate::ExecutionMemoryReservation::reserve_in_scope(lease, heap)) {
+            Some(Ok(mut held)) => {
+                held.track_activity(limits);
+                result_memory
+                    .expect("opaque results retain their run-owned allocation holds")
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .push(held);
+                result
+            }
+            Some(Err(denial)) => {
+                context.record_nested_stop_owner(super::meter::NestedStopOwner::Request);
+                allocation_denial = Some(denial);
+                let disposed = contain(AssertUnwindSafe(|| drop(result)));
+                if disposed.is_err() {
+                    allocation_denial = None;
+                    Err(KernelFailure::Panic)
+                } else {
+                    Err(KernelFailure::ResultCapacityExceeded)
+                }
+            }
+            None => result,
+        }
+    } else {
+        result
     };
     let (work, span) = context.cost();
     let stop_owner = context.settle_result(&result, |failure| context.failure_owner(failure));
@@ -88,6 +127,7 @@ where
     }
     (
         TaskOutcome {
+            allocation_denial,
             result: super::task_result::TaskResult::new(result, stop_owner),
             work,
             span,
@@ -96,3 +136,6 @@ where
         result_heap,
     )
 }
+
+#[cfg(test)]
+mod tests;

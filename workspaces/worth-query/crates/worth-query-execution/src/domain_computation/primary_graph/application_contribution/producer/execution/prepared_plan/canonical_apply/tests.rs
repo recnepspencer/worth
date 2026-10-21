@@ -1,13 +1,16 @@
 //! The cursor owns ordered application and destroys every unvisited slot.
 use super::*;
-use std::cell::{Cell, RefCell};
+use std::cell::Cell;
+use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::time::Duration;
+use std::time::Instant;
 use crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy;
-use worth_query_admission::facade::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope};
-use worth_relational::facade::mvcc::CompanionPreflightBudget;
+use worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 struct ResultValue {
     rank: Cell<usize>,
@@ -57,7 +60,7 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
                     },
                     |_| 0,
                 )],
-                move |mut slots, _| {
+                move |mut slots| {
                     assert_eq!(slots.len(), 1);
                     let result = slots.pop().unwrap().into_value::<ResultValue>();
                     completion.borrow_mut().push(result.rank.get());
@@ -73,15 +76,11 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
         let cursor = CanonicalApplyCursor::compute(keys, plans, &execution);
         assert_eq!(*computed.lock().unwrap(), vec![0, 1, 2]);
         assert!(completed.borrow().is_empty());
-        let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: Some(0),
-            maximum_preparation_bytes: None,
-        });
+
         let mut applied = Vec::new();
         assert_eq!(
             cursor.apply(
-                &mut admission,
-                |key, value, _| {
+                |key, value| {
                     let value = value?;
                     assert_eq!(key, value, "canonical slots retain their semantic keys");
                     applied.push(value);

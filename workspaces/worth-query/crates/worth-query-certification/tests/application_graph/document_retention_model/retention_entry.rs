@@ -144,7 +144,7 @@ impl ApplicationQueryBinding<DocumentRetentionSchema> for DocumentRetentionCondi
 
     const IDENTITY: &'static str =
         "worth.query.certification.document-retention.condition-read-binding.v1";
-    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::bounded(1, 64);
+    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
 
     fn scope_field() -> ApplicationFieldRef<
         DocumentRetentionSchema,

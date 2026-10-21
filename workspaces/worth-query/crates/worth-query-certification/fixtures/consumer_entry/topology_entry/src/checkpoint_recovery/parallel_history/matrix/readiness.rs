@@ -95,8 +95,6 @@ pub(super) fn operation_definition() -> domain::WorthQueryDomainOperationDefinit
         canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("node").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("matrix-readiness").unwrap(),
-        128,
-        128,
         "matrix-readiness-v1",
     )
     .semantic_reads([output_change_projection()])

@@ -225,12 +225,6 @@ fn selection(
                 selected.application_basis().snapshot_handle(),
                 true,
                 Some(facts),
-                &mut application
-                    .primary_provider
-                    .graph
-                    .source_owner
-                    .invalidation_owner
-                    .edit_admission_with_work_limit(Some(32)),
             )
             .unwrap()
         })

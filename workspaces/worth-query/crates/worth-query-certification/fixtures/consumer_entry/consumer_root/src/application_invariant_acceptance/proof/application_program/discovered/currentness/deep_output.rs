@@ -62,7 +62,7 @@ fn discovered_currentness_all_retained_dependent_settlements() {
     let historical = aggregate.observation();
     request
         .at(historical)
-        .require_current_discovered_program_outputs(&aggregate, comparison_work(&world.application))
+        .require_current_discovered_program_outputs(&aggregate)
         .unwrap();
     let final_value = request
         .query(PlanarOutputRead {
@@ -111,7 +111,7 @@ fn discovered_currentness_all_retained_dependent_settlements() {
     for (_, root) in aggregate.root_outputs() {
         request
             .at(&leaf_current)
-            .require_current_output_demand(root, comparison_work(&world.application))
+            .require_current_output_demand(root)
             .unwrap();
     }
     let (_, middle) = aggregate
@@ -120,7 +120,7 @@ fn discovered_currentness_all_retained_dependent_settlements() {
         .unwrap();
     request
         .at(&leaf_current)
-        .require_current_output_demand(middle, comparison_work(&world.application))
+        .require_current_output_demand(middle)
         .unwrap();
     let (_, leaf) = aggregate
         .outputs_for::<MembershipSchema, PlanarFinalToSummaryConnection>()
@@ -129,19 +129,16 @@ fn discovered_currentness_all_retained_dependent_settlements() {
     stale(
         request
             .at(&leaf_current)
-            .require_current_output_demand(leaf, comparison_work(&world.application)),
+            .require_current_output_demand(leaf),
     );
     stale(
         request
             .at(&leaf_current)
-            .require_current_discovered_program_outputs(
-                &aggregate,
-                comparison_work(&world.application),
-            ),
+            .require_current_discovered_program_outputs(&aggregate),
     );
     request
         .at(historical)
-        .require_current_discovered_program_outputs(&aggregate, comparison_work(&world.application))
+        .require_current_discovered_program_outputs(&aggregate)
         .unwrap();
     let source = request
         .query(PlanarRead {
@@ -210,7 +207,7 @@ fn discovered_currentness_all_retained_dependent_settlements() {
     for (_, root) in aggregate.root_outputs() {
         request
             .at(&current)
-            .require_current_output_demand(root, comparison_work(&world.application))
+            .require_current_output_demand(root)
             .unwrap();
     }
     let (_, dependent) = aggregate
@@ -220,19 +217,16 @@ fn discovered_currentness_all_retained_dependent_settlements() {
     stale(
         request
             .at(&current)
-            .require_current_output_demand(dependent, comparison_work(&world.application)),
+            .require_current_output_demand(dependent),
     );
     stale(
         request
             .at(&current)
-            .require_current_discovered_program_outputs(
-                &aggregate,
-                comparison_work(&world.application),
-            ),
+            .require_current_discovered_program_outputs(&aggregate),
     );
     request
         .at(historical)
-        .require_current_discovered_program_outputs(&aggregate, comparison_work(&world.application))
+        .require_current_discovered_program_outputs(&aggregate)
         .unwrap();
     assert_eq!(
         world.application.retained_source_custody_count_for_test(),

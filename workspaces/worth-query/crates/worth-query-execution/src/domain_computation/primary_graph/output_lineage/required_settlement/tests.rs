@@ -2,15 +2,15 @@
 //! the other: a stop denies the request, and a reason verifies in full.
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
-use worth_relational::facade::mvcc::{CompanionPreflightBudget, CompanionPreflightStop};
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-use crate::domain_computation::primary_graph::application_output_demand::{
-    ReadyCompletion, WorthQueryAcceptedOutputAuthority, WorthQueryCompletedOutputDemand,
-    WorthQueryOutputReadinessDeliveryEvidence,
-};
+use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryCompletedOutputDemand;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence;
 use crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application;
 
-use super::super::{invalidation::InvalidationEditAdmission, WorthQueryApplicationOutputLineage};
+use super::super::WorthQueryApplicationOutputLineage;
 use super::RequiredSettlementStop;
 
 fn committed() -> (u64, ApplicationSchemaBindingIdentity, ReadyCompletion) {
@@ -24,13 +24,6 @@ fn committed() -> (u64, ApplicationSchemaBindingIdentity, ReadyCompletion) {
     (runtime_authority, schema, completion)
 }
 
-fn admission(work: u64) -> InvalidationEditAdmission {
-    InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(work),
-        maximum_preparation_bytes: None,
-    })
-}
-
 #[test]
 fn a_foreign_accepted_authority_is_a_stop_not_a_reason() {
     let (runtime_authority, schema, completion) = committed();
@@ -38,7 +31,6 @@ fn a_foreign_accepted_authority_is_a_stop_not_a_reason() {
         runtime_authority.wrapping_add(1),
         &schema,
         &completion,
-        &mut admission(64),
     );
     assert_eq!(resolved.err(), Some(RequiredSettlementStop::Foreign));
 }
@@ -50,7 +42,6 @@ fn an_exhausted_lookup_is_a_stop_not_a_reason() {
         runtime_authority,
         &schema,
         &completion,
-        &mut admission(1),
     );
     assert!(matches!(
         resolved,
@@ -67,7 +58,6 @@ fn an_uncertified_row_is_a_reason_not_a_stop() {
         runtime_authority,
         &schema,
         &completion,
-        &mut admission(1024),
     );
     assert!(matches!(resolved, Ok(Ok(None) | Err(_))));
 }

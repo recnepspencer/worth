@@ -64,7 +64,7 @@ pub(super) fn open(host: &host::Host) -> Lease<'_> {
         >(
             &phase, binding.into_query(), &principal, root,
             ApplicationQueryParameterSet::new(),
-            WorthQueryApplicationLiveControls::bounded(scope.clone(), 4, 1, Some(5_120)).unwrap(),
+            WorthQueryApplicationLiveControls::bounded(scope.clone(), 4, 1).unwrap(),
         ).unwrap()
         })
         .unwrap()

@@ -54,7 +54,7 @@ fn seed(count: u64, request: &SerialRequest) -> ExecutionRetainedRun<u64> {
     complete(
         map.run_retained_run(
             ExecutionRequest::serial(request),
-            ExecutionWorkCeiling::new(100_000),
+            ExecutionWorkCeiling::new(Some(100_000)),
             kernel,
         )
         .unwrap(),
@@ -65,7 +65,7 @@ fn seed(count: u64, request: &SerialRequest) -> ExecutionRetainedRun<u64> {
 #[test]
 fn one_changed_input_uses_native_ranges_and_same_cells_as_population_grows() {
     for count in [1, 10, 100] {
-        let memory = SerialMemoryBudget::new(10_000_000);
+        let memory = SerialMemoryBudget::new(Some(10_000_000));
         let request = serial(&memory);
         let prior = seed(count, &request);
         let changed = count / 2 + 1;
@@ -78,7 +78,7 @@ fn one_changed_input_uses_native_ranges_and_same_cells_as_population_grows() {
         let outcome = prior
             .advance(
                 ExecutionRequest::serial(&request),
-                ExecutionWorkCeiling::new(100_000),
+                ExecutionWorkCeiling::new(Some(100_000)),
                 changes,
                 empty_ids(),
                 |value, context| {
@@ -110,7 +110,7 @@ fn one_changed_input_uses_native_ranges_and_same_cells_as_population_grows() {
             .unwrap()
             .value += 7;
         let oracle = ExecutionMap::<_, ()>::from_keyless_partitions(full).unwrap();
-        let MapOutcome::Complete { values, report } = ExecutionWorkCeiling::new(100_000)
+        let MapOutcome::Complete { values, report } = ExecutionWorkCeiling::new(Some(100_000))
             .run_serial(&request, || oracle.run(None, kernel))
             .unwrap()
             .0
@@ -137,7 +137,7 @@ fn one_changed_input_uses_native_ranges_and_same_cells_as_population_grows() {
 
 #[test]
 fn every_tight_native_prefix_matches_full_execution_with_changed_slot() {
-    let memory = SerialMemoryBudget::new(10_000_000);
+    let memory = SerialMemoryBudget::new(Some(10_000_000));
     let request = serial(&memory);
     let prior = seed(4, &request);
     let varied = |input: &u64, context: &mut MapKernelContext<'_, '_>| {
@@ -153,7 +153,7 @@ fn every_tight_native_prefix_matches_full_execution_with_changed_slot() {
             .unwrap()
             .value = 30;
         let ordinary = ExecutionMap::<_, ()>::from_keyless_partitions(full_inputs).unwrap();
-        let full = ExecutionWorkCeiling::new(ceiling)
+        let full = ExecutionWorkCeiling::new(Some(ceiling))
             .run_serial(&request, || ordinary.run(None, varied))
             .unwrap()
             .0;
@@ -162,7 +162,7 @@ fn every_tight_native_prefix_matches_full_execution_with_changed_slot() {
         let sparse = prior
             .advance(
                 ExecutionRequest::serial(&request),
-                ExecutionWorkCeiling::new(ceiling),
+                ExecutionWorkCeiling::new(Some(ceiling)),
                 changed,
                 empty_ids(),
                 varied,
@@ -183,7 +183,7 @@ fn every_tight_native_prefix_matches_full_execution_with_changed_slot() {
                 let recarried = run
                     .advance::<u64, (), _>(
                         ExecutionRequest::serial(&request),
-                        ExecutionWorkCeiling::new(ceiling),
+                        ExecutionWorkCeiling::new(Some(ceiling)),
                         BTreeMap::new(),
                         empty_ids(),
                         varied,
@@ -245,7 +245,7 @@ fn every_tight_native_prefix_matches_full_execution_with_changed_slot() {
 
 #[test]
 fn native_membership_move_delete_last_member_and_reinsert_have_no_history_chain() {
-    let memory = SerialMemoryBudget::new(10_000_000);
+    let memory = SerialMemoryBudget::new(Some(10_000_000));
     let request = serial(&memory);
     let prior = seed(3, &request);
     let removed =
@@ -254,7 +254,7 @@ fn native_membership_move_delete_last_member_and_reinsert_have_no_history_chain(
         prior
             .advance(
                 ExecutionRequest::serial(&request),
-                ExecutionWorkCeiling::new(100),
+                ExecutionWorkCeiling::new(Some(100)),
                 entries([7]),
                 removed,
                 kernel,
@@ -277,7 +277,7 @@ fn native_membership_move_delete_last_member_and_reinsert_have_no_history_chain(
         moved
             .advance::<u64, (), _>(
                 ExecutionRequest::serial(&request),
-                ExecutionWorkCeiling::new(100),
+                ExecutionWorkCeiling::new(Some(100)),
                 BTreeMap::new(),
                 removed,
                 kernel,
@@ -291,7 +291,7 @@ fn native_membership_move_delete_last_member_and_reinsert_have_no_history_chain(
         empty
             .advance(
                 ExecutionRequest::serial(&request),
-                ExecutionWorkCeiling::new(100),
+                ExecutionWorkCeiling::new(Some(100)),
                 entries([2]),
                 empty_ids(),
                 kernel,

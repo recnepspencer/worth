@@ -26,7 +26,6 @@ struct EditCost {
 #[derive(Debug)]
 struct AdvanceCost {
     cost: Cost,
-    request_work: Vec<u64>,
     registry_visits: u64,
     marking: Vec<WorthQueryNativeMarkingForTest>,
     verification: WorthQueryFactVerificationForTest,
@@ -37,7 +36,6 @@ struct AdvanceCost {
 // keeps them outside its source-query interval.
 macro_rules! observed_advance {
     ($court:expr, $demand:expr, $at:expr) => {{
-        $court.application.caller_request_work_for_test();
         native_marking();
         fact_verification();
         let before = $court.application.whole_registry_rows_visited_for_test();
@@ -45,19 +43,17 @@ macro_rules! observed_advance {
             let WorthQueryApplicationOutputDemandProgress::Settled(settlement) =
                 $demand.demand.advance($court.request).unwrap()
             else {
-                panic!("{}: a funded native advance must settle", $at)
+                panic!("{}: the native advance must settle", $at)
             };
             let lifetime = settlement.producer_contacts_in_this_demand();
             (settlement, lifetime)
         });
-        let work = $court.application.caller_request_work_for_test();
         let visits = $court.application.whole_registry_rows_visited_for_test() - before;
         let marking = native_marking();
         let verification = fact_verification();
         $court.judge_settlement(&$demand.body, settlement.observation(), &$at);
         AdvanceCost {
             cost,
-            request_work: work,
             registry_visits: visits,
             marking,
             verification,
@@ -69,7 +65,7 @@ macro_rules! observed_advance {
 fn local_edit_baseline_at_one_ten_and_hundred_copies_in_one_runtime() {
     let _guard = checkpoint_recovery_test_guard();
     // The differential observer adds full verification; measure the ordinary lane.
-    let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
+    let application = install(None, ring_world::seed::<1>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3e00);
@@ -185,7 +181,7 @@ fn local_edit_baseline_at_one_ten_and_hundred_copies_in_one_runtime() {
         model[0].b_read = Some(model[0].root_output());
         assert_eq!(inexact_deliveries() - inexact, 0, "{at}: exact delivery");
         // Phase A records today's native work. Whole-map visits remain visible
-        // even when the exact producer set and semantic request bill are local;
+        // even when the exact producer set and source-query contacts are local;
         // this baseline cannot certify the later total-locality requirement.
         costs.push(EditCost {
             commit_source_queries,
@@ -234,17 +230,6 @@ fn local_edit_baseline_at_one_ten_and_hundred_copies_in_one_runtime() {
                     == pair[1].refresh.each_ref().map(|run| run.cost)
         ),
         "equivalent edit contacts and source-query work do not grow: {costs:?}"
-    );
-    // Request charges include lawful history/navigation granules; allow headroom.
-    let work = |cost: &EditCost| {
-        cost.refresh
-            .iter()
-            .flat_map(|run| &run.request_work)
-            .sum::<u64>()
-    };
-    assert!(
-        work(&costs[2]) <= work(&costs[0]).saturating_mul(4),
-        "local request work grows with population: {costs:?}"
     );
 }
 

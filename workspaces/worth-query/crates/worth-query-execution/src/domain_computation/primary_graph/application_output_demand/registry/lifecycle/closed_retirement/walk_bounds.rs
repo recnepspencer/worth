@@ -1,17 +1,17 @@
 //! Actual mutation walk sites stay local when another occurrence grows.
-use super::super::super::tests::{self as registry_tests, key, occurrence, record, OracleWalk};
-use super::super::super::{DemandState, WorthQueryOutputCheckpoint, WorthQueryOutputProgress};
+use super::super::super::tests as registry_tests;
+use super::super::super::tests::key;
+use super::super::super::tests::occurrence;
+use super::super::super::tests::record;
+use super::super::super::DemandState;
+use super::super::super::WorthQueryOutputCheckpoint;
+use super::super::super::WorthQueryOutputProgress;
 use super::*;
-use crate::domain_computation::primary_graph::{
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-};
-use core::convert::Infallible;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 impl DemandRegistryState {
-    pub(in super::super::super) fn assert_walk_site<C>(site: usize, mut payer: impl FnMut() -> C)
-    where
-        C: OccurrenceSearchCharge<Refusal = Infallible>,
-    {
+    pub(in super::super::super) fn assert_walk_site(site: usize) {
         let ready = registry_tests::closed_retirement::ready();
         let crate::domain_computation::primary_graph::application_output_demand::registry::DemandState::Output(output) = ready else { panic!("Ready fixture") };
         let Some(crate::domain_computation::primary_graph::application_output_demand::registry::WorthQueryOutputCheckpoint::Ready(completion)) = output.checkpoint else { panic!("Ready fixture") };
@@ -43,8 +43,7 @@ impl DemandRegistryState {
                 .insert(newest.clone(), record(occurrence(), ready(), 0));
             let mut row = record(occurrence(), ready(), 0);
             row.prerequisites.push(Arc::new(old.clone()));
-            state.required_reserved_bytes = row.prerequisites.capacity()
-                * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
+
             state.records.insert(dependent.clone(), row);
             for selected in [&old, &newest] {
                 let member = state.prepare_required_member(selected).unwrap();
@@ -73,8 +72,7 @@ impl DemandRegistryState {
             }
             registry_tests::walk_bounds::add_custody(&mut state, &receipts[..entries], neighbors);
             let before = super::super::super::record_map::occurrence_rows_visited();
-            let mut charge = payer();
-            let done = match site {
+            match site {
                 0 => {
                     // The dependent has moved its claim before retirement.
                     state
@@ -89,34 +87,28 @@ impl DemandRegistryState {
                         .framework_required_count = 1;
                     state.records.get_mut(&dependent).unwrap().prerequisites[0] =
                         Arc::new(newest.clone());
-                    state
-                        .retire_row(&old, &mut Vec::new(), &mut charge)
-                        .map(|_| ())
+                    state.retire_row(&old, &mut Vec::new());
                 }
-                1 => state
-                    .follow_newest(&dependent, &old, &mut charge)
-                    .map(|_| ()),
-                2 => newest_ready(&state.records, &old, &mut charge).map(|_| ()),
-                3 => held(
-                    &state.records,
-                    &newest,
-                    &state.records[&newest],
-                    &mut charge,
-                )
-                .map(|_| ()),
-                4 => state
-                    .release_record_prerequisites(&dependent, &mut charge)
-                    .map(|_| ()),
-                5 => state.remove_required_member_if_released(&newest, &mut charge),
-                6 => state
-                    .revive_replaced_ready(&newest, &mut charge)
-                    .map(|_| ()),
+                1 => {
+                    state.follow_newest(&dependent, &old);
+                }
+                2 => {
+                    assert!(newest_ready(&state.records, &old));
+                }
+                3 => {
+                    assert!(held(&state.records, &newest, &state.records[&newest]));
+                }
+                4 => {
+                    state.release_record_prerequisites(&dependent);
+                }
+                5 => {
+                    state.remove_required_member_if_released(&newest);
+                }
+                6 => {
+                    assert!(state.revive_replaced_ready(&newest));
+                }
                 _ => panic!("unknown walk site"),
             };
-            match done {
-                Ok(()) => {}
-                Err(never) => match never {},
-            }
             let visited = super::super::super::record_map::occurrence_rows_visited() - before;
             assert!(visited > 0, "site {site} was not reached");
             tally += 1;
@@ -129,35 +121,35 @@ impl DemandRegistryState {
 
 #[test]
 fn registry_row_retirement_walk_body_keeps_its_bound() {
-    DemandRegistryState::assert_walk_site(0, OracleWalk::after_effect);
+    DemandRegistryState::assert_walk_site(0);
 }
 
 #[test]
 fn registry_follow_newest_walk_body_keeps_its_bound() {
-    DemandRegistryState::assert_walk_site(1, OracleWalk::after_effect);
+    DemandRegistryState::assert_walk_site(1);
 }
 
 #[test]
 fn registry_newest_ready_walk_body_keeps_its_bound() {
-    DemandRegistryState::assert_walk_site(2, OracleWalk::after_effect);
+    DemandRegistryState::assert_walk_site(2);
 }
 
 #[test]
 fn registry_held_walk_body_keeps_its_bound() {
-    DemandRegistryState::assert_walk_site(3, OracleWalk::after_effect);
+    DemandRegistryState::assert_walk_site(3);
 }
 
 #[test]
 fn registry_prerequisite_release_walk_body_keeps_its_bound() {
-    DemandRegistryState::assert_walk_site(4, OracleWalk::after_effect);
+    DemandRegistryState::assert_walk_site(4);
 }
 
 #[test]
 fn registry_member_release_walk_body_keeps_its_bound() {
-    DemandRegistryState::assert_walk_site(5, OracleWalk::after_effect);
+    DemandRegistryState::assert_walk_site(5);
 }
 
 #[test]
 fn registry_revive_ready_walk_body_keeps_its_bound() {
-    DemandRegistryState::assert_walk_site(6, OracleWalk::after_effect);
+    DemandRegistryState::assert_walk_site(6);
 }

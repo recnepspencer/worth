@@ -14,7 +14,7 @@ pub(super) fn install_program(
         program,
         declaration,
         ((),),
-        support::limits(32, support::invalidation(128 * 1024 * 1024, None, 32)),
+        support::limits(32, support::invalidation()),
         |_phase, graph, installed| {
             let principal = installed
                 .principal_binding(ConsumerPrincipalBinding::reference::<QuoteSchema>())
@@ -40,7 +40,7 @@ pub(super) fn install_ordinary(
     application_installation::in_memory(
         QuoteSchema::declaration().expect("the counted schema is valid"),
         ((),),
-        support::limits(32, support::invalidation(128 * 1024 * 1024, None, 32)),
+        support::limits(32, support::invalidation()),
         |_phase, graph, installed| {
             let principal = installed
                 .principal_binding(ConsumerPrincipalBinding::reference::<QuoteSchema>())

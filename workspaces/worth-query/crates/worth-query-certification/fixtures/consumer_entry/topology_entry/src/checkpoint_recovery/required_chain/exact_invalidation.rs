@@ -27,22 +27,6 @@ type Seed = fn(
     &mut worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphBootstrap<CheckpointSchema>,
 );
 
-/// What the invalidation owner may retain of delivered marks.
-#[derive(Clone, Copy)]
-struct Retained {
-    bytes: u64,
-    commit_positions: usize,
-}
-
-impl Retained {
-    /// A window no courtroom history outgrows, and room for every row its
-    /// retained versions hold.
-    const AMPLE: Self = Self {
-        bytes: 1 << 40,
-        commit_positions: 512,
-    };
-}
-
 /// Product observations enough for every output a courtroom history leaves
 /// cached and every source its performed writes keep.
 const AMPLE_OBSERVATIONS: u64 = 64;
@@ -52,9 +36,8 @@ const AMPLE_OBSERVATIONS: u64 = 64;
 fn install(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     seed: Seed,
-    retained: Retained,
 ) -> Runtime {
-    install_observing(checkpoint, seed, retained, AMPLE_OBSERVATIONS)
+    install_observing(checkpoint, seed, AMPLE_OBSERVATIONS)
 }
 
 /// A courtroom world whose branch admits `observations` product observations
@@ -62,24 +45,15 @@ fn install(
 fn install_observing(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     seed: Seed,
-    retained: Retained,
     observations: u64,
 ) -> Runtime {
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    let work = profile
-        .limits()
-        .source_currentness_work()
-        .map(|work| u64::try_from(work).unwrap());
+
     support::install_program_with_limits::<program::ChainProgram>(
         checkpoint,
         profile,
-        support::limits_with_room(
-            4_096,
-            observations,
-            512,
-            support::invalidation(retained.bytes, work, retained.commit_positions),
-        ),
+        support::limits_with_room(4_096, observations, 512, support::invalidation()),
         seed,
     )
 }

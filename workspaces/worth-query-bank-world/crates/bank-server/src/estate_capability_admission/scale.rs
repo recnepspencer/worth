@@ -123,8 +123,8 @@ fn unrelated_grant_population_does_not_widen_terminal_publication() {
     );
     let baseline_principal = baseline.authenticate();
     let expanded_principal = expanded.authenticate();
-    let baseline_controls = BankReadControls::current(request_scope(), 1, 512).unwrap();
-    let expanded_controls = BankReadControls::current(request_scope(), 1, 512).unwrap();
+    let baseline_controls = BankReadControls::current(request_scope(), 1).unwrap();
+    let expanded_controls = BankReadControls::current(request_scope(), 1).unwrap();
 
     let baseline_result = baseline
         .runtime

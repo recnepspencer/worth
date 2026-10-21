@@ -3,7 +3,7 @@ use super::{RawNonLiveKernelOutcome, RawOneShotRows};
 use worth_execution::ChargedBytes;
 impl ChargedBytes for RawNonLiveKernelOutcome {
     fn additional_charged_bytes(&self) -> u64 {
-        let Self { raw, result_buffer } = self;
+        let Self { raw } = self;
         let RawOneShotRows {
             rows,
             source_footprints,
@@ -52,6 +52,5 @@ impl ChargedBytes for RawNonLiveKernelOutcome {
                     .as_ref()
                     .map_or(0, |source| source.retained_bytes() as u64),
             )
-            .saturating_add(result_buffer.additional_charged_bytes())
     }
 }

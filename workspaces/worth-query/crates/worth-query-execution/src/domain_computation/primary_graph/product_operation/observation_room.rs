@@ -24,21 +24,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         &self,
         mut admit: impl FnMut() -> Result<Admitted, Denial>,
     ) -> Result<Admitted, Denial> {
-        let mut reclaim = None;
         loop {
             match admit() {
                 Err(Denial::Refused(AdmissionRefusal::ObservationCapacityExhausted)) => {
-                    let admission = reclaim.get_or_insert_with(|| {
-                        self.primary_provider
-                            .graph
-                            .source_owner
-                            .invalidation_owner
-                            .request_admission()
-                    });
-                    if !matches!(
-                        self.output_demands.reclaim_unheld_observation(admission),
-                        Ok(true)
-                    ) {
+                    if !matches!(self.output_demands.reclaim_unheld_observation(), Ok(true)) {
                         return Err(Denial::Refused(
                             AdmissionRefusal::ObservationCapacityExhausted,
                         ));

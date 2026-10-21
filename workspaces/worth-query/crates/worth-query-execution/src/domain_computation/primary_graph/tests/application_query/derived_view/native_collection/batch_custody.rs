@@ -73,7 +73,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                             &membership_query,
                             &access,
                             ApplicationQueryParameterSet::new(),
-                            current_controls(&request),
+                            crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&membership_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
                         )
                         .unwrap(),
                 )
@@ -93,23 +93,24 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                             &entry_query,
                             &pair_access,
                             ApplicationQueryParameterSet::new(),
-                            current_controls(&request),
+                            crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
                         )
                         .unwrap(),
                 )
                 .unwrap();
-            let read_work = ordinary.receipt().work().total_work_units();
             drop(ordinary);
-            let nz = |value| std::num::NonZeroUsize::new(value).unwrap();
-            let closed_batch =
-        crate::domain_computation::primary_graph::WorthQueryApplicationQueryBatchAdmission::new(
-            crate::domain_computation::primary_graph::WorthQueryApplicationQueryBatchLimits::new(
-                nz(2),
-                Some(nz(100_000)),
-                nz(262_144),
-                nz(4_096),
-            ),
-        );
+
+            let closed_batch = world
+                .application
+                .application_query_batch_from_installed_reads(&[world
+                    .application
+                    .plan_installed_query_batch_reads(
+                        &entry_query,
+                        2,
+                        std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"),
+                    )
+                    .unwrap()])
+                .unwrap();
             let keys = world
                 .application
                 .reconstruct_managed_derived_collection_pair(
@@ -132,7 +133,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                                 &entry_query,
                                 &pair_access,
                                 ApplicationQueryParameterSet::new(),
-                                current_controls(&request),
+                                crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
                             )
                             .unwrap();
                         let second = selected
@@ -143,7 +144,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                                 &entry_query,
                                 &pair_access,
                                 ApplicationQueryParameterSet::new(),
-                                current_controls(&request),
+                                crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
                             )
                             .unwrap();
                         Ok(WorthQueryDerivedPairReadPlans::in_batch(
@@ -154,23 +155,13 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                     },
                     |row| row.status().to_string(),
                     |row| row.status().to_string(),
-                    |_, body| {
-                        assert!(
-                            closed_batch.observe().retained_bytes() > 0,
-                            "closed read claims survive owner projection"
-                        );
-                        SceneLabel(body.label().to_string())
-                    },
+                    |_, body| SceneLabel(body.label().to_string()),
                 )
                 .unwrap();
+
             assert_eq!(keys.len(), 1);
             let key = keys[0].clone();
-            assert_eq!(closed_batch.observe().retained_bytes(), 0);
-            assert_eq!(
-                closed_batch.observe().read_work_units(),
-                read_work.checked_mul(2).unwrap(),
-                "both closed reads examine the same query and root as the ordinary receipt",
-            );
+
             let graph = world.application.runtime.primary_graph().unwrap();
             let field = AccountLabel::reference();
             let locator = graph
@@ -247,7 +238,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                         &entry_query,
                         &access,
                         ApplicationQueryParameterSet::new(),
-                        current_controls(&request),
+                        crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
                     )
                     .unwrap()
             };
@@ -277,7 +268,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                                 &entry_query,
                                 &body_access,
                                 ApplicationQueryParameterSet::new(),
-                                current_controls(&request),
+                                crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
                             )
                             .unwrap(),
                     )
@@ -309,7 +300,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                 .unwrap();
             let first_work = first.receipt().work().total_work_units();
             drop(first);
-            let first_memory = std::cell::Cell::new(0);
+
             let projections = std::cell::Cell::new(0);
             let snapshot = world
                 .application
@@ -317,8 +308,19 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                 .unwrap();
             let (application, fresh_product, _) = fresh.into_parts();
             batch_refresh::refuse_then_refresh(
-                first_work,
-                &first_memory,
+                || {
+                    world
+                        .application
+                        .application_query_batch_from_installed_reads(&[world
+                            .application
+                            .plan_installed_query_batch_reads(
+                                &entry_query,
+                                2,
+                                std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"),
+                            )
+                            .unwrap()])
+                        .unwrap()
+                },
                 &projections,
                 &snapshot,
                 &key,
@@ -344,7 +346,6 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                             first,
                             batch,
                             |row: &AccountSummaryResult, batch| {
-                                first_memory.set(batch.observe().retained_bytes());
                                 let selected = application
                                     .on_product(request_execution, fresh_product.retained_clone())
                                     .unwrap();
@@ -366,7 +367,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                                         &entry_query,
                                         &access,
                                         ApplicationQueryParameterSet::new(),
-                                        current_controls(&request),
+                                        crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
                                     )
                                     .unwrap();
                                 world

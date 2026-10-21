@@ -1,16 +1,17 @@
 //! Query-read custody in the SAME native physical posting index, never a producer.
-use super::{
-    admission::IndexAdmission, fact_key::FactPostingKey, index_capacity, retention,
-    settlement::PreparedPostingOrdinals, source_alignment::SnapshotAlignedMarkState,
-    InvalidationEditAdmission, SourceInvalidationOwner,
-};
+use super::fact_key::FactPostingKey;
+use super::settlement::PreparedPostingOrdinals;
+use super::source_alignment::SnapshotAlignedMarkState;
+use super::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
-use im::{OrdMap, OrdSet};
-use std::sync::{Arc, Mutex, Weak};
-use worth_relational::facade::{
-    mvcc::CompanionPreflightStop, publication::PatchStreamPosition,
-    runtime::PositionedRelationalSnapshot,
-};
+use im::OrdMap;
+use im::OrdSet;
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::Weak;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::publication::PatchStreamPosition;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 mod marking;
 mod reclamation;
 mod registration;
@@ -18,15 +19,11 @@ use reclamation::QueryReadBacking;
 #[cfg(test)]
 mod tests;
 pub(super) use marking::mark_query_reads;
-type Capacity = Arc<
-    crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity,
->;
 
 /// Addresses and their allocation only. No source/session/currentness permission.
 #[derive(Debug)]
 pub(super) struct QueryReadProjection {
     keys: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
-    _capacity: Capacity,
 }
 #[derive(Debug)]
 struct QueryReadIdentity;
@@ -40,7 +37,6 @@ pub(in crate::domain_computation::primary_graph) struct QueryFactCoverage {
     projection: Arc<QueryReadProjection>,
     identity: Arc<QueryReadIdentity>,
     slot: Mutex<Option<u64>>,
-    _capacity: Capacity,
 }
 #[derive(Clone, Debug)]
 pub(super) struct QueryReadBinding {
@@ -50,7 +46,6 @@ pub(super) struct QueryReadBinding {
     epoch: super::mark_state::DeliveryEpoch,
     dirty: Option<usize>,
     // Weak identity allocation survives until the LAST historical binding drops.
-    _identity_capacity: Capacity,
 }
 impl QueryReadBinding {
     fn belongs_to(&self, coverage: &QueryFactCoverage) -> bool {
@@ -94,13 +89,12 @@ impl SourceInvalidationOwner {
         basis: PositionedRelationalSnapshot,
         facts: &[WorthQueryApplicationObservedFact],
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<Arc<QueryFactCoverage>>, QueryCoverageStop> {
         policy.check_live()?;
         if basis.runtime_instance_id() != self.runtime_instance_id || facts.is_empty() {
             return Ok(None);
         }
-        let Some(cell) = self.cell_for_read(&basis, admission)? else {
+        let Some(cell) = self.cell_for_read(&basis)? else {
             return Ok(None);
         };
         let image = cell.read_image();
@@ -111,7 +105,7 @@ impl SourceInvalidationOwner {
         // issues qualify. A newly introduced kind keeps funded full verification.
         for fact in facts {
             policy.check_live()?;
-            admission.work(1)?;
+
             if !matches!(
                 fact,
                 WorthQueryApplicationObservedFact::SourceEntity { .. }
@@ -123,43 +117,20 @@ impl SourceInvalidationOwner {
             }
         }
         let mut unsupported = None;
-        let projected = PreparedPostingOrdinals::prepare(facts, None, &mut unsupported, admission)?;
+        let projected = PreparedPostingOrdinals::prepare(facts, None, &mut unsupported)?;
         if unsupported.is_some() {
             return Ok(None);
         }
-        let (keys, retained_bytes) = projected.into_query_parts();
-        let projection_bytes = index_capacity::arc_bytes::<QueryReadProjection>()
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        let owner_bytes = index_capacity::arc_bytes::<QueryFactCoverage>()
-            .and_then(|n| n.checked_add(index_capacity::arc_bytes::<QueryReadIdentity>()?))
-            .and_then(|n| n.checked_add(basis.branch_id().0.capacity() as u64))
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        admission.bytes(
-            projection_bytes
-                .checked_add(owner_bytes)
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-        )?;
-        let projection_capacity = retention::reserve(
-            &self.resources,
-            retained_bytes
-                .checked_add(projection_bytes)
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-            admission,
-        )?;
-        let capacity = retention::reserve(&self.resources, owner_bytes, admission)?;
+        let keys = projected.into_query_parts();
         policy.check_live()?;
         let coverage = Arc::new(QueryFactCoverage {
             owner: Arc::clone(self),
             basis,
-            projection: Arc::new(QueryReadProjection {
-                keys,
-                _capacity: projection_capacity,
-            }),
+            projection: Arc::new(QueryReadProjection { keys }),
             identity: Arc::new(QueryReadIdentity),
             slot: Mutex::new(None),
-            _capacity: capacity,
         });
-        self.install_query_read(&coverage, &coverage.basis, cell, image, policy, admission)?;
+        self.install_query_read(&coverage, &coverage.basis, cell, image, policy)?;
         policy.check_live()?;
         Ok(Some(coverage))
     }
@@ -172,7 +143,6 @@ impl SourceInvalidationOwner {
         coverage: &'selected QueryFactCoverage,
         selected: &'selected PositionedRelationalSnapshot,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<CleanQueryFacts<'selected>>, QueryCoverageStop> {
         policy.check_live()?;
         if !registration::same_source(self, coverage, selected) {
@@ -185,16 +155,16 @@ impl SourceInvalidationOwner {
         let Some(slot) = slot else {
             return Ok(None);
         };
-        let Some(cell) = self.cell_for_read(selected, admission)? else {
+        let Some(cell) = self.cell_for_read(selected)? else {
             return Ok(None);
         };
         let image = cell.read_image();
-        admission.ordered_read(image.payload().past.len())?;
+
         let Ok(aligned) = SnapshotAlignedMarkState::observe_image(&image, selected) else {
             return Ok(None);
         };
         let state = aligned.recovery_state();
-        admission.ordered_read(state.posting_bindings.len())?;
+
         let Some(super::settlement::PostingBindings::QueryRead(read)) =
             state.posting_bindings.get(&slot).map(Arc::as_ref)
         else {

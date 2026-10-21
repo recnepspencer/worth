@@ -4,7 +4,7 @@ use super::*;
 use crate::domain_computation::primary_graph::tests::fixture::installed_layout;
 
 #[test]
-fn unrelated_aspects_preserve_selected_inventory_and_lookup_cost() {
+fn unrelated_aspects_preserve_selected_inventory() {
     let mut layout = installed_layout();
     let selected = layout
         .native_output_aspects("Account")
@@ -12,8 +12,6 @@ fn unrelated_aspects_preserve_selected_inventory_and_lookup_cost() {
         .collect::<Vec<_>>();
     assert!(!selected.is_empty());
     let kind = layout.entity_kind("Account");
-    let work = layout.native_output_lookup_work("Account");
-    assert!(work.is_some_and(|work| work > 0));
     let contracts = selected
         .iter()
         .map(|aspect| {
@@ -23,7 +21,7 @@ fn unrelated_aspects_preserve_selected_inventory_and_lookup_cost() {
             )
         })
         .collect::<Vec<_>>();
-    let original_count = layout.aspect_contract_count();
+    let original_count: usize = layout.aspect_contracts.values().map(BTreeMap::len).sum();
     let original_kind_count = layout.entity_kinds.len();
     let unrelated = layout.aspect_contracts.get_mut("Activity").unwrap();
     let contract = unrelated.values().next().unwrap().clone();
@@ -36,11 +34,16 @@ fn unrelated_aspects_preserve_selected_inventory_and_lookup_cost() {
             )
             .is_none());
     }
-    layout.aspect_contract_count = layout.aspect_contracts.values().map(BTreeMap::len).sum();
-    assert_eq!(layout.aspect_contract_count(), original_count + 4096);
+    assert_eq!(
+        layout
+            .aspect_contracts
+            .values()
+            .map(BTreeMap::len)
+            .sum::<usize>(),
+        original_count + 4096
+    );
     assert_eq!(layout.entity_kinds.len(), original_kind_count);
     assert_eq!(layout.entity_kind("Account"), kind);
-    assert_eq!(layout.native_output_lookup_work("Account"), work);
     assert_eq!(
         layout
             .native_output_aspects("Account")

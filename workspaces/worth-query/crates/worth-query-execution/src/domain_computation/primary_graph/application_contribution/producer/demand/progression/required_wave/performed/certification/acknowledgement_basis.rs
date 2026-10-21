@@ -1,20 +1,17 @@
 //! A Current acknowledgment cannot discharge a cause on a different Product.
 use super::*;
-use crate::domain_computation::primary_graph::output_lineage::own_write_fixture::{
-    evict_index_with_unrelated_write, with_committed_own_write,
-};
+use crate::domain_computation::primary_graph::output_lineage::own_write_fixture::with_committed_own_write;
 #[test]
 fn a_current_proof_from_another_basis_acknowledges_nothing() {
     with_committed_own_write(|world, _receipt, _recorded, resources| {
         world.application.with_host_advancement(|phase| {
         let execution = phase.execution_request_for(&world.application.product_runtime).unwrap();
         let runtime = &world.application;
-        let mut admission = runtime.demand_request_admission();
+
         let (basis_a, _) = super::super::super::selection::select_required_basis(
             &execution,
             runtime,
             runtime.current_world(),
-            &mut admission,
         )
         .unwrap();
         let a = CurrentBasis::of(basis_a.selected().product().observation());
@@ -32,19 +29,35 @@ fn a_current_proof_from_another_basis_acknowledges_nothing() {
             member.certify_current_basis(a.clone()),
         );
         // Use the registry's real queue, so the writer's state is observable.
-        evict_index_with_unrelated_write(&phase, world, &resources);
+        {
+            use crate::domain_computation::primary_graph::tests::{application_attempt::resolved_account,
+                fixture::{live_scope, AccountLabel, publish_relational_mutation}};
+
+            use worth_relational::facade::transactions::{WorkerIntentBatch, MutationIntent,
+                EntityMutationIntent, UpdateEntityFieldsIntent, AspectFieldPatch};
+            let root = resolved_account(&phase.test_host_request(), world, "unrelated", &live_scope());
+            let field = AccountLabel::reference();
+            let graph = world.application.runtime.primary_graph().unwrap();
+            let locator = graph.layout().field_locator(field.entity(), field.aspect(), field.field()).unwrap().clone();
+            publish_relational_mutation(&execution, world,
+                WorkerIntentBatch::new("certification-unrelated-source").push(MutationIntent::Entity(
+                    EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                        entity_id: root.entity_id(),
+                        fields: AspectFieldPatch::from(std::collections::BTreeMap::from([(
+                            locator, worth_foundational::facade::AspectValue::String("unrelated-write".into()))])),
+                    }))));
+        }
         let (basis_b, _) = super::super::super::selection::select_required_basis(
             &execution,
             runtime,
             runtime.current_world(),
-            &mut admission,
         )
         .unwrap();
         let b = CurrentBasis::of(basis_b.selected().product().observation());
         assert_ne!(a, b, "the production publication really moved the basis");
         member.certify_current_basis(b.clone());
         let work = member.fixture_selected_work();
-        let outcome = work.acknowledge_current_admitted(proof, &mut admission);
+        let outcome = work.acknowledge_current_admitted(proof);
         assert!(
             matches!(outcome, Err(ref denial) if denial.kind() == WorthQueryOutputDemandDenialKind::ForeignDemand),
             "the row itself refuses the old certification basis"
@@ -61,7 +74,7 @@ fn a_current_proof_from_another_basis_acknowledges_nothing() {
         );
         let work = member.fixture_selected_work();
         drop(
-            work.acknowledge_current_admitted(proof_b, &mut admission)
+            work.acknowledge_current_admitted(proof_b)
                 .unwrap(),
         );
         assert!(
@@ -88,12 +101,11 @@ impl CurrentProof<()> {
                         .execution_request_for(&world.application.product_runtime)
                         .unwrap();
                     let runtime = &world.application;
-                    let mut admission = runtime.demand_request_admission();
+
                     let (selected, _) = super::super::super::selection::select_required_basis(
                         &execution,
                         runtime,
                         runtime.current_world(),
-                        &mut admission,
                     )
                     .unwrap();
                     let basis = CurrentBasis::of(selected.selected().product().observation());
@@ -114,12 +126,11 @@ fn a_current_proof_of_record_a_cannot_acknowledge_record_b_at_the_same_basis() {
         world.application.with_host_advancement(|phase| {
         let execution = phase.execution_request_for(&world.application.product_runtime).unwrap();
         let runtime = &world.application;
-        let mut admission = runtime.demand_request_admission();
+
         let (selected, _) = super::super::super::selection::select_required_basis(
             &execution,
             runtime,
             runtime.current_world(),
-            &mut admission,
         )
         .unwrap();
         let basis = CurrentBasis::of(selected.selected().product().observation());
@@ -155,7 +166,7 @@ fn a_current_proof_of_record_a_cannot_acknowledge_record_b_at_the_same_basis() {
         drop(member_b.certify_current_basis(basis.clone()));
         let _work_a = member_a.fixture_selected_work();
         let work = member_b.fixture_selected_work();
-        let result = work.acknowledge_current_admitted(proof, &mut admission);
+        let result = work.acknowledge_current_admitted(proof);
         assert!(
             matches!(result, Err(ref denial) if denial.kind() == WorthQueryOutputDemandDenialKind::ForeignDemand),
             "the writer refuses another record's Current proof by value"

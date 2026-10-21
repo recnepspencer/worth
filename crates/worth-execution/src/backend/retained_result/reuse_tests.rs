@@ -17,7 +17,7 @@ impl ChargedBytes for Value {
 
 fn serial() -> SerialRequest {
     SerialRequest::from_memory(
-        SerialMemoryBudget::new(100_000),
+        SerialMemoryBudget::new(Some(100_000)),
         crate::CancellationToken::new(),
         None,
     )
@@ -41,7 +41,7 @@ fn carried_input_keeps_the_same_nonclone_result_cell_and_changed_input_evaluates
     let MapOutcome::Complete { mut values, .. } = source
         .run_retained(
             ExecutionRequest::serial(&serial),
-            ExecutionWorkCeiling::new(100),
+            ExecutionWorkCeiling::new(Some(100)),
             |input, context| {
                 context.checkpoint(3)?;
                 Ok::<_, KernelFailure<()>>(Value(*input * 10))
@@ -76,7 +76,7 @@ fn carried_input_keeps_the_same_nonclone_result_cell_and_changed_input_evaluates
     let MapOutcome::Complete { values, report } = planned
         .run_retained_inputs(
             ExecutionRequest::serial(&serial),
-            ExecutionWorkCeiling::new(100),
+            ExecutionWorkCeiling::new(Some(100)),
             None,
             |input, context| {
                 entered.fetch_add(1, Ordering::Relaxed);
@@ -104,8 +104,14 @@ fn unqualified_or_misbound_native_result_refuses_before_any_new_kernel() {
     let MapOutcome::Complete { mut values, .. } = source
         .run_retained(
             ExecutionRequest::serial(&serial),
-            ExecutionWorkCeiling::new(100),
-            |_, context| Ok::<_, KernelFailure<()>>(context.remaining_work()),
+            ExecutionWorkCeiling::new(Some(100)),
+            |_, context| {
+                Ok::<_, KernelFailure<()>>(
+                    context
+                        .remaining_work()
+                        .expect("fixture installs finite work"),
+                )
+            },
         )
         .unwrap()
     else {
@@ -115,7 +121,7 @@ fn unqualified_or_misbound_native_result_refuses_before_any_new_kernel() {
     let MapOutcome::Complete { mut values, .. } = source
         .run_retained(
             ExecutionRequest::serial(&serial),
-            ExecutionWorkCeiling::new(100),
+            ExecutionWorkCeiling::new(Some(100)),
             |input, context| {
                 context.checkpoint(1)?;
                 Ok::<_, KernelFailure<()>>(*input)
@@ -150,7 +156,7 @@ fn unqualified_or_misbound_native_result_refuses_before_any_new_kernel() {
         let entered = AtomicUsize::new(0);
         let denied = planned.run_retained_inputs(
             ExecutionRequest::serial(&serial),
-            ExecutionWorkCeiling::new(100),
+            ExecutionWorkCeiling::new(Some(100)),
             None,
             |input, _| {
                 entered.fetch_add(1, Ordering::Relaxed);
@@ -165,7 +171,7 @@ fn unqualified_or_misbound_native_result_refuses_before_any_new_kernel() {
     let retry = source
         .run_retained(
             ExecutionRequest::serial(&serial),
-            ExecutionWorkCeiling::new(100),
+            ExecutionWorkCeiling::new(Some(100)),
             |input, context| {
                 context.checkpoint(1)?;
                 Ok::<_, KernelFailure<()>>(*input)
@@ -186,7 +192,7 @@ fn retained_reduction_matches_the_full_native_tree_and_refusal_keeps_no_successf
         context.checkpoint(3)?;
         Ok::<_, KernelFailure<()>>(*input * 10)
     };
-    let (expected, expected_report, expected_metrics) = ExecutionWorkCeiling::new(100)
+    let (expected, expected_report, expected_metrics) = ExecutionWorkCeiling::new(Some(100))
         .run_serial(&serial, || {
             source
                 .run_reduce(None, kernel, 0_u64, |a, b| a + b, 1_000, 0)
@@ -196,7 +202,7 @@ fn retained_reduction_matches_the_full_native_tree_and_refusal_keeps_no_successf
         .0;
     let actual = source.run_reduce_retained_holding(
         ExecutionRequest::serial(&serial),
-        ExecutionWorkCeiling::new(100),
+        ExecutionWorkCeiling::new(Some(100)),
         None,
         None,
         kernel,
@@ -225,7 +231,7 @@ fn retained_reduction_matches_the_full_native_tree_and_refusal_keeps_no_successf
     let advanced = run
         .advance(
             ExecutionRequest::serial(&serial),
-            ExecutionWorkCeiling::new(100),
+            ExecutionWorkCeiling::new(Some(100)),
             BTreeMap::new(),
             worth_proof::CanonicalUniqueVec::try_from_sorted_unique(Vec::new()).unwrap(),
             |_: &u64, _| -> Result<u64, KernelFailure<()>> { panic!("unchanged native run") },
@@ -238,7 +244,7 @@ fn retained_reduction_matches_the_full_native_tree_and_refusal_keeps_no_successf
     assert_eq!(report.charged_work(), 3);
     let stopped = source.run_reduce_retained_holding(
         ExecutionRequest::serial(&serial),
-        ExecutionWorkCeiling::new(3),
+        ExecutionWorkCeiling::new(Some(3)),
         None,
         None,
         kernel,
@@ -284,7 +290,7 @@ fn surviving_result_uses_the_same_deep_bound_checked_by_native_evaluation() {
     let MapOutcome::Complete { values, .. } = source
         .run_retained(
             ExecutionRequest::serial(&serial),
-            ExecutionWorkCeiling::new(100),
+            ExecutionWorkCeiling::new(Some(100)),
             |_, context| {
                 context.checkpoint(1)?;
                 Ok::<_, KernelFailure<()>>(Measured {
@@ -325,7 +331,7 @@ fn retained_reduction_with_access_keys_completes_without_a_keyless_advance_capab
     let completed = source
         .run_reduce_retained_holding(
             ExecutionRequest::serial(&serial),
-            ExecutionWorkCeiling::new(100),
+            ExecutionWorkCeiling::new(Some(100)),
             None,
             None,
             |value, context| {

@@ -10,28 +10,14 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationSchema, ApplicationStructuredValueBinding},
 };
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationProjection, WorthQueryApplicationQueryBatchAdmission,
-    WorthQueryApplicationQueryBatchLimits, WorthQueryApplicationQueryBatchResourceDenial,
+    WorthQueryApplicationProjection, WorthQueryApplicationQueryBatchResourceDenial,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 mod execution;
 
-/// A homogeneous, ordered batch of existing declared intents. All items use
-/// the retained data observation, but retain independent ordinary scope and
-/// disclosure admission. Duplicate scopes remain separate, charged entries.
-///
-/// `limits` is required before execution. The common loan covers root/tree
-/// read work and result/source custody. Authorization and preparation retain
-/// their existing per-item bounds and are not claimed as aggregate-bounded.
-///
-/// ```compile_fail,E0599
-/// use worth_query_publication::facade::application_entry::WorthQueryApplicationQueryBatchRequest;
-/// use worth_query_declaration::facade::{application_schema::ApplicationSchema, application_query::ApplicationQueryIntent};
-/// fn unbounded<S: ApplicationSchema, I: ApplicationQueryIntent<S>>(request: WorthQueryApplicationQueryBatchRequest<'_, '_, '_, S, I>) {
-///     request.execute();
-/// }
-/// ```
+/// Ordered ordinary declared reads over one retained data observation.
+/// Every item is freshly authorized and keeps its own source/disclosure receipt.
 pub struct WorthQueryApplicationQueryBatchRequest<'application, 'principal, 'scope, Schema, Intent>
 {
     application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -42,20 +28,6 @@ pub struct WorthQueryApplicationQueryBatchRequest<'application, 'principal, 'sco
         worth_query_execution::facade::primary_graph::WorthQueryApplicationReadObservation,
     >,
     intents: Vec<Intent>,
-}
-
-/// A batch with mandatory explicit read/custody bounds. This is a bounded
-/// builder, not an admitted query or scope capability.
-pub struct WorthQueryApplicationBoundedQueryBatchRequest<
-    'application,
-    'principal,
-    'scope,
-    Schema,
-    Intent,
-> {
-    request:
-        WorthQueryApplicationQueryBatchRequest<'application, 'principal, 'scope, Schema, Intent>,
-    limits: WorthQueryApplicationQueryBatchLimits,
 }
 
 /// No denial contains a partial batch or a source from an earlier item.
@@ -101,52 +73,6 @@ impl<
         }
     }
 
-    pub(super) fn execute_installed(
-self, limits: Option<WorthQueryApplicationQueryBatchLimits>, query_limits: Option<(std::num::NonZeroUsize, std::num::NonZeroUsize)>, phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>) -> Result<
-        crate::domain_computation::WorthQueryPublishedApplicationQueryBatch<
-            <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
-            <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
-        >,
-        WorthQueryApplicationQueryBatchDenial,
-    >
-    where
-        <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
-        <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::Query>,
-    {
-        execution::execute(
-            phase,
-            self,
-            execution::BatchExecutionPolicy::Installed(limits),
-            query_limits,
-        )
-    }
-
-    pub fn limits(
-        self,
-        limits: WorthQueryApplicationQueryBatchLimits,
-    ) -> WorthQueryApplicationBoundedQueryBatchRequest<
-        'application,
-        'principal,
-        'scope,
-        Schema,
-        Intent,
-    > {
-        WorthQueryApplicationBoundedQueryBatchRequest {
-            request: self,
-            limits,
-        }
-    }
-}
-
-impl<
-        'application,
-        'principal,
-        'scope,
-        Schema: ApplicationSchema,
-        Intent: ApplicationQueryIntent<Schema>,
-    >
-    WorthQueryApplicationBoundedQueryBatchRequest<'application, 'principal, 'scope, Schema, Intent>
-{
     pub fn execute(
 self, phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>) -> Result<
         crate::domain_computation::WorthQueryPublishedApplicationQueryBatch<
@@ -159,11 +85,21 @@ self, phase: &worth_query_execution::facade::application_contribution::WorthQuer
         <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
         <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::Query>,
     {
-        execution::execute(
-            phase,
-            self.request,
-            execution::BatchExecutionPolicy::Explicit(self.limits),
-            None,
-        )
+        self.execute_installed(None, phase)
+    }
+
+    pub(super) fn execute_installed(
+self, query_limits: Option<std::num::NonZeroUsize>, phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>) -> Result<
+        crate::domain_computation::WorthQueryPublishedApplicationQueryBatch<
+            <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
+            <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
+        >,
+        WorthQueryApplicationQueryBatchDenial,
+    >
+    where
+        <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
+        <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::Query>,
+    {
+        execution::execute(phase, self, query_limits)
     }
 }

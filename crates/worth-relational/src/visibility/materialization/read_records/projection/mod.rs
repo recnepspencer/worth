@@ -27,7 +27,6 @@ mod view;
 pub use adjacency_revision::{
     AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection,
 };
-pub use admitted_snapshot::RelationalSnapshotProjectionAdmissionStop;
 pub use borrowed_adjacency::RelationalAdjacencyVisit;
 pub use borrowed_records::{
     RelationalBorrowedRecordReadDenial, RelationalEntityMetadata, RelationalRelationMetadata,

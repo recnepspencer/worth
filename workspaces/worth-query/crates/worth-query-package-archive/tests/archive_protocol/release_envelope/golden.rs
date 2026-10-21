@@ -3,12 +3,14 @@ use super::*;
 
 const RECORD_SIX_ENVELOPE_HEX: &str = include_str!("release_envelope_v1.hex");
 const RECORD_SEVEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v7.hex");
-const CURRENT_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v9.hex");
+const RECORD_NINE_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v9.hex");
+const CURRENT_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v10.hex");
 
 pub(super) fn assert_current_envelope_and_unsupported_records() {
     for (version, vector) in [
         (6_u16, RECORD_SIX_ENVELOPE_HEX),
         (7_u16, RECORD_SEVEN_ENVELOPE_HEX),
+        (9_u16, RECORD_NINE_ENVELOPE_HEX),
     ] {
         let original = decode_hex(vector.trim());
         // A valid outer envelope/checksum does not admit an unsupported inner record.
@@ -49,7 +51,7 @@ pub(super) fn assert_current_envelope_and_unsupported_records() {
     );
     assert_eq!(
         u16::from_be_bytes(decoded.archive()[118..120].try_into().unwrap()),
-        9
+        10
     );
     let archive =
         decode_package_archive(decoded.archive(), WorthQueryPackageArchiveLimits::DEFAULT).unwrap();

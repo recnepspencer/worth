@@ -11,22 +11,23 @@ mod product_publication;
 mod required_origin;
 mod stops;
 mod touched_records;
-use stops::{failure, index_preparation_stop, native_output_witness_stop, transaction_commit_stop};
+use stops::failure;
+use stops::index_preparation_stop;
+use stops::native_output_witness_stop;
+use stops::transaction_commit_stop;
 pub(in crate::domain_computation::primary_graph::provider) use touched_records::PreparedTouchedRecords;
 mod publication;
 pub(in crate::domain_computation::primary_graph) use publication::WorthQueryPrimaryGraphCommittedApplication;
 
 use super::super::WorthQueryPreparedApplicationCommit;
-use crate::domain_computation::primary_graph::provider::{
-    mutation_work::WorthQueryPrimaryMutationWorkCounters,
-    session_commit::{
-        provider_failure, snapshot_admission_failure, WorthQueryPreImageRetentionWork,
-    },
-    WorthQueryPrimaryGraphApplicationAttempt, WorthQueryPrimaryGraphProvider,
-};
-use crate::domain_computation::{
-    WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
-};
+use crate::domain_computation::primary_graph::provider::mutation_work::WorthQueryPrimaryMutationWorkCounters;
+use crate::domain_computation::primary_graph::provider::session_commit::provider_failure;
+use crate::domain_computation::primary_graph::provider::session_commit::snapshot_admission_failure;
+use crate::domain_computation::primary_graph::provider::session_commit::WorthQueryPreImageRetentionWork;
+use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphApplicationAttempt;
+use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
+use crate::domain_computation::WorthQueryProviderSessionFailure;
+use crate::domain_computation::WorthQueryProviderSessionProtocolStage;
 
 pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryCommittedApplicationSession {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,
@@ -43,9 +44,6 @@ pub(in crate::domain_computation::primary_graph::provider) struct WorthQueryComm
     product_publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt,
     managed_views: Option<managed_views::PreparedViewPublication>,
     source_fact_rebase: Option<super::PreparedSourceFactRebase>,
-    /// The request's meter from consumed-output verification through the
-    /// source-fact rebase to completed registration.
-    publication_admission: crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     required_prerequisites:
         Option<crate::domain_computation::primary_graph::PreparedPrerequisiteClaims>,
     prepared_lineage_slot:
@@ -95,22 +93,14 @@ pub(super) fn commit(
     })
     .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
     let consumed_output::VerifiedConsumedOutputPublication {
-        mut publication_admission,
         mut required_prerequisites,
     } = consumed_output::verify(&execution, provider, &mut attempt, before.as_snapshot())?;
-    let availability_fence = availability::prepare(
-        &execution,
-        provider,
-        &attempt,
-        before.as_snapshot(),
-        &mut publication_admission,
-    )?;
+    let availability_fence =
+        availability::prepare(&execution, provider, &attempt, before.as_snapshot())?;
     let prepared_output_witness =
         crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness::prepare(
             &attempt,
             &provider.graph.layout,
-            &provider.graph.source_owner.invalidation_owner,
-            &mut publication_admission,
         )
         .map_err(native_output_witness_stop)?;
     let candidate = required_origin::bind(
@@ -120,7 +110,6 @@ pub(super) fn commit(
         provider,
         &attempt,
         required_prerequisites.as_ref(),
-        &mut publication_admission,
     )?;
     #[cfg(test)]
     provider.fault_port.candidate_ready_for_native_preparation();
@@ -151,12 +140,9 @@ pub(super) fn commit(
             .bind(&mut candidate)
             .map_err(native_output_witness_stop)?;
     }
-    let prepared_touched_records = touched_records::PreparedTouchedRecords::prepare(
-        &candidate,
-        &mut publication_admission,
-        allocation_policy,
-    )?;
-    let source_fact_rebase = provider.graph.with_runtime(&execution, |runtime| source_fact_rebase.prepare_candidate(&candidate, runtime, before.as_snapshot(), &mut publication_admission,
+    let prepared_touched_records =
+        touched_records::PreparedTouchedRecords::prepare(&candidate, allocation_policy)?;
+    let source_fact_rebase = provider.graph.with_runtime(&execution, |runtime| source_fact_rebase.prepare_candidate(&candidate, runtime, before.as_snapshot(),
         crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_policy, Some(attempt.affinity().publication_request())),
     )).map_err(stops::source_rebase_preparation_stop)?;
     let ordinary_index_budget =
@@ -196,7 +182,6 @@ pub(super) fn commit(
         &mut attempt,
         candidate,
         &mut required_prerequisites,
-        &mut publication_admission,
     )?;
     let performed = match performed {
         product_publication::WorthQueryApplicationProductPublicationOutcome::Performed(
@@ -227,7 +212,7 @@ pub(super) fn commit(
                 prepared_output_witness,
                 prepared_touched_records,
                 lineage_metadata: None,
-                publication_admission,
+
                 reserved_terminal,
             };
             reservation.retain_managed(unpublished.recovery_handle(), retained);
@@ -265,7 +250,7 @@ pub(super) fn commit(
         product_publication: performed,
         managed_views,
         source_fact_rebase: Some(source_fact_rebase),
-        publication_admission,
+
         required_prerequisites,
         prepared_lineage_slot,
         prepared_output_witness,
@@ -275,10 +260,10 @@ pub(super) fn commit(
 fn publication_request_stop(
     cause: worth_execution::WorkCeilingDenial,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
-    use crate::domain_computation::{
-        WorthQueryProviderSessionCommitControlStopped, WorthQueryProviderSessionCommitStop as Stop,
-        WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
-    };
+    use crate::domain_computation::WorthQueryProviderSessionCommitControlStopped;
+    use crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop;
+    use crate::domain_computation::WorthQueryProviderSessionFailure;
+    use crate::domain_computation::WorthQueryProviderSessionProtocolStage;
     match crate::domain_computation::primary_graph::application_contribution::publication_execution_kind(cause) {
         Ok(kind) => Stop::PreEffectDenied(WorthQueryProviderSessionFailure::checked_read_stopped(Ok(kind), WorthQueryProviderSessionProtocolStage::Commit, "World publication request stopped before effect")),
         Err(control) => Stop::ControlStopped(WorthQueryProviderSessionCommitControlStopped::new(control, "World publication request stopped before effect")),
@@ -288,10 +273,9 @@ fn publication_request_stop(
 fn world_no_effect(
     no_effect: worth_runtime_world::facade::NoEffectCompositePublication,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
-    use crate::domain_computation::{
-        WorthQueryProviderSessionCommitControlStopped, WorthQueryProviderSessionCommitStop as Stop,
-        WorthQueryProviderSessionControlStopKind,
-    };
+    use crate::domain_computation::WorthQueryProviderSessionCommitControlStopped;
+    use crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop;
+    use crate::domain_computation::WorthQueryProviderSessionControlStopKind;
     use worth_runtime_world::facade::NoEffectCause;
     match no_effect.cause() {
         NoEffectCause::StaleExpectedProductHead => Stop::ProductStale(
@@ -322,20 +306,6 @@ fn world_no_effect(
     }
 }
 impl WorthQueryCommittedApplicationSession {
-    /// What the source-fact rebase reads and the request meter it spends.
-    pub(super) fn rebase_parts(
-        &mut self,
-    ) -> (
-        &worth_relational::facade::transactions::CommitResult,
-        Option<usize>,
-        &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
-    ){
-        (
-            self.committed.as_ref(),
-            self.attempt.indexed_rebase_work_budget(),
-            &mut self.publication_admission,
-        )
-    }
     pub(in crate::domain_computation::primary_graph::provider) fn take_recovered_output_source(
         &self,
     ) -> crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource{

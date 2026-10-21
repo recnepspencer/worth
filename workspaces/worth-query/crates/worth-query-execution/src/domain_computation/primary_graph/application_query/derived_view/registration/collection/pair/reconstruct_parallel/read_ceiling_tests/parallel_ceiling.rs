@@ -122,25 +122,22 @@ fn parallel_read_request_exhaustion_keeps_a_canonical_prefix_and_releases_memory
             crate::domain_computation::primary_graph::application_query::DispatchWitness::install(
                 Some(roots[1].entity_id()),
             );
-                let partitions = plans
+
+let partitions = plans
                     .iter_mut()
                     .zip(&roots)
                     .enumerate()
                     .map(|(index, (pair, root))| {
-                        let capacity = pair.result_capacity().unwrap();
+
                         (
                             PartitionIdentity::new(index as u64 + 1),
-                            KeylessPartition {
-                                value: pair
-                                    .worker(&request, &world.application, root.entity_id())
+                            pair
+                                    .worker(&request,  root.entity_id())
                                     .unwrap(),
-                                kernel_scratch_bytes: 0,
-                                max_result_bytes: capacity,
-                            },
                         )
                     })
                     .collect();
-                let map = ExecutionMap::<_, ()>::from_keyless_partitions(partitions).unwrap();
+                let map = ExecutionMap::<_, ()>::from_keyless_values(partitions).unwrap();
                 let (outcome, _) = ExecutionWorkCeiling::new(Some(ceiling))
                     .run(&lease, || {
                         map.run_owned(Some(&lease), |pair, context| {

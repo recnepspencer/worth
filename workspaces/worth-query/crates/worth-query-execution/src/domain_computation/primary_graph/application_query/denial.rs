@@ -8,11 +8,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
 
-mod preparation;
-pub(in crate::domain_computation::primary_graph) use preparation::{
-    QueryPreparationContext, QueryPreparationOperation,
-};
-
 /// The specific reason a query read was refused at admission.
 ///
 /// Admission runs before any read, so nothing was read or disclosed. Families:
@@ -113,8 +108,6 @@ pub enum WorthQueryApplicationQueryAdmissionDenialKind {
 pub struct WorthQueryApplicationQueryAdmissionDenial {
     kind: WorthQueryApplicationQueryAdmissionDenialKind,
     authorization_denial: Option<Box<WorthQueryOperationAuthorizationDenial>>,
-    preparation_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
-    preparation_context: Option<QueryPreparationContext>,
     subject: String,
 }
 
@@ -126,8 +119,6 @@ impl WorthQueryApplicationQueryAdmissionDenial {
         Self {
             kind,
             authorization_denial: None,
-            preparation_stop: None,
-            preparation_context: None,
             subject: subject.into(),
         }
     }
@@ -139,28 +130,7 @@ impl WorthQueryApplicationQueryAdmissionDenial {
             // would add an unretained allocation to the admitted path.
             subject: String::new(),
             authorization_denial: Some(Box::new(denial)),
-            preparation_stop: None,
-            preparation_context: None,
         }
-    }
-
-    /// Keep the actual native refusal rather than erasing its required/maximum
-    /// amounts at the Query translation. This payload grants no read authority.
-    pub(in crate::domain_computation::primary_graph) fn with_preparation_stop(
-        mut self,
-        stop: worth_relational::facade::mvcc::CompanionPreflightStop,
-    ) -> Self {
-        self.preparation_stop = Some(stop);
-        self
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn with_preparation_context(
-        mut self,
-        context: QueryPreparationContext,
-    ) -> Self {
-        // A more specific rejecting owner always wins over outer phase labels.
-        self.preparation_context.get_or_insert(context);
-        self
     }
 
     pub const fn kind(&self) -> WorthQueryApplicationQueryAdmissionDenialKind {

@@ -5,33 +5,36 @@ mod selected_basis;
 mod stable_cutover;
 pub(super) mod stable_publication;
 mod verification;
-pub(in crate::domain_computation::primary_graph) use stable_cutover::{
-    PublishedStableLineage, StablePublicationStop,
-};
+pub(in crate::domain_computation::primary_graph) use stable_cutover::PublishedStableLineage;
+pub(in crate::domain_computation::primary_graph) use stable_cutover::StablePublicationStop;
 pub(super) use stable_publication::performed_fact_sequence;
-pub(in crate::domain_computation::primary_graph) use stable_publication::{
-    prepare_stable_address, PreparedStableLineageAddress, StableEqualityConsequence,
-};
+pub(in crate::domain_computation::primary_graph) use stable_publication::prepare_stable_address;
+pub(in crate::domain_computation::primary_graph) use stable_publication::PreparedStableLineageAddress;
+pub(in crate::domain_computation::primary_graph) use stable_publication::StableEqualityConsequence;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use verification::InputCutoffDecision;
 
 pub(in crate::domain_computation::primary_graph) use selected_basis::PreparedInputCutoffBasis;
-pub(in crate::domain_computation::primary_graph) use verification::{
-    cutoff_declines, InputCutoffVerificationStop, OwnedInputCutoffDecision, VerifiedInputCutoff,
-};
+pub(in crate::domain_computation::primary_graph) use verification::cutoff_declines;
+pub(in crate::domain_computation::primary_graph) use verification::InputCutoffVerificationStop;
+pub(in crate::domain_computation::primary_graph) use verification::OwnedInputCutoffDecision;
+pub(in crate::domain_computation::primary_graph) use verification::VerifiedInputCutoff;
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
+use std::sync::OnceLock;
 
 use worth_relational::facade::mvcc::CompanionPreflightStop;
-use worth_runtime_world::facade::{ProductBranchIncarnation, ProductBranchObservation};
+use worth_runtime_world::facade::ProductBranchObservation;
 
-use super::{
-    invalidation::{FullVerificationReason, InvalidationEditAdmission},
-    prepared_slot::tree_work,
-    PreparedInputReuseKey, ProductCoordinate, RecordedOutput, RecordedSettlementIdentity,
-    SealedNativeOutputWitness, SemanticSource, WorthQueryApplicationOutputLineage,
-};
+use super::invalidation::FullVerificationReason;
+use super::PreparedInputReuseKey;
+use super::ProductCoordinate;
+use super::RecordedOutput;
+use super::RecordedSettlementIdentity;
+use super::SealedNativeOutputWitness;
+use super::SemanticSource;
+use super::WorthQueryApplicationOutputLineage;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 
 /// Pins the exact owner-selected record, including its retained capacity and
@@ -113,17 +116,13 @@ impl RetainedInputCutoffCandidate {
 
     pub(in crate::domain_computation::primary_graph) fn verification_requirement(
         &self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<FullVerificationReason>, CompanionPreflightStop> {
-        admission.charge_external_work(1)?;
         Ok(self.recorded().verification_requirement())
     }
 
     pub(in crate::domain_computation::primary_graph) fn observed_source_facts(
         &self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<super::ComparableSourceFacts>, CompanionPreflightStop> {
-        admission.charge_external_work(1)?;
         Ok(self
             .recorded()
             .observed_source_facts()
@@ -143,7 +142,6 @@ impl WorthQueryApplicationOutputLineage {
         observation: &ProductBranchObservation,
         source_partition_identity: [u8; 32],
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<RetainedInputCutoffCandidate>, CompanionPreflightStop> {
         let source = SemanticSource {
             runtime_authority: scope.runtime_authority(),
@@ -163,7 +161,6 @@ impl WorthQueryApplicationOutputLineage {
                 &source,
                 coordinate,
                 source_partition_identity,
-                admission,
             )? {
                 let cell = self.recorded_cell_at_partition_slot_admitted(
                     &source,
@@ -171,13 +168,10 @@ impl WorthQueryApplicationOutputLineage {
                     generation,
                     source_partition_identity,
                     slot,
-                    admission,
                 )?;
                 return Ok(Some(RetainedInputCutoffCandidate { cell }));
             }
-            let ancestry_work = tree_work::<ProductBranchIncarnation>(self.origins.len())
-                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-            admission.charge_external_work(ancestry_work)?;
+
             let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
                 return Ok(None);
             };

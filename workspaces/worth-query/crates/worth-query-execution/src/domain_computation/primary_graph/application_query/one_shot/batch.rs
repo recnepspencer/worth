@@ -1,6 +1,5 @@
 use super::super::{
-    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchMemory,
-    WorthQueryApplicationQueryBatchResourceDenial,
+    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchResourceDenial,
 };
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
@@ -129,95 +128,29 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
         use WorthQueryApplicationBatchReadDenial::{Execution, Resource};
-        match plan.planned_batch_item.take() {
+        let item = match plan.planned_batch_item.take() {
             Some(item) if !item.belongs_to(batch) => {
                 return Err(Resource(
                     WorthQueryApplicationQueryBatchResourceDenial::ForeignPlan,
                 ))
             }
-            Some(_) => {}
-            None => {
-                batch
-                    .take_planned_read(
-                        plan.runtime_authority.as_u64(),
-                        plan.query.binding_identity(),
-                        plan.query.identity(),
-                        plan.controls
-                            .maximum_work()
-                            .map(std::num::NonZeroUsize::get),
-                        plan.controls.maximum_result_count().get(),
-                    )
-                    .map_err(Resource)?;
-            }
-        }
-        let mut rows = batch
-            .claim_memory(
-                batch
-                    .inline_result_bytes(
-                        plan.graph_read_plan()
-                            .budget_check()
-                            .max_inline_result_bytes(),
-                    )
-                    .unwrap_or(0),
-            )
-            .map_err(Resource)?;
-        let reservation = batch
-            .reserve_read(
-                plan.controls
-                    .maximum_work()
-                    .map(std::num::NonZeroUsize::get),
-            )
-            .map_err(Resource)?;
-        let maximum = reservation.maximum();
+            Some(item) => item,
+            None => batch
+                .take_planned_read(
+                    plan.runtime_authority.as_u64(),
+                    plan.query.binding_identity(),
+                    plan.query.identity(),
+                    plan.controls.maximum_result_count().get(),
+                )
+                .map_err(Resource)?
+                .expect("a registered read consumes one slot"),
+        };
         let spent = match charge {
             Some(charge) => OneShotReadWorkObservation::with_charge(charge),
             None => OneShotReadWorkObservation::new(),
         };
-        let result = self.execute_application_query_one_shot_core(
-            execution,
-            plan,
-            Some(&spent),
-            Some(batch),
-            maximum,
-        );
-        let Some(actual) = spent.read() else {
-            // Validation, refreshed authorization or buffer admission may stop
-            // before the kernel initializes its work observation. Keep that
-            // real terminal cause; the reserved loan stays conservatively spent.
-            return match result {
-                Err(error) => Err(match batch.memory_denial() {
-                    Some(denial) => Resource(denial),
-                    None => Execution(error),
-                }),
-                Ok(_) => Err(Resource(
-                    WorthQueryApplicationQueryBatchResourceDenial::WorkAccountingMismatch,
-                )),
-            };
-        };
-        if let Ok(result) = &result
-            && result.receipt().work().total_work_units() != actual
-        {
-            return Err(Resource(
-                WorthQueryApplicationQueryBatchResourceDenial::WorkAccountingMismatch,
-            ));
-        }
-        reservation.settle(actual).map_err(Resource)?;
-        match result {
-            Ok(result) => {
-                let measured = result
-                    .receipt()
-                    .result_buffer()
-                    .expect("a completed native read records its buffer")
-                    .peak_bytes();
-                rows.grow_to(measured).map_err(Resource)?;
-                Ok(WorthQueryApplicationBatchResult::issued(result, rows))
-            }
-            Err(error) => {
-                if let Some(denial) = batch.memory_denial() {
-                    return Err(Resource(denial));
-                }
-                Err(Execution(error))
-            }
-        }
+        self.execute_application_query_one_shot_core(execution, plan, Some(&spent))
+            .map(|result| WorthQueryApplicationBatchResult::issued(result, item))
+            .map_err(Execution)
     }
 }

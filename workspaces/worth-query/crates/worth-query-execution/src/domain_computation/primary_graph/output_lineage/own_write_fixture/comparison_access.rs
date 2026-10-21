@@ -14,10 +14,7 @@ fn own_write_cutoff_cannot_project_retained_facts_for_comparison() {
         let candidate =
             super::super::input_cutoff::RetainedInputCutoffCandidate::from_exact_cell(cell);
         assert!(
-            candidate
-                .observed_source_facts(&mut owner.edit_admission())
-                .unwrap()
-                .is_none(),
+            candidate.observed_source_facts().unwrap().is_none(),
             "postconditions of a stale computation are not comparable input facts"
         );
     });
@@ -51,7 +48,6 @@ fn own_write_dirty_marks_cannot_be_cleared_by_postcondition_comparison() {
                 &snapshot,
                 &selected,
                 &cell.get().unwrap().settlement_identity,
-                &mut owner.edit_admission(),
             );
             assert!(
                 matches!(

@@ -1,10 +1,7 @@
 //! The outputs a reader at a retained observation selects.
 
 use super::*;
-use crate::domain_computation::primary_graph::{
-    invariant_projection::ConsumedOutputEvidence,
-    output_lineage::invalidation::InvalidationEditAdmission,
-};
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 /// One retained output as a retained observation selects it. Holding it
@@ -37,7 +34,6 @@ impl WorthQueryApplicationOutputLineage {
         output_bindings: &[TypeId],
         source_partition_identity: [u8; 32],
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Vec<ObservedRetainedOutput>, CompanionPreflightStop> {
         let mut outputs = Vec::new();
         for output_binding in output_bindings {
@@ -50,7 +46,6 @@ impl WorthQueryApplicationOutputLineage {
                     .expect("output family binding is installed"),
             };
             if !self.by_source.contains_key(&source) {
-                admission.charge_external_work(1)?;
                 continue;
             }
             let mut coordinate = ProductCoordinate {
@@ -63,13 +58,7 @@ impl WorthQueryApplicationOutputLineage {
                     .map_err(|stop| CompanionPreflightStop::Execution(stop.into()))?;
                 let cell = self
                     .partition_index
-                    .latest_admitted(
-                        execution,
-                        &source,
-                        coordinate,
-                        source_partition_identity,
-                        admission,
-                    )?
+                    .latest_admitted(execution, &source, coordinate, source_partition_identity)?
                     .map(|(generation, slot)| {
                         self.cell_at_partition_slot(
                             &source,

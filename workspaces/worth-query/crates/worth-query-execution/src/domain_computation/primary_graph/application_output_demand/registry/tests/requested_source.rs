@@ -15,9 +15,9 @@ fn a_cached_ready_without_its_source_cannot_claim_requested_execution() {
         .unwrap()
         .state = super::closed_retirement::ready();
     drop(interest);
-    let before = registry.state.lock().unwrap().required_reserved_bytes;
+
     assert!(registry
-        .claim_cached_requested_ready(&key, &mut record_admission())
+        .claim_cached_requested_ready(&key)
         .unwrap()
         .is_none());
     let state = registry.state.lock().unwrap();
@@ -25,5 +25,4 @@ fn a_cached_ready_without_its_source_cannot_claim_requested_execution() {
     assert!(!state.records[&key].is_required());
     assert!(state.records[&key].readmission_source.is_none());
     assert!(!state.required_keys.contains(&key));
-    assert_eq!(state.required_reserved_bytes, before);
 }

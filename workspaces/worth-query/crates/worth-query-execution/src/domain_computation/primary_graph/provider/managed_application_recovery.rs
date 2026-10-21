@@ -110,7 +110,6 @@ impl From<ManagedUnpublishedRecoveryStop> for WorthQueryManagedApplicationRecove
                 Self::ProviderBusy
             }
             ManagedUnpublishedRecoveryStop::Capacity => Self::ProviderCapacity,
-            ManagedUnpublishedRecoveryStop::Admission(stop) => Self::ProviderAdmission(stop),
         }
     }
 }
@@ -251,8 +250,7 @@ where
                 .bind_governed_proposal(admission.governed_proposal_identity());
             let lane = self
                 .primary_provider
-                .application_branch_commit_lane(product.observation())
-                .map_err(|_| Denial::ProviderCapacity)?;
+                .application_branch_commit_lane(product.observation());
             let coordination = lane.enter();
             let mut guard = self
                 .primary_provider

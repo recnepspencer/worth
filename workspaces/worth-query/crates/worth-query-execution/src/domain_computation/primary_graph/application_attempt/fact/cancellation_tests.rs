@@ -1,14 +1,16 @@
 //! Cancellation is a typed stop through native adjacency and indexed equality.
 mod exhaustion;
 use super::*;
-use crate::domain_computation::primary_graph::{
-    tests::fixture::{installed_authorization_world, AccountOwner, AccountStatus},
-    WorthQueryApplicationAttemptDenialKind as Kind,
-};
-use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
-use worth_query_declaration::facade::application_schema::{
-    ApplicationScalarValueBinding, StringApplicationValueBinding,
-};
+use crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world;
+use crate::domain_computation::primary_graph::tests::fixture::AccountOwner;
+use crate::domain_computation::primary_graph::tests::fixture::AccountStatus;
+use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind as Kind;
+use worth_execution::CancellationSource;
+use worth_execution::ExecutionRequest;
+use worth_execution::SerialMemoryBudget;
+use worth_execution::SerialRequest;
+use worth_query_declaration::facade::application_schema::ApplicationScalarValueBinding;
+use worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
 
 #[test]
 fn cancelled_indexed_selection_equality_keeps_the_native_stop() {
@@ -237,30 +239,20 @@ fn source_currentness_keeps_a_stop_raised_inside_the_indexed_read() {
                     }
                 },
             );
-        let mut admission =
-            crate::domain_computation::primary_graph::InvalidationEditAdmission::new(
-                worth_relational::facade::mvcc::CompanionPreflightBudget {
-                    maximum_work_visits: Some(1_000_000),
-                    maximum_preparation_bytes: None,
-                },
-            );
+
         crate::domain_computation::primary_graph::fact_verification_observation::fact_verification_on_this_thread_for_test();
-        assert_eq!(fact.source_currentness_in(runtime, execution, snapshot, &mut admission), Err(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled)));
+        assert_eq!(fact.source_currentness_in(runtime, execution, snapshot), Err(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled)));
         let observed = crate::domain_computation::primary_graph::fact_verification_observation::fact_verification_on_this_thread_for_test();
         assert!(
             observed.source_currentness_visits > 0,
             "the interrupted native comparison remains observed"
         );
-        assert_eq!(
-            observed.source_currentness_work,
-            admission.charged_work(),
-            "stopped work uses the original admission's actual charges"
-        );
+
         assert_eq!(crate::domain_computation::primary_graph::fact_verification_observation::fact_verification_on_this_thread_for_test(), Default::default(), "taking the interval cannot recount it");
         // Leave a genuine stopped comparison unconsumed. The final listener
         // owns that diagnostic interval and must release it on drop.
         assert!(fact
-            .source_currentness_in(runtime, execution, snapshot, &mut admission)
+            .source_currentness_in(runtime, execution, snapshot)
             .is_err());
         drop(observation);
         assert_eq!(crate::domain_computation::primary_graph::fact_verification_observation::fact_verification_on_this_thread_for_test(), Default::default(), "dropping the observation clears untaken work");

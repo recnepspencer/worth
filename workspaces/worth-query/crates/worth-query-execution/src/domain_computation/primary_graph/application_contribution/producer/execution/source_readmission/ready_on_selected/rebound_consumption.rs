@@ -13,12 +13,10 @@ pub(super) fn retain<Schema: worth_query_installation::facade::ApplicationSchema
     product: &WorthQueryProductObservationLease,
     snapshot: &SnapshotHandle,
     positioned: &PositionedRelationalSnapshot,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<ReboundConsumedOutput, ProducerExecutionStop> {
     let handle = &runtime.primary_provider.graph;
     let candidate = handle.output_lineage.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
-        .resolve_required_settlement(runtime.runtime.authority_identity().as_u64(),
-            &runtime.installed_schema.binding_identity(), completion, admission)
+        .resolve_required_settlement(runtime.runtime.authority_identity().as_u64(), &runtime.installed_schema.binding_identity(), completion)
         .map_err(|stop| match stop {
             crate::domain_computation::primary_graph::output_lineage::RequiredSettlementStop::Admission(stop) =>
                 ready::ready_resource_denial("resolved consumed output", stop),
@@ -30,7 +28,7 @@ pub(super) fn retain<Schema: worth_query_installation::facade::ApplicationSchema
         return Ok(ReboundConsumedOutput::Fresh);
     };
     if !candidate
-        .matches_consumed_output(pending, admission)
+        .matches_consumed_output(pending)
         .map_err(|stop| ready::ready_resource_denial("resolved consumed output", stop))?
     {
         return Ok(ReboundConsumedOutput::Fresh);
@@ -44,16 +42,15 @@ pub(super) fn retain<Schema: worth_query_installation::facade::ApplicationSchema
                 product,
                 snapshot,
                 positioned,
-                admission,
             )?;
             let CurrentAcceptedResult::Current(proof) = current else {
                 return Ok(ReboundConsumedOutput::Fresh);
             };
-            let Some(bound) = proof.bind_product(admission)? else {
+            let Some(bound) = proof.bind_product()? else {
                 return Ok(ReboundConsumedOutput::Fresh);
             };
             bound
-                .retain_consumed(&handle.source_owner.invalidation_owner, admission)
+                .retain_consumed()
                 .map(ReboundConsumedOutput::Equal)
                 .map_err(CurrentAcceptedStop::Closure)
         })

@@ -44,7 +44,7 @@ where
         request
             .application
             .with_application_advancement(request.scope, |phase| {
-                let observation = self.current_observation(request, &phase, policy)?;
+                let observation = self.current_observation(request, &phase)?;
                 let inputs = <Delivery<Schema, Intent, Action> as ApplicationFixedBatchDelivery<
                     Schema,
                     Binding<Schema, Intent>,
@@ -53,7 +53,7 @@ where
                 request
                     .at(&observation)
                     .query_batch(inputs.into_iter().collect())
-                    .execute_installed(policy.batch_limits, policy.query_limits, &phase)
+                    .execute_installed(policy.query_limits, &phase)
                     .map_err(Denial::Batch)
             })
             .map_err(Denial::Execution)?
@@ -82,7 +82,7 @@ where
                 request
                     .at(self.settlement.observation())
                     .query_batch(inputs.into_iter().collect())
-                    .execute_installed(None, None, &phase)
+                    .execute_installed(None, &phase)
                     .map_err(Denial::Batch)
             })
             .map_err(Denial::Execution)?

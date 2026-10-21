@@ -2,19 +2,11 @@
 use super::*;
 #[test]
 fn uncommitted_upstream_never_admits_a_prepared_member() {
-    use crate::domain_computation::execution_runtime::source_invalidation::{
-        WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
-    };
+    use crate::domain_computation::execution_runtime::source_invalidation::WorthQueryInvalidationResources;
     use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
     use crate::domain_computation::primary_graph::output_lineage::SourceInvalidationOwner;
     let registry = WorthQueryOutputDemandRegistry::default();
-    let owner = SourceInvalidationOwner::new(
-        WorthQueryInvalidationResources::install(
-            WorthQueryInvalidationResourceInstallation::bounded(1_000_000, 1 << 20, 1 << 20, 1),
-        )
-        .unwrap(),
-        1,
-    );
+    let owner = SourceInvalidationOwner::new(WorthQueryInvalidationResources::new(), 1);
     let world =
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
             true,
@@ -46,7 +38,6 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
         .expect("the wave-admission proof owns its request");
     let (_lineage, identity) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
     let consumed = ConsumedOutputEvidence::retained_for_test(
-        &owner,
         Arc::clone(&identity),
         Arc::from([]),
         Vec::new(),
@@ -54,13 +45,10 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
         Arc::clone(&selected),
     );
     let demand_key = key("upstream", 1, 1);
-    let mut admission = record_admission();
+
     {
         let mut state = registry.state.lock().unwrap();
-        state.required_budget_bytes = Some(1 << 20);
-        let (posting, _cleanup) = state
-            .reserve_settlement_vacancy(&identity, &mut admission)
-            .unwrap();
+        let (posting, _cleanup) = state.reserve_settlement_vacancy(&identity).unwrap();
         super::super::settlement_index::SettlementIndex::fill_prepared(
             &posting,
             &identity,
@@ -83,8 +71,6 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
             .admit_current_outputs(
                 (selected.runtime_instance_id(), selected.root_id()),
                 std::iter::once(&consumed),
-                &owner,
-                &mut admission,
             )
             .err()
             .unwrap();

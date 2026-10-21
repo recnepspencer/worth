@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
 use worth_relational::facade::mvcc::{
-    CompanionBranchCell, CompanionPreflightBudget, CompanionPreflightStop,
-    PendingCompanionRegistration, PreparedPublicationCompanionEffect,
-    PublicationCompanionPreflight, PublicationCompanionRegistration,
-    PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop,
-    RelationalPublicationCompanion,
+    CompanionBranchCell, CompanionPreflightStop, PendingCompanionRegistration,
+    PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
+    PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
+    PublicationCompanionRegistrationStop, RelationalPublicationCompanion,
 };
 use worth_relational::facade::{branch::RelationalBranchIdentity, runtime::RelationalRuntime};
 
@@ -72,13 +71,12 @@ impl PendingRelationalBridgeCanonicalSubscription {
     pub fn activate(
         self,
         consumer: Arc<dyn RelationalPublicationCompanion>,
-        budget: CompanionPreflightBudget,
     ) -> Result<RelationalBridgeCanonicalSubscription, PublicationCompanionRegistrationStop> {
         let delivery = Arc::new(CanonicalEnvelopeDelivery {
             runtime_instance_id: self.runtime_instance_id,
             consumer,
         });
-        let registration = self.pending.activate(delivery, budget)?;
+        let registration = self.pending.activate(delivery)?;
         Ok(RelationalBridgeCanonicalSubscription {
             registration,
             port: self.port,
@@ -110,7 +108,7 @@ impl RelationalPublicationCompanion for CanonicalEnvelopeDelivery {
         &self,
         context: &mut PublicationCompanionPreflight<'_>,
     ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
-        context.claim_work(1)?;
+        context.checkpoint()?;
         if context.runtime_instance_id() != self.runtime_instance_id {
             return Err(CompanionPreflightStop::ForeignCell);
         }

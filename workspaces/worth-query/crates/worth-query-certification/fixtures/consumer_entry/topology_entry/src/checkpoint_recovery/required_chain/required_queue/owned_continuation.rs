@@ -90,10 +90,7 @@ fn owned_root_and_dependent_demands_keep_native_custody_across_fresh_requests() 
     let current = request.retain_current_read().unwrap();
     request
         .at(&current)
-        .require_current_output_demand(
-            &output,
-            Some((std::num::NonZeroUsize::new(1_000_000).unwrap()).get()),
-        )
+        .require_current_output_demand(&output)
         .unwrap();
     let original_commit = output
         .application_commit_receipt()

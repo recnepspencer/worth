@@ -11,16 +11,18 @@ pub(super) mod registry;
 mod stops;
 pub(in crate::domain_computation::primary_graph) use registry::WorthQueryApplicationPublicationRecoveryReservation;
 use registry::WorthQueryPendingApplicationIdempotency;
-use stops::{basis_retention_failure, bridge_head_failure, failure, snapshot_capacity_failure};
+use stops::basis_retention_failure;
+use stops::bridge_head_failure;
+use stops::failure;
+use stops::snapshot_capacity_failure;
 
-use super::{
-    session_commit::snapshot_admission_failure, WorthQueryPrimaryGraphApplicationAttempt,
-    WorthQueryPrimaryGraphCommittedApplication, WorthQueryPrimaryGraphProvider,
-};
-use crate::domain_computation::{
-    WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
-    WorthQueryProviderSessionRecoveryPosture,
-};
+use super::session_commit::snapshot_admission_failure;
+use super::WorthQueryPrimaryGraphApplicationAttempt;
+use super::WorthQueryPrimaryGraphCommittedApplication;
+use super::WorthQueryPrimaryGraphProvider;
+use crate::domain_computation::WorthQueryProviderSessionFailure;
+use crate::domain_computation::WorthQueryProviderSessionProtocolStage;
+use crate::domain_computation::WorthQueryProviderSessionRecoveryPosture;
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplicationPublication {
     product_incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
@@ -40,7 +42,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplica
         Option<crate::domain_computation::primary_graph::PreparedPrerequisiteClaims>,
     prepared_lineage_slot:
         Option<crate::domain_computation::primary_graph::output_lineage::PreparedOutputLineageSlot>,
-    publication_admission: crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+
 }
 
 impl WorthQueryPendingApplicationPublication {
@@ -56,7 +58,6 @@ impl WorthQueryPendingApplicationPublication {
         prepared_lineage_slot: Option<
             crate::domain_computation::primary_graph::output_lineage::PreparedOutputLineageSlot,
         >,
-        publication_admission: crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Self {
         let product_incarnation = application
             .committed_product_publication()
@@ -80,7 +81,6 @@ impl WorthQueryPendingApplicationPublication {
             receipt_basis_lease: None,
             required_prerequisites,
             prepared_lineage_slot,
-            publication_admission,
         }
     }
 
@@ -337,23 +337,11 @@ fn publish_with_snapshot(
     if let Some(identity) = settlement_identity {
         let failure_membership = work_membership.clone();
         let owner = &provider.graph.source_owner.invalidation_owner;
-        let admission = &mut pending.publication_admission;
-        let registration_result = crate::domain_computation::primary_graph::output_lineage::invalidation::register_completed(execution,
-            owner,
-            &completed,
-            recorded.as_ref().expect("performed lineage was recorded").computation_source,
-            recorded.as_ref().expect("performed lineage was recorded").computation_registration,
-            &consumed_outputs,
-            runtime,
-            after,
-            Arc::clone(&identity),
-            work_membership,
-            recorded
+
+        let registration_result = crate::domain_computation::primary_graph::output_lineage::invalidation::register_completed(execution, owner, &completed, recorded.as_ref().expect("performed lineage was recorded").computation_source, recorded.as_ref().expect("performed lineage was recorded").computation_registration, &consumed_outputs, runtime, after, Arc::clone(&identity), work_membership, recorded
                 .as_ref()
                 .and_then(|recorded| recorded.output_witness.as_ref())
-                .and_then(|witness| witness.get()),
-            admission,
-        );
+                .and_then(|witness| witness.get()));
         if let Err(reason) = registration_result {
             provider
                 .graph
@@ -377,7 +365,7 @@ fn publish_with_snapshot(
             superseded.retire(displaced, owner);
         }
         (None, Some(displaced)) => {
-            drop(owner.retire_released([displaced], &mut owner.edit_admission()));
+            drop(owner.retire_released([displaced]));
         }
         (None, None) => {}
     }

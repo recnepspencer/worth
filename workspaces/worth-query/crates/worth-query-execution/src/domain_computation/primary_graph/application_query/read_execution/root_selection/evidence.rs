@@ -14,7 +14,6 @@ use crate::domain_computation::primary_graph::application_query::{
         WorthQueryObservedRootSelection,
     },
     read_execution::WorthQueryApplicationReadExecutionDenialKind,
-    resource_lifecycle::WorthQueryApplicationResultBufferReservation,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
@@ -166,34 +165,8 @@ impl RootPathSourceBuilder {
 
     pub(super) fn finish(
         self,
-        result_buffer: &mut WorthQueryApplicationResultBufferReservation,
     ) -> Result<Arc<WorthQueryObservedRootSelection>, WorthQueryApplicationReadExecutionDenial>
     {
-        // The output vectors below declare exact capacities from these map sizes.
-        // Nested field allocations use the same capacity accounting as retention.
-        let retained_bytes = std::mem::size_of::<WorthQueryObservedRootSelection>()
-            .saturating_add(2 * std::mem::size_of::<usize>())
-            .saturating_add(
-                self.entities
-                    .len()
-                    .saturating_mul(std::mem::size_of::<EntityId>()),
-            )
-            .saturating_add(
-                self.aspects
-                    .len()
-                    .saturating_mul(std::mem::size_of::<WorthQueryObservedFieldRevision>()),
-            )
-            .saturating_add(self.aspects.values().fold(0usize, |bytes, aspect| {
-                bytes.saturating_add(aspect.owned_capacity_bytes())
-            }))
-            .saturating_add(
-                self.adjacencies
-                    .len()
-                    .saturating_mul(std::mem::size_of::<WorthQueryObservedAdjacencyRevision>()),
-            );
-        result_buffer
-            .claim(retained_bytes)
-            .map_err(|()| buffer_denial())?;
         let mut entities = Vec::with_capacity(self.entities.len());
         entities.extend(self.entities);
         let mut aspects = Vec::with_capacity(self.aspects.len());
@@ -201,18 +174,8 @@ impl RootPathSourceBuilder {
         let mut adjacencies = Vec::with_capacity(self.adjacencies.len());
         adjacencies.extend(self.adjacencies.into_values());
         let source = WorthQueryObservedRootSelection::new(entities, aspects, adjacencies);
-        if source.retained_bytes() != retained_bytes {
-            return Err(buffer_denial());
-        }
         Ok(Arc::new(source))
     }
-}
-
-fn buffer_denial() -> WorthQueryApplicationReadExecutionDenial {
-    read_execution_denial(
-        WorthQueryApplicationReadExecutionDenialKind::ResultBufferLimitExceeded,
-        "root-path-source",
-    )
 }
 
 fn source_denial(subject: &str) -> WorthQueryApplicationReadExecutionDenial {

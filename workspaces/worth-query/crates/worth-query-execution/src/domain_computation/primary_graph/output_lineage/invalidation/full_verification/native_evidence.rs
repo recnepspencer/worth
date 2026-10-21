@@ -6,28 +6,26 @@ impl FullVerificationImage<'_> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: EvidenceView<'_>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<FullVerificationDecision, FullVerificationStop> {
         let mut pending = Vec::new();
         let mut visited = OrdSet::new();
-        reserve_pending(&mut pending, 1, admission)?;
+        reserve_pending(&mut pending, 1)?;
         pending.push(root);
         while let Some(source) = pending.pop() {
-            admission.admit_visited_settlement(visited.len())?;
             if visited.contains(source.identity()) {
                 continue;
             }
             visited.insert(Arc::clone(source.identity()));
-            if !self.root_source_is_current(execution, source, admission)? {
+            if !self.root_source_is_current(execution, source)? {
                 return Ok(FullVerificationDecision::Changed);
             }
             let witness = source
                 .native_output_witness()
                 .ok_or(FullVerificationStop::OutputEvidenceUnavailable)?;
-            if !witness.unchanged_in(self.runtime, self.snapshot, admission)? {
+            if !witness.unchanged_in(self.runtime, self.snapshot)? {
                 return Ok(FullVerificationDecision::Changed);
             }
-            reserve_pending(&mut pending, source.upstream().len(), admission)?;
+            reserve_pending(&mut pending, source.upstream().len())?;
             pending.extend(source.upstream().iter().map(EvidenceView::from));
         }
         Ok(FullVerificationDecision::Current)

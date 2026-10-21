@@ -35,7 +35,9 @@ pub(super) fn install() -> World {
     let mut binding = None;
     let limits = WorthQueryInMemoryApplicationLimits::new(
         super::resources::world_resources(),
-        WorthQueryApplicationQueryResourceProfile::bounded(4096, 4096, 4096, 32).unwrap(),
+        WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
+        ),
         SignalConditionalEvaluationBudget::development(),
     );
     let application = in_memory(

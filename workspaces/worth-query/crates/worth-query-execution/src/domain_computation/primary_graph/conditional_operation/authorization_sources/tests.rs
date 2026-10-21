@@ -129,13 +129,7 @@ fn governed_temporal_reconstruction_uses_real_capability_progression() {
             &query,
             &access,
             worth_query_declaration::facade::application_query::ApplicationQueryParameterSet::new(),
-            WorthQueryApplicationQueryControls::product_one_shot(
-                product,
-                application_basis,
-                NonZeroUsize::new(1).unwrap(),
-                Some(NonZeroUsize::new(256).unwrap()),
-                &request,
-            ),
+            WorthQueryApplicationQueryControls::product_one_shot(product, application_basis, NonZeroUsize::new(1).unwrap(), &request),
         )
         .expect("current capability must admit temporal reconstruction");
             assert!(plan.graph_work_capability_identity().is_some());

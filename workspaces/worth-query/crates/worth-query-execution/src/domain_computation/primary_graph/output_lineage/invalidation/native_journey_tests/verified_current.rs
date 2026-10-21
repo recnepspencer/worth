@@ -61,23 +61,33 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
         .unwrap()
         .clone();
 
-    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(request_execution, |runtime| {
-        write_field(request_execution, runtime, entity, label, "prime");
-        let (snapshot, basis) = snapshot(runtime);
-        let facts: Arc<[_]> = Arc::from([field_fact(&host_custody.borrowed_request_for_test(), runtime, &snapshot, entity, status)]);
-        register(
-            owner,
-            Arc::clone(&prior),
-            Arc::clone(&facts),
-            &basis,
-            OrdSet::new(),
-        );
-        let relation = StableEqualityConsequence::native_actor_fixture(
-            Arc::clone(&prior),
-            Arc::clone(&current),
-            &basis,
-        );
-        let alias = owner
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            handle.with_runtime_mut(request_execution, |runtime| {
+                write_field(request_execution, runtime, entity, label, "prime");
+                let (snapshot, basis) = snapshot(runtime);
+                let facts: Arc<[_]> = Arc::from([field_fact(
+                    &host_custody.borrowed_request_for_test(),
+                    runtime,
+                    &snapshot,
+                    entity,
+                    status,
+                )]);
+                register(
+                    owner,
+                    Arc::clone(&prior),
+                    Arc::clone(&facts),
+                    &basis,
+                    OrdSet::new(),
+                );
+                let relation = StableEqualityConsequence::native_actor_fixture(
+                    Arc::clone(&prior),
+                    Arc::clone(&current),
+                    &basis,
+                );
+let alias = owner
             .prepare_current_stable_settlement(
                 SettlementRegistration {
                     computation: None,
@@ -92,108 +102,114 @@ fn repeated_current_certification_preserves_image_and_retention_and_rejects_a_ra
                 },
                 &basis,
                 relation,
-                &mut owner.edit_admission(),
             )
             .unwrap();
-        drop(
-            alias
-                .install()
-                .unwrap_or_else(|_| panic!("selected alias installs")),
-        );
-        let cell = owner
-            .cell_for_read(&basis, &mut owner.edit_admission())
+
+
+                drop(
+                    alias
+                        .install()
+                        .unwrap_or_else(|_| panic!("selected alias installs")),
+                );
+let cell = owner
+            .cell_for_read(&basis)
             .unwrap()
             .unwrap();
-        for with_downstream in [false, true] {
-            if with_downstream {
-                let downstream = RecordedSettlementIdentity::retain(
-                    &SemanticSource {
-                        output_binding: OutputBindingIdentity::declared("DownstreamOutput"),
-                        ..source.clone()
-                    },
-                    coordinate,
-                    0,
-                );
-                register(
-                    owner,
-                    Arc::clone(&downstream),
-                    Arc::from([]),
-                    &basis,
-                    OrdSet::unit(Arc::clone(&current)),
-                );
-                assert!(matches!(
-                    currentness(owner, &basis, &downstream),
-                    SourceSettlementCurrentness::Clean
-                ));
-            }
-            let original = cell.read_image();
-            let retained = owner.resources.retained_capacity_bytes();
-            for _ in 0..3 {
-                let prepared = owner
+
+
+                for with_downstream in [false, true] {
+                    if with_downstream {
+                        let downstream = RecordedSettlementIdentity::retain(
+                            &SemanticSource {
+                                output_binding: OutputBindingIdentity::declared("DownstreamOutput"),
+                                ..source.clone()
+                            },
+                            coordinate,
+                            0,
+                        );
+                        register(
+                            owner,
+                            Arc::clone(&downstream),
+                            Arc::from([]),
+                            &basis,
+                            OrdSet::unit(Arc::clone(&current)),
+                        );
+                        assert!(matches!(
+                            currentness(owner, &basis, &downstream),
+                            SourceSettlementCurrentness::Clean
+                        ));
+                    }
+                    let original = cell.read_image();
+
+                    for _ in 0..3 {
+
+let prepared = owner
                     .prepare_verified_current(
                         runtime,
                         &snapshot,
                         &basis,
                         &current,
                         &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(),
-                        &mut owner.edit_admission(),
                     )
                     .unwrap()
                     .expect("complete clean actor coverage certifies current");
-                drop(
-                    prepared
-                        .install()
-                        .unwrap_or_else(|_| panic!("unchanged image certifies")),
-                );
-                let observed = cell.read_image();
-                assert!(Arc::ptr_eq(original.payload(), observed.payload()));
-                assert_eq!(
-                    original.topology_generation(),
-                    observed.topology_generation()
-                );
-                assert_eq!(retained, owner.resources.retained_capacity_bytes());
-            }
-        }
+drop(
+                            prepared
+                                .install()
+                                .unwrap_or_else(|_| panic!("unchanged image certifies")),
+                        );
+                        let observed = cell.read_image();
+                        assert!(Arc::ptr_eq(original.payload(), observed.payload()));
+                        assert_eq!(
+                            original.topology_generation(),
+                            observed.topology_generation()
+                        );
 
-        let original = cell.read_image();
-        let stale = owner
+                    }
+                }
+
+                let original = cell.read_image();
+
+
+let stale = owner
             .prepare_verified_current(
                 runtime,
                 &snapshot,
                 &basis,
                 &current,
                 &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::clone(&facts)).for_comparison().unwrap(),
-                &mut owner.edit_admission(),
             )
             .unwrap()
             .unwrap();
-        let other = RecordedSettlementIdentity::retain(&source, coordinate, 2);
-        register(
-            owner,
-            Arc::clone(&other),
-            Arc::clone(&facts),
-            &basis,
-            OrdSet::new(),
-        );
-        let replacement = cell.read_image();
-        assert!(!Arc::ptr_eq(original.payload(), replacement.payload()));
-        let stopped = match stale.install() {
-            Err(stopped) => stopped,
-            Ok(_) => panic!("an actor edit must reject the old image certificate"),
-        };
-        assert_eq!(
-            stopped.reason(),
-            CompanionCellEditStop::TopologyGenerationChanged
-        );
-        drop(stopped);
-        assert!(Arc::ptr_eq(
-            replacement.payload(),
-            cell.read_image().payload()
-        ));
-        assert!(matches!(
-            currentness(owner, &basis, &other),
-            SourceSettlementCurrentness::Clean
-        ));
-        runtime.snapshots().release_snapshot(&snapshot).unwrap();
-    }) }).expect("the fixture read owns its installed host call");
+let other = RecordedSettlementIdentity::retain(&source, coordinate, 2);
+                register(
+                    owner,
+                    Arc::clone(&other),
+                    Arc::clone(&facts),
+                    &basis,
+                    OrdSet::new(),
+                );
+                let replacement = cell.read_image();
+                assert!(!Arc::ptr_eq(original.payload(), replacement.payload()));
+                let stopped = match stale.install() {
+                    Err(stopped) => stopped,
+                    Ok(_) => panic!("an actor edit must reject the old image certificate"),
+                };
+                assert_eq!(
+                    stopped.reason(),
+                    CompanionCellEditStop::TopologyGenerationChanged
+                );
+                drop(stopped);
+                assert!(Arc::ptr_eq(
+                    replacement.payload(),
+                    cell.read_image().payload()
+                ));
+                assert!(matches!(
+                    currentness(owner, &basis, &other),
+                    SourceSettlementCurrentness::Clean
+                ));
+                runtime.snapshots().release_snapshot(&snapshot).unwrap();
+            })
+        })
+        .expect("the fixture read owns its installed host call");
 }

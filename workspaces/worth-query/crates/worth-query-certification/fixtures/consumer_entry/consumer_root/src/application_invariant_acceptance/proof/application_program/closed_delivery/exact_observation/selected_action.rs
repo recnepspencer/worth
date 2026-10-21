@@ -87,10 +87,9 @@ fn closed_no_projection_compares_the_action_selected_at_the_caller_observation()
         ))
         .unwrap();
         let fresh = world.application.request(&fresh_principal, &fresh_scope);
-        let policy = WorthQueryOperationDeliveryPolicy::default();
         let compatible = fresh.retain_current_read().unwrap();
         closed_fixed
-            .deliver_current_at(&fresh.at(&compatible), policy)
+            .deliver_current_at(&fresh.at(&compatible))
             .expect("compatible selected meaning is accepted at the caller observation");
         drop(compatible);
         // Changed selected meaning cannot strand the tree's original read cleanup.
@@ -118,24 +117,20 @@ fn closed_no_projection_compares_the_action_selected_at_the_caller_observation()
             )
         };
         // The owner's own observation and a caller-held one agree.
-        assert!(mismatch(
-            closed_fixed.deliver_current(&fresh, policy).map(drop)
-        ));
+        assert!(mismatch(closed_fixed.deliver_current(&fresh).map(drop)));
         let changed_at = fresh.retain_current_read().unwrap();
         assert!(mismatch(
-            closed_fixed.deliver_current_at(&fresh.at(&changed_at), policy)
+            closed_fixed.deliver_current_at(&fresh.at(&changed_at))
         ));
         adopt(removed_revision);
-        assert!(missing(
-            closed_fixed.deliver_current(&fresh, policy).map(drop)
-        ));
+        assert!(missing(closed_fixed.deliver_current(&fresh).map(drop)));
         let removed_at = fresh.retain_current_read().unwrap();
         assert!(missing(
-            closed_fixed.deliver_current_at(&fresh.at(&removed_at), policy)
+            closed_fixed.deliver_current_at(&fresh.at(&removed_at))
         ));
         // The older caller observation still compares its own changed action.
         assert!(mismatch(
-            closed_fixed.deliver_current_at(&fresh.at(&changed_at), policy)
+            closed_fixed.deliver_current_at(&fresh.at(&changed_at))
         ));
         drop((removed_at, changed_at));
         adopt(original_revision);
@@ -149,18 +144,14 @@ fn closed_no_projection_compares_the_action_selected_at_the_caller_observation()
                 )) if cause.kind() == WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
             )
         };
-        assert!(unavailable(
-            closed_fixed.deliver_current(&fresh, policy).map(drop)
-        ));
-        assert!(unavailable(
-            closed_tree.deliver_current(&fresh, policy).map(drop)
-        ));
+        assert!(unavailable(closed_fixed.deliver_current(&fresh).map(drop)));
+        assert!(unavailable(closed_tree.deliver_current(&fresh).map(drop)));
         let restored = fresh.retain_current_read().unwrap();
         assert!(unavailable(
-            closed_fixed.deliver_current_at(&fresh.at(&restored), policy)
+            closed_fixed.deliver_current_at(&fresh.at(&restored))
         ));
         assert!(unavailable(
-            closed_tree.deliver_current_at(&fresh.at(&restored), policy)
+            closed_tree.deliver_current_at(&fresh.at(&restored))
         ));
         drop(restored);
         assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
@@ -190,7 +181,6 @@ fn closed_leaf_clean_currentness_uses_native_marks_before_projection() {
     let grants = [model_owner_grant::<Program>()];
     let mut world = installation::install_selected_program(
         &crate::installed_schema(),
-        4096,
         WorthQueryApplicationProgramRoster::new(),
         &grants,
         program,
@@ -232,19 +222,11 @@ fn closed_leaf_clean_currentness_uses_native_marks_before_projection() {
         .unwrap();
         let request = world.application.request(&principal, &scope);
         let observation = request.retain_current_read().unwrap();
-        let policy = world
-            .application
-            .runtime()
-            .output_demand_resource_profile()
-            .limits()
-            .source_currentness_work()
-            .and_then(NonZeroUsize::new)
-            .map(WorthQueryOperationDeliveryPolicy::currentness)
-            .unwrap_or_default();
+
         let _ =
             worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test();
         closed
-            .deliver_current_at(&request.at(&observation), policy)
+            .deliver_current_at(&request.at(&observation))
             .unwrap();
         let gate =
             worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test();
@@ -253,13 +235,10 @@ fn closed_leaf_clean_currentness_uses_native_marks_before_projection() {
             "original closed leaf gate: {gate:?}"
         );
         println!("closed original leaf gate: {gate:?}");
-        let window = crate::application_invariant_acceptance::resources::INVALIDATION_INSTALLATION
-            .maximum_retained_positions
-            .expect("this continuity fixture explicitly installs a finite window");
+
         source::assert_y(&request, "remote-a", length(41));
-        let mut repeated_work = None;
-        for step in 0..=window {
-            let replacement = length(if step % 2 == 0 { 42 } else { 41 });
+        for (step, next_value) in [42, 41, 42].into_iter().enumerate() {
+            let replacement = length(next_value);
             let before = request
                 .query(PlanarRead {
                     body_key: "remote-a".into(),
@@ -285,37 +264,19 @@ fn closed_leaf_clean_currentness_uses_native_marks_before_projection() {
                 });
             source::assert_y(&request, "remote-a", replacement);
             let selected = request.retain_current_read().unwrap();
-            let _ = world
-                .application
-                .take_required_set_comparison_work_for_test();
             let _ =
                 worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test(
                 );
             for _ in 0..2 {
-                closed
-                    .deliver_current_at(&request.at(&selected), policy)
-                    .unwrap();
+                closed.deliver_current_at(&request.at(&selected)).unwrap();
             }
             let facts =
                 worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test(
                 );
             assert_eq!(
                 facts.source_currentness_visits, 0,
-                "closed leaf continuity step={step} window={window}: {facts:?}"
+                "closed leaf continuity step={step}: {facts:?}"
             );
-            let work = world
-                .application
-                .take_required_set_comparison_work_for_test();
-            assert_eq!(work.len(), 2);
-            assert!(work[0] >= work[1]);
-            match repeated_work {
-                None => repeated_work = Some(work[1]),
-                Some(expected) => assert_eq!(
-                    work[1], expected,
-                    "closed leaf repeated cost grows with old history at step={step}"
-                ),
-            }
-            println!("closed leaf continuity step={step} window={window} charges={work:?} fact_visits={}", facts.source_currentness_visits);
         }
         assert_eq!(
             request

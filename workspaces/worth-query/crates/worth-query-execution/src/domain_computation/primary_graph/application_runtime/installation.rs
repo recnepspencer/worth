@@ -317,7 +317,6 @@ where
         fault_port,
         maximum_concurrent_graph_work,
         resource_support,
-        runtime.branch_coordination_resource_profile(),
     );
     primary_provider
         .graph

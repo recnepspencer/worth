@@ -45,7 +45,7 @@ fn request_exhaustion_reports_the_declared_prefix_at_every_width() {
             assert_eq!(settled.len(), prefix + 1);
             assert!(matches!(&settled[prefix], Err(WorthQueryAdvancementDenial::Resource(
                 super::super::super::super::super::WorthQueryManagedComputationResourceDenial::WorkExhausted))));
-            assert_eq!(report.charged_work(), admitted);
+
             let values: Vec<_> = settled
                 .into_iter()
                 .take(prefix)

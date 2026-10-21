@@ -80,10 +80,7 @@ impl BankEstateEmergencyAccessActivityAdmission<'_, '_, '_, '_> {
             .application_runtime()
             .request(self.principal.external(), self.controls.request())
             .query(self.request)
-            .limits(
-                self.controls.maximum_result_count(),
-                self.controls.maximum_work(),
-            )
+            .limit_results(self.controls.maximum_result_count())
             .execute_approved(
                 self.approved.query(),
                 bank_domain::schema::ViewEstateEmergencyProtectionCapability::reference(),
@@ -106,14 +103,14 @@ impl BankEstateEmergencyAccessActivityAdmission<'_, '_, '_, '_> {
         let application = self.runtime.application_runtime();
         let request = application.request(self.principal.external(), self.controls.request());
         let retained = request
-            .at_approved_elevation(&phase, self.approved.query(), Some(self.controls.maximum_work()))
+            .at_approved_elevation(&phase, self.approved.query(), None)
             .map_err(BankApplicationQueryDenial::from_history_selection)?;
         let capability_input = self.request.capability_request();
         retained
             .query(self.request)
-            .limits(
+            .limit_results(
                 self.controls.maximum_result_count(),
-                self.controls.maximum_work(),
+
             )
             .admit_approved_retained(
                 &phase,
@@ -151,9 +148,9 @@ impl BankEstateEmergencyAccessActivityAdmission<'_, '_, '_, '_> {
             .request(self.principal.external(), self.controls.request())
             .at(session.observation())
             .query(self.request)
-            .limits(
+            .limit_results(
                 self.controls.maximum_result_count(),
-                self.controls.maximum_work(),
+
             )
             .admit_approved_retained(
                 &phase,

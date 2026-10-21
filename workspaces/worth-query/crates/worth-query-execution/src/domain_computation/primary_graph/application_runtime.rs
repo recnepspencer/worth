@@ -123,8 +123,6 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     pub(super) recovered_program_source_delivery:
         super::provider::recovered_program_source_delivery::RecoveredProgramSourceDeliveryRegistration,
-    pub(super) required_set_comparison_observations:
-        super::application_query::observed_source::retained_dependencies::RequiredSetComparisonObservations,
     pub(super) basis_leases:
         super::application_query::resource_lifecycle::WorthQueryApplicationBasisRegistry,
     pub(super) granular_invalidation: super::WorthQueryGranularInvalidationInstallation,
@@ -134,8 +132,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(crate) primary_provider: std::sync::Arc<WorthQueryPrimaryGraphProvider>,
     pub(super) primary_graph_authority:
         worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
-    pub(super) result_buffers:
-        super::application_query::resource_lifecycle::WorthQueryApplicationResultBufferRegistry,
+
     pub(super) source_meanings:
         super::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry,
     pub(super) next_external_dispatch_attempt: AtomicU64,
@@ -292,12 +289,6 @@ where
         &self,
     ) -> super::WorthQueryGranularInvalidationInstallation {
         self.granular_invalidation.current()
-    }
-
-    pub fn result_buffer_observer(
-        &self,
-    ) -> super::application_query::WorthQueryApplicationResultBufferObserver {
-        self.result_buffers.observer()
     }
 
     pub fn application_query_basis_observer(

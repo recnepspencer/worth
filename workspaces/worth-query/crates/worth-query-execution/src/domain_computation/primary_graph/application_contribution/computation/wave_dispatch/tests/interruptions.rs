@@ -118,10 +118,6 @@ fn cancellation_during_compute_has_a_witness_and_a_safe_canonical_prefix() {
                 })
                 .collect();
             assert_eq!(values, (0..boundary).collect::<Vec<_>>());
-            assert_eq!(
-                report.charged_work(),
-                CHARGES[..boundary].iter().sum::<u64>()
-            );
         }
     }
 }

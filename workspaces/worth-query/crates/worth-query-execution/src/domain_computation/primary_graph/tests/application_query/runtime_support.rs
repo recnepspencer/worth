@@ -4,8 +4,7 @@ use worth_query_admission::facade::{
         WorthQueryGraphIndexInventory, WorthQueryGraphIndexLifecycleClass,
         WorthQueryGraphIndexLifecycleOwner, WorthQueryGraphIndexPosture,
         WorthQueryGraphIndexSupportState, WorthQueryGraphReadAccessRequirementKind,
-        WorthQueryGraphReadAccessRequirementSet, WorthQueryGraphReadBudget,
-        WorthQueryGraphReadPlanReviewDenialKind,
+        WorthQueryGraphReadAccessRequirementSet, WorthQueryGraphReadPlanReviewDenialKind,
     },
 };
 use worth_query_admission::integration::{
@@ -25,8 +24,6 @@ use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntimeInst
 use crate::domain_computation::primary_graph::{
     application_query::primary_graph_support_inventory, schema_layout::WorthQueryPrimaryGraphLayout,
 };
-
-mod admitted;
 
 #[test]
 fn live_support_requires_the_exact_contract_and_both_equality_indexes() {
@@ -50,7 +47,8 @@ fn live_support_requires_the_exact_contract_and_both_equality_indexes() {
         query.continuation(),
         Some(live),
         &requirements,
-    );
+    )
+    .expect("the fixture compiled support contract is valid");
     let row = supported
         .row_for_requirement_kind(&WorthQueryGraphReadAccessRequirementKind::LiveMaintenanceSupport)
         .expect("exact installed live contract and indexes must emit support");
@@ -68,24 +66,28 @@ fn live_support_requires_the_exact_contract_and_both_equality_indexes() {
         &WorthQueryGraphIndexSupportState::Available
     );
 
-    assert_live_support_absent(primary_graph_support_inventory(
-        &graph.layout,
-        query.continuation(),
-        None,
-        &requirements,
-    ));
-    assert_live_support_absent(primary_graph_support_inventory(
-        &lower_layout(missing_scope_index::MissingScopeIndexSchema::declaration().unwrap()),
-        query.continuation(),
-        Some(live),
-        &requirements,
-    ));
-    assert_live_support_absent(primary_graph_support_inventory(
-        &lower_layout(missing_target_index::MissingTargetIndexSchema::declaration().unwrap()),
-        query.continuation(),
-        Some(live),
-        &requirements,
-    ));
+    assert_live_support_absent(
+        primary_graph_support_inventory(&graph.layout, query.continuation(), None, &requirements)
+            .expect("the fixture compiled support contract is valid"),
+    );
+    assert_live_support_absent(
+        primary_graph_support_inventory(
+            &lower_layout(missing_scope_index::MissingScopeIndexSchema::declaration().unwrap()),
+            query.continuation(),
+            Some(live),
+            &requirements,
+        )
+        .expect("the fixture compiled support contract is valid"),
+    );
+    assert_live_support_absent(
+        primary_graph_support_inventory(
+            &lower_layout(missing_target_index::MissingTargetIndexSchema::declaration().unwrap()),
+            query.continuation(),
+            Some(live),
+            &requirements,
+        )
+        .expect("the fixture compiled support contract is valid"),
+    );
 }
 
 #[test]
@@ -118,18 +120,24 @@ fn provider_mechanism_deletion_mints_no_support_row() {
         WorthQueryGraphReadAccessRequirementKind::OrderingSupport,
     ] {
         let isolated = isolated_requirement(&requirements, kind.clone());
-        assert_support_present(primary_graph_support_inventory(
-            &graph.layout,
-            query.continuation(),
-            query.live(),
-            &isolated,
-        ));
-        assert_support_absent(primary_graph_support_inventory(
-            &hostile,
-            query.continuation(),
-            query.live(),
-            &isolated,
-        ));
+        assert_support_present(
+            primary_graph_support_inventory(
+                &graph.layout,
+                query.continuation(),
+                query.live(),
+                &isolated,
+            )
+            .expect("the fixture compiled support contract is valid"),
+        );
+        assert_support_absent(
+            primary_graph_support_inventory(
+                &hostile,
+                query.continuation(),
+                query.live(),
+                &isolated,
+            )
+            .expect("the fixture compiled support contract is valid"),
+        );
     }
 }
 
@@ -153,18 +161,19 @@ fn continuation_ordering_requires_the_installed_seek_mechanism() {
     );
     let graph = world.application.runtime.primary_graph().unwrap();
 
-    assert_support_present(primary_graph_support_inventory(
-        &graph.layout,
-        query.continuation(),
-        query.live(),
-        &ordering,
-    ));
-    assert_support_absent(primary_graph_support_inventory(
-        &graph.layout,
-        None,
-        query.live(),
-        &ordering,
-    ));
+    assert_support_present(
+        primary_graph_support_inventory(
+            &graph.layout,
+            query.continuation(),
+            query.live(),
+            &ordering,
+        )
+        .expect("the fixture compiled support contract is valid"),
+    );
+    assert_support_absent(
+        primary_graph_support_inventory(&graph.layout, None, query.live(), &ordering)
+            .expect("the fixture compiled support contract is valid"),
+    );
 }
 
 #[test]
@@ -199,10 +208,10 @@ fn query_runtime_mechanism_deletion_denies_plan_review() {
             query.continuation(),
             query.live(),
             &isolated,
-        );
+        )
+        .expect("the fixture compiled support contract is valid");
         assert!(
-            review_graph_read_access(isolated.clone(), inventory.clone(), application_budget(),)
-                .is_admitted(),
+            review_graph_read_access(isolated.clone(), inventory.clone()).is_admitted(),
             "the installed runtime must support {kind:?}"
         );
         let deleted = WorthQueryGraphIndexInventory::from_rows(
@@ -213,24 +222,13 @@ fn query_runtime_mechanism_deletion_denies_plan_review() {
                 .cloned()
                 .collect(),
         );
-        let review = review_graph_read_access(isolated, deleted, application_budget());
+        let review = review_graph_read_access(isolated, deleted);
         assert_eq!(
             review.denial().map(|denial| denial.kind()),
             Some(WorthQueryGraphReadPlanReviewDenialKind::UnsupportedGraphIndexSupport),
             "deleting {kind:?} must deny rather than invent fallback support"
         );
     }
-}
-
-fn application_budget() -> WorthQueryGraphReadBudget {
-    let runtime_default = WorthQueryGraphReadBudget::inline_ephemeral_default();
-    WorthQueryGraphReadBudget::policy(
-        runtime_default.max_inline_index_bytes(),
-        runtime_default
-            .max_inline_result_bytes()
-            .map(|bytes| bytes.saturating_mul(10)),
-        Some(10_000),
-    )
 }
 
 fn isolated_requirement(

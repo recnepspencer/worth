@@ -1,21 +1,21 @@
-use super::super::{
-    schedule_output_producer, schedule_output_producer_on_selected, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQuerySelectedApplicationProducer,
-};
-use super::bridge_denial::{bridge_denial, is_temporarily_deferred};
+use super::super::schedule_output_producer;
+use super::super::schedule_output_producer_on_selected;
+use super::super::WorthQueryOutputDemandDenial;
+use super::super::WorthQueryOutputDemandDenialKind;
+use super::super::WorthQuerySelectedApplicationProducer;
+use super::bridge_denial::bridge_denial;
+use super::bridge_denial::is_temporarily_deferred;
 use super::progression::denial;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult;
+use crate::domain_computation::primary_graph::conditional_operation::WorthQuerySelectedSignalProjections;
+use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use crate::domain_computation::primary_graph::{
-    application_output_demand::WorthQueryOutputSchedulingResult,
-    conditional_operation::WorthQuerySelectedSignalProjections,
-    output_lineage::invalidation::InvalidationEditAdmission,
-    product_operation::SharedSelectedProductOperation, WorthQueryObservedSource,
-    WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryObservedSource;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use std::sync::Arc;
-use worth_runtime_bridge::facade::{
-    BridgeConditionalDenial, BridgeInstalledConditionalLowering, BridgeSealedRuntimeAssembly,
-};
+use worth_runtime_bridge::facade::BridgeConditionalDenial;
+use worth_runtime_bridge::facade::BridgeInstalledConditionalLowering;
+use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
 
 const OUTPUT_SCHEDULE_DOMAIN: &[u8] = b"worth-query:output-schedule:v1";
 
@@ -117,64 +117,13 @@ where
             &crate::domain_computation::primary_graph::application_output_demand::WorthQueryPerformedOutputDemandSource,
         >,
         shared: &SharedSelectedProductOperation<'_, Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<WorthQueryOutputSchedulingResult, WorthQueryOutputDemandDenial> {
         // Inspecting the selected Product, route cardinality and borrowed
         // field widths is itself request work; claim it before those reads.
-        admission
-            .charge_external_work(8)
-            .map_err(|_| schedule_work_denial())?;
+
         let selected_product = shared.selected();
         let observation = selected_product.product().observation();
-        let name_bytes = observation.branch_identity().name().as_str().len();
-        let performed_name_bytes = performed_source.map_or(0, |source| {
-            source
-                .change
-                .product_branch_identity()
-                .name()
-                .as_str()
-                .len()
-        });
-        let route_count = self.output_producer_routes.len();
-        let levels = usize::BITS as usize - route_count.max(1).leading_zeros() as usize;
-        let comparisons = route_count
-            .min(11)
-            .checked_mul(levels)
-            .ok_or_else(schedule_work_denial)?;
-        let hash_input = OUTPUT_SCHEDULE_DOMAIN
-            .len()
-            .checked_add(observed_source.query_identity.as_bytes().len())
-            .and_then(|bytes| {
-                bytes.checked_add(observed_source.parameter_binding_identity.bytes().len())
-            })
-            .ok_or_else(schedule_work_denial)?;
-        let hash_blocks = hash_input
-            .checked_add(9)
-            .and_then(|bytes| bytes.checked_add(63))
-            .map(|bytes| bytes / 64)
-            .ok_or_else(schedule_work_denial)?;
-        let hash_work = hash_input
-            .checked_add(hash_blocks)
-            // SHA finalization writes 32 bytes. The attempt key initializes
-            // eight bytes and then copies eight digest bytes into them.
-            // One finalization and one checked-attempt visit are separate.
-            .and_then(|work| work.checked_add(32 + 8 + 8 + 2))
-            .ok_or_else(schedule_work_denial)?;
-        let route_work = selected
-            .identity
-            .len()
-            .checked_add(3)
-            .and_then(|width| comparisons.checked_mul(width))
-            .and_then(|work| work.checked_add(name_bytes))
-            .and_then(|work| work.checked_add(performed_name_bytes))
-            .and_then(|work| work.checked_add(hash_work))
-            // Runtime/occurrence, performed publication and route/Signal
-            // owner visits after the selected tree search.
-            .and_then(|work| work.checked_add(12))
-            .ok_or_else(schedule_work_denial)?;
-        admission
-            .charge_external_work(u64::try_from(route_work).map_err(|_| schedule_work_denial())?)
-            .map_err(|_| schedule_work_denial())?;
+
         if !std::ptr::eq(self, selected_product.application())
             || observation.lifecycle_incarnation() != branch.occurrence()
         {
@@ -200,7 +149,7 @@ where
                 "performed source and selected scheduling Product belong to different occurrences",
             ));
         }
-        let truth = WorthQuerySelectedSignalProjections::prepare(shared, admission)
+        let truth = WorthQuerySelectedSignalProjections::prepare(shared)
             .map_err(schedule_admission_denial)?;
         self.schedule_selected_output_producer_with_truth(
             selected,
@@ -299,13 +248,6 @@ where
             }
         }
     }
-}
-
-fn schedule_work_denial() -> WorthQueryOutputDemandDenial {
-    denial(
-        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        "selected required scheduling exceeds request work",
-    )
 }
 
 fn schedule_admission_denial(

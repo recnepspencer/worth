@@ -16,12 +16,12 @@ impl RelationalPublicationCompanion for OverflowCompanion {
     ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
         match self.0 {
             OverflowMeter::Work => {
-                context.claim_work(u64::MAX)?;
-                context.claim_work(1)?;
+                context.checkpoint()?;
+                context.checkpoint()?;
             }
             OverflowMeter::PreparationBytes => {
-                context.claim_bytes(u64::MAX)?;
-                context.claim_bytes(1)?;
+                context.checkpoint()?;
+                context.checkpoint()?;
             }
         }
         panic!("an overflowing preflight charge must stop before a companion effect exists");
@@ -41,13 +41,7 @@ fn preflight_counter_overflow_denies_without_moving_the_native_head() {
             .begin_required_registration()
             .expect("required registration starts");
         let _registration = pending
-            .activate(
-                Arc::new(OverflowCompanion(meter)),
-                CompanionPreflightBudget {
-                    maximum_work_visits: None,
-                    maximum_preparation_bytes: None,
-                },
-            )
+            .activate(Arc::new(OverflowCompanion(meter)))
             .expect("overflow fixture is active");
         let mut transaction = test_owner_begin_transaction_for_main(&runtime);
         transaction

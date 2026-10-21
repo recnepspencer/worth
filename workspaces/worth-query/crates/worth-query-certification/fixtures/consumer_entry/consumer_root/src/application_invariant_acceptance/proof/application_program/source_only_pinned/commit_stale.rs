@@ -13,7 +13,6 @@ fn source_only_pinned_commit_time_staleness_retains_terminal_original_loan() {
         .unwrap();
     let world = installation::install_selected_program(
         &crate::installed_schema(),
-        4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),
         &[],
