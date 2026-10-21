@@ -31,7 +31,9 @@ where
             .recovered_outputs
             .matching_source_partition(source_scope, observed_source.partition_identity())
             .find(|readmitted| {
-                readmitted.checkpoint.producer.as_str() == producer
+                self.installed_producers
+                    .implementation_matches(producer, readmitted.checkpoint.implementation)
+                    && readmitted.checkpoint.producer.as_str() == producer
                     && readmitted.checkpoint.source == checkpoint_source.bytes()
                     && readmitted.checkpoint.idempotency_key == expected_idempotency_key
                     && readmitted.correspondence.binding_type() == Some(output_binding)
@@ -214,6 +216,7 @@ where
                 readmitted.computation_source.retain_facts(restored.observed_source_facts.clone()),
                 restored.native_output_witness.as_ref().map(std::sync::Arc::clone),
                 Some(restored.checkpoint.clone()),
+            None,
         );
         let witness = restored
             .native_output_witness

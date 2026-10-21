@@ -17,6 +17,7 @@ use crate::domain_computation::primary_graph::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct InstalledProducerEdition {
     digest: [u8; 32],
+    build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     binding_type: TypeId,
     source_type: TypeId,
     operation_binding_type: TypeId,
@@ -61,6 +62,7 @@ impl InstalledProducerEdition {
 
     pub(super) fn from_declaration(
         declaration: &DeclaredProducerBinding,
+        build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     ) -> Result<Self, WorthQueryPrimaryGraphInstallationDenial> {
         let roles: Vec<_> = declaration
             .output_role_descriptors
@@ -128,8 +130,8 @@ impl InstalledProducerEdition {
             )
         })?
         .identity();
-        // The None branch preserves the prior edition encoding. An opt-in
-        // binds the exact installed handler as well as the producer meaning.
+        // Input reuse remains part of declared meaning; every producer below
+        // additionally receives the mandatory application build identity.
         let digest = match declaration.input_reuse {
             None => base_digest,
             Some(contract) => application_value_identity(
@@ -150,8 +152,25 @@ impl InstalledProducerEdition {
             })?
             .identity(),
         };
+        let digest = application_value_identity(
+            ApplicationValueIdentityDomain::ProducerImplementationEdition,
+            &declaration.identity,
+            &(
+                "application-build-producing-edition.v1",
+                build_identity.bytes(),
+                digest,
+            ),
+        )
+        .map_err(|_| {
+            WorthQueryPrimaryGraphInstallationDenial::new(
+                DenialKind::ProducerBindingMeaningMismatch,
+                declaration.identity.clone(),
+            )
+        })?
+        .identity();
         Ok(Self {
             digest,
+            build_identity,
             binding_type: declaration.binding_type,
             source_type: declaration.source_type,
             operation_binding_type: declaration.operation_binding_type,
@@ -160,9 +179,14 @@ impl InstalledProducerEdition {
         })
     }
 
-    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) const fn digest(self) -> [u8; 32] {
         self.digest
+    }
+
+    pub(in crate::domain_computation::primary_graph) const fn build_identity(
+        self,
+    ) -> worth_foundational::facade::ApplicationBuildIdentity {
+        self.build_identity
     }
 
     #[cfg(test)]
@@ -170,6 +194,10 @@ impl InstalledProducerEdition {
         let unit = TypeId::of::<()>();
         Self {
             digest,
+            build_identity: worth_foundational::facade::ApplicationBuildIdentity::parse(
+                "11111111-1111-1111-1111-111111111111",
+            )
+            .expect("fixture build identity"),
             binding_type: unit,
             source_type: unit,
             operation_binding_type: unit,

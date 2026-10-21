@@ -6,7 +6,7 @@ use crate::history::data::CommitId;
 use crate::publication::patch::data::PatchStreamPosition;
 use std::io::{Read, Seek, SeekFrom, Write};
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
-const MAGIC: &[u8] = b"WORTH-REL-SEG4\n";
+const MAGIC: &[u8] = b"WORTH-REL-SEG6\n";
 const HEADER: usize = 24;
 fn corrupt(detail: &str) -> DurabilityError {
     DurabilityError::new(RecoveryFailureClass::CorruptSegment, detail)
@@ -20,7 +20,7 @@ fn open(path: &Path) -> Result<fs::File, DurabilityError> {
     if &magic[..MAGIC.len()] != MAGIC {
         return Err(DurabilityError::new(
             RecoveryFailureClass::UnsupportedLegacySemantics,
-            "unsupported native segment format; current segments require SEG4",
+            "unsupported native segment format; current segments require SEG6",
         ));
     }
     Ok(input)

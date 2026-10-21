@@ -2,6 +2,7 @@
 use super::*;
 use crate::document_retention_model::{host::host_limits, schema::DocumentRetentionSchema};
 use worth_query_host::facade::application_installation as installation;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 #[test]
@@ -46,6 +47,7 @@ fn checkpoint_transition_refuses_real_accepted_output_before_authoring() {
         WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host_limits(),
         source.clone(),
         predecessor,

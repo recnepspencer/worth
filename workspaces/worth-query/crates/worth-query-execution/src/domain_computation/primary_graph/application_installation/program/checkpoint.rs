@@ -25,6 +25,7 @@ pub fn in_memory_program_from_checkpoint<Schema, Program>(
     program: ValidatedApplicationProgram<Schema, Program>,
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+    build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
     checkpoint: crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint,
 ) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
@@ -40,6 +41,7 @@ where
         WorthQueryApplicationProgramRoster::new(),
         declaration,
         configuration,
+        build_identity,
         limits,
         checkpoint,
     )
@@ -54,6 +56,7 @@ pub fn in_memory_rostered_program_from_checkpoint<Schema, Program>(
     roster: WorthQueryApplicationProgramRoster<'_, Schema>,
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Program::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+    build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
     checkpoint: crate::domain_computation::primary_graph::WorthQueryApplicationCheckpoint,
 ) -> Result<WorthQueryProgramApplicationRuntime<Schema, Program>, WorthQueryInMemoryApplicationDenial>
@@ -69,6 +72,7 @@ where
         roster,
         declaration,
         configuration,
+        build_identity,
         limits,
         |_phase, _graph, _installed| Ok(()),
         None,

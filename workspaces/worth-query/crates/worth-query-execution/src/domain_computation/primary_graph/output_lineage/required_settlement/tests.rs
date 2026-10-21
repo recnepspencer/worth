@@ -2,7 +2,6 @@
 //! the other: a stop denies the request, and a reason verifies in full.
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
-use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority;
@@ -33,22 +32,6 @@ fn a_foreign_accepted_authority_is_a_stop_not_a_reason() {
         &completion,
     );
     assert_eq!(resolved.err(), Some(RequiredSettlementStop::Foreign));
-}
-
-#[test]
-fn an_exhausted_lookup_is_a_stop_not_a_reason() {
-    let (runtime_authority, schema, completion) = committed();
-    let resolved = WorthQueryApplicationOutputLineage::default().resolve_required_settlement(
-        runtime_authority,
-        &schema,
-        &completion,
-    );
-    assert!(matches!(
-        resolved,
-        Err(RequiredSettlementStop::Admission(
-            CompanionPreflightStop::WorkExhausted { .. }
-        ))
-    ));
 }
 
 #[test]

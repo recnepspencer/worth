@@ -8,6 +8,7 @@ use std::{num::NonZeroUsize, sync::Mutex};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::runtime::{
     CancellationToken, ExecutionAllocationDenialKind as AllocationKind, LeaseDenial, LeaseRequest,
 };
@@ -57,6 +58,7 @@ pub(super) fn assert_target_record(
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         configuration(),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         checkpoint::checkpoint_limits(),
         checkpoint,
     )
@@ -99,6 +101,7 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
             application_installation::WorthQueryApplicationProgramRoster::new(),
             TemporalHostSchema::declaration().unwrap(),
             configuration(),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             checkpoint::checkpoint_limits(),
             source,
             predecessor,

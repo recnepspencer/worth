@@ -190,6 +190,28 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
         cold.envelope.commit.commit_id, no_data_id,
         "membership wins over two different latest member writes"
     );
+    for (build, edition) in [([0x33; 16], [0x22; 32]), ([0x11; 16], [0x44; 32])] {
+        let mut wrong = crate::mvcc::native_meaning_fixture("native-creator");
+        wrong.implementation =
+            RequiredOutputProducingImplementation::from_checkpoint(build, edition).unwrap();
+        assert!(
+            runtime
+                .readmit_required_output_publication(
+                    execution,
+                    &installed,
+                    &basis,
+                    "native-preserver",
+                    &[4; 32],
+                    &wrong,
+                    &crate::mvcc::native_roles_fixture(
+                        &ids.map(|id| (id, KindId(1))),
+                        crate::mvcc::RequiredOutputRolePosture::Preserve
+                    ),
+                )
+                .is_err(),
+            "an original performance cannot be retagged to another build or edition"
+        );
+    }
     for subset in [&ids[..1], &ids[1..]] {
         assert!(runtime
             .readmit_required_output_publication(

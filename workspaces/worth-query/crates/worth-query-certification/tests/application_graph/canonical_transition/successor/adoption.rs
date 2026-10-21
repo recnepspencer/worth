@@ -1,6 +1,7 @@
 //! The same nonempty native carrier crosses a genuine derived-only codec boundary.
 use super::*;
 use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 
 #[test]
 fn nonempty_v1_native_carrier_adopts_v2_then_produces_edits_and_reopens() {
@@ -59,6 +60,7 @@ fn nonempty_v1_native_carrier_adopts_v2_then_produces_edits_and_reopens() {
         installation::WorthQueryApplicationProgramRoster::new(),
         schema::CanonicalSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host::limits(),
         checkpoint,
         expected_predecessor,

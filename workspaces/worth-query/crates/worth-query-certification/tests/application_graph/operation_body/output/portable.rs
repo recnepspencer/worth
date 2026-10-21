@@ -1,5 +1,6 @@
 //! Descriptions cannot substitute for their exact installed roles or target slots.
 use super::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_installation::{
         in_memory_program_from_checkpoint, WorthQueryCheckpointCapturePolicy,
@@ -123,6 +124,7 @@ fn output_bodies_reconstruct_and_new_receipts_rebind_exact_entity_types() {
         program::validated::<31>(&schema),
         schema,
         (program::Installation::Native,),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host_limits(),
         checkpoint,
     )

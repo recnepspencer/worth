@@ -1,6 +1,5 @@
 //! Native decision and candidate authoring for the declared retention mutation.
 use super::*;
-use worth_query_host::facade::declaration::application_operation::ApplicationCandidateRequirements;
 
 pub struct SetRetentionHandler;
 

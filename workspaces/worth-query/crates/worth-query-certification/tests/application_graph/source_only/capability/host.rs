@@ -9,6 +9,7 @@ use std::{
     sync::Arc,
     time::{Duration, SystemTime},
 };
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     admission::authenticated_principal::*, application_contribution::*,
     application_installation::*, declaration::application_program::*,
@@ -103,6 +104,7 @@ pub fn install_program<
         WorthQueryApplicationProgramRoster::new(),
         CapabilitySchema::declaration().unwrap(),
         (contacts.clone(),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         crate::document_retention_model::host::host_limits(),
         |_, graph, installed| {
             projection = Some(graph.retain_invariant_projection_authority());

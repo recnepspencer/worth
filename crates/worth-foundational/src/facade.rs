@@ -1,3 +1,6 @@
+pub use crate::application_build_identity::{
+    ApplicationBuildIdentity, InvalidApplicationBuildIdentity,
+};
 pub use crate::aspects::{
     admit_authoritative_record_aspect_state, aspects, classify_aspect_contract_evolution,
     export_portable_record_aspect_patch, export_portable_record_aspect_state,

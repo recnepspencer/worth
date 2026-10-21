@@ -2,6 +2,7 @@
 use super::code_identity::ChangedCodeTotals;
 use super::computation::HistoryOwner;
 use super::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 pub(super) struct HistoryConfiguration {
     topology: TopologyConfiguration,
     code: std::sync::Arc<std::sync::atomic::AtomicBool>,
@@ -172,7 +173,7 @@ fn install_configured(
         .unwrap();
     let declaration = CheckpointSchema::declaration().unwrap();
     application_installation::in_memory_program(
-        program, declaration, (configuration,), limits,
+        program, declaration, (configuration,), ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(), limits,
         |_phase, graph, installed| {
             let principal = installed.principal_binding(
                 ConsumerPrincipalBinding::reference::<CheckpointSchema>()

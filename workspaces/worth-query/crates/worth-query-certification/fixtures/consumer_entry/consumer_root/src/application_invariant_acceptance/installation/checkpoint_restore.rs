@@ -3,6 +3,7 @@ use super::*;
 use worth_query_decl::facade::application_program::{
     ApplicationProgramDefinition, ValidatedApplicationProgram,
 };
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 
 pub(in crate::application_invariant_acceptance) fn restore_selected_program<P>(
     world: &ConsumerWorld<P>,
@@ -30,6 +31,7 @@ where
         installation::WorthQueryApplicationProgramRoster::new(),
         ConsumerSchema::declaration().unwrap(),
         configuration,
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         resources::application_limits(),
         checkpoint,
     )

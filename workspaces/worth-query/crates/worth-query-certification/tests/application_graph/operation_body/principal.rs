@@ -1,5 +1,6 @@
 //! Native actor capture is binding-affine, replay-safe, and independent of caller values.
 use super::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_installation::{
         in_memory_program_from_checkpoint, WorthQueryCheckpointCapturePolicy,
@@ -26,6 +27,7 @@ fn admitted_actor_survives_reconstruction_and_cannot_be_chosen_by_input() {
         program::validated::<36>(&schema),
         schema,
         (program::Installation::Native,),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host_limits(),
         checkpoint,
     )

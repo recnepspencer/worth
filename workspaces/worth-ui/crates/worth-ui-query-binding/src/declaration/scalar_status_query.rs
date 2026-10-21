@@ -3,8 +3,8 @@ use worth_query_decl::facade::{
         ApplicationLiveQueryIntent, ApplicationQueryBasisSupport, ApplicationQueryCardinality,
         ApplicationQueryDefinition, ApplicationQueryDefinitionBuilder,
         ApplicationQueryDisclosureContract, ApplicationQueryLaneEligibility,
-        ApplicationQueryLiveResourceContract, ApplicationQueryParameterSet,
-        ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
+        ApplicationQueryParameterSet, ApplicationQueryResultFieldRef,
+        ApplicationQueryResultShapeBuilder,
     },
     application_schema::{
         EqualityPredicate, NoApplicationUnit, ReadOnly, ReadWrite, U64ApplicationValueBinding,
@@ -83,7 +83,7 @@ worth_query_query_binding!(
     scope WorthUiRecord, IdentityAspect, IdentityIdField, String, ReadOnly, NoApplicationUnit,
     field IdentityIdField::reference(),
     value WorthUiStatusQueryRequest::identity,
-    limits results 1, work 64
+    limits results 1
 );
 
 impl ApplicationLiveQueryIntent<WorthUiApplicationSchema> for WorthUiStatusQueryRequest {
@@ -174,11 +174,7 @@ pub(crate) fn status_query_definition() -> ApplicationQueryDefinition<
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot().with_live())
         .public()
-        .live_root_by::<WorthUiStatusLiveCause, _, _, _, _, _, _, _, _>(
-            identity(),
-            identity(),
-            ApplicationQueryLiveResourceContract::bounded(4, 512, 1_024),
-        )
+        .live_root_by::<WorthUiStatusLiveCause, _, _, _, _, _, _, _, _>(identity(), identity())
         .build()
         .expect("the UI status query is statically canonical")
 }

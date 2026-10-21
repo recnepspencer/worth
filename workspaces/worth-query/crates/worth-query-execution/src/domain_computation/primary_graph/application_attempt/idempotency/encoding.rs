@@ -46,3 +46,47 @@ fn append_bytes(encoded: &mut String, bytes: &[u8]) {
         encoded.push(HEX[usize::from(byte & 0x0f)] as char);
     }
 }
+
+use super::{
+    mutation_binding, workflow_definition, workflow_instance, workflow_proposal_context,
+    workflow_transition, WorthQueryApplicationIdempotencyBinding,
+};
+impl WorthQueryApplicationIdempotencyBinding {
+    /// Every intent slot, without the encoding's version; `intent_text` is
+    /// what a key records.
+    pub(super) fn intent_slots(self) -> String {
+        let mut encoded = encode_identity(self.intent_identity);
+        append_identity_slot(&mut encoded, "source", self.source_identity);
+        append_identity_slot(&mut encoded, "operation", self.operation_identity);
+        append_scope_slot(&mut encoded, self.operation_scope_identity);
+        append_identity_slot(&mut encoded, "precondition", self.precondition_identity);
+        append_identity_slot(&mut encoded, "input", self.governed_input_identity);
+        append_identity_slot(&mut encoded, "proposal", self.governed_proposal_identity);
+        append_identity_slot(
+            &mut encoded,
+            "conditional-definition",
+            self.conditional_definition_identity,
+        );
+        workflow_definition::append_identity_slot(&mut encoded, self.workflow_definition_identity);
+        workflow_instance::append_identity_slot(&mut encoded, self.workflow_instance_identity);
+        workflow_proposal_context::append_identity_slot(
+            &mut encoded,
+            self.workflow_proposal_context_identity,
+        );
+        workflow_transition::append_identity_slot(&mut encoded, self.workflow_transition_identity);
+        workflow_transition::append_support_identity_slot(
+            &mut encoded,
+            self.workflow_support_identity,
+        );
+        workflow_transition::append_client_key_identity_slot(
+            &mut encoded,
+            self.workflow_client_key_identity,
+        );
+        workflow_transition::append_approval_identity_slot(
+            &mut encoded,
+            self.workflow_approval_identity,
+        );
+        mutation_binding::append_identity_slot(&mut encoded, self.mutation_binding_identity);
+        encoded
+    }
+}

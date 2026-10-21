@@ -61,19 +61,6 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                     "live is not retired"
                 );
 
-                drop(
-                    PreparedNativeOutputWitness::prepare_republication(&correspondence, layout)
-                        .unwrap()
-                        .unwrap(),
-                );
-
-                assert!(
-                    matches!(
-                        PreparedNativeOutputWitness::prepare_republication(&correspondence, layout),
-                        Err(CompanionPreflightStop::WorkExhausted { .. })
-                    ),
-                    "one unit below complete preparation cannot allocate a publishable witness"
-                );
                 let prepared = prepare();
                 publish(
                     request_execution,
@@ -173,14 +160,6 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                         .unwrap(),
                     "even genuine retired facts do not grant checkpoint eligibility"
                 );
-                assert!(matches!(
-                    PreparedNativeOutputWitness::prepare_republication(&correspondence, layout),
-                    Err(CompanionPreflightStop::WorkExhausted { .. })
-                ));
-                assert!(matches!(
-                    witness.unchanged_in(runtime, &committed),
-                    Err(CompanionPreflightStop::WorkExhausted { .. })
-                ));
                 let wrong_generation = mixed_correspondence(
                     &host_custody.borrowed_request_for_test(),
                     live,

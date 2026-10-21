@@ -1,5 +1,6 @@
 //! Installed Worlds return bootstrap admission and share one host ledger for retained custody.
 use std::{cell::Cell, num::NonZeroUsize, sync::Arc};
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 use super::product_workflow_support::{self, principal, read_input, ExampleApplication};
@@ -53,6 +54,7 @@ fn install(
             program::validated_program(),
             TemporalHostSchema::declaration().unwrap(),
             configuration,
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             limits,
             checkpoint,
         ),
@@ -60,6 +62,7 @@ fn install(
             program::validated_program(),
             TemporalHostSchema::declaration().unwrap(),
             configuration,
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             limits,
             |_phase, graph, installed| {
                 let binding = installed

@@ -4,6 +4,7 @@ use crate::document_retention_model::operator_identity::request_scope;
 use std::num::NonZeroUsize;
 use worth_execution::LeaseRequest;
 use worth_foundational::{ExecutionBudget, ExecutionRequestPolicy};
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_installation as installation, runtime::ExecutionAllocationDenialKind,
 };
@@ -38,6 +39,7 @@ fn related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_dec
         ),
         successor::schema::CanonicalSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         successor::host::limits(),
         checkpoint,
         installation::WorthQueryCheckpointProgramPredecessor::new(

@@ -9,7 +9,6 @@ use super::*;
 use crate::domain_computation::primary_graph::tests::fixture::AccountBlocked;
 use crate::domain_computation::primary_graph::tests::fixture::PrincipalIdentityField;
 use worth_relational::facade::identity::PartitionId;
-use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::CreateIntent;
 use worth_relational::facade::transactions::CreatedRelationRef;
@@ -19,7 +18,7 @@ use worth_relational::facade::transactions::RelationMutationIntent;
 use worth_relational::facade::transactions::RelationSpec;
 
 #[test]
-fn native_reverification_clears_only_the_verified_live_image_with_admitted_work() {
+fn native_reverification_clears_only_the_verified_live_image() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -159,18 +158,6 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
                 release_test_commit_snapshot(runtime, &deleted);
                 let (restored_handle, restored) = snapshot(runtime);
 
-                assert!(matches!(
-                    owner.reverify_dirty(
-                        &host_custody.borrowed_request_for_test(),
-                        runtime,
-                        &restored_handle,
-                        &restored,
-                        &identity
-                    ),
-                    Err(SettlementVerificationStop::Admission(
-                        CompanionPreflightStop::WorkExhausted { .. }
-                    ))
-                ));
                 assert!(matches!(
                     currentness(owner, &restored, &identity),
                     SourceSettlementCurrentness::Dirty(_)

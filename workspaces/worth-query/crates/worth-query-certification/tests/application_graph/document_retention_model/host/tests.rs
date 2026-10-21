@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 #[path = "tests/workflow_registration.rs"]
 mod workflow_registration;
 use declaration::application_operation::ApplicationMutationBinding;
@@ -18,6 +19,7 @@ fn guarded_binding_cannot_install_without_a_program_owner() {
         worth_query_host::facade::application_installation::in_memory::<DocumentRetentionSchema>(
             DocumentRetentionSchema::declaration().expect("the fixture schema is valid"),
             ((),),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             host_limits(),
             |_, _, _| Ok(()),
         );
@@ -67,6 +69,7 @@ fn a_workflow_control_binding_refuses_a_handler() {
         WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host_limits(),
         |phase, graph, installed| {
             seed_host(phase, graph, installed)?;

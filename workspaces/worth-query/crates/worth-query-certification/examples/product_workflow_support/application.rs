@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 
 use worth_query_host::facade::admission;
 use worth_query_host::facade::application_installation;
@@ -34,6 +35,8 @@ impl ExampleApplication {
             program::validated_program(),
             declaration,
             (TemporalContributionConfiguration { clock_source },),
+            ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
+                .expect("embedded application build identity"),
             example_limits(None),
             |_phase, graph, installed| {
                 let principal_binding = installed
@@ -67,8 +70,7 @@ pub(crate) fn example_limits(
         world,
         runtime::WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
-        )
-        .expect("valid query limits"),
+        ),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     )
 }

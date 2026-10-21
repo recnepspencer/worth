@@ -205,6 +205,7 @@ fn commit_own_write(
                     &world.application,
                     &execution,
                     [11; 32],
+                    worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11;16], [0x22;32]).unwrap(),
                     None,
                     execution.allocation_policy(),
                 )
@@ -213,6 +214,7 @@ fn commit_own_write(
                     &world.application,
                     &execution,
                     [11; 32],
+                    worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11;16], [0x22;32]).unwrap(),
                     None,
                     execution.allocation_policy(),
                 )

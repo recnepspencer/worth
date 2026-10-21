@@ -1,5 +1,6 @@
 //! One installed population collection shared by Initial and Preserve handlers.
 use super::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::application_installation::{
     self, WorthQueryProgramApplicationRuntime,
 };
@@ -117,6 +118,7 @@ fn install_selected_with_window(demand_key: &str, window: Arc<EnrollmentWindow>)
             .unwrap(),
         Schema::declaration().unwrap(),
         configuration,
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         // This journey holds historical deliveries and multiple original output
         // owners through ordinary publication.
         support::limits_with_room(64, 64, 256, support::invalidation()),

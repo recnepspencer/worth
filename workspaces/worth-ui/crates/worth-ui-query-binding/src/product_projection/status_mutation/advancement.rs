@@ -43,7 +43,7 @@ impl MutationState {
         // opens a genuine observer and must disclose the original retained commit again.
         let mut live = request
             .query(WorthUiStatusQueryRequest::new("platform.pulse.status"))
-            .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1, Some(64)))
+            .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1))
             .map_err(|denial| {
                 WorthUiStatusMutationStop::Setup(WorthUiStatusOwnerError::LiveOpen(format!(
                     "{denial:?}"

@@ -52,6 +52,12 @@ impl PublishedStableLineage {
     ) -> Option<[u8; 32]> {
         self.recorded().source_partition_identity
     }
+    pub(in crate::domain_computation::primary_graph) fn producing_implementation(
+        &self,
+    ) -> Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation> {
+        self.recorded().producing_implementation
+    }
+
     pub(in crate::domain_computation::primary_graph) fn producer_dependency_identity(
         &self,
     ) -> Option<[u8; 32]> {

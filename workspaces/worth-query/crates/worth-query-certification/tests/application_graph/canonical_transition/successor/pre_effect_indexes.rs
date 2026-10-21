@@ -1,6 +1,7 @@
 //! A real cold bootstrap index cannot cross codec adoption's effect boundary.
 use super::*;
 use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 
 #[test]
 fn missing_native_bootstrap_index_generation_refuses_before_codec_authoring() {
@@ -18,6 +19,7 @@ fn missing_native_bootstrap_index_generation_refuses_before_codec_authoring() {
         installation::WorthQueryApplicationProgramRoster::new(),
         schema::CanonicalSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host::limits(),
         checkpoint,
         predecessor,

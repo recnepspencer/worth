@@ -44,6 +44,7 @@ mod successor;
 
 use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
 use installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{application_entry::*, application_installation as installation};
 
 #[test]
@@ -114,6 +115,7 @@ fn accepted_created_canonical_output_refuses_unsupported_transition_without_chan
         installation::WorthQueryApplicationProgramRoster::new(),
         schema::CanonicalSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host::limits(),
         checkpoint.clone(),
         predecessor,

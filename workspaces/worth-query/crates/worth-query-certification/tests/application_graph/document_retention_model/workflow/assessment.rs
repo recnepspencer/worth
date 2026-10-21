@@ -110,14 +110,18 @@ pub fn settle_early_assessment_for(
         .advanced()
         .start()
         .expect("the installed early assessment demand must start");
-    match handle
-        .advanced()
-        .settle(&runtime.request(&principal, &scope).on_branch(branch))
-        .expect("the installed assessment producer must advance")
-    {
-        WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => settled,
-        WorthQueryWorkflowAssessmentDemandProgress::Pending => {
-            panic!("the bounded assessment producer did not settle within its declared work")
+    let request = runtime.request(&principal, &scope).on_branch(branch);
+    loop {
+        match handle
+            .advanced()
+            .settle(&request)
+            .expect("the installed assessment producer must advance")
+        {
+            WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => break settled,
+            WorthQueryWorkflowAssessmentDemandProgress::Progressed => continue,
+            WorthQueryWorkflowAssessmentDemandProgress::Pending => {
+                panic!("the synchronous assessment is waiting for external progress")
+            }
         }
     }
 }
@@ -207,13 +211,16 @@ pub fn settle_assessment_for(
     let request = runtime
         .request(&fresh_principal, &fresh_scope)
         .on_branch(branch);
-    let settlement = match handle
-        .advance(&request)
-        .expect("the installed assessment producer must advance")
-    {
-        WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => settled,
-        WorthQueryWorkflowAssessmentDemandProgress::Pending => {
-            panic!("the bounded assessment producer did not settle within its declared work")
+    let settlement = loop {
+        match handle
+            .advance(&request)
+            .expect("the installed assessment producer must advance")
+        {
+            WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => break settled,
+            WorthQueryWorkflowAssessmentDemandProgress::Progressed => continue,
+            WorthQueryWorkflowAssessmentDemandProgress::Pending => {
+                panic!("the synchronous assessment is waiting for external progress")
+            }
         }
     };
     handle.close(&request).unwrap_or_else(|_| {

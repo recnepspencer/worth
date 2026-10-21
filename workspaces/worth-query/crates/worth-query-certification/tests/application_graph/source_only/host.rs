@@ -5,6 +5,7 @@ use super::{
     schema::*,
 };
 use std::sync::Arc;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_contribution::*, application_installation::*, declaration::application_program::*,
     primary_graph::*,
@@ -49,6 +50,7 @@ where
         WorthQueryApplicationProgramRoster::new(),
         SourceOnlyRetentionSchema::declaration().unwrap(),
         (contacts.clone(),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         crate::document_retention_model::host::host_limits(),
         |_, graph, installed| {
             let binding = installed.principal_binding(DocumentPrincipalBinding::reference()).unwrap();

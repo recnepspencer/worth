@@ -75,7 +75,9 @@ fn recorded_settlements(
             entity_id: entity,
         }])),
             None,
-         None);
+         None,
+         None,
+     );
     }
     let source = SemanticSource {
         runtime_authority,

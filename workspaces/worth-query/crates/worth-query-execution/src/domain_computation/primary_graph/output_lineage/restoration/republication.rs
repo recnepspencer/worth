@@ -28,6 +28,8 @@ use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutp
 /// it. Only the output witness is new: the re-created entities carry new
 /// revisions, sealed at the restoration commit.
 pub(in crate::domain_computation::primary_graph) struct RepublishedOutput {
+    producing_implementation:
+        Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     computation_source: super::super::ComputationSourceEvidence,
     predecessor: Arc<RecordedSettlementIdentity>,
     facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
@@ -61,6 +63,7 @@ impl RepublishedOutput {
     /// record this republication continues. The row is a performed origin of
     /// its own: its witness covers the re-created entities.
     pub(super) fn continue_in(self, row: &mut RecordedOutput) {
+        row.producing_implementation = self.producing_implementation;
         row.computation_source = self.computation_source;
         row.consumed_outputs = self.consumed_outputs;
         row.completed_handler_facts = Some(self.completed_handler_facts);
@@ -152,7 +155,11 @@ impl WorthQueryApplicationOutputLineage {
         if boundary.handler_fact_count() > facts.len() {
             return None;
         }
+        if !self.implementation_is_current(origin) {
+            return None;
+        }
         Some(RepublishedOutput {
+            producing_implementation: origin.producing_implementation,
             computation_source: suspended.computation_source,
             predecessor: Arc::clone(&suspended.settlement_identity),
             facts,
@@ -205,6 +212,7 @@ impl WorthQueryApplicationOutputLineage {
             None,
             &mut republished,
             computation_source,
+            None,
             None,
         )?;
         republished.is_none().then_some(RepublishedRecord {

@@ -221,6 +221,7 @@ where
             runtime,
             &phase.checked_execution_request_for(&runtime.product_runtime).map_err(|stop| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(stop), Binding::IDENTITY))?,
             *identities.key_identity(),
+            worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(edition.build_identity(), edition.digest()),
             successor_of,
             identity_execution.allocation_policy(),
         )
@@ -233,7 +234,8 @@ where
                     )
                     .bind_mutation::<Schema, Operation<Schema, Binding>>(),
                 )
-                .bind_producer_dependency(&dependency_identity);
+                .bind_producer_dependency(&dependency_identity)
+                .bind_producing_implementation(worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(edition.build_identity(), edition.digest()));
             let program = program
                 .with_output_demand_observation()
                 .with_producer_required_invariants(Binding::REQUIRED_INVARIANTS);

@@ -1,5 +1,6 @@
 //! Install one actual selected program with explicit source-revision deployment grants.
 use super::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 
 pub(in crate::application_invariant_acceptance) fn install_selected_program<Program>(
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
@@ -49,6 +50,7 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
         roster,
         ConsumerSchema::declaration().expect("the contributed declaration is valid"),
         configuration,
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits,
         |bootstrap_phase, graph, installed| {
             reject_foreign_invariant_factory(installed, foreign);

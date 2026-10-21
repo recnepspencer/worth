@@ -27,6 +27,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
     WorthQueryNativeCheckpointSectionBytes,
 };
+pub use worth_foundational::facade::{ApplicationBuildIdentity, InvalidApplicationBuildIdentity};
 
 // Actual result vocabulary returned by the application preview lifecycle.
 pub use worth_runtime_bridge::facade::{

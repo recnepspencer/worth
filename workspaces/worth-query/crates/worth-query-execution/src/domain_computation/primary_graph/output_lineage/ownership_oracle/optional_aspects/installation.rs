@@ -4,6 +4,7 @@ use crate::facade::application_installation::{
     in_memory_program, WorthQueryInMemoryApplicationLimits, WorthQueryProgramApplicationRuntime,
 };
 use std::sync::{atomic::AtomicUsize, Arc};
+use worth_foundational::facade::ApplicationBuildIdentity;
 worth_query_decl::facade::worth_query_application! { pub(super) OptionalSchema { owner: "worth.query.test.optional-aspects", version: (1, 0), contributions: [Members], } }
 worth_query_decl::facade::worth_query_application! { pub(super) RequiredSchema { owner: "worth.query.test.required-aspects", version: (1, 0), contributions: [Members], } }
 impl TopologySchemaBinding for OptionalSchema {}
@@ -97,6 +98,8 @@ pub(super) fn install<
             .unwrap(),
         Schema::declaration().unwrap(),
         (incomplete,),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111")
+            .expect("embedded application build identity"),
         limits::<Schema>(),
         |_, graph, installed| {
             let binding = installed
@@ -161,6 +164,8 @@ pub(super) fn restore<
             .unwrap(),
         Schema::declaration().unwrap(),
         (false,),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111")
+            .expect("embedded application build identity"),
         limits::<Schema>(),
         checkpoint,
     )

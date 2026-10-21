@@ -34,14 +34,14 @@ pub use worth_execution::ExecutionAllocationPolicy as WorthQueryCheckpointCaptur
 
 const MAGIC: &[u8; 8] = b"WQAPCP01";
 // Current-only combined grammar: whole-aspect facts remain wire12 (presence tag11); producer quotes are absent.
-const FORMAT_VERSION: u16 = 12;
+const FORMAT_VERSION: u16 = 13;
 const WORKFLOW_FACTS: u16 = 2;
 const WORKFLOW_INSTANCES: u16 = 4;
 const CHECKSUM_BYTES: usize = 32;
 const BODY_PREFIX_BYTES: usize = 2 + 2 + 2 + 8 + 8 + 8;
 const HEADER_BYTES: usize = MAGIC.len() + CHECKSUM_BYTES + BODY_PREFIX_BYTES;
 // Version 9 preserves the row layout and certifies the exporter exclusion.
-const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = 8 + 1 + 32 + 16 + 32 + 33 + 32 + 8 + 8 + 1 + 2;
+const MINIMUM_ACCEPTED_OUTPUT_BYTES: usize = 8 + 1 + 48 + 32 + 16 + 32 + 33 + 32 + 8 + 8 + 1 + 2;
 const MAXIMUM_PRODUCER_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ROLE_IDENTITY_BYTES: usize = 4 * 1024;
 const MAXIMUM_ENTITY_NAME_BYTES: usize = 4 * 1024;

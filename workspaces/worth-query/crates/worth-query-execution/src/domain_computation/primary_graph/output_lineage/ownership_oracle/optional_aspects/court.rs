@@ -115,6 +115,7 @@ fn readmit_with_ordinary<Schema: BirthSchema>(
             let producer = locator.producer().to_owned();
             let dependency = row.producer_dependency_identity.unwrap();
             let meaning = RequiredOutputPublicationMeaning {
+                implementation: row.producing_implementation.expect("the actual producer publication retains its original implementation"),
                 family: settled.output_family_identity().to_owned(),
                 source_scope: source_entity,
                 source_partition: row.source_partition_identity.unwrap(),

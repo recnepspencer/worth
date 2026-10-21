@@ -3,6 +3,7 @@ use super::*;
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 #[test]
 fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roster() {
     let (original, settlement) = original(model::authored_value());
@@ -122,6 +123,7 @@ fn companion_deferred_append_cancel_and_funded_same_capsule_repair_keep_historic
         installation::WorthQueryApplicationProgramRoster::new(),
         successor::schema::CanonicalSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         successor::host::limits(),
         checkpoint,
         installation::WorthQueryCheckpointProgramPredecessor::new(

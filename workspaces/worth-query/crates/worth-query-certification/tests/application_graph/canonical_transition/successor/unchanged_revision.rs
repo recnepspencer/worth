@@ -1,5 +1,6 @@
 //! Actual compiled successor with changed codec meaning but the old aspect revision.
 use super::{model, wire_model};
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 #[path = "../../canonical_value/binding.rs"]
 #[expect(
     clippy::duplicate_mod,
@@ -66,6 +67,7 @@ pub fn assert_missing_revision_refused(
         host::program(),
         schema::CanonicalSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host::limits(),
         checkpoint,
     )

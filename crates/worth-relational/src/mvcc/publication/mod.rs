@@ -4,8 +4,8 @@ pub use application_publication::RelationalInstalledApplicationPublicationAuthor
 pub(crate) use application_publication::{origin_denial, RequiredOutputPublicationAdmission};
 pub use application_publication::{
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
-    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
-    RequiredOutputRoleTarget,
+    RequiredOutputProducingImplementation, RequiredOutputPublication,
+    RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
 };
 mod candidate;
 mod candidate_consumption;

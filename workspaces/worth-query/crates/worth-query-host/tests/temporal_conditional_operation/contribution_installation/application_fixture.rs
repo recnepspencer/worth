@@ -1,5 +1,6 @@
 //! The installed temporal program shared by public commit proofs.
 use super::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 pub(super) fn installed_application(
 ) -> application_installation::WorthQueryProgramApplicationRuntime<
     TemporalHostSchema,
@@ -21,6 +22,7 @@ pub(super) fn installed_application(
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         (configuration,),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         WorthQueryInMemoryApplicationLimits::new(
             product_world_resources(1_024),
             runtime::WorthQueryApplicationQueryResourceProfile::new(

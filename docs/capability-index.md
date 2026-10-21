@@ -59,6 +59,14 @@ Do all five steps, in order.
 
 ## Task index
 
+Application installation and reopen require one
+`host::application_installation::ApplicationBuildIdentity`, embedded by the
+application build pipeline. Query binds it to every producer, including
+`INPUT_REUSE=None`; callers do not maintain a second producer roster.
+A new build conservatively invalidates derived output. This identity describes
+producing code and grants no execution, publication or recovery authority.
+See [build identity](build-an-application.md#application-build-identity).
+
 Ordinary mutations carry their prepared decision into `CandidateWriter` without
 candidate quotes or dependency-byte ceilings. Installed mutation authority,
 required output roles/families, current reads, cancellation and atomic publication
@@ -490,15 +498,15 @@ explicit bootstrap request and capture policy. See [original-request transitions
 
 ## Known gaps
 
-**Compiler-derived implementation editions.** Automatic producer/output/partition
-edition integration is not yet a Decl/Host capability. The initial
-[`implementation-edition` compiler observer](../tools/implementation-edition/src/lib.rs)
-captures supported Rust/compiler inputs, verifies external bytes against locked
-registry archives or Git trees, and checks finite generator effects against actual
-execution. Serde Core 1.0.229 has a real compiler/generated-input proof; unqualified
-proc-macro, native and generator contexts refuse. It does not yet qualify the CAD
-closure or change installed output currentness. Consumers must await the native
-cutover rather than construct editions from descriptive digests or reports.
+**Selective compiler fingerprints.** The supported ordinary guard is the
+whole-application `ApplicationBuildIdentity`: the build pipeline embeds one UUID,
+and installation binds it to every producer automatically. A changed build may
+conservatively invalidate all derived outputs. Follow the
+[build identity pipeline contract](build-an-application.md#application-build-identity);
+consumers do not need the standalone compiler observer or a second edition roster.
+Per-crate/selective code fingerprints are not promised by this API. The identity
+is descriptive; native authority, source-format compatibility and currentness
+remain governed by their existing owners.
 
 Check the support posture in the capability table before concluding that a
 capability is missing. Follow the linked current owner and consumer guidance.

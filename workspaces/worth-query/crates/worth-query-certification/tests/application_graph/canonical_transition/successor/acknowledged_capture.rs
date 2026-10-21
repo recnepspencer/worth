@@ -4,6 +4,7 @@ use std::num::NonZeroUsize;
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     primary_graph,
     runtime::{
@@ -46,6 +47,7 @@ fn acknowledged_codec_successor_keeps_exact_capture_cause_and_repairs_without_re
         installation::WorthQueryApplicationProgramRoster::new(),
         schema::CanonicalSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host::limits(),
         checkpoint,
         predecessor,

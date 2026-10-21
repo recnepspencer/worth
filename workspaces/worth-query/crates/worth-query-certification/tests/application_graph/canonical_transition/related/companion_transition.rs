@@ -5,6 +5,7 @@ use super::{
     *,
 };
 use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{application_entry::*, application_installation as installation};
 type Original = old::host::Host<old::program::SourceProgram>;
 type Target = new::host::Host<new::program::TargetProgram>;
@@ -39,6 +40,7 @@ fn transition_counted(
         installation::WorthQueryApplicationProgramRoster::new(),
         successor::schema::CanonicalSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         successor::host::limits(),
         checkpoint,
         installation::WorthQueryCheckpointProgramPredecessor::new(

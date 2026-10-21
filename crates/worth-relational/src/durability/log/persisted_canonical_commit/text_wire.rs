@@ -5,7 +5,7 @@ use serde::Deserialize;
 pub(crate) struct CanonicalCommitWire<'a> {
     canonical_protocol_version: u16,
     position: crate::publication::patch::data::PatchStreamPosition,
-    #[serde(borrow, rename = "canonical_v5")]
+    #[serde(borrow, rename = "canonical_v6")]
     canonical: crate::history::data::CanonicalEnvelopeWire<'a>,
 }
 impl CanonicalCommitWire<'_> {
@@ -17,7 +17,7 @@ impl CanonicalCommitWire<'_> {
         if self.canonical_protocol_version != super::CANONICAL_PROTOCOL_VERSION {
             return Err(crate::durability::data::DurabilityError::new(
                 crate::durability::data::RecoveryFailureClass::CorruptSegment,
-                "unsupported native canonical protocol; managed text requires v5",
+                "unsupported native canonical protocol; managed text requires v6",
             )
             .into());
         }

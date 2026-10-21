@@ -11,6 +11,7 @@ use std::sync::{
     Arc,
 };
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_installation::{in_memory_program, WorthQueryInMemoryApplicationDenial},
     declaration::application_operation::{
@@ -81,6 +82,7 @@ fn authored_body_input_selection_requires_capture_at_installation() {
         program::validated::<103>(&schema),
         schema,
         (program::Installation::Native,),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host_limits(),
         |_phase, _graph, _schema| panic!("missing capture must deny before initialization"),
     );

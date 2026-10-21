@@ -7,6 +7,17 @@ impl<Schema> WorthQueryInstalledApplicationProducerRegistry<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
+    pub(in crate::domain_computation::primary_graph) fn implementation_matches(
+        &self,
+        producer: &str,
+        original: worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
+    ) -> bool {
+        self.entries.get(producer).is_some_and(|installed| {
+            installed.edition.digest() == original.edition()
+                && installed.edition.build_identity().bytes() == original.build_identity()
+        })
+    }
+
     pub(in crate::domain_computation::primary_graph) fn checkpoint_publication_meaning(
         &self,
         checkpoint: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
@@ -19,6 +30,7 @@ where
         let installed = installed_checkpoint_producer(&self.entries, &checkpoint.producer)?;
         Ok(
             worth_relational::facade::mvcc::RequiredOutputPublicationMeaning {
+                implementation: checkpoint.implementation,
                 family: funding.copy_text(&installed.declaration.output_family, execution)?,
                 source_scope: worth_relational::facade::identity::EntityId::new(
                     worth_relational::facade::identity::PartitionId::new(

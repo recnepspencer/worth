@@ -67,6 +67,7 @@ pub(in crate::domain_computation::primary_graph) fn merge(
             if heads.get(&key).map_or(allow_missing, |head| {
                 binding == Some(head.binding)
                     && identity.idempotency_key == head.idempotency_key
+                    && head.producing_implementation() == Some(identity.implementation)
                     && head.identity.as_ref().is_none_or(|native| {
                         identity.producer.as_str() == native.producer
                             && identity.source == native.source

@@ -6,6 +6,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryAcceptedOutputCh
 
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryAcceptedOutputCheckpointIdentity {
+    pub(in crate::domain_computation::primary_graph) implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
     pub(in crate::domain_computation::primary_graph) producer: std::sync::Arc<String>,
     pub(in crate::domain_computation::primary_graph) posture:
         WorthQueryAcceptedOutputCheckpointPosture,
@@ -39,6 +40,7 @@ impl WorthQueryAcceptedOutputCheckpointIdentity {
     ) -> std::cmp::Ordering {
         self.producer
             .cmp(&other.producer)
+            .then_with(|| self.implementation.cmp(&other.implementation))
             .then_with(|| self.posture.cmp(&other.posture))
             .then_with(|| self.source.cmp(&other.source))
             .then_with(|| self.scope.cmp(&other.scope))

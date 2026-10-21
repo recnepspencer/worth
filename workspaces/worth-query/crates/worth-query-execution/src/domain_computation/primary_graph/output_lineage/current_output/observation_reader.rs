@@ -69,6 +69,9 @@ impl WorthQueryApplicationOutputLineage {
                         )
                     });
                 if let Some((cell, recorded)) = cell.and_then(|cell| Some((cell, cell.get()?))) {
+                    if !self.implementation_is_current(recorded) {
+                        break;
+                    }
                     let origin = recorded
                         .performed_origin
                         .as_ref()

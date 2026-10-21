@@ -112,7 +112,9 @@ impl WorthQueryApplicationOutputLineage {
         let candidates = heads
             .into_iter()
             .filter_map(|(role, recorded)| {
-                WorthQueryCurrentOutputCandidate::from_recorded(recorded, role)
+                self.implementation_is_current(recorded)
+                    .then(|| WorthQueryCurrentOutputCandidate::from_recorded(recorded, role))
+                    .flatten()
             })
             .collect();
         Ok(WorthQueryCurrentOutputFamilyResolution {

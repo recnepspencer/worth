@@ -9,6 +9,7 @@ use bank_domain::{
         ApprovedBusinessPaymentWorkflow, BankPrincipalBinding, BankSchema,
     },
 };
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::declaration::application_program::ApplicationWorkflowComponentLimits;
 use worth_query_host::facade::{
     application_installation::{
@@ -92,6 +93,8 @@ pub(super) fn prepare_installation(
                 .support(successor_p2),
             declaration,
             ((), (), ()),
+            ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
+                .expect("embedded application build identity"),
             limits,
             initialize,
         ),
@@ -103,6 +106,8 @@ pub(super) fn prepare_installation(
                     .support(successor_p2),
                 declaration,
                 ((), (), ()),
+                ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
+                    .expect("embedded application build identity"),
                 limits,
                 initialize,
                 source,

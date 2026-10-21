@@ -13,6 +13,7 @@ use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
 };
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_installation::{self as installation, WorthQueryInMemoryApplicationLimits},
     declaration::authentication::WorthQueryPrincipalMappingStatus,
@@ -59,6 +60,7 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
             .expect("the omitted-rule program is declaration-valid"),
         ConsumerSchema::declaration().expect("the contributed declaration is valid"),
         configuration,
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits,
         |_bootstrap_phase, graph, installed| {
             let principal = installed
@@ -107,6 +109,7 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
         crate::application_program::validated_omitted_program_binding(),
         ConsumerSchema::declaration().expect("the contributed declaration is valid"),
         configuration,
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits,
         |_bootstrap_phase, graph, installed| {
             let principal = installed
@@ -163,6 +166,7 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
         program,
         ConsumerSchema::declaration().unwrap(),
         configuration,
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits,
         |_bootstrap_phase, graph, installed| {
             let principal = installed

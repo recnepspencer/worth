@@ -9,6 +9,7 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationContribution, WorthQueryApplicationContributionSetup,
     WorthQueryBootstrapAdvancementPhase,
 };
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::application_installation::{
     in_memory_rostered_program, WorthQueryApplicationProgramRoster,
     WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
@@ -151,8 +152,7 @@ pub fn publish_on_first_program_for_workflow_scale() -> DocumentRetentionRuntime
             world_resources::workflow_scale_resources(),
             runtime::WorthQueryApplicationQueryResourceProfile::new(
                 std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
-            )
-            .expect("finite workflow-scale query resources"),
+            ),
             primary_graph::SignalConditionalEvaluationBudget::development(),
         )
         .with_profile(WorthQueryInMemoryApplicationProfile::WorkflowScale),
@@ -256,6 +256,7 @@ where
         roster.support(super::actor_generation::validated_actor_program()),
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits,
         seed_host,
     )

@@ -5,6 +5,7 @@ use crate::facade::application_installation::{
     in_memory_program, WorthQueryInMemoryApplicationLimits, WorthQueryProgramApplicationRuntime,
 };
 use std::sync::{atomic::AtomicUsize, Arc};
+use worth_foundational::facade::ApplicationBuildIdentity;
 use worth_query_decl::facade::{application_program::*, application_schema::*};
 
 worth_query_decl::facade::worth_query_application! {
@@ -92,6 +93,7 @@ pub(super) fn install() -> Application {
     in_memory_program(
         ApplicationProgramAuthoring::<OwnerSchema, OwnerProgram>::begin().validated_program().unwrap(),
         OwnerSchema::declaration().unwrap(), ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         WorthQueryInMemoryApplicationLimits::new(
             crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
             Default::default(),

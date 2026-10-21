@@ -5,6 +5,7 @@ use std::sync::{
     Arc,
 };
 use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus;
 pub(super) fn install(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
@@ -25,6 +26,7 @@ pub(super) fn install(
             program,
             declaration,
             configuration,
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             support::limits(
                 32,
                 // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.
@@ -37,6 +39,7 @@ pub(super) fn install(
             program,
             declaration,
             configuration,
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             support::limits(
                 32,
                 // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.

@@ -48,13 +48,15 @@ jobs:
           else
             python scripts/ci/check_consumer_doc_debt.py
           fi
-      - name: Test the predecessor ratchet
-        run: python -m unittest discover -s scripts/ci -p test_consumer_doc_debt.py
+      - name: Test build identity issuance and the predecessor ratchet
+        run: |
+          python -m unittest discover -s scripts/ci -p test_application_build.py
+          python -m unittest discover -s scripts/ci -p test_consumer_doc_debt.py
       - name: Compile and run configured Query and Bank doctests
         run: python scripts/ci/query_gate.py doc
       - name: Run the observable mixed workflow consumer
         run: >-
-          cargo run --manifest-path workspaces/worth-query/Cargo.toml
+          python scripts/application_build.py cargo run --manifest-path workspaces/worth-query/Cargo.toml
           -p worth-query-certification --example observable_workflow
       - name: Preserve failed gate logs and results
         if: failure()
@@ -120,14 +122,14 @@ jobs:
         run: python scripts/ci/query_gate.py fixture
       - name: Prove public output-role documentation contracts
         run: >-
-          cargo test --doc
+          python scripts/application_build.py cargo test --doc
           --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
           -p worth-query-topology-entry
       # The external consumer journey: publication, reconstruction, output
       # preservation and optional output roles through the public facades.
       - name: Run the public consumer journey
         run: >-
-          time cargo run
+          time python scripts/application_build.py cargo run
           --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
           -p worth-query-consumer-root
       - name: Preserve failed court logs and results

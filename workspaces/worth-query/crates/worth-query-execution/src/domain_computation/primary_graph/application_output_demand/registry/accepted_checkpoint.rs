@@ -35,6 +35,7 @@ impl WorthQueryOutputDemandRegistry {
                             == Some(key.source.runtime_idempotency_identity());
                         Some((
                             WorthQueryAcceptedOutputCheckpointIdentity {
+                                implementation: idempotency.producing_implementation()?,
                                 producer: (key.producer.clone()).into(),
                                 posture: WorthQueryAcceptedOutputCheckpointPosture::Performed,
                                 source: key.source.checkpoint_identity().bytes(),
@@ -61,6 +62,7 @@ impl WorthQueryOutputDemandRegistry {
                             ));
                         Some((
                             WorthQueryAcceptedOutputCheckpointIdentity {
+                                implementation: stable.producing_implementation()?,
                                 producer: (key.producer.clone()).into(),
                                 posture: WorthQueryAcceptedOutputCheckpointPosture::StableReused,
                                 source: key.source.checkpoint_identity().bytes(),

@@ -31,7 +31,11 @@ impl WorthQueryApplicationOutputLineage {
                 identity.matches_current(runtime_identity, checkpoint_identity)
             })
         })?;
+        if !self.implementation_is_current(recorded) {
+            return None;
+        }
         Some(WorthQueryExactRecordedOutput {
+            producing_implementation: recorded.producing_implementation,
             correspondence: Arc::clone(&recorded.correspondence),
             source_identity: recorded.source_identity?,
             source_partition_identity: recorded.source_partition_identity?,

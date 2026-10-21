@@ -20,7 +20,7 @@ use partition_aliases::{
 pub(super) use section_accounting::CaptureSectionRecorder;
 use section_accounting::{MeasuredValue, NativeSection};
 
-const CHECKPOINT_PROTOCOL_VERSION: u16 = 5;
+const CHECKPOINT_PROTOCOL_VERSION: u16 = 6;
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct PersistedDurableCheckpointFile {

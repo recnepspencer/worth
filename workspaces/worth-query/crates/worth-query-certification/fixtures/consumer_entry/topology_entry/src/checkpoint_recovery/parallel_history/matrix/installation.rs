@@ -2,6 +2,7 @@
 use super::{application::*, control::Control};
 use crate::principal::*;
 use worth_query_decl::facade::application_program::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     admission::authenticated_principal as authentication,
     application_installation,
@@ -26,6 +27,7 @@ pub(super) fn install(control: std::sync::Arc<Control>) -> Application {
         program,
         declaration,
         (control.clone(),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits,
         |_phase, graph, installed| {
             let principal = installed

@@ -1,12 +1,14 @@
 use crate::transactions::data::TransactionCommitError;
 mod completion;
 mod custody;
+mod producing_implementation;
 mod route_absence;
 pub use completion::{
     RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
     RequiredOutputRoleTarget,
 };
 pub use custody::RelationalRequiredOutputPublication;
+pub use producing_implementation::RequiredOutputProducingImplementation;
 pub use route_absence::RelationalRequiredOutputRouteAbsence;
 
 #[cfg(test)]
@@ -134,6 +136,10 @@ pub(crate) fn native_roles_fixture(
 #[cfg(test)]
 pub(crate) fn native_meaning_fixture(family: &str) -> RequiredOutputPublicationMeaning {
     RequiredOutputPublicationMeaning {
+        implementation: RequiredOutputProducingImplementation::from_checkpoint(
+            [0x11; 16], [0x22; 32],
+        )
+        .unwrap(),
         family: family.to_owned(),
         source_scope: crate::identity::data::EntityId::new(
             crate::identity::data::PartitionId::main(),

@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 pub(crate) fn application_checkpoint_restores_fresh_editable_authority(
@@ -19,6 +20,7 @@ pub(crate) fn application_checkpoint_restores_fresh_editable_authority(
             contacts,
             install_route: true,
         },),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         checkpoint_limits(),
         |_phase, graph, installed| {
             let principal = installed
@@ -66,6 +68,7 @@ pub(crate) fn application_checkpoint_restores_fresh_editable_authority(
             contacts: restored_contacts,
             install_route: true,
         },),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         checkpoint_limits(),
         checkpoint,
     )
@@ -192,6 +195,7 @@ pub(crate) fn application_checkpoint_denies_corrupt_incompatible_and_forged_byte
             contacts,
             install_route: true,
         },),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         checkpoint_limits(),
         |_phase, graph, installed| {
             let principal = installed
@@ -308,6 +312,7 @@ fn checkpoint_bytes_are_denied(
             contacts,
             install_route: true,
         },),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         checkpoint_limits(),
         corrupt,
     ) {

@@ -6,6 +6,7 @@ use crate::document_retention_model::{
     schema::*,
 };
 use worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::application_installation::{
     in_memory_rostered_program, in_memory_rostered_program_from_checkpoint,
     WorthQueryApplicationCheckpoint, WorthQueryApplicationProgramRoster,
@@ -19,6 +20,8 @@ pub fn publish() -> crate::document_retention_model::MixedApplication {
         roster(),
         DocumentRetentionSchema::declaration().expect("the neutral schema validates"),
         ((), ()),
+        ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
+            .expect("embedded application build identity"),
         host_limits(),
         seed_host,
     )
@@ -35,6 +38,8 @@ pub fn restore(
         roster(),
         DocumentRetentionSchema::declaration().expect("the same neutral schema validates"),
         ((), ()),
+        ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
+            .expect("embedded application build identity"),
         host_limits(),
         checkpoint,
     )

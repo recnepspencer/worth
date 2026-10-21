@@ -149,7 +149,11 @@ impl WorthQueryApplicationOutputLineage {
                 }
             };
             if let Some(recorded) = recorded {
-                return retained_currentness_read(recorded);
+                return if self.implementation_is_current(recorded) {
+                    retained_currentness_read(recorded)
+                } else {
+                    Ok(None)
+                };
             }
             let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
                 return Ok(None);
@@ -204,7 +208,11 @@ impl WorthQueryApplicationOutputLineage {
                 },
             )?;
             if let Some(recorded) = recorded {
-                return retained_currentness_read(recorded);
+                return if self.implementation_is_current(recorded) {
+                    retained_currentness_read(recorded)
+                } else {
+                    Ok(None)
+                };
             }
             let Some(parent) = self.origins.get(&coordinate.occurrence).copied() else {
                 return Ok(None);
@@ -268,7 +276,9 @@ impl WorthQueryApplicationOutputLineage {
                     )
                 });
             if let Some(recorded) = recorded {
-                return if Arc::ptr_eq(&recorded.settlement_identity, identity) {
+                return if self.implementation_is_current(recorded)
+                    && Arc::ptr_eq(&recorded.settlement_identity, identity)
+                {
                     retained_currentness_read(recorded)
                 } else {
                     Ok(None)

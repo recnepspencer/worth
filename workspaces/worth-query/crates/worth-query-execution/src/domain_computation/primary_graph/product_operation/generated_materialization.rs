@@ -54,6 +54,7 @@ pub(super) struct ProducerQualification {
         crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity,
     source_partition_identity: [u8; 32],
     producer_dependency_identity: Option<[u8; 32]>,
+    producing_implementation: Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     idempotency_key_identity: [u8; 32],
     runtime_authority: u64,
     schema: worth_query_installation::facade::ApplicationSchemaBindingIdentity,

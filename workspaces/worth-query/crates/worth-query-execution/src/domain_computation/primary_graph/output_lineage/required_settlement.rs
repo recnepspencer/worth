@@ -230,6 +230,9 @@ impl WorthQueryApplicationOutputLineage {
         let Some(recorded) = cell.get() else {
             return Err(FullVerificationReason::NativeRevisionUnavailable.into());
         };
+        if !self.implementation_is_current(recorded) {
+            return Ok(None);
+        }
         if !Arc::ptr_eq(&recorded.settlement_identity, pin)
             || !std::ptr::eq(recorded.correspondence.as_ref(), correspondence)
             || recorded.source_partition_identity != Some(partition)

@@ -4,6 +4,7 @@ use std::sync::{
     atomic::{AtomicBool, AtomicUsize},
     Arc,
 };
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 
 pub(super) fn install<const MODE: u8>() -> Result<
     application_installation::WorthQueryProgramApplicationRuntime<JointSchema, JointProgram<MODE>>,
@@ -23,6 +24,7 @@ pub(super) fn install<const MODE: u8>() -> Result<
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         support::limits(32, support::invalidation()),
         |_phase, graph, installed| support::bind_model_owner(graph, installed),
     )

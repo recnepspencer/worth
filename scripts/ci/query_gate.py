@@ -43,6 +43,7 @@ from pathlib import Path
 
 from query_gate_artifacts import test_binaries
 from query_gate_diagnostics import failed_tests, report_failed_command
+from query_gate_environment import environment
 
 ROOT = Path(__file__).resolve().parents[2]
 QUERY = "workspaces/worth-query/Cargo.toml"
@@ -214,22 +215,11 @@ ORDER = ["fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
          "relational", "signal", "execution", "query-execution", "query-rest",
          "fixture", "ui", "bank", "doc-lower", "doc", "wasm", "boundary", "extra"]
 
-def environment():
-    env = dict(os.environ)
-    # Test binaries are run directly, so cargo's [env] table does not reach them.
-    env.setdefault("RUST_MIN_STACK", "16777216")
-    env.setdefault("WORTH_REPO", str(ROOT))
-    env.setdefault("CARGO", shutil.which("cargo") or "cargo")
-    if shutil.which("sccache") and "RUSTC_WRAPPER" not in env:
-        if env.get("CARGO_INCREMENTAL") == "1":
-            del env["CARGO_INCREMENTAL"]
-        env["RUSTC_WRAPPER"] = "sccache"
-    return env
 
 class Gate:
     def __init__(self, out):
         self.out = out
-        self.env = environment()
+        self.env = environment(ROOT)
         self.built = {}
 
     def command(self, label, argv):

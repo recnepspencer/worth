@@ -38,6 +38,11 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
     )
     .expect("empty restored correspondence is valid for a registry lifetime test");
     let checkpoint = super::super::WorthQueryAcceptedOutputCheckpointIdentity {
+        implementation:
+            worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint(
+                [0x11; 16], [0x22; 32],
+            )
+            .unwrap(),
         producer: ("producer".to_owned()).into(),
         posture: super::super::WorthQueryAcceptedOutputCheckpointPosture::Performed,
         source: [1; 32],

@@ -1,6 +1,7 @@
 //! Genuine installation, source seeding, authenticated reads and checkpoint recovery.
 use super::{model::NestedValue, producer, query::ReadValue, schema::*};
 use crate::document_retention_model::{host::host_limits, operator_identity::*};
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_contribution::*,
     application_entry::*,
@@ -74,6 +75,7 @@ fn install_owned(
             .unwrap(),
         CanonicalSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits(),
         |_, graph, installed| {
             retain(graph);
@@ -110,6 +112,7 @@ pub fn restore(checkpoint: WorthQueryApplicationCheckpoint) -> Host {
             .unwrap(),
         CanonicalSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits(),
         checkpoint,
     )

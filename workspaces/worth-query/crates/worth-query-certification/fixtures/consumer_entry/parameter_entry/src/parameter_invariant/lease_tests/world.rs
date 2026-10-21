@@ -4,6 +4,7 @@ use crate::{Count, Parameter};
 use worth_query_consumer_values::PositiveCount;
 use worth_query_decl::facade::application_schema::*;
 use worth_query_decl::facade::authentication::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::domain::WorthQueryInstalledPrincipalBinding;
 
 use worth_query_host::facade::primary_graph::*;
@@ -43,6 +44,7 @@ pub(super) fn install() -> World {
     let application = in_memory(
         LeaseSchema::declaration().unwrap(),
         (Arc::clone(&calls), ()),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits,
         |_phase, bootstrap, schema| {
             let principal = schema

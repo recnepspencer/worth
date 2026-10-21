@@ -90,6 +90,7 @@ impl CanonicalCommitEnvelope {
             .as_deref()
             .ok_or("present output has no installed producer publication")?;
         if origin.commit != self.commit
+            || !origin.meaning.implementation.valid()
             || origin.producer.is_empty()
             || origin.basis.branch_id() != &self.branch_context
             || self

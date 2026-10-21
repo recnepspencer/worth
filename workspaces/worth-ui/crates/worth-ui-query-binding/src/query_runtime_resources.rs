@@ -29,29 +29,20 @@ pub(crate) fn ui_product_world_resources() -> runtime::WorthQueryProductWorldRes
             },
         },
         runtime::WorthQueryProductWorldClock::start(),
-        runtime::WorthQueryInvalidationResources::install(
-            runtime::WorthQueryInvalidationResourceInstallation::bounded(
-                1_000_000,
-                64 * 1_024 * 1_024,
-                128 * 1_024 * 1_024,
-                128,
-            ),
-        )
-        .expect("the Query invalidation installation is valid"),
+        runtime::WorthQueryInvalidationResources::new(),
         UI_EXECUTION_POLICY,
     )
     .expect("the UI Product World resources are valid")
 }
 
-// Twice the 64 MiB preparation ceiling leaves framework memory headroom.
-// The 16 million work allowance bounds leases; serial requests bound memory only.
+// The existing host execution policy still owns physical request resources.
 pub(crate) const UI_EXECUTION_POLICY: runtime::ExecutionRequestPolicy =
     runtime::ExecutionRequestPolicy::new(
         runtime::ExecutionPosture::Serial,
         runtime::DeterminismContract::CanonicalBitwise,
         runtime::ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
-            128 * 1024 * 1024,
+            Some(128 * 1024 * 1024),
             Some(16_000_000),
         ),
     );

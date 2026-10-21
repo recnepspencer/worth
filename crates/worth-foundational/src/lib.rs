@@ -28,6 +28,7 @@
 
 #![forbid(unsafe_code)]
 
+mod application_build_identity;
 mod aspects;
 mod boundary;
 mod boundary_artifacts;

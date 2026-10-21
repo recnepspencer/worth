@@ -1,5 +1,6 @@
 //! Fresh native readmission must retain expression meaning and reject false bindings.
 use super::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_installation::{
         in_memory_program_from_checkpoint, WorthQueryCheckpointCapturePolicy,
@@ -34,6 +35,7 @@ fn conditional_requirement_survives_checkpoint_and_fresh_schema_readmission() {
         program::validated::<25>(&schema),
         schema,
         (program::Installation::Native,),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         super::super::host_limits(),
         checkpoint,
     )

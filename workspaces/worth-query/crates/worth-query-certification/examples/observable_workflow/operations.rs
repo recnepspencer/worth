@@ -190,13 +190,16 @@ pub fn assess(
         .expect("installed retention query and producer contract")
         .retain_operation(application.program_runtime())
         .expect("retain the actual assessment producer owner");
-    let settlement = match owner
-        .advance(&request)
-        .expect("advance the native producer")
-    {
-        WorthQueryWorkflowAssessmentDemandProgress::Settled(settlement) => settlement,
-        WorthQueryWorkflowAssessmentDemandProgress::Pending => {
-            panic!("the bounded installed producer must settle before evidence acceptance")
+    let settlement = loop {
+        match owner
+            .advance(&request)
+            .expect("advance the native producer")
+        {
+            WorthQueryWorkflowAssessmentDemandProgress::Settled(settlement) => break settlement,
+            WorthQueryWorkflowAssessmentDemandProgress::Progressed => continue,
+            WorthQueryWorkflowAssessmentDemandProgress::Pending => {
+                panic!("the synchronous assessment is waiting for external progress")
+            }
         }
     };
     owner

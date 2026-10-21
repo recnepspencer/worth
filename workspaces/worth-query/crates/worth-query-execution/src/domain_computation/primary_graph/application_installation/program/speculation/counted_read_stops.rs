@@ -10,6 +10,7 @@ use crate::facade::application_installation::WorthQueryProgramOwner;
 use crate::facade::application_installation::{
     in_memory_program, WorthQueryInMemoryApplicationLimits,
 };
+use worth_foundational::facade::ApplicationBuildIdentity;
 use worth_query_declaration::facade::application_program::*;
 use worth_query_declaration::facade::application_schema::U64ApplicationValueBinding;
 use worth_query_declaration::facade::authentication::{
@@ -121,6 +122,7 @@ fn installed_preview_runtime() -> WorthQueryProgramApplicationRuntime<PreviewSch
         .unwrap();
     in_memory_program(
         program, PreviewSchema::declaration().unwrap(), ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         WorthQueryInMemoryApplicationLimits::new(
             crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
             Default::default(),

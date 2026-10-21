@@ -43,6 +43,8 @@ pub(in crate::domain_computation::primary_graph) struct NativePriorCheckpointOut
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     pub(in crate::domain_computation::primary_graph) binding: TypeId,
     pub(in crate::domain_computation::primary_graph) idempotency_key: [u8; 32],
+    producing_implementation:
+        Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub(in crate::domain_computation::primary_graph) partition: Option<[u8; 32]>,
     pub(in crate::domain_computation::primary_graph) entity: Option<EntityId>,
     pub(in crate::domain_computation::primary_graph) identity:
@@ -183,6 +185,7 @@ impl WorthQueryApplicationOutputLineage {
                     scope,
                     binding,
                     idempotency_key: recorded.idempotency_key_identity,
+                    producing_implementation: recorded.producing_implementation,
                     partition,
                     entity,
                     identity,

@@ -5,7 +5,7 @@ use crate::history::data::{
 };
 use crate::publication::patch::data::PatchStreamPosition;
 
-pub(super) const CANONICAL_PROTOCOL_VERSION: u16 = 5;
+pub(super) const CANONICAL_PROTOCOL_VERSION: u16 = 6;
 
 /// Raw native-file vocabulary. Decoding this type never grants current
 /// canonical authority; callers must pass it through owner readmission.
@@ -16,7 +16,7 @@ pub(crate) struct PersistedCanonicalCommit {
     #[serde(default)]
     canonical_protocol_version: u16,
     position: PatchStreamPosition,
-    #[serde(rename = "canonical_v5")]
+    #[serde(rename = "canonical_v6")]
     canonical: CanonicalCommitEnvelope,
 }
 
@@ -33,19 +33,19 @@ impl<'de> Deserialize<'de> for PersistedCanonicalCommit {
             #[serde(default)]
             canonical: Option<CanonicalCommitEnvelope>,
             #[serde(default)]
-            canonical_v5: Option<CanonicalCommitEnvelope>,
+            canonical_v6: Option<CanonicalCommitEnvelope>,
         }
         let Wire {
             canonical_protocol_version,
             position,
             canonical,
-            canonical_v5,
+            canonical_v6,
         } = Wire::deserialize(deserializer)?;
-        let canonical = match (canonical_protocol_version, canonical, canonical_v5) {
+        let canonical = match (canonical_protocol_version, canonical, canonical_v6) {
             (CANONICAL_PROTOCOL_VERSION, None, Some(current)) => current,
             _ => {
                 return Err(serde::de::Error::custom(
-                    "unsupported native canonical format; v5 required",
+                    "unsupported native canonical format; v6 required",
                 ))
             }
         };
@@ -68,7 +68,7 @@ impl<'de> Deserialize<'de> for PersistedCanonicalCommit {
 pub(super) struct PersistedCheckpointCommitRef<'a> {
     canonical_protocol_version: u16,
     position: PatchStreamPosition,
-    #[serde(rename = "canonical_v5")]
+    #[serde(rename = "canonical_v6")]
     canonical: CheckpointCanonicalEnvelopeRef<'a>,
 }
 
@@ -174,7 +174,7 @@ mod tests {
             );
             let decoded: PersistedCanonicalCommit =
                 rmp_serde::from_slice(&bytes).expect("native commit map decodes");
-            assert_eq!(decoded.canonical_protocol_version, 5);
+            assert_eq!(decoded.canonical_protocol_version, 6);
             let readmitted = decoded
                 .readmit()
                 .expect("current native commit is admitted");
@@ -186,15 +186,15 @@ mod tests {
         }
 
         #[derive(Serialize)]
-        struct InterimV5Ref<'a> {
+        struct InterimV6Ref<'a> {
             canonical_protocol_version: u16,
             position: PatchStreamPosition,
-            canonical_v5: CheckpointCanonicalEnvelopeRef<'a>,
+            canonical_v6: CheckpointCanonicalEnvelopeRef<'a>,
         }
-        let incomplete = rmp_serde::to_vec_named(&InterimV5Ref {
+        let incomplete = rmp_serde::to_vec_named(&InterimV6Ref {
             canonical_protocol_version: CANONICAL_PROTOCOL_VERSION,
             position: positioned.position(),
-            canonical_v5: CheckpointCanonicalEnvelopeRef::new(positioned.envelope())
+            canonical_v6: CheckpointCanonicalEnvelopeRef::new(positioned.envelope())
                 .without_codec_retirements_for_test(),
         })
         .unwrap();
@@ -208,7 +208,7 @@ mod tests {
         let denied =
             rmp_serde::from_slice::<super::text_wire::CanonicalCommitWire<'_>>(&incomplete)
                 .err()
-                .expect("borrowed current reader must reject incomplete interim v5");
+                .expect("borrowed current reader must reject incomplete interim v6");
         assert!(
             denied
                 .to_string()
@@ -255,13 +255,13 @@ mod tests {
             canonical_protocol_version: u16,
             position: PatchStreamPosition,
             canonical: CheckpointCanonicalEnvelopeRef<'a>,
-            canonical_v5: CheckpointCanonicalEnvelopeRef<'a>,
+            canonical_v6: CheckpointCanonicalEnvelopeRef<'a>,
         }
         let dual = rmp_serde::to_vec_named(&DualRef {
             canonical_protocol_version: CANONICAL_PROTOCOL_VERSION,
             position: positioned.position(),
             canonical: CheckpointCanonicalEnvelopeRef::new(positioned.envelope()),
-            canonical_v5: CheckpointCanonicalEnvelopeRef::new(positioned.envelope()),
+            canonical_v6: CheckpointCanonicalEnvelopeRef::new(positioned.envelope()),
         })
         .expect("dual native map");
         assert!(rmp_serde::from_slice::<PersistedCanonicalCommit>(&dual).is_err());
@@ -270,21 +270,21 @@ mod tests {
         struct V2WithV3FieldRef<'a> {
             canonical_protocol_version: u16,
             position: PatchStreamPosition,
-            canonical_v5: CheckpointCanonicalEnvelopeRef<'a>,
+            canonical_v6: CheckpointCanonicalEnvelopeRef<'a>,
         }
         let v2_with_v3_field = rmp_serde::to_vec_named(&V2WithV3FieldRef {
             canonical_protocol_version: 2,
             position: positioned.position(),
-            canonical_v5: CheckpointCanonicalEnvelopeRef::new(positioned.envelope()),
+            canonical_v6: CheckpointCanonicalEnvelopeRef::new(positioned.envelope()),
         })
         .expect("mismatched legacy map");
         assert!(rmp_serde::from_slice::<PersistedCanonicalCommit>(&v2_with_v3_field).is_err());
 
         let mut forged = persisted.clone();
-        forged.canonical_protocol_version = 4;
+        forged.canonical_protocol_version = 5;
         assert!(
             forged.readmit().is_err(),
-            "v4 cannot claim current producer succession authority"
+            "v5 cannot claim current producer succession authority"
         );
     }
 }

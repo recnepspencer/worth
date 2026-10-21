@@ -1,5 +1,6 @@
 //! Retained-body reconstruction and authority-free portable readmission.
 use super::{host_limits, install, invoke, invoke_input, program, read_retention, Outcome};
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_installation::{
         in_memory_program_from_checkpoint, WorthQueryCheckpointCapturePolicy,
@@ -31,6 +32,7 @@ fn authored_body_checkpoint_keeps_the_original_program_and_destination() {
         program::validated::<8>(&schema),
         schema,
         (program::Installation::Native,),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host_limits(),
         checkpoint,
     )
@@ -99,6 +101,7 @@ fn authored_body_input_survives_checkpoint_and_fresh_portable_readmission() {
         program::validated::<100>(&schema),
         schema,
         (program::Installation::Native,),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host_limits(),
         checkpoint,
     )

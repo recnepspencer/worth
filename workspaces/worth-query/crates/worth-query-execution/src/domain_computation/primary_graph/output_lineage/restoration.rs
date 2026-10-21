@@ -71,6 +71,9 @@ impl WorthQueryApplicationOutputLineage {
 
         verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
         checkpoint: Option<crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
+        producing_implementation: Option<
+            worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
+        >,
     ) -> Option<RestoredRecord> {
         let computation_source = observed_source_facts.source();
         let observed_source_facts = observed_source_facts.postconditions().clone();
@@ -90,6 +93,7 @@ impl WorthQueryApplicationOutputLineage {
             &mut None,
             computation_source,
             checkpoint,
+            producing_implementation,
         )
     }
 
@@ -117,7 +121,22 @@ impl WorthQueryApplicationOutputLineage {
         republished: &mut Option<republication::RepublishedOutput>,
         computation_source: super::ComputationSourceEvidence,
         checkpoint: Option<crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
+        producing_implementation: Option<
+            worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
+        >,
     ) -> Option<RestoredRecord> {
+        let producing_implementation = match (producing_implementation, checkpoint.as_ref()) {
+            (Some(original), Some(checkpoint)) => {
+                assert_eq!(
+                    original, checkpoint.implementation,
+                    "restored original producing association agrees"
+                );
+                Some(original)
+            }
+            (original, checkpoint) => {
+                original.or_else(|| checkpoint.map(|checkpoint| checkpoint.implementation))
+            }
+        };
         self.invalidate_source_publication_coverage();
         let observed_source_facts = observed_source_facts.into();
         let source = SemanticSource {
@@ -161,7 +180,8 @@ impl WorthQueryApplicationOutputLineage {
                 .and_then(|cell| cell.get())
                 .expect("a restored partition locator must reference retained output authority");
             assert!(
-                recorded.source_partition_identity == Some(source_partition_identity)
+                recorded.producing_implementation == producing_implementation
+                    && recorded.source_partition_identity == Some(source_partition_identity)
                     && recorded.source_identity == Some(source_identity)
                     && recorded.producer_dependency_identity == producer_dependency_identity
                     && recorded.idempotency_key_identity == idempotency_key_identity
@@ -185,6 +205,7 @@ impl WorthQueryApplicationOutputLineage {
             .as_ref()
             .map_or_else(|| observed_source_facts.clone(), |output| output.facts());
         let mut recorded = RecordedOutput {
+            producing_implementation,
             required_publication: None,
             native_prior_checkpoint: checkpoint
                 .map(super::native_prior_checkpoint::NativePriorCheckpointLocator::Recovered),
@@ -316,6 +337,9 @@ impl WorthQueryApplicationOutputLineage {
             .or_default();
         let slot = records.len();
         let recorded = RecordedOutput {
+            producing_implementation: checkpoint
+                .as_ref()
+                .map(|checkpoint| checkpoint.implementation),
             required_publication: None,
             native_prior_checkpoint: checkpoint
                 .map(super::native_prior_checkpoint::NativePriorCheckpointLocator::Recovered),

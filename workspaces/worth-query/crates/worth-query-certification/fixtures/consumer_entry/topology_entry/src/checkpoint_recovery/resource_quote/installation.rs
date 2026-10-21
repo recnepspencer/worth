@@ -1,6 +1,7 @@
 //! Install only the counted schema, with the ordinary principal and host owners.
 use super::*;
 use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus;
 
 pub(super) fn install_program(
@@ -14,6 +15,7 @@ pub(super) fn install_program(
         program,
         declaration,
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         support::limits(32, support::invalidation()),
         |_phase, graph, installed| {
             let principal = installed
@@ -40,6 +42,7 @@ pub(super) fn install_ordinary(
     application_installation::in_memory(
         QuoteSchema::declaration().expect("the counted schema is valid"),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         support::limits(32, support::invalidation()),
         |_phase, graph, installed| {
             let principal = installed

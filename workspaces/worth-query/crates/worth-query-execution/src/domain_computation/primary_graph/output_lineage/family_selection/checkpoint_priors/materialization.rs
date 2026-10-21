@@ -5,12 +5,22 @@ use super::Structure;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity;
 
 impl NativePriorCheckpointOutput<'_> {
+    /// Original producing meaning, independent of current-installation eligibility.
+    pub(in crate::domain_computation::primary_graph) fn producing_implementation(
+        &self,
+    ) -> Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation> {
+        self.producing_implementation
+    }
+
     pub(in crate::domain_computation::primary_graph) fn materialize_identity(
         &self,
     ) -> Result<Option<WorthQueryAcceptedOutputCheckpointIdentity>, Denial> {
         let Some(locator) = self.identity.as_ref() else {
             return Ok(None);
         };
+        let implementation = self.producing_implementation().ok_or(Denial::Structural(
+            Structure::MissingProducingImplementation,
+        ))?;
         if let Some(recovered) = locator.recovered {
             // Preserve original posture/facts and the original immutable heaps'
             // payer. Reading this locator grants no new Ready or performed claim.
@@ -55,6 +65,7 @@ impl NativePriorCheckpointOutput<'_> {
         }
         Ok(Some(
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
+                implementation,
                 producer: producer.into(),
                 posture: crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed,
                 source: locator.source,

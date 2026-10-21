@@ -11,6 +11,8 @@ pub(in crate::domain_computation::primary_graph) struct SelectedRequiredPublicat
 }
 
 pub(in crate::domain_computation::primary_graph) struct RequiredPublicationPredecessor {
+    pub(in crate::domain_computation::primary_graph) implementation:
+        worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
     pub(in crate::domain_computation::primary_graph) correspondence:
         Arc<WorthQueryApplicationOutputCorrespondence>,
     pub(in crate::domain_computation::primary_graph) producer: String,
@@ -64,6 +66,9 @@ impl SelectedRequiredPublicationHead {
             .ok_or(Stop::SelectedSourceMismatch)?;
 
         Ok(RequiredPublicationPredecessor {
+            implementation: origin
+                .producing_implementation
+                .ok_or(Stop::SelectedSourceMismatch)?,
             correspondence: Arc::clone(&origin.correspondence),
             producer: locator.producer().to_owned(),
             dependency,

@@ -32,7 +32,14 @@ impl InstalledProducerProvider<Schema> {
             provider_type: TypeId::of::<()>(),
             output_contract_type: TypeId::of::<()>(),
         };
-        let edition = InstalledProducerEdition::from_declaration(&declaration).unwrap();
+        let edition = InstalledProducerEdition::from_declaration(
+            &declaration,
+            worth_foundational::facade::ApplicationBuildIdentity::parse(
+                "11111111-1111-1111-1111-111111111111",
+            )
+            .unwrap(),
+        )
+        .unwrap();
         Arc::new(Self {
             declaration,
             edition,

@@ -22,7 +22,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[test]
-fn checkpoint_one_buffer_matches_independent_v11_grammar_and_sections() {
+fn checkpoint_one_buffer_matches_independent_v13_grammar_and_sections() {
     let (world, receipt) = recoverable_application_world(141, "checkpoint-wire-proof");
     let scope = receipt.principal_scope().scope();
     let facts = super::super::facts::encode(&[WorthQueryApplicationObservedFact::SourceEntity {
@@ -31,6 +31,7 @@ fn checkpoint_one_buffer_matches_independent_v11_grammar_and_sections() {
     .unwrap();
     let rows = vec![
         WorthQueryAcceptedOutputCheckpointIdentity {
+            implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
             producer: ("producer-a".to_owned()).into(),
             posture: WorthQueryAcceptedOutputCheckpointPosture::Performed,
             source: [1; 32],
@@ -55,6 +56,7 @@ fn checkpoint_one_buffer_matches_independent_v11_grammar_and_sections() {
             metadata: None,
         },
         WorthQueryAcceptedOutputCheckpointIdentity {
+            implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
             producer: ("producer-b".to_owned()).into(),
             posture: WorthQueryAcceptedOutputCheckpointPosture::StableReused,
             source: [11; 32],
@@ -74,7 +76,7 @@ fn checkpoint_one_buffer_matches_independent_v11_grammar_and_sections() {
     scope_wire.extend_from_slice(&scope.partition_id().to_be_bytes());
     scope_wire.extend_from_slice(&scope.local_slot().to_be_bytes());
     scope_wire.extend_from_slice(&scope.generation().to_be_bytes());
-    let expected = independent_v11(
+    let expected = independent_v13(
         world.application.publication().bootstrap_commit_id().0,
         &scope_wire,
         native,
@@ -93,7 +95,7 @@ fn checkpoint_one_buffer_matches_independent_v11_grammar_and_sections() {
     assert_eq!(sections.accepted_output_count(), 2);
     // Two fixed rows, literal text widths, three 33-byte role frames,
     // and the independently encoded fact payload. No production size helper.
-    let fixed_row_bytes = 8 + 1 + 32 + 16 + 32 + 1 + 32 + 32 + 8 + 2 + 8;
+    let fixed_row_bytes = 8 + 1 + 48 + 32 + 16 + 32 + 1 + 32 + 32 + 8 + 2 + 8;
     let expected_rows = 2 * fixed_row_bytes + 20 + 3 * 33 + 3 + 14 + facts.len();
     assert_eq!(sections.accepted_output_bytes(), expected_rows);
     assert_eq!(sections.total_bytes(), 70 + native.len() + expected_rows);
@@ -208,11 +210,11 @@ fn role(
     }
 }
 
-/// Independent current v11 grammar with literal fixture branch choices.
+/// Independent current v13 grammar with literal fixture branch choices.
 /// It does not call the production body writer, or size helper.
-fn independent_v11(bootstrap: u64, scope: &[u8], native: &[u8], facts: &[u8]) -> Vec<u8> {
+fn independent_v13(bootstrap: u64, scope: &[u8], native: &[u8], facts: &[u8]) -> Vec<u8> {
     let mut body = Vec::new();
-    body.extend_from_slice(&11_u16.to_be_bytes());
+    body.extend_from_slice(&13_u16.to_be_bytes());
     body.extend_from_slice(&2_u16.to_be_bytes());
     body.extend_from_slice(&4_u16.to_be_bytes());
     body.extend_from_slice(&bootstrap.to_be_bytes());
@@ -221,6 +223,8 @@ fn independent_v11(bootstrap: u64, scope: &[u8], native: &[u8], facts: &[u8]) ->
     body.extend_from_slice(native);
     text(&mut body, b"producer-a");
     body.push(0);
+    body.extend_from_slice(&[0x11; 16]);
+    body.extend_from_slice(&[0x22; 32]);
     body.extend_from_slice(&[1; 32]);
     body.extend_from_slice(scope);
     body.extend_from_slice(&[2; 32]);
@@ -240,11 +244,13 @@ fn independent_v11(bootstrap: u64, scope: &[u8], native: &[u8], facts: &[u8]) ->
         body.extend_from_slice(&slot.to_be_bytes());
         body.extend_from_slice(&3_u32.to_be_bytes());
     }
-    body.extend_from_slice(&10_u16.to_be_bytes());
+    body.extend_from_slice(&12_u16.to_be_bytes());
     body.extend_from_slice(&(facts.len() as u64).to_be_bytes());
     body.extend_from_slice(facts);
     text(&mut body, b"producer-b");
     body.push(1);
+    body.extend_from_slice(&[0x11; 16]);
+    body.extend_from_slice(&[0x22; 32]);
     body.extend_from_slice(&[11; 32]);
     body.extend_from_slice(scope);
     body.extend_from_slice(&[12; 32]);

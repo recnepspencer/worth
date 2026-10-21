@@ -1502,6 +1502,45 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
 
 ## 4. Install the application graph
 
+### Application build identity
+
+Each complete build supplies a fresh UUID through `WORTH_IMPLEMENTATION_BUILD_ID`.
+The application embeds it with `env!`, parses it through
+`host::application_installation::ApplicationBuildIdentity::parse`, and passes
+it once after contribution configuration to every fresh/reopen installation
+entry point. Missing identity fails compilation; malformed or zero identity
+fails parsing before installation. There is no default identity.
+
+Use the thin ordinary build entry point from the repository root:
+
+```sh
+python scripts/application_build.py cargo build --locked
+```
+
+It supplies a fresh UUID for that invocation while forwarding the original
+arguments and preserving all other environment inputs. It replaces an inherited
+identity rather than accidentally reusing a previous build. The public CI
+workflow uses it for direct application commands; `scripts/ci/query_gate.py`
+issues one identity for its complete grouped build invocation through the same
+issuer. A subsequent build command must enter through this wrapper again.
+Applications outside this repository use the same issuance rule in their own
+build entry point.
+
+The fresh environment value must be supplied for **every complete build
+invocation**, including a dirty checkout, dependency/configuration rebuild or
+an otherwise Cargo-fresh invocation. `env!` embeds that value and makes it a
+compiler input; do not issue it in a cached build script or read it from the
+runtime environment on reopen. Repeated launches of the same artifact retain
+its embedded identity. Runnable application examples use this same environment
+input; test worlds use explicit descriptive fixture identities.
+
+Query seals the same identity into every installed producer edition, including
+producers with `INPUT_REUSE=None`. A changed build makes old derived output
+stale even when its value is unchanged; source and historical correspondence
+remain subject to the existing native recovery and reference contracts. The
+UUID grants no authorization or compatibility permission.
+
+
 Installation turns a validated program, a schema declaration, the
 contributions' configuration, and resource limits into a running runtime. The
 `initial_state` closure seeds the primary graph before the first publication.
@@ -1519,6 +1558,8 @@ let runtime = application_installation::in_memory_program(
     program::validated_program(),                  // ValidatedApplicationProgram<S, P>
     declaration,                                   // ApplicationSchemaDeclaration<S>
     (TemporalContributionConfiguration { clock_source },), // one entry per contribution
+    application_installation::ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
+        .expect("the build pipeline embeds one nonzero UUID"),
     example_limits(),                              // WorthQueryInMemoryApplicationLimits
     |_phase, graph, installed| {                           // seed the primary graph
         let principal_binding = installed
@@ -1537,8 +1578,9 @@ let runtime = application_installation::in_memory_program(
 // Same file: limits.
 application_installation::WorthQueryInMemoryApplicationLimits::new(
     product_world_resources(),
-    runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
-        .expect("valid query limits"),
+    runtime::WorthQueryApplicationQueryResourceProfile::new(
+        std::num::NonZeroUsize::new(128).expect("concurrent graph work is nonzero"),
+    ),
     primary_graph::SignalConditionalEvaluationBudget::development(),
 )
 ```
@@ -1562,6 +1604,8 @@ let runtime = in_memory_rostered_program(
     WorthQueryApplicationProgramRoster::new().support(successor),
     declaration,
     ((), (), ()),          // three contributions, none configured
+    application_installation::ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
+        .expect("the build pipeline embeds one nonzero UUID"),
     limits,
     initialize,            // |_phase, graph, installed| { ... Ok(()) }
 )?;

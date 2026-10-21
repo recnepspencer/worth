@@ -5,6 +5,7 @@ use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_contribution::with_bootstrap_advancement_from_request,
     runtime::{CancellationSource, CancellationToken, LeaseRequest},
@@ -41,7 +42,7 @@ pub(super) fn transition_original(
     with_bootstrap_advancement_from_request(original, |phase| {
         application_installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
             &phase, validated_program(), application_installation::WorthQueryApplicationProgramRoster::new(),
-            TemporalHostSchema::declaration().unwrap(), configuration(), checkpoint::checkpoint_limits(),
+            TemporalHostSchema::declaration().unwrap(), configuration(), ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(), checkpoint::checkpoint_limits(),
             checkpoint, predecessor, Resources::bounded(512, 32, 4096).unwrap(), author)
     }).expect("the original native request enters without another Query opening")
 }
@@ -190,6 +191,7 @@ fn original_request_serial_capture_and_nested_query_opening_refuse_before_author
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         configuration(),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         checkpoint::checkpoint_limits(),
         |_, graph, installed| {
             let principal = installed

@@ -68,6 +68,7 @@ pub(super) fn restore<Schema: ApplicationSchema>(
             // compares its facts and output in full.
             None,
             Some(checkpoint.clone()),
+            None,
         );
     }
     Ok(())

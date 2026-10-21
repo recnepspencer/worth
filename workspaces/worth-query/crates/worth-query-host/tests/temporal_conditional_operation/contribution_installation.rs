@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 
 use worth_query_host::facade::{
     application_contribution::{
@@ -253,6 +254,7 @@ pub(super) fn zero_route_installation_is_denied() {
             contacts,
             install_route: false,
         },),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         WorthQueryInMemoryApplicationLimits::new(
             product_world_resources(1_024),
             runtime::WorthQueryApplicationQueryResourceProfile::new(

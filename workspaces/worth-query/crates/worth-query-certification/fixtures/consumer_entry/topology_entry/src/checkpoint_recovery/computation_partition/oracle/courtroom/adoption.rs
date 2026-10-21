@@ -3,6 +3,7 @@ use super::super::differential::alphabet::{Change, Lcg};
 use super::*;
 use std::sync::Arc;
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 
 pub(super) struct Adopted;
@@ -69,7 +70,7 @@ pub(super) fn install_rostered(model: &Model) -> Application {
     };
 
     let limits = support::limits_with_room(32, 16, 64, support::invalidation());
-    application_installation::in_memory_rostered_program(initial, roster, CheckpointSchema::declaration().unwrap(), (configuration,), limits, |_bootstrap_phase, graph, installed| {
+    application_installation::in_memory_rostered_program(initial, roster, CheckpointSchema::declaration().unwrap(), (configuration,), ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(), limits, |_bootstrap_phase, graph, installed| {
         let binding = installed.principal_binding(ConsumerPrincipalBinding::reference::<CheckpointSchema>()).unwrap();
         let external = worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new("https://checkpoint.invalid/local", "model-owner").unwrap();
         graph.bind_principal(&binding, primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(), 1_u64, external, worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled)?;

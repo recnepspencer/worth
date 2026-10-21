@@ -34,8 +34,8 @@ pub use crate::mvcc::{
 };
 pub use crate::mvcc::{
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
-    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
-    RequiredOutputRoleTarget,
+    RequiredOutputProducingImplementation, RequiredOutputPublication,
+    RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
 };
 pub use crate::publication::RelationalSettlementPort;
 pub use crate::transactions::data::{

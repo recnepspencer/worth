@@ -15,6 +15,7 @@ use product_workflow_support::schema::{
 };
 use product_workflow_support::{principal, read_input, AmendTemporalIntent, ExampleApplication};
 use worth_query_decl::facade::application_operation::ApplicationMutationIdentities;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_discovery::WorthQueryApplicationCallablePosture,
     application_entry::{
@@ -277,6 +278,7 @@ fn installed_conditional_requires_its_declared_program_action() {
         program,
         TemporalHostSchema::declaration().expect("the temporal schema is valid"),
         (TemporalContributionConfiguration { clock_source },),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         example_limits(None),
         |_phase, graph, installed| {
             let principal = installed
@@ -307,6 +309,7 @@ fn installed_conditional_rejects_a_client_action_for_its_operation() {
         program,
         TemporalHostSchema::declaration().expect("the temporal schema is valid"),
         (TemporalContributionConfiguration { clock_source },),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         example_limits(None),
         |_phase, graph, installed| {
             let principal = installed

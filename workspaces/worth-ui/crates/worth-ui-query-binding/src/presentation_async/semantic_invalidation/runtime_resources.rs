@@ -10,8 +10,8 @@ pub(super) fn presentation_async_resources() -> runtime::WorthQueryConditionalEx
         runtime::WorthQueryConditionalEvaluationCacheBudget::bounded(1, SOURCE_QUERY_CACHE_BYTES)
             .expect("the presentation async runtime retains a positive minimum cache budget"),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget {
-            maximum_retained_slots: SOURCE_GRAPH_RETAINED_SLOTS,
-            maximum_retained_bytes: SOURCE_GRAPH_RETAINED_BYTES,
+            maximum_retained_slots: Some(SOURCE_GRAPH_RETAINED_SLOTS),
+            maximum_retained_bytes: Some(SOURCE_GRAPH_RETAINED_BYTES),
             maximum_attempt_visits: Some(SOURCE_GRAPH_CAPTURE_VISITS),
         },
     )

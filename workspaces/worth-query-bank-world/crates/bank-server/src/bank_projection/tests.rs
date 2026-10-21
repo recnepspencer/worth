@@ -10,6 +10,7 @@ use bank_domain::schema::{
     AccountIdentity, ApplyOpeningFunding, BankPrincipalBinding, BankSchema, CreatePersonalAccount,
     PersonalOwner, Principal, SendMoney, SendMoneyOperation,
 };
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::application_installation::{
     in_memory_program, WorthQueryProgramApplicationRuntime,
 };
@@ -211,6 +212,7 @@ impl ProjectionHarness {
             validated_bank_application().unwrap(),
             BankSchema::declaration().unwrap(),
             ((), (), ()),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             crate::identity_runtime::bank_application_limits(),
             |_phase, graph, installed_schema| {
                 let binding = installed_schema

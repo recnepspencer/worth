@@ -1,10 +1,9 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationCandidateCardinalityCeiling, ApplicationCandidateRequirements,
-        ApplicationCandidateResourceCeiling, ApplicationConventionalAdmission,
-        ApplicationMutationAdmissionBinding, ApplicationMutationBinding,
-        ApplicationMutationFieldScope, ApplicationMutationIntent, ApplicationQueryMutationSource,
-        ApplicationWorkflowExecutionRequirements, NoApplicationMutationOutputs,
+        ApplicationConventionalAdmission, ApplicationMutationAdmissionBinding,
+        ApplicationMutationBinding, ApplicationMutationFieldScope, ApplicationMutationIntent,
+        ApplicationQueryMutationSource, ApplicationWorkflowExecutionRequirements,
+        NoApplicationMutationOutputs,
     },
     application_schema::{
         ApplicationFieldRef, ApplicationPrincipalBindingRef, ApplicationSchemaDeclarationBuilder,
@@ -86,13 +85,6 @@ impl ApplicationMutationBinding<WorthUiApplicationSchema> for WorthUiStatusUpdat
     const HANDLER_IDENTITY: &'static str = "worth.ui.status-update-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.ui.status-update-command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES:
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
-        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 1),
-            ApplicationCandidateResourceCeiling::representation_bytes(65_544),
-        );
-
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
@@ -142,16 +134,6 @@ pub struct WorthUiStatusUpdateHandler;
 impl OperationHandler<WorthUiApplicationSchema, WorthUiStatusUpdateBinding>
     for WorthUiStatusUpdateHandler
 {
-    fn candidate_requirements(
-        &self,
-        _: &WorthUiScalarProjectionSourceRecord,
-        _: &WorthQueryInvariantMutationTarget<WorthUiApplicationSchema, WorthUiRecord>,
-    ) -> ApplicationCandidateRequirements {
-        WorthUiStatusUpdateBinding::CANDIDATES
-            .fixed_requirements()
-            .expect("fixed candidate contract")
-    }
-
     fn decide(
         &self,
         input: &WorthUiScalarProjectionSourceRecord,

@@ -41,6 +41,10 @@ impl WorthQueryApplicationCheckpoint {
                 1 => super::super::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::StableReused,
                 _ => return Err("checkpoint accepted output posture is invalid".to_owned().into()),
             };
+            let implementation = worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint(
+                cursor.next_bytes(16)?.try_into().expect("exact build identity width"),
+                cursor.next_bytes(32)?.try_into().expect("exact producing edition width"),
+            ).map_err(|cause| cause.to_owned())?;
             let source = cursor
                 .next_bytes(32)?
                 .try_into()
@@ -178,6 +182,7 @@ impl WorthQueryApplicationCheckpoint {
             identity_funding.slots::<CheckpointMetadataFunding>(1, execution)?;
             accepted_outputs.push(
                 super::super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
+                    implementation,
                     producer: std::sync::Arc::new(producer),
                     posture,
                     source,

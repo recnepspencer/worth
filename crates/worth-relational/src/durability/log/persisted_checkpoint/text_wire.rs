@@ -20,7 +20,7 @@ impl<'de: 'a, 'a> serde::Deserialize<'de> for CheckpointFileWire<'a> {
                     || map.next_value::<u16>()? != super::CHECKPOINT_PROTOCOL_VERSION
                 {
                     return Err(serde::de::Error::custom(
-                        "unsupported native checkpoint format; v5 required first",
+                        "unsupported native checkpoint format; v6 required first",
                     ));
                 }
                 if map.next_key::<&'de str>()? != Some("checkpoint") {

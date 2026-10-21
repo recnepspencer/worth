@@ -1,5 +1,6 @@
 //! Native checkpoint-fixture installation with caller-owned limits and seed.
 use super::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 
 /// Returns installation refusals while preserving caller-owned domain control.
 pub(super) fn try_install_program_with_limits_and_domain_denial<Program>(
@@ -36,6 +37,7 @@ where
             program,
             declaration,
             configuration,
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             limits.with_output_demand_resources(profile),
             checkpoint,
         ),
@@ -43,6 +45,7 @@ where
             program,
             declaration,
             configuration,
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             limits.with_output_demand_resources(profile),
             |_phase, graph, installed| {
                 bind_model_owner(graph, installed)?;

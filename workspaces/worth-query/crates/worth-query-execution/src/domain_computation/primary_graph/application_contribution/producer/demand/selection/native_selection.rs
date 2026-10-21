@@ -207,7 +207,13 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                                     && retained_output_settlement_is_verified(runtime, selected.application_basis().snapshot_handle(), candidate.verification_requirement, &candidate.settlement_identity, owner)?
                             }
                         };
-                    let facts_current = proven
+                    // Existing live output determines Preserve even when its producing
+                    // build cannot reuse. Identity never substitutes for native liveness.
+                    let (_, installed) = self.installed_producers.select_exact::<Family>(candidate.binding)?;
+                    let implementation_current = candidate.producing_implementation.is_some_and(|original| {
+                        original == worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(installed.edition.build_identity(), installed.edition.digest())
+                    });
+                    let facts_current = implementation_current && proven
                         && matches!(
                             compare_retained_output_dependencies(execution,
                                 runtime,

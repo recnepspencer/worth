@@ -139,7 +139,6 @@ const fn parameter(kind: QueryParameter) -> BankApplicationQueryParameterDenialK
 const fn graph_read(kind: QueryGraphRead) -> BankGraphReadPlanReviewDenialKind {
     use BankGraphReadPlanReviewDenialKind as Bank;
     match kind {
-        QueryGraphRead::BudgetExceeded => Bank::BudgetExceeded,
         QueryGraphRead::RequiredAsyncMaterialization => Bank::RequiredAsyncMaterialization,
         QueryGraphRead::RequiredAccessCapabilityRegistration => {
             Bank::RequiredAccessCapabilityRegistration

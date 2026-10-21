@@ -151,6 +151,7 @@ mod tests {
         let records = (0..=population)
             .map(|number| WorthQueryReadmittedAcceptedOutput {
                 checkpoint: WorthQueryAcceptedOutputCheckpointIdentity {
+                    implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
                     producer: ("producer".to_owned()).into(),
                     posture: super::super::WorthQueryAcceptedOutputCheckpointPosture::Performed,
                     source: [0x31; 32],

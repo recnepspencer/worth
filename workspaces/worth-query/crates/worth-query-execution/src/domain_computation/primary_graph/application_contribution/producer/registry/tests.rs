@@ -20,6 +20,31 @@ use super::{
 };
 
 #[test]
+fn every_producer_edition_includes_the_application_build_even_without_input_reuse() {
+    use worth_foundational::facade::ApplicationBuildIdentity;
+    let first = ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap();
+    let next = ApplicationBuildIdentity::parse("22222222-2222-2222-2222-222222222222").unwrap();
+    for input_reuse in [
+        None,
+        Some(
+            super::super::WorthQueryProducerInputReuseContract::canonical_bitwise(
+                super::super::WorthQueryDecisionContextDependencies::NONE,
+            ),
+        ),
+    ] {
+        let mut declaration = declared(TypeId::of::<InstalledProducer>());
+        declaration.input_reuse = input_reuse;
+        let installed = InstalledProducerEdition::from_declaration(&declaration, first).unwrap();
+        let reopened = InstalledProducerEdition::from_declaration(&declaration, first).unwrap();
+        let rebuilt = InstalledProducerEdition::from_declaration(&declaration, next).unwrap();
+        assert_eq!(installed, reopened);
+        assert_eq!(installed.build_identity(), first);
+        assert_eq!(rebuilt.build_identity(), next);
+        assert_ne!(installed.digest(), rebuilt.digest());
+    }
+}
+
+#[test]
 fn producer_input_reuse_is_portable_installed_meaning_bound_to_the_handler() {
     let base = declared(TypeId::of::<InstalledProducer>());
     let mut opted_in = base.clone();
@@ -39,9 +64,15 @@ fn producer_input_reuse_is_portable_installed_meaning_bound_to_the_handler() {
 
     assert!(!base.has_same_meaning_as(&opted_in));
     let edition = |declaration| {
-        InstalledProducerEdition::from_declaration(declaration)
-            .unwrap()
-            .digest()
+        InstalledProducerEdition::from_declaration(
+            declaration,
+            worth_foundational::facade::ApplicationBuildIdentity::parse(
+                "11111111-1111-1111-1111-111111111111",
+            )
+            .unwrap(),
+        )
+        .unwrap()
+        .digest()
     };
     assert_ne!(edition(&base), edition(&opted_in));
     assert_ne!(edition(&opted_in), edition(&changed_handler));
@@ -164,6 +195,7 @@ fn checkpoint(
     >,
 ) -> crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity{
     crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
+        implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
         producer: ("producer".to_owned()).into(),
         posture: crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed,
         source: [0; 32],

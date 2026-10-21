@@ -25,6 +25,7 @@ pub(in crate::domain_computation::primary_graph) enum CheckpointPriorStructure {
     UnexpectedOutputRole,
     MissingOperationBinding,
     MissingSourcePartition,
+    MissingProducingImplementation,
 }
 
 impl CheckpointPriorSelectionDenial {

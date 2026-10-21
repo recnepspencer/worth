@@ -257,6 +257,7 @@ fn a_clean_settlement_reuses_without_fact_reverification() {
                     .seal_decision_reuse(context(), DecisionContextUse::default())
                     .unwrap();
                 let row = RecordedOutput {
+                    producing_implementation: None,
                     required_publication: None,
                     computation_source: evidence,
                     native_prior_checkpoint: None,

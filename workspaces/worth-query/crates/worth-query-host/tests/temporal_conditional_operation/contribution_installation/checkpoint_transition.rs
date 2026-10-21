@@ -3,72 +3,16 @@
 mod admission;
 #[path = "checkpoint_transition/original_request.rs"]
 mod original_request;
+#[path = "checkpoint_transition/predecessor.rs"]
+mod predecessor;
 use super::*;
 use application_installation::{
     WorthQueryCheckpointProgramPredecessor as Predecessor,
     WorthQueryCheckpointTransitionResources as Resources,
 };
+use predecessor::{configuration, source, LegacyTemporalProgram};
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
-struct LegacyTemporalProgram;
-impl ApplicationProgramDefinition<TemporalHostSchema> for LegacyTemporalProgram {
-    type Contributions = <TemporalHostSchema as ApplicationSchemaComposition>::Contributions;
-    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
-    type Rules = ApplicationRuleLeaf;
-    const IDENTITY: ApplicationProgramIdentity =
-        ApplicationProgramIdentity::new("worth.query.host.temporal-installation.legacy");
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        TemporalInstallationProgram::feature_specs()
-    }
-}
-fn configuration() -> (TemporalContributionConfiguration,) {
-    let contacts = ContactCounters::default();
-    let (installation_predicate, _) = Predicate::controlled(contacts.clone());
-    let (definition_predicate, _) = Predicate::controlled(contacts.clone());
-    let (clock_source, clock_control) = ClockSource::due();
-    (TemporalContributionConfiguration {
-        installation_predicate,
-        definition_predicate: Arc::new(definition_predicate),
-        clock_source,
-        clock_control,
-        contacts,
-        install_route: true,
-    },)
-}
-
-fn source() -> (
-    application_installation::WorthQueryApplicationCheckpoint,
-    Predecessor,
-) {
-    let program = ApplicationProgramAuthoring::<TemporalHostSchema, LegacyTemporalProgram>::begin()
-        .validated_program()
-        .unwrap();
-    let predecessor = Predecessor::new(&program.revision().to_string()).unwrap();
-    let application = application_installation::in_memory_program(
-        program,
-        TemporalHostSchema::declaration().unwrap(),
-        configuration(),
-        checkpoint::checkpoint_limits(),
-        |_phase, graph, installed| {
-            let principal = installed
-                .principal_binding(TemporalPrincipalBinding::reference())
-                .unwrap();
-            seed_graph(graph, &principal, "checkpoint-transition", 0, 1, true);
-            Ok(())
-        },
-    )
-    .unwrap();
-    (
-        application
-            .with_host_advancement(|phase| {
-                application
-                    .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
-                    .unwrap()
-            })
-            .expect("installed host call opens"),
-        predecessor,
-    )
-}
-
 fn transition(
     checkpoint: application_installation::WorthQueryApplicationCheckpoint,
     predecessor: Predecessor,
@@ -89,6 +33,7 @@ fn transition(
         application_installation::WorthQueryApplicationProgramRoster::new(),
         TemporalHostSchema::declaration().unwrap(),
         configuration(),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         checkpoint::checkpoint_limits(),
         checkpoint,
         predecessor,
@@ -106,6 +51,7 @@ fn checkpoint_transition_publishes_typed_effects_and_reopens_under_target_roster
             validated_program(),
             TemporalHostSchema::declaration().unwrap(),
             configuration(),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             checkpoint::checkpoint_limits(),
             source.clone()
         )
@@ -145,6 +91,7 @@ fn checkpoint_transition_publishes_typed_effects_and_reopens_under_target_roster
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         configuration(),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         checkpoint::checkpoint_limits(),
         checkpoint,
     )
@@ -308,6 +255,7 @@ fn checkpoint_transition_deferred_settlement_retains_repair_without_rerunning_au
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         configuration(),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         checkpoint::checkpoint_limits(),
         checkpoint,
     )
@@ -345,6 +293,7 @@ fn checkpoint_transition_retains_acknowledged_checkpoint_after_later_installatio
             application_installation::WorthQueryApplicationProgramRoster::new(),
             TemporalHostSchema::declaration().unwrap(),
             (configuration,),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             checkpoint::checkpoint_limits(),
             source,
             predecessor,
@@ -374,6 +323,7 @@ fn checkpoint_transition_retains_acknowledged_checkpoint_after_later_installatio
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         self::configuration(),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         checkpoint::checkpoint_limits(),
         target,
     )

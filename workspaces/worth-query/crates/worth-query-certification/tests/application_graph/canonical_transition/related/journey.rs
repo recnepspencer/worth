@@ -1,6 +1,7 @@
 //! One real installed graph is reused by every related route proof.
 use super::*;
 use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{application_entry::*, application_installation as installation};
 pub(super) fn successor(
     checkpoint: installation::WorthQueryApplicationCheckpoint,
@@ -13,6 +14,7 @@ pub(super) fn successor(
         ),
         successor::schema::CanonicalSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         successor::host::limits(),
         checkpoint,
         installation::WorthQueryCheckpointProgramPredecessor::new(

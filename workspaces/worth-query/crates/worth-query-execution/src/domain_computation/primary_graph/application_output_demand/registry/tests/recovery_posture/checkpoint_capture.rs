@@ -72,6 +72,11 @@ fn checkpoint_output_slots_ignore_superseded_source_generations() {
         .principal_scope()
         .scope();
     let checkpoint = |source| WorthQueryAcceptedOutputCheckpointIdentity {
+        implementation:
+            worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint(
+                [0x11; 16], [0x22; 32],
+            )
+            .unwrap(),
         producer: ("producer".to_owned()).into(),
         posture: super::super::super::WorthQueryAcceptedOutputCheckpointPosture::Performed,
         source,

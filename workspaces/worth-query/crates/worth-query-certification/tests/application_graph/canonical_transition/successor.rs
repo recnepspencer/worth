@@ -1,5 +1,6 @@
 //! Independently compiled V2 schema; persisted names and scalar loci match V1.
 use super::{model, output as wire_model};
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 #[path = "successor/acknowledged_capture.rs"]
 mod acknowledged_capture;
 #[path = "successor/adoption.rs"]
@@ -194,6 +195,7 @@ fn exact_v2_restore_requires_explicit_transition_before_any_derived_decode() {
         host::program(),
         schema::CanonicalSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host::limits(),
         checkpoint.clone(),
     )

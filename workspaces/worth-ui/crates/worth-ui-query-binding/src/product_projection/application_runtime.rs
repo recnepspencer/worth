@@ -1,3 +1,4 @@
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_installation::{
         in_memory_program, WorthQueryInMemoryApplicationLimits, WorthQueryProgramApplicationRuntime,
@@ -15,7 +16,7 @@ use worth_query_host::facade::{
         RuntimeWorldCustodyBudgetInstallation, RuntimeWorldHistoryBudgetInstallation,
         RuntimeWorldObservationBudgetInstallation, RuntimeWorldPublicationBudgetInstallation,
         RuntimeWorldRecoveryBudgetInstallation, RuntimeWorldRetentionBudgetInstallation,
-        WorthQueryApplicationCandidateResourceProfile, WorthQueryApplicationQueryResourceProfile,
+        WorthQueryApplicationQueryResourceProfile, WorthQueryInvalidationResources,
         WorthQueryProductWorldClock, WorthQueryProductWorldResources,
     },
 };
@@ -41,6 +42,8 @@ pub(super) fn install_status_application(
         program,
         declaration,
         ((),),
+        ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
+            .expect("embedded application build identity"),
         resource_limits(),
         |_phase, graph, installed| {
             let binding = installed
@@ -116,24 +119,15 @@ fn resource_limits() -> WorthQueryInMemoryApplicationLimits {
             },
         },
         WorthQueryProductWorldClock::start(),
-        worth_query::facade::runtime::WorthQueryInvalidationResources::install(
-            worth_query::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
-                1_000_000,
-                64 * 1_024 * 1_024,
-                128 * 1_024 * 1_024,
-                128,
-            ),
-        )
-        .expect("the Query invalidation installation is valid"),
+        WorthQueryInvalidationResources::new(),
         crate::query_runtime_resources::UI_EXECUTION_POLICY,
     )
     .expect("the UI product resources are statically valid");
     WorthQueryInMemoryApplicationLimits::new(
         world,
-        WorthQueryApplicationCandidateResourceProfile::physical_resources(512, 131_072)
-            .expect("the UI candidate limits are statically non-zero"),
-        WorthQueryApplicationQueryResourceProfile::bounded(512, 8_192, 8_192, 16)
-            .expect("the UI query limits are statically non-zero"),
+        WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(16).expect("concurrent graph admission is nonzero"),
+        ),
         SignalConditionalEvaluationBudget::development(),
     )
 }

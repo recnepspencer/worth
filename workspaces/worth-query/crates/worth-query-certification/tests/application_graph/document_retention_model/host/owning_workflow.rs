@@ -1,6 +1,7 @@
 //! Named owning action installation retains an independent native read authority.
 use super::super::programs::WorkflowOwnerProgram;
 use super::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 #[allow(
     dead_code,
     reason = "Shared fixture factory is used by the compiled authored_workflow example"
@@ -29,6 +30,7 @@ pub fn publish_owner_workflow_with_projection() -> (
             .support(super::super::actor_generation::validated_actor_program()),
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host_limits(),
         |phase, graph, schema| {
             projection = Some(graph.retain_invariant_projection_authority());

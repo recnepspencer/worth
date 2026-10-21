@@ -216,6 +216,7 @@ where
             recorded_source_identity: exact.source_identity,
             source_partition_identity: exact.source_partition_identity,
             producer_dependency_identity: exact.producer_dependency_identity,
+            producing_implementation: exact.producing_implementation,
             idempotency_key_identity: exact.idempotency_key_identity,
             runtime_authority: exact.runtime_authority,
             schema: exact.schema,

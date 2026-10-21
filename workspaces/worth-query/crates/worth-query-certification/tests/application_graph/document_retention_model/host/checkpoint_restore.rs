@@ -1,6 +1,7 @@
 //! Restoring a P0-initial host from a checkpoint it captured, under whichever
 //! roster the restoring host declares.
 
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::application_installation::{
     in_memory_rostered_program_from_checkpoint, WorthQueryApplicationCheckpoint,
     WorthQueryApplicationProgramRoster, WorthQueryInMemoryApplicationDenial,
@@ -43,6 +44,7 @@ where
         roster.support(super::super::actor_generation::validated_actor_program()),
         DocumentRetentionSchema::declaration().expect("the document-retention schema is valid"),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host_limits(),
         checkpoint,
     )

@@ -56,6 +56,7 @@ pub(super) fn performed(
         )
         .unwrap();
     RecordedOutput {
+        producing_implementation: None,
         required_publication: None,
         native_prior_checkpoint: None,
         computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
@@ -101,6 +102,7 @@ pub(super) fn untracked(row: RecordedOutput, context: DecisionContextUse) -> Rec
     let completed = boundary.seal_decision_reuse(decision(DECISION_KEY), context);
     assert!(completed.is_none());
     RecordedOutput {
+        producing_implementation: None,
         required_publication: None,
         completed_handler_facts: Some(boundary),
         completed_decision_reuse: completed,

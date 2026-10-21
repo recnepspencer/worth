@@ -7,6 +7,7 @@ use super::*;
 use crate::document_retention_model::operator_identity::{authenticate_operator, request_scope};
 use worth_execution::{CancellationSource, ExecutionRequest, ExecutionWorkCeiling, LeaseRequest};
 use worth_foundational::{ExecutionBudget, ExecutionRequestPolicy};
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     primary_graph::{
         WorthQueryInvariantProjectionDenialKind, WorthQueryProductBranchAdmissionDenial,
@@ -95,6 +96,7 @@ fn held_v1_result_snapshot_output_and_observation_survive_independent_v2_adoptio
         installation::WorthQueryApplicationProgramRoster::new(),
         schema::CanonicalSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host::limits(),
         checkpoint,
         expected_predecessor,

@@ -49,9 +49,60 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 
 /// Installs contribution-owned schema meaning without an application program.
+///
+/// The complete application's embedded build identity is mandatory, including
+/// for installations whose producers do not opt into input reuse.
+///
+/// A pipeline-issued identity follows contribution configuration.
+///
+/// ```
+/// use worth_query_execution::facade::{
+///     application_contribution::WorthQueryApplicationContributionTuple,
+///     application_installation::{in_memory, ApplicationBuildIdentity, WorthQueryInMemoryApplicationLimits},
+/// };
+/// use worth_query_declaration::facade::application_schema::{
+///     ApplicationSchemaComposition, ApplicationSchemaDeclaration,
+/// };
+/// fn install<Schema>(
+///     declaration: ApplicationSchemaDeclaration<Schema>,
+///     configuration: <Schema::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+///     build: ApplicationBuildIdentity,
+///     limits: WorthQueryInMemoryApplicationLimits,
+/// ) where
+///     Schema: ApplicationSchemaComposition,
+///     Schema::Contributions: WorthQueryApplicationContributionTuple<Schema>,
+/// {
+///     let _ = in_memory(declaration, configuration, build, limits, |_, _, _| Ok(()));
+/// }
+/// ```
+///
+/// The otherwise identical call cannot omit that installation input.
+///
+/// ```compile_fail,E0061
+/// use worth_query_execution::facade::{
+///     application_contribution::WorthQueryApplicationContributionTuple,
+///     application_installation::{in_memory, ApplicationBuildIdentity, WorthQueryInMemoryApplicationLimits},
+/// };
+/// use worth_query_declaration::facade::application_schema::{
+///     ApplicationSchemaComposition, ApplicationSchemaDeclaration,
+/// };
+/// fn install<Schema>(
+///     declaration: ApplicationSchemaDeclaration<Schema>,
+///     configuration: <Schema::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+///     build: ApplicationBuildIdentity,
+///     limits: WorthQueryInMemoryApplicationLimits,
+/// ) where
+///     Schema: ApplicationSchemaComposition,
+///     Schema::Contributions: WorthQueryApplicationContributionTuple<Schema>,
+/// {
+///     let _ = in_memory(declaration, configuration, limits, |_, _, _| Ok(()));
+/// }
+/// ```
+///
 pub fn in_memory<Schema>(
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Schema::Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+    build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
         &super::WorthQueryBootstrapAdvancementPhase<'_>,
@@ -66,6 +117,7 @@ where
     in_memory_with_contributions::<Schema, Schema::Contributions>(
         declaration,
         configuration,
+        build_identity,
         limits,
         initial_state,
         None,
@@ -78,6 +130,7 @@ where
 pub(super) fn in_memory_with_contributions<Schema, Contributions>(
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+    build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
         &super::WorthQueryBootstrapAdvancementPhase<'_>,
@@ -103,6 +156,7 @@ where
             &phase,
             declaration,
             configuration,
+            build_identity,
             limits,
             initial_state,
             authorization_time_source,

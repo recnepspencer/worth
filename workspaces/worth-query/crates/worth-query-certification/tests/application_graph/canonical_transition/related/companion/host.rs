@@ -1,6 +1,7 @@
 //! Ordinary installed hosts and producers used by the companion transition proof.
 use super::{super::schema::*, model::NestedValue, producer};
 use crate::document_retention_model::operator_identity::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_entry::*,
     application_installation::*,
@@ -41,6 +42,7 @@ where
         roster,
         CanonicalSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         super::super::host::limits(),
         |_, graph, installed| {
             let binding = installed
@@ -184,6 +186,7 @@ where
         roster,
         CanonicalSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         super::super::host::limits(),
         checkpoint,
     )

@@ -4,6 +4,7 @@ use crate::transactions::data::EntityReference;
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct RequiredOutputPublicationMeaning {
+    pub implementation: super::RequiredOutputProducingImplementation,
     pub family: String,
     pub source_scope: EntityId,
     pub source_partition: [u8; 32],
@@ -11,6 +12,8 @@ pub struct RequiredOutputPublicationMeaning {
 }
 
 impl RequiredOutputPublicationMeaning {
+    // A new build succeeds the same authored route. Exact readmission still
+    // compares the complete original meaning, including its implementation.
     pub(crate) fn same_route(&self, other: &Self) -> bool {
         self.family == other.family
             && self.source_scope == other.source_scope

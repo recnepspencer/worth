@@ -160,6 +160,7 @@ impl WorthQueryApplicationOutputLineage {
         }
         let candidate = match heads.as_slice() {
             [] => None,
+            [(_, head)] if !self.implementation_is_current(head) => None,
             [(role, head)] => Some(
                 WorthQueryCurrentOutputCandidate::from_recorded(head, role)
                     .ok_or_else(|| stop(Kind::IncompleteDependencyCoverage))?,

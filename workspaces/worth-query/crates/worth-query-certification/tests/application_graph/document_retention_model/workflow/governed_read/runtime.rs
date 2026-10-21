@@ -8,14 +8,11 @@ pub type GovernedRuntime = WorthQueryWorkflowApplicationRuntime<
     RetentionProgramP0,
 >;
 pub fn install() -> GovernedRuntime {
-    // Exact fork reads may seed one native index generation, including its catalog
-    // backing. This fixture declares a finite preparation envelope for that shape;
-    // it does not change the native request payer or admit cold population work.
-    let queries =
-        worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::new(
-            std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
-        )
-        .expect("finite governed read preparation and unchanged result limits");
+    // Native request owners qualify exact fork reads and their catalog backing;
+    // this profile selects simultaneous graph admission, not a work invoice.
+    let queries = worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::new(
+        std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
+    );
     retain(host::publish_on_first_program_with_limits(
         host::with_query_resources(queries),
     ))

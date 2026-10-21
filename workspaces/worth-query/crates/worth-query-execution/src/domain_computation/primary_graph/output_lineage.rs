@@ -8,6 +8,7 @@ pub(in crate::domain_computation::primary_graph) use source_facts::RetainedSourc
 pub(in crate::domain_computation::primary_graph) use source_publication::CoveredSourcePublication;
 pub(in crate::domain_computation::primary_graph) use source_publication::SourcePublication;
 mod computation_source;
+mod implementation_build;
 pub(in crate::domain_computation::primary_graph) use computation_source::ComputationSourceEvidence;
 pub(in crate::domain_computation::primary_graph) use computation_source::CurrentComputation;
 mod current_candidate;
@@ -94,6 +95,7 @@ pub(in crate::domain_computation::primary_graph) use semantic_source::SemanticSo
 
 #[derive(Default)]
 pub(crate) struct WorthQueryApplicationOutputLineage {
+    implementation_build: Option<worth_foundational::facade::ApplicationBuildIdentity>,
     by_source: BTreeMap<
         SemanticSource,
         BTreeMap<
@@ -113,6 +115,8 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
 type RecordedGeneration = Vec<Arc<OnceLock<RecordedOutput>>>;
 
 pub(super) struct WorthQueryExactRecordedOutput {
+    pub(super) producing_implementation:
+        Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub(super) correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     pub(super) source_identity: RecordedSourceIdentity,
     pub(super) source_partition_identity: [u8; 32],
@@ -311,6 +315,7 @@ impl WorthQueryApplicationOutputLineage {
             }),
             source_partition_identity: evidence.idempotency().source_partition_identity(),
             producer_dependency_identity: evidence.idempotency().producer_dependency_identity(),
+            producing_implementation: evidence.idempotency().producing_implementation(),
             idempotency_key_identity: *evidence.idempotency().key_identity(),
         };
         if let Some(prepared) = prepared {

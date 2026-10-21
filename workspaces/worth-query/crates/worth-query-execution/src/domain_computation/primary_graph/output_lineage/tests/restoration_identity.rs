@@ -49,6 +49,8 @@ fn restoration_rejects_conflicting_identity_for_the_same_partition() {
             [0x41; 32],
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>::from([])),
             None,
-            None);
+            None,
+            None,
+        );
     }
 }

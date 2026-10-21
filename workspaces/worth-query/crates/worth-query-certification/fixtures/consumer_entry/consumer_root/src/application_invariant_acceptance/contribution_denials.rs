@@ -3,6 +3,7 @@ mod producer_denials;
 mod program;
 
 use program::{validated_denial_program, DenialProgram};
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
@@ -100,6 +101,7 @@ fn inventory_drift_precedes_callbacks() {
         validated_denial_program::<MissingContributionSchema>(),
         MissingContributionSchema::declaration().unwrap(),
         (topology_configuration(&setup_calls),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits(),
         |_, _, _| {
             seed_calls.fetch_add(1, Ordering::SeqCst);
@@ -118,6 +120,7 @@ fn inventory_drift_precedes_callbacks() {
             Arc::clone(&setup_calls),
             Arc::clone(&setup_calls),
         ),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits(),
         |_, _, _| {
             seed_calls.fetch_add(1, Ordering::SeqCst);
@@ -147,6 +150,7 @@ fn missing_handler_precedes_initializer() {
         validated_denial_program::<MissingHandlerSchema>(),
         MissingHandlerSchema::declaration().unwrap(),
         (Arc::clone(&setup_calls), Arc::clone(&setup_calls)),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits(),
         |_bootstrap_phase, graph, installed| {
             seed_calls.fetch_add(1, Ordering::SeqCst);
@@ -183,6 +187,7 @@ fn foreign_member_registration_is_denied() {
                 (attempted_member, Arc::clone(&setup_calls)),
                 topology_configuration(&setup_calls),
             ),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             limits(),
             |_, _, _| {
                 seed_calls.fetch_add(1, Ordering::SeqCst);

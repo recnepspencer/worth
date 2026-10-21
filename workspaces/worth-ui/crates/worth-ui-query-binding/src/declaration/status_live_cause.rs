@@ -1,8 +1,6 @@
 use worth_query_decl::facade::{
     application_query::ApplicationQueryLiveCauseBinding,
-    application_schema::{
-        ApplicationEffectRef, ApplicationRetainedEffectBinding, StringApplicationValueBinding,
-    },
+    application_schema::{ApplicationEffectRef, StringApplicationValueBinding},
     worth_query_effect, worth_query_portable_type, worth_query_structured_value_binding,
 };
 
@@ -16,12 +14,6 @@ pub struct WorthUiStatusChanged {
 worth_query_structured_value_binding!(pub WorthUiStatusChangedBinding for WorthUiStatusChanged {
     identity: "worth.ui.status-changed-payload.v1"
 });
-
-impl ApplicationRetainedEffectBinding for WorthUiStatusChangedBinding {
-    fn retained_bytes(value: &Self::Value) -> u64 {
-        u64::try_from(value.identity.len()).unwrap_or(u64::MAX)
-    }
-}
 
 worth_query_effect!(pub WorthUiStatusChangedEffect for WorthUiApplicationSchema,
     payload WorthUiStatusChangedBinding);

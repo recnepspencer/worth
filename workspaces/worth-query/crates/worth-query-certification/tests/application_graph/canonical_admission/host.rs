@@ -1,6 +1,7 @@
 //! Normal installation, authenticated mutation, and native current-format recovery.
 use super::{operation, query, schema::*};
 use crate::document_retention_model::operator_identity::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_contribution::*, application_entry::*, application_installation::*,
     declaration::application_program::*, declaration::authentication::*, primary_graph::*,
@@ -66,6 +67,7 @@ fn install_owned(
             .unwrap(),
         AdmissionSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         super::limits::limits(work),
         |_, graph, installed| {
             projection = Some(graph.retain_invariant_projection_authority());
@@ -122,6 +124,7 @@ pub fn restore(checkpoint: WorthQueryApplicationCheckpoint, work: u64) -> Host {
             .unwrap(),
         AdmissionSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         super::limits::limits(work),
         checkpoint,
     )

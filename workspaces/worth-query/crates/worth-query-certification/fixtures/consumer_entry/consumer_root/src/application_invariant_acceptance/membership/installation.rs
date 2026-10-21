@@ -8,6 +8,7 @@ use std::sync::{
 use worth_query_decl::facade::application_program::{
     ApplicationProgramAuthoring, ApplicationProgramDefinition,
 };
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_installation::{in_memory_program, WorthQueryProgramApplicationRuntime},
     declaration::authentication::WorthQueryPrincipalMappingStatus,
@@ -61,6 +62,7 @@ fn install_program_seeded<
         program,
         Schema::declaration().unwrap(),
         configuration,
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         resources::application_limits(),
         |phase, graph, installed| {
             let principal = installed

@@ -1,5 +1,6 @@
 //! Scope, real creation and replay survive fresh native reconstruction.
 use super::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_installation::{
         in_memory_program_from_checkpoint, WorthQueryCheckpointCapturePolicy,
@@ -36,6 +37,7 @@ fn creation_only_body_survives_checkpoint_and_fresh_readmission() {
         program::validated::<30>(&schema),
         schema,
         (program::Installation::Native,),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host_limits(),
         checkpoint,
     )

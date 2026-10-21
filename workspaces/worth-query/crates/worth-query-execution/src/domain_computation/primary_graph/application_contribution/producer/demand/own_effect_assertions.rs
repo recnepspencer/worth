@@ -53,11 +53,11 @@ where
                 Stage::OwnPublicationContinuation,
                 Stage::DisclosureExhausted
             ],
-            "identify the exact Pending branch before any successor advance"
+            "identify the exact unfinished Progressed branch before any successor advance"
         );
         assert!(
             !self.settled && self.settled_at_observation.is_none(),
-            "Pending is not completion"
+            "Progressed is not completion"
         );
         assert_eq!(self.producer_contacts_in_this_demand, 1);
         assert_eq!(

@@ -4,6 +4,7 @@ use std::sync::{
     atomic::{AtomicBool, AtomicUsize},
     Arc,
 };
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
     application_installation::in_memory_program,
     declaration::authentication::WorthQueryPrincipalMappingStatus,
@@ -28,6 +29,7 @@ pub(super) fn install(fanout: usize, unrelated: usize) -> Runtime {
         program,
         Schema::declaration().unwrap(),
         configuration,
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         resources::application_limits(),
         |phase, graph, installed| {
             let binding = installed

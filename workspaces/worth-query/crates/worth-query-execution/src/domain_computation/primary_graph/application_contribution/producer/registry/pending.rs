@@ -113,6 +113,7 @@ where
 
     pub(in crate::domain_computation::primary_graph) fn seal_with_support(
         mut self,
+        build_identity: worth_foundational::facade::ApplicationBuildIdentity,
         support: &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot,
         packages: &worth_query_installation::facade::WorthQueryInstalledPackageIndex,
     ) -> Result<
@@ -136,8 +137,11 @@ where
             .declared
             .into_iter()
             .map(|(identity, declaration)| {
-                let edition = InstalledProducerEdition::from_declaration(&declaration)?
-                    .retaining_computation(self.retaining.contains(&declaration.operation_type));
+                let edition =
+                    InstalledProducerEdition::from_declaration(&declaration, build_identity)?
+                        .retaining_computation(
+                            self.retaining.contains(&declaration.operation_type),
+                        );
                 let (value, executor) = self
                     .providers
                     .remove(&identity)

@@ -31,6 +31,8 @@ pub(super) fn write(
             WorthQueryAcceptedOutputCheckpointPosture::Performed => 0,
             WorthQueryAcceptedOutputCheckpointPosture::StableReused => 1,
         }])?;
+        writer.bytes(&accepted.implementation.build_identity())?;
+        writer.bytes(&accepted.implementation.edition())?;
         writer.bytes(&accepted.source)?;
         writer.scope(accepted.scope)?;
         writer.bytes(&accepted.source_partition)?;

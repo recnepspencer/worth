@@ -4,6 +4,7 @@ mod canonical_encoding;
 mod content_rule;
 mod content_tree;
 mod output_postcondition;
+mod producing_implementation;
 
 use super::retained_decision_facts::StorageControl;
 use super::retained_decision_facts::StoreDenial;
@@ -40,6 +41,7 @@ impl<Schema, Operation, Input, Scope>
         >,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         declared_key: [u8; 32],
+        implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
         successor_of: Option<[u8; 32]>,
 
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -73,12 +75,17 @@ impl<Schema, Operation, Input, Scope>
             .map_err(WorthQueryProducerIdentityDenial::DependencyStorage)?;
         let _root_funding = root_funding
             .map_err(|cause| WorthQueryProducerIdentityDenial::DependencyStorage(cause.into()))?;
-        let (dependency, work) = content
+        let (fact_dependency, fact_work) = content
             .identity(declared_key)
             .map_err(|_| WorthQueryProducerIdentityDenial::DependencyCanonicalizationRejected)?;
         control
             .check_live()
             .map_err(WorthQueryProducerIdentityDenial::DependencyStorage)?;
+        let (dependency, implementation_work) =
+            producing_implementation::identity(fact_dependency, implementation).map_err(|_| {
+                WorthQueryProducerIdentityDenial::DependencyCanonicalizationRejected
+            })?;
+        let work = fact_work.combine(implementation_work);
         self.output_currentness_facts = Some(
             complete_content_currentness_facts(dependency_facts, moved, content.reusable())
                 .with_rebase_carry(self.read_set.postcondition_carry.clone()),

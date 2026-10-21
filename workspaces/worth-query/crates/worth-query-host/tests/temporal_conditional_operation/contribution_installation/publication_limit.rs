@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 type Application = application_installation::WorthQueryProgramApplicationRuntime<
@@ -15,6 +16,7 @@ fn explicit_publication_limit_survives_checkpoint_installation_and_enforces_comm
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         (configuration(),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits(),
         |_phase, graph, installed| {
             let principal = installed
@@ -39,6 +41,7 @@ fn explicit_publication_limit_survives_checkpoint_installation_and_enforces_comm
             validated_program(),
             TemporalHostSchema::declaration().unwrap(),
             (configuration(),),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
             limits()
                 .with_maximum_publication_records(std::num::NonZeroUsize::new(maximum).unwrap()),
             checkpoint.clone(),

@@ -23,6 +23,7 @@ pub(super) fn in_memory_with_contributions_in_advancement<Schema, Contributions>
     phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
     declaration: ApplicationSchemaDeclaration<Schema>,
     configuration: <Contributions as WorthQueryApplicationContributionTuple<Schema>>::Configuration,
+    build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     limits: WorthQueryInMemoryApplicationLimits,
     initial_state: impl FnOnce(
         &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
@@ -168,7 +169,11 @@ where
     // Seal the real configured executors before a recovered producer route can
     // justify retiring an old output. The same registry is published below.
     let producers = producers
-        .seal_with_support(graph.resource_support_ref(), runtime.installed_packages())
+        .seal_with_support(
+            build_identity,
+            graph.resource_support_ref(),
+            runtime.installed_packages(),
+        )
         .map_err(Denial::Contributions)?;
     if restoring && let Some(support) = &admitted_program_support {
         if let Some(transition) = checkpoint_transition {
@@ -257,6 +262,13 @@ where
         };
     application.installed_producers = producers;
     application.installed_conditionals = installed_conditionals;
+    application
+        .primary_provider
+        .graph
+        .output_lineage
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .bind_implementation_build(build_identity);
     if let Some(support) = admitted_program_support {
         application
             .product_runtime

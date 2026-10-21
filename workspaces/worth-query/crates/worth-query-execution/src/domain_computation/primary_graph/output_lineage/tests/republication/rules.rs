@@ -130,7 +130,9 @@ fn a_restored_row_without_performed_proof_stays_fresh_until_verified() {
             IDEMPOTENCY_KEY,
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::clone(&facts)),
             None,
-            None);
+            None,
+            None,
+        );
         let restored = stage.restored();
         assert_eq!(
             restored.verification_requirement(),
@@ -181,6 +183,7 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
             suspended_generation,
             |row| {
                 let mut row = RecordedOutput {
+                    producing_implementation: None,
                     required_publication: None,
                     native_prior_checkpoint: None,
                     computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
@@ -250,6 +253,7 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
         stage.retain(
             alias_generation,
             |row| RecordedOutput {
+                producing_implementation: None,
                 required_publication: None,
                 native_prior_checkpoint: None,
                 computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),

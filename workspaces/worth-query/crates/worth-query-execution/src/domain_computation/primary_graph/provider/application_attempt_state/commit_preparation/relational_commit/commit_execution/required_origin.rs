@@ -94,6 +94,10 @@ pub(super) fn bind(
     }
     let source_scope = scope.scope();
     let meaning = RequiredOutputPublicationMeaning {
+        implementation: attempt
+            .idempotency()
+            .producing_implementation()
+            .ok_or_else(mismatch)?,
         family,
         source_scope: worth_relational::facade::identity::EntityId::new(
             worth_relational::facade::identity::PartitionId::new(source_scope.partition_id()),
@@ -165,6 +169,7 @@ pub(super) fn bind(
 
             // This is the performed epoch, not the new demand's source epoch.
             let prior_meaning = RequiredOutputPublicationMeaning {
+                implementation: prior.implementation,
                 family: meaning.family.clone(),
                 source_epoch: prior.source_epoch,
                 source_scope: meaning.source_scope,

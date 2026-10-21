@@ -22,6 +22,7 @@ fn current_output_replaces_its_recovered_slot_without_checkpoint_growth() {
         .scope();
     let checkpoint = |source, partition| {
         crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
+            implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
             producer: ("producer".to_owned()).into(),
             posture: crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed,
             source,
@@ -74,6 +75,17 @@ fn producer_identity_length_and_utf8_are_guarded() {
     assert_denied(
         checkpoint_body(1, padded(accepted_prefix(&[0xff], 0, [0; 32]))),
         "producer identity is not UTF-8",
+    );
+}
+
+#[test]
+fn missing_original_build_identity_cannot_default_to_the_current_build() {
+    let mut accepted = accepted_without_roles(b"producer", 0);
+    let build_at = 8 + b"producer".len() + 1;
+    accepted[build_at..build_at + 16].fill(0);
+    assert_denied(
+        checkpoint_body(1, accepted),
+        "required output has no producing build identity",
     );
 }
 
@@ -165,8 +177,9 @@ fn roles_and_accepted_outputs_require_canonical_order() {
 fn duplicate_slot_and_copied_fact_payload_cannot_form_two_recovered_candidates() {
     let first = accepted_without_roles(b"producer", 0);
     let mut changed_source = first.clone();
-    // Producer length, name, and v7 posture precede source identity.
-    changed_source[17] = 2;
+    // Producer length, name, posture, and original implementation precede source.
+    let source_offset = 8 + b"producer".len() + 1 + 16 + 32;
+    changed_source[source_offset] = 2;
     let mut two_slots = first.clone();
     two_slots.extend_from_slice(&changed_source);
     assert_denied(checkpoint_body(2, two_slots), "output slots are duplicated");
@@ -220,7 +233,9 @@ fn accepted_prefix(producer: &[u8], dependency_posture: u8, dependency: [u8; 32]
     let mut accepted = Vec::new();
     accepted.extend_from_slice(&(producer.len() as u64).to_be_bytes());
     accepted.extend_from_slice(producer);
-    accepted.push(0); // Performed; StableReused is the other v7 posture.
+    accepted.push(0); // Performed, followed by mandatory original producing association.
+    accepted.extend_from_slice(&[0x11; 16]);
+    accepted.extend_from_slice(&[0x22; 32]);
     accepted.extend_from_slice(&[1; 32]);
     accepted.extend_from_slice(&entity_bytes());
     accepted.extend_from_slice(&[2; 32]);

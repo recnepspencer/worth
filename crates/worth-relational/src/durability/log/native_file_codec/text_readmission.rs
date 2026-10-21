@@ -63,7 +63,7 @@ pub(crate) fn decode_checkpoint(
     let payload = bytes.strip_prefix(super::CHECKPOINT_MAGIC).ok_or_else(|| {
         DurabilityError::new(
             RecoveryFailureClass::UnsupportedLegacySemantics,
-            "unsupported native checkpoint frame; CHK4 required",
+            "unsupported native checkpoint frame; CHK6 required",
         )
     })?;
     let wire: super::super::persisted_checkpoint::CheckpointFileWire<'_> =
@@ -94,7 +94,7 @@ pub(crate) fn read_checkpoint_file(
     if magic.as_slice() != super::CHECKPOINT_MAGIC {
         return Err(DurabilityError::new(
             RecoveryFailureClass::UnsupportedLegacySemantics,
-            "unsupported native checkpoint frame; CHK4 required",
+            "unsupported native checkpoint frame; CHK6 required",
         )
         .into());
     }

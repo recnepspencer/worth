@@ -3,6 +3,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 
 use worth_query_decl::facade::application_schema::{
     ApplicationInvariantExecutionPoint, ApplicationInvariantMarkerIdentity, ApplicationSchema,
@@ -77,6 +78,7 @@ fn missing_provider_precedes_initializer() {
         validated_denial_program::<MissingProducerSchema>(),
         MissingProducerSchema::declaration().unwrap(),
         (Arc::clone(&setup_calls), Arc::clone(&setup_calls)),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits(),
         |_, _, _| {
             seed_calls.fetch_add(1, Ordering::SeqCst);
@@ -97,6 +99,7 @@ fn duplicate_provider_is_denied() {
         validated_denial_program::<DuplicateProducerSchema>(),
         DuplicateProducerSchema::declaration().unwrap(),
         (Arc::clone(&setup_calls), Arc::clone(&setup_calls)),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits(),
         |_, _, _| panic!("duplicate provider must deny before initial state"),
     );
@@ -113,6 +116,7 @@ fn ambiguous_applicability_precedes_callbacks() {
         validated_denial_program::<AmbiguousProducerSchema>(),
         AmbiguousProducerSchema::declaration().unwrap(),
         (Arc::clone(&calls), Arc::clone(&calls)),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         limits(),
         |_, _, _| panic!("ambiguous applicability must deny before initial state"),
     );

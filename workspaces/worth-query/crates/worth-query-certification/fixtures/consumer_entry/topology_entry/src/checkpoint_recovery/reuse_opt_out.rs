@@ -9,7 +9,9 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryProducerInputReuseContract, WorthQueryProducerLifecyclePosture,
 };
 use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandProgress;
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 
+mod build_identity;
 mod every_consult;
 mod program;
 mod required_refresh;
@@ -38,6 +40,16 @@ fn live_output_without_initial_input_reuse_selects_preserve_and_keeps_its_entity
 fn install_no_reuse(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<NoReuseSchema, NoReuseProgram> {
+    install_no_reuse_with_build(
+        checkpoint,
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+    )
+}
+
+fn install_no_reuse_with_build(
+    checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
+    build_identity: ApplicationBuildIdentity,
+) -> application_installation::WorthQueryProgramApplicationRuntime<NoReuseSchema, NoReuseProgram> {
     let program = ApplicationProgramAuthoring::<NoReuseSchema, NoReuseProgram>::begin()
         .validated_program()
         .unwrap();
@@ -55,6 +67,7 @@ fn install_no_reuse(
             program,
             NoReuseSchema::declaration().unwrap(),
             configuration,
+            build_identity,
             limits,
             checkpoint,
         )
@@ -64,6 +77,7 @@ fn install_no_reuse(
         program,
         NoReuseSchema::declaration().unwrap(),
         configuration,
+        build_identity,
         limits,
         |_phase, graph, installed| {
             let principal = installed.principal_binding(

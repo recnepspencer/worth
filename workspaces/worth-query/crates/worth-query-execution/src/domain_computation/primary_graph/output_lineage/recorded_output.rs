@@ -11,6 +11,8 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub(in crate::domain_computation::primary_graph) struct RecordedOutput {
+    pub(super) producing_implementation:
+        Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub(super) required_publication:
         Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     /// The performed computation read a fact that its own effect replaced.

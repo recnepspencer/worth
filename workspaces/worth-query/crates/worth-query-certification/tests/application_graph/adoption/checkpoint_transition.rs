@@ -8,6 +8,7 @@ use crate::document_retention_model::{
     schema::{Document, DocumentIdentityField, DocumentRetentionField, DocumentRetentionSchema},
     settled_verdict::{settle, RetentionVerdict},
 };
+use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::{application_installation as installation, primary_graph};
 
@@ -42,6 +43,7 @@ fn checkpoint_transition_target_rule_rejects_retained_predecessor_only_value() {
             .support(validated_actor_program()),
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host_limits(),
         source.clone(),
         predecessor,
@@ -106,6 +108,7 @@ fn checkpoint_transition_target_rule_accepts_complete_retained_and_created_state
             .support(validated_actor_program()),
         DocumentRetentionSchema::declaration().unwrap(),
         ((),),
+        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         host_limits(),
         source,
         predecessor,

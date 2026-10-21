@@ -4,7 +4,7 @@ use std::path::Path;
 use crate::durability::data::{DurabilityError, RecoveryFailureClass};
 
 use super::local_store::{DurableCheckpointFile, DurableSegmentFile, DurableStoreManifestFile};
-pub(crate) const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK4\n";
+pub(crate) const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK6\n";
 
 mod checkpoint_encoding;
 pub(crate) use checkpoint_encoding::{encode_checkpoint, encode_payload};

@@ -142,7 +142,7 @@ fn demand_expected<Schema: BirthSchema>(
             )?;
             let mut original_roster = None;
             if matches!(expected, Expected::Materialized | Expected::RequiredAdmission) {
-                assert!(matches!(advanced, WorthQueryOutputDemandAdvance::Pending), "born-stale output cannot settle current");
+                assert!(matches!(advanced, WorthQueryOutputDemandAdvance::Progressed), "the original born-stale publication progressed without settling current");
                 let locator = runtime.primary_provider.graph.layout.field_locator("Body", "SourceNotes", "SourceSelection").unwrap();
                 demand.assert_born_stale_absence_for_test(runtime, &phase, &execution, root, locator, |receipt| {
                     original_roster = Some(court::observe_performed_receipt(runtime, &phase, receipt, WorthQueryApplicationOutputPosture::Create));

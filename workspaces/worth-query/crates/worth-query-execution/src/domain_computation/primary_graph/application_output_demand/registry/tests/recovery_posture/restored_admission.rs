@@ -59,6 +59,7 @@ fn restored_output(
 ) -> super::super::super::WorthQueryRestoredAcceptedOutput {
     super::super::super::WorthQueryRestoredAcceptedOutput {
         checkpoint: super::super::super::WorthQueryAcceptedOutputCheckpointIdentity {
+            implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint([0x11; 16], [0x22; 32]).unwrap(),
             producer: ("restored".to_owned()).into(),
             posture: super::super::super::WorthQueryAcceptedOutputCheckpointPosture::Performed,
             source: [0x55; 32],
