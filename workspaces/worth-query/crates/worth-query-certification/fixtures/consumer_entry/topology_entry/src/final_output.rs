@@ -245,7 +245,11 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = Schema::FINAL_INPUT_REUSE;
 }
 
+mod feature;
 mod preservation;
+pub use feature::{
+    planar_final_feature_runtime, PlanarFinalFeatureRoles, PlanarFinalFeatureRuntime,
+};
 mod preserve_readiness;
 mod readiness;
 pub use preservation::*;

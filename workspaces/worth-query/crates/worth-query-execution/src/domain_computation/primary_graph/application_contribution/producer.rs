@@ -208,22 +208,19 @@ where
 pub trait WorthQueryApplicationProducerBinding<Schema>: Sized + 'static
 where
     Schema: ApplicationSchema,
-    Self::Operation: ApplicationMutationBinding<
+{
+    type Operation: ApplicationMutationBinding<
         Schema,
         SourceExpectation = ApplicationQueryMutationSource<
             <<Self::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::Query,
         >,
-    >,
-    <Self::Operation as ApplicationMutationBinding<Schema>>::Input:
-        ApplicationMutationInputScope<Schema, Self::Operation> + Clone + Send + Sync,
-    <Self::Operation as ApplicationMutationBinding<Schema>>::ScopeBinding:
-        ApplicationMutationScopeResolution<
+        Input: ApplicationMutationInputScope<Schema, Self::Operation> + Clone + Send + Sync,
+        ScopeBinding: ApplicationMutationScopeResolution<
             Schema,
             <Self::Operation as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
-    <Self::Operation as ApplicationMutationBinding<Schema>>::Denial: std::fmt::Debug,
-{
-    type Operation: ApplicationMutationBinding<Schema>;
+        Denial: std::fmt::Debug,
+    >;
     type OutputFamily: WorthQueryProducerOutputFamily<Schema>;
     type Provider: WorthQueryApplicationProducerProvider<Schema, Self>;
     /// The fixed role of the operation's output contract that every commit

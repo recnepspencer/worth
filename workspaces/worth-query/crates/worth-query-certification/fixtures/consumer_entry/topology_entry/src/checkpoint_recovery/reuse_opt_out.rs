@@ -54,6 +54,7 @@ fn install_no_reuse_with_build(
         .validated_program()
         .unwrap();
     let configuration = (TopologyConfiguration {
+        final_feature: crate::planar_final_feature_runtime(),
         setup_calls: Arc::new(AtomicUsize::new(0)),
         invariant_calls: Arc::new(AtomicUsize::new(0)),
         invariant_probe: Arc::new(AtomicUsize::new(0)),

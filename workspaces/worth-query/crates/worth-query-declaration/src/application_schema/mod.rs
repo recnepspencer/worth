@@ -17,6 +17,7 @@ mod capability_identifier_validation;
 mod capability_member_closure;
 mod contribution;
 mod decision_read_authoring;
+mod declared_operation;
 mod declaration;
 mod declaration_denial;
 mod effect_authoring;
@@ -197,6 +198,7 @@ pub use operation_definition::{
 };
 pub use operation_dependency_locus::ApplicationOperationDependencyLocus;
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;
+pub use declared_operation::ApplicationDeclaredOperation;
 pub use portable_schema::{
     observe_portable_application_schema_reconstruction_work,
     validate_portable_application_schema_freshly,

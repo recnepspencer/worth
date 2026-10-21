@@ -57,12 +57,63 @@ pub(super) fn validate_features_and_actions(
     Ok(feature_ids)
 }
 
+fn validate_required_roles(
+    feature: &ApplicationFeatureDeclaration,
+) -> Result<(), ApplicationProgramValidationDenial> {
+    use crate::application_program::ApplicationRequiredFeatureRoleKind as Kind;
+    let mut identities = BTreeSet::new();
+    for pair in feature.required_roles().chunks_exact(2) {
+        if pair[0].kind() != Kind::Initial || pair[1].kind() != Kind::Preserve {
+            return Err(denial(
+                ApplicationProgramValidationDenialKind::InvalidRequiredFeatureRole,
+                feature.identity(),
+            ));
+        }
+        validate_required_output_pair(feature.identity(), pair[0].output(), pair[1].output())?;
+        for role in pair {
+            for identity in [
+                role.producer(),
+                role.readiness(),
+                role.mutation(),
+                role.operation(),
+                role.output().family(),
+                role.output().source(),
+                role.output().role(),
+            ] {
+                require_identity(identity)?;
+            }
+            if !identities.insert((role.kind(), role.producer())) {
+                return Err(denial(
+                    ApplicationProgramValidationDenialKind::DuplicateRequiredFeatureRole,
+                    role.producer(),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn validate_required_output_pair(
+    feature: &str,
+    initial: &crate::application_program::ApplicationRequiredFeatureOutput,
+    preserve: &crate::application_program::ApplicationRequiredFeatureOutput,
+) -> Result<(), ApplicationProgramValidationDenial> {
+    if initial != preserve {
+        return Err(denial(
+            ApplicationProgramValidationDenialKind::InvalidRequiredFeatureRole,
+            feature,
+        ));
+    }
+    Ok(())
+}
+
 fn validate_feature(
     feature: &ApplicationFeatureDeclaration,
     feature_ids: &mut BTreeSet<FeatureIdentity>,
 ) -> Result<(), ApplicationProgramValidationDenial> {
     require_identity(feature.composition_instance())?;
     require_identity(feature.identity())?;
+    validate_required_roles(feature)?;
     if !feature_ids.insert((feature.composition_instance(), feature.identity())) {
         return Err(denial(
             ApplicationProgramValidationDenialKind::DuplicateFeature,

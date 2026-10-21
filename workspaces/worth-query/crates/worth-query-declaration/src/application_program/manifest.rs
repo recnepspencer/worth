@@ -84,6 +84,17 @@ impl ApplicationProgramManifest {
                     ],
                 )
             }));
+            for role in feature.required_roles() {
+                records.push(framed_record(
+                    "required-producer-role",
+                    [
+                        ("owner", owner.to_owned()),
+                        ("feature", feature.identity().to_owned()),
+                    ]
+                    .into_iter()
+                    .chain(role.canonical_fields()),
+                ));
+            }
             for artifact in feature.derived_artifacts() {
                 let mut dependencies = artifact
                     .dependencies()

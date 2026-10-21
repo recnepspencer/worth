@@ -3,6 +3,11 @@ use std::marker::PhantomData;
 use crate::application_schema::{ApplicationSchema, ApplicationStructuredValueBinding};
 
 mod authoring;
+mod required_pair;
+pub use required_pair::{
+    ApplicationRequiredFeatureOutput, ApplicationRequiredFeatureRoleDeclaration,
+    ApplicationRequiredFeatureRoleKind, ApplicationRequiredFeatureRoles,
+};
 
 pub use authoring::{ApplicationFeatureSpec, ApplicationFeatureSpecBuilder};
 
@@ -74,6 +79,7 @@ pub struct ApplicationFeatureDeclaration {
     derived_artifacts: Box<[super::ApplicationDerivedArtifactDeclaration]>,
     derived_collections: Box<[super::ApplicationDerivedCollectionDeclaration]>,
     managed_computations: Box<[super::ApplicationManagedComputationDeclaration]>,
+    required_roles: Box<[ApplicationRequiredFeatureRoleDeclaration]>,
 }
 
 impl ApplicationFeatureDeclaration {
@@ -96,6 +102,7 @@ impl ApplicationFeatureDeclaration {
             derived_artifacts: Box::new([]),
             derived_collections: Box::new([]),
             managed_computations: Box::new([]),
+            required_roles: Box::new([]),
         }
     }
 
@@ -158,6 +165,16 @@ impl ApplicationFeatureDeclaration {
         collections: Vec<super::ApplicationDerivedCollectionDeclaration>,
     ) {
         self.derived_collections = collections.into_boxed_slice();
+    }
+
+    pub fn required_roles(&self) -> &[ApplicationRequiredFeatureRoleDeclaration] {
+        &self.required_roles
+    }
+    pub(super) fn set_required_roles(
+        &mut self,
+        roles: Vec<ApplicationRequiredFeatureRoleDeclaration>,
+    ) {
+        self.required_roles = roles.into_boxed_slice();
     }
 
     pub fn managed_computations(&self) -> &[super::ApplicationManagedComputationDeclaration] {

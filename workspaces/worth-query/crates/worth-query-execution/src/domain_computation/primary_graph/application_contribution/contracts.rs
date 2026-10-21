@@ -1,6 +1,7 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
+mod feature;
 
 use worth_query_installation::facade::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryPortableDomainPackage;
@@ -42,6 +43,22 @@ where
         Schema: 'static,
         Binding: WorthQueryApplicationConditionalBinding<Schema>,
     {
+        self.conditional_with_requirements::<Binding>(
+            Binding::REQUIRED_PRODUCERS
+                .iter()
+                .map(|identity| (*identity).to_owned())
+                .collect(),
+        )
+    }
+
+    fn conditional_with_requirements<Binding>(
+        &mut self,
+        required_producers: Vec<String>,
+    ) -> Result<&mut Self, WorthQueryPrimaryGraphInstallationDenial>
+    where
+        Schema: 'static,
+        Binding: WorthQueryApplicationConditionalBinding<Schema>,
+    {
         if self.conditionals.contains_key(Binding::IDENTITY) {
             return Err(denial(
                 DenialKind::DuplicateConditionalBinding,
@@ -53,11 +70,9 @@ where
             DeclaredConditionalBinding {
                 owner: self.owner.clone(),
                 contract: Binding::package_contract(),
-                required_producers: Binding::REQUIRED_PRODUCERS
-                    .iter()
-                    .map(|identity| (*identity).to_owned())
-                    .collect(),
+                required_producers,
                 binding_type: TypeId::of::<Binding>(),
+                operation_type: TypeId::of::<Binding::Operation>(),
                 installed_type: TypeId::of::<Binding::Installed>(),
             },
         );

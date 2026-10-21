@@ -281,6 +281,7 @@ impl<Schema: ParameterSchemaBinding + TopologySchemaBinding>
 
 fn topology_configuration(calls: &Arc<AtomicUsize>) -> TopologyConfiguration {
     TopologyConfiguration {
+        final_feature: worth_query_topology_entry::planar_final_feature_runtime(),
         setup_calls: Arc::clone(calls),
         invariant_calls: Arc::new(AtomicUsize::new(0)),
         invariant_probe: Arc::new(AtomicUsize::new(0)),

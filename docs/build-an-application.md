@@ -423,6 +423,51 @@ impl ApplicationFeature<BankSchema> for BankPaymentsFeature {
 `ApplicationFeature` also has `const MAJOR: u16 = 1` and `const MINOR: u16 = 0`,
 which you may override.
 
+### Required Initial and Preserve output roles
+
+A producer feature can require both lifecycle roles with one Host-side alias.
+The ordinary Topology consumer binds its existing producers and readiness
+owners this way:
+
+<!-- compiled: final_output/feature.rs -->
+```rust
+pub type PlanarFinalFeatureRoles<Schema, Feature = PlanarFinalOutputFeature> =
+    WorthQueryRequiredFeaturePair<
+        Schema,
+        Feature,
+        PlanarFinalOutputProducer<Schema>,
+        PlanarFinalOutputReadiness<Schema>,
+        PlanarFinalPreserveProducer<Schema>,
+        PlanarFinalPreserveReadiness<Schema>,
+    >;
+```
+
+Attach `.required_pair::<PlanarFinalFeatureRoles<Schema>>()` to the feature's
+program spec, call `contracts.feature::<PlanarFinalFeatureRoles<Schema>>()?`,
+and pass its explicit two-role runtime to
+`setup.feature::<PlanarFinalFeatureRoles<Schema>>(runtime)?`. Each role is a
+`WorthQueryFeatureRoleRuntime::new(handler, provider, readiness_configuration)`;
+`WorthQueryFeatureRuntime::new(initial, preserve)` requires both values. Handlers
+remain distinct, stateful application owners. The carrier derives each
+readiness owner's exact required producer from the associated types; its
+native predicate and `bind_output_readiness` remain the readiness owner's work.
+
+Program meaning retains both requirements independently of those callbacks.
+Omitting contracts and registration together is refused. Configured `None`
+roles, handlers, providers or readiness values preserve those requirements and
+return the original typed installation cause before initial state or output
+publication. Output-family `SUPPORTED` lists describe applicability; they do
+not declare mandatory installation roles.
+
+The runnable [required-feature example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/examples/required_feature.rs)
+uses the complete public schema/program/configuration/install path, publishes
+an Initial value of 3, edits authored source, and preserves the original entity
+with value 11. Run it from the repository root:
+
+```text
+cargo run --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-topology-entry --example required_feature
+```
+
 ### 3.2 Attach actions to features
 
 `ApplicationFeatureSpec` records which feature owns which actions. Begin a

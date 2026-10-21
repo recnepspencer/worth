@@ -32,6 +32,7 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
     let producer_authorization_denials = Arc::new(AtomicUsize::new(0));
     let configuration = (
         TopologyConfiguration {
+            final_feature: worth_query_topology_entry::planar_final_feature_runtime(),
             setup_calls: Arc::clone(&topology_calls),
             invariant_calls: Arc::clone(&invariant_calls),
             invariant_probe: Arc::clone(&invariant_probe),

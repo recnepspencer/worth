@@ -86,6 +86,7 @@ pub use super::application_contribution::{
     WorthQueryComputationReadDenial, WorthQueryComputationReader,
     WorthQueryConfiguredApplicationContributions, WorthQueryDecisionContextDependencies,
     WorthQueryDeterministicReducer, WorthQueryExecutionPlacementForTest,
+    WorthQueryFeatureConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
     WorthQueryForeignAdvancementPhase, WorthQueryInstalledApplicationConditionalRegistry,
     WorthQueryInstalledApplicationProducerRegistry, WorthQueryInstalledManagedComputation,
     WorthQueryInstalledPartitionedComputation, WorthQueryManagedComputationCheckpoint,
@@ -105,6 +106,7 @@ pub use super::application_contribution::{
     WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
     WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
     WorthQueryPublishedComputationStateForTest, WorthQueryReductionInputDenial,
+    WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
     WorthQuerySelectedApplicationProducer, WorthQueryWorkflowAssessmentOutputFamily,
     WorthQueryWorkflowAssessmentPosture,
 };

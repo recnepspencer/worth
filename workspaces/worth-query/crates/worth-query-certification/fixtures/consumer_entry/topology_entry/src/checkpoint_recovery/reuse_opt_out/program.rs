@@ -82,8 +82,7 @@ impl ApplicationProgramDefinition<NoReuseSchema> for NoReuseProgram {
             super::super::required_chain::output_feature_spec_for::<NoReuseSchema>(),
             ApplicationFeatureSpec::root::<NoReuseSchema, PlanarFinalOutputFeature>()
                 .derived_artifact::<RequiredFinal>()
-                .conditional_operation::<PublishFinalPlanarOutput>()
-                .conditional_operation::<PreserveFinalPlanarOutput>()
+                .required_pair::<PlanarFinalFeatureRoles<NoReuseSchema>>()
                 .finish(),
             ApplicationFeatureSpec::root::<NoReuseSchema, PlanarAlternateFinalOutputFeature>()
                 .provides::<PlanarAlternateFinalBodyOutput>()

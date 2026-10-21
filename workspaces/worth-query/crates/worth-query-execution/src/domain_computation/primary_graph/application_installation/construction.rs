@@ -82,6 +82,11 @@ where
         Some(admit) => Some(admit(&installed)?),
         None => None,
     };
+    if let Some(support) = &admitted_program_support {
+        contracts
+            .validate_required_features(&support.features)
+            .map_err(Denial::Contributions)?;
+    }
     let configured = WorthQueryConfiguredApplicationContributions::<Schema>::configure::<
         Contributions,
     >(&installed, configuration, contracts)

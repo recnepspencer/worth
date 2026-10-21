@@ -127,8 +127,7 @@ where
 {
     ApplicationFeatureSpec::root::<CheckpointSchema, PlanarFinalOutputFeature>()
         .derived_artifact::<Artifact>()
-        .conditional_operation::<PublishFinalPlanarOutput>()
-        .conditional_operation::<PreserveFinalPlanarOutput>()
+        .required_pair::<PlanarFinalFeatureRoles<CheckpointSchema>>()
 }
 
 pub(super) fn feature_specs_with_final_output(

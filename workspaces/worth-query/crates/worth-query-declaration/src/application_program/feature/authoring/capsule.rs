@@ -80,6 +80,7 @@ pub struct ApplicationFeatureSpecBuilder<Schema, Instance, Feature> {
     derived_artifacts: Vec<ApplicationDerivedArtifactDeclaration>,
     derived_collections: Vec<ApplicationDerivedCollectionDeclaration>,
     managed_computations: Vec<ApplicationManagedComputationDeclaration>,
+    required_roles: Vec<super::super::ApplicationRequiredFeatureRoleDeclaration>,
     marker: PhantomData<fn() -> (Schema, Instance, Feature)>,
 }
 
@@ -97,6 +98,7 @@ where
             derived_artifacts: Vec::new(),
             derived_collections: Vec::new(),
             managed_computations: Vec::new(),
+            required_roles: Vec::new(),
             marker: PhantomData,
         }
     }
@@ -140,6 +142,18 @@ where
         action: ApplicationActionDeclaration,
     ) -> Self {
         self.actions.push(action);
+        self
+    }
+
+    /// Both actions and the independent installation requirements come from one pair.
+    pub fn required_pair<Roles>(mut self) -> Self
+    where
+        Roles: super::super::ApplicationRequiredFeatureRoles<Schema, Feature = Feature>,
+    {
+        self = self
+            .conditional_mutation::<Roles::InitialMutation>()
+            .conditional_mutation::<Roles::PreserveMutation>();
+        self.required_roles.extend(Roles::roles());
         self
     }
 
@@ -239,6 +253,7 @@ where
     }
 
     pub fn finish(mut self) -> ApplicationFeatureSpec {
+        self.feature.set_required_roles(self.required_roles);
         self.feature.set_outputs(self.outputs);
         self.feature.set_derived_artifacts(self.derived_artifacts);
         self.feature

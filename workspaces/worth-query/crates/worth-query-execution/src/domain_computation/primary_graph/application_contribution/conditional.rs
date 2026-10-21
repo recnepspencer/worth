@@ -90,7 +90,7 @@ where
     type Operation: 'static;
 
     const IDENTITY: &'static str;
-    const REQUIRED_PRODUCERS: &'static [&'static str];
+    const REQUIRED_PRODUCERS: &'static [&'static str] = &[];
 
     fn package_contract() -> WorthQueryApplicationConditionalPackageContract;
 
@@ -106,6 +106,7 @@ pub(super) struct DeclaredConditionalBinding {
     pub(super) contract: WorthQueryApplicationConditionalPackageContract,
     pub(super) required_producers: Vec<String>,
     pub(super) binding_type: TypeId,
+    pub(super) operation_type: TypeId,
     pub(super) installed_type: TypeId,
 }
 
@@ -257,6 +258,25 @@ where
     where
         Binding: WorthQueryApplicationConditionalBinding<Schema>,
     {
+        self.register_with_requirements::<Binding>(
+            owner,
+            configuration,
+            Binding::REQUIRED_PRODUCERS
+                .iter()
+                .map(|identity| (*identity).to_owned())
+                .collect(),
+        )
+    }
+
+    pub(super) fn register_with_requirements<Binding>(
+        &mut self,
+        owner: &str,
+        configuration: Binding::Configuration,
+        required_producers: Vec<String>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
+    where
+        Binding: WorthQueryApplicationConditionalBinding<Schema>,
+    {
         let declared = self
             .declared
             .get(Binding::IDENTITY)
@@ -264,12 +284,9 @@ where
         if declared.owner != owner
             || declared.contract != Binding::package_contract()
             || declared.binding_type != TypeId::of::<Binding>()
+            || declared.operation_type != TypeId::of::<Binding::Operation>()
             || declared.installed_type != TypeId::of::<Binding::Installed>()
-            || declared.required_producers
-                != Binding::REQUIRED_PRODUCERS
-                    .iter()
-                    .map(|identity| (*identity).to_owned())
-                    .collect::<Vec<_>>()
+            || declared.required_producers != required_producers
         {
             return Err(denial(
                 DenialKind::ContributionMemberMismatch,

@@ -17,6 +17,7 @@ where
 {
     let configuration = (
         TopologyConfiguration {
+            final_feature: worth_query_topology_entry::planar_final_feature_runtime(),
             setup_calls: Arc::new(AtomicUsize::new(0)),
             invariant_calls: Arc::clone(&world.invariant_calls),
             invariant_probe: Arc::clone(&world.invariant_probe),

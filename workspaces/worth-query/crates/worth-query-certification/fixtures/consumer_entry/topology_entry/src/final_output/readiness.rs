@@ -39,8 +39,6 @@ impl<Schema: TopologySchemaBinding>
     type Operation = PublishFinalPlanarOutput;
 
     const IDENTITY: &'static str = "worth.query.certification.planar-final-output-readiness.v1";
-    const REQUIRED_PRODUCERS: &'static [&'static str] =
-        &["worth.query.certification.planar-final-output-producer.v2"];
 
     fn package_contract(
     ) -> application_contribution::WorthQueryApplicationConditionalPackageContract {

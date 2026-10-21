@@ -1,3 +1,5 @@
+mod access;
+
 /// Declares a typed operation marker in an application schema, with the
 /// structured value binding of its input.
 ///
@@ -8,6 +10,16 @@
 /// returning its typed `ApplicationOperationRef`.
 #[macro_export]
 macro_rules! worth_query_operation {
+    (
+        $vis:vis $Operation:ident for $Schema:ty,
+        input $InputBinding:path;
+        access { $($access:tt)* }
+    ) => {
+        $crate::worth_query_operation!($vis $Operation for $Schema, input $InputBinding);
+        $crate::__worth_query_operation_access!(
+            $Operation for $Schema, input $InputBinding; { $($access)* }
+        );
+    };
     (
         $vis:vis $Operation:ident for $Schema:ty,
         input $InputBinding:path

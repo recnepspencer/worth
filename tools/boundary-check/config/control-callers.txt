@@ -515,6 +515,9 @@ crates/worth-cad-entry/src/contribution/installation_omission_for_test.rs crates
 crates/worth-cad-entry/src/contribution/installation_omission_for_test.rs crates/worth-cad-entry/src/schema/chamfer_correspondence.rs
 crates/worth-cad-entry/src/contribution/installation_omission_for_test.rs crates/worth-cad-entry/src/facade.rs
 crates/worth-cad-entry/src/contribution/installation_omission_for_test.rs crates/worth-cad-entry/tests/program_declaration/installation.rs
+crates/worth-cad-entry/src/contribution/installation_omission_for_test.rs crates/worth-cad-entry/src/families/boolean/realization/installation.rs
+crates/worth-cad-entry/src/contribution/installation_omission_for_test.rs crates/worth-cad-entry/src/families/boolean/realization/schema.rs
+crates/worth-cad-entry/src/contribution/installation_omission_for_test.rs crates/worthy-studio-application/tests/installation_contract.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/input_cutoff/checkpoint_polling.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/input_cutoff/checkpoint_polling.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/retained_predecessors/ordinary/successor_custody.rs

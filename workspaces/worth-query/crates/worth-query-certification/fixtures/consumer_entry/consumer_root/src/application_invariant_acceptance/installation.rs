@@ -39,6 +39,7 @@ pub(super) fn install(
 pub(super) fn assert_program_cannot_omit_an_installed_rule() {
     let configuration = (
         TopologyConfiguration {
+            final_feature: worth_query_topology_entry::planar_final_feature_runtime(),
             setup_calls: Arc::new(AtomicUsize::new(0)),
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
@@ -89,6 +90,7 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
 pub(super) fn assert_program_cannot_omit_a_required_binding() {
     let configuration = (
         TopologyConfiguration {
+            final_feature: worth_query_topology_entry::planar_final_feature_runtime(),
             setup_calls: Arc::new(AtomicUsize::new(0)),
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
@@ -140,6 +142,7 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
 
     let configuration = (
         TopologyConfiguration {
+            final_feature: worth_query_topology_entry::planar_final_feature_runtime(),
             setup_calls: Arc::new(AtomicUsize::new(0)),
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),

@@ -129,8 +129,7 @@ macro_rules! program {
                         .native_action::<PlanarEditBinding<CheckpointSchema>>()
                         .finish_action()
                         .conditional_operation::<MutatePlanar>()
-                        .conditional_operation::<PublishFinalPlanarOutput>()
-                        .conditional_operation::<PreserveFinalPlanarOutput>()
+                        .required_pair::<PlanarFinalFeatureRoles<CheckpointSchema, PlanarOutputFeature>>()
                         .conditional_operation::<PublishAlternatePlanarOutput>()
                         .finish(),
                     ApplicationFeatureSpec::root::<CheckpointSchema, chain::ChainFeature>()

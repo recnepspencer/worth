@@ -2,6 +2,11 @@ mod composition;
 pub(in crate::domain_computation::primary_graph) mod computation;
 mod conditional;
 mod contracts;
+mod feature;
+pub use feature::{
+    WorthQueryFeatureConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
+    WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
+};
 pub(in crate::domain_computation) mod execution_denial;
 mod partitioned_computation;
 mod producer;

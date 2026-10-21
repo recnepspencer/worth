@@ -46,6 +46,7 @@ fn install_program_seeded<
 ) -> MembershipWorld<P> {
     let configuration = (
         TopologyConfiguration {
+            final_feature: worth_query_topology_entry::planar_final_feature_runtime(),
             setup_calls: Arc::new(AtomicUsize::new(0)),
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
