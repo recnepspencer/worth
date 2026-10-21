@@ -165,8 +165,9 @@ key and typed conditions. A receipt correspondence or `NoOutputGraph` does not
 substitute for the actual installed output-source inventory.
 
 Capability request selectors use the installed operation's scope and decision-read
-contracts. Declare related/context selector fields through `operation_read_field`
-(or an existing whole-entity decision read); governed elevation uses its installed
+contracts. Declare related/context selector fields in the operation's typed
+`access { read_fields: [...] }` clause (or `read_entities` for a whole entity),
+then install that projection with `declared_operation`; governed elevation uses its installed
 identity field. Query checks this footprint before resolving the selector. During
 program adoption, the native candidate maintains these exact dependencies and
 capability grant joins from its authentic predecessor. This preparation grants no

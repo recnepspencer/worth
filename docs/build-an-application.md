@@ -156,15 +156,7 @@ worth_query_application_contribution! {
                 .aspect(TemporalIntent::reference(), IntentFacts::reference())
                 .field(TemporalIntent::reference(), IntentRevisionField::reference())
                 // ... more fields, relations, a principal binding ...
-                .operation(
-                    AmendTemporal::reference()
-                        .definition()
-                        .no_external_effect()   // typestate: you must choose
-                        .no_aftermath()         // typestate: you must choose
-                        .finish(),
-                )
-                .operation_read_field(AmendTemporal::reference(), IntentRevisionField::reference())
-                .operation_write(AmendTemporal::reference(), IntentRevisionField::reference())
+                // ... operations use declared_operation with their typed access (§2.1) ...
                 .invariant(integrity::definition());
             super::application_entry::declare(schema)
         }
@@ -174,6 +166,10 @@ worth_query_application_contribution! {
 
 The host side of the same contribution registers what runs: handlers,
 invariants, and conditional nodes.
+For a required Initial/Preserve producer feature, use the single
+[required-role declaration](#required-initial-and-preserve-output-roles) and its
+`contracts.feature` / `setup.feature` projections. The temporal example below
+is a standalone conditional, not a paired output feature.
 
 <!-- illustrative -->
 ```rust,ignore
@@ -206,7 +202,8 @@ impl WorthQueryApplicationContribution<TemporalHostSchema> for TemporalHostContr
 }
 ```
 
-- `contracts` is optional and defaults to `Ok(())`.
+- `contracts` defaults to `Ok(())` for contributions without required runtime
+  contracts. A required pair must project its contracts with `contracts.feature`.
 - A contribution with nothing to configure uses `type Configuration = ();`.
   Bank has three such contributions and installs them with the configuration
   tuple `((), (), ())`.
@@ -215,7 +212,59 @@ impl WorthQueryApplicationContribution<TemporalHostSchema> for TemporalHostContr
 The schema and contribution APIs are covered in depth by the
 [`worth-query-host` README](../workspaces/worth-query/crates/worth-query-host/README.md)
 and the [`worth-query-decl` README](../workspaces/worth-query/crates/worth-query-decl/README.md).
-The rest of this guide is about what sits on top of the schema.
+### 2.1 Declare operation access once
+
+For a native handler on a concrete application schema, put its complete access set in
+`worth_query_operation!`'s `access` clause. It generates both the Rust
+capabilities and the installed schema projection. In this small example,
+`Schema`, `Input`, `Record`, `Value` and `Children` are already declared typed
+schema members:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+use worth_query_decl::facade::{application_schema::*, worth_query_operation};
+
+worth_query_operation!(pub Edit for Schema, input Input;
+    access {
+        read_entities: [Record];
+        read_fields: [Value];
+        read_relations: [Children];
+        writes: [Value];
+        expects_version: [Value];
+        links: [Children];
+        unlinks: [Children];
+    }
+);
+
+let schema = schema.declared_operation::<Edit>(
+    Edit::reference().definition().no_external_effect().no_aftermath().finish(),
+);
+```
+
+Use `read_entities`, `read_fields` and `read_relations` for decisions; `writes`,
+`creates`, `deletes`, `links`, `unlinks` and `emits` for effects; and
+`expects_version` / `expects_fact` for source preconditions. Empty or unused
+clauses can be omitted. Declare every actual access, including related members;
+the macro does not inspect handler bodies. Effect/aftermath policy and mutation
+binding installation remain explicit at their existing owners.
+
+Edit the access clause when adding a field or relation. Do not also author
+`worth_query_operation_reads!`/`writes!` lists or repeat the same members in
+`operation_read_field`/`operation_write` registration calls. Do not add a
+projection-work invoice to make this declaration install. Native admission still
+checks actual reads and effects; a Rust capability cannot widen that authority.
+
+This form currently targets concrete schemas. Schema-generic operation markers
+keep their existing typed declarations; the concrete `access` form does not
+claim to generate access for an arbitrary schema trait.
+For a [declarative operation body](../workspaces/worth-query/crates/worth-query/docs/authoring/scope-field-operation-bodies.md),
+the body already derives its installed footprint. Follow that authoring path
+without restating the body as a second installed access description.
+The [complete schema and access proof](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/declared_operation/tests.rs)
+checks both projections and schema validation without an invoice. The
+[`ApplicationDeclaredOperation` reference](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/declared_operation.rs)
+includes a passing capability example and an undeclared-member compile refusal.
 
 ---
 
@@ -425,7 +474,7 @@ which you may override.
 
 ### Required Initial and Preserve output roles
 
-A producer feature can require both lifecycle roles with one Host-side alias.
+Use one Host-side alias for a producer feature requiring both lifecycle roles.
 The ordinary Topology consumer binds its existing producers and readiness
 owners this way:
 
@@ -451,6 +500,10 @@ and pass its explicit two-role runtime to
 remain distinct, stateful application owners. The carrier derives each
 readiness owner's exact required producer from the associated types; its
 native predicate and `bind_output_readiness` remain the readiness owner's work.
+Do not add separate Initial/Preserve `conditional_operation` markers,
+producer/conditional contract lists, handler/provider registration rosters or
+copied `REQUIRED_PRODUCERS` entries for that pair. The declaration supplies these
+mechanical associations; each runtime role still supplies its actual values.
 
 Program meaning retains both requirements independently of those callbacks.
 Omitting contracts and registration together is refused. Configured `None`
@@ -779,9 +832,10 @@ the default `prepare_decision` wraps it in an immediate plan.
 
 Partition reuse is distinct from clean reuse of an entire output and from
 input cutoff. It applies only to the runs of a producer. A producer is a
-`WorthQueryApplicationProducerBinding` declared with
-`contracts.producer::<Binding>()` and registered with `setup.producer`; its
-`Operation` is the mutation binding the producer runs. Installation decides
+`WorthQueryApplicationProducerBinding`; its `Operation` is the mutation binding
+the producer runs. For a required Initial/Preserve feature, the
+[required pair](#required-initial-and-preserve-output-roles) projects its
+contracts and registration. Installation decides
 retention once: it compares the owner's `Operation` type with the `Operation`
 of each declared producer's mutation binding. When a declared producer runs that
 operation, a run made under that producer leaves its partition state on the
@@ -1144,8 +1198,10 @@ edition changes may require a cold preparation before same-edition reuse.
 The selected producer role stays fixed and exactly-one; the fixture also
 publishes and preserves the two supporting members required by its native
 planar topology, including their original incarnations.
-Each producer has its own readiness binding with that exact singleton
-`REQUIRED_PRODUCERS` dependency, even when the operation and checked owner are shared.
+Each producer has its own readiness binding with its exact producer dependency,
+even when the operation and checked owner are shared. For a required pair, the
+feature contract derives that association; do not copy it into a readiness
+`REQUIRED_PRODUCERS` list. Other genuine conditional dependencies remain explicit.
 When their complete portable package contracts are identical, contribution
 composition emits that operation/node contract once; each binding still installs
 and validates its own route. Different meanings for the same operation remain a
@@ -3563,9 +3619,10 @@ binding:
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// workspaces/worth-query-bank-world/crates/bank-domain/src/schema/workflow/control.rs (abridged)
-worth_query_operation!(pub $operation for BankSchema, input ApprovePaymentInputBinding);
-worth_query_operation_reads!($operation => [PaymentIdentityField]);
+// The Bank control-binding shape, using current operation-access authoring:
+worth_query_operation!(pub $operation for BankSchema, input ApprovePaymentInputBinding;
+    access { read_fields: [PaymentIdentityField]; }
+);
 
 pub struct $binding;
 
@@ -3589,7 +3646,9 @@ impl ApplicationCapabilityRequest<BankSchema, $capability> for ApprovePayment {
 }
 ```
 
-The macro is invoked once for each control step, for example
+Install its access with `schema.declared_operation::<Operation>(definition)`
+and the existing explicit policy. Keep the workflow-control binding's native
+authorization rules. The macro is invoked once for each control step, for example
 `ApprovedBusinessPaymentAuthoringOperation`, `…AuthoringBinding`,
 `…AuthoringIntent`, and `ApprovedBusinessPaymentAuthoring`. The whole file is
 244 lines.

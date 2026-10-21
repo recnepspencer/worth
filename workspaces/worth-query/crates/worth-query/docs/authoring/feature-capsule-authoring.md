@@ -36,6 +36,7 @@ Use `root(Schema, Feature)` for the root composition and
 block grammar is:
 
 ```text
+required_pair(Roles<Schema>);
 action(Binding, Delivery) {
     locality_and_change(Scope, Shape);
     correspondence(Correspondence);
@@ -56,9 +57,40 @@ meaning. Equivalent authoring preserves the program revision; changing actual
 delivery or metadata contracts changes canonical meaning through the existing
 identity owner. Unsupported or repeated clauses are rejected, and each block delegates
 to one typed builder and one `finish_action()`. Non-mutation members such as
-`provides`, `derived_artifact`, `derived_collection`, `managed_computation` and
-`conditional_operation` retain their semantics. Root-only `.operation::<Op>()`
+`provides`, `derived_artifact`, `derived_collection` and `managed_computation`
+retain their semantics. Root-only `.operation::<Op>()`
 remains a builder capability.
+
+## Required Initial and Preserve production
+
+For a feature that needs both lifecycle roles, declare one Host-side
+`WorthQueryRequiredFeaturePair<Schema, Feature, Initial, InitialReadiness,
+Preserve, PreserveReadiness>`. Its pure declaration projection supplies
+`required_pair(Roles<Schema>);` in the capsule macro, or
+`.required_pair::<Roles<Schema>>()` on the builder. The same alias supplies
+`contracts.feature::<Roles<Schema>>()?` and `setup.feature::<Roles<Schema>>(runtime)?`.
+Runtime construction uses `WorthQueryFeatureRuntime::new(initial, preserve)`;
+each value is `WorthQueryFeatureRoleRuntime::new(handler, provider, readiness)`.
+The role's operation/provider/family/output types come from its producer.
+
+Do not separately list the pair's operations, producer/conditional contracts or
+runtime registrations. The carrier also supplies each readiness owner's exact
+producer dependency; retain its native predicate and output-readiness binding,
+without copying that association into `REQUIRED_PRODUCERS`. Additional genuine
+conditional dependencies stay explicit.
+
+The program retains both required slots even if configuration omits them.
+Missing pair types or runtime literal fields fail compilation. Configured absent
+values fail installation with the original typed cause before seed, publication
+or session exposure. `OutputFamily::SUPPORTED` describes applicability; it does
+not declare a required installation slot.
+
+See the [small typed alias and full installation walkthrough](../../../../../../docs/build-an-application.md#required-initial-and-preserve-output-roles)
+and the runnable [required-feature example](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/examples/required_feature.rs).
+It declares the real program/schema/configuration and performs Initial
+publication, an authored source edit, Preserve publication on the same native
+entity and normal close. The declaration remains pure: Host implements its
+projection without importing runtime owners into the declaration crate.
 
 ## Ports and connections
 
@@ -105,8 +137,10 @@ operation/input equality, binding identity and workflow requirements from
 no ordinary delivery argument. Metadata attachments keep the same consuming
 contracts and composition occurrence.
 
-This answers required program binding membership while preserving conditional
-ownership. `conditional_operation(Op)` supplies operation meaning alone; a
+This standalone conditional form answers program binding membership while
+preserving conditional ownership. For a required Initial/Preserve feature use
+`required_pair` above; it already derives the pair's mutation membership.
+`conditional_operation(Op)` supplies operation meaning alone; a
 separate `native_action(Binding)` introduces a nonconditional action and conflicts
 with that installed conditional. Declaration installs neither readiness nor a
 producer: the real conditional, handler, producer association and exact declared

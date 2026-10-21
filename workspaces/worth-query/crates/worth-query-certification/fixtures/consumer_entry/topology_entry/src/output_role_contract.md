@@ -3,6 +3,13 @@ disagrees with the output contract fails to compile. The passing twins below
 use each declared role and family as the contract declares it; each failing
 example changes one thing.
 
+These are focused output-contract compile proofs, not feature installation
+recipes. For a required Initial/Preserve feature, use the single
+[required-role declaration](../../../../../../../../docs/build-an-application.md#required-initial-and-preserve-output-roles)
+and its program/contracts/setup projections. The isolated single-producer
+registration calls below exercise output-role refusals; do not copy them into
+a second per-feature wiring list.
+
 Reconstruction selection stays within the installed producer's output contract.
 Its declared preserved source role is accepted:
 

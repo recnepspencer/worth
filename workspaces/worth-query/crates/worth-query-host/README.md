@@ -51,12 +51,28 @@ revision is refused naming the current one.
 
 `WorthQueryApplicationContributionContracts` and
 `WorthQueryApplicationContributionSetup` resolve installed bindings internally.
-An entry declares `contracts.producer::<Binding>()` and
-`contracts.conditional::<Binding>()`, then configures its owned members with
-`setup.handler::<Binding, _>(handler)`,
-`setup.invariant(reference, execution_point, factory)`,
-`setup.producer::<Binding>(provider)`, and
-`setup.conditional::<Binding>(configuration)`.
+For a feature requiring Initial and Preserve production, declare one
+`WorthQueryRequiredFeaturePair<Schema, Feature, Initial, InitialReadiness,
+Preserve, PreserveReadiness>`. Use that same alias in the feature's
+`.required_pair::<Roles>()`, `contracts.feature::<Roles>()?` and
+`setup.feature::<Roles>(runtime)?`. Construct the two role values with
+`WorthQueryFeatureRoleRuntime::new(handler, provider, readiness_configuration)`
+and combine them with `WorthQueryFeatureRuntime::new(initial, preserve)`.
+The producers' associated types supply operation, provider, family and output
+role; the carrier derives each readiness owner's producer association. Keep its
+predicate and native output-readiness binding at the existing readiness owner.
+Do not maintain separate paired producer/conditional registration lists or copy
+that association into `REQUIRED_PRODUCERS`.
+
+The [required-role guide](../../../../docs/build-an-application.md#required-initial-and-preserve-output-roles)
+and runnable [required-feature example](../worth-query-certification/fixtures/consumer_entry/topology_entry/examples/required_feature.rs)
+show the whole program, configuration and installation path. A standalone
+conditional without a required production pair still uses
+`contracts.conditional` and `setup.conditional`; independent handlers and
+invariants keep their existing setup methods. For operation access, use one
+typed `worth_query_operation!(... access { ... })` declaration and install it
+with `schema.declared_operation::<Operation>(definition)`; see
+[operation access](../../../../docs/build-an-application.md#21-declare-operation-access-once).
 The sealed tuple traversal checks the complete installed contribution inventory
 before invoking configuration. Missing handlers fail before `initial_state`;
 producer applicability and required invariant closure, conditional dependencies,
