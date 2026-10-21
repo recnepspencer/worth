@@ -59,10 +59,6 @@ impl WorthQueryGraphReadAccessExecutionCounters {
             .finish()
     }
 
-    pub(crate) fn record_ephemeral_index_allocations(&mut self, allocation_count: usize) {
-        self.ephemeral_index_allocation_count += allocation_count;
-    }
-
     pub(crate) fn digest_part(&self) -> String {
         format!(
             "access_execution_counters:executor_entry:{}:strategy_recompute:{}:ephemeral_index_allocation:{}:edge_scan:{}:per_result_neighbor_lookup:{}:persistent_artifact_bypass:{}:materialized_row:{}",

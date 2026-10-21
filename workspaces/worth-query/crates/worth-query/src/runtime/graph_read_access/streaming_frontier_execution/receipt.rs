@@ -63,7 +63,7 @@ impl WorthQueryGraphReadStreamingReceipt {
         let convergence_result_digest = convergence_result_digest.into();
         let page_width = streaming_plan.page_budget().max_page_width().max(1);
         let emitted_page_count = emitted_row_count.div_ceil(page_width).max(1);
-        let page_count = emitted_page_count.max(streaming_plan.planned_frontier_page_count_floor());
+        let page_count = emitted_page_count;
         let mut page_receipts = Vec::with_capacity(page_count);
 
         for page_ordinal in 0..page_count {

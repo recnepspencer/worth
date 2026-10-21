@@ -1,7 +1,6 @@
 mod support;
 
 mod graph_read_access_architectural_closeout;
-mod graph_read_access_async_materialization_cases;
 mod graph_read_access_persistent_identity;
 mod graph_read_access_persistent_requirement;
 mod graph_read_access_phase_eight_ephemeral_provisioning;

@@ -6,7 +6,6 @@ use super::read_composition_runtime::{
 };
 use super::runtime_read_execution_receipts::{
     attach_graph_read_access_receipt, attach_read_intent_execution_evidence,
-    provision_graph_indexes_for_read_binding,
 };
 use super::*;
 use crate::intent_admission::dx::{
@@ -242,17 +241,9 @@ impl WorthQueryRuntime {
         let snapshot_identity = self
             .current_snapshot_identity_with_request(execution)
             .evidence_identity();
-        let ephemeral_graph_index_receipt =
-            provision_graph_indexes_for_read_binding(&binding, snapshot_identity.as_str())?;
         let mut executed_read = execute(self, execution, &binding)?;
-        executed_read.record_ephemeral_index_receipt(ephemeral_graph_index_receipt.as_ref());
 
-        attach_graph_read_access_receipt(
-            &mut executed_read,
-            &binding,
-            snapshot_identity.as_str(),
-            ephemeral_graph_index_receipt,
-        );
+        attach_graph_read_access_receipt(&mut executed_read, &binding, snapshot_identity.as_str());
         attach_read_intent_execution_evidence(&mut executed_read, &binding, &snapshot_identity);
 
         Ok(executed_read.into_product())

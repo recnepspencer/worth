@@ -6,8 +6,7 @@ use super::{
 use crate::identity::hash_parts;
 use crate::runtime::{
     WorthQueryGraphIndexInventory, WorthQueryGraphIndexInventoryMatchReport,
-    WorthQueryGraphReadAccessAuthorityReceipt, WorthQueryGraphReadAccessCostEstimate,
-    WorthQueryGraphReadAccessRequirementSet, WorthQueryGraphReadBudgetCheck,
+    WorthQueryGraphReadAccessAuthorityReceipt, WorthQueryGraphReadAccessRequirementSet,
     WorthQueryGraphReadFamilyIndexContract, WorthQueryPersistentGraphIndexRequirementDeclaration,
 };
 
@@ -15,8 +14,6 @@ use crate::runtime::{
 pub struct WorthQueryGraphReadAccessAdmission {
     digest: String,
     requirement_set: WorthQueryGraphReadAccessRequirementSet,
-    cost_estimate: WorthQueryGraphReadAccessCostEstimate,
-    budget_check: WorthQueryGraphReadBudgetCheck,
     case_registry: WorthQueryGraphReadAccessCaseRegistry,
     graph_index_inventory: WorthQueryGraphIndexInventory,
     graph_index_inventory_match_report: WorthQueryGraphIndexInventoryMatchReport,
@@ -35,14 +32,6 @@ impl WorthQueryGraphReadAccessAdmission {
 
     pub fn requirement_set(&self) -> &WorthQueryGraphReadAccessRequirementSet {
         &self.requirement_set
-    }
-
-    pub fn cost_estimate(&self) -> &WorthQueryGraphReadAccessCostEstimate {
-        &self.cost_estimate
-    }
-
-    pub fn budget_check(&self) -> &WorthQueryGraphReadBudgetCheck {
-        &self.budget_check
     }
 
     pub fn case_registry(&self) -> &WorthQueryGraphReadAccessCaseRegistry {
@@ -89,8 +78,6 @@ impl WorthQueryGraphReadAccessAdmission {
 
     pub(crate) fn admitted_in_authority(
         requirement_set: WorthQueryGraphReadAccessRequirementSet,
-        cost_estimate: WorthQueryGraphReadAccessCostEstimate,
-        budget_check: WorthQueryGraphReadBudgetCheck,
         case_registry: WorthQueryGraphReadAccessCaseRegistry,
         graph_index_inventory: WorthQueryGraphIndexInventory,
         graph_index_inventory_match_report: WorthQueryGraphIndexInventoryMatchReport,
@@ -99,8 +86,6 @@ impl WorthQueryGraphReadAccessAdmission {
     ) -> Self {
         Self::new(
             requirement_set,
-            cost_estimate,
-            budget_check,
             case_registry,
             graph_index_inventory,
             graph_index_inventory_match_report,
@@ -112,8 +97,6 @@ impl WorthQueryGraphReadAccessAdmission {
 
     pub(crate) fn denied_in_authority(
         requirement_set: WorthQueryGraphReadAccessRequirementSet,
-        cost_estimate: WorthQueryGraphReadAccessCostEstimate,
-        budget_check: WorthQueryGraphReadBudgetCheck,
         case_registry: WorthQueryGraphReadAccessCaseRegistry,
         graph_index_inventory: WorthQueryGraphIndexInventory,
         graph_index_inventory_match_report: WorthQueryGraphIndexInventoryMatchReport,
@@ -122,8 +105,6 @@ impl WorthQueryGraphReadAccessAdmission {
     ) -> Self {
         Self::new(
             requirement_set,
-            cost_estimate,
-            budget_check,
             case_registry,
             graph_index_inventory,
             graph_index_inventory_match_report,
@@ -135,8 +116,6 @@ impl WorthQueryGraphReadAccessAdmission {
 
     fn new(
         requirement_set: WorthQueryGraphReadAccessRequirementSet,
-        cost_estimate: WorthQueryGraphReadAccessCostEstimate,
-        budget_check: WorthQueryGraphReadBudgetCheck,
         case_registry: WorthQueryGraphReadAccessCaseRegistry,
         graph_index_inventory: WorthQueryGraphIndexInventory,
         graph_index_inventory_match_report: WorthQueryGraphIndexInventoryMatchReport,
@@ -158,7 +137,6 @@ impl WorthQueryGraphReadAccessAdmission {
             .then(|| {
                 WorthQueryPersistentGraphIndexRequirementDeclaration::from_admission_parts(
                     &requirement_set,
-                    &cost_estimate,
                     &graph_index_inventory_match_report,
                 )
             })
@@ -170,13 +148,11 @@ impl WorthQueryGraphReadAccessAdmission {
             );
         let inventory_match_digest = inventory_match_digest(&inventory_matches);
         let digest = hash_parts(&[
-            "worth_query_graph_read_access_admission_v1".to_string(),
+            "worth_query_graph_read_access_admission_v2".to_string(),
             format!(
                 "requirements:{}",
                 requirement_set.digest().render_support_hex()
             ),
-            format!("estimate:{}", cost_estimate.digest().as_str()),
-            format!("budget:{}", budget_check.budget_digest()),
             format!("case_registry:{}", case_registry.digest()),
             format!("graph_index_inventory:{}", graph_index_inventory.digest()),
             format!(
@@ -205,8 +181,6 @@ impl WorthQueryGraphReadAccessAdmission {
         Self {
             digest,
             requirement_set,
-            cost_estimate,
-            budget_check,
             case_registry,
             graph_index_inventory,
             graph_index_inventory_match_report,

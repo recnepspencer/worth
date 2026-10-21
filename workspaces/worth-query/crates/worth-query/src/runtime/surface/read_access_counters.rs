@@ -1,7 +1,7 @@
 use crate::identity::hash_parts;
 use crate::runtime::{
-    WorthQueryAdmittedGraphReadAccessPlan, WorthQueryEphemeralGraphIndexReceipt,
-    WorthQueryGraphReadAccessPlanConsumption, WorthQueryGraphReadStreamingReceipt,
+    WorthQueryAdmittedGraphReadAccessPlan, WorthQueryGraphReadAccessPlanConsumption,
+    WorthQueryGraphReadStreamingReceipt,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -13,7 +13,6 @@ pub struct WorthQueryGraphReadAccessComplexityCounters {
     per_result_neighbor_lookup_count: usize,
     planned_access_step_count: usize,
     consumed_access_step_count: usize,
-    ephemeral_index_allocation_count: usize,
     persistent_artifact_bypass_count: usize,
     streaming_page_count: usize,
     streaming_emitted_row_count: usize,
@@ -48,10 +47,6 @@ impl WorthQueryGraphReadAccessComplexityCounters {
         self.consumed_access_step_count
     }
 
-    pub fn ephemeral_index_allocation_count(&self) -> usize {
-        self.ephemeral_index_allocation_count
-    }
-
     pub fn persistent_artifact_bypass_count(&self) -> usize {
         self.persistent_artifact_bypass_count
     }
@@ -67,16 +62,12 @@ impl WorthQueryGraphReadAccessComplexityCounters {
     pub(in crate::runtime) fn from_execution_parts(
         plan: &WorthQueryAdmittedGraphReadAccessPlan,
         plan_consumption: &WorthQueryGraphReadAccessPlanConsumption,
-        ephemeral_receipt: Option<&WorthQueryEphemeralGraphIndexReceipt>,
         streaming_receipt: Option<&WorthQueryGraphReadStreamingReceipt>,
     ) -> Self {
         let execution = plan_consumption.execution_counters();
         let planned_access_step_count = plan.admission().requirement_set().rows().len();
         let consumed_access_step_count =
             planned_access_step_count * execution.executor_entry_count();
-        let ephemeral_index_allocation_count = ephemeral_receipt
-            .map(|receipt| receipt.counters().successful_allocation_count())
-            .unwrap_or(0);
         let streaming_page_count = streaming_receipt
             .map(|receipt| receipt.counters().page_count())
             .unwrap_or(0);
@@ -99,7 +90,6 @@ impl WorthQueryGraphReadAccessComplexityCounters {
             ),
             format!("planned_access_steps:{planned_access_step_count}"),
             format!("consumed_access_steps:{consumed_access_step_count}"),
-            format!("ephemeral_allocations:{ephemeral_index_allocation_count}"),
             format!(
                 "persistent_artifact_bypass:{}",
                 execution.persistent_artifact_bypass_count()
@@ -115,7 +105,6 @@ impl WorthQueryGraphReadAccessComplexityCounters {
             per_result_neighbor_lookup_count: execution.per_result_neighbor_lookup_count(),
             planned_access_step_count,
             consumed_access_step_count,
-            ephemeral_index_allocation_count,
             persistent_artifact_bypass_count: execution.persistent_artifact_bypass_count(),
             streaming_page_count,
             streaming_emitted_row_count,

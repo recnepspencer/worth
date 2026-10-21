@@ -255,7 +255,6 @@ fn closeout_ephemeral_covered_read_receipt_proves_bounded_runtime_index_use() {
         .expect("ephemeral receipt should expose access counters");
 
     assert_consumed_access_plan_receipt("ephemeral", &result);
-    assert_eq!(counters.ephemeral_index_allocation_count(), 1);
     assert_eq!(counters.per_result_neighbor_lookup_count(), 0);
     assert_eq!(counters.persistent_artifact_bypass_count(), 0);
 }

@@ -156,7 +156,7 @@ fn current_preview_and_branch_use_same_requirements_with_distinct_authority_dige
 }
 
 #[test]
-fn tenant_and_relationship_proofs_enter_shape_and_cost_before_execution() {
+fn tenant_and_relationship_proofs_enter_shape_before_execution() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -203,10 +203,6 @@ fn tenant_and_relationship_proofs_enter_shape_and_cost_before_execution() {
         plain.requirement_set().access_shape_digest(),
         narrowed.requirement_set().access_shape_digest()
     );
-    assert_ne!(
-        plain.cost_estimate().digest(),
-        narrowed.cost_estimate().digest()
-    );
     assert!(narrowed
         .authority_receipt()
         .policy_tenant_digest()
@@ -251,10 +247,6 @@ fn tenant_and_relationship_proofs_enter_shape_and_cost_before_execution() {
     assert_eq!(
         receipt_summary.authority_receipt_digest(),
         reviewed_authority_digest
-    );
-    assert_eq!(
-        receipt_summary.cost_estimate_digest(),
-        narrowed.cost_estimate().digest().as_str()
     );
 }
 

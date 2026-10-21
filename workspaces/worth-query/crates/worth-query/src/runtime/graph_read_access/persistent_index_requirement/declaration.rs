@@ -5,8 +5,7 @@ use super::{
 use crate::identity::hash_parts;
 use crate::runtime::{
     WorthQueryGraphIndexInventoryMatchReport, WorthQueryGraphReadAccessAdmissionPosture,
-    WorthQueryGraphReadAccessCostEstimate, WorthQueryGraphReadAccessRequirementSet,
-    WorthQueryGraphReadRequiredCapabilityOwner,
+    WorthQueryGraphReadAccessRequirementSet, WorthQueryGraphReadRequiredCapabilityOwner,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -17,8 +16,6 @@ pub struct WorthQueryPersistentGraphIndexRequirementDeclaration {
     selectivity_shape_digest: String,
     requirement_set_digest: String,
     inventory_match_report_digest: String,
-    estimated_index_bytes: usize,
-    estimated_result_bytes: usize,
     required_owner: WorthQueryGraphReadRequiredCapabilityOwner,
     requirement_rows: Vec<WorthQueryPersistentGraphIndexRequirementRow>,
     counters: WorthQueryPersistentGraphIndexRequirementCounters,
@@ -49,14 +46,6 @@ impl WorthQueryPersistentGraphIndexRequirementDeclaration {
         &self.inventory_match_report_digest
     }
 
-    pub fn estimated_index_bytes(&self) -> usize {
-        self.estimated_index_bytes
-    }
-
-    pub fn estimated_result_bytes(&self) -> usize {
-        self.estimated_result_bytes
-    }
-
     pub fn required_owner(&self) -> &WorthQueryGraphReadRequiredCapabilityOwner {
         &self.required_owner
     }
@@ -78,7 +67,6 @@ impl WorthQueryPersistentGraphIndexRequirementDeclaration {
 
     pub(crate) fn from_admission_parts(
         requirements: &WorthQueryGraphReadAccessRequirementSet,
-        estimate: &WorthQueryGraphReadAccessCostEstimate,
         report: &WorthQueryGraphIndexInventoryMatchReport,
     ) -> Option<Self> {
         let requirement_rows = report
@@ -98,21 +86,17 @@ impl WorthQueryPersistentGraphIndexRequirementDeclaration {
         let selectivity_shape_digest = requirements.selectivity_shape_digest().render_hex();
         let requirement_set_digest = requirements.digest().render_support_hex();
         let inventory_match_report_digest = report.digest().to_string();
-        let estimated_index_bytes = estimate.supported().index_bytes();
-        let estimated_result_bytes = estimate.supported().result_bytes();
         let required_owner = WorthQueryGraphReadRequiredCapabilityOwner::PersistentStore;
         let counters =
             WorthQueryPersistentGraphIndexRequirementCounters::new(requirement_rows.len());
         let digest = hash_parts(
             &[
-                "worth_query_persistent_graph_index_requirement_declaration_v1".to_string(),
+                "worth_query_persistent_graph_index_requirement_declaration_v2".to_string(),
                 format!("read_graph:{read_graph_digest}"),
                 format!("access_shape:{access_shape_digest}"),
                 format!("selectivity_shape:{selectivity_shape_digest}"),
                 format!("requirements:{requirement_set_digest}"),
                 format!("inventory_match_report:{inventory_match_report_digest}"),
-                format!("estimated_index_bytes:{estimated_index_bytes}"),
-                format!("estimated_result_bytes:{estimated_result_bytes}"),
                 format!("required_owner:{}", required_owner.as_str()),
                 counters.digest_part(),
             ]
@@ -131,8 +115,6 @@ impl WorthQueryPersistentGraphIndexRequirementDeclaration {
             selectivity_shape_digest,
             requirement_set_digest,
             inventory_match_report_digest,
-            estimated_index_bytes,
-            estimated_result_bytes,
             required_owner,
             requirement_rows,
             counters,

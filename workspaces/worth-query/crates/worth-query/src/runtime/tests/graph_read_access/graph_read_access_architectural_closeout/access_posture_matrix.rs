@@ -58,11 +58,11 @@ fn closeout_matrix_certifies_representative_access_postures() {
 
     assert_posture(
         request_execution,
-        "closeout.matrix.budget-denied",
-        |workspace| dense_traversal_family(workspace, "closeout-budget-denied"),
-        WorthQueryGraphReadAccessAdmissionPosture::Denied,
-        Some(WorthQueryGraphReadAccessDenialKind::BudgetExceeded),
-        Some(WorthQueryGraphReadAccessAdmissionPosture::AsyncMaterializationRequired),
+        "closeout.matrix.dense-supported",
+        |workspace| dense_traversal_family(workspace, "closeout-dense-supported"),
+        WorthQueryGraphReadAccessAdmissionPosture::InlineIndexed,
+        None,
+        None,
     );
 
     assert_support_profile_posture(

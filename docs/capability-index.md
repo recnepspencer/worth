@@ -588,3 +588,16 @@ cardinality; their managed queue occupancy is released on delivery or normal clo
 `WorthQueryOutputReadinessContractBuilder::new` takes identity, node identity,
 native projection, canonical query, projection role, strategy and lowering family;
 readiness is synchronous, effect-free native execution with no work/byte quotation.
+
+
+### Graph-read admission in the default Query workspace
+
+`worth-query-admission::integration::review_graph_read_access(requirements, inventory)`
+reviews native index support without a caller budget or cost estimate. The legacy
+`worth-query` receiver preserves the requirement set, inventory match, authority
+receipt and typed async, persistent-index, capability-registration or unsupported
+refusal. Its execution receipt retains the admitted plan and actual executor
+observations. It no longer presents estimated index bytes as an allocation receipt
+or creates materialized row proofs from estimated result counts. The retired
+`graph_read_materializations` simulator is not an asynchronous executor; an async
+requirement still refuses ordinary inline execution until its native support exists.

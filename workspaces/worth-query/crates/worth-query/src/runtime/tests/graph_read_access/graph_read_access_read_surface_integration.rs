@@ -15,7 +15,6 @@ use support::graph_read_access::read_surface_assertions::{
     assert_success_counters_are_executor_observed, read_composition_denial,
 };
 use support::graph_read_access::read_surface_declarations::{
-    dense_over_budget_family, execute_dense_over_budget_compose_read,
     execute_graph_access_compose_read, execute_unregistered_domain_operation_compose_read,
     graph_access_family, unregistered_domain_operation_family,
 };
@@ -77,59 +76,6 @@ fn basis_context_intent_fronts_keep_access_plan_consumption_visible() {
         );
         assert_success_counters_are_executor_observed(counters);
     }
-}
-
-#[test]
-fn over_budget_denials_publish_admission_envelopes_across_fronts() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let mut family_workspace = workspace(
-        request_execution,
-        "graph-read-access.read-surface.denial.family",
-    );
-    let family = dense_over_budget_family(&mut family_workspace, "read-surface-denial");
-    assert_pre_execution_graph_access_denial(&read_composition_denial(
-        family_workspace
-            .execute_read_family(request_execution, &family)
-            .expect_err("over-budget reusable family should deny"),
-    ));
-
-    let mut intent_workspace = workspace(
-        request_execution,
-        "graph-read-access.read-surface.denial.intent",
-    );
-    let intent_family = dense_over_budget_family(&mut intent_workspace, "read-surface-denial");
-    assert_pre_execution_graph_access_denial(&read_composition_denial(
-        intent_workspace
-            .read_family_intent(&intent_family)
-            .execute(request_execution)
-            .expect_err("over-budget intent should deny"),
-    ));
-
-    let mut review_workspace = workspace(
-        request_execution,
-        "graph-read-access.read-surface.denial.review",
-    );
-    let review_family = dense_over_budget_family(&mut review_workspace, "read-surface-denial");
-    let review = review_workspace
-        .read_family_intent(&review_family)
-        .review()
-        .expect("intent review should admit before graph access planning");
-    assert_pre_execution_graph_access_denial(&read_composition_denial(
-        review
-            .graph_read_access_plan()
-            .expect_err("over-budget reviewed plan should deny"),
-    ));
-
-    let mut compose_workspace = workspace(
-        request_execution,
-        "graph-read-access.read-surface.denial.compose",
-    );
-    assert_pre_execution_graph_access_denial(&read_composition_denial(
-        execute_dense_over_budget_compose_read(request_execution, &mut compose_workspace)
-            .expect_err("over-budget compose_read should deny"),
-    ));
 }
 
 #[test]
@@ -226,7 +172,6 @@ fn helper_fronts_prove_no_per_result_neighbor_lookup_loop_from_executor_counters
         .expect("receipt should expose complexity counters");
 
     assert_success_counters_are_executor_observed(counters);
-    assert_eq!(counters.ephemeral_index_allocation_count(), 1);
     assert!(
         result
             .receipt()

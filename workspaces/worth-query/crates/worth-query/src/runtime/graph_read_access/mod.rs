@@ -2,7 +2,6 @@ mod access_admission;
 mod access_authority_context;
 mod access_requirements;
 mod access_shape;
-mod async_materialized_read;
 mod basis_binding;
 mod boolean_expression;
 mod cost_model;
@@ -49,8 +48,8 @@ pub use access_admission::{
     WorthQueryGraphReadAccessCaseRegistry, WorthQueryGraphReadAccessDenial,
     WorthQueryGraphReadAccessDenialKind, WorthQueryGraphReadAccessExecutionCounters,
     WorthQueryGraphReadAccessInventoryMatch, WorthQueryGraphReadAccessPlanConsumption,
-    WorthQueryGraphReadAccessPlanExplanation, WorthQueryGraphReadBudgetExceededDenial,
-    WorthQueryGraphReadPersistentArtifactAudit, WorthQueryGraphReadRequiredCapabilityOwner,
+    WorthQueryGraphReadAccessPlanExplanation, WorthQueryGraphReadPersistentArtifactAudit,
+    WorthQueryGraphReadRequiredCapabilityOwner,
 };
 pub use access_authority_context::{
     admit_graph_read_access_authority, WorthQueryGraphReadAccessAuthorityContext,
@@ -71,19 +70,6 @@ pub use access_requirements::{
     WorthQueryGraphReadRelationAuthority,
 };
 pub use access_shape::WorthQueryGraphReadAccessShape;
-pub use async_materialized_read::{
-    WorthQueryGraphReadCheckpointInterval, WorthQueryGraphReadMaterializationAdmittedJob,
-    WorthQueryGraphReadMaterializationAdmittedLimits,
-    WorthQueryGraphReadMaterializationCancellationReceipt,
-    WorthQueryGraphReadMaterializationCheckpoint, WorthQueryGraphReadMaterializationCounters,
-    WorthQueryGraphReadMaterializationJob, WorthQueryGraphReadMaterializationJobState,
-    WorthQueryGraphReadMaterializationPolicy, WorthQueryGraphReadMaterializationProgress,
-    WorthQueryGraphReadMaterializationReceipt, WorthQueryGraphReadMaterializationRecoveryHandle,
-    WorthQueryGraphReadMaterializationRequest, WorthQueryGraphReadMaterializationRequestError,
-    WorthQueryGraphReadMaterializationResourceLimitReceipt,
-    WorthQueryGraphReadMaterializationRuntime, WorthQueryGraphReadMaterializedArtifact,
-    WorthQueryGraphReadMaterializedRowProof,
-};
 pub use basis_binding::{
     WorthQueryGraphReadBasisBinding, WorthQueryGraphReadBasisPosture,
     WorthQueryGraphReadPolicyTenantPosture, WorthQueryGraphReadPolicyTenantProofBinding,
@@ -110,13 +96,8 @@ pub use cost_model::{
     WorthQueryGraphReadObservedCostEstimate, WorthQueryGraphReadPlanningObservation,
     WorthQueryGraphReadSupportedCostContribution, WorthQueryGraphReadSupportedCostEstimate,
 };
-pub(crate) use ephemeral_index_provisioning::provision_ephemeral_graph_indexes_for_read_execution;
 pub use ephemeral_index_provisioning::{
-    WorthQueryEphemeralGraphIndex, WorthQueryEphemeralGraphIndexAllocationRow,
-    WorthQueryEphemeralGraphIndexCounters, WorthQueryEphemeralGraphIndexLifecycleRegistry,
-    WorthQueryEphemeralGraphIndexPlan, WorthQueryEphemeralGraphIndexProvisioningError,
-    WorthQueryEphemeralGraphIndexReceipt, WorthQueryEphemeralGraphIndexScope,
-    WorthQueryEphemeralGraphIndexScopeKind,
+    WorthQueryEphemeralGraphIndexAllocationRow, WorthQueryEphemeralGraphIndexPlan,
 };
 pub use explanation_api::{
     derive_graph_read_access_requirements, try_derive_graph_read_access_requirements,

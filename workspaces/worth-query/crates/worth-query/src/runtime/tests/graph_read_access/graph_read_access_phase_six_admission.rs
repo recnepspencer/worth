@@ -1,74 +1,11 @@
 use crate::runtime::{
     admit_graph_read_access_for_family, WorthQueryGraphReadAccessAdmissionPosture,
-    WorthQueryGraphReadAccessDenialKind, WorthQueryGraphReadAccessRequirementKind,
-    WorthQueryGraphReadBudgetClassKind, WorthQueryGraphReadRequiredCapabilityOwner,
-    WorthQueryRuntimeError,
+    WorthQueryGraphReadAccessRequirementKind, WorthQueryGraphReadRequiredCapabilityOwner,
 };
 
 use crate::runtime::tests::graph_read_access::support::graph_read_access_cost_model::{
-    dense_traversal_family, frontier_search_family, projection_only_family, workspace,
+    frontier_search_family, projection_only_family, workspace,
 };
-
-#[test]
-fn broad_read_is_denied_by_access_admission_before_execution() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let mut workspace = workspace(
-        request_execution,
-        "graph-read-access.phase-six.budget-denial",
-    );
-    let family = dense_traversal_family(&mut workspace, "phase-six-budget-denial");
-    let review = workspace
-        .read_family_intent(&family)
-        .review()
-        .expect("read intent review should still be inspectable");
-    let admission = review
-        .graph_read_access_admission()
-        .expect("graph read admission should be explainable");
-    let denial = admission
-        .denial()
-        .expect("broad graph read should be denied before execution");
-    let exceeded = denial
-        .budget_exceeded()
-        .expect("budget denial should carry exceeded fields");
-
-    assert!(!admission.is_admitted());
-    assert_eq!(
-        admission.posture(),
-        &WorthQueryGraphReadAccessAdmissionPosture::Denied
-    );
-    assert_eq!(
-        denial.kind(),
-        &WorthQueryGraphReadAccessDenialKind::BudgetExceeded
-    );
-    assert_eq!(
-        denial.suggested_posture(),
-        &WorthQueryGraphReadAccessAdmissionPosture::AsyncMaterializationRequired
-    );
-    assert_eq!(
-        admission.budget_check().class().kind(),
-        &WorthQueryGraphReadBudgetClassKind::ExceedsInlineEphemeralBudget
-    );
-    assert!(
-        exceeded.estimated_index_bytes()
-            > exceeded
-                .max_inline_index_bytes()
-                .expect("this refusal selects a finite index policy")
-    );
-    assert_read_denial_carries_admission(
-        review
-            .graph_read_access_plan()
-            .expect_err("denied graph read should not produce admitted access plan"),
-        admission.digest(),
-    );
-    assert_read_denial_carries_admission(
-        review
-            .execute(request_execution)
-            .expect_err("denied graph read should not execute"),
-        admission.digest(),
-    );
-}
 
 #[test]
 fn inline_read_review_plan_is_same_artifact_attached_to_execution_receipt() {
@@ -223,7 +160,7 @@ fn access_case_registry_covers_each_requirement_row_before_execution() {
 }
 
 #[test]
-fn admission_explanation_exposes_requirements_cost_and_budget_without_executor_topology() {
+fn admission_explanation_exposes_requirements_and_support_without_executor_topology() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -244,10 +181,6 @@ fn admission_explanation_exposes_requirements_cost_and_budget_without_executor_t
     assert!(!explanation.requirement_rows().is_empty());
     assert_eq!(
         explanation.requirement_rows().len(),
-        explanation.attribution_rows().len()
-    );
-    assert_eq!(
-        explanation.requirement_rows().len(),
         explanation.inventory_matches().len()
     );
     assert!(explanation
@@ -257,35 +190,5 @@ fn admission_explanation_exposes_requirements_cost_and_budget_without_executor_t
             inventory_match.required_capability_owner()
                 == &WorthQueryGraphReadRequiredCapabilityOwner::QueryRuntime
         }));
-    assert_eq!(
-        explanation.budget_check().class().kind(),
-        &WorthQueryGraphReadBudgetClassKind::InlineEphemeralCandidate
-    );
     assert!(explanation.denial().is_none());
-}
-
-fn assert_read_denial_carries_admission(error: WorthQueryRuntimeError, admission_digest: &str) {
-    match error {
-        WorthQueryRuntimeError::ReadCompositionDenied(denial) => {
-            let denial_admission = denial
-                .graph_read_access_admission()
-                .expect("read denial should retain graph read access admission");
-            assert_eq!(denial_admission.digest(), admission_digest);
-            let counters = denial
-                .graph_read_access_execution_counters()
-                .expect("read denial should retain graph read access execution counters");
-            assert_eq!(counters.executor_entry_count(), 0);
-            assert_eq!(counters.strategy_recompute_count(), 0);
-            assert_eq!(counters.edge_scan_count(), 0);
-            assert_eq!(counters.materialized_row_count(), 0);
-            assert_eq!(
-                denial_admission
-                    .denial()
-                    .expect("admission should retain access denial")
-                    .kind(),
-                &WorthQueryGraphReadAccessDenialKind::BudgetExceeded
-            );
-        }
-        other => panic!("expected read composition denial, got {other:?}"),
-    }
 }

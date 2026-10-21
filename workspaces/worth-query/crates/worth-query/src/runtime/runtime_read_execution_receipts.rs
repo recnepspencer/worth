@@ -1,27 +1,10 @@
 use super::*;
 use crate::intent_admission::WorthQueryReadExecutionBinding;
 
-pub(crate) fn provision_graph_indexes_for_read_binding(
-    binding: &WorthQueryReadExecutionBinding,
-    snapshot_identity_digest: &str,
-) -> Result<Option<WorthQueryEphemeralGraphIndexReceipt>, WorthQueryRuntimeError> {
-    provision_ephemeral_graph_indexes_for_read_execution(
-        binding.graph_read_access_plan(),
-        snapshot_identity_digest,
-    )
-    .map_err(|error| {
-        WorthQueryRuntimeError::ReadCompositionDenied(WorthQueryReadDenial::new(
-            WorthQueryReadDenialKind::BasisPreflightDenied,
-            error.as_str(),
-        ))
-    })
-}
-
 pub(crate) fn attach_graph_read_access_receipt<Product>(
     executed_read: &mut super::read_composition_runtime::WorthQueryExecutedReadProduct<Product>,
     binding: &WorthQueryReadExecutionBinding,
     snapshot_identity_digest: &str,
-    ephemeral_graph_index_receipt: Option<WorthQueryEphemeralGraphIndexReceipt>,
 ) where
     Product: WorthQueryReadExecutionProduct,
 {
@@ -40,7 +23,6 @@ pub(crate) fn attach_graph_read_access_receipt<Product>(
     executed_read.product_mut().attach_graph_read_access_plan(
         binding.graph_read_access_plan().clone(),
         graph_read_access_plan_consumption,
-        ephemeral_graph_index_receipt,
         graph_read_streaming_receipt,
     );
 }

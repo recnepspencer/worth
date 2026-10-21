@@ -10,7 +10,6 @@ pub struct WorthQueryGraphReadStreamingPlan {
     admission_digest: String,
     requirement_set_digest: String,
     page_budget: WorthQueryGraphReadStreamingPageBudget,
-    planned_frontier_page_count_floor: usize,
     canonical_result_basis_digest: String,
     replay_basis_digest: String,
 }
@@ -32,10 +31,6 @@ impl WorthQueryGraphReadStreamingPlan {
         &self.page_budget
     }
 
-    pub fn planned_frontier_page_count_floor(&self) -> usize {
-        self.planned_frontier_page_count_floor
-    }
-
     pub fn canonical_result_basis_digest(&self) -> &str {
         &self.canonical_result_basis_digest
     }
@@ -50,11 +45,6 @@ impl WorthQueryGraphReadStreamingPlan {
             return None;
         }
         let page_budget = WorthQueryGraphReadStreamingPageBudget::frontier_default();
-        let planned_frontier_page_count_floor = admission
-            .cost_estimate()
-            .intrinsic()
-            .candidate_roots()
-            .max(1);
         let admission_digest = admission.digest().to_string();
         let requirement_set_digest = admission.requirement_set().digest().render_support_hex();
         let canonical_result_basis_digest = hash_parts(&[
@@ -75,11 +65,10 @@ impl WorthQueryGraphReadStreamingPlan {
             format!("page_budget:{}", page_budget.digest()),
         ]);
         let digest = hash_parts(&[
-            "worth_query_graph_read_streaming_plan_v1".to_string(),
+            "worth_query_graph_read_streaming_plan_v2".to_string(),
             format!("admission:{admission_digest}"),
             format!("requirements:{requirement_set_digest}"),
             format!("page_budget:{}", page_budget.digest()),
-            format!("planned_frontier_page_count_floor:{planned_frontier_page_count_floor}"),
             format!("canonical_result_basis:{canonical_result_basis_digest}"),
             format!("replay_basis:{replay_basis_digest}"),
         ]);
@@ -88,7 +77,6 @@ impl WorthQueryGraphReadStreamingPlan {
             admission_digest,
             requirement_set_digest,
             page_budget,
-            planned_frontier_page_count_floor,
             canonical_result_basis_digest,
             replay_basis_digest,
         })

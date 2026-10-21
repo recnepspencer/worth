@@ -1,12 +1,12 @@
 use crate::runtime::{
-    WorthQueryGraphReadAccessAdmissionPosture, WorthQueryGraphReadBudgetClassKind,
-    WorthQueryGraphReadStreamingCursorDenialKind, WorthQueryGraphReadStreamingReceipt,
+    WorthQueryGraphReadAccessAdmissionPosture, WorthQueryGraphReadStreamingCursorDenialKind,
+    WorthQueryGraphReadStreamingReceipt,
 };
 
 use crate::runtime::tests::graph_read_access::support;
 
 use crate::runtime::tests::graph_read_access::support::graph_read_access_cost_model::{
-    dense_traversal_family, frontier_search_family, projection_only_family, workspace,
+    frontier_search_family, projection_only_family, workspace,
 };
 use support::aspect_touch as touch;
 
@@ -38,10 +38,6 @@ fn frontier_read_admits_streaming_plan_before_execution() {
     assert_eq!(
         admission.posture(),
         &WorthQueryGraphReadAccessAdmissionPosture::AdmittedPagedStreaming
-    );
-    assert_eq!(
-        admission.budget_check().class().kind(),
-        &WorthQueryGraphReadBudgetClassKind::ExceedsInlineEphemeralBudget
     );
     assert_eq!(
         plan.execution_strategy(),
@@ -174,32 +170,6 @@ fn streaming_cursor_session_denies_replay_and_skipped_sequence() {
         skipped_denial.kind(),
         &WorthQueryGraphReadStreamingCursorDenialKind::CursorSequenceSkipped
     );
-}
-
-#[test]
-fn dense_broad_read_remains_denied_instead_of_streaming_magic() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let mut workspace = workspace(
-        request_execution,
-        "graph-read-access.phase-nine.dense-denied",
-    );
-    let family = dense_traversal_family(&mut workspace, "phase-nine-dense-denied");
-    let review = workspace
-        .read_family_intent(&family)
-        .review()
-        .expect("dense broad read review should be inspectable");
-    let admission = review
-        .graph_read_access_admission()
-        .expect("dense broad admission evidence should exist");
-
-    assert!(!admission.is_admitted());
-    assert_eq!(
-        admission.posture(),
-        &WorthQueryGraphReadAccessAdmissionPosture::Denied
-    );
-    assert!(review.graph_read_access_plan().is_err());
 }
 
 #[test]

@@ -12,10 +12,7 @@ pub use case_inventory::{
     WorthQueryGraphReadAccessCase, WorthQueryGraphReadAccessCaseRegistry,
     WorthQueryGraphReadAccessInventoryMatch,
 };
-pub use denial::{
-    WorthQueryGraphReadAccessDenial, WorthQueryGraphReadAccessDenialKind,
-    WorthQueryGraphReadBudgetExceededDenial,
-};
+pub use denial::{WorthQueryGraphReadAccessDenial, WorthQueryGraphReadAccessDenialKind};
 pub(crate) use execution_evidence::WorthQueryGraphReadAccessExecutionRecorder;
 pub use execution_evidence::{
     WorthQueryGraphReadAccessExecutionCounters, WorthQueryGraphReadAccessPlanConsumption,
