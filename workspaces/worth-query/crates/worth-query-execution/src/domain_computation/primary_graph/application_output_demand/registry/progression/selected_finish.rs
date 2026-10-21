@@ -23,9 +23,8 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
         }
     }
 
-    /// The full denial stays with the immediate caller. The registry retains
-    /// the exact semantic kind/posture with an empty diagnostic subject, so
-    /// no new variable backing is allocated after Signal has been contacted.
+    /// The original denial stays with the immediate caller. The registry
+    /// retains its diagnostic clone, which carries no cleanup authority.
     pub(in crate::domain_computation::primary_graph) fn finish(
         self,
         mut performed_source: Option<WorthQueryPerformedOutputDemandSource>,
@@ -37,7 +36,7 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
             }
             Ok(_) => false,
         };
-        let terminal_kind = match result {
+        let terminal_denial = match result {
             Ok(WorthQueryOutputSchedulingResult::NoEffect(denial)) | Err(denial) => {
                 use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
                 // An interrupted scheduling attempt leaves the row for a later claim,
@@ -47,7 +46,7 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
                 } else {
                     WorthQueryOutputDemandRecoveryPosture::Terminal
                 };
-                Some(denial.kind())
+                (!interrupted).then(|| denial.clone())
             }
             _ => None,
         };
@@ -68,17 +67,14 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
         {
             return;
         }
-        let terminal_cleanup = terminal_kind.is_some() && !interrupted;
+        let terminal_cleanup = terminal_denial.is_some();
         let obligations = if interrupted {
             // Interruption before execution leaves the exact reopened Ready
             // with its owners, including its claims and retained custody.
             record.performed_source = performed_source.take();
             record.leave_refresh_unclaimed(DemandState::Admitted);
             Vec::new()
-        } else if let Some(kind) = terminal_kind {
-            let mut retained = WorthQueryOutputDemandDenial::new(kind, "");
-            retained.recovery_posture =
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal;
+        } else if let Some(retained) = terminal_denial {
             record.state = DemandState::Failed(retained);
             record.performed_source = None;
 

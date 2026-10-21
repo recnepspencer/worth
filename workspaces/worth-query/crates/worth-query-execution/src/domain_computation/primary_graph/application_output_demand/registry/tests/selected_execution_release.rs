@@ -18,6 +18,7 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
             ),
             (Kind::SourceQueryExecution(Read::StaleScope), true),
             (Kind::ProducerUnavailable, false),
+            (Kind::ProducerDomainDenied, false),
             (Kind::SourceQueryExecution(Read::CardinalityMismatch), false),
             (
                 Kind::RequestAuthorization(AuthorizationRefusal::MutationPreconditionRejected),
@@ -52,8 +53,22 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
                     successor_of: None
                 }
             ));
-            let mut denial = WorthQueryOutputDemandDenial::new(kind.clone(), "");
+            let mut denial = if kind == Kind::ProducerDomainDenied {
+                WorthQueryOutputDemandDenial::producer_domain_denied(
+                    "the original producer".to_owned(),
+                    Some("original domain refusal"),
+                )
+            } else {
+                WorthQueryOutputDemandDenial::new(kind.clone(), "the original producer".to_owned())
+            };
+            denial.readmission_failure = Some("original readmission refusal");
             finish.failure(&mut denial);
+            if !peer_executes {
+                let state = registry.state.lock().unwrap();
+                let dependent = super::super::required_stop::head_stop(&state.records, &demand_key)
+                    .expect("a dependent receives the original intrinsic failure");
+                assert_eq!(dependent, denial);
+            }
             assert_eq!(
             denial.recovery_posture(),
             crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal,

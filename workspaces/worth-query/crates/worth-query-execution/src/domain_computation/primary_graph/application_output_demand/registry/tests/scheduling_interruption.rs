@@ -29,10 +29,9 @@ impl Finish {
         fixture: &Fixture,
         kind: WorthQueryOutputDemandDenialKind,
     ) -> WorthQueryOutputDemandDenial {
-        let mut result = Err(WorthQueryOutputDemandDenial::new(
-            kind,
-            "scheduling stopped",
-        ));
+        let mut denial = WorthQueryOutputDemandDenial::new(kind, "scheduling stopped".to_owned());
+        denial.readmission_failure = Some("original scheduling refusal");
+        let mut result = Err(denial);
         match self {
             Self::Ordinary => {
                 let WorthQueryOutputDemandAdvanceAdmission::Schedule(source) =
@@ -171,7 +170,11 @@ fn other_scheduling_stops_still_fail_the_row_and_release_obligations() {
         let state = fixture.registry.state.lock().unwrap();
         let row = &state.records[&fixture.interest.key];
         assert!(matches!(&row.state, DemandState::Failed(stored)
-            if stored.kind() == WorthQueryOutputDemandDenialKind::ProducerUnavailable));
+            if stored == &denial));
+        assert_eq!(
+            super::super::required_stop::head_stop(&state.records, &fixture.interest.key),
+            Some(denial)
+        );
         assert!(row.performed_source.is_none());
         assert!(row.performed_obligations.is_empty());
     }
