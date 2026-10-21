@@ -10,7 +10,9 @@ mod approval;
 mod assessment_evidence;
 #[path = "publication/authentication.rs"]
 mod authentication;
+mod body;
 pub use authentication::PreparedWorkflowApprovalAuthentication;
+pub use body::{WorkflowApprovalBodyDenial, WorkflowApprovalBodyPreparation};
 #[path = "publication/commit.rs"]
 mod commit;
 #[path = "publication/evidence_readiness.rs"]

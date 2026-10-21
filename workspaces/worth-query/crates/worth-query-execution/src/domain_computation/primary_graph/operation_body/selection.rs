@@ -44,24 +44,31 @@ impl<Schema> PreparedBodySelections<Schema> {
 pub(super) fn installed_reads(
     body: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
 ) -> Vec<ApplicationOperationDecisionReadTarget> {
-    let Some(creation) = body.creation() else {
-        return Vec::new();
-    };
-    creation
-        .fields()
-        .iter()
-        .filter_map(|step| step.related_source().map(|source| source.selection_read()))
-        .chain(
+    body.creation()
+        .into_iter()
+        .flat_map(|root| root.initialization_sites())
+        .flat_map(|creation| {
             creation
-                .links()
+                .fields()
                 .iter()
-                .flat_map(|link| link.replacement_reads())
-                .filter(|read| {
-                    matches!(
-                        read,
-                        ApplicationOperationDecisionReadTarget::Relation { .. }
-                    )
-                }),
+                .filter_map(|step| step.related_source().map(|source| source.selection_read()))
+                .chain(
+                    creation
+                        .links()
+                        .iter()
+                        .flat_map(|link| link.replacement_reads())
+                        .filter(|read| {
+                            matches!(
+                                read,
+                                ApplicationOperationDecisionReadTarget::Relation { .. }
+                            )
+                        }),
+                )
+        })
+        .chain(
+            body.outputs()
+                .iter()
+                .filter_map(|output| output.target.selection_read()),
         )
         .collect::<std::collections::BTreeSet<_>>()
         .into_iter()

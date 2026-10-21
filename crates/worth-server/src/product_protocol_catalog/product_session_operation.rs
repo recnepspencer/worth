@@ -8,6 +8,8 @@ pub struct WorthServerProductSessionOperationProtocol {
     request_schema_identity: String,
     response_schema_identity: String,
     requires_product_session: bool,
+    #[serde(skip_serializing_if = "is_false")]
+    requires_server_instance: bool,
 }
 
 impl WorthServerProductSessionOperationProtocol {
@@ -18,6 +20,7 @@ impl WorthServerProductSessionOperationProtocol {
         request_schema_identity: String,
         response_schema_identity: String,
         requires_product_session: bool,
+        requires_server_instance: bool,
     ) -> Self {
         Self {
             operation_name,
@@ -26,6 +29,7 @@ impl WorthServerProductSessionOperationProtocol {
             request_schema_identity,
             response_schema_identity,
             requires_product_session,
+            requires_server_instance,
         }
     }
 
@@ -52,4 +56,12 @@ impl WorthServerProductSessionOperationProtocol {
     pub fn requires_product_session(&self) -> bool {
         self.requires_product_session
     }
+
+    pub fn requires_server_instance(&self) -> bool {
+        self.requires_server_instance
+    }
+}
+
+fn is_false(value: &bool) -> bool {
+    !value
 }

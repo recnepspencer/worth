@@ -43,9 +43,9 @@ mod tests {
         // Production merge validation currently only observes branch bases.
         // Its backend error type can carry execution stops; exercise that seam
         // with a real commit-owner refusal, without threading a production lease.
-        let TransactionCommitError::Execution { denial, .. } =
-            crate::relational_execution_refusal::work_exhausted(execution)
-        else {
+        let refusal = crate::relational_execution_refusal::work_exhausted(execution);
+        let source = crate::relational_execution_refusal::source_partition(&refusal);
+        let TransactionCommitError::Execution { denial, .. } = refusal else {
             panic!("real execution refusal");
         };
         let kind = match denial.kind {
@@ -59,7 +59,7 @@ mod tests {
         };
         assert_eq!(kind, worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
             denial: worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted,
-            partition_identity: Some(1), policy_ancestor: None,
+            partition_identity: source, policy_ancestor: None,
         });
         let classified =
             crate::runtime::ordinary_workflow_authority::classify_merge_validation_kind(

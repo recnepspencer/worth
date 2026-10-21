@@ -1,6 +1,6 @@
 mod affinity;
 mod pending;
-use affinity::parameter_denial;
+pub(super) use affinity::parameter_denial;
 pub use pending::WorthQueryPendingSourceExpectation;
 
 use super::*;
@@ -19,6 +19,7 @@ struct CheckedSourceAffinity<'a> {
 /// Source facts prepared for exactly one admitted operation before its handler
 /// or stable-output publication can consume them.
 pub(in crate::domain_computation::primary_graph) struct PreparedObservedSourceExpectation {
+    context: Option<super::ObservedQueryExpressionContext>,
     admission_identity: WorthQueryOperationAdmissionIdentity,
     selected_product: crate::basis::WorthQueryProductBranchReadIdentity,
     observed_product: crate::basis::WorthQueryProductBranchReadIdentity,
@@ -75,7 +76,8 @@ impl PreparedObservedSourceExpectation {
             ));
         }
         admission.bind_source_partition(self.bound.partition_identity);
-        admission.bind_source_facts(self.facts);
+        admission.bind_source_expectation_kind(self.bound.kind);
+        admission.bind_source_facts(self.facts, self.context);
         Ok(self.bound)
     }
 
@@ -88,6 +90,18 @@ impl PreparedObservedSourceExpectation {
         self,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<BoundStableObservedSourceFacts, WorthQuerySourceExpectationDenial> {
+        // Stable producer cutoffs do not execute authored body requirements.
+        // Never silently discard values required by that body.
+        if admission
+            .allowed_graph_contract()
+            .body()
+            .is_some_and(|body| body.requires_query_context())
+        {
+            return Err(WorthQuerySourceExpectationDenial::new(
+                WorthQuerySourceExpectationDenialKind::SourceContractMismatch,
+                "query-context body is not a stable producer cutoff",
+            ));
+        }
         if !self.matches_admission(admission)
             || !admission
                 .graph_work()
@@ -192,7 +206,13 @@ where
         >,
     {
         let identity = source.idempotency_identity().bytes();
-        self.bind_checked_source_expectation::<Binding, Scope>(admission, source, identity, input)
+        self.bind_checked_source_expectation::<Binding, Scope>(
+            admission,
+            source,
+            identity,
+            input,
+            WorthQuerySourceExpectationKind::Row,
+        )
     }
 
     pub fn bind_application_result_set_expectation<Binding, Scope>(
@@ -219,6 +239,7 @@ where
             result_set.source,
             identity,
             input,
+            WorthQuerySourceExpectationKind::ResultSet,
         )
     }
 
@@ -263,16 +284,19 @@ where
         let partition_identity = source.partition_identity();
         let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(admission.publication_request(), allocation_policy);
         let facts = prepared_facts.into_facts(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(admission.publication_request())))?;
+        let context = source.retain_expression_binding();
         let super::WorthQueryApplicationBasisSelectionIdentity::Product(observed_product) =
             source.selection
         else {
             unreachable!("validated product source retains its selected observation")
         };
         Ok(PreparedObservedSourceExpectation {
+            context,
             admission_identity: admission.admission_identity(),
             selected_product: checked.selected_product,
             observed_product,
             bound: WorthQueryBoundSourceExpectation {
+                kind: WorthQuerySourceExpectationKind::Row,
                 identity,
                 partition_identity,
             },
@@ -286,6 +310,7 @@ where
         source: WorthQueryObservedSource<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>,
         identity: [u8; 32],
         input: &Binding::Input,
+        kind: WorthQuerySourceExpectationKind,
     ) -> Result<WorthQueryPendingSourceExpectation<<Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query>, WorthQuerySourceExpectationDenial>
     where Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<Schema>,
     {
@@ -305,10 +330,12 @@ where
             Some(admission.publication_request()),
         )?;
         let bound = WorthQueryBoundSourceExpectation {
+            kind,
             identity,
             partition_identity: source.partition_identity(),
         };
         admission.bind_source_partition(bound.partition_identity);
+        admission.bind_source_expectation_kind(bound.kind);
         Ok(WorthQueryPendingSourceExpectation {
             admission_identity: admission.admission_identity(),
             selected_product: checked.selected_product,

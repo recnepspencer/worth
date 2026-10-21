@@ -53,18 +53,20 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         source: SharedObservedFact,
     ) -> Result<Self, &'static str> {
         match self {
-            Self::Application { read_scope, fact } if fact.as_ref() == source.as_ref() => {
-                Ok(Self::ApplicationObservedSource { read_scope, fact })
+            Self::Application { read_scope, fact } => Ok(Self::ApplicationObservedSource {
+                read_scope,
+                fact: retained_observation(fact, source)?,
+            }),
+            Self::ObservedSource { fact } => Ok(Self::ObservedSource {
+                fact: retained_observation(fact, source)?,
+            }),
+            Self::ApplicationObservedSource { read_scope, fact } => {
+                Ok(Self::ApplicationObservedSource {
+                    read_scope,
+                    fact: retained_observation(fact, source)?,
+                })
             }
-            Self::ObservedSource { fact } if fact.as_ref() == source.as_ref() => {
-                Ok(Self::ObservedSource { fact })
-            }
-            Self::ApplicationObservedSource { read_scope, fact }
-                if fact.as_ref() == source.as_ref() =>
-            {
-                Ok(Self::ApplicationObservedSource { read_scope, fact })
-            }
-            _ => Err("decision facts disagree at one structural locator"),
+            _ => Err(DISAGREEMENT),
         }
     }
 
@@ -175,4 +177,22 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         };
         Ok(equal)
     }
+}
+
+const DISAGREEMENT: &str = "decision facts disagree at one structural locator";
+
+/// Equal structural observations may carry different read bounds. Retain the
+/// one whose bound covers both; any other difference is a disagreement.
+fn retained_observation(
+    fact: SharedObservedFact,
+    source: SharedObservedFact,
+) -> Result<SharedObservedFact, &'static str> {
+    if fact.as_ref() == source.as_ref() {
+        return Ok(fact);
+    }
+    let mut merged = fact.as_ref().clone();
+    if !merged.merge_equal_observation(source.as_ref()) {
+        return Err(DISAGREEMENT);
+    }
+    Ok(if &merged == source.as_ref() { source } else { fact })
 }

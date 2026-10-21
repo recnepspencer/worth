@@ -148,6 +148,9 @@ pub enum ApplicationWorkflowDataFlow {
     JoinedEvidence,
     ApprovalAuthority,
     OperationInput,
+    /// The proposal retains each target's own original request contract.
+    /// Unlike `OperationInput`, this never substitutes the proposal's input.
+    CapturedOperationInput,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]

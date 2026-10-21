@@ -1,6 +1,5 @@
 //! Declaration-selected advance signatures; both delegate the same native spine.
 use super::*;
-use worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding;
 use worth_query_declaration::facade::application_program::{
     ApplicationRetainedCommit, ApplicationSourceCompletion,
 };
@@ -10,21 +9,14 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
-    I::Binding: ApplicationMutationAdmissionBinding<S>,
-    <I::Binding as ApplicationMutationAdmissionBinding<S>>::Admission:
-        super::super::super::mutation::authorization::WorthQueryBindingAdmission<S, I::Binding>,
-    <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync,
-    <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeResolution<
-        S,
-        <I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity,
-    >,
+    I::Binding: WorthQuerySourceOperationBinding<S>,
 {
     /// Advances once with fresh authority.
     pub fn advance(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> super::advancement::Advance<S, I, P, A, ApplicationSourceCompletion> {
-        self.advance_with_history(request, None)
+        <I::Binding as binding::sealed::Driver<S>>::advance(self, request, None)
     }
 }
 impl<S, I, P, A> WorthQuerySourceOnlyOperation<S, I, P, A, ApplicationRetainedCommit>
@@ -33,14 +25,7 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, I::Binding>,
-    I::Binding: ApplicationMutationAdmissionBinding<S>,
-    <I::Binding as ApplicationMutationAdmissionBinding<S>>::Admission:
-        super::super::super::mutation::authorization::WorthQueryBindingAdmission<S, I::Binding>,
-    <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync,
-    <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding: ApplicationMutationScopeResolution<
-        S,
-        <I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity,
-    >,
+    I::Binding: WorthQuerySourceOperationBinding<S>,
 {
     /// Retained delivery uses the same native history; `None` adds no work ceiling.
     /// ```compile_fail,E0061
@@ -82,6 +67,6 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         maximum_history_work: Option<std::num::NonZeroUsize>,
     ) -> super::advancement::Advance<S, I, P, A, ApplicationRetainedCommit> {
-        self.advance_with_history(request, maximum_history_work)
+        <I::Binding as binding::sealed::Driver<S>>::advance(self, request, maximum_history_work)
     }
 }

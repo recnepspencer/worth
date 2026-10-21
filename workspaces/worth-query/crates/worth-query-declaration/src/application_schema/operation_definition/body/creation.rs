@@ -22,7 +22,12 @@ pub struct ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Ent
     pub(super) links: Vec<super::ApplicationOperationBodyCreationLink>,
     pub(super) signing: Option<super::ApplicationOperationBodySigningSpec>,
     pub(super) signing_lifecycle: Option<super::ApplicationOperationBodySigningLifecycleSpec>,
+    pub(super) subject_impact_bound: Option<std::num::NonZeroUsize>,
     pub(super) enrollment: Option<super::ApplicationOperationBodyEnrollment>,
+    pub(super) reuse_current_if_unchanged: bool,
+    pub(super) peers: Vec<ApplicationOperationBodyCreation>,
+    pub(super) path_links: Vec<super::ApplicationOperationBodyCreationPathLink>,
+    pub(super) children: Vec<super::ApplicationOperationBodyChildCreation>,
     marker: PhantomData<fn() -> Entity>,
 }
 
@@ -51,7 +56,12 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             links: Vec::new(),
             signing: None,
             signing_lifecycle: None,
+            subject_impact_bound: None,
             enrollment: None,
+            reuse_current_if_unchanged: false,
+            children: Vec::new(),
+            peers: Vec::new(),
+            path_links: Vec::new(),
             marker: PhantomData,
         })
     }
@@ -69,18 +79,17 @@ impl<Schema, Operation, Input, Entity>
         Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
-        Field::Binding::validate(&value)
-            .map_err(crate::application_schema::ApplicationValueEncodeDenial::from)?;
-        self.fields
-            .push(ApplicationOperationBodyCreatedField::Literal {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
-                binding: Field::Binding::IDENTITY,
-                value: Field::Binding::encode(&value)?,
-            });
+        self.fields.push(super::initialization::literal::<
+            Schema,
+            Operation,
+            Entity,
+            Aspect,
+            Field,
+            Value,
+            Write,
+            Equality,
+            Unit,
+        >(field, value)?);
         Ok(self)
     }
 
@@ -93,20 +102,17 @@ impl<Schema, Operation, Input, Entity>
         Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
-        if member.is_empty() || member.trim() != member {
-            return Err(ApplicationOperationBodyAuthoringDenial::InvalidInputMember);
-        }
-        self.fields
-            .push(ApplicationOperationBodyCreatedField::Input {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
-                binding: Field::Binding::IDENTITY,
-                scalar_family: Field::Binding::SCALAR_FAMILY,
-                member: member.to_owned(),
-            });
+        self.fields.push(super::initialization::input::<
+            Schema,
+            Operation,
+            Entity,
+            Aspect,
+            Field,
+            Value,
+            Write,
+            Equality,
+            Unit,
+        >(field, member, false)?);
         Ok(self)
     }
 
@@ -121,20 +127,17 @@ impl<Schema, Operation, Input, Entity>
         Field: OperationWrites<Operation> + OptionalApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
-        if member.is_empty() || member.trim() != member {
-            return Err(ApplicationOperationBodyAuthoringDenial::InvalidInputMember);
-        }
-        self.fields
-            .push(ApplicationOperationBodyCreatedField::OptionalInput {
-                field: ApplicationFieldBindingLocus::new(
-                    field.entity(),
-                    field.aspect(),
-                    field.field(),
-                ),
-                binding: Field::Binding::IDENTITY,
-                scalar_family: Field::Binding::SCALAR_FAMILY,
-                member: member.to_owned(),
-            });
+        self.fields.push(super::initialization::input::<
+            Schema,
+            Operation,
+            Entity,
+            Aspect,
+            Field,
+            Value,
+            Write,
+            Equality,
+            Unit,
+        >(field, member, true)?);
         Ok(self)
     }
 
@@ -216,7 +219,12 @@ impl<Schema, Operation, Input, Entity>
             links: self.links,
             signing: self.signing,
             signing_lifecycle: self.signing_lifecycle,
+            subject_impact_bound: self.subject_impact_bound,
             enrollment: self.enrollment,
+            reuse_current_if_unchanged: self.reuse_current_if_unchanged,
+            children: self.children,
+            peers: self.peers,
+            path_links: self.path_links,
         };
         super::classified_capture::validate_creation(&creation)?;
         if !super::signing_lifecycle::validation::validate_creation(&creation) {
@@ -241,30 +249,40 @@ impl<Schema, Operation, Input, Entity>
             .links()
             .iter()
             .any(|link| {
-                link.scope_entity() != scope
+                (matches!(
+                    link.source,
+                    super::ApplicationOperationBodyCreationLinkSource::Scope
+                ) && link.scope_entity() != scope)
                     || link.created_entity()
                         != body.program.creation().expect("creation attached").entity()
             })
         {
             return Err(ApplicationOperationBodyAuthoringDenial::InvalidCreationLink);
         }
-        for step in body
+        for creation in body
             .program
             .creation()
-            .expect("creation attached before finishing")
-            .fields()
+            .into_iter()
+            .flat_map(|c| c.creation_roots())
         {
-            if !fields.insert(step.field()) {
-                return Err(ApplicationOperationBodyAuthoringDenial::DuplicateAssignment);
-            }
-            let foreign_source = match step.related_source() {
-                Some(source) => source.from != scope || source.field.entity() != source.to,
-                None => step
-                    .source_field()
-                    .is_some_and(|source| source.entity() != scope),
-            };
-            if foreign_source {
-                return Err(ApplicationOperationBodyAuthoringDenial::ForeignSourceEntity);
+            fields.clear();
+            for step in creation.fields() {
+                if !fields.insert(step.field()) {
+                    return Err(ApplicationOperationBodyAuthoringDenial::DuplicateAssignment);
+                }
+                let foreign_source = if let Some(path) = step.path_source() {
+                    !path.has_supported_shape() || path.path.start_entity() != scope
+                } else {
+                    match step.related_source() {
+                        Some(source) => source.from != scope || source.field.entity() != source.to,
+                        None => step
+                            .source_field()
+                            .is_some_and(|source| source.entity() != scope),
+                    }
+                };
+                if foreign_source {
+                    return Err(ApplicationOperationBodyAuthoringDenial::ForeignSourceEntity);
+                }
             }
         }
         Ok(body)

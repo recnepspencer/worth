@@ -3,7 +3,7 @@ use super::{
 };
 
 impl WorthQueryApplicationIdempotencyBinding {
-    pub(in crate::domain_computation::primary_graph) fn matches_workflow_birth(
+    pub(in crate::domain_computation::primary_graph) fn matches_workflow_instance(
         &self,
         identity: &[u8; 32],
     ) -> bool {

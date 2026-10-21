@@ -65,13 +65,7 @@ where
     }
 
     fn binding_digest(&self) -> String {
-        let binding = self.application.installed_schema().binding_identity();
-        format!(
-            "query-primary-graph-application-v1:{}:{}:{}",
-            binding.package_identity().render_hex(),
-            binding.schema_identity().render_hex(),
-            binding.generation(),
-        )
+        binding_digest(&self.application)
     }
 
     fn inspect_application_readiness(
@@ -80,17 +74,38 @@ where
         primary_graph::WorthQueryPrimaryGraphApplicationReadinessSnapshot,
         WorthServerQueryApplicationReadinessDenial,
     > {
-        self.application
-            .with_host_advancement(|phase| {
-                self.application
-                    .on_branch(self.application.current_world())
-                    .select(&phase)
-                    .map_err(WorthServerQueryApplicationReadinessDenial::ProductSelection)?
-                    .inspect_application_readiness()
-                    .map_err(WorthServerQueryApplicationReadinessDenial::Application)
-            })
-            .map_err(WorthServerQueryApplicationReadinessDenial::Advancement)?
+        inspect_application_readiness(&self.application)
     }
+}
+
+pub(super) fn binding_digest<Schema: ApplicationSchema>(
+    application: &primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+) -> String {
+    let binding = application.installed_schema().binding_identity();
+    format!(
+        "query-primary-graph-application-v1:{}:{}:{}",
+        binding.package_identity().render_hex(),
+        binding.schema_identity().render_hex(),
+        binding.generation()
+    )
+}
+
+pub(super) fn inspect_application_readiness<Schema: ApplicationSchema>(
+    application: &primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+) -> Result<
+    primary_graph::WorthQueryPrimaryGraphApplicationReadinessSnapshot,
+    WorthServerQueryApplicationReadinessDenial,
+> {
+    application
+        .with_host_advancement(|phase| {
+            application
+                .on_branch(application.current_world())
+                .select(&phase)
+                .map_err(WorthServerQueryApplicationReadinessDenial::ProductSelection)?
+                .inspect_application_readiness()
+                .map_err(WorthServerQueryApplicationReadinessDenial::Application)
+        })
+        .map_err(WorthServerQueryApplicationReadinessDenial::Advancement)?
 }
 
 pub(super) fn primary_graph_application_readiness_provider<Schema>(

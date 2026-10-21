@@ -13,9 +13,8 @@ use crate::domain_computation::primary_graph::{
 use worth_foundational::expression_api::ExpressionValue;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyRequirementDirection as Direction,
-    ApplicationOperationBodyRequirementSource as Operand, ApplicationReadableScalarValueBinding,
+    ApplicationOperationBodyRequirementSource as Operand,
     ApplicationSigningEvidenceSource as Source,
-    ApplicationSigningSubjectProvenanceBinding as Binding,
 };
 
 impl<Schema: ApplicationSchema, Operation>
@@ -67,6 +66,7 @@ impl<Schema: ApplicationSchema, Operation>
             let locator = self
                 .tracked_body_locator(&evidence, &source.provenance)
                 .map_err(HandlerExecutionDenial::new)?;
+            let layout = self.reader.layout;
             found |= self
                 .reader
                 .body_scalar_observe(&evidence, &locator, |raw| {
@@ -79,16 +79,10 @@ impl<Schema: ApplicationSchema, Operation>
                     let _memory = execution.reserve(bytes).map_err(|cause| {
                         HandlerExecutionDenial::new(WorthQueryAdvancementDenial::Resource(cause))
                     })?;
-                    let provenance = Binding::decode(raw).map_err(|_| invalid())?;
-                    let subject = provenance.authentication().subject;
-                    if subject.partition != identity.entity_id.partition_value_u64()
-                        || subject.slot != identity.entity_id.local_slot_value()
-                        || subject.generation != identity.entity_id.generation_value()
-                        || provenance
-                            .dependencies()
-                            .iter()
-                            .any(|dependency| dependency.source != subject)
-                    {
+                    let provenance = crate::domain_computation::primary_graph::application_attempt::signed_creation::PublishedCertifiedSubject::decode(layout, &source.provenance, raw).map_err(|()| invalid())?;
+                    if !provenance.has_valid_subject(worth_query_declaration::facade::application_schema::ApplicationSigningEntityCoordinates {
+                        partition: identity.entity_id.partition_value_u64(), slot: identity.entity_id.local_slot_value(), generation: identity.entity_id.generation_value()
+                    }) {
                         return Err(invalid());
                     }
                     let metadata = &provenance.authentication().metadata;

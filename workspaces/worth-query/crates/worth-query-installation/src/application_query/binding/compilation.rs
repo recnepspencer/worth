@@ -96,6 +96,9 @@ impl WorthQueryCompiledApplicationQuery {
                 )
                 .combine(obligations.installation_evidence().canonical_work()),
         );
+        let expression_context_schema = (definition.cardinality() == worth_query_declaration::facade::application_query::ApplicationQueryCardinality::ExactlyOne)
+            .then(|| definition.result_shape().expression_context_schema(schema.installed_declaration().members()).ok())
+            .flatten();
         let read_family = WorthQueryInstalledApplicationReadFamilyBinding::bind(read_graph);
         let authority_identity = derive_installed_query_authority_seal(
             &schema.package_authority.authority_key,
@@ -104,6 +107,7 @@ impl WorthQueryCompiledApplicationQuery {
             obligations.identity(),
         );
         Ok(Self {
+            expression_context_schema,
             binding_identity,
             canonical,
             canonical_work_policy,

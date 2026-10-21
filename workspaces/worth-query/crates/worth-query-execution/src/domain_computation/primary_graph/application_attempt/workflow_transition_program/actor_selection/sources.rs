@@ -112,7 +112,11 @@ impl WorthQueryWorkflowActorContext {
                     return Ok((None, None, None));
                 };
                 let node = unique(compiled.nodes_with_path(&required.node_path).iter())?;
-                let source = unique(compiled.operation_input_sources(node.entity()))?;
+                let source = unique(
+                    compiled
+                        .operation_input_sources(node.entity())
+                        .chain(compiled.captured_operation_input_sources(node.entity())),
+                )?;
                 let (transition, identity, parent) = handle.with_runtime(execution, |runtime| {
                     let (transition, identity) = native::original_transition(
                         execution,
@@ -139,6 +143,19 @@ impl WorthQueryWorkflowActorContext {
                 {
                     return Err(affinity("original workflow source pairing changed"));
                 }
+                if let Some(expected) = &required.captured_input {
+                    let actual = handle.with_runtime(execution, |runtime| {
+                        crate::domain_computation::primary_graph::workflow::proposal::observe_captured_workflow_input(
+                            execution, runtime, snapshot, layout, originals.proposal, &originals.proposal_identity,
+                            &required.node_path, expected.resource, facts,
+                        )
+                    })?;
+                    if &actual != expected || actual.input != required.input_identity {
+                        return Err(affinity("recorded actor captured target changed"));
+                    }
+                } else if required.input_identity != originals.proposal_input_identity {
+                    return Err(affinity("homogeneous operation input changed"));
+                }
                 self.validate_proposal(
                     execution,
                     handle,
@@ -149,7 +166,7 @@ impl WorthQueryWorkflowActorContext {
                     &identity,
                     originals.proposal,
                     &originals.proposal_identity,
-                    &required.input_identity,
+                    &originals.proposal_input_identity,
                     request,
                     facts,
                 )?;

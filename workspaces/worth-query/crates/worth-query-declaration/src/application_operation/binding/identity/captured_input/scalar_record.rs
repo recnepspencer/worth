@@ -181,6 +181,11 @@ impl<'a> Cursor<'a> {
             (tag::STR, F::String) => {
                 return Ok(ApplicationCanonicalInputScalar::Text(self.text()?))
             }
+            // The declared target family supplies Decimal meaning, not a Rust
+            // newtype name or a lossy float conversion. Its codec still admits validity.
+            (tag::STR, F::Decimal) => {
+                return Ok(ApplicationCanonicalInputScalar::DecimalText(self.text()?))
+            }
             _ => return Err(Denial::InvalidScalar),
         };
         Ok(ApplicationCanonicalInputScalar::Inline(value))

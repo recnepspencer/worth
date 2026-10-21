@@ -1,9 +1,11 @@
 //! Installed expression meaning and typed sources for an operation precondition.
 mod authoring;
-mod encoding;
+mod collection;
+pub(super) mod encoding;
 mod expression;
 mod operands;
 mod principal;
+pub(super) mod query_context;
 mod signing_evidence;
 mod validation;
 
@@ -34,12 +36,24 @@ pub enum ApplicationOperationBodyRequirementDenial {
     UnusedOperand,
     ForeignScope,
     UnsupportedScalar,
+    UnsupportedQueryContext,
+    MultipleQueryContexts,
     Expression(ExpressionDenial),
 }
 
 impl From<ExpressionDenial> for ApplicationOperationBodyRequirementDenial {
     fn from(value: ExpressionDenial) -> Self {
         Self::Expression(value)
+    }
+}
+impl From<crate::application_query::ApplicationQueryExpressionContextDenial>
+    for ApplicationOperationBodyRequirementDenial
+{
+    fn from(cause: crate::application_query::ApplicationQueryExpressionContextDenial) -> Self {
+        match cause {
+            crate::application_query::ApplicationQueryExpressionContextDenial::Expression(cause) => Self::Expression(cause),
+            crate::application_query::ApplicationQueryExpressionContextDenial::UndeclaredOrUnitBearingField => Self::UnsupportedQueryContext,
+        }
     }
 }
 
@@ -90,6 +104,19 @@ impl ApplicationOperationBodyRequirementProgram {
             return Err(Denial::InvalidName);
         }
         operands.sort_by(|left, right| left.name().cmp(right.name()));
+        if operands
+            .iter()
+            .filter(|operand| {
+                matches!(
+                    operand.source(),
+                    ApplicationOperationBodyRequirementSource::QueryContext { .. }
+                )
+            })
+            .count()
+            > 1
+        {
+            return Err(Denial::MultipleQueryContexts);
+        }
         if operands
             .windows(2)
             .any(|pair| pair[0].name() == pair[1].name())

@@ -15,14 +15,23 @@ fields can be set from a present scalar input, explicitly cleared, or replaced
 and initialized from one-level Option-valued input. Query installs and executes those
 values; the host does not choose a handler that independently restates them.
 An operation may declare presence requirements or Boolean Foundation expressions
-over typed scope fields and related-item counts. The same installed requirements
+over typed scope fields, related-item counts and outgoing child-field lists. The same installed requirements
 drive admission and authorized read-only guidance.
-Fixed typed output roles may preserve the admitted scope or identify the body's
-created row through Query's existing commit correspondence. A preservation-only
+For correlated multi-field or nested-row requirements, use an exact sealed
+[native query expression context](./native-query-expression-contexts.md) as a
+typed operand, not a host-built validation record.
+Fixed typed output roles may preserve the admitted scope, preserve its single
+selected outgoing subject, or identify the body's created row through Query's
+existing commit correspondence. A preservation-only
 body needs no dummy business-field write.
 The creation may also link to/from that admitted scope through typed declared
 relations, so domain membership does not depend on a later host effect.
 This remains a bounded body form; it does not dispatch workflow commands.
+For source changes that must remove obsolete selections beneath persistent rows,
+use [owned-selection retirement](./owned-selection-retirement.md), not a host cascade.
+For a conditional typed external request using the exact operation input, use
+[Authored Conditional External Effects](./conditional-body-effects.md). Its guard
+suppresses the effect, not the business operation, and uses the ordinary outbox.
 For one unsigned creation that must publish with its fresh native instance, use
 the explicit [workflow-enrollment attachment](./workflow-enrolled-creations.md).
 It does not replace a body with host-created workflow effects.
@@ -48,6 +57,12 @@ them or supply missing joins between them.
 Declare through `worth_query_decl::facade::application_schema`:
 
 - `Operation::reference().body().expect(...).assign(...).assign_input(...).finish()`;
+- `body.expect_input(field, "member")` to require a present field equal to one
+  captured flat scalar, without declaring a write;
+- `body.expect_input_from_path(path, field, "member")` for a related field,
+  preserving the path-start scope; see [path-input guards](./path-input-guards.md);
+- `body.assign_value_at_path(path, field, &value)` for a computed write to an exact
+  related endpoint; see [computed graph-target writes](./computed-path-writes.md);
 - `body.in_scope(Tenant::reference())` when creation does not touch an existing field;
 - `body.set_optional_input(optional_field, "member")` or
   `body.clear_optional(optional_field)` for distinct optional-value intentions;
@@ -71,7 +86,12 @@ Declare through `worth_query_decl::facade::application_schema`:
   `creation.link_to_scope(relation, "link-slot")` for links to the new row;
 - `creation.replace_from_scope(relation, "link-slot")` to atomically replace an
   at-most-one outgoing selection with that exact new row;
-- `body.preserve_scope_output::<Binding, Role>()` and
+- `creation.replace_and_retire_from_scope(relation, "link-slot")` for explicit
+  [disposable predecessor retirement](./retiring-selection-replacement.md);
+- `creation.reuse_current_if_unchanged()` for explicit
+  [complete-content selection reuse](./complete-content-selection-reuse.md);
+- `body.preserve_scope_output::<Binding, Role>()`,
+  `body.preserve_related_output::<Binding, Role>(relation)` and
   `creation.create_output::<Binding, Role>()` for fixed typed output correspondence;
 - a completed operation definition's `with_body(body)`;
 - `ApplicationProgramAuthoring::begin().with_schema(&schema).validated_program()`.
@@ -114,7 +134,7 @@ Callers do not supply an independently evaluated context or a `supplied` Boolean
 
 ## How It Executes
 
-For input assignments, the operation's structured input binding must opt in to
+For input assignments and input expectations, the operation's structured input binding must opt in to
 `RETAIN_CANONICAL_INPUT`. Its scalar destination binding must have a readable codec
 and an explicit `NATIVE_INPUT_ADMISSION` decoder resource profile. The built-in
 primitive scalar bindings supply profiles. Custom codecs default to unavailable;
@@ -143,6 +163,114 @@ wrong-family members. This selector does not reinterpret JSON or serialize the
 input again. It reserves selected values and the installed decoder's declared
 peak allocation on the same request, charges declared work, validates through
 the exact installed codec, then moves the prepared values into the candidate.
+
+### Exact Decimal inputs
+
+A field whose explicit scalar binding declares `ScalarAspectType::Decimal` can
+use exact captured text as a native body input. The pure domain value should
+validate its business rules and serialize transparently as a string:
+
+```rust,ignore
+#[derive(serde::Serialize)]
+#[serde(transparent)]
+struct ExactAmount(String); // Construction validates/normalizes before capture.
+
+#[derive(serde::Serialize)]
+struct SetAmounts {
+    amount: ExactAmount,
+    adjustment: Option<ExactAmount>,
+}
+```
+
+The installed field family supplies Decimal meaning. An ordinary String field
+still receives String; selecting Decimal does not parse numbers by looking at
+their spelling or an arbitrary Rust newtype name. Floats and integer inputs are
+not coerced to Decimal, and nominal serde wrappers remain unsupported by the flat
+selector. `"9007199254740993.125"` therefore keeps every digit without an f64
+round trip. Required text and Some(text) are supported; None in an optional
+replacement remains an explicit Clear or absent initializer.
+
+For example, declare both fields with the application's readable Decimal codec,
+then author:
+
+```rust,ignore
+let body = SetAmountsOperation::reference().body()
+    .assign_optional_input(Adjustment::reference(), "adjustment")?
+    .assign_input(Amount::reference(), "amount")?
+    .finish()?;
+```
+
+The codec must opt into native input admission with a profile covering its actual
+decoder, validator, temporary allocations and boxed result. It is still the
+authority for accepted grammar, signs, precision, range and canonical spelling.
+An exact nonnegative quantity codec can reject `"-1"`, `"1e3"` and `"01.00"`
+while its pure constructor normalizes valid user spelling **before** capture.
+Do not silently normalize a native input after its original identity is captured.
+
+The selector borrows exact Decimal text and quotes its retained byte capacity.
+Native execution materializes `AspectValue::Decimal` under the existing request
+reservation and admits the codec's declared resources before decoding. An
+advanced `ApplicationCanonicalInputScalar::DecimalText` is representation only:
+even malformed text can be selected, and it grants neither domain validity nor
+permission to write. Codec failure remains `InputMismatch { member }` before
+any body effect. No encoder tag, canonical input bytes, request identity or body
+transport shape changes for this support.
+
+Do not store graph quantities as String merely to bypass missing Decimal
+admission, round through floats, truncate fractions into whole-number fields, or
+skip the installed codec's validation.
+
+### Compare a field with captured input
+
+Use `expect_input` when a mutation must compare committed graph truth with a
+value already in its original command. It takes a typed field with
+`OperationReads<Operation>`; it does not need or grant write permission. For
+example, a source operation can guard the document's identity and then assign
+a different input member:
+
+```rust,ignore
+// Illustrative fragment; the surrounding operation declares both reads and its write.
+let body = SetRetention::reference().body()
+    .expect_input(DocumentIdentityField::reference(), "identity")?
+    .assign_input(DocumentRetentionField::reference(), "retention_days")?
+    .finish()?;
+```
+
+Both required and optional stored fields are supported. The input member must
+be a present scalar, not an Option. An absent stored field never matches;
+present-empty, false and zero remain ordinary values. Missing, duplicate, nested,
+wrong-family or codec-invalid input denies with `InputMismatch { member }`.
+A different or absent graph value denies with `SourceMismatch { entity, aspect,
+field }`. Neither publishes an assignment or creation. The source fact remains
+a publication obligation, so another session changing only the compared field
+can stale a prepared candidate.
+
+A realistic use is selecting a provider lot whose captured company must equal
+the NCR's committed company. Resolve and revision-admit the provider selection
+through the installed external-input port, construct the original input with
+that accepted company, then declare:
+
+```rust,ignore
+// Illustrative domain declaration, not a provider transaction or graph grant.
+let body = SelectLot::reference().body()
+    .expect_input(Company::reference(), "company")?
+    .set_optional_input(SelectedLot::reference(), "lot")?
+    .finish()?;
+```
+
+Retain the complete original input and logical key through the normal owning
+action. Exact committed replay recovers its original result; it does not rerun
+the guard against today's graph or fetch today's provider values. Native
+authorization still applies. Provider freshness at admission is not atomic
+with graph publication. Do not replace the guard with a host comparison, a
+copied readiness Boolean or a filtered query created just to enforce equality.
+
+This is a body execution guard, not a new expression operand or a requirement
+assessment finding. Read-only requirement assessment does not report this
+input comparison as Met/Unmet. Use declared requirements for guided readiness.
+Canonical schema body v20 and portable body v30 encode this new meaning only
+when present; older body encodings retain their existing meaning. Decoding or
+inspecting a body never grants execution authority.
 
 An optional Set requires a present flat scalar input member. `""` and zero remain
 present values; they are not Clear. An authored `clear_optional` is a distinct
@@ -226,9 +354,9 @@ Initialization may set read-only fields because those fields are being created,
 not edited later. The fixed key names a candidate-local symbolic creation slot;
 it is neither a business identity nor an idempotency key. Query creates the row
 in the existing admitted scope's context, checks that all required created
-fields are initialized, and charges creation and initializers to the same
-candidate. An operation's candidate ceiling must admit that creation and its
-writes. Creation is attached before the complete body is validated: a bare scope,
+fields are initialized, and places creation and initializers in the same
+candidate under declared create/write authority. Creation is attached before
+the complete body is validated: a bare scope,
 expectations, or requirements without a creation, scope assignment or output use cannot
 finish. `initialize_from_scope` requires a required scalar source field in the
 admitted scope with `OperationReads<Operation>`, a target with the same Rust value,
@@ -282,6 +410,20 @@ commit resolves a creation slot to its durable entity identity. No host manufact
 an output receipt. A preservation-only body observes scope Entity kind/liveness
 through the decision-read owner even though it has no scalar reads or writes.
 
+`preserve_related_output` requires a Preserve/ExactlyOne role whose Entity is the
+typed relation's target. The source must be the binding's actual scope; both
+entities and the relation need normal `OperationReads<Operation>` permission.
+Registration derives those three installed reads. Cold admission checks them,
+the endpoints and the exact binding/role contract independently. No live target
+refuses with `MissingAuthoritativeFact`; multiple distinct live targets refuse
+with `AmbiguousRelation`, both naming the relation. Neither produces a receipt.
+The body seals the same tracked selection used by related-source initializers
+and selection replacement. Candidate output binding uses that retained target,
+not a fresh relation lookup. A racing replacement stales the whole candidate.
+Exact committed replay returns the original correspondence even if the pointer
+later changes. This reference identifies a committed output; it is not by itself
+current workflow, signature or assessment authority.
+
 Creation links name typed relations with `OperationLinks<Operation>`. The created
 endpoint is fixed by the creation builder; finishing and fresh readmission bind
 the other endpoint to the body's admitted scope. The key is candidate-local, not
@@ -331,6 +473,27 @@ fresh governed query.
 An invalid input member returns `DomainDenied(InputMismatch { member })` before
 effects. Work or memory refusal remains an execution denial.
 
+### Unique business values
+
+Declare uniqueness once with the schema builder's `unique_field(entity, field)`;
+the field must be equality-queryable. This is independent of a creation's
+symbolic slot, the logical request key and authorization. For example, declaring
+`DocumentIdentityField` unique prevents two live Documents from holding the same
+business identity, including creates under different admitted tenant scopes.
+Use a different authored identity shape if business uniqueness is tenant-local.
+
+The shared native handler tail observes each distinct assigned unique value
+through its installed equality index at the candidate's retained snapshot.
+Creation initializers, required assignments and present optional replacements
+use that same owner; optional clears consume no value. These intrinsic write
+dependencies are retained before signing/sealing, without requiring a supplier
+lookup or granting access to the other holders. Previously observed predicates
+are reused, and the ordinary native lowering law still refuses taken values or
+two writes of the same unique value within one candidate. A concurrent claimant
+cannot turn an observed absence into permission: publication rechecks the
+retained predicate and uniqueness. No losing creation or membership link commits.
+Unavailable indexes fail closed; uniqueness is never downgraded to a host precheck.
+
 ## Small Example
 
 With the application's normal typed field and operation declarations in scope:
@@ -375,12 +538,16 @@ let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
 setup.operation_body::<SetRetentionBinding>()?;
 ```
 
-The ordinary caller sends its intent and stable logical key through
-`execute_in_program`. The installed body supplies `30`, not a caller-provided
-destination. Normal policy and invariants can still deny that write. A successful
-unit result is not a row snapshot: read authoritative data through a fresh
-governed query. `prepare_in_program` can retain the actual candidate before
-publication; it grants neither an unpublished result nor a fresh retry permit.
+The ordinary caller declares the action's delivery and captures its intent and
+stable logical key with `idempotency_owned`, then `retain_operation` for the exact
+action. Advance with fresh request authority and retain every returned owner;
+see the [owning front door](../foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions).
+The installed body supplies `30`, not a caller-provided destination. Normal policy
+and invariants can still deny that write. A successful unit result is not a row
+snapshot: read authoritative data through a fresh governed query. Deliberate
+native preparation uses the explicitly advanced lane's `prepare_in_program`;
+it is not the ordinary mutation/retry API and grants neither an unpublished
+result nor a fresh retry permit.
 
 For a caller supplied scalar, use `assign_input(DocumentRetentionField::reference(),
 "retention_days")` in place of `assign(...)`, and opt the operation's structured
@@ -436,8 +603,8 @@ let body = EnterReview::reference().body()
 ```
 
 Here `AuditActor` has `OperationWrites<EnterReview>` and exactly the identity
-value/codec of `EnterReviewBinding`. Admit the creation, link and four writes in
-the binding's normal candidate ceiling. Query commits the old stage, new stage,
+value/codec of `EnterReviewBinding`. Declare authority for the creation, link and
+writes. Query commits the old stage, new stage,
 actor, and membership atomically. A governed audit query reads the persisted
 actor independently of the unit mutation result. The intent contains no actor
 selector. This is not a signed attestation; a workflow occurrence or signature
@@ -535,14 +702,55 @@ let body = CopyRound::reference().body()
     .finish()?;
 ```
 
-Declare the corresponding typed Read/Create/Write/Link/Unlink capabilities and
-ordinary candidate ceiling. The intent contains parent and fresh round identity
+Declare the corresponding typed Read/Create/Write/Link/Unlink capabilities.
+The intent contains parent and fresh round identity
 only. Query derives installed reads and publishes the new fields, history and
 current pointer together. Historical signature/provenance remains unchanged;
 the new subject has no evidence until it signs independently. The real runnable
 deviation supplier exercises this path, source/selection races and retry after a
 later current selection. The Active guard is intentional: this is not a Reopen
 operation or fresh enrollment of an existing item.
+
+To return only the selected round without changing it, declare `CheckedRound` as
+a Preserve/ExactlyOne role in `CheckRoundBinding::Output`, with Entity
+`ApprovalRound`, and author:
+
+```rust
+let body = CheckRound::reference().body()
+    .in_scope(Deviation::reference())?
+    .preserve_related_output::<CheckRoundBinding, CheckedRound>(CurrentRound::reference())?
+    .finish()?;
+```
+
+To expose both the copied preimage and the new round, the copy operation's own
+output contract declares `SourceRound` as Preserve/ExactlyOne and `CreatedRound`
+as Create/ExactlyOne. Attach the first before creating, and the second to the
+creation builder:
+
+```rust
+let body = CopyRound::reference().body()
+    .in_scope(Deviation::reference())?
+    .preserve_related_output::<CopyRoundBinding, SourceRound>(CurrentRound::reference())?
+    .create_in_scope(ApprovalRound::reference(), "copied-round")?
+    .initialize_input(RoundIdentity::reference(), "identity")?
+    .initialize_optional_from_related(
+        CurrentRound::reference(), RoundDescription::reference(), RoundDescription::reference(),
+    )?
+    .initialize_from_related(
+        CurrentRound::reference(), RoundAssignee::reference(), RoundAssignee::reference(),
+    )?
+    .link_from_scope(RoundHistory::reference(), "history")?
+    .replace_from_scope(CurrentRound::reference(), "current")?
+    .create_output::<CopyRoundBinding, CreatedRound>()?
+    .finish()?;
+```
+
+Keep any real domain guards and required initializers from the complete operation.
+On commit, `receipt.outputs_of::<CopyRoundOutputs>()?.entity::<SourceRound>()?`
+names the original round; `entity::<CreatedRound>()?` names the new one. Both
+ExactlyOne roles return typed entities directly. Copying and returning the source
+share one decision observation even though the candidate replaces CurrentRound.
+Do not resolve the source again after commit: it now points at the created round.
 
 To expose its actual committed identity, give `CreateDocumentBinding::Output` a
 fixed role whose Entity is Document and Action is `WorthQueryCreateOutput`, then
@@ -551,6 +759,15 @@ builder. On the real commit receipt, read
 `receipt.outputs_of::<CreateOutputs>()?.entity::<CreatedDocument>()?`.
 ExactlyOne yields the typed entity directly; AtMostOne yields Option. Neither a
 business identity nor the symbolic creation slot substitutes for this reference.
+
+When such a body performs a guarded workflow operation, Query also retains its
+actual output correspondence on that native operation transition. This happens
+in the same publication as the body and transition, not through another host
+write. There is no extra supplier registration or caller-supplied output list.
+For example, a closing body may Preserve its item and Create its audit row;
+the retained entries name those actual entities, not today's selected round.
+See [retained operation correspondence](../foundations/workflows.md#retained-operation-correspondence)
+for the historical identity boundary and the remaining chain-affinity limit.
 
 A conditional assessment publisher can keep its pure producer kernel and native
 source/settlement contract while declaring the effect itself:
@@ -601,6 +818,59 @@ review flag makes this authored rule NotApplicable. When it is true, the same
 body supplies guidance and refuses the write until one distinct validator exists.
 The host does not recheck the count or choose a default rule result.
 
+### Require values on every related item
+
+Use `outgoing_field_values(name, relation, field)` on the same operand builder
+when a count alone is insufficient. The field must belong to the relation's
+typed target and both must declare `OperationReads<Operation>`. Fresh schema
+admission also checks the exact field binding, scalar width, optionality,
+unit-free contract and complete relation/entity/field read closure.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The runnable supplier uses this same call shape.
+let operands = Submit::reference().requirement_operands()
+    .outgoing_field_values("notes", Items::reference(), ItemNote::reference())?;
+let requirement = ApplicationOperationBodyRequirement::admit(
+    "complete-item-notes", operands, None,
+    parser.parse("length(notes) >= 2 && notes.all(n, is_some(n) && length(unwrap(n)) > 0)")?,
+    "notes",
+)?;
+// Attach to the ordinary body with .requirement(requirement), then install it.
+```
+
+Here `ItemNote` is optional text. Required fields produce plain list elements;
+optional fields produce Option elements, including `None`. Membership is a
+distinct-live-child set: duplicate edges do not add elements, dangling endpoints
+are unavailable, and missing required or malformed values are typed denials,
+not omitted elements or fabricated false. Empty membership produces an empty
+list. Foundation's `all` over that list does not establish a collection minimum;
+author the length requirement explicitly when the business requires one.
+
+Query reads adjacency, child liveness and child fields on the same retained
+snapshot. The existing tracked observations drive both guidance and actual
+publication currentness. A later member or consumed-field change can make a
+prepared attempt stale. A ready finding is descriptive, not permission to
+bypass fresh admission or automatically retry a stale mutation.
+These are admission dependencies, not automatically certified signature subjects.
+Only the signed body's declared captures define its permanent subject footprint;
+a field-list requirement does not add collection captures to an attestation.
+
+The runnable deviation supplier checks its real tenant-to-draft collection
+through two immutable installed actions with minimums one and two. Its common
+entry/driver stays unchanged. One ready early-signed draft does not hide another
+incomplete member; completing that member permits the check without requiring
+its signature. A preserved scope output describes the actual checked tenant,
+not an ongoing collection-validity grant.
+
+Enumeration follows native identity order, not user/business ordering. This
+single outgoing hop has no filters, nested paths, row records, or correlated
+multi-field predicate contract. Findings target the collection and child field,
+not individual failing rows. Do not zip independent field lists into a custom
+host rule engine. Resource limits refuse rather than truncate the collection.
+Body record v24 carries this new source; v1–v23 keep their existing meaning and
+refuse its source tag.
+
 ## How It Relates To Other Features
 
 Program manifests and semantic descriptions include body values. Portable schema
@@ -616,6 +886,9 @@ Optional-input assignment and initialization use portable body record v9.
 Older versions reject those opcodes rather than reinterpret their intent.
 Fixed output uses select portable body record v10; valid no-output v1–v9 records
 retain their previous bytes. Their meaning enters both schema and program identity.
+Related Preserve outputs select portable body record v22, schema body meaning v14
+and program body meaning v17. Earlier Scope/Create encodings remain unchanged.
+Profiles older than v22 reject related-output tag 3 rather than reinterpreting it.
 Creation links select portable body record v11; valid no-link v1–v10 encodings
 retain their previous bytes. Direction, endpoints, relation and key enter both
 schema and program meaning, and fresh reconstruction keeps that exact linkage.
@@ -667,22 +940,35 @@ This form supports literal equality expectations, literal assignments and flat
 input member assignments on one admitted scope's required scalar fields, optional
 Set-from-flat-input, explicit Clear, one-level Option-valued replacement and
 initialization, operation-specific presence requirements,
-and Foundation Boolean requirements over scope scalar/presence and distinct
-incoming/outgoing related-item count operands, plus
+and Foundation Boolean requirements over scope scalar/presence, distinct
+incoming/outgoing related-item count operands and outgoing child-field lists, plus
 one in-context created entity with literal, flat-input, tracked scope-preimage or
 single outgoing related-subject required/optional preimage
 initializers or an exact unitless admitted-principal identity initializer,
 links between that creation and its admitted scope, including at-most-one outgoing
 selection replacement, plus fixed
-Preserve-scope/Create-slot output uses. It requires
-at least one real creation, scope assignment or output use and unit results.
+Preserve-scope, Preserve-single-outgoing-subject and Create-slot output uses. It requires
+at least one real creation, scope assignment, output use or
+[whole-input or native-query-context external emission](./conditional-body-effects.md) and unit results.
+Exact guard-free [computed path writes](./computed-path-writes.md) additionally
+support required unitless UInt64 destinations through the same candidate.
 Output roles are binding-affine; a body cannot silently reinterpret one binding's
 roles under another binding with matching names. Arbitrary target selection,
 Retire and role-family member uses are unsupported. Optional literal assignments,
 general input/source assignments, filtered collections, governed-query operands,
-custom expression kernels, multiple creations, arbitrary existing-target relation
+custom expression kernels, arbitrary existing-target relation
 edits, signature consequences and command
 continuation are not implemented here.
+Explicit unsigned [atomic child creation](./atomic-child-creation.md) supports
+multiple newly created sites through this same native body, not a host effect loop.
+Related outputs have no Optional, reverse or filtered selection form. They return
+the preimage, not a post-write query result. Guarded operation settlement retains
+that correspondence on the performed operation transition.
+`require_predecessor_output::<Binding, Selected, Producer, Produced>()` on an
+authored succession joins a captured Preserve/ExactlyOne selection to the latest
+performed occurrence of the named producer's ExactlyOne output. See
+[succession output affinity](../foundations/workflow-succession-output-affinity.md).
+The supplier still owns the graph and business-current selection meaning.
 Related copying has no filtered, multi-subject or reverse-selection form and
 cannot initialize a required target from an optional source. Related certified
 captures are refused, not reinterpreted as root-scope captures. Copying alone does

@@ -8,6 +8,7 @@
 # unsafe_code is forbidden per-crate via #![forbid(unsafe_code)] in lib.rs.
 
 [build]
+incremental = true
 rustflags = [
     "-C", "overflow-checks=on",
     # WORTH UI selects its Linux windowing system at compile time. The arms and
@@ -28,4 +29,4 @@ rustflags = [
 #   RUST_LOG=off    cargo test   → silent (CI-friendly)
 [env]
 RUST_LOG = { value = "info", force = false }
-RUST_MIN_STACK = { value = "16777216", force = false }
+RUST_MIN_STACK = { value = "67108864", force = false }

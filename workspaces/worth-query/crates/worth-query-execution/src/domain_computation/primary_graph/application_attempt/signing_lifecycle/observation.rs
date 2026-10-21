@@ -1,14 +1,11 @@
 //! Bounded current membership and immutable footprint observation retain native revisions.
+use super::super::signed_creation::PublishedCertifiedSubject as Provenance;
 use super::super::{
     fact::{observe_adjacency_checked, AdjacencyObservationDenial},
     WorthQueryApplicationAdjacencyDirection as Direction,
 };
 use super::{
     attempt, capacity, refused, unavailable, EntityId, Fact, Kind, KindId, Lease, Outcome, Rule,
-};
-use worth_query_declaration::facade::application_schema::{
-    ApplicationReadableScalarValueBinding, ApplicationSigningSubjectProvenance as Provenance,
-    ApplicationSigningSubjectProvenanceBinding as Binding,
 };
 use worth_relational::facade::{
     runtime::{
@@ -116,7 +113,8 @@ pub(super) fn footprint(
         locator,
         |value| {
             let value = value.ok_or_else(unavailable)?;
-            let value = Binding::decode(value).map_err(|_| unavailable())?;
+            let value =
+                Provenance::decode(&lease.layout, field, value).map_err(|()| unavailable())?;
             Ok::<_, Outcome>(value)
         },
     )

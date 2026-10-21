@@ -21,6 +21,7 @@ where
         let actor_policy = Spec::actor_policy();
         let observation_policy = Spec::observation_policy();
         self.validate_policies(&actor_policy, &observation_policy)?;
+        self.validate_succession_producers()?;
         let authoring_capability = self.authoring_capability.ok_or_else(|| {
             denial(
                 WorthQueryApplicationWorkflowInstallationDenialKind::MissingAuthoringCapability,
@@ -41,6 +42,7 @@ where
         })?;
         if self.operations.is_empty()
             && self.births.is_empty()
+            && self.successions.is_empty()
             && self.assessments.is_empty()
             && self.conditions.is_empty()
             && self.approvals.is_empty()
@@ -60,6 +62,7 @@ where
             &advance_capability,
             &self.operations,
             &self.births,
+            &self.successions,
             &self.assessments,
             &self.conditions,
             &self.approvals,
@@ -76,6 +79,7 @@ where
             advance_capability,
             operations: self.operations.into_boxed_slice(),
             births: self.births.into_boxed_slice(),
+            successions: self.successions.into_boxed_slice(),
             assessments: self.assessments.into_boxed_slice(),
             conditions: self.conditions.into_boxed_slice(),
             approvals: self.approvals.into_boxed_slice(),

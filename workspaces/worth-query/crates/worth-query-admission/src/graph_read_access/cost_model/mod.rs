@@ -1,5 +1,4 @@
 mod attribution;
-mod budget;
 mod counters;
 mod estimate;
 mod estimator;
@@ -11,11 +10,6 @@ mod status;
 pub use attribution::{
     WorthQueryGraphReadCostAttributionRow, WorthQueryGraphReadIntrinsicCostContribution,
     WorthQueryGraphReadSupportedCostContribution,
-};
-pub use budget::{
-    WorthQueryGraphReadBudget, WorthQueryGraphReadBudgetCheck, WorthQueryGraphReadBudgetClass,
-    WorthQueryGraphReadBudgetClassKind, WorthQueryGraphReadBudgetDigest,
-    WorthQueryGraphReadInlineEphemeralAllowance, WorthQueryGraphReadInlineEphemeralAllowanceKind,
 };
 pub use counters::WorthQueryGraphReadCostEstimateCounters;
 pub use estimate::{

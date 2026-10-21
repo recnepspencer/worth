@@ -31,6 +31,7 @@ pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout, Facts: Fa
 }
 
 pub(super) struct WorthQueryRegisteredProviderEffects {
+    body_external_emission: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
     expected_steps: WorthQueryExpectedEffectSteps,
     batch: WorkerIntentBatch,
     emissions: WorthQueryAdmittedApplicationEmissionBatch,
@@ -99,6 +100,7 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
         let emissions = WorthQueryAdmittedApplicationEmissionBatch::admit(emissions)
             .map_err(|_| invalid_emission_denial())?;
         Ok(WorthQueryRegisteredProviderEffects {
+            body_external_emission: None,
             expected_steps,
             batch,
             emissions,
@@ -110,6 +112,35 @@ impl<'facts, 'layout, Facts: FactSequence + ?Sized>
 }
 
 impl WorthQueryRegisteredProviderEffects {
+    pub(super) fn bind_body_external_emission(
+        &mut self,
+        selection: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
+    ) {
+        self.body_external_emission = selection;
+    }
+    /// Mandatory contracts remain mandatory unless the native body earned an
+    /// exact suppression, or this is receipt-backed settlement only. That
+    /// origin cannot carry a new emission or a body-emission disposition.
+    pub(super) fn selected_external_contract<'a>(
+        &self,
+        original: &'a worth_query_installation::facade::InstalledExternalEffectContract,
+        settlement: Option<&super::super::workflow_transition_program::LocalActionSettlementProof>,
+    ) -> Result<
+        Option<&'a worth_query_installation::facade::InstalledExternalEffectContract>,
+        &'static str,
+    > {
+        if settlement.is_some() {
+            if self.body_external_emission.is_some() || self.emissions.len() != 0 {
+                return Err(
+                    "native local settlement cannot carry a body emission disposition or emissions",
+                );
+            }
+            return Ok(None);
+        }
+        crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection::selected_external_contract(
+            self.body_external_emission.as_ref(), original,
+        )
+    }
     pub(in crate::domain_computation::primary_graph) fn native_publication_roles(
         &self,
     ) -> impl ExactSizeIterator<Item = (&str, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture, &str, &worth_relational::facade::transactions::EntityReference)> + Clone{
@@ -202,6 +233,7 @@ impl WorthQueryRegisteredProviderEffects {
             provider.bind_application_dispatch_outbox(batch, dispatch_basis, mutation_partition)?;
         Ok((
             Self {
+                body_external_emission: self.body_external_emission,
                 expected_steps: self.expected_steps,
                 batch,
                 emissions: self.emissions,

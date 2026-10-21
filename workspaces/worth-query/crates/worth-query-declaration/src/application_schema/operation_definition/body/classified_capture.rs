@@ -149,18 +149,32 @@ impl<Schema, Operation, Input, Entity>
 }
 
 pub(super) fn validate_roles(fields: &[Step], encoding: Option<Encoding>) -> Result<(), Denial> {
-    let classified = fields
+    // Graph-certified captures are not admitted through the older scope-only
+    // provenance profile. The graph owner installs its distinct encoding.
+    if fields
         .iter()
-        .any(|step| matches!(step, Step::CapturedScopeField { .. }));
+        .any(|step| matches!(step, Step::CapturedPathField { .. }))
+        && encoding != Some(Encoding::CertifiedGraphSubjectV3)
+    {
+        return Err(Denial::UnclassifiedSignedCapture);
+    }
+    let classified = fields.iter().any(|step| {
+        matches!(
+            step,
+            Step::CapturedScopeField { .. } | Step::CapturedPathField { .. }
+        )
+    });
     let unclassified = fields.iter().any(|step| {
         matches!(
             step,
             Step::ScopeField { .. } | Step::PresentScopeField { .. }
         )
     });
-    if (encoding == Some(Encoding::CertifiedSubjectV2) && unclassified)
-        || (encoding != Some(Encoding::CertifiedSubjectV2) && classified)
-    {
+    let certified = matches!(
+        encoding,
+        Some(Encoding::CertifiedSubjectV2 | Encoding::CertifiedGraphSubjectV3)
+    );
+    if (certified && unclassified) || (!certified && classified) {
         return Err(Denial::UnclassifiedSignedCapture);
     }
     Ok(())
@@ -170,7 +184,7 @@ pub(super) fn validate_creation(creation: &ApplicationOperationBodyCreation) -> 
         && creation
             .fields()
             .iter()
-            .any(|step| step.related_source().is_some())
+            .any(|step| step.related_source().is_some() || matches!(step, Step::Computed { .. }))
     {
         return Err(Denial::UnclassifiedSignedCapture);
     }

@@ -314,6 +314,30 @@ impl CompiledWorkflowDefinition {
         self.data_sources(operation, ApplicationWorkflowDataFlow::OperationInput)
     }
 
+    pub(in crate::domain_computation::primary_graph) fn captured_operation_input_sources(
+        &self,
+        operation: EntityId,
+    ) -> impl Iterator<Item = &CompiledWorkflowNode> {
+        self.data_sources(
+            operation,
+            ApplicationWorkflowDataFlow::CapturedOperationInput,
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn captured_input_targets(
+        &self,
+        source: EntityId,
+    ) -> impl Iterator<Item = &CompiledWorkflowNode> {
+        self.outgoing(source).filter_map(move |edge| {
+            match self.publication.connections[edge.connection].kind.as_ref() {
+                CompiledWorkflowConnectionKind::Data(
+                    ApplicationWorkflowDataFlow::CapturedOperationInput,
+                ) => Some(&self.publication.nodes[edge.peer]),
+                _ => None,
+            }
+        })
+    }
+
     fn data_sources(
         &self,
         target: EntityId,

@@ -7,7 +7,10 @@ use worth_query_execution::facade::primary_graph::{
 };
 
 mod advancement;
+mod authorization;
+mod binding;
 pub(super) use advancement::Step as SourceStep;
+pub use binding::WorthQuerySourceOperationBinding;
 mod completion;
 mod entrance;
 mod native_posture;

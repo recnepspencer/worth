@@ -35,6 +35,7 @@ worth_query_application_contribution! {
                 .operation_expected_fact(SetRetention::reference(), DocumentIdentityField::reference())
                 .application_mutation_binding::<SetRetentionBinding>()
                 .application_mutation_binding::<super::workflow::bindings::GuardedBinding>()
+                .application_mutation_binding::<super::workflow::actor_binding::ActorBinding>()
                 .application_mutation_binding::<super::workflow::bindings::ControlBinding>()
                 .application_mutation_binding::<super::workflow::bindings::StartBinding>()
                 .application_mutation_binding::<super::workflow::bindings::AdvanceBinding>().application_query_binding::<super::readback::ReadBinding>()

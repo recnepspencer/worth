@@ -182,7 +182,7 @@ where
         &rules,
         adoption_authorization.as_ref(),
     );
-    let revision = ApplicationProgramRevision::mint(&manifest)
+    let revision = ApplicationProgramRevision::mint(&manifest, Program::CANONICAL_REVISION_BUDGET)
         .map_err(|budget| deny_canonical_revision_budget(&identity, budget))?;
     let semantic_description = ApplicationSemanticDescription::from_validated_parts(
         revision,

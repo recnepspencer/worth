@@ -1,4 +1,5 @@
 mod admission;
+mod navigation;
 mod proposal;
 use super::*;
 
@@ -14,8 +15,7 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub(in crate::domain_computation::primary_graph) fn materialize_workflow_advance<
-        Capability,
+    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn materialize_admitted_workflow_transition<
         Spec,
     >(
         mut self,
@@ -29,7 +29,6 @@ where
         WorthQueryApplicationAttemptDenial,
     >
     where
-        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
         if instance.branch() != self.lease.product().product_branch() {
@@ -42,9 +41,6 @@ where
             request_kind,
             WorkflowTransitionRequestKind::LocalAction { .. }
         );
-        if !business_action {
-            self.authorize_advance::<Capability, Spec>(installed)?;
-        }
         let layout = self.lease.layout.workflow().clone();
         let published = super::super::PublishedWorkflowDefinitionRef::retained(
             instance.branch(),
@@ -95,7 +91,7 @@ where
                         "settled workflow has no live business action",
                     ));
                 }
-                if request_kind == WorkflowTransitionRequestKind::NavigateBack {
+                if matches!(request_kind, WorkflowTransitionRequestKind::NavigateBack) {
                     return Ok(self.navigation_replay_denial(
                         &layout,
                         instance.entity_id(),
@@ -170,7 +166,7 @@ where
                     });
             }
         };
-        let proposal = if request_kind == WorkflowTransitionRequestKind::Advance {
+        let proposal = if matches!(request_kind, WorkflowTransitionRequestKind::Advance) {
             crate::domain_computation::primary_graph::workflow::instance::select_current_proposal_need(
                 &compiled, &observed.progress_basis,
             )?
@@ -206,67 +202,36 @@ where
             kind,
             requested,
             input_identity,
+            completion,
         } = &request_kind
         {
-            let selected = self.select_observed_local_action(
+            return self.materialize_observed_local_action(
                 execution,
                 &layout,
                 &compiled,
-                &instance,
+                instance,
                 &mut observed,
                 requested,
                 maximum_transitions,
-                *kind,
-            )?;
-            facts.append(&mut observed.facts);
-            return self.materialize_local_action_requirement(
-                &layout,
-                &compiled,
-                instance,
-                selected,
+                super::local_actions::LocalActionDescriptor::new(installed, *kind),
                 live_membership,
                 facts,
-                requested.clone(),
                 *input_identity,
                 allowance,
-                *kind,
+                completion.as_ref(),
             );
         }
-        if request_kind == WorkflowTransitionRequestKind::NavigateBack {
-            let selected = match select_navigation_back_transition(
-                &compiled,
-                instance.entity_id(),
-                &observed.progress_basis,
-            ) {
-                Ok(selected) => selected,
-                Err(denial) => {
-                    return Ok(self.navigation_replay_denial(
-                        &layout,
-                        instance.entity_id(),
-                        std::mem::take(&mut observed.replays),
-                        denial,
-                    ));
-                }
-            };
-            let replay_probe_identity = *selected.identity_bytes();
-            let replays = publication::PreparedWorkflowTransitionReplays::retained(std::mem::take(
-                &mut observed.replays,
-            ))
-            .for_navigation_back();
-            facts.append(&mut observed.facts);
-            return self
-                .materialize_navigation_back(
-                    &layout,
-                    compiled,
-                    instance,
-                    selected,
-                    live_membership,
-                    facts,
-                    allowance,
-                )
-                .map(|prepared| {
-                    prepared.with_replays(replays.with_probe_identity(replay_probe_identity))
-                });
+        if matches!(request_kind, WorkflowTransitionRequestKind::NavigateBack) {
+            return self.materialize_observed_navigation_back(
+                execution,
+                &layout,
+                compiled,
+                instance,
+                &mut observed,
+                live_membership,
+                facts,
+                allowance,
+            );
         }
         let selection = match request_kind {
             WorkflowTransitionRequestKind::Advance => {
@@ -299,6 +264,15 @@ where
             }
             Err(denial) => return Err(denial),
         };
+        observed.fence_other_owner(
+            execution,
+            self.lease.handle(),
+            self.lease.snapshot(),
+            &layout,
+            instance.entity_id(),
+            &compiled,
+            Some(&selected),
+        )?;
         let replay_probe_identity = *selected.identity_bytes();
         let replays = publication::PreparedWorkflowTransitionReplays::retained(std::mem::take(
             &mut observed.replays,

@@ -72,7 +72,7 @@ impl<Query> WorthQueryPendingSourceExpectation<Query> {
             Some(admission.publication_request()),
             control.policy(),
         )?;
-        admission.bind_source_facts(facts);
+        admission.bind_source_facts(facts, self.source.retain_expression_binding());
         Ok(())
     }
 }

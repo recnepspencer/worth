@@ -12,6 +12,7 @@ fn key(slot: u64) -> WorkflowInstanceProgressKey {
 
 fn progress(head: u64) -> WorkflowInstanceProgress {
     WorkflowInstanceProgress {
+        captured_inputs: None,
         head: entity(head),
         next_occurrence: 2,
         retry_counts: im::OrdMap::from_iter([(

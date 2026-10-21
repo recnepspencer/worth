@@ -23,10 +23,6 @@ impl InstalledProductBranches {
         self.exact.len()
     }
 
-    pub(super) fn capacity(&self) -> usize {
-        self.exact.capacity()
-    }
-
     pub(super) fn try_reserve(&mut self, additional: usize) -> Result<(), TryReserveError> {
         self.exact.try_reserve(additional)
     }

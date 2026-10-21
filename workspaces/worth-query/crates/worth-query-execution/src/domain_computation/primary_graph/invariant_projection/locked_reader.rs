@@ -22,10 +22,12 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 
+mod borrowed_snapshot;
 #[path = "locked_reader/operation_body.rs"]
 mod operation_body;
 #[path = "locked_reader/predecode_admission.rs"]
 mod predecode_admission;
+pub(super) use borrowed_snapshot::CompletedSnapshotRead;
 mod requirement_collection;
 pub(super) use requirement_collection::ObservedRequirementItems;
 #[path = "locked_reader/traversal_denial.rs"]
@@ -193,127 +195,33 @@ where
                 .snapshot_for_observation(&basis.observation())
                 .map_err(super::admission_denial::from_snapshot_admission_denial)
         })?;
-        let decode_work = std::cell::Cell::new(None);
-        let decode = super::super::value_decode::ValueDecodeState::new(self.value_bindings.clone());
-        let projected = decode.run(
-            execution,
-            |value_decode| {
-                self.graph.with_runtime_mut(execution, |runtime| {
-            catch_unwind(AssertUnwindSafe(|| {
-                let mut reader = WorthQueryApplicationInvariantProjectionReader {
-                    value_bindings: &self.value_bindings,
-                    value_decode,
-                    execution,
-                    runtime,
-                    layout: &self.layout,
-                    snapshot: &snapshot,
-                    observation: basis.observation(),
-                    entity_resolution: &self.entity_resolution,
-                    authority_identity: self.authority_identity,
-                    work: WorthQueryInvariantProjectionWork::default(),
-                    work_budget,
-                    retention_exhausted: false,
-                    native_read_stop: None,
-                    realized_scope: WorthQueryRealizedProjectionScope::default(),
-                    aggregate_projections: Arc::clone(&self.graph.aggregate_projections),
-                    output_lineage: Arc::clone(&self.graph.output_lineage),
-                    invalidation_owner: Arc::clone(&self.graph.source_owner.invalidation_owner),
-                    selected_product_occurrence: None,
-                    program_activation: self.program_activation.as_ref(),
-                    selected_product_generation: None,
-                    selected_source_partition_identity: None,
-                    prior_output_bindings: HashMap::new(),
-                    current_output_families: HashMap::new(),
-                    consumed_outputs: BTreeMap::new(),
-                    dependent_source_facts: super::super::application_attempt::retained_decision_facts::AuthoringSourceFacts::vacant(),
-                    retention_control,
-                    _schema: PhantomData,
-                };
-                let output = projection(&mut reader);
-                decode_work.set(Some(reader.work));
-                (
-                    output,
-                    reader.work,
-                    reader.realized_scope,
-                    reader.consumed_outputs,
-                    reader.dependent_source_facts.finish(retention_control),
-                    (reader.work_budget.exceeded(), reader.work_budget.overflowed()),
-                    reader.retention_exhausted,
-                    reader.native_read_stop,
-                )
-            }))
-            })
-            },
-        );
-        let projected = match projected {
-            Ok(projected) => projected,
-            Err(cause) => {
-                self.graph.release_query_snapshot(&snapshot);
-                return Err(WorthQueryInvariantProjectionDenial::value_decode_stopped(
-                    cause,
-                    decode_work.get(),
-                ));
-            }
-        };
-        let (
+        let projected = catch_unwind(AssertUnwindSafe(|| {
+            self.read_snapshot(
+                execution,
+                work_budget,
+                &basis,
+                &snapshot,
+                projection,
+                retention_control,
+            )
+        }));
+        let CompletedSnapshotRead {
             output,
             work,
             realized_scope,
             consumed_outputs,
             dependent_source_facts,
-            (exceeded, overflowed),
-            retention_exhausted,
-            native_read_stop,
-        ) = match projected {
-            Ok(completed) => completed,
+        } = match projected {
+            Ok(Ok(completed)) => completed,
+            Ok(Err(denial)) => {
+                self.graph.release_query_snapshot(&snapshot);
+                return Err(denial);
+            }
             Err(payload) => {
                 self.graph.release_query_snapshot(&snapshot);
                 resume_unwind(payload)
             }
         };
-        let stopped = if let Some(cause) = native_read_stop {
-            Some(WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, Some(work)))
-        } else if overflowed {
-            Some(WorthQueryInvariantProjectionDenial::execution_request_stopped(
-                worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow,
-                Some(work),
-            ))
-        } else if exceeded {
-            Some(WorthQueryInvariantProjectionDenial::work_budget_exceeded(
-                work,
-            ))
-        } else {
-            retention_exhausted.then(|| {
-                WorthQueryInvariantProjectionDenial::from_kind(
-                    super::WorthQueryInvariantProjectionDenialKind::RetentionCapacityExhausted,
-                )
-            })
-        };
-        if let Some(denial) = stopped {
-            self.graph.release_query_snapshot(&snapshot);
-            return Err(match dependent_source_facts {
-                Ok(_) => denial,
-                Err(retention) => denial.with_retention_denial(retention),
-            });
-        }
-        let dependent_source_facts = match dependent_source_facts {
-            Ok(facts) => facts,
-            Err(denial) => {
-                self.graph.with_runtime_mut(execution, |runtime| {
-                    crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-                });
-                return Err(
-                    WorthQueryInvariantProjectionDenial::source_retention_denied(denial, work),
-                );
-            }
-        };
-        if let Err(cause) = decode.check(execution) {
-            self.graph.release_query_snapshot(&snapshot);
-            return Err(WorthQueryInvariantProjectionDenial::value_decode_stopped(
-                cause,
-                Some(work),
-            ));
-        }
         Ok(WorthQueryCompletedInvariantProjection {
             output,
             snapshot: WorthQueryApplicationInvariantProjectionSnapshot {

@@ -21,24 +21,24 @@ impl<Schema, Operation, Input, Scope>
         incoming: &[WorthQueryApplicationObservedFact],
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-        let current = self.lease.handle().with_runtime(execution, |runtime| {
+        self.lease.handle().with_runtime(execution, |runtime| {
             for fact in incoming {
                 check_request_live(
                     self.admission.publication_request(),
                     "workflow operation authority",
                 )?;
                 if !fact.remains_equal_in(runtime, execution, self.lease.snapshot())? {
-                    return Ok::<bool, WorthQueryApplicationAttemptDenial>(false);
+                    return Err(denial(
+                        WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+                        format!(
+                            "workflow authority observation changed: {}",
+                            fact.locator_identity()
+                        ),
+                    ));
                 }
             }
-            Ok(true)
+            Ok(())
         })?;
-        if !current {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
-                "workflow authority facts",
-            ));
-        }
         let mut locators = std::collections::BTreeMap::new();
         for (index, fact) in self.facts.iter().enumerate() {
             check_request_live(
@@ -49,7 +49,7 @@ impl<Schema, Operation, Input, Scope>
             if locators.insert(locator, index).is_some() {
                 return Err(denial(
                     WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
-                    "workflow authority facts",
+                    "workflow candidate contains duplicate fact locators",
                 ));
             }
         }
@@ -75,7 +75,7 @@ impl<Schema, Operation, Input, Scope>
                 {
                     return Err(denial(
                         WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
-                        "workflow authority facts",
+                        "workflow authority fact conflicts with decision",
                     ));
                 }
                 std::collections::btree_map::Entry::Occupied(_) => {}

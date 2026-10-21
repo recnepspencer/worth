@@ -84,7 +84,7 @@ pub(super) fn observe(
     let authored = compiled
         .required_assessments(evidence_source.entity())
         .collect::<Vec<_>>();
-    if authored.len() < 2 {
+    if authored.is_empty() {
         return Err(affinity("approval evidence inventory is incomplete"));
     }
     let mut required = Vec::new();

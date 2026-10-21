@@ -18,6 +18,7 @@ mod draft_vocabulary;
 mod installation;
 mod operation;
 mod read_binding;
+mod succession;
 mod support_identity;
 pub use adoption_coverage::{
     WorthQueryWorkflowGlobalActionDependency, WorthQueryWorkflowNodeDependency,
@@ -36,6 +37,7 @@ pub enum WorthQueryApplicationWorkflowInstallationDenialKind {
     OperationNotInProgram,
     OperationNotInstalled,
     BirthBindingNotInstalled,
+    SuccessionBindingNotInstalled,
     AssessmentNotInstalled,
     ApprovalNotInstalled,
     AuthoringCapabilityNotInstalled,
@@ -48,6 +50,8 @@ pub enum WorthQueryApplicationWorkflowInstallationDenialKind {
     EmptyVocabulary,
     DefinitionLimitExceeded,
     UnsupportedDefinitionMember,
+    /// Authored captured-target inputs have no native proposal producer installed yet.
+    CapturedOperationInputsNotSupported,
     ForeignSchemaBinding,
     InvalidPolicy,
     ObservationNotImplemented,
@@ -91,6 +95,7 @@ pub(super) struct InstalledWorkflowOperation {
     pub(super) requires_workflow_authority: bool,
     pub(super) supports_local_workflow_action: bool,
     pub(super) capability: Option<(&'static str, WorthQueryPortableTypeIdentity)>,
+    pub(super) admission_identity: Option<[u8; 32]>,
     pub(super) reference: ApplicationWorkflowOperationRef,
     pub(super) inbound_ref:
         Option<worth_query_declaration::facade::application_program::ApplicationWorkflowInboundRef>,
@@ -98,6 +103,15 @@ pub(super) struct InstalledWorkflowOperation {
 
 #[derive(Clone)]
 pub(super) struct InstalledWorkflowBirth {
+    binding_type: TypeId,
+    binding_identity: &'static str,
+    role_type: TypeId,
+    role_name: &'static str,
+    entity_name: &'static str,
+    capability: InstalledWorkflowCapabilityBinding,
+}
+#[derive(Clone)]
+pub(super) struct InstalledWorkflowSuccession {
     binding_type: TypeId,
     binding_identity: &'static str,
     role_type: TypeId,
@@ -200,6 +214,7 @@ where
     pub(super) advance_capability: InstalledWorkflowAdvanceCapability,
     pub(super) operations: Box<[InstalledWorkflowOperation]>,
     pub(super) births: Box<[InstalledWorkflowBirth]>,
+    pub(super) successions: Box<[InstalledWorkflowSuccession]>,
     pub(super) assessments: Box<[InstalledWorkflowAssessment]>,
     pub(super) conditions: Box<[InstalledWorkflowCondition]>,
     pub(super) approvals: Box<[InstalledWorkflowApproval]>,

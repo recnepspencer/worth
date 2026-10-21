@@ -9,13 +9,16 @@ mod envelope;
 mod execution;
 pub(crate) mod execution_pipeline;
 mod lane_coordination;
+mod operation_custody;
 mod outcome;
 mod payload;
 mod plan;
+mod program_application_readiness;
 mod query_application_readiness;
 mod read_batch;
 mod registration;
 mod registry;
+mod retry_owner;
 mod schedule;
 mod support_snapshot;
 mod surface;
@@ -41,6 +44,7 @@ pub use denial::{
 };
 pub use envelope::{WorthServerProductOperationEnvelope, WorthServerProductOperationEnvelopeKind};
 pub use execution::WorthServerProductOperationRuntime;
+pub use operation_custody::*;
 pub use outcome::{
     WorthServerCompletedProductOperation, WorthServerProductOperationFailure,
     WorthServerProductOperationOutcome, WorthServerProductOperationRetryClass,
@@ -53,6 +57,7 @@ pub use registration::{
     WorthServerProductAdapterRegistrationReceipt, WorthServerProductApplicationAdapterRegistration,
 };
 pub use registry::{WorthServerProductAdapterRegistry, WorthServerProductAdapterRegistryError};
+pub use retry_owner::WorthServerProductRetryOwner;
 pub use schedule::{WorthServerProductSchedulerAdmission, WorthServerScheduledProductOperation};
 pub use support_snapshot::WorthServerProductOperationSupportSnapshot;
 pub use surface::{
@@ -62,6 +67,7 @@ pub use surface::{
 };
 
 pub(crate) use execution_pipeline::{build_durable_envelope, build_envelope};
+use program_application_readiness::program_application_readiness_provider;
 use query_application_readiness::{
     primary_graph_application_readiness_provider, WorthServerQueryApplicationReadinessProvider,
 };

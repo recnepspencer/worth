@@ -17,7 +17,7 @@ where
             <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
         >,
         input: &Binding::Input,
-        compare_parameters: impl FnOnce(
+        mut compare_parameters: impl FnMut(
             &WorthQueryRetainedObservedParameters,
             worth_query_declaration::facade::application_query::ApplicationQueryParameterSet<
                 <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
@@ -71,6 +71,11 @@ where
                 Binding::IDENTITY,
             )
         };
+        if admission.allowed_graph_contract().body().is_some_and(|body| body.requires_query_context())
+            && !compare_parameters(&source.parameters, worth_query_declaration::facade::application_query::ApplicationQueryParameterSet::new())?
+        {
+            return Err(parameters_denial());
+        }
         if let Some(expected) =
             Binding::expected_source_parameters(input).map_err(|_| parameters_denial())?
             && !compare_parameters(&source.parameters, expected)?
@@ -94,7 +99,7 @@ where
     }
 }
 
-pub(super) fn parameter_denial(
+pub(in crate::domain_computation::primary_graph::application_query::observed_source) fn parameter_denial(
     subject: &str,
     denial: worth_query_admission::facade::application_query::WorthQueryApplicationQueryParameterDenial,
 ) -> WorthQuerySourceExpectationDenial {

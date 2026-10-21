@@ -138,7 +138,12 @@ pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scop
     authorization_basis: WorthQueryOperationAuthorizationBasis<Input>,
     graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     source_partition_identity: Option<[u8; 32]>,
+    source_expectation_kind:
+        Option<crate::domain_computation::primary_graph::WorthQuerySourceExpectationKind>,
     source_facts: Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
+    query_context: Option<
+        crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext,
+    >,
     required_output_demand:
         Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     _marker: PhantomData<fn(Input) -> (Schema, Operation, Scope)>,

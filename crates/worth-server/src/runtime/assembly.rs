@@ -30,6 +30,7 @@ use crate::{
 
 #[derive(Debug)]
 pub(crate) struct WorthServerRuntimeAssembly {
+    instance_selection: crate::WorthServerInstanceSelectionPolicy,
     config: WorthServerConfig,
     surface_registry: WorthServerSurfaceRegistry,
     operation_registry: WorthServerOperationRegistry,
@@ -52,6 +53,8 @@ pub(crate) struct WorthServerRuntimeAssembly {
 }
 
 pub(crate) struct WorthServerRuntimeAssemblyParts {
+    pub(crate) instance_selection: crate::WorthServerInstanceSelectionPolicy,
+    pub(crate) server_instance: crate::WorthServerInstanceIdentity,
     pub(crate) config: WorthServerConfig,
     pub(crate) surface_registry: WorthServerSurfaceRegistry,
     pub(crate) operation_registry: WorthServerOperationRegistry,
@@ -67,6 +70,8 @@ pub(crate) struct WorthServerRuntimeAssemblyParts {
 impl WorthServerRuntimeAssembly {
     pub(crate) fn new(parts: WorthServerRuntimeAssemblyParts) -> Self {
         let WorthServerRuntimeAssemblyParts {
+            instance_selection,
+            server_instance,
             config,
             surface_registry,
             operation_registry,
@@ -88,6 +93,7 @@ impl WorthServerRuntimeAssembly {
         let request_context_facade =
             WorthServerRequestContextFacade::new(config.request_context().clone());
         let product_session_registry = WorthServerProductSessionRegistry::new(
+            server_instance,
             counters.clone(),
             product_session_clock.unwrap_or_else(default_product_session_clock),
             product_session_termination_observers,
@@ -95,6 +101,7 @@ impl WorthServerRuntimeAssembly {
         let transport_caller_admission =
             crate::transport::WorthServerTransportCallerAdmission::new(transport_caller_verifier);
         Self {
+            instance_selection,
             config,
             surface_registry,
             operation_registry,
@@ -118,6 +125,10 @@ impl WorthServerRuntimeAssembly {
 
     pub(crate) fn config(&self) -> &WorthServerConfig {
         &self.config
+    }
+
+    pub(crate) fn instance_selection(&self) -> crate::WorthServerInstanceSelectionPolicy {
+        self.instance_selection
     }
 
     pub(crate) fn execution_authority(&self) -> Option<&ExecutionAuthority> {

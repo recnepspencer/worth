@@ -1,11 +1,17 @@
 mod approval;
 mod birth;
+mod succession;
 pub use birth::WorthQueryWorkflowBirthBindingDenial;
+pub use succession::WorthQueryWorkflowSuccessionBindingDenial;
 pub use worth_query_execution::publication_boundary::workflow_birth::RequiredWorkflowBirth;
+pub use worth_query_execution::publication_boundary::workflow_succession::{
+    RequiredWorkflowSuccession, WorkflowSuccessionTarget,
+};
 mod assessment;
 mod condition;
 mod definition;
 mod instance;
+mod local_actions;
 mod navigation;
 pub(in crate::application_entry) mod operation;
 mod ordinary;
@@ -64,8 +70,9 @@ pub use worth_query_execution::publication_boundary::workflow_advance::{
     PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence, PerformedWorkflowTransition,
     RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
     RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-    RequiredWorkflowProposal, WorkflowApprovalDecision, WorkflowConditionOperand,
-    WorkflowProgressOutcome, WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+    RequiredWorkflowProposal, WorkflowApprovalBodyDenial, WorkflowApprovalBodyPreparation,
+    WorkflowApprovalDecision, WorkflowConditionOperand, WorkflowProgressOutcome,
+    WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
 };
 pub use worth_query_execution::publication_boundary::workflow_definition_publication::{
     PerformedWorkflowDefinitionPublication, PreparedWorkflowDefinitionPublication,

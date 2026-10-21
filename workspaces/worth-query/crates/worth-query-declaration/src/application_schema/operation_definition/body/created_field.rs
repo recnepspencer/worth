@@ -36,6 +36,11 @@ pub enum ApplicationOperationBodyCreatedField {
         scalar_family: ScalarAspectType,
         member: String,
     },
+    Computed {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        value: String,
+    },
     OptionalInput {
         field: ApplicationFieldBindingLocus,
         binding: WorthQueryPortableTypeIdentity,
@@ -59,6 +64,14 @@ pub enum ApplicationOperationBodyCreatedField {
         binding: WorthQueryPortableTypeIdentity,
         scalar_family: ScalarAspectType,
         source: ApplicationFieldBindingLocus,
+    },
+    CapturedPathField {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        scalar_family: ScalarAspectType,
+        source: super::ApplicationOperationBodyPathFieldSource,
+        role: ApplicationOperationBodyCaptureRole,
+        target_presence: crate::application_schema::ApplicationFieldPresence,
     },
     SigningProvenance {
         field: ApplicationFieldBindingLocus,
@@ -86,9 +99,11 @@ impl ApplicationOperationBodyCreatedField {
         match self {
             Self::Literal { field, .. }
             | Self::Input { field, .. }
+            | Self::Computed { field, .. }
             | Self::OptionalInput { field, .. }
             | Self::ScopeField { field, .. }
             | Self::RelatedField { field, .. }
+            | Self::CapturedPathField { field, .. }
             | Self::PresentScopeField { field, .. }
             | Self::CapturedScopeField { field, .. }
             | Self::SigningProvenance { field, .. }
@@ -99,9 +114,11 @@ impl ApplicationOperationBodyCreatedField {
         match self {
             Self::Literal { binding, .. }
             | Self::Input { binding, .. }
+            | Self::Computed { binding, .. }
             | Self::OptionalInput { binding, .. }
             | Self::ScopeField { binding, .. }
             | Self::RelatedField { binding, .. }
+            | Self::CapturedPathField { binding, .. }
             | Self::PresentScopeField { binding, .. }
             | Self::CapturedScopeField { binding, .. }
             | Self::SigningProvenance { binding, .. }
@@ -118,10 +135,12 @@ impl ApplicationOperationBodyCreatedField {
         match self {
             Self::Literal { value, .. } => value.value_family(),
             Self::SigningProvenance { .. } => ScalarAspectType::String,
+            Self::Computed { .. } => ScalarAspectType::UInt64,
             Self::Input { scalar_family, .. }
             | Self::OptionalInput { scalar_family, .. }
             | Self::ScopeField { scalar_family, .. }
             | Self::RelatedField { scalar_family, .. }
+            | Self::CapturedPathField { scalar_family, .. }
             | Self::PresentScopeField { scalar_family, .. }
             | Self::CapturedScopeField { scalar_family, .. }
             | Self::PrincipalIdentity { scalar_family, .. } => *scalar_family,
@@ -139,6 +158,7 @@ impl ApplicationOperationBodyCreatedField {
             | Self::PresentScopeField { source, .. }
             | Self::CapturedScopeField { source, .. } => Some(source),
             Self::RelatedField { source, .. } => Some(&source.field),
+            Self::CapturedPathField { source, .. } => Some(&source.field),
             _ => None,
         }
     }
@@ -154,11 +174,18 @@ impl ApplicationOperationBodyCreatedField {
             _ => None,
         }
     }
+    pub fn path_source(&self) -> Option<&super::ApplicationOperationBodyPathFieldSource> {
+        match self {
+            Self::CapturedPathField { source, .. } => Some(source),
+            _ => None,
+        }
+    }
     pub fn source_presence(&self) -> Option<crate::application_schema::ApplicationFieldPresence> {
         use crate::application_schema::ApplicationFieldPresence as Presence;
         match self {
             Self::ScopeField { .. } => Some(Presence::Required),
             Self::RelatedField { source, .. } => Some(source.presence),
+            Self::CapturedPathField { source, .. } => Some(source.presence),
             Self::PresentScopeField { .. } => Some(Presence::Optional),
             Self::CapturedScopeField {
                 source_presence, ..

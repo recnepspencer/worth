@@ -217,6 +217,16 @@ fn truncation_and_trailing_payload_fail_without_committing_work() {
     let payload_length = u32::from_be_bytes(trailing[8..12].try_into().unwrap()) + 1;
     trailing[8..12].copy_from_slice(&payload_length.to_be_bytes());
     trailing.push(0);
+    // A suffix starts the optional body extension; one byte is truncated,
+    // rather than trailing data after a successfully decoded body.
+    assert_decode_kind(&trailing, Kind::Truncated);
+    trailing.pop();
+    let mut body = BinaryOutput::with_capacity(64);
+    crate::record::operation_body::write(&mut body, &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![])).unwrap();
+    trailing.extend(body.into_bytes());
+    trailing.push(0);
+    let payload_length = u32::try_from(trailing.len() - 12).unwrap();
+    trailing[8..12].copy_from_slice(&payload_length.to_be_bytes());
     assert_decode_kind(&trailing, Kind::TrailingBytes);
 }
 

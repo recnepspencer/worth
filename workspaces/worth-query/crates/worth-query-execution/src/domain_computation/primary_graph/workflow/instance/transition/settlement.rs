@@ -47,30 +47,6 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_transition_fa
     visit_transition_facts(layout, admitted, outcome, state, None, None, emit)
 }
 
-pub(in crate::domain_computation::primary_graph) fn visit_workflow_operation_transition_facts<
-    Schema,
-    Operation,
-    Input,
-    Scope,
-    Error,
->(
-    layout: &WorthQueryWorkflowLayout,
-    admitted: &AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
-    operation_receipt_identity: &[u8; 32],
-    executor: WorkflowAdmittedActor,
-    emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
-) -> Result<CreatedEntityRef, Error> {
-    visit_transition_facts(
-        layout,
-        admitted,
-        worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
-        super::super::state::WorkflowInstanceState::Ready,
-        Some(operation_receipt_identity),
-        Some(executor),
-        emit,
-    )
-}
-
 pub(in crate::domain_computation::primary_graph) fn visit_workflow_operation_settlement_facts<
     Error,
 >(
@@ -172,9 +148,11 @@ fn visit_transition_facts_from_basis<Error>(
         ),
         (
             layout.transition.protocol_version.clone(),
-            AspectValue::UInt64(
-                super::super::super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
-            ),
+            AspectValue::UInt64(if operation_receipt_identity.is_some() {
+                super::super::super::schema::version::WORKFLOW_OPERATION_OUTPUT_PROTOCOL_VERSION
+            } else {
+                super::super::super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION
+            }),
         ),
         (
             layout.transition.occurrence.clone(),
@@ -231,7 +209,11 @@ fn visit_transition_facts_from_basis<Error>(
         layout.instance.state.clone(),
         AspectValue::UInt64(state.persisted_tag()),
     )]);
-    if state == super::super::state::WorkflowInstanceState::Completed {
+    if matches!(
+        state,
+        super::super::state::WorkflowInstanceState::Completed
+            | super::super::state::WorkflowInstanceState::Terminated
+    ) {
         admitted
             .advancer
             .append_fields(&layout.instance.end_advancer, &mut instance_fields);

@@ -35,6 +35,7 @@ pub enum WorthQueryWorkflowProposalPreparationDenialKind {
     ProposalPreparation,
     IdempotencyResolution,
     InstanceBranchMismatch,
+    Inputs,
 }
 
 /// Why `prepare_workflow_proposal` refused. `InstanceBranchMismatch` means the instance is
@@ -48,11 +49,13 @@ pub enum WorthQueryWorkflowProposalPreparationDenial {
         worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
     ),
     InstanceBranchMismatch,
+    Inputs(crate::application_entry::WorthQueryWorkflowInputDenial),
 }
 
 impl WorthQueryWorkflowProposalPreparationDenial {
     pub const fn kind(&self) -> WorthQueryWorkflowProposalPreparationDenialKind {
         match self {
+            Self::Inputs(_) => WorthQueryWorkflowProposalPreparationDenialKind::Inputs,
             Self::RuntimeMismatch => {
                 WorthQueryWorkflowProposalPreparationDenialKind::RuntimeMismatch
             }
@@ -100,12 +103,47 @@ where
         >,
 {
     pub fn prepare_workflow_proposal<'workflow, Spec>(
-        mut self,
+        self,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         instance: PublishedWorkflowInstanceRef,
     ) -> Result<WorthQueryWorkflowProposalRequest<'application, Schema, MutationOperation<Schema, Intent>, MutationInput<Schema, Intent>, MutationScope<Schema, IntentBinding<Schema, Intent>>>, WorthQueryWorkflowProposalPreparationDenial>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        self.prepare_workflow_proposal_inputs(workflow, instance, |_, _, _| Ok(Vec::new()))
+    }
+
+    /// Publish the complete original target-input contracts with this proposal.
+    /// Capturing is descriptive: target readiness and authorization are checked
+    /// only by their later ordinary guarded-operation admissions.
+    pub fn prepare_workflow_proposal_with_inputs<'workflow, Spec, Program, R>(
+        self,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
+        instance: PublishedWorkflowInstanceRef,
+        inputs: &crate::application_entry::WorthQueryWorkflowOperationInputs<Schema, Program, R>,
+    ) -> Result<WorthQueryWorkflowProposalRequest<'application, Schema, MutationOperation<Schema, Intent>, MutationInput<Schema, Intent>, MutationScope<Schema, IntentBinding<Schema, Intent>>>, WorthQueryWorkflowProposalPreparationDenial>
+    where Schema: 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+        Program: worth_query_declaration::facade::application_program::ApplicationProgramDefinition<Schema>,
+        R: crate::application_entry::WorthQueryWorkflowInputList<Schema, Program>,
+    {
+        self.prepare_workflow_proposal_inputs(workflow, instance, |request, phase, selected| {
+            inputs.prepare_capture(request, phase, selected)
+        })
+    }
+
+    fn prepare_workflow_proposal_inputs<'workflow, Spec>(
+        mut self,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
+        instance: PublishedWorkflowInstanceRef,
+        capture: impl FnOnce(
+            &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+            &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+            &worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<'_, Schema>,
+        ) -> Result<Vec<(worth_query_declaration::facade::application_program::ApplicationWorkflowNodeIdentity,
+            worth_query_execution::publication_boundary::workflow_proposal::PreparedWorkflowCapturedInput)>, crate::application_entry::WorthQueryWorkflowInputDenial>,
+    ) -> Result<WorthQueryWorkflowProposalRequest<'application, Schema, MutationOperation<Schema, Intent>, MutationInput<Schema, Intent>, MutationScope<Schema, IntentBinding<Schema, Intent>>>, WorthQueryWorkflowProposalPreparationDenial>
+    where Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
         let request_scope = self.request_scope().clone();
         let runtime = self.application_runtime();
@@ -124,16 +162,28 @@ where
         let identities = self
             .identities()
             .map_err(WorthQueryWorkflowProposalPreparationDenial::RequestAdmission)?;
-        let mutation = authorization::prepare_capability_selected(&phase, &self, &identities, staged, &selected)
+        let mut mutation = authorization::prepare_capability_selected(&phase, &self, &identities, staged, &selected)
             .map_err(WorthQueryWorkflowProposalPreparationDenial::RequestAdmission)?;
+        let fresh = crate::application_entry::WorthQueryApplicationRequest {
+            application, principal: self.authenticated_principal(), scope: self.request_scope(), branch: request_branch,
+        };
+        let captured = capture(&fresh, &phase, &selected)
+            .map_err(WorthQueryWorkflowProposalPreparationDenial::Inputs)?;
+        let access = worth_query_execution::publication_boundary::program_publication_access();
+        let captured = worth_query_execution::publication_boundary::workflow_proposal::WorkflowCapturedInputs::prepare::<Schema, IntentBinding<Schema, Intent>, _>(
+            &access, &selected, &mut mutation.admission, captured,
+        ).map_err(|cause| WorthQueryWorkflowProposalPreparationDenial::Inputs(
+            crate::application_entry::WorthQueryWorkflowInputDenial::Capture(cause)))?;
+        mutation.idempotency = captured.bind_idempotency(&access, mutation.idempotency);
         if instance.branch() != request_branch {
             return Err(WorthQueryWorkflowProposalPreparationDenial::InstanceBranchMismatch);
         }
-        if let Some(outcome) = WorthQueryWorkflowProposalAdapter::resolve_replay(&phase,
+        if let Some(outcome) = WorthQueryWorkflowProposalAdapter::resolve_replay_with_inputs(&phase,
             application,
             &mutation.admission,
             mutation.idempotency,
             instance.clone(),
+            &captured,
         )
         .map_err(WorthQueryWorkflowProposalPreparationDenial::IdempotencyResolution)?
         {
@@ -141,12 +191,13 @@ where
                 execution: WorkflowProposalRequestExecution::Resolved(outcome),
             });
         }
-        let prepared = WorthQueryWorkflowProposalAdapter::prepare(&phase,
+        let prepared = WorthQueryWorkflowProposalAdapter::prepare_with_inputs(&phase,
             &selected,
             workflow.workflow_spec_for(&selected),
             instance,
             mutation.admission,
             &mutation.idempotency,
+            captured,
         ).map_err(WorthQueryWorkflowProposalPreparationDenial::ProposalPreparation)?;
         Ok(WorthQueryWorkflowProposalRequest {
             execution: WorkflowProposalRequestExecution::Prepared {

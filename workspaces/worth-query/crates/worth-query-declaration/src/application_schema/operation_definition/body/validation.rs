@@ -31,14 +31,26 @@ pub(crate) fn validate_operation_bodies(
             return Err(ApplicationSchemaDeclarationDenial::decision_read_body_dependency(operation));
         }
         super::requirement::validate_requirements(operation, body, members)?;
+        super::retirement::validate(operation, body, members)?;
+        super::path_input::validate(operation, body, members)?;
+        super::path_value::validate(operation, body, members)?;
+        super::reference_input::validate(operation, body, members)?;
+        super::emission::validate_emission(operation, body, members)?;
+        super::value::validate_values(operation, body, members)?;
         super::output_validation::validate_outputs(operation, body, members)?;
         if !super::enrollment::valid(body) {
             return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
                 operation,
             ));
         }
+        if !super::succession::valid(body) || !super::succession::readmit(body, members) {
+            return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(operation));
+        }
         super::principal_validation::validate_principals(operation, body, members)?;
         super::creation_link_validation::validate_links(operation, body, members)?;
+        super::creation_reuse::validate(operation, body, members)?;
+        super::child_validation::validate(operation, body, members)?;
+        super::peer_validation::validate(operation, body, members)?;
         if !super::signing_lifecycle::validate(body, members) {
             return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
                 operation,
@@ -55,7 +67,11 @@ pub(crate) fn validate_operation_bodies(
                 return Err(ApplicationSchemaDeclarationDenial::DuplicateMember);
             }
         }
-        if let Some(creation) = body.creation() {
+        for creation in body
+            .creation()
+            .into_iter()
+            .flat_map(|root| root.initialization_sites())
+        {
             if creation.key().is_empty() || creation.key().trim() != creation.key() {
                 return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
                     operation,
@@ -130,10 +146,14 @@ pub(crate) fn validate_operation_bodies(
                 }
             }
         }
-        if writes.is_empty() && body.creation().is_none() && body.outputs().is_empty() {
-            return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
-                operation,
-            ));
+        if writes.is_empty()
+            && body.reference_inputs().is_empty()
+            && body.path_value_assignments().is_empty()
+            && body.creation().is_none()
+            && body.outputs().is_empty()
+            && body.external_emission().is_none()
+        {
+            return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(operation));
         }
         if !members.iter().any(|member| {
             matches!(member, ApplicationSchemaMember::Operation { operation: candidate, .. }
@@ -171,7 +191,7 @@ pub(crate) fn validate_operation_bodies(
                 } if entity == locus.entity() && aspect == locus.aspect() && field == locus.field()
                     && value_type == step.binding().as_str()
                     && *scalar_family == step.scalar_family()
-                    && *presence == expected_presence
+                    && (matches!(step, ApplicationOperationBodyScopeField::ExpectInput { .. }) || *presence == expected_presence)
                     && (step.write_target().is_none() || *writable))
             });
             if !found {

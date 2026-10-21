@@ -193,7 +193,7 @@ without hidden N+1 traversal or unbounded local materialization.
 
 The declaration is the authoring surface. The access plan is the accountability
 surface. Support rows must make it clear whether a graph read executes inline,
-uses bounded ephemeral access structures, streams, requires a persistent index,
+uses bounded ephemeral access structures, requires a persistent index,
 requires async materialization, requires store-backed capability, requires
 domain capability registration, or denies.
 
@@ -201,8 +201,6 @@ The graph read access admission posture vocabulary is:
 
 - `inline_indexed`
 - `bounded_ephemeral_index`
-- `admitted_paged_streaming`
-- `paged_streaming_required`
 - `persistent_index_required`
 - `async_materialization_required`
 - `store_backed_capability_required`
@@ -211,7 +209,6 @@ The graph read access admission posture vocabulary is:
 
 The graph read access denial vocabulary is:
 
-- `budget_exceeded`
 - `required_async_materialization`
 - `required_access_capability_registration`
 - `required_persistent_index`
@@ -242,8 +239,8 @@ The required capability owner vocabulary is:
 
 Broad boolean graph reads and high-fanout traversals must not be described as
 ordinary inline reads unless their admitted access plan proves that posture. If
-the budget is exceeded, docs and support rows must preserve the typed denial
-and suggested posture instead of recommending local relation loops or broad RAM
+admission denies, docs and support rows must preserve the typed denial and
+required posture instead of recommending local relation loops or broad RAM
 expansion.
 
 Receipt proof is part of support honesty. A read that claims graph-read access

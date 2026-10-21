@@ -72,6 +72,7 @@ pub(super) fn execution_is_row(kind: WorthQueryApplicationOneShotDenialKind) -> 
         | Kind::ActiveSnapshotCapacityExhausted { .. }
         | Kind::RetentionCapacityExhausted
         // An admission-to-execution race; the next advance reports the installation.
+        | Kind::ExpressionContextIncomplete
         | Kind::StaleInstalledQuery => false,
         Kind::Projection(kind) => projection_is_row(kind),
         Kind::ForeignPlan
@@ -83,6 +84,7 @@ pub(super) fn execution_is_row(kind: WorthQueryApplicationOneShotDenialKind) -> 
         | Kind::CardinalityMismatch
         | Kind::TraversalUnavailable
         | Kind::ProjectionUnavailable
+        | Kind::ExpressionContextUnavailable
         | Kind::ResultBufferLimitExceeded
         | Kind::SourceIdentityExhausted => true,
     }
@@ -118,6 +120,16 @@ mod tests {
         ));
         assert!(projection_is_row(
             WorthQueryApplicationProjectionDenialKind::ValueDecode(Decode::CodecRejected),
+        ));
+    }
+
+    #[test]
+    fn context_disclosure_incompleteness_is_not_cached_on_the_shared_row() {
+        assert!(!execution_is_row(
+            WorthQueryApplicationOneShotDenialKind::ExpressionContextIncomplete
+        ));
+        assert!(execution_is_row(
+            WorthQueryApplicationOneShotDenialKind::ExpressionContextUnavailable
         ));
     }
 }

@@ -171,6 +171,19 @@ Recovery promotes the original native carrier; registered replay rejoins its
 original outputs without running the source handler. Recovered evidence does not
 manufacture the original handler result.
 
+Before disclosing a retained SourceOnly command's status, call
+`owner.assess_current_authorization(&fresh_request)`. Active, completed and
+terminal SourceOnly owners expose this borrowed check. Query selects the exact
+retained runtime, branch and installed action, then uses the binding's declared
+conventional or capability authorization with the original captured input,
+preconditions and workflow actor context. A foreign runtime or current denial
+returns the native typed refusal without consuming the owner. This check does
+not stage a candidate, claim an idempotency key, advance recovery, spend a
+workflow grant or repeat a completed mutation. Its successful result is only a
+current authorization observation: it is neither execution admission nor a
+promise that a later advance will succeed. Authentication or matching a cached
+command-owner identity cannot substitute for this check.
+
 At the Fixed source-preparation boundary, `prepared_source_receipt()` borrows the
 actual original action receipt. Capture any needed descriptive runtime/scope,
 installed binding, product incarnation and publication generation before the next

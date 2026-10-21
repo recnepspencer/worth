@@ -26,7 +26,7 @@ pub use installed_contract::{
     WorthQueryInstalledApplicationCapabilityIdentity,
 };
 pub use plan_source::WorthQueryInstalledApplicationCapabilityPlanSource;
-pub(crate) use registry::compile_capability_registry;
+pub(crate) use registry::{compile_capability_registry, ApplicationCapabilityRegistryKey};
 pub use revocation_proposal::{
     derive_capability_revocation_proposal_identity, WorthQueryCapabilityRevocationProposalBasis,
     WorthQueryCapabilityRevocationProposalDenial,

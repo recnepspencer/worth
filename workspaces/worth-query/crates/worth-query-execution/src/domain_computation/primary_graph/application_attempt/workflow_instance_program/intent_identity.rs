@@ -150,3 +150,36 @@ fn encode(identity: [u8; 32]) -> String {
     }
     text
 }
+
+pub(super) fn succession_identity(
+    compiled: &CompiledWorkflowDefinition,
+    predecessor: EntityId,
+    scope: EntityId,
+    key: [u8; 32],
+    input: [u8; 32],
+    binding: &str,
+    role: &str,
+) -> Result<(String, [u8; 32]), ()> {
+    identity(
+        compiled,
+        scope,
+        key,
+        vec![
+            (
+                "succession.predecessor.partition",
+                predecessor.partition_value().to_string(),
+            ),
+            (
+                "succession.predecessor.slot",
+                predecessor.local_slot_value().to_string(),
+            ),
+            (
+                "succession.predecessor.generation",
+                predecessor.generation_value().to_string(),
+            ),
+            ("succession.binding", binding.to_owned()),
+            ("succession.role", role.to_owned()),
+            ("succession.input", encode(input)),
+        ],
+    )
+}

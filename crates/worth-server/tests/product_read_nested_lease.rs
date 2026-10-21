@@ -1,5 +1,7 @@
 #[allow(unused_imports)]
 use crate::shared_support_product_adapter_phase_nine_fixture as fixture;
+#[path = "product_read_nested_lease/default_checked_lane.rs"]
+mod default_checked_lane;
 #[path = "../../worth-relational/examples/support.rs"]
 mod relational_support;
 #[allow(unused_imports)]
@@ -216,6 +218,7 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
         .register_surface(WorthNativeSurface::enabled())
         .register_surface(CompatHttpSurface::phase_one_enabled())
         .register_product_adapters(vec![registration])
+        .register_product_adapter(default_checked_lane::registration())
         .with_execution_authority(Arc::clone(&authority))
         .build()
         .unwrap();
@@ -238,6 +241,7 @@ fn leased_server_adapter_propagates_exact_lease_to_nested_relational_read() {
     let wide = authority
         .request_lease(lease_request(8 * 1024 * 1024, cancellation.token()))
         .unwrap();
+    default_checked_lane::assert_refused(&session, &wide);
     let completed = session
         .product_operations()
         .execute_shared_read_batch_with_lease(vec![input()], &wide)

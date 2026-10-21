@@ -1,7 +1,9 @@
+mod body_external_emission;
 mod conditional_definition;
 mod effect_growth;
 mod emission;
 mod entity_creation;
+mod entity_retirement;
 mod entity_selection;
 mod model;
 mod operation_body;
@@ -198,20 +200,12 @@ impl<Schema, Operation, Input, Scope>
     where
         Entity: OperationDeletes<Operation>,
     {
-        self.validate_target(target, entity.name())?;
-        self.admit_program_target(&ApplicationOperationProgramTarget::Delete {
-            entity: entity.name().to_string(),
-        })?;
-        let EntityReference::Existing(entity_id) = target.reference else {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::ForeignEffectTarget,
-                entity.name(),
-            ));
-        };
-        self.reserve_effects(1)?;
-        self.effects
-            .push(WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id });
-        Ok(())
+        self.delete_at_target(
+            &ApplicationOperationProgramTarget::Delete {
+                entity: entity.name().into(),
+            },
+            target,
+        )
     }
 
     pub fn finish(
@@ -225,6 +219,7 @@ impl<Schema, Operation, Input, Scope>
             .validate_current_authority()
             .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
         self.output_correspondence.validate_effects(&self.effects)?;
+        self.validate_body_external_emission()?;
         Ok(WorthQueryApplicationEffectProgram {
             read_set: self.read_set,
             effects: self.effects,
@@ -236,6 +231,16 @@ impl<Schema, Operation, Input, Scope>
             producer_required_invariants: &[],
             output_currentness_facts: None,
         })
+    }
+
+    /// Intrinsic uniqueness is a native write obligation, not supplier read authority.
+    pub(in crate::domain_computation::primary_graph) fn observe_unique_write_dependencies(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.read_set
+            .observe_unique_write_values(execution, &self.effects, allocation)
     }
 
     fn validate_target<Entity>(

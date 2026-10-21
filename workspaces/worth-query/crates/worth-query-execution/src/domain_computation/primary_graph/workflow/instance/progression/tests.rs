@@ -90,6 +90,7 @@ fn completed_history_requires_the_terminal_settlement_to_be_excluded() {
 fn latest_transition_locator_tracks_occurrence_without_becoming_authority() {
     let node = entity(50);
     let mut progress = WorkflowInstanceProgress {
+        captured_inputs: None,
         head: node,
         next_occurrence: 2,
         retry_counts: OrdMap::new(),
@@ -116,6 +117,7 @@ fn latest_transition_locator_tracks_occurrence_without_becoming_authority() {
 fn evidence_locator_survives_a_later_reuse_transition_without_new_evidence() {
     let node = entity(60);
     let mut progress = WorkflowInstanceProgress {
+        captured_inputs: None,
         head: node,
         next_occurrence: 2,
         retry_counts: OrdMap::new(),

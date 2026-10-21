@@ -45,6 +45,7 @@ impl<Query> WorthQueryObservedSource<Query> {
         &self,
     ) -> WorthQueryObservedSource<Other> {
         WorthQueryObservedSource {
+            expression_context: self.expression_context.clone(),
             runtime_authority: self.runtime_authority,
             schema_binding: self.schema_binding.clone(),
             query_identity: self.query_identity.clone(),

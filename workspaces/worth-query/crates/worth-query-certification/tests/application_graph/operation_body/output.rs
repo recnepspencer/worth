@@ -3,6 +3,8 @@ use super::*;
 use worth_query_host::facade::declaration::application_operation::*;
 #[path = "output/portable.rs"]
 mod portable;
+#[path = "output/related.rs"]
+pub(super) mod related;
 
 pub struct ScopeOutputs<const MODE: u64>;
 pub struct ScopeOutput<const MODE: u64>;

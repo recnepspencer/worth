@@ -15,7 +15,7 @@ impl WorkflowInstanceProgress {
             .sort_unstable_by_key(|observation| observation.transition().settlement().occurrence());
         let mut progress = Self::start(compiled);
         for observation in observations {
-            progress.apply_observation(compiled, *observation)?;
+            progress.apply_observation(compiled, observation.clone())?;
         }
         Ok(progress)
     }

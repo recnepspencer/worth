@@ -86,17 +86,18 @@ fn observe_transition(
         entity_id: transition,
         kind,
     });
-    exact(execution,
+    let protocol = exact_u64(
+        execution,
         runtime,
         snapshot,
         transition,
         kind,
         &layout.transition.protocol_version,
-        AspectValue::UInt64(
-            crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
-        ),
         facts,
     )?;
+    if !matches!(protocol, 2 | 3) {
+        return Err(denial("workflow transition protocol is unsupported"));
+    }
     let occurrence = exact_u64(
         execution,
         runtime,
@@ -125,6 +126,11 @@ fn observe_transition(
         &layout.transition.operation_receipt_identity,
         facts,
     )?;
+    if protocol == 3 && operation_receipt_identity.is_none() {
+        return Err(denial(
+            "recorded operation output protocol has no performed operation",
+        ));
+    }
     if purpose == TransitionReadPurpose::Command {
         super::transition_roles::observe(
             execution,

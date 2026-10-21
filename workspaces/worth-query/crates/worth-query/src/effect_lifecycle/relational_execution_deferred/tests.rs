@@ -123,18 +123,18 @@ fn leased_execution_is_typed_at_the_effect_boundary() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     use worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
-    let observed = transaction_commit(crate::relational_execution_refusal::work_exhausted(
-        execution,
-    ));
+    let refusal = crate::relational_execution_refusal::work_exhausted(execution);
+    let source = crate::relational_execution_refusal::source_partition(&refusal);
+    let observed = transaction_commit(refusal);
     assert!(matches!(
         observed,
         RelationalEffectExecutionFailure::Denied {
             kind: EffectExecutionDenialKind::RelationalExecutionDenied(Kind::ExecutionResource {
                 denial: Resource::WorkExhausted,
-                partition_identity: Some(1),
+                partition_identity,
                 policy_ancestor: None,
             }),
             ..
-        }
+        } if partition_identity == source
     ));
 }

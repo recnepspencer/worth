@@ -13,6 +13,7 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::{EntityId, KindId};
 mod changes;
 mod consequences;
+mod graph;
 mod guard;
 mod observation;
 mod signing;
@@ -50,15 +51,20 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
             for rule in rules {
                 context.checkpoint(1).map_err(stopped)?;
                 let changed = changes::select(rule, lease, effects, &facts, execution)?;
-                for (subject, fields) in changed {
+                let subjects = graph::affected_subjects(
+                    rule, lease, effects, &changed, execution, &request, context, &mut batch,
+                )?;
+                for subject in subjects {
                     consequences::collect(
                         rule,
                         subject,
-                        &fields,
+                        &changed,
+                        effects,
                         actor,
                         admission.operation(),
                         logical_request,
                         lease,
+                        execution,
                         &request,
                         context,
                         &mut batch,

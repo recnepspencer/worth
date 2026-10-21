@@ -27,7 +27,10 @@ impl WorthQueryApplicationContribution<CapabilitySchema> for CapabilityContribut
         setup: &mut WorthQueryApplicationContributionSetup<'_, CapabilitySchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         setup.handler::<SetRetentionBinding, _>(RetentionHandler(contacts.clone()))?;
-        setup.handler::<super::workflow::bindings::GuardedBinding, _>(RetentionHandler(contacts))
+        setup.handler::<super::workflow::bindings::GuardedBinding, _>(RetentionHandler(
+            contacts.clone(),
+        ))?;
+        setup.handler::<super::workflow::actor_binding::ActorBinding, _>(RetentionHandler(contacts))
     }
 }
 struct Adapter;

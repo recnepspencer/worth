@@ -1,4 +1,5 @@
 mod application_operation_contract;
+mod application_query;
 mod application_schema;
 mod artifact_contract;
 mod conditional_application_operation;

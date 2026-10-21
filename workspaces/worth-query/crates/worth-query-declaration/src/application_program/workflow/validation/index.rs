@@ -21,7 +21,7 @@ pub(super) struct IndexedConnection<'a> {
 
 #[derive(Clone, Default)]
 pub(super) struct NodeConnectionSummary {
-    incoming_data: [u32; 7],
+    incoming_data: [u32; 8],
     outgoing_control: [u32; 11],
     retry_count: u32,
     retry_trigger: Option<ApplicationWorkflowControlOutcome>,
@@ -282,6 +282,7 @@ const fn data_index(flow: ApplicationWorkflowDataFlow) -> usize {
         ApplicationWorkflowDataFlow::JoinedEvidence => 4,
         ApplicationWorkflowDataFlow::ApprovalAuthority => 5,
         ApplicationWorkflowDataFlow::OperationInput => 6,
+        ApplicationWorkflowDataFlow::CapturedOperationInput => 7,
     }
 }
 

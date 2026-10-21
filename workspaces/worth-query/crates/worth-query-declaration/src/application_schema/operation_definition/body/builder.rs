@@ -15,26 +15,23 @@ use super::{
 };
 
 pub struct ApplicationOperationBodyBuilder<Schema, Operation, Input> {
-    scope: Option<String>,
-    steps: Vec<ApplicationOperationBodyScopeField>,
+    pub(super) scope: Option<String>,
+    pub(super) steps: Vec<ApplicationOperationBodyScopeField>,
+    pub(super) values: Vec<super::ApplicationOperationBodyValueProgram>,
+    pub(super) retirements: Vec<super::ApplicationOperationBodyOwnedSelectionRetirement>,
+    pub(super) path_input_expectations: Vec<super::ApplicationOperationBodyPathInputExpectation>,
+    pub(super) path_value_assignments: Vec<super::ApplicationOperationBodyPathValueAssignment>,
+    pub(super) reference_inputs: Vec<super::ApplicationOperationBodyReferenceInput>,
     requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
     pub(super) outputs: Vec<super::ApplicationOperationBodyOutput>,
+    pub(super) succession: Option<super::ApplicationOperationBodySuccession>,
+    pub(super) external_emission: Option<super::ApplicationOperationBodyExternalEmission>,
+    pub(super) external_emission_recipe:
+        Option<super::ApplicationOperationBodyExternalEffectRecipe>,
     marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
-impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input> {
-    /// Begins scope-bound source expectations and assignments. Membership is
-    /// derived when the completed body is attached to this operation definition.
-    pub fn body(self) -> ApplicationOperationBodyBuilder<Schema, Operation, Input> {
-        ApplicationOperationBodyBuilder {
-            scope: None,
-            steps: Vec::new(),
-            requirements: Vec::new(),
-            outputs: Vec::new(),
-            marker: PhantomData,
-        }
-    }
-}
+mod entrance;
 
 impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation, Input> {
     /// Selects the existing admitted scope without requiring a write to it.
@@ -46,15 +43,18 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
     where
         Entity: OperationReads<Operation>,
     {
-        if self
-            .scope
-            .as_deref()
-            .is_some_and(|scope| scope != entity.name())
-        {
+        self.in_named_scope(entity.name())?;
+        Ok(self)
+    }
+    pub(super) fn in_named_scope(
+        &mut self,
+        entity: &str,
+    ) -> Result<(), ApplicationOperationBodyAuthoringDenial> {
+        if self.scope.as_deref().is_some_and(|scope| scope != entity) {
             return Err(ApplicationOperationBodyAuthoringDenial::MultipleScopeEntities);
         }
-        self.scope = Some(entity.name().to_owned());
-        Ok(self)
+        self.scope = Some(entity.to_owned());
+        Ok(())
     }
 
     pub fn expect<Entity, Aspect, Field, Value, Write, Equality, Unit>(
@@ -73,6 +73,35 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             binding: Field::Binding::IDENTITY,
             value: Field::Binding::encode(&value)?,
         });
+        Ok(self)
+    }
+
+    /// Requires a present scope field equal to one original canonical input member.
+    /// Both required and optional fields are supported; absence never satisfies equality.
+    /// The installed scalar binding validates the captured member before comparison.
+    pub fn expect_input<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+        mut self,
+        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        member: &str,
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
+    where
+        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Unit: ApplicationFieldUnit,
+    {
+        if member.is_empty() || member.trim() != member {
+            return Err(ApplicationOperationBodyAuthoringDenial::InvalidInputMember);
+        }
+        self.steps
+            .push(ApplicationOperationBodyScopeField::ExpectInput {
+                field: ApplicationFieldBindingLocus::new(
+                    field.entity(),
+                    field.aspect(),
+                    field.field(),
+                ),
+                binding: Field::Binding::IDENTITY,
+                scalar_family: Field::Binding::SCALAR_FAMILY,
+                member: member.to_owned(),
+            });
         Ok(self)
     }
 
@@ -136,17 +165,65 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         {
             return Err(ApplicationOperationBodyAuthoringDenial::MultipleScopeEntities);
         }
-        if writes.is_empty() && creation.is_none() && self.outputs.is_empty() {
+        if writes.is_empty()
+            && self.reference_inputs.is_empty()
+            && self.path_value_assignments.is_empty()
+            && creation.is_none()
+            && self.outputs.is_empty()
+            && self.external_emission.is_none()
+        {
             return Err(ApplicationOperationBodyAuthoringDenial::Empty);
         }
+        let program = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            scope.to_owned(),
+            self.steps,
+            creation,
+            self.requirements,
+        )
+        .with_untrusted_outputs(self.outputs)
+        .with_untrusted_succession(self.succession)
+        .with_untrusted_external_emission(self.external_emission);
+        let program = program
+            .with_untrusted_values(self.values)
+            .with_untrusted_retirements(self.retirements);
+        let program = program
+            .with_untrusted_path_input_expectations(self.path_input_expectations)
+            .with_untrusted_path_value_assignments(self.path_value_assignments);
+        let program = program.with_untrusted_reference_inputs(self.reference_inputs);
+        super::reference_input::validate_shape(&program)?;
+        program.validate_path_bindings()?;
+        if !program.has_supported_retiring_replacement()
+            || !program.has_supported_creation_reuse()
+            || !program.has_supported_child_creations()
+            || !program.has_supported_peer_creations()
+        {
+            return Err(ApplicationOperationBodyAuthoringDenial::InvalidCreationLink);
+        }
+        let mut paths = BTreeSet::new();
+        if program.retirements().iter().any(|rule| {
+            !rule.fits_body(&program)
+                || !paths.insert((&rule.owners_relation, &rule.selection_relation))
+        }) {
+            return Err(ApplicationOperationBodyAuthoringDenial::InvalidSelectionRetirement);
+        }
+        if program
+            .observation_operands()
+            .any(|operand| Some(operand.source().scope_entity()) != program.scope_entity())
+        {
+            return Err(ApplicationOperationBodyAuthoringDenial::MultipleScopeEntities);
+        }
+        if !super::succession::valid(&program) {
+            return Err(ApplicationOperationBodyAuthoringDenial::InvalidWorkflowSuccession);
+        }
+        if program
+            .query_contexts()
+            .any(|(_, query)| Some(query.scope_entity()) != program.scope_entity())
+        {
+            return Err(ApplicationOperationBodyAuthoringDenial::MultipleScopeEntities);
+        }
         Ok(ApplicationOperationBody {
-            program: ApplicationOperationBodyProgram::from_untrusted_in_scope(
-                scope.to_owned(),
-                self.steps,
-                creation,
-                self.requirements,
-            )
-            .with_untrusted_outputs(self.outputs),
+            program,
+            external_emission_recipe: self.external_emission_recipe,
             marker: PhantomData,
         })
     }

@@ -25,6 +25,7 @@ mod draft;
 mod evaluation;
 mod functions;
 mod language;
+mod native_scalar;
 mod numeric;
 mod operators;
 mod profile;

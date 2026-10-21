@@ -6,7 +6,8 @@ use super::{
     InstalledWorkflowAuthoringCapability, InstalledWorkflowBirth,
     InstalledWorkflowCapabilityBinding, InstalledWorkflowCondition,
     InstalledWorkflowInstanceStartCapability, InstalledWorkflowOperation,
-    WorthQueryApplicationWorkflowResourceCeiling, WorthQueryInstalledApplicationWorkflowSpec,
+    InstalledWorkflowSuccession, WorthQueryApplicationWorkflowResourceCeiling,
+    WorthQueryInstalledApplicationWorkflowSpec,
 };
 
 impl<Schema, Spec> WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>
@@ -33,6 +34,7 @@ pub(super) fn derive(
     advance: &InstalledWorkflowAdvanceCapability,
     operations: &[InstalledWorkflowOperation],
     births: &[InstalledWorkflowBirth],
+    successions: &[InstalledWorkflowSuccession],
     assessments: &[InstalledWorkflowAssessment],
     conditions: &[InstalledWorkflowCondition],
     approvals: &[InstalledWorkflowApproval],
@@ -110,6 +112,19 @@ pub(super) fn derive(
         let mut entry = fields(
             "birth",
             &[birth.binding_identity, birth.role_name, birth.entity_name],
+        );
+        append_frame(&mut entry, &capability);
+        entries.push(entry);
+    }
+    for succession in successions {
+        let capability = capability("succession-capability", &succession.capability);
+        let mut entry = fields(
+            "succession",
+            &[
+                succession.binding_identity,
+                succession.role_name,
+                succession.entity_name,
+            ],
         );
         append_frame(&mut entry, &capability);
         entries.push(entry);

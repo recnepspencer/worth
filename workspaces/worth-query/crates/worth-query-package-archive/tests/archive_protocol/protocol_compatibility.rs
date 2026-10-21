@@ -37,8 +37,9 @@ fn current_reader_profile_is_derived_from_every_public_version_constant() {
         profile.application_program_description_window(),
         WORTH_QUERY_APPLICATION_PROGRAM_ARCHIVE_PROTOCOL_VERSION,
     );
-    assert_exact_window(
+    assert_window(
         profile.workflow_definition_draft_window(),
+        7,
         WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
     );
 }
@@ -210,7 +211,11 @@ fn supported_window(layer: WorthQueryPackageArchiveProtocolLayer) -> (u16, u16) 
             WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION
         }
     };
-    (current, current)
+    if layer == WorthQueryPackageArchiveProtocolLayer::WorkflowDefinitionDraft {
+        (7, current)
+    } else {
+        (current, current)
+    }
 }
 
 fn assert_layer(

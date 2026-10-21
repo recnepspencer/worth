@@ -66,20 +66,31 @@ fn admit(
     )
 }
 #[test]
-fn atomic_present_demands_require_present_support_without_dense_getters() {
+fn atomic_omitted_support_ceilings_keep_no_policy_meaning() {
     let required = atomic(
         Scale::selective().with(Axis::BatchWidth, 0),
-        Limits::selective().with(Dimension::RetainedBytes, 0),
+        Limits::selective().with(Dimension::RetainedBytes, 1),
     );
     assert!(admit(&required, required.clone()).is_ok());
-    for missing in [
+    for omitted in [
         atomic(Scale::selective(), required.resource_ceilings().clone()),
         atomic(required.scale_ceilings().clone(), Limits::selective()),
     ] {
-        let denial = admit(&required, missing).unwrap_err();
-        assert_eq!(denial.kind(), &Kind::Backpressured);
-        assert!(denial.detail().contains("does not support required"));
+        assert!(
+            admit(&required, omitted).is_ok(),
+            "an omitted support ceiling retains its no-policy meaning"
+        );
     }
+    let denial = admit(
+        &required,
+        atomic(
+            required.scale_ceilings().clone(),
+            Limits::selective().with(Dimension::RetainedBytes, 0),
+        ),
+    )
+    .unwrap_err();
+    assert_eq!(denial.kind(), &Kind::Backpressured);
+    assert!(denial.detail().contains("below the required"));
     let no_demand = atomic(Scale::selective(), Limits::selective());
     assert!(admit(&no_demand, required.clone()).is_ok());
     let work = atomic(

@@ -1,0 +1,219 @@
+//! Finite input registration describes installed actions; it does not plan workflow order.
+use super::{roster::*, selection::WorthQuerySelectedWorkflowOperation};
+use crate::application_entry::{
+    WorthQueryOperationConstructionDenial, WorthQueryOperationDescription,
+    WorthQueryWorkflowOperationBindingDenial,
+};
+use worth_query_declaration::facade::{
+    application_operation::{ApplicationMutationBinding, ApplicationMutationIntent},
+    application_program::{
+        ApplicationAction, ApplicationActionDelivery, ApplicationProgramDefinition,
+        ApplicationSourceCompletion, ApplicationWorkflowInputBinding,
+        ApplicationWorkflowNodeIdentity, ApplicationWorkflowOperationNode, ApplicationWorkflowSpec,
+    },
+    application_schema::ApplicationSchema,
+};
+use worth_query_execution::{
+    facade::application_installation::{
+        WorthQueryProgramApplicationRuntime, WorthQueryWorkflowVocabulary,
+    },
+    publication_boundary::workflow_advance::RequiredWorkflowOperation,
+};
+
+/// Selection/registration refusal without an independently admitted business effect.
+/// Registration returns original inputs; failed native binding restores the entry.
+#[derive(Debug)]
+pub enum WorthQueryWorkflowInputDenial {
+    CaptureAdmission(crate::application_entry::WorthQueryApplicationRequestMutationDenial),
+    Capture(
+        worth_query_execution::publication_boundary::workflow_proposal::WorkflowCapturedInputDenial,
+    ),
+    CaptureBranchMismatch,
+    UnqualifiedTarget,
+    DuplicateBinding,
+    DuplicateTarget,
+    NotGuarded,
+    NotSupplied,
+    AlreadyTransferred,
+    Binding(WorthQueryWorkflowOperationBindingDenial),
+    Construction(WorthQueryOperationConstructionDenial),
+}
+impl std::fmt::Display for WorthQueryWorkflowInputDenial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "workflow input selection: {self:?}")
+    }
+}
+impl std::error::Error for WorthQueryWorkflowInputDenial {}
+
+/// Original funded descriptions, one per qualified node or one unqualified entry per binding.
+/// Entries transfer once, only to the existing native owning workflow operation.
+/// Registration order never selects the next operation. Repeated operations in
+/// a workflow remain legal; a later logical submission supplies their new input.
+pub struct WorthQueryWorkflowOperationInputs<
+    S: ApplicationSchema,
+    P: ApplicationProgramDefinition<S>,
+    R = WorthQueryWorkflowInputEnd,
+> {
+    runtime: WorthQueryProgramApplicationRuntime<S, P>,
+    roster: R,
+}
+impl<S: ApplicationSchema, P: ApplicationProgramDefinition<S>>
+    WorthQueryWorkflowOperationInputs<S, P>
+{
+    pub fn new(runtime: &WorthQueryProgramApplicationRuntime<S, P>) -> Self {
+        Self {
+            runtime: runtime.clone(),
+            roster: WorthQueryWorkflowInputEnd,
+        }
+    }
+}
+impl<
+        S: ApplicationSchema + 'static,
+        P: ApplicationProgramDefinition<S>,
+        R: WorthQueryWorkflowInputList<S, P>,
+    > WorthQueryWorkflowOperationInputs<S, P, R>
+{
+    /// Validate actual owning-delivery membership before any submitted action runs.
+    /// Refusal returns the original pack and unmodified incoming description.
+    pub fn with<A, I>(
+        self,
+        description: WorthQueryOperationDescription<S, I>,
+    ) -> Result<
+        WorthQueryWorkflowOperationInputs<S, P, WorthQueryWorkflowInputNode<S, I, A, R>>,
+        (
+            Self,
+            WorthQueryOperationDescription<S, I>,
+            WorthQueryWorkflowInputDenial,
+        ),
+    >
+    where
+        I: ApplicationMutationIntent<S>,
+        A: ApplicationAction<S, I::Binding>,
+        A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = ApplicationSourceCompletion>,
+        WorthQueryWorkflowInputNode<S, I, A, R>: WorthQueryWorkflowInputList<S, P>,
+    {
+        self.register::<A, I>(None, description)
+    }
+    /// Retain input for an exact qualified authored node, not a binding-wide fallback.
+    /// This describes custody only: native selection still checks the actual pinned
+    /// requirement, exact input and installed action. It neither publishes target
+    /// inputs in a proposal nor grants workflow or mutation authority.
+    /// Refusal returns the original pack and incoming description unchanged.
+    pub fn with_at<A, I>(
+        self,
+        target: &impl ApplicationWorkflowInputBinding<ApplicationWorkflowOperationNode>,
+        description: WorthQueryOperationDescription<S, I>,
+    ) -> Result<
+        WorthQueryWorkflowOperationInputs<S, P, WorthQueryWorkflowInputNode<S, I, A, R>>,
+        (
+            Self,
+            WorthQueryOperationDescription<S, I>,
+            WorthQueryWorkflowInputDenial,
+        ),
+    >
+    where
+        I: ApplicationMutationIntent<S>,
+        A: ApplicationAction<S, I::Binding>,
+        A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = ApplicationSourceCompletion>,
+        WorthQueryWorkflowInputNode<S, I, A, R>: WorthQueryWorkflowInputList<S, P>,
+    {
+        self.register::<A, I>(Some(target.workflow_node_identity().clone()), description)
+    }
+    fn register<A, I>(
+        self,
+        target: Option<ApplicationWorkflowNodeIdentity>,
+        description: WorthQueryOperationDescription<S, I>,
+    ) -> Result<
+        WorthQueryWorkflowOperationInputs<S, P, WorthQueryWorkflowInputNode<S, I, A, R>>,
+        (
+            Self,
+            WorthQueryOperationDescription<S, I>,
+            WorthQueryWorkflowInputDenial,
+        ),
+    >
+    where
+        I: ApplicationMutationIntent<S>,
+        A: ApplicationAction<S, I::Binding>,
+        A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = ApplicationSourceCompletion>,
+        WorthQueryWorkflowInputNode<S, I, A, R>: WorthQueryWorkflowInputList<S, P>,
+    {
+        let denial = if let Some(cause) = self
+            .roster
+            .registration_denial(I::Binding::IDENTITY, target.as_ref())
+        {
+            Some(cause)
+        } else if !I::Binding::REQUIRES_WORKFLOW_AUTHORITY || I::Binding::WORKFLOW_CONTROL {
+            Some(WorthQueryWorkflowInputDenial::NotGuarded)
+        } else if !self
+            .runtime
+            .runtime()
+            .product_runtime()
+            .owns_branch_selector(description.branch)
+        {
+            Some(WorthQueryWorkflowInputDenial::Construction(
+                WorthQueryOperationConstructionDenial::ForeignRuntime,
+            ))
+        } else {
+            self.runtime
+                .installed_program()
+                .resolve_action::<I::Binding, A>()
+                .err()
+                .map(|cause| {
+                    WorthQueryWorkflowInputDenial::Construction(
+                        WorthQueryOperationConstructionDenial::Action(cause),
+                    )
+                })
+        };
+        if let Some(cause) = denial {
+            return Err((self, description, cause));
+        }
+        Ok(WorthQueryWorkflowOperationInputs {
+            runtime: self.runtime,
+            roster: WorthQueryWorkflowInputNode {
+                description: Some(description),
+                target,
+                tail: self.roster,
+                action: std::marker::PhantomData,
+            },
+        })
+    }
+    /// Binding identity narrows a candidate only. Native binding and construction
+    /// still check input, branch, requirements, installed meaning and issued slot.
+    pub fn select<'w, Spec: ApplicationWorkflowSpec<Schema = S>>(
+        &mut self,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'w, S, Spec>>,
+        required: &RequiredWorkflowOperation,
+    ) -> Result<WorthQuerySelectedWorkflowOperation<S, P, R>, WorthQueryWorkflowInputDenial> {
+        let workflow = workflow.into();
+        if !std::ptr::eq(self.runtime.runtime(), workflow.runtime()) {
+            return Err(WorthQueryWorkflowInputDenial::Binding(
+                WorthQueryWorkflowOperationBindingDenial::RuntimeMismatch,
+            ));
+        }
+        self.roster
+            .select(&self.runtime, workflow, required)
+            .map(WorthQuerySelectedWorkflowOperation::new)
+    }
+
+    pub(in crate::application_entry) fn prepare_capture(
+        &self,
+        request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, S>,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+        selected: &worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<'_, S>,
+    ) -> Result<Vec<(ApplicationWorkflowNodeIdentity,
+    worth_query_execution::publication_boundary::workflow_proposal::PreparedWorkflowCapturedInput)>, WorthQueryWorkflowInputDenial>{
+        if !std::ptr::eq(self.runtime.runtime(), request.application) {
+            return Err(WorthQueryWorkflowInputDenial::Construction(
+                WorthQueryOperationConstructionDenial::ForeignRuntime,
+            ));
+        }
+        let mut context = super::capture::WorthQueryWorkflowInputCapture {
+            request,
+            phase,
+            selected,
+            inputs: Vec::new(),
+        };
+        self.roster.capture(&mut context)?;
+        Ok(context.inputs)
+    }
+}

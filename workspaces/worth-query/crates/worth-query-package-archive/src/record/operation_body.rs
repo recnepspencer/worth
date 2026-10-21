@@ -4,16 +4,30 @@ use super::{
     sequence::{decode_sequence, write_sequence},
 };
 
+mod children;
 mod classified_capture;
 mod creation_fields;
 mod creation_links;
 mod enrollment;
+mod external_emission;
 mod outputs;
+mod path_capture;
+mod peers;
 mod principal;
+mod query_context;
+mod scope_fields;
+mod values;
+mod version;
+pub(super) use query_context::require_nesting_depth;
+mod path_input;
+mod path_value;
+mod reference_input;
 mod related_source;
 mod requirements;
+mod retirements;
 mod signing;
 mod signing_lifecycle;
+mod succession;
 #[cfg(test)]
 mod tests;
 use crate::{
@@ -36,88 +50,7 @@ pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
-    let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body.creation().is_some_and(|creation| creation.fields().iter().any(|step| step.related_source().is_some())) { 20 }
-    else if body.creation().is_some_and(|creation| creation.links().iter().any(|link|
-        link.posture == worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle)) {
-        19
-    } else if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand|
-        matches!(operand.source(), worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource::RelatedSignedEvidence { .. })) {
-        18
-    } else if body.creation().is_some_and(|creation| creation.enrollment().is_some()) {
-        17
-    } else if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand|
-        matches!(operand.source(), worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource::SignedEvidence(_))) {
-        16
-    } else if body
-        .creation()
-        .is_some_and(|creation| creation.signing_lifecycle().is_some())
-    {
-        15
-    } else if body.creation().is_some_and(|creation| {
-        creation.fields().iter().any(|step| {
-            matches!(
-                step,
-                ApplicationOperationBodyCreatedField::CapturedScopeField { .. }
-            )
-        })
-    }) {
-        14
-    } else if signing::uses_signed_sources(body) {
-        13
-    } else if body.creation().is_some_and(|creation| {
-        creation
-            .fields()
-            .iter()
-            .any(|step| step.principal_source().is_some())
-    }) {
-        12
-    } else if body
-        .creation()
-        .is_some_and(|creation| !creation.links().is_empty())
-    {
-        11
-    } else if !body.outputs().is_empty() {
-        10
-    } else if body.has_optional_inputs() {
-        9
-    } else if scoped {
-        8
-    } else if !body.requirements().is_empty() {
-        7
-    } else if body.scope_fields().iter().any(|step| {
-        matches!(
-            step,
-            ApplicationOperationBodyScopeField::RequirePresent { .. }
-        )
-    }) {
-        6
-    } else if body.scope_fields().iter().any(|step| {
-        matches!(
-            step,
-            ApplicationOperationBodyScopeField::SetOptionalInput { .. }
-                | ApplicationOperationBodyScopeField::ClearOptional { .. }
-        )
-    }) {
-        5
-    } else if body.creation().is_some_and(|creation| {
-        creation
-            .fields()
-            .iter()
-            .any(|step| step.source_field().is_some())
-    }) {
-        4
-    } else if body.creation().is_some() {
-        3
-    } else if body
-        .scope_fields()
-        .iter()
-        .any(|step| step.input_member().is_some())
-    {
-        2
-    } else {
-        1
-    };
+    let version = version::select(body);
     output.u16(version)?;
     if version >= 8 {
         output.text(
@@ -125,49 +58,7 @@ pub(super) fn write(
                 .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?,
         )?;
     }
-    write_sequence(output, body.scope_fields(), |output, step| {
-        output.u16(match step {
-            ApplicationOperationBodyScopeField::Expect { .. } => 1,
-            ApplicationOperationBodyScopeField::Assign { .. } => 2,
-            ApplicationOperationBodyScopeField::AssignInput { .. } => 3,
-            ApplicationOperationBodyScopeField::SetOptionalInput { .. } => 4,
-            ApplicationOperationBodyScopeField::ClearOptional { .. } => 5,
-            ApplicationOperationBodyScopeField::RequirePresent { .. } => 6,
-            ApplicationOperationBodyScopeField::AssignOptionalInput { .. } => 7,
-        })?;
-        output.text(step.field().entity())?;
-        output.text(step.field().aspect())?;
-        output.text(step.field().field())?;
-        output.text(step.binding().as_str())?;
-        match step {
-            ApplicationOperationBodyScopeField::Expect { value, .. }
-            | ApplicationOperationBodyScopeField::Assign { value, .. } => {
-                super::foundational_value::write_aspect_value(output, value)
-            }
-            ApplicationOperationBodyScopeField::AssignInput {
-                member,
-                scalar_family,
-                ..
-            }
-            | ApplicationOperationBodyScopeField::SetOptionalInput {
-                member,
-                scalar_family,
-                ..
-            }
-            | ApplicationOperationBodyScopeField::AssignOptionalInput {
-                member,
-                scalar_family,
-                ..
-            } => {
-                super::foundational_aspect::write_scalar_type(output, *scalar_family)?;
-                output.text(member)
-            }
-            ApplicationOperationBodyScopeField::ClearOptional { scalar_family, .. }
-            | ApplicationOperationBodyScopeField::RequirePresent { scalar_family, .. } => {
-                super::foundational_aspect::write_scalar_type(output, *scalar_family)
-            }
-        }
-    })?;
+    scope_fields::write(output, body.scope_fields())?;
     if version >= 5 {
         output.u16(u16::from(body.creation().is_some()))?;
     }
@@ -206,6 +97,56 @@ pub(super) fn write(
             body.creation().and_then(|creation| creation.enrollment()),
         )?;
     }
+    if version >= 21 {
+        succession::write(output, body.succession())?;
+    }
+    if version >= 28 {
+        output.u8(u8::from(body.external_emission().is_some()))?;
+    }
+    if let Some(emission) = body.external_emission() {
+        external_emission::write(output, emission, version)?;
+    }
+    if version >= 28 {
+        values::write(output, body.values())?;
+    }
+    if version >= 29 {
+        output.u64(
+            u64::try_from(
+                body.creation()
+                    .and_then(|c| c.subject_impact_bound())
+                    .map_or(0, std::num::NonZeroUsize::get),
+            )
+            .map_err(|_| Denial::new(Kind::InvalidRecordShape))?,
+        )?;
+    }
+    if version >= 31 {
+        retirements::write(output, body.retirements())?;
+    }
+    if version >= 32 {
+        path_input::write(output, body.path_input_expectations())?;
+    }
+    if version >= 33 {
+        path_value::write(output, body.path_value_assignments())?;
+    }
+    if version >= 35 {
+        output
+            .u8(u8::from(body.creation().is_some_and(|creation| {
+                creation.reuses_current_if_unchanged()
+            })))?;
+    }
+    if version >= 36 {
+        children::write(
+            output,
+            body.creation().map_or(&[], |c| c.children()),
+            version,
+        )?;
+    }
+    if version >= 37 {
+        reference_input::write(output, body.reference_inputs())?;
+    }
+    if version >= 38 {
+        peers::write(output, body, version)?;
+    }
     Ok(())
 }
 
@@ -214,7 +155,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=20) {
+    if !matches!(version, 1..=40) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -222,75 +163,7 @@ pub(super) fn decode(
     } else {
         None
     };
-    let steps = decode_sequence(input, budget, 20, |input, _| {
-        let tag = input.u16()?;
-        if !(matches!(tag, 1 | 2)
-            || (version >= 2 && tag == 3)
-            || (version >= 5 && matches!(tag, 4 | 5))
-            || (version >= 6 && tag == 6)
-            || (version >= 9 && tag == 7))
-        {
-            return Err(Denial::new(Kind::UnsupportedRecordVariant));
-        }
-        let field = ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
-        let binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned());
-        if matches!(tag, 3 | 4 | 7) {
-            let scalar_family = super::foundational_aspect::decode_scalar_type(input)?;
-            let member = input.text()?.to_owned();
-            return Ok(if tag == 3 {
-                ApplicationOperationBodyScopeField::AssignInput {
-                    field,
-                    binding,
-                    scalar_family,
-                    member,
-                }
-            } else if tag == 4 {
-                ApplicationOperationBodyScopeField::SetOptionalInput {
-                    field,
-                    binding,
-                    scalar_family,
-                    member,
-                }
-            } else {
-                ApplicationOperationBodyScopeField::AssignOptionalInput {
-                    field,
-                    binding,
-                    scalar_family,
-                    member,
-                }
-            });
-        }
-        if matches!(tag, 5 | 6) {
-            let scalar_family = super::foundational_aspect::decode_scalar_type(input)?;
-            return Ok(if tag == 5 {
-                ApplicationOperationBodyScopeField::ClearOptional {
-                    field,
-                    binding,
-                    scalar_family,
-                }
-            } else {
-                ApplicationOperationBodyScopeField::RequirePresent {
-                    field,
-                    binding,
-                    scalar_family,
-                }
-            });
-        }
-        let value = super::foundational_value::decode_aspect_value(input)?;
-        Ok(match tag {
-            1 => ApplicationOperationBodyScopeField::Expect {
-                field,
-                binding,
-                value,
-            },
-            2 => ApplicationOperationBodyScopeField::Assign {
-                field,
-                binding,
-                value,
-            },
-            _ => unreachable!("tag admitted before operands"),
-        })
-    })?;
+    let steps = scope_fields::decode(input, budget, version)?;
     let has_creation = if version >= 5 {
         match input.u16()? {
             0 => false,
@@ -307,7 +180,7 @@ pub(super) fn decode(
         Vec::new()
     };
     let outputs = if version >= 10 {
-        outputs::decode(input, budget)?
+        outputs::decode(input, budget, version)?
     } else {
         Vec::new()
     };
@@ -348,6 +221,88 @@ pub(super) fn decode(
         }
         None => return Err(Denial::new(Kind::InvalidRecordShape)),
     };
+    let succession = if version >= 21 {
+        succession::decode(input, version)?
+    } else {
+        None
+    };
+    let has_emission = if version >= 28 {
+        match input.u8()? {
+            0 => false,
+            1 => true,
+            _ => return Err(Denial::new(Kind::InvalidBooleanEncoding)),
+        }
+    } else {
+        version >= 26
+    };
+    let external_emission = if has_emission {
+        Some(external_emission::decode(input, budget, version)?)
+    } else {
+        None
+    };
+    let values = if version >= 28 {
+        values::decode(input, budget)?
+    } else {
+        Vec::new()
+    };
+    let creation = if version >= 29 {
+        let bound = std::num::NonZeroUsize::new(
+            usize::try_from(input.u64()?).map_err(|_| Denial::new(Kind::InvalidRecordShape))?,
+        );
+        if bound.is_some() && creation.is_none() {
+            return Err(Denial::new(Kind::InvalidRecordShape));
+        }
+        creation.map(|creation| creation.with_untrusted_subject_impact_bound(bound))
+    } else {
+        creation
+    };
+    let retirements = if version >= 31 {
+        retirements::decode(input, budget)?
+    } else {
+        Vec::new()
+    };
+    let path_inputs = if version >= 32 {
+        path_input::decode(input, budget)?
+    } else {
+        Vec::new()
+    };
+    let path_values = if version >= 33 {
+        path_value::decode(input, budget)?
+    } else {
+        Vec::new()
+    };
+    let creation = if version >= 35 {
+        let reuse = match input.u8()? {
+            0 => false,
+            1 => true,
+            _ => return Err(Denial::new(Kind::InvalidBooleanEncoding)),
+        };
+        if reuse && creation.is_none() {
+            return Err(Denial::new(Kind::InvalidRecordShape));
+        }
+        creation.map(|creation| creation.with_untrusted_reuse_current_if_unchanged(reuse))
+    } else {
+        creation
+    };
+    let creation = if version >= 36 {
+        let children = children::decode(input, budget, version)?;
+        if creation.is_none() && !children.is_empty() {
+            return Err(Denial::new(Kind::InvalidRecordShape));
+        }
+        creation.map(|c| c.with_untrusted_children(children))
+    } else {
+        creation
+    };
+    let references = if version >= 37 {
+        reference_input::decode(input, budget)?
+    } else {
+        Vec::new()
+    };
+    let creation = if version >= 38 {
+        peers::decode(input, budget, creation, version)?
+    } else {
+        creation
+    };
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(
             scope,
@@ -355,7 +310,14 @@ pub(super) fn decode(
             creation,
             requirements,
         )
-        .with_untrusted_outputs(outputs))
+        .with_untrusted_outputs(outputs)
+        .with_untrusted_succession(succession)
+        .with_untrusted_external_emission(external_emission)
+        .with_untrusted_values(values)
+        .with_untrusted_retirements(retirements)
+        .with_untrusted_path_input_expectations(path_inputs)
+        .with_untrusted_path_value_assignments(path_values)
+        .with_untrusted_reference_inputs(references))
     } else {
         let body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
             steps,

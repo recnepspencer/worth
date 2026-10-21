@@ -48,9 +48,11 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_proposal_fact
         ),
         (
             layout.proposal.protocol_version.clone(),
-            AspectValue::UInt64(
-                crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
-            ),
+            AspectValue::UInt64(if proposal.captured_identity.is_some() {
+                super::super::schema::version::WORKFLOW_CAPTURED_PROPOSAL_PROTOCOL_VERSION
+            } else {
+                super::super::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION
+            }),
         ),
         (
             layout.proposal.operation.clone(),
@@ -73,6 +75,16 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_proposal_fact
             AspectValue::UInt64(u64::try_from(proposal.coverages.len()).unwrap_or(u64::MAX)),
         ),
     ]);
+    if let Some(identity) = proposal.captured_identity {
+        fields.insert(
+            layout.proposal.captured_identity.clone(),
+            text(super::captured_inputs::hex(identity)),
+        );
+        fields.insert(
+            layout.proposal.captured_count.clone(),
+            AspectValue::UInt64(proposal.captured.len() as u64),
+        );
+    }
     if let Some(source_identity) = &proposal.source_identity {
         fields.insert(
             layout.proposal.source_identity.clone(),
@@ -135,6 +147,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_proposal_fact
             to: EntityReference::Created(coverage_entity),
         })?;
     }
+    super::captured_inputs::emit(layout, proposal, &proposal_entity, &mut emit)?;
     Ok((transition, proposal_entity))
 }
 

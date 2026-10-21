@@ -167,7 +167,6 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
                 RequireDraftNote::reference(),
                 DocumentIdentityField::reference(),
             )
-            .application_mutation_binding::<BodyBinding<DESTINATION>>()
             .application_mutation_binding::<SourceBinding<DESTINATION>>()
             .application_mutation_binding::<DraftBinding<DESTINATION, SetDraftNote>>()
             .application_mutation_binding::<DraftBinding<DESTINATION, ClearDraftNote>>()
@@ -180,6 +179,11 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
             .application_query_binding::<super::audit_query::AuditQueryBinding<DESTINATION>>()
             .application_query(super::draft_query::draft_query_definition::<DESTINATION>())
             .application_query_binding::<super::draft_query::DraftQueryBinding<DESTINATION>>();
+        let schema = if matches!(DESTINATION, 37 | 38) {
+            schema.application_mutation_binding::<super::output::related::binding::RelatedBinding<DESTINATION>>()
+        } else {
+            schema.application_mutation_binding::<BodyBinding<DESTINATION>>()
+        };
         let schema = if DESTINATION == 36 {
             schema
                 .aspect(Audit::reference(), AuditActorFacts::reference())
@@ -187,6 +191,7 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
         } else {
             schema
         };
+        let schema = super::retirement::declaration::declare::<DESTINATION>(schema);
         super::genesis::declaration::declare::<DESTINATION>(schema)
     }
 }
@@ -263,11 +268,20 @@ impl<const DESTINATION: u64> WorthQueryApplicationContribution<DocumentRetention
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         match install {
             Installation::Native => {
+                if matches!(DESTINATION, 120..=125) {
+                    setup
+                        .operation_body::<super::retirement::binding::ReplaceBinding<DESTINATION>>(
+                        )?;
+                }
                 if matches!(DESTINATION, 30 | 31) {
                     setup
                         .operation_body::<super::genesis::binding::CreateBinding<DESTINATION>>()?;
                 }
-                setup.operation_body::<BodyBinding<DESTINATION>>()?;
+                if matches!(DESTINATION, 37 | 38) {
+                    setup.operation_body::<super::output::related::binding::RelatedBinding<DESTINATION>>()?;
+                } else {
+                    setup.operation_body::<BodyBinding<DESTINATION>>()?;
+                }
                 setup.operation_body::<SourceBinding<DESTINATION>>()?;
                 setup.operation_body::<DraftBinding<DESTINATION, SetDraftNote>>()?;
                 setup.operation_body::<DraftBinding<DESTINATION, ClearDraftNote>>()?;
@@ -303,22 +317,37 @@ impl<const DESTINATION: u64> ApplicationProgramDefinition<DocumentRetentionSchem
         ApplicationProgramIdentity::new("worth.query.body-court.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         let feature =
-            ApplicationFeatureSpec::root::<DocumentRetentionSchema<DESTINATION>, BodyFeature>()
+            ApplicationFeatureSpec::root::<DocumentRetentionSchema<DESTINATION>, BodyFeature>();
+        let feature = if matches!(DESTINATION, 37 | 38) {
+            feature
+                .native_action::<super::output::related::binding::RelatedBinding<DESTINATION>>()
+                .finish_action()
+        } else {
+            feature
                 .native_action::<BodyBinding<DESTINATION>>()
                 .finish_action()
-                .native_action::<SourceBinding<DESTINATION>>()
-                .finish_action()
-                .native_action::<DraftBinding<DESTINATION, SetDraftNote>>()
-                .finish_action()
-                .native_action::<DraftBinding<DESTINATION, ClearDraftNote>>()
-                .finish_action()
-                .native_action::<DraftBinding<DESTINATION, RequireDraftNote>>()
-                .finish_action()
-                .native_action::<super::requirement_control::UnlinkBinding<DESTINATION>>()
-                .finish_action();
+        };
+        let feature = feature
+            .native_action::<SourceBinding<DESTINATION>>()
+            .finish_action()
+            .native_action::<DraftBinding<DESTINATION, SetDraftNote>>()
+            .finish_action()
+            .native_action::<DraftBinding<DESTINATION, ClearDraftNote>>()
+            .finish_action()
+            .native_action::<DraftBinding<DESTINATION, RequireDraftNote>>()
+            .finish_action()
+            .native_action::<super::requirement_control::UnlinkBinding<DESTINATION>>()
+            .finish_action();
         let feature = if matches!(DESTINATION, 30 | 31) {
             feature
                 .native_action::<super::genesis::binding::CreateBinding<DESTINATION>>()
+                .finish_action()
+        } else {
+            feature
+        };
+        let feature = if matches!(DESTINATION, 120..=125) {
+            feature
+                .native_action::<super::retirement::binding::ReplaceBinding<DESTINATION>>()
                 .finish_action()
         } else {
             feature

@@ -16,7 +16,11 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationEmi
     payload_type_id: TypeId,
     payload: Arc<dyn Any + Send + Sync>,
     external_payload: Option<WorthQueryExternalPayloadProjection>,
-    // Last to drop: physical backing releases before its retained grant.
+    _native_query_backing: Option<
+        crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext,
+    >,
+    _native_values_backing:
+        Option<crate::domain_computation::primary_graph::operation_body::value::PreparedBodyValues>,
 }
 
 #[derive(Clone)]
@@ -40,6 +44,8 @@ impl WorthQueryApplicationEmission {
             payload_type_id: TypeId::of::<Binding::Value>(),
             payload: Arc::new(payload),
             external_payload: None,
+            _native_query_backing: None,
+            _native_values_backing: None,
         }
     }
 
@@ -51,17 +57,8 @@ impl WorthQueryApplicationEmission {
         Binding: ApplicationExternalEffectBinding,
         Binding::Value: Send + Sync,
     {
-        let bytes = Binding::external_effect_bytes(&payload);
-        let encoded_len = u64::try_from(bytes.len()).map_err(|_| ())?;
-        if Binding::MAX_EXTERNAL_BYTES == 0 || encoded_len > Binding::MAX_EXTERNAL_BYTES {
-            return Err(());
-        }
-        let mut emission = Self::new::<Binding>(effect, payload);
-        emission.external_payload = Some(WorthQueryExternalPayloadProjection {
-            bytes: bytes.into(),
-            maximum_bytes: Binding::MAX_EXTERNAL_BYTES,
-        });
-        Ok(emission)
+        let projection = worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection::encode::<Binding>(effect, payload).map_err(|_| ())?;
+        Ok(Self::from_external_projection(projection, None, None))
     }
 
     pub(in crate::domain_computation::primary_graph::application_attempt) fn from_lifecycle(
@@ -73,6 +70,8 @@ impl WorthQueryApplicationEmission {
             payload_type_id: TypeId::from(derived.payload_type_id()),
             payload: derived.payload(),
             external_payload: None,
+            _native_query_backing: None,
+            _native_values_backing: None,
         }
     }
 
@@ -91,6 +90,31 @@ impl WorthQueryApplicationEmission {
         !self.effect.is_empty()
             && self.payload_type.is_valid()
             && self.payload_type_id == TypeId::from(self.payload.as_ref().type_id())
+    }
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn effect_name(
+        &self,
+    ) -> &str {
+        self.effect
+    }
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn from_external_projection(
+        projection: worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection,
+        backing: Option<crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>,
+        values: Option<
+            crate::domain_computation::primary_graph::operation_body::value::PreparedBodyValues,
+        >,
+    ) -> Self {
+        Self {
+            effect: projection.effect(),
+            payload_type: projection.identity().clone(),
+            payload_type_id: TypeId::from(projection.value_type()),
+            payload: projection.value(),
+            external_payload: Some(WorthQueryExternalPayloadProjection {
+                bytes: projection.bytes(),
+                maximum_bytes: projection.maximum_bytes(),
+            }),
+            _native_query_backing: backing,
+            _native_values_backing: values,
+        }
     }
 
     fn external_payload(&self) -> Option<&WorthQueryExternalPayloadProjection> {

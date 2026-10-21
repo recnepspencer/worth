@@ -33,6 +33,7 @@ mod live;
 mod native_access;
 pub(in crate::domain_computation::primary_graph) use native_access::ApplicationQueryNativeAccess;
 pub(in crate::domain_computation::primary_graph) mod observed_source;
+pub(in crate::domain_computation) use observed_source::ObservedQueryExpressionContext;
 mod one_shot;
 mod output_source_observation;
 pub(in crate::domain_computation::primary_graph) use one_shot::WorthQueryAdmittedOneShotStop;

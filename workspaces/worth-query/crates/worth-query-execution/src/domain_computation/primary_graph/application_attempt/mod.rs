@@ -51,6 +51,7 @@ mod read_scope;
 mod read_set;
 pub(in crate::domain_computation::primary_graph) use dependency_identity::CompletedFactRoutes;
 pub(in crate::domain_computation::primary_graph) mod signed_creation;
+mod signed_selection;
 mod signing_lifecycle;
 pub(in crate::domain_computation::primary_graph) use read_set::request_liveness::check_request_live;
 pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
@@ -192,12 +193,13 @@ pub use workflow_definition_program::{
 pub use workflow_instance_program::{
     PerformedWorkflowInstanceCancellation, PerformedWorkflowInstanceStart,
     PreparedWorkflowInstanceCancellation, PreparedWorkflowInstanceStart,
-    PublishedWorkflowInstanceRef, RequiredWorkflowBirth, RetiredWorkflowDefinitionStart,
-    SupersededWorkflowDefinitionStart, WorkflowBirthAuthority, WorkflowBirthAuthoritySlot,
-    WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
-    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome,
-    WorthQueryWorkflowBirthAdapter, WorthQueryWorkflowInstanceAdapter,
-    WorthQueryWorkflowInstanceDiscoveryIntent,
+    PublishedWorkflowInstanceRef, RequiredWorkflowBirth, RequiredWorkflowSuccession,
+    RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart, WorkflowBirthAuthority,
+    WorkflowBirthAuthoritySlot, WorkflowInstanceBindingDenial, WorkflowInstanceCancellationOutcome,
+    WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowSuccessionAuthority,
+    WorkflowSuccessionAuthoritySlot, WorkflowSuccessionTarget, WorthQueryWorkflowBirthAdapter,
+    WorthQueryWorkflowInstanceAdapter, WorthQueryWorkflowInstanceDiscoveryIntent,
+    WorthQueryWorkflowSuccessionAdapter,
 };
 pub use workflow_proposal_program::{
     PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowProposalRef,
@@ -209,10 +211,11 @@ pub use workflow_transition_program::{
     PreparedWorkflowAdvance, PreparedWorkflowAssessment, PreparedWorkflowOperation,
     RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
     RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-    RequiredWorkflowProposal, WorkflowApprovalDecision, WorkflowLocalActionKind,
-    WorkflowOperationAuthority, WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
-    WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
-    WorthQueryWorkflowActorContext, WorthQueryWorkflowAdvanceAdapter,
+    RequiredWorkflowProposal, WorkflowApprovalBodyDenial, WorkflowApprovalBodyPreparation,
+    WorkflowApprovalDecision, WorkflowLocalActionKind, WorkflowOperationAuthority,
+    WorkflowOperationAuthoritySlot, WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
+    WorkflowTransitionPreparationDenial, WorthQueryWorkflowActorContext,
+    WorthQueryWorkflowAdvanceAdapter,
 };
 
 pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQueryApplicationSourceAdjacencyEndpoints;
@@ -220,7 +223,6 @@ pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQ
 #[cfg(test)]
 pub(in crate::domain_computation) use fact::consult_observation;
 
-#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use fact::observe_indexed_entity_selection;
 
 pub(in crate::domain_computation::primary_graph) use read_set::CompletedReadScopes;

@@ -16,8 +16,11 @@ mod source_publication_read;
 pub(in crate::domain_computation::primary_graph) use source_publication_read::SourcePublicationRead;
 mod workflow_definition_predecessor;
 mod workflow_history_basis;
+pub(in crate::domain_computation) use workflow_history_basis::WorkflowHistoryRequirement;
 mod workflow_instance_capacity;
 pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacency;
+pub(in crate::domain_computation::primary_graph) use adjacency::observe_adjacency_with_work;
+pub(in crate::domain_computation::primary_graph) use adjacency::observe_audit_outgoing_adjacency;
 pub(in crate::domain_computation::primary_graph) use adjacency::{
     observe_adjacency_checked, AdjacencyObservationDenial,
 };
@@ -204,7 +207,7 @@ pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
     /// currentness, not permission to address arbitrary entities in that basis.
     WorkflowHistoryBasis {
         instance: EntityId,
-        maximum_transitions: usize,
+        requirement: WorkflowHistoryRequirement,
         transition_count: usize,
         snapshot: worth_relational::facade::snapshots::SnapshotHandle,
     },

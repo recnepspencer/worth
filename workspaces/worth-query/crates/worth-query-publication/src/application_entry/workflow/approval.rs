@@ -31,20 +31,28 @@ type MutationOperation<Schema, Intent> =
 type MutationInput<Schema, Intent> =
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Input;
 
+type ApprovalRequest<'application, 'principal, 'scope, Schema, Spec, Intent> =
+    WorthQueryWorkflowApprovalSigningRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+        Spec,
+        MutationOperation<Schema, Intent>,
+        MutationInput<Schema, Intent>,
+        MutationScope<Schema, IntentBinding<Schema, Intent>>,
+    >;
 type WorkflowApprovalPreparationResult<'application, 'principal, 'scope, Schema, Spec, Intent> =
     Result<
-        WorthQueryWorkflowApprovalSigningRequest<
-            'application,
-            'principal,
-            'scope,
-            Schema,
-            Spec,
-            MutationOperation<Schema, Intent>,
-            MutationInput<Schema, Intent>,
-            MutationScope<Schema, IntentBinding<Schema, Intent>>,
-        >,
+        ApprovalRequest<'application, 'principal, 'scope, Schema, Spec, Intent>,
         WorthQueryWorkflowAdvancePreparationDenial,
     >;
+
+#[derive(Clone, Copy)]
+enum ApprovalBodyPosture {
+    SignOnly,
+    WithBody,
+}
 
 impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
     WorthQueryApplicationMutationRequestWithIdempotency<
@@ -74,7 +82,7 @@ where
 {
     #[allow(clippy::too_many_arguments)]
     pub fn prepare_workflow_approval<Spec>(
-        mut self,
+        self,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec>>,
         instance: PublishedWorkflowInstanceRef,
         required: &RequiredWorkflowApproval,
@@ -83,6 +91,28 @@ where
     ) -> WorkflowApprovalPreparationResult<'application, 'principal, 'scope, Schema, Spec, Intent>
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        self.prepare_approval_using(workflow, instance, required, proposal, decision, ApprovalBodyPosture::SignOnly,
+            |_, _, _, request| Ok(request))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn prepare_approval_using<Spec, Output>(
+        mut self,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec>>,
+        instance: PublishedWorkflowInstanceRef,
+        required: &RequiredWorkflowApproval,
+        proposal: &PublishedWorkflowProposalRef,
+        decision: WorkflowApprovalDecision,
+        posture: ApprovalBodyPosture,
+        complete: impl FnOnce(
+            &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+            &worth_query_declaration::facade::application_operation::ApplicationMutationIdentities<'_, Schema, IntentBinding<Schema, Intent>>,
+            <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
+            ApprovalRequest<'application, 'principal, 'scope, Schema, Spec, Intent>,
+        ) -> Result<Output, WorthQueryWorkflowAdvancePreparationDenial>,
+    ) -> Result<Output, WorthQueryWorkflowAdvancePreparationDenial>
+    where Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
         let request_scope = self.request_scope().clone();
         let runtime = self.application_runtime();
@@ -109,6 +139,13 @@ where
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
         let mutation = authorization::prepare_capability_selected(&phase, &self, &identities, staged, &selected)
             .map_err(WorthQueryWorkflowAdvancePreparationDenial::RequestAdmission)?;
+        let body = mutation.admission.allowed_graph_contract().body();
+        match posture {
+            ApprovalBodyPosture::SignOnly if body.is_some() => return Err(WorthQueryWorkflowAdvancePreparationDenial::ApprovalBodyRequired),
+            ApprovalBodyPosture::WithBody if body.and_then(|body| body.creation()).and_then(|creation| creation.signing()).is_none() =>
+                return Err(WorthQueryWorkflowAdvancePreparationDenial::ApprovalBodyUnavailable),
+            _ => {}
+        }
         let prepared = WorthQueryWorkflowAdvanceAdapter::prepare_approval::<
             Schema,
             <IntentBinding<Schema, Intent> as ApplicationCapabilityMutationBinding<Schema>>::Capability,
@@ -126,7 +163,7 @@ where
             mutation.admission,
         )
         .map_err(WorthQueryWorkflowAdvancePreparationDenial::TransitionPreparation)?;
-        Ok(WorthQueryWorkflowApprovalSigningRequest {
+        complete(&phase, &identities, mutation.principal_identity, WorthQueryWorkflowApprovalSigningRequest {
             request: WorthQueryWorkflowAdvanceRequest {
                 application,
                 principal: self.authenticated_principal(),
@@ -243,4 +280,5 @@ where
     }
 }
 
+mod body;
 mod ordinary;

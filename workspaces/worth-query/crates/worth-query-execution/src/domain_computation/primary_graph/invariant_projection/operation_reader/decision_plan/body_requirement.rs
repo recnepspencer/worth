@@ -14,10 +14,20 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyRequirementDirection as Direction,
     ApplicationOperationBodyRequirementSource as Source,
 };
+mod collection_values;
 
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
+    pub(in crate::domain_computation::primary_graph) fn body_query_context(
+        &self,
+        query: &str,
+    ) -> Result<
+        crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext,
+        HandlerExecutionDenial,
+    > {
+        self.query_context.filter(|context| context.query_identifier() == query).cloned().ok_or_else(|| HandlerExecutionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, query)))
+    }
     pub(in crate::domain_computation::primary_graph) fn body_requirement_operand<Entity>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
@@ -26,6 +36,20 @@ impl<Schema: ApplicationSchema, Operation>
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<PreparedRequirementOperand, HandlerExecutionDenial> {
         match source {
+            Source::QueryContext { query, .. } => {
+                let context = self.query_context.filter(|context| context.query_identifier() == query.name()).ok_or_else(|| HandlerExecutionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, query.name())))?;
+                // Values are already retained by the admission; this is an Arc
+                // clone, not another query, decode or allocation of the tree.
+                Ok(PreparedRequirementOperand {
+                    value: context.value().clone(),
+                    _reservation: execution.reserve(0).map_err(|cause| {
+                        HandlerExecutionDenial::new(WorthQueryAdvancementDenial::Resource(cause))
+                    })?,
+                })
+            }
+            Source::RelatedFieldValues { .. } => {
+                self.collection_field_values(identity, source, execution, context)
+            }
             Source::SignedEvidence(source) => {
                 self.signed_evidence_operand(identity, source, execution, context)
             }

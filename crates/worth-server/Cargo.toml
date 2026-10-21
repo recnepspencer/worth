@@ -20,7 +20,9 @@ worth-query.workspace = true
 worth-query-host = { path = "../../workspaces/worth-query/crates/worth-query-host" }
 serde.workspace = true
 serde_json.workspace = true
+schemars = "1.0.4"
 sha2 = "0.10"
+getrandom = "0.4.3"
 flate2 = "1"
 
 [dev-dependencies]
@@ -46,3 +48,7 @@ path = "tests/isolated/product_operation_phase_thirteen_shared_read.rs"
 [[test]]
 name = "product_read_nested_lease"
 path = "tests/isolated/product_read_nested_lease.rs"
+
+[[test]]
+name = "product_retry_ownership"
+path = "tests/product_retry_ownership.rs"

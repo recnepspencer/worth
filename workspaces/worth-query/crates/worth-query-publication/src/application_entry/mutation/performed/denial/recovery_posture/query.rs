@@ -239,6 +239,7 @@ fn execution_posture(kind: ExecutionKind) -> WorthQueryRequiredOutputRecoveryPos
         | ExecutionKind::BasisUnavailable
         | ExecutionKind::ActiveSnapshotCapacityExhausted { .. }
         | ExecutionKind::RetentionCapacityExhausted
+        | ExecutionKind::ExpressionContextIncomplete
         | ExecutionKind::PredicateIndexUnavailable
         | ExecutionKind::TraversalUnavailable => Retryable,
         ExecutionKind::ExecutionRequest(_) => Retryable,
@@ -255,6 +256,7 @@ fn execution_posture(kind: ExecutionKind) -> WorthQueryRequiredOutputRecoveryPos
         | ExecutionKind::ResultLimitExceeded
         | ExecutionKind::CardinalityMismatch
         | ExecutionKind::ProjectionUnavailable
+        | ExecutionKind::ExpressionContextUnavailable
         | ExecutionKind::Projection(_)
         | ExecutionKind::ResultBufferLimitExceeded
         | ExecutionKind::WorkLimitExceeded
@@ -266,6 +268,18 @@ fn execution_posture(kind: ExecutionKind) -> WorthQueryRequiredOutputRecoveryPos
 mod tests {
     use super::*;
     use worth_query_execution::facade::product::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+
+    #[test]
+    fn expression_context_incompleteness_requires_fresh_admission_not_terminal_shape_failure() {
+        assert_eq!(
+            execution_posture(ExecutionKind::ExpressionContextIncomplete),
+            WorthQueryRequiredOutputRecoveryPosture::Retryable
+        );
+        assert_eq!(
+            execution_posture(ExecutionKind::ExpressionContextUnavailable),
+            WorthQueryRequiredOutputRecoveryPosture::Terminal
+        );
+    }
 
     #[test]
     fn missing_or_invalid_workflow_actor_evidence_is_terminal_for_same_source_recovery() {

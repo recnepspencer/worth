@@ -2,6 +2,7 @@ mod authoring;
 mod birth;
 mod completion;
 mod contract;
+mod succession;
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::BTreeMap;

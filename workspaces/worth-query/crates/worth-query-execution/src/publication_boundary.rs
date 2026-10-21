@@ -76,11 +76,11 @@ pub mod workflow_advance {
         PreparedWorkflowOperation, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
         RequiredWorkflowActor, RequiredWorkflowApproval, RequiredWorkflowAssessment,
         RequiredWorkflowCondition, RequiredWorkflowEvidence, RequiredWorkflowOperation,
-        RequiredWorkflowProposal, WorkflowApprovalDecision, WorkflowConditionOperand,
-        WorkflowLocalActionKind, WorkflowOperationAuthority, WorkflowOperationAuthoritySlot,
-        WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
-        WorkflowTransitionPreparationDenial, WorthQueryWorkflowAdvanceAdapter,
-        WorthQueryWorkflowConditionSources,
+        RequiredWorkflowProposal, WorkflowApprovalBodyDenial, WorkflowApprovalBodyPreparation,
+        WorkflowApprovalDecision, WorkflowConditionOperand, WorkflowLocalActionKind,
+        WorkflowOperationAuthority, WorkflowOperationAuthoritySlot, WorkflowProgressOutcome,
+        WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
+        WorthQueryWorkflowAdvanceAdapter, WorthQueryWorkflowConditionSources,
     };
 }
 
@@ -90,12 +90,22 @@ pub mod workflow_birth {
         WorthQueryWorkflowBirthAdapter,
     };
 }
+pub mod workflow_succession {
+    pub use crate::domain_computation::primary_graph::application_attempt::{
+        RequiredWorkflowSuccession, WorkflowSuccessionAuthority, WorkflowSuccessionAuthoritySlot,
+        WorkflowSuccessionTarget, WorthQueryWorkflowSuccessionAdapter,
+    };
+}
 
 pub mod workflow_proposal {
     pub use crate::domain_computation::primary_graph::{
         PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowInstanceRef,
         PublishedWorkflowProposalRef, WorkflowProposalBindingDenial, WorkflowProposalOutcome,
         WorkflowProposalPreparationDenial, WorthQueryWorkflowProposalAdapter,
+    };
+    pub use crate::domain_computation::primary_graph::{
+        PreparedWorkflowCapturedInput, WorkflowCapturedInputContract, WorkflowCapturedInputDenial,
+        WorkflowCapturedInputSource, WorkflowCapturedInputs,
     };
 }
 

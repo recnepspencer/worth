@@ -56,12 +56,15 @@ mod shape;
 mod signing_provenance;
 mod signing_supersession;
 pub use signing_provenance::{
-    ApplicationSigningEntityCoordinates, ApplicationSigningProvenance,
+    ApplicationSigningEntityCoordinates, ApplicationSigningGraphSubjectDependency,
+    ApplicationSigningGraphSubjectProvenance, ApplicationSigningGraphSubjectProvenanceBinding,
+    ApplicationSigningGraphSubjectProvenanceParts, ApplicationSigningProvenance,
     ApplicationSigningProvenanceBinding, ApplicationSigningProvenanceEncoding,
     ApplicationSigningProvenanceMetadata, ApplicationSigningProvenanceParts,
     ApplicationSigningProvenanceValueBinding, ApplicationSigningSubjectDependency,
-    ApplicationSigningSubjectProvenance, ApplicationSigningSubjectProvenanceBinding,
-    ApplicationSigningSubjectProvenanceParts,
+    ApplicationSigningSubjectObservedFieldVersion, ApplicationSigningSubjectProvenance,
+    ApplicationSigningSubjectProvenanceBinding, ApplicationSigningSubjectProvenanceParts,
+    ApplicationSigningSubjectSelectionDependency,
 };
 pub use signing_supersession::{
     ApplicationSigningSupersession, ApplicationSigningSupersessionBinding,
@@ -136,7 +139,9 @@ pub use declaration::{
 };
 pub use declaration_denial::ApplicationSchemaDeclarationDenial;
 pub use effect_authoring::{TypedEffectIntent, TypedEffectIntentBuilder};
-pub use effect_binding::ApplicationExternalEffectBinding;
+pub use effect_binding::{
+    ApplicationExternalEffectBinding, ApplicationExternalEffectPayloadProjection,
+};
 pub use effect_marker_identity::ApplicationEffectMarkerIdentity;
 pub use external_effect_correlation_family::WorthQueryExternalEffectCorrelationFamily;
 pub use external_effect_protocol::ApplicationExternalEffectProtocol;
@@ -166,19 +171,29 @@ pub use mutation_precondition::{
 pub use operation_definition::{
     ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
     ApplicationOperationBodyBuilder, ApplicationOperationBodyCaptureRole,
+    ApplicationOperationBodyChildCreation, ApplicationOperationBodyChildCreationBuilder,
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
     ApplicationOperationBodyCreationBuilder, ApplicationOperationBodyCreationLink,
     ApplicationOperationBodyCreationLinkDirection, ApplicationOperationBodyCreationLinkPosture,
-    ApplicationOperationBodyEnrollment, ApplicationOperationBodyOutput,
-    ApplicationOperationBodyOutputTarget, ApplicationOperationBodyProgram,
+    ApplicationOperationBodyCreationLinkSource, ApplicationOperationBodyCreationPathLink,
+    ApplicationOperationBodyEnrollment, ApplicationOperationBodyEvaluationSnapshot,
+    ApplicationOperationBodyExpression, ApplicationOperationBodyExternalEffectRecipe,
+    ApplicationOperationBodyExternalEmission, ApplicationOperationBodyExternalPayloadSource,
+    ApplicationOperationBodyOutput, ApplicationOperationBodyOutputTarget,
+    ApplicationOperationBodyOwnedSelectionRetirement, ApplicationOperationBodyPathFieldSource,
+    ApplicationOperationBodyPathInputExpectation, ApplicationOperationBodyPathValueAssignment,
+    ApplicationOperationBodyProgram, ApplicationOperationBodyReferenceInput,
     ApplicationOperationBodyRelatedFieldSource, ApplicationOperationBodyRequirement,
     ApplicationOperationBodyRequirementDenial, ApplicationOperationBodyRequirementDirection,
     ApplicationOperationBodyRequirementExpression, ApplicationOperationBodyRequirementOperand,
     ApplicationOperationBodyRequirementOperands, ApplicationOperationBodyRequirementProgram,
     ApplicationOperationBodyRequirementSource, ApplicationOperationBodyScopeField,
     ApplicationOperationBodySigningLifecycleSpec, ApplicationOperationBodySigningSpec,
-    ApplicationOperationDefinition, ApplicationOperationDefinitionBuilder,
-    ApplicationSigningEvidenceRef, ApplicationSigningEvidenceSource,
+    ApplicationOperationBodySuccession, ApplicationOperationBodySuccessionOutputMatch,
+    ApplicationOperationBodyValue, ApplicationOperationBodyValueProgram,
+    ApplicationOperationBodyValueSnapshot, ApplicationOperationDefinition,
+    ApplicationOperationDefinitionBuilder, ApplicationSigningEvidenceRef,
+    ApplicationSigningEvidenceSource,
 };
 pub use operation_dependency_locus::ApplicationOperationDependencyLocus;
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;

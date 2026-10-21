@@ -30,6 +30,9 @@ pub(super) fn require_encoding_contract(
     {
         return Err(Denial::new(Kind::NestingDepthBudgetExceeded));
     }
+    if let ApplicationSchemaMember::OperationBody { body, .. } = member {
+        crate::record::operation_body::require_nesting_depth(body, maximum_depth)?;
+    }
     capability::require_nesting_depth(member, maximum_depth)
 }
 

@@ -48,6 +48,7 @@ fn fixture() -> (Body, Vec<Member>) {
         ["History", "Current"]
             .into_iter()
             .map(|name| Link {
+                source: Default::default(),
                 posture:
                     crate::application_schema::ApplicationOperationBodyCreationLinkPosture::Append,
                 relation: name.into(),
@@ -92,6 +93,48 @@ fn fixture() -> (Body, Vec<Member>) {
         relation("Supersessions", "Evidence", "Supersession"),
     ];
     (body, members)
+}
+
+#[test]
+fn lifecycle_compatibility_checks_child_sites_without_claiming_an_admission_bypass() {
+    use crate::application_schema::{
+        ApplicationOperationBodyChildCreation as Child,
+        ApplicationOperationBodyCreationLinkPosture as Posture,
+    };
+    let (body, mut members) = fixture();
+    let child = Child {
+        parent_key: "holder".into(),
+        creation: Creation::from_untrusted("Evidence".into(), "child".into(), vec![])
+            .with_untrusted_links(vec![Link {
+                relation: "OwnedEvidence".into(),
+                from: "Holder".into(),
+                to: "Evidence".into(),
+                key: "child".into(),
+                direction: Direction::FromScope,
+                posture: Posture::Append,
+                source: Default::default(),
+            }]),
+    };
+    let holder = Creation::from_untrusted("Holder".into(), "holder".into(), vec![]);
+    let without_child =
+        Body::from_untrusted_in_scope("Draft".into(), vec![], Some(holder.clone()), vec![]);
+    members.push(Member::OperationBody {
+        operation: "Unsigned".into(),
+        body: without_child,
+    });
+    assert!(validate(&body, &members));
+    let Member::OperationBody { body: unsigned, .. } = members.last_mut().unwrap() else {
+        unreachable!()
+    };
+    *unsigned = Body::from_untrusted_in_scope(
+        "Draft".into(),
+        vec![],
+        Some(holder.with_untrusted_children(vec![child])),
+        vec![],
+    );
+    // This isolates the lifecycle owner's inventory check. Global signed-creator
+    // validation separately refuses an unsigned Create contract for Evidence.
+    assert!(!validate(&body, &members));
 }
 
 #[test]

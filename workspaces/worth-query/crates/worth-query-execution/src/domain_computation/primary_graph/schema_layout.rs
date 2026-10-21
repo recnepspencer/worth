@@ -73,7 +73,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     entity_kinds: BTreeMap<String, KindId>,
     relation_kinds: BTreeMap<String, WorthQueryPrimaryRelationLayout>,
     application_entity_kinds: BTreeSet<KindId>,
-    signed_entity_kinds: BTreeSet<KindId>,
+    signing: signed_entities::SignedEntityLayout,
     pub(in crate::domain_computation::primary_graph) signing_lifecycle:
         signing_lifecycle::SigningLifecycleLayout,
     application_relation_kinds: BTreeSet<KindId>,
@@ -180,7 +180,7 @@ impl WorthQueryPrimaryGraphLayout {
         let principal_bindings = lower_principal_bindings(schema, &entity_kinds, &relation_kinds)?;
         let relation_layouts = lower_relation_layouts(schema, &entity_kinds, &relation_kinds)?;
         let application_entity_kinds = entity_kinds.values().copied().collect();
-        let signed_entity_kinds = signed_entities::lower(schema, &entity_kinds)?;
+        let signing = signed_entities::lower(schema, &entity_kinds)?;
         let signing_lifecycle = signing_lifecycle::SigningLifecycleLayout::lower(
             schema,
             &entity_kinds,
@@ -209,7 +209,7 @@ impl WorthQueryPrimaryGraphLayout {
                 entity_kinds,
                 relation_kinds: relation_layouts,
                 application_entity_kinds,
-                signed_entity_kinds,
+                signing,
                 signing_lifecycle,
                 application_relation_kinds,
                 fields,

@@ -124,7 +124,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     }
 }
 
-pub(super) fn resolution_denial(
+pub(in crate::domain_computation::primary_graph) fn resolution_denial(
     denial: HandlerExecutionDenial,
     subject: &str,
 ) -> HandlerExecutionDenial {

@@ -21,6 +21,8 @@ mod draft_query;
 mod genesis;
 #[path = "operation_body/input.rs"]
 mod input;
+#[path = "operation_body/input_expectation.rs"]
+mod input_expectation;
 #[path = "operation_body/input_selection.rs"]
 mod input_selection;
 #[path = "operation_body/installation.rs"]
@@ -45,6 +47,8 @@ mod requirement;
 mod requirement_control;
 #[path = "operation_body/retention_body.rs"]
 mod retention_body;
+#[path = "operation_body/retirement.rs"]
+mod retirement;
 #[path = "operation_body/schema.rs"]
 mod schema;
 use installation::{install, install_with_projection};

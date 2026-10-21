@@ -8,6 +8,7 @@ mod completed_candidate;
 mod execution;
 mod execution_report;
 pub use completed_candidate::WorthQueryCompletedMutationCandidate;
+pub(in crate::domain_computation::primary_graph) use execution::build_handler_candidate;
 pub use execution::MutationHandlerExecutionDenial;
 pub use execution_report::{
     WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,

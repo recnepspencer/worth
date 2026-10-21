@@ -118,7 +118,7 @@ pub(super) fn derive<Schema, Operation, Input, Scope>(
             observed.output_content_identity.clone(),
         ));
     }
-    if evidence.len() < 2 {
+    if evidence.is_empty() {
         return Err(affinity("approval evidence inventory is incomplete"));
     }
     evidence_material.sort();

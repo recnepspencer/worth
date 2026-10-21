@@ -1,5 +1,3 @@
-mod child_identity;
-
 use super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::effect_validation::denial;
 use super::{
@@ -48,7 +46,7 @@ impl<Schema, Operation, Input, Scope>
             .delegation_activation_binding()
             .ok_or_else(|| transition_required(self.admission.operation()))?;
         let effects = activation_effects(binding, self.admission.allowed_graph_contract())?;
-        self.observe_created_unique_values(execution, &effects, allocation_policy)?;
+        self.observe_unique_write_values(execution, &effects, allocation_policy)?;
         let program = WorthQueryApplicationEffectProgram {
             read_set: self,
             effects,

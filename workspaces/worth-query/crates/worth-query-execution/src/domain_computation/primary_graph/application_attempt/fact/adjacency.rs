@@ -45,6 +45,42 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency(
         direction,
         maximum_work_units,
     );
+    resolve_observation(observed)
+}
+
+/// Historical identity observation only. Ordinary adjacency remains Live-only.
+pub(in crate::domain_computation::primary_graph) fn observe_audit_outgoing_adjacency(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    relation_kind: KindId,
+    anchor: EntityId,
+    maximum_work_units: usize,
+) -> Result<
+    Option<Vec<WorthQueryApplicationObservedRelation>>,
+    super::super::WorthQueryApplicationAttemptDenial,
+> {
+    resolve_observation(
+        observe_with_posture(
+            runtime,
+            execution,
+            snapshot,
+            relation_kind,
+            anchor,
+            WorthQueryApplicationAdjacencyDirection::Outgoing,
+            Some(maximum_work_units),
+            RelationPosture::IncludingAudit,
+        )
+        .map(|(relations, _)| relations),
+    )
+}
+
+fn resolve_observation(
+    observed: Result<Vec<WorthQueryApplicationObservedRelation>, AdjacencyObservationDenial>,
+) -> Result<
+    Option<Vec<WorthQueryApplicationObservedRelation>>,
+    super::super::WorthQueryApplicationAttemptDenial,
+> {
     match observed {
         Ok(relations) => Ok(Some(relations)),
         Err(AdjacencyObservationDenial::Execution(cause)) => Err(
@@ -102,7 +138,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_adjacency_checked(
     .map(|(relations, _)| relations)
 }
 
-pub(super) fn observe_adjacency_with_work(
+pub(in crate::domain_computation::primary_graph) fn observe_adjacency_with_work(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -110,6 +146,33 @@ pub(super) fn observe_adjacency_with_work(
     anchor: EntityId,
     direction: WorthQueryApplicationAdjacencyDirection,
     maximum_work_units: Option<usize>,
+) -> Result<(Vec<WorthQueryApplicationObservedRelation>, usize), AdjacencyObservationDenial> {
+    observe_with_posture(
+        runtime,
+        execution,
+        snapshot,
+        relation_kind,
+        anchor,
+        direction,
+        maximum_work_units,
+        RelationPosture::Live,
+    )
+}
+
+enum RelationPosture {
+    Live,
+    IncludingAudit,
+}
+
+fn observe_with_posture(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    relation_kind: KindId,
+    anchor: EntityId,
+    direction: WorthQueryApplicationAdjacencyDirection,
+    maximum_work_units: Option<usize>,
+    posture: RelationPosture,
 ) -> Result<(Vec<WorthQueryApplicationObservedRelation>, usize), AdjacencyObservationDenial> {
     if let Err(stop) = execution.check_live() {
         return Err(match worth_relational::facade::mvcc::RelationalInterruptionEvent::from_request_stop(
@@ -136,21 +199,32 @@ pub(super) fn observe_adjacency_with_work(
                 .ok_or(AdjacencyObservationDenial::WorkBudgetExceeded)
         })
         .transpose()?;
-    let read =
-        match direction {
-            WorthQueryApplicationAdjacencyDirection::Outgoing => pin
-                .bounded_outgoing_relations_for_frontier(execution, &frontier, relation_kind, work),
-            WorthQueryApplicationAdjacencyDirection::Incoming => pin
-                .bounded_incoming_relations_for_frontier(execution, &frontier, relation_kind, work),
+    let read = match (direction, posture) {
+        (WorthQueryApplicationAdjacencyDirection::Outgoing, RelationPosture::IncludingAudit) => pin
+            .bounded_outgoing_relations_including_audit_for_frontier(
+                execution,
+                &frontier,
+                relation_kind,
+                work,
+            ),
+        (WorthQueryApplicationAdjacencyDirection::Outgoing, RelationPosture::Live) => {
+            pin.bounded_outgoing_relations_for_frontier(execution, &frontier, relation_kind, work)
         }
-        .map_err(|stop| match stop {
-            worth_relational::facade::runtime::BoundedFrontierReadStop::Admission(stop) => {
-                AdjacencyObservationDenial::Execution(stop.into())
-            }
-            worth_relational::facade::runtime::BoundedFrontierReadStop::Limit(_) => {
-                AdjacencyObservationDenial::WorkBudgetExceeded
-            }
-        })?;
+        (WorthQueryApplicationAdjacencyDirection::Incoming, RelationPosture::Live) => {
+            pin.bounded_incoming_relations_for_frontier(execution, &frontier, relation_kind, work)
+        }
+        (WorthQueryApplicationAdjacencyDirection::Incoming, RelationPosture::IncludingAudit) => {
+            unreachable!("audit observation is outgoing")
+        }
+    }
+    .map_err(|stop| match stop {
+        worth_relational::facade::runtime::BoundedFrontierReadStop::Admission(stop) => {
+            AdjacencyObservationDenial::Execution(stop.into())
+        }
+        worth_relational::facade::runtime::BoundedFrontierReadStop::Limit(_) => {
+            AdjacencyObservationDenial::WorkBudgetExceeded
+        }
+    })?;
     let work_units = read.work_units();
     let relations = read
         .into_records()

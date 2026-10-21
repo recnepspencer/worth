@@ -183,6 +183,9 @@ impl<Schema, Operation, Input, Scope, Phase>
             new_commit_refusal: None,
             signed_creation: None,
             workflow_birth_binding: None,
+            workflow_succession_binding: None,
+            local_action_settlement: None,
+            body_external_emission: None,
             _phase: PhantomData,
         })
     }

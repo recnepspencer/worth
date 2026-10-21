@@ -41,6 +41,7 @@ pub struct WorthQueryApplicationQueryRequest<'application, 'principal, 'scope, S
     >,
     intent: Intent,
     limits: Option<NonZeroUsize>,
+    retain_expression_context: bool,
 }
 
 impl<'application, 'principal, 'scope, Schema, Intent>
@@ -64,6 +65,7 @@ where
             retained: None,
             intent,
             limits: None,
+            retain_expression_context: false,
         }
     }
 
@@ -85,6 +87,7 @@ where
             retained: Some(observation),
             intent,
             limits: None,
+            retain_expression_context: false,
         }
     }
 
@@ -93,6 +96,29 @@ where
     pub fn limit_results(mut self, maximum_results: NonZeroUsize) -> Self {
         self.limits = Some(maximum_results);
         self
+    }
+
+    /// Executes an exactly-one query and retains its native expression record
+    /// on the observed source, before the application result projector runs.
+    /// Incomplete disclosure or unsupported scalar/unit meaning refuses the
+    /// request. The context grants no read or mutation permission.
+    pub fn execute_with_expression_context(
+        mut self,
+    ) -> Result<
+        WorthQueryPublishedApplicationResult<
+            <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
+            <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
+        >,
+        WorthQueryApplicationRequestQueryDenial,
+    >
+    where
+        <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeResolution<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
+        <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
+            WorthQueryApplicationProjection<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::Query>,
+    {
+        self.retain_expression_context = true;
+        self.execute()
     }
 
     pub fn execute(
@@ -219,6 +245,11 @@ where
             ),
         }
         .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
+        let plan = if self.retain_expression_context {
+            plan.retain_expression_context()
+        } else {
+            plan
+        };
         let result = self
             .application
             .execute_application_query_one_shot(phase, plan)

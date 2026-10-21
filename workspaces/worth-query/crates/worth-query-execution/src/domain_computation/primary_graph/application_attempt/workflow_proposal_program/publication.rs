@@ -26,6 +26,7 @@ pub struct PreparedWorkflowProposal<Schema, Operation, Input, Scope> {
     pub(super) input_type: String,
     pub(super) input_identity: [u8; 32],
     pub(super) source_identity: Option<[u8; 32]>,
+    pub(super) captured_identity: Option<[u8; 32]>,
     pub(super) progress_update: Option<
         crate::domain_computation::primary_graph::workflow::instance::PreparedWorkflowProgressUpdate,
     >,
@@ -173,6 +174,7 @@ where
             input_type,
             input_identity,
             source_identity,
+            captured_identity,
             progress_update,
         } = prepared;
         let presented = match self
@@ -194,7 +196,9 @@ where
             phase,
             &presented,
             program,
-            idempotency.bind_workflow_proposal_context(&proposal_context_identity),
+            idempotency
+                .bind_workflow_proposal_context(&proposal_context_identity)
+                .bind_workflow_captured_inputs(captured_identity),
             crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );

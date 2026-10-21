@@ -66,6 +66,7 @@ impl WorkflowTransitionProgressBasis {
             advanced,
             settlement,
             evidence_bytes: 0,
+            captured_inputs: None,
             replay: WorkflowTransitionReplayProjection {
                 identity: transition_identity,
                 identity_bytes: transition_identity_bytes,
@@ -101,6 +102,7 @@ impl WorkflowTransitionProgressBasis {
             advanced,
             settlement,
             evidence_bytes: 0,
+            captured_inputs: None,
             replay: WorkflowTransitionReplayProjection {
                 identity: transition_identity,
                 identity_bytes: transition_identity_bytes,
@@ -116,6 +118,7 @@ impl WorkflowTransitionProgressBasis {
 #[derive(Clone)]
 #[doc(hidden)]
 pub struct PreparedWorkflowProgressUpdate {
+    captured_inputs: Option<std::sync::Arc<crate::domain_computation::primary_graph::workflow::captured_input::WorkflowCapturedInputSupport>>,
     key: WorkflowInstanceProgressKey,
     source_revision: Option<VersionId>,
     source: WorkflowInstanceProgress,
@@ -126,6 +129,13 @@ pub struct PreparedWorkflowProgressUpdate {
 }
 
 impl PreparedWorkflowProgressUpdate {
+    pub(in crate::domain_computation::primary_graph) fn retaining_captured_inputs(
+        mut self,
+        support: Option<std::sync::Arc<crate::domain_computation::primary_graph::workflow::captured_input::WorkflowCapturedInputSupport>>,
+    ) -> Self {
+        self.captured_inputs = support;
+        self
+    }
     pub(in crate::domain_computation::primary_graph) const fn key(
         &self,
     ) -> WorkflowInstanceProgressKey {
@@ -156,6 +166,7 @@ impl PreparedWorkflowProgressUpdate {
             mut advanced,
             settlement,
             evidence_bytes,
+            captured_inputs,
             replay,
         } = self;
         advanced.retain_transition_identity(
@@ -170,6 +181,12 @@ impl PreparedWorkflowProgressUpdate {
             )
             .retaining_evidence_bytes(evidence_bytes),
         );
+        if let Some(support) = captured_inputs {
+            advanced.retain_captured_inputs(
+                WorkflowTransitionLocator::new(transition, settlement),
+                support,
+            );
+        }
         retention.advance(
             key,
             source_revision,

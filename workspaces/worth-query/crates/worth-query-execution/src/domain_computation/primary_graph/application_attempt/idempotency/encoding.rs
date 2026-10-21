@@ -69,10 +69,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         );
         workflow_definition::append_identity_slot(&mut encoded, self.workflow_definition_identity);
         workflow_instance::append_identity_slot(&mut encoded, self.workflow_instance_identity);
-        workflow_proposal_context::append_identity_slot(
-            &mut encoded,
-            self.workflow_proposal_context_identity,
-        );
+        workflow_proposal_context::append_identity_slot(&mut encoded, self.workflow_proposal);
         workflow_transition::append_identity_slot(&mut encoded, self.workflow_transition_identity);
         workflow_transition::append_support_identity_slot(
             &mut encoded,

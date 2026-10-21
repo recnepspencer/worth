@@ -1,0 +1,202 @@
+//! Reconstruct native correspondence closure without consulting today's business selection.
+use super::{budget::HistoryReconstructionCharge, denial, WorthQueryApplicationAttemptDenial};
+use crate::domain_computation::primary_graph::{
+    application_attempt::{
+        observe_adjacency, observe_field_value,
+        WorthQueryApplicationAdjacencyDirection as Direction,
+    },
+    workflow::schema::WorthQueryWorkflowLayout,
+};
+use std::collections::BTreeMap;
+use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
+use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as Posture;
+use worth_relational::facade::{
+    identity::{EntityId, KindId},
+    runtime::RelationalRuntime,
+    snapshots::SnapshotHandle,
+};
+#[cfg(test)]
+mod tests;
+
+pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedOperationOutputs
+{
+    pub(in crate::domain_computation::primary_graph::application_attempt) binding: String,
+    pub(in crate::domain_computation::primary_graph::application_attempt) entries:
+        BTreeMap<String, ObservedOperationOutput>,
+}
+pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedOperationOutput
+{
+    pub(in crate::domain_computation::primary_graph::application_attempt) entity: String,
+    pub(in crate::domain_computation::primary_graph::application_attempt) posture: Posture,
+    pub(in crate::domain_computation::primary_graph::application_attempt) target: EntityId,
+}
+
+pub(super) fn observe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    snapshot: &SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    transition: EntityId,
+    charge: &mut HistoryReconstructionCharge,
+) -> Result<Option<ObservedOperationOutputs>, WorthQueryApplicationAttemptDenial> {
+    OutputContextReader {
+        execution,
+        runtime,
+        snapshot,
+        layout,
+    }
+    .validate(transition, charge)
+}
+
+/// One pinned native read context, not a cache or a second output authority.
+struct OutputContextReader<'a, 'scope, 'lease> {
+    execution: &'a worth_execution::ExecutionRequest<'scope, 'lease>,
+    runtime: &'a RelationalRuntime,
+    snapshot: &'a SnapshotHandle,
+    layout: &'a WorthQueryWorkflowLayout,
+}
+
+impl OutputContextReader<'_, '_, '_> {
+    fn validate(
+        &self,
+        transition: EntityId,
+        charge: &mut HistoryReconstructionCharge,
+    ) -> Result<Option<ObservedOperationOutputs>, WorthQueryApplicationAttemptDenial> {
+        let context = self.count(transition)?;
+        let count = context.as_ref().map_or(0, |(_, count)| *count);
+        if count > charge.record_limit() {
+            return Err(super::budget::inventory_exhausted());
+        }
+        charge.reserve_inventory(count)?;
+        let members = observe_adjacency(
+            self.runtime,
+            self.execution,
+            self.snapshot,
+            self.layout.operation_output.membership,
+            transition,
+            Direction::Outgoing,
+            count
+                .checked_add(1)
+                .and_then(|count| count.checked_mul(2))
+                .ok_or_else(|| denial("workflow output count overflows"))?,
+        )?
+        .ok_or_else(|| denial("workflow operation outputs are unavailable"))?;
+        if members.len() != count {
+            return Err(denial(
+                "workflow operation output count disagrees with membership",
+            ));
+        }
+        let mut roles = BTreeMap::new();
+        for member in members {
+            let (role, entry) = self.entry(member.to, charge)?;
+            if roles.insert(role, entry).is_some() {
+                return Err(denial("workflow operation output role is duplicated"));
+            }
+        }
+        Ok(context.map(|(binding, _)| ObservedOperationOutputs {
+            binding,
+            entries: roles,
+        }))
+    }
+
+    fn count(
+        &self,
+        transition: EntityId,
+    ) -> Result<Option<(String, usize)>, WorthQueryApplicationAttemptDenial> {
+        let layout = &self.layout.transition;
+        let read = |field| {
+            observe_field_value(
+                self.runtime,
+                self.execution,
+                self.snapshot,
+                transition,
+                layout.entity_kind,
+                field,
+            )
+        };
+        crate::domain_computation::primary_graph::workflow::operation_output::decode_transition_output_context(
+            read(&layout.protocol_version)?,
+            read(&layout.output_binding)?,
+            read(&layout.output_count)?,
+        )
+            .map_err(|()| denial("workflow operation output context is malformed"))
+    }
+
+    fn entry(
+        &self,
+        entry: EntityId,
+        charge: &mut HistoryReconstructionCharge,
+    ) -> Result<(String, ObservedOperationOutput), WorthQueryApplicationAttemptDenial> {
+        let output = &self.layout.operation_output;
+        charge.reserve_record(
+            self.execution,
+            self.runtime,
+            self.snapshot,
+            entry,
+            output.entity_kind,
+            &output.role,
+        )?;
+        let role = self.text(entry, &output.role)?;
+        let entity = self.text(entry, &output.entity)?;
+        let posture = observe_field_value(
+            self.runtime,
+            self.execution,
+            self.snapshot,
+            entry,
+            output.entity_kind,
+            &output.posture,
+        )?;
+        let posture = match posture {
+            Some(AspectValue::UInt64(1)) => Posture::Preserve,
+            Some(AspectValue::UInt64(2)) => Posture::Create,
+            Some(AspectValue::UInt64(3)) => Posture::Retire,
+            _ => return Err(denial("workflow operation output posture is unsupported")),
+        };
+        let targets = crate::domain_computation::primary_graph::application_attempt::fact::observe_audit_outgoing_adjacency(
+            self.runtime, self.execution, self.snapshot, output.target, entry, 4,
+        )?.ok_or_else(|| denial("workflow output target is unavailable"))?;
+        if targets.len() != 1 {
+            return Err(denial(
+                "workflow output requires exactly one historical target",
+            ));
+        }
+        // Retire or later deletion does not reclassify historical correspondence.
+        Ok((
+            role,
+            ObservedOperationOutput {
+                entity,
+                posture,
+                target: targets[0].to,
+            },
+        ))
+    }
+
+    fn text(
+        &self,
+        entity: EntityId,
+        field: &AspectFieldLocator,
+    ) -> Result<String, WorthQueryApplicationAttemptDenial> {
+        text(
+            self.execution,
+            self.runtime,
+            self.snapshot,
+            entity,
+            self.layout.operation_output.entity_kind,
+            field,
+        )
+    }
+}
+
+fn text(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    snapshot: &SnapshotHandle,
+    entity: EntityId,
+    kind: KindId,
+    field: &AspectFieldLocator,
+) -> Result<String, WorthQueryApplicationAttemptDenial> {
+    match observe_field_value(runtime, execution, snapshot, entity, kind, field)? {
+        Some(AspectValue::String(InternedString::Raw(value))) if !value.is_empty() => Ok(value),
+        _ => Err(denial("workflow output text is malformed")),
+    }
+}

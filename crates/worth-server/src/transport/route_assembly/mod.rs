@@ -5,6 +5,7 @@ mod execution_bridge;
 mod facade;
 mod inventory;
 mod operational_route;
+mod product_surface_denial;
 mod projected_router;
 mod request_decoding;
 mod response_projection;

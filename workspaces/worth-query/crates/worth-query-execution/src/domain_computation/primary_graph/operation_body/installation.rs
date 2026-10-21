@@ -28,16 +28,35 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             return Err(denied());
         }
         let body = installed.operation().body().ok_or_else(denied)?;
+        if !body.has_supported_retiring_replacement()
+            || !body.has_supported_creation_reuse()
+            || !body.has_supported_child_creations()
+            || !body.has_supported_peer_creations()
+        {
+            return Err(denied());
+        }
+        let retirement_inputs = body
+            .retirements()
+            .iter()
+            .map(|rule| {
+                if !rule.fits_body(body) {
+                    return Err(denied());
+                }
+                rule.source_input_index(body).ok_or_else(denied)
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let external_emission = super::emission::install::<Schema, Binding>(schema, body)?;
         if body.scope_entity() != Some(Binding::scope_field().entity()) {
             return Err(denied());
         }
+        if body.path_value_assignments().iter().any(|step| {
+            !step.target.has_supported_shape()
+                || Some(step.target.path.start_entity()) != body.scope_entity()
+        }) {
+            return Err(denied());
+        }
         let mut input_bindings = Vec::new();
-        for source in body
-            .requirements()
-            .iter()
-            .flat_map(|requirement| requirement.operands())
-            .map(|operand| operand.source())
-        {
+        for source in body.observation_operands().map(|operand| operand.source()) {
             use worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource as Source;
             if let Source::PrincipalIdentity {
                 scope,
@@ -116,8 +135,23 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 input_bindings.push(binding.clone());
             }
         }
-        if let Some(creation) = body.creation() {
-            for link in creation.links() {
+        for creation in body
+            .creation()
+            .into_iter()
+            .flat_map(|root| root.initialization_sites())
+        {
+            for link in creation
+                .links()
+                .iter()
+                .chain(creation.path_links().iter().map(|path| &path.link))
+            {
+                if let worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkSource::Principal {mutation_binding, principal_binding, identity} = &link.source {
+                    let principal = Binding::principal_binding();
+                    if mutation_binding != Binding::IDENTITY || principal_binding != principal.name()
+                        || identity.entity()!=principal.principal_entity()
+                        || identity.aspect()!=principal.principal_identity_aspect()
+                        || identity.field()!=principal.principal_identity_field() {return Err(denied());}
+                }
                 super::super::WorthQueryApplicationEntityKey::<Schema, ()>::new(&link.key)
                     .map_err(|_| denied())?;
             }
@@ -142,7 +176,14 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 }
                 if let Some(source) = step.source_field() {
                     if step.related_source().is_none()
+                        && step.path_source().is_none()
                         && source.entity() != Binding::scope_field().entity()
+                    {
+                        return Err(denied());
+                    }
+                    if let Some(path) = step.path_source()
+                        && (!path.has_supported_shape()
+                            || path.path.start_entity() != Binding::scope_field().entity())
                     {
                         return Err(denied());
                     }
@@ -180,12 +221,59 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 }
             }
         }
+        for guard in body.path_input_expectations() {
+            let source = &guard.source;
+            if !source.has_supported_shape()
+                || source.path.start_entity() != Binding::scope_field().entity()
+            {
+                return Err(denied());
+            }
+            let binding = schema
+                .value_bindings()
+                .field(
+                    source.field.entity(),
+                    source.field.aspect(),
+                    source.field.field(),
+                )
+                .ok_or_else(denied)?;
+            if binding.identity() != &guard.binding
+                || binding.scalar_family() != guard.scalar_family
+                || !Binding::InputBinding::RETAIN_CANONICAL_INPUT
+                || !binding.is_readable()
+                || !binding.admits_native_input()
+            {
+                return Err(denied());
+            }
+            input_bindings.push(binding.clone());
+        }
+        for reference in body.reference_inputs() {
+            let field = &reference.field;
+            let binding = schema
+                .value_bindings()
+                .field(field.entity(), field.aspect(), field.field())
+                .ok_or_else(denied)?;
+            if binding.identity() != &reference.binding
+                || binding.scalar_family() != reference.scalar_family
+                || !Binding::InputBinding::RETAIN_CANONICAL_INPUT
+                || !binding.is_readable()
+                || !binding.admits_native_input()
+                || !binding.is_identity()
+                || binding.unit().is_some()
+            {
+                return Err(denied());
+            }
+            input_bindings.push(binding.clone());
+        }
         Ok(Self {
+            values: super::value::install(schema, body, Binding::IDENTITY)?,
             selection_reads: super::selection::installed_reads(body),
             outputs: super::output::install_outputs::<Schema, Binding>(schema, body)?,
             body: body.clone(),
             marker: PhantomData,
             input_bindings,
+            external_emission,
+            retirement_inputs,
+            child_parents: super::children::parent_indices(body),
         })
     }
 }

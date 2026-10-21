@@ -11,6 +11,35 @@ pub(super) fn append(
     prefix: &str,
     creation: &ApplicationOperationBodyCreation,
 ) {
+    if !creation.peers().is_empty() {
+        basis.usize(format!("{prefix}.created.peers"), creation.peers().len());
+        for (index, peer) in creation.peers().iter().enumerate() {
+            append(basis, &format!("{prefix}.created.peer[{index}]"), peer);
+        }
+    }
+    for (index, path) in creation.path_links().iter().enumerate() {
+        basis.text(
+            format!("{prefix}.created.path-link[{index}]"),
+            &path.canonical_record(),
+        );
+    }
+    if !creation.children().is_empty() {
+        basis.usize(
+            format!("{prefix}.created.children"),
+            creation.children().len(),
+        );
+        for (index, child) in creation.children().iter().enumerate() {
+            let child_prefix = format!("{prefix}.created.child[{index}]");
+            basis.text(format!("{child_prefix}.parent"), &child.parent_key);
+            append(basis, &child_prefix, &child.creation);
+        }
+    }
+    if creation.reuses_current_if_unchanged() {
+        basis.text(
+            format!("{prefix}.created.reuse-current"),
+            "complete-content-v1",
+        );
+    }
     if !creation.links().is_empty() {
         basis.usize(format!("{prefix}.created.links"), creation.links().len());
         for (index, link) in creation.links().iter().enumerate() {
@@ -22,6 +51,12 @@ pub(super) fn append(
     }
     basis.text(format!("{prefix}.created.entity"), creation.entity());
     basis.text(format!("{prefix}.created.key"), creation.key());
+    if let Some(bound) = creation.subject_impact_bound() {
+        basis.usize(
+            format!("{prefix}.created.subject-impact-bound"),
+            bound.get(),
+        );
+    }
     if let Some(enrollment) = creation.enrollment() {
         basis.text(
             format!("{prefix}.created.workflow-enrollment"),
@@ -48,11 +83,13 @@ pub(super) fn append(
             match step {
                 Field::Literal { .. } => "literal",
                 Field::Input { .. } => "input",
+                Field::Computed { .. } => "computed-value",
                 Field::OptionalInput { .. } => "optional-input",
                 Field::ScopeField { .. } => "scope-field",
                 Field::RelatedField { .. } => "related-field",
                 Field::PresentScopeField { .. } => "present-scope-field",
                 Field::CapturedScopeField { .. } => "classified-scope-field",
+                Field::CapturedPathField { .. } => "classified-path-field",
                 Field::SigningProvenance { .. } => "signing-provenance",
                 Field::PrincipalIdentity { .. } => "principal-identity",
             },
@@ -62,6 +99,25 @@ pub(super) fn append(
         basis.text(format!("{field}.field"), step.field().field());
         basis.text(format!("{field}.binding"), step.binding().as_str());
         match step {
+            Field::CapturedPathField {
+                source,
+                scalar_family,
+                role,
+                target_presence,
+                ..
+            } => {
+                basis.text(format!("{field}.path-source"), &source.canonical_record());
+                basis.text(
+                    format!("{field}.source-family"),
+                    scalar_family.canonical_name(),
+                );
+                basis.text(format!("{field}.capture-role"), role.canonical_name());
+                basis.text(
+                    format!("{field}.target-presence"),
+                    target_presence.canonical_name(),
+                );
+            }
+            Field::Computed { value, .. } => basis.text(format!("{field}.computed-value"), value),
             Field::Literal { value, .. } => basis.value(
                 format!("{field}.value"),
                 worth_foundational::facade::canonical_basis_value_for_aspect_value(value),

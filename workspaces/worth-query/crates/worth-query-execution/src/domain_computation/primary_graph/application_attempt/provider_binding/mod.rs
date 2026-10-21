@@ -26,6 +26,7 @@ use super::{
 };
 
 pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAttempt {
+    local_action_settlement: Option<super::workflow_transition_program::LocalActionSettlementProof>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
     facts: FactPayload,
@@ -44,6 +45,20 @@ pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAt
 }
 
 impl WorthQueryPreparedApplicationProviderAttempt {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn with_local_action_settlement(
+        mut self,
+        proof: Option<super::workflow_transition_program::LocalActionSettlementProof>,
+    ) -> Self {
+        self.local_action_settlement = proof;
+        self
+    }
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn with_body_external_emission(
+        mut self,
+        selection: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
+    ) -> Self {
+        self.effects.bind_body_external_emission(selection);
+        self
+    }
     pub(in crate::domain_computation::primary_graph::application_attempt) fn with_required_output_demand(
         mut self,
         context: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
@@ -145,6 +160,7 @@ pub(super) fn prepare_provider_attempt<'layout>(
     }
     let completed = accumulator.finish(output_correspondence)?;
     Ok(WorthQueryPreparedApplicationProviderAttempt {
+        local_action_settlement: None,
         required_output_demand: None,
         installed_read_scopes,
         facts,

@@ -10,6 +10,8 @@ documents = [
   "workspaces/worth-query/crates/worth-query-host/README.md",
   "workspaces/worth-query/crates/worth-query-decl/README.md",
   "workspaces/worth-query/crates/worth-query/docs/authoring/feature-capsule-authoring.md",
+  "workspaces/worth-query/crates/worth-query/docs/authoring/existing-reference-inputs.md",
+  "workspaces/worth-query/crates/worth-query/docs/authoring/independent-creation-sites.md",
   "workspaces/worth-query/crates/worth-query/docs/foundations/source-only-retained-delivery.md",
   "workspaces/worth-query/crates/worth-query/docs/AI_README.md",
   "workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md",
@@ -18,6 +20,8 @@ documents = [
   "workspaces/worth-query/crates/worth-query/docs/domain-capabilities/execution-resource-admission-and-managed-runs.md",
   "workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md",
   "workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md",
+  "workspaces/worth-query/crates/worth-query/docs/foundations/workflow-operation-inputs.md",
+  "workspaces/worth-query/crates/worth-query/docs/foundations/workflow-succession-output-affinity.md",
 ]
 
 [[doctests]]

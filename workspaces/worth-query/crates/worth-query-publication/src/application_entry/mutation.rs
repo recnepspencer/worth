@@ -21,6 +21,7 @@ pub(in crate::application_entry) mod selected_program;
 mod staged;
 
 pub use attempt::WorthQueryApplicationMutationAttemptReport;
+pub(in crate::application_entry) use authorization_assessment::assess_owned;
 pub use authorization_assessment::WorthQueryCurrentAuthorizationAssessment;
 pub(in crate::application_entry) use discovered::AdmittedDiscoveredRecoveryDenial;
 pub use discovered::{

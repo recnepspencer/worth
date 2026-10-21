@@ -17,6 +17,9 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 definition.operation,
                 definition.input_type.clone(),
             );
+        if let Some(recipe) = definition.external_emission_recipe {
+            self.member_provenance.register_body_external_effect(recipe);
+        }
         self.push_member_in_place(ApplicationSchemaMember::Operation {
             operation: operation.clone(),
             input_type: definition.input_type,
@@ -38,18 +41,53 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 );
             }
             reads.extend(
-                body.requirements()
+                body.outputs()
                     .iter()
-                    .flat_map(|requirement| requirement.operands())
+                    .flat_map(|output| output.target.decision_reads()),
+            );
+            reads.extend(
+                body.observation_operands()
                     .flat_map(|operand| operand.source().decision_reads()),
             );
-            if let Some(creation) = body.creation() {
-                reads.extend(
-                    creation
-                        .links()
-                        .iter()
-                        .flat_map(|link| link.replacement_reads()),
-                );
+            reads.extend(
+                body.retirements()
+                    .iter()
+                    .flat_map(|rule| rule.decision_reads()),
+            );
+            reads.extend(
+                body.path_input_expectations()
+                    .iter()
+                    .flat_map(|guard| guard.source.decision_reads()),
+            );
+            reads.extend(
+                body.path_value_assignments()
+                    .iter()
+                    .flat_map(|step| step.target.decision_reads()),
+            );
+            reads.extend(
+                body.reference_inputs()
+                    .iter()
+                    .flat_map(|reference| reference.decision_reads()),
+            );
+            for creation in body
+                .creation()
+                .into_iter()
+                .flat_map(|c| c.initialization_sites())
+            {
+                if creation.reuses_current_if_unchanged() {
+                    reads.extend(creation.fields().iter().map(|field| {
+                        super::super::ApplicationOperationDecisionReadTarget::Field {
+                            entity: field.field().entity().to_owned(),
+                            aspect: field.field().aspect().to_owned(),
+                            field: field.field().field().to_owned(),
+                        }
+                    }));
+                }
+                reads.extend(creation.links().iter().flat_map(|link| {
+                    link.replacement_reads()
+                        .into_iter()
+                        .chain(link.source_reads())
+                }));
                 reads.extend(
                     creation
                         .fields()
@@ -63,49 +101,73 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                         .filter_map(|step| step.related_source())
                         .flat_map(|source| source.decision_reads()),
                 );
+                reads.extend(
+                    creation
+                        .fields()
+                        .iter()
+                        .filter_map(|step| step.path_source())
+                        .flat_map(|source| source.decision_reads()),
+                );
             }
+            reads.extend(
+                body.creation()
+                    .into_iter()
+                    .flat_map(|c| c.initialization_sites())
+                    .flat_map(|c| c.path_links())
+                    .flat_map(|p| p.decision_reads()),
+            );
             for target in reads {
                 self.push_member_in_place(ApplicationSchemaMember::OperationDecisionRead {
                     operation: operation.clone(),
                     target,
                 });
             }
-            for target in body
+            let mut programs = body
                 .scope_fields()
                 .iter()
                 .filter_map(|step| step.write_target())
+                .chain(
+                    body.path_value_assignments()
+                        .iter()
+                        .map(|step| step.write_target()),
+                )
+                .collect::<std::collections::BTreeSet<_>>();
+            for site in body
+                .creation()
+                .into_iter()
+                .flat_map(|root| root.initialization_sites())
             {
+                programs.insert(super::super::ApplicationOperationProgramTarget::Create {
+                    entity: site.entity().to_owned(),
+                });
+                programs.extend(site.fields().iter().map(|field| field.write_target()));
+                programs.extend(site.path_links().iter().map(|p| p.link.program_target()));
+                programs.extend(site.links().iter().flat_map(|link| {
+                    std::iter::once(link.program_target())
+                        .chain(link.replacement_target())
+                        .chain(link.retirement_target())
+                }));
+            }
+            programs.extend(
+                body.retirements()
+                    .iter()
+                    .flat_map(|rule| rule.program_targets()),
+            );
+            programs.extend(
+                body.reference_inputs()
+                    .iter()
+                    .flat_map(|reference| reference.program_targets()),
+            );
+            if let Some(emission) = body.external_emission() {
+                programs.insert(super::super::ApplicationOperationProgramTarget::Emit {
+                    effect: emission.effect.clone(),
+                });
+            }
+            for target in programs {
                 self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
                     operation: operation.clone(),
                     target,
                 });
-            }
-            if let Some(creation) = body.creation() {
-                for target in creation
-                    .links()
-                    .iter()
-                    .flat_map(|link| {
-                        std::iter::once(link.program_target()).chain(link.replacement_target())
-                    })
-                    .collect::<std::collections::BTreeSet<_>>()
-                {
-                    self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
-                        operation: operation.clone(),
-                        target,
-                    });
-                }
-                self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
-                    operation: operation.clone(),
-                    target: super::super::ApplicationOperationProgramTarget::Create {
-                        entity: creation.entity().to_owned(),
-                    },
-                });
-                for field in creation.fields() {
-                    self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
-                        operation: operation.clone(),
-                        target: field.write_target(),
-                    });
-                }
             }
             self.push_member_in_place(ApplicationSchemaMember::OperationBody {
                 operation: operation.clone(),

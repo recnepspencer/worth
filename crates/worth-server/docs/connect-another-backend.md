@@ -29,6 +29,11 @@ without reimplementing:
 Same-process Rust integration:
 
 - `WorthServer::compat_http()`
+- [`mount_query_source`](query-source-custody.md) for bounded transport custody
+  over actual native no-output Query owners, including fresh inspection and close.
+- `WorthServerProductOperationDeclaration::with_program_application(...)` for
+  an adapter backed by an existing native Query program. This retains its
+  authentic allocation for readiness, without extracting a raw runtime.
 
 HTTP-shaped integration:
 
@@ -51,6 +56,39 @@ That means:
 - do not silently map upload failures into plain mutation retries
 
 ## How it executes
+
+### Fence a live Server instance
+
+An in-memory Server assembly has one OS-entropy-backed
+`WorthServer::instance_identity()`. Its session IDs include that identity; session
+coordination responses expose it as `server_instance`. It is a live address
+domain, not a Query installation identity, package/release pin, capability or
+persistence guarantee. A replacement assembly receives another identity even
+when its address, configuration, graph IDs and session counters repeat.
+Application affinity assumes the assembly retains its immutable adapter
+registrations; applications still need their own typed locator and release
+correspondence. The Server identity does not replace either.
+
+For an endpoint whose locators must not silently move to a replacement, install
+`builder.with_instance_selection_policy(
+WorthServerInstanceSelectionPolicy::RequiredForProductCalls)`. Product calls and
+session closure then require `x-worth-server-instance`; only the two session-open
+discovery entrances permit absence. `Optional` preserves the existing default
+for other hosts. Either policy rejects a supplied mismatching selector before
+request preparation, session lookup, response replay or adapter execution.
+
+Retain the originally observed selection with the locator. Missing selection
+returns `MissingServerInstance`; mismatch returns `ServerInstanceMismatch` with
+`requested_server_instance` and `actual_server_instance`. Do not adopt the latter
+as the target of an existing locator or retry an old mutation against it. A proxy
+must bind the selector to its authenticated assertion so removing/substituting
+the header cannot turn a selected request into discovery.
+
+The actual policy projects `requires_server_instance` in protocol descriptors
+and both generated languages. The generated Python remote request scope carries
+`server_instance_identity`; caller headers cannot override it. Static catalogs
+include required selection, never the live identity. Optional/default rows omit
+the false extension, preserving their prior serialized meaning and digest.
 
 The simplest service-to-service pattern is:
 
@@ -86,7 +124,90 @@ app server into Worth truth:
 The payoff is that your backend does not have to become its own half-correct
 query handoff layer.
 
+For a native Query application, keep registration inside its entry/adaptation
+boundary. Attach its existing `WorthQueryProgramApplicationRuntime` with
+`declaration.with_program_application(program.clone())`, then return the finished
+`WorthServerProductApplicationAdapterRegistration` to your server composition
+root. That clone retains the same installed allocation; it does not install a
+second graph or cache a readiness snapshot. Ordinary operation execution must
+still enter Query with fresh authenticated authority and the verifier-bound
+request deadline/cancellation scope. Readiness never supplies operation grants.
+
+An adapter implementing only `execute` supports the ordinary scalar execution
+path. Its default `execute_with_lease` returns the explicit
+`product.checked_execution_unsupported` denial. To support checked shared-read
+batches, implement that method and propagate the exact lease into nested work;
+never call the unleased method as a fallback.
+
+### Application-owned command retries
+
+For a runtime-backed mutation that retains genuine native operation custody,
+declare `WorthServerProductRetryOwner::ApplicationCustody`:
+
+```rust
+use worth_server::{WorthServerProductOperationDeclaration, WorthServerProductRetryOwner};
+fn owning_command(declaration: WorthServerProductOperationDeclaration)
+    -> WorthServerProductOperationDeclaration {
+    declaration.with_retry_owner(WorthServerProductRetryOwner::ApplicationCustody)
+}
+```
+
+The default for eligible runtime-backed mutations is `ServerReceipt`: a matching
+idempotency retry returns the prior product response without executing the adapter
+again. Reads are never eligible for response replay, even with an idempotency
+header; each read reaches fresh adapter authorization. Receipt replay is not appropriate
+when the adapter must reauthenticate through Query or advance a live native
+owner. Cached responses can also describe Pending or a prior refusal rather than
+the owner's present outcome.
+
+With `ApplicationCustody`, Server still performs transport admission, session
+checks, readiness and scheduling, then re-enters the adapter for every command.
+It does not consult or write its response-retry cache and emits no Server retry
+receipt or `PreviouslyCommitted` classification. The adapter's current native
+outcome remains in its declared result contract. A successfully published response
+is not proof that the business operation committed.
+
+For example, an owning creation adapter reserves bounded capacity, captures the
+original input once, and retains the actual native operation before replying.
+After a lost reply, a fresh authenticated command addresses that same custody.
+The adapter supplies fresh request authority to native advancement, retains any
+returned owner before responding, and distinguishes completion from pending,
+denial, indeterminate publication and close refusal. It cannot recapture the
+clock, replace the original key, infer completion from a current row, or return
+protected prior results without fresh native authorization. The declaration flag
+does not implement any of those responsibilities.
+
+Only runtime-backed product mutations may use application retry custody. Reads,
+session-coordination operations and durable-executor declarations reject it during
+registration. Durable mutation replay keeps its separate installed executor
+contract. Existing default declarations keep their canonical identity; application
+custody contributes distinct canonical meaning. This is process-local ownership,
+not Store-backed crash recovery or an atomic whole-graph compare-and-swap promise.
+
 ## Inspection and debugging
+
+### Product-surface refusals
+
+A product route can be admitted by transport but refused before it has a product
+execution envelope. The HTTP response then has
+`transport_denial_code: "ProductOperationDenied"`, not `UnknownRoute`. Its optional
+`product_operation_denial` describes the original surface refusal under
+`worth-server-product-surface-denial.v1` (numeric version 1). It preserves the
+owner's code, readiness/session code, expected/observed basis, execution boundary,
+rebase requirement, and available idempotency/recovery metadata. In Rust,
+`WorthServerTransportDenial::product_operation_denial()` retains the exact original
+typed refusal and its facts.
+
+For example, a stale product basis reports `ReadinessDenied`, readiness
+`PreconditionFailed`, the exact expected/observed basis values, and
+`RejectedBeforeAdapterExecution`. Consumers can reconcile using these structured
+facts; they must not parse `detail` or infer that a route is absent. No performed
+operation, plan, result or commit envelope is fabricated for this refusal.
+
+Other surface refusals can follow an attempted execution. Inspect the carried
+execution/recovery posture rather than treating every refusal as no effect or
+automatically retrying. Recovery metadata describes original custody; it is not
+an authorization token or a replacement for the installed recovery owner.
 
 Log and preserve:
 
@@ -106,6 +227,8 @@ thin to debug this surface well.
 - Mixing binary transfer concerns into ordinary JSON writes.
 - Replacing explicit server preconditions with "best effort" local retries.
 - Assuming a generic HTTP client abstraction is enough by itself.
+- Using Server response replay to bypass fresh native authority or replace a live
+  operation owner, or treating `ApplicationCustody` as an idempotency implementation.
 
 ## Current limits
 

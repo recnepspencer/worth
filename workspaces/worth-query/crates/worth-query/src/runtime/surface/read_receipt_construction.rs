@@ -253,7 +253,6 @@ impl WorthQueryReadReceipt {
             materialized_fact_posture: None,
             graph_read_access_plan: None,
             graph_read_access_plan_consumption: None,
-            graph_read_streaming_receipt: None,
             graph_read_access_summary: None,
             graph_read_access_complexity_counters: None,
             decision_trace_envelope: None,

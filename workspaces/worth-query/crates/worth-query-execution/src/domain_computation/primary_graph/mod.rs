@@ -79,6 +79,10 @@ pub(crate) mod settlement_repair;
 mod typed_bootstrap;
 mod value_decode;
 pub(in crate::domain_computation) mod workflow;
+pub use workflow::captured_input::{
+    PreparedWorkflowCapturedInput, WorkflowCapturedInputContract, WorkflowCapturedInputDenial,
+    WorkflowCapturedInputSource, WorkflowCapturedInputs,
+};
 
 #[cfg(test)]
 pub(in crate::domain_computation) mod tests;
@@ -93,6 +97,7 @@ pub(in crate::domain_computation) use application_attempt::WorthQueryApplication
 pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationSnapshotRelease;
 pub(in crate::domain_computation) use exact_basis_access::WorthQueryExactBasisSnapshotDenial;
 pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationObservedFact;
+pub(in crate::domain_computation) use application_query::observed_source::WorthQuerySourceExpectationKind;
 pub(in crate::domain_computation) use application_attempt::progression_denied;
 pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationAttemptAffinity;
 pub(in crate::domain_computation) use application_attempt::WorthQueryApplicationAttemptBasis;

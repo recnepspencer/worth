@@ -2,11 +2,168 @@
 use super::semantic_encoding::framed_record;
 use crate::application_schema::ApplicationOperationBodyProgram;
 mod base;
+mod peers;
+#[cfg(test)]
+mod peers_tests;
 use base::operation_body_base_record;
 
+#[cfg(test)]
+mod children_tests;
 mod enrollment;
+#[cfg(test)]
+mod reference_input_tests;
+mod related_output;
 mod related_source;
-pub(super) use related_source::operation_body_record;
+mod succession;
+pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> String {
+    let record = related_output::operation_body_record(body);
+    let record = if let Some(bound) = body
+        .creation()
+        .and_then(|creation| creation.subject_impact_bound())
+    {
+        framed_record(
+            "operation-body-subject-impacts-v1",
+            [
+                ("body", record),
+                ("maximum-subjects", bound.get().to_string()),
+            ],
+        )
+    } else {
+        record
+    };
+    let record = if body.values().is_empty() {
+        record
+    } else {
+        framed_record(
+            "operation-body-values-v1",
+            std::iter::once(("body", record)).chain(
+                body.values()
+                    .iter()
+                    .map(|value| ("value", value.canonical_record())),
+            ),
+        )
+    };
+    let record = if body.scope_fields().iter().any(|step| {
+        matches!(
+            step,
+            crate::application_schema::ApplicationOperationBodyScopeField::ExpectInput { .. }
+        )
+    }) {
+        framed_record("operation-body-input-expectations-v1", [("body", record)])
+    } else {
+        record
+    };
+    let record = if body.retirements().is_empty() {
+        record
+    } else {
+        framed_record(
+            "operation-body-owned-selection-retirements-v1",
+            std::iter::once(("body", record)).chain(
+                body.retirements()
+                    .iter()
+                    .map(|rule| ("retirement", rule.canonical_record())),
+            ),
+        )
+    };
+    let record = if body.path_input_expectations().is_empty() {
+        record
+    } else {
+        framed_record(
+            "operation-body-path-input-expectations-v1",
+            std::iter::once(("body", record)).chain(
+                body.path_input_expectations()
+                    .iter()
+                    .map(|guard| ("path-input", guard.canonical_record())),
+            ),
+        )
+    };
+    let record = if body.path_value_assignments().is_empty() {
+        record
+    } else {
+        framed_record(
+            "operation-body-path-value-assignments-v1",
+            std::iter::once(("body", record)).chain(
+                body.path_value_assignments()
+                    .iter()
+                    .map(|step| ("path-value", step.canonical_record())),
+            ),
+        )
+    };
+    let record = if body
+        .creation()
+        .is_some_and(|creation| creation.retires_predecessor())
+    {
+        framed_record("operation-body-retiring-replacement-v1", [("body", record)])
+    } else {
+        record
+    };
+    let record = if body
+        .creation()
+        .is_some_and(|creation| creation.reuses_current_if_unchanged())
+    {
+        framed_record(
+            "operation-body-complete-content-reuse-v1",
+            [("body", record)],
+        )
+    } else {
+        record
+    };
+    let record = if body.reference_inputs().is_empty() {
+        record
+    } else {
+        framed_record(
+            "operation-body-reference-inputs-v1",
+            std::iter::once(("body", record)).chain(
+                body.reference_inputs()
+                    .iter()
+                    .map(|reference| ("reference-input", reference.canonical_record())),
+            ),
+        )
+    };
+    peers::append(body, append_children(body, record))
+}
+fn append_children(body: &ApplicationOperationBodyProgram, record: String) -> String {
+    let Some(creation) = body.creation().filter(|c| !c.children().is_empty()) else {
+        return record;
+    };
+    framed_record(
+        "operation-body-child-sites-v1",
+        std::iter::once(("body", record)).chain(
+            creation
+                .children()
+                .iter()
+                .map(|child| ("child", child_record(child))),
+        ),
+    )
+}
+pub(super) fn child_record(
+    child: &crate::application_schema::ApplicationOperationBodyChildCreation,
+) -> String {
+    let header = [
+        ("parent", child.parent_key.clone()),
+        ("creation", base::creation_record(&child.creation)),
+    ];
+    if child.creation.links().len() == 1 {
+        framed_record(
+            "child-creation-v1",
+            header.into_iter().chain(std::iter::once((
+                "link",
+                child.creation.links()[0].canonical_record(),
+            ))),
+        )
+    } else {
+        framed_record(
+            "child-creation-v2",
+            header.into_iter().chain(
+                child
+                    .creation
+                    .links()
+                    .iter()
+                    .map(|link| ("link", link.canonical_record())),
+            ),
+        )
+    }
+}
 
 fn operation_body_lifecycle_record(body: &ApplicationOperationBodyProgram) -> String {
     if let Some(lifecycle) = body

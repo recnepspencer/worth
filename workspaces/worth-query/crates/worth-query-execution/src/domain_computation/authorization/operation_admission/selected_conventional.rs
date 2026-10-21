@@ -203,7 +203,9 @@ where
         authorization_basis: WorthQueryOperationAuthorizationBasis::Conventional,
         graph_work,
         source_partition_identity: None,
+        source_expectation_kind: None,
         source_facts: Vec::new(),
+        query_context: None,
         required_output_demand: None,
         _marker: PhantomData,
     };

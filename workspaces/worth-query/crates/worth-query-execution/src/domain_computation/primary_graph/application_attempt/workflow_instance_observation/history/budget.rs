@@ -23,6 +23,9 @@ pub(super) struct HistoryReconstructionCharge {
 }
 
 impl HistoryReconstructionCharge {
+    pub(super) fn record_limit(&self) -> usize {
+        (self.maximum_bytes() - self.bytes) / TRANSITION_CHARGE
+    }
     pub(super) fn new(
         budget: WorthQueryWorkflowHistoryReconstructionBudget,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial> {

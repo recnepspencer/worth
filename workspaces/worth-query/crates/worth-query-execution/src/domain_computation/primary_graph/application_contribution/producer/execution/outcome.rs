@@ -236,6 +236,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 | Kind::SigningLifecycleForgery
                 | Kind::SigningLifecycleUnavailable
                 | Kind::SigningLifecycleEvidenceCapacity { .. }
+                | Kind::SigningLifecycleSubjectCapacity { .. }
                 | Kind::SigningLifecycleRepresentationCapacity
                 | Kind::SigningLifecycleObservation { .. }
                 | Kind::MutationBindingMismatch

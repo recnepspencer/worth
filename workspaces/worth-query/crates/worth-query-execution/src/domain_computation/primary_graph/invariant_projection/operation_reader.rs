@@ -9,8 +9,11 @@ use worth_query_installation::facade::{
     WorthQueryCompiledApplicationOperationContracts, WritePosture,
 };
 
+mod admitted;
 mod admitted_projection;
+mod borrowed;
 mod prepared_inputs;
+pub(in crate::domain_computation::primary_graph) use borrowed::BorrowedOperationProjection;
 pub(in crate::domain_computation::primary_graph) use prepared_inputs::PreparedCurrentInputs;
 mod computation_calls;
 mod current_output;
@@ -76,6 +79,7 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
     binding_identity: &'reader worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
     admitted_principal: Option<worth_relational::facade::identity::EntityId>,
+    query_context: Option<&'reader super::super::application_query::ObservedQueryExpressionContext>,
     operation_scope:
         Option<crate::domain_computation::authorization::WorthQueryOperationScopeBinding>,
     decision_facts: &'reader mut DecisionReads,
@@ -167,6 +171,7 @@ where
                         binding_identity: &self.binding_identity,
                         admission_identity: None,
                         admitted_principal: None,
+                        query_context: None,
                         operation_scope: None,
                         decision_facts: &mut decision_facts,
                         _operation: PhantomData,
@@ -217,6 +222,7 @@ where
                         binding_identity: &self.binding_identity,
                         admission_identity: None,
                         admitted_principal: None,
+                        query_context: None,
                         operation_scope: None,
                         decision_facts: &mut decision_facts,
                         _operation: PhantomData,

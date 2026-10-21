@@ -41,6 +41,8 @@ pub(super) fn lower_proposal(
         .required("input-type", ScalarAspectType::String)
         .required("input-identity", ScalarAspectType::String)
         .optional("source-identity", ScalarAspectType::String)
+        .optional("captured-inputs", ScalarAspectType::String)
+        .optional("captured-count", ScalarAspectType::UInt64)
         .required("node-path", ScalarAspectType::String)
         .required("coverage-count", ScalarAspectType::UInt64)
         .required("proposer-partition", ScalarAspectType::UInt64)
@@ -61,6 +63,8 @@ pub(super) fn lower_proposal(
     Ok((
         registry,
         WorkflowProposalLayout {
+            captured_identity: planned_field_locator(PROPOSAL_ASPECT, "captured-inputs")?,
+            captured_count: planned_field_locator(PROPOSAL_ASPECT, "captured-count")?,
             proposer,
 
             entity_kind: kind,

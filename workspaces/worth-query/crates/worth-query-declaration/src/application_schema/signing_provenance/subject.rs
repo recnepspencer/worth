@@ -50,6 +50,36 @@ impl ApplicationSigningSubjectDependency {
     }
 }
 
+pub(super) fn validate_dependencies<'a>(
+    dependencies: impl IntoIterator<
+        Item = (
+            &'a ApplicationFieldBindingLocus,
+            &'a ApplicationFieldBindingLocus,
+            &'a str,
+        ),
+    >,
+) -> Result<(), ()> {
+    let mut captures = std::collections::BTreeSet::new();
+    for (source, captured, binding) in dependencies {
+        if binding.is_empty()
+            || [
+                source.entity(),
+                source.aspect(),
+                source.field(),
+                captured.entity(),
+                captured.aspect(),
+                captured.field(),
+            ]
+            .iter()
+            .any(|text| text.is_empty())
+            || !captures.insert(captured)
+        {
+            return Err(());
+        }
+    }
+    Ok(())
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ApplicationSigningSubjectProvenanceParts {

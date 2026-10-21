@@ -1,4 +1,5 @@
 //! Execution-only native body write into the existing candidate owner.
+mod reference_input;
 use super::OutputRoleUse;
 use super::{
     ApplicationMutationBinding, ApplicationSchema, CandidateWriter,
@@ -10,6 +11,25 @@ use worth_query_declaration::facade::application_schema::ApplicationFieldBinding
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     CandidateWriter<'_, Schema, Binding>
 {
+    pub(in crate::domain_computation::primary_graph) fn body_external_emission(
+        &mut self,
+        selection: crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.body_external_emission(selection)
+    }
+    pub(in crate::domain_computation::primary_graph) fn body_retire_owned_selection(
+        &mut self,
+        owner: &super::WorthQueryInvariantMutationTarget<Schema, ()>,
+        selected: &super::WorthQueryInvariantMutationTarget<Schema, ()>,
+        rule:&worth_query_declaration::facade::application_schema::ApplicationOperationBodyOwnedSelectionRetirement,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let owner = self.projected_entity(owner)?;
+        let selected = self.projected_entity(selected)?;
+        let [unlink, delete] = rule.program_targets();
+        self.candidate
+            .unlink_at_target(&unlink, &owner, &selected)?;
+        self.candidate.delete_at_target(&delete, &selected)
+    }
     pub(in crate::domain_computation::primary_graph) fn body_creation_unlink<Entity>(
         &mut self,
         scope: &WorthQueryApplicationEffectEntity<Schema, Entity>,
@@ -20,6 +40,18 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             .replacement_target()
             .expect("installed replacement posture");
         self.candidate.unlink_at_target(&target, scope, predecessor)
+    }
+    pub(in crate::domain_computation::primary_graph) fn body_creation_retire_predecessor(
+        &mut self,
+        predecessor: &WorthQueryApplicationEffectEntity<Schema, ()>,
+        link: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLink,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.delete_at_target(
+            &link
+                .retirement_target()
+                .expect("installed retiring replacement"),
+            predecessor,
+        )
     }
     pub(in crate::domain_computation::primary_graph) fn body_signing_slot(
         &mut self,

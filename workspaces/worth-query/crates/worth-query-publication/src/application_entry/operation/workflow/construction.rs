@@ -4,6 +4,9 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding,
 };
 use worth_query_execution::facade::application_installation::WorthQueryWorkflowVocabulary;
+use worth_query_execution::publication_boundary::workflow_advance::{
+    WorthQueryWorkflowActorContext, WorthQueryWorkflowAdvanceAdapter,
+};
 
 /// Binds an immutable operation description to its issued workflow requirement.
 ///
@@ -15,6 +18,7 @@ pub struct WorthQueryOwnedWorkflowBinding<'w, S: ApplicationSchema, I: Applicati
 {
     description: WorthQueryOperationDescription<S, I>,
     required: RequiredWorkflowOperation,
+    actor_context: Option<WorthQueryWorkflowActorContext>,
     runtime:
         &'w worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
             S,
@@ -88,9 +92,28 @@ impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>> WorthQueryOperationD
                 WorthQueryWorkflowOperationBindingDenial::AuthorityUnavailable,
             ));
         }
+        let actor_context =
+            match WorthQueryWorkflowAdvanceAdapter::bind_owned_operation_actor_context::<
+                S,
+                Spec,
+                I::Binding,
+            >(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+                workflow,
+                required,
+            ) {
+                Ok(context) => context,
+                Err(cause) => {
+                    return Err((
+                        self,
+                        WorthQueryWorkflowOperationBindingDenial::ActorContext(Box::new(cause)),
+                    ))
+                }
+            };
         Ok(WorthQueryOwnedWorkflowBinding {
             description: self,
             required: required.clone(),
+            actor_context,
             runtime: workflow.runtime(),
         })
     }
@@ -116,11 +139,17 @@ impl<'w, S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>>
         let Self {
             description,
             required,
+            actor_context,
             runtime: original_runtime,
         } = self;
         match WorthQuerySourceOnlyOperation::construct(description, runtime) {
             Ok(mut source) => {
-                source.admission.workflow = Some(required.clone());
+                source.admission.workflow = Some(
+                    super::super::source_admission::WorkflowAdmission::Operation {
+                        required: required.clone(),
+                        actor_context,
+                    },
+                );
                 Ok(WorthQueryWorkflowOperation {
                     source,
                     required,
@@ -133,6 +162,7 @@ impl<'w, S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>>
                 Self {
                     description,
                     required,
+                    actor_context,
                     runtime: original_runtime,
                 },
                 cause,

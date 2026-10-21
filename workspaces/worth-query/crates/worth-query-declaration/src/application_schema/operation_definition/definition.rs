@@ -18,6 +18,8 @@ pub struct ApplicationOperationDefinition<Schema, Operation, Input> {
     pub(super) external_effect: Option<DeclaredExternalEffectSlot>,
     pub(super) aftermath: Option<PortableApplicationAftermathContract>,
     pub(super) body: Option<super::ApplicationOperationBodyProgram>,
+    pub(super) external_emission_recipe:
+        Option<super::ApplicationOperationBodyExternalEffectRecipe>,
     pub(super) marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
@@ -46,6 +48,7 @@ impl<Schema, Operation, Input> ApplicationOperationDefinition<Schema, Operation,
             return Err(super::ApplicationOperationBodyAuthoringDenial::DuplicateAttachment);
         }
         self.body = Some(body.program);
+        self.external_emission_recipe = body.external_emission_recipe;
         Ok(self)
     }
 }

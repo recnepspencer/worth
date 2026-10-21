@@ -40,6 +40,7 @@ where
         output_currentness_facts,
     } = program;
     let workflow_settlement = read_set.workflow_authority_binding;
+    let body_external_emission = read_set.body_external_emission;
     let workflow_deadline = read_set.workflow_deadline;
     let new_commit_refusal = read_set.new_commit_refusal;
     let signed_creation = read_set.signed_creation;
@@ -48,7 +49,10 @@ where
         .as_ref()
         .and_then(|binding| binding.approval_authority.clone());
     let mut admission = read_set.admission;
-    if admission.allowed_graph_contract().body().is_some() && mutation_proof.is_none() {
+    if admission.allowed_graph_contract().body().is_some()
+        && mutation_proof.is_none()
+        && read_set.local_action_settlement.is_none()
+    {
         return terminal(WorthQueryApplicationCommitOutcome::Denied(
             WorthQueryApplicationCommitDenial::operation_body_execution_required(),
         ));
@@ -57,6 +61,15 @@ where
     let preimage_demand = installed_preimage_demand(admission.allowed_graph_contract().aftermath());
     let idempotency =
         bind_commit_idempotency(&admission, conditional_definition.as_ref(), idempotency);
+    if let Some(denial) = read_set.local_action_settlement.as_ref().and_then(|proof| {
+        proof.refusal(
+            &idempotency,
+            effect_posture,
+            mutation_proof.is_some() || workflow_settlement.is_some(),
+        )
+    }) {
+        return terminal(WorthQueryApplicationCommitOutcome::Denied(denial));
+    }
     if let Some(denial) = mutation_proof
         .as_ref()
         .and_then(|proof| proof.refusal(&idempotency))
@@ -96,6 +109,10 @@ where
     ) {
         return terminal(WorthQueryApplicationCommitOutcome::Denied(denial));
     }
+    if let Err(denial) = crate::domain_computation::primary_graph::application_attempt::workflow_instance_program::guard_succession(
+        admission.allowed_graph_contract().body().and_then(|body| body.succession()),
+        read_set.workflow_succession_binding.as_ref(), mutation_proof.as_ref(), &idempotency,
+    ) { return terminal(WorthQueryApplicationCommitOutcome::Denied(denial)); }
     let ordinary_basis = conditional_definition.is_none()
         && aftermath_causality.is_none()
         && elevation_currentness.is_none();
@@ -159,6 +176,8 @@ where
             admission,
             lease,
             provider: WorthQueryProviderAttemptPreparation {
+                local_action_settlement: read_set.local_action_settlement,
+                body_external_emission,
                 required_output_demand,
                 installed_read_scopes: read_set.installed_read_scopes,
                 effect_routes,

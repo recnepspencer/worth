@@ -35,6 +35,8 @@ impl<Schema, Operation, Input, Scope>
         let execution = &phase_request;
 
         if self.read_set.workflow_authority_binding.is_some()
+            || self.read_set.workflow_birth_binding.is_some()
+            || self.read_set.workflow_succession_binding.is_some()
             || self.read_set.admission.operation() != authority.operation
             || self.read_set.admission.runtime_authority().as_u64() != authority.runtime_authority
             || self.read_set.lease.product().product_branch()
@@ -45,6 +47,7 @@ impl<Schema, Operation, Input, Scope>
         self.read_set
             .append_authority_facts(execution, authority.facts(), allocation_policy)?;
         self.read_set.workflow_authority_binding = Some(WorkflowOperationBindingProof {
+            captured_input: authority.captured_input.clone(),
             binding: authority.binding.clone(),
             transition_identity: authority.transition_identity,
             input_identity: authority.input_identity,
@@ -71,6 +74,18 @@ impl<Schema, Operation, Input, Scope>
             None => !Binding::REQUIRES_WORKFLOW_AUTHORITY,
             Some(proof) => {
                 Binding::REQUIRES_WORKFLOW_AUTHORITY
+                    && proof.captured_input.as_ref().is_none_or(|expected| {
+                        expected.resource == self.read_set.admission.scope_entity_id()
+                            && expected.source.map(|source| source.0)
+                                == self
+                                    .read_set
+                                    .admission
+                                    .source_expectation_kind()
+                                    .map(|kind| kind.code())
+                            && expected.preconditions.as_ref()
+                                == self.read_set.admission.mutation_preconditions().identity()
+                            && idempotency.matches_captured_workflow_contract(expected)
+                    })
                     && proof.workflow_execution_requirements
                         == Binding::workflow_execution_requirements()
                     && proof.binding == Binding::IDENTITY

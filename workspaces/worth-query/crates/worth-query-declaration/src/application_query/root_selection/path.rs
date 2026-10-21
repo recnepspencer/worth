@@ -8,7 +8,9 @@ use crate::application_schema::{
 
 use super::ApplicationQueryRootPathGuard;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(
+    Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, serde::Serialize, serde::Deserialize,
+)]
 pub enum ApplicationQueryRootPathDirection {
     Forward,
     Reverse,

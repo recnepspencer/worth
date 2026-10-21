@@ -7,7 +7,8 @@ use super::{
 use crate::application_operation::ApplicationMutationBinding;
 use crate::application_schema::{
     ApplicationFieldBindingLocus, ApplicationScalarValueBinding, ApplicationSchema,
-    ApplicationSchemaMember as Member, ApplicationSigningSubjectProvenanceBinding,
+    ApplicationSchemaMember as Member, ApplicationSigningGraphSubjectProvenanceBinding,
+    ApplicationSigningSubjectProvenanceBinding,
 };
 use std::marker::PhantomData;
 
@@ -61,7 +62,7 @@ impl ApplicationSigningEvidenceSource {
         let lifecycle = creation.signing_lifecycle()?;
         if body.scope_entity() != Some(lifecycle.source_entity.as_str())
             || !creation.fields().iter().any(|field| matches!(field, Field::SigningProvenance { field, binding }
-                if field == signing.provenance() && *binding == ApplicationSigningSubjectProvenanceBinding::IDENTITY))
+                if field == signing.provenance() && (*binding == ApplicationSigningSubjectProvenanceBinding::IDENTITY || *binding == ApplicationSigningGraphSubjectProvenanceBinding::IDENTITY)))
             || !creation.fields().iter().any(|field| matches!(field, Field::PrincipalIdentity { field, mutation_binding, .. }
                 if field == signing.actor() && mutation_binding == binding)) { return None; }
         // Use the schema owner's canonical body encoding, never a second body serializer.

@@ -7,6 +7,7 @@
 
 use std::cmp::Ordering;
 use std::sync::Arc;
+mod retained_size;
 
 use crate::expressions::denial::{ExpressionDenial, ExpressionDenialDetail, ExpressionResult};
 use crate::values::{CanonicalDecimal, CanonicalF32, CanonicalF64};
@@ -316,6 +317,13 @@ impl ExpressionValue {
         }
     }
 
+    /// Record fields only; lists and entries are not records.
+    pub fn record_fields(&self) -> Option<&[Self]> {
+        match &self.0 {
+            Repr::Record(parts) => Some(&parts.items),
+            _ => None,
+        }
+    }
     /// Map entries in canonical key order.
     pub fn map_entries(&self) -> Option<impl ExactSizeIterator<Item = (&Self, &Self)>> {
         match &self.0 {

@@ -1,19 +1,53 @@
 //! Typed values in an operation body, distinct from its derived effect ceiling.
 
 mod builder;
+mod expression;
+mod value;
+pub use expression::ApplicationOperationBodyExpression;
+pub use value::{
+    ApplicationOperationBodyEvaluationSnapshot, ApplicationOperationBodyValue,
+    ApplicationOperationBodyValueProgram, ApplicationOperationBodyValueSnapshot,
+};
+mod emission;
+pub use emission::{
+    ApplicationOperationBodyExternalEffectRecipe, ApplicationOperationBodyExternalEmission,
+    ApplicationOperationBodyExternalPayloadSource,
+};
+mod creation_path;
+mod peer_creation;
+mod peer_validation;
+pub use creation_path::ApplicationOperationBodyCreationPathLink;
+mod child_creation;
+mod child_validation;
 mod classified_capture;
 mod created_field;
 mod creation;
 mod creation_link;
 mod creation_link_validation;
+mod creation_replacement;
+mod creation_reuse;
+mod initialization;
+pub use child_creation::{
+    ApplicationOperationBodyChildCreation, ApplicationOperationBodyChildCreationBuilder,
+};
 mod enrollment;
 pub use enrollment::ApplicationOperationBodyEnrollment;
 mod output;
 mod output_validation;
+mod path_input;
+mod path_source;
+mod path_value;
+mod reference_input;
+pub use path_input::ApplicationOperationBodyPathInputExpectation;
+pub use path_value::ApplicationOperationBodyPathValueAssignment;
+pub use reference_input::ApplicationOperationBodyReferenceInput;
 mod present_source;
 mod related_source;
+mod retirement;
 pub use created_field::ApplicationOperationBodyCaptureRole;
+pub use path_source::ApplicationOperationBodyPathFieldSource;
 pub use related_source::ApplicationOperationBodyRelatedFieldSource;
+pub use retirement::ApplicationOperationBodyOwnedSelectionRetirement;
 mod principal;
 mod principal_validation;
 mod signing;
@@ -25,14 +59,19 @@ pub use signing::ApplicationOperationBodySigningSpec;
 pub use signing_lifecycle::ApplicationOperationBodySigningLifecycleSpec;
 mod program;
 mod requirement;
+mod scope_field;
 mod source_validation;
+mod succession;
+pub use succession::{
+    ApplicationOperationBodySuccession, ApplicationOperationBodySuccessionOutputMatch,
+};
 mod validation;
 
 pub use builder::ApplicationOperationBodyBuilder;
 pub use creation::ApplicationOperationBodyCreationBuilder;
 pub use creation_link::{
     ApplicationOperationBodyCreationLink, ApplicationOperationBodyCreationLinkDirection,
-    ApplicationOperationBodyCreationLinkPosture,
+    ApplicationOperationBodyCreationLinkPosture, ApplicationOperationBodyCreationLinkSource,
 };
 pub use output::{ApplicationOperationBodyOutput, ApplicationOperationBodyOutputTarget};
 pub use program::{
@@ -54,6 +93,7 @@ use crate::application_schema::ApplicationValueEncodeDenial;
 /// Completed authored meaning. Construction validates all typed literal values.
 pub struct ApplicationOperationBody<Schema, Operation, Input> {
     pub(super) program: ApplicationOperationBodyProgram,
+    pub(super) external_emission_recipe: Option<ApplicationOperationBodyExternalEffectRecipe>,
     pub(super) marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
@@ -75,6 +115,9 @@ pub enum ApplicationOperationBodyAuthoringDenial {
     IncompatibleOutput,
     InvalidCreationLink,
     InvalidWorkflowEnrollment,
+    InvalidWorkflowSuccession,
+    InvalidSelectionRetirement,
+    InvalidReferenceReplacement,
     Requirement(ApplicationOperationBodyRequirementDenial),
 }
 

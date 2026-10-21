@@ -211,14 +211,14 @@ mod tests {
 
         use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
         use worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
-        let observed = commit(crate::relational_execution_refusal::work_exhausted(
-            execution,
-        ));
+        let refusal = crate::relational_execution_refusal::work_exhausted(execution);
+        let source = crate::relational_execution_refusal::source_partition(&refusal);
+        let observed = commit(refusal);
         assert_eq!(
             observed.kind(),
             WorthQueryWorkspaceErrorKind::ExecutionDenied(Kind::ExecutionResource {
                 denial: Resource::WorkExhausted,
-                partition_identity: Some(1),
+                partition_identity: source,
                 policy_ancestor: None,
             })
         );

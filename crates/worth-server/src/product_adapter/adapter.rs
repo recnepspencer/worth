@@ -14,15 +14,23 @@ pub trait WorthServerProductApplicationAdapter: Send + Sync + 'static {
 
     /// Executes a shared-read packet under the caller's bounded authority.
     /// Implementations must explicitly carry `lease` into any nested work.
+    /// The default refuses this lane without executing unleased work.
     fn execute_with_lease(
         &self,
-        operation: &WorthServerScheduledProductOperation,
-        lease: &worth_execution::ExecutionResourceLease<'_>,
-        context: &mut worth_execution::MapKernelContext<'_, '_>,
+        _operation: &WorthServerScheduledProductOperation,
+        _lease: &worth_execution::ExecutionResourceLease<'_>,
+        _context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<
         Result<WorthServerProductOperationSuccess, WorthServerProductAdapterExecutionError>,
         worth_execution::MapKernelStop,
-    >;
+    > {
+        Ok(Err(WorthServerProductAdapterExecutionError::denied(
+            WorthServerProductOperationDenial::new(
+                "product.checked_execution_unsupported",
+                "this adapter has no checked-lease execution implementation",
+            ),
+        )))
+    }
 }
 
 pub trait WorthServerProductPayloadSchemaValidator: Send + Sync + 'static {

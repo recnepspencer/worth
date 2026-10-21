@@ -45,7 +45,8 @@ impl WorthQueryPackageArchiveCompatibilityProfile {
         application_program_description: exact_window(
             WORTH_QUERY_APPLICATION_PROGRAM_ARCHIVE_PROTOCOL_VERSION,
         ),
-        workflow_definition_draft: exact_window(
+        workflow_definition_draft: readable_window(
+            7,
             WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
         ),
     };

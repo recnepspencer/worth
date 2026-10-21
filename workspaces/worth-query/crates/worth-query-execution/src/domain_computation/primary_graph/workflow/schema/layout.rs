@@ -34,6 +34,9 @@ impl std::ops::Deref for WorthQueryWorkflowLayout {
 
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowLayoutFields {
+    pub(in crate::domain_computation::primary_graph) captured_input: WorkflowCapturedInputLayout,
+    pub(in crate::domain_computation::primary_graph) operation_output:
+        WorkflowOperationOutputLayout,
     pub(in crate::domain_computation::primary_graph) lineage: WorkflowLineageLayout,
     pub(in crate::domain_computation::primary_graph) definition: WorkflowDefinitionLayout,
     pub(in crate::domain_computation::primary_graph) node: WorkflowNodeLayout,
@@ -71,8 +74,38 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowLayoutFields {
     pub(in crate::domain_computation::primary_graph) evidence_dependency_relation: KindId,
     /// Successor instance to the instance its migration ended.
     pub(in crate::domain_computation::primary_graph) instance_migrated_from_relation: KindId,
+    /// Fresh lifecycle episode to its completed predecessor; not migrated effects.
+    pub(in crate::domain_computation::primary_graph) instance_succeeded_from_relation: KindId,
     /// Successor instance to each receipted transition it inherits as history.
     pub(in crate::domain_computation::primary_graph) instance_prior_effect_relation: KindId,
+}
+
+#[derive(Clone, Debug)]
+pub(in crate::domain_computation::primary_graph) struct WorkflowCapturedInputLayout {
+    pub entity_kind: KindId,
+    pub membership: KindId,
+    pub resource: KindId,
+    pub identity_index_id: DerivedIndexId,
+    pub identity: AspectFieldLocator,
+    pub node: AspectFieldLocator,
+    pub binding: AspectFieldLocator,
+    pub input_type: AspectFieldLocator,
+    pub input: AspectFieldLocator,
+    pub key: AspectFieldLocator,
+    pub source_kind: AspectFieldLocator,
+    pub source: AspectFieldLocator,
+    pub source_partition: AspectFieldLocator,
+    pub preconditions: AspectFieldLocator,
+}
+
+#[derive(Clone, Debug)]
+pub(in crate::domain_computation::primary_graph) struct WorkflowOperationOutputLayout {
+    pub(in crate::domain_computation::primary_graph) entity_kind: KindId,
+    pub(in crate::domain_computation::primary_graph) role: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) entity: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) posture: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) membership: KindId,
+    pub(in crate::domain_computation::primary_graph) target: KindId,
 }
 
 #[derive(Clone, Debug)]
@@ -299,6 +332,8 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
 
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionLayout {
+    pub(in crate::domain_computation::primary_graph) output_binding: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) output_count: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) advancer:
         super::super::actor::record::WorkflowActorFields,
     pub(in crate::domain_computation::primary_graph) executor:
@@ -316,6 +351,8 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionLayout
 
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowProposalLayout {
+    pub(in crate::domain_computation::primary_graph) captured_identity: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) captured_count: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) proposer:
         super::super::actor::record::WorkflowActorFields,
     pub(in crate::domain_computation::primary_graph) entity_kind: KindId,

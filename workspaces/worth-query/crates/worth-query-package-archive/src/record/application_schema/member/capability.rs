@@ -10,7 +10,7 @@ use super::super::super::decode_budget::RecordDecodeAttempt;
 use super::super::wire_vocabulary::{decode_type_identity, write_type_identity};
 
 mod application_capability;
-mod application_query;
+use crate::record::application_query;
 
 pub(super) fn require_nesting_depth(
     member: &ApplicationSchemaMember,

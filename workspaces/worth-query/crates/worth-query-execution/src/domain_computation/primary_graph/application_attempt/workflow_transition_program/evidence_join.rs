@@ -44,7 +44,7 @@ where
             .iter()
             .map(|node| node.entity())
             .collect::<std::collections::BTreeSet<_>>();
-        if authored.len() < 2 || distinct.len() != authored.len() {
+        if authored.is_empty() || distinct.len() != authored.len() {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
                 "evidence join required inventory is incomplete or duplicated",

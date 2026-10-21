@@ -494,6 +494,14 @@ and submission enforcement; native authorization remains with its existing owner
 Resolve external input, admit its captured revision and pass the accepted values
 into the original mutation intent.
 
+If admission refusal must be resumable, use
+`WorthQueryCapturedExternalInput::admit_preserving(&provider)`. Its error returns
+the exact `(original_capture, provider_denial)`; retain that capture and retry
+validation against it. Selection, values, revision and provenance remain unchanged.
+Resolving the provider again produces a different observation, not recovery of
+the original one. The existing `admit` is the one-shot form: it intentionally
+discards the capture on refusal. Neither form grants mutation permission.
+
 The `worth_query_feature_spec!` macro on the decl facade lowers
 `action(Binding, Delivery) { ... };`, `native_action(Binding) { ... };` and
 `conditional_native_action(Binding) { ... };`
@@ -676,6 +684,14 @@ pub(crate) fn validated_bank_application() -> Result<
   `normalized_manifest()`.
 - `revision()` is the content-addressed `ApplicationProgramRevision`: the same
   meaning always gives the same revision.
+- Validation uses `ApplicationProgramDefinition::CANONICAL_REVISION_BUDGET`,
+  a finite `CanonicalDigestWorkBudget` available from the same program facade.
+  Its default remains 4096 basis entries and 1 MiB encoded bytes. Large authored
+  programs may override that associated constant; exceeding either ceiling is
+  a typed `CanonicalRevisionBudgetExceeded` denial. The budget governs cold
+  declaration work, is not part of the manifest, and does not change the revision
+  when the accepted program meaning is identical. It grants no runtime resource
+  or publication permission.
 - A denial is an `ApplicationProgramValidationDenial` with `kind()` and
   `subject()`. Kinds include `DuplicateFeature`, `DuplicateAction`,
   `DanglingFeature`, `MissingRequiredInput`, `UndeclaredOutput`,
@@ -3532,6 +3548,37 @@ The macro is invoked once for each control step, for example
 `ApprovedBusinessPaymentAuthoringOperation`, `…AuthoringBinding`,
 `…AuthoringIntent`, and `ApprovedBusinessPaymentAuthoring`. The whole file is
 244 lines.
+
+#### Create and enroll through one retained action
+
+When the subject must be born with its workflow, declare
+`creation.enroll_in_workflow::<Spec, Binding, CreatedRole>()` on the actual
+creation body and install `.birth_operation::<Binding, CreatedRole>()` in the
+vocabulary. The creator has its own container-scoped capability; it does not use
+the unborn subject's current-operation authority. Publish a real definition and
+prepare `RequiredWorkflowBirth` through native workflow control.
+
+Ordinary creation and retry then use the original captured descriptor:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let original = workflow.request(&principal, &scope)
+    .on_branch(required.branch()).mutate(intent)
+    .without_source().idempotency_owned(logical_key)?;
+let operation = original
+    .for_workflow_birth::<Spec, CreatedRole>(&workflow, &required)?
+    .retain_operation::<Program, CreateAction>(workflow.program_runtime())?;
+// Supply fresh authority to advance; preserve Progress/Refused or close completion custody.
+```
+
+Use SourceCompletion or RetainedCommit delivery, not a native-action declaration
+for ordinary mutation retry. Binding checks the frozen original input and key;
+construction failures return original custody without consuming birth authority.
+Native advancement owns atomic creation/enrollment and recovery under fresh
+authorization. The application must not coordinate separate create/start commits
+or repeatedly reissue advanced mutations after interrupted completion. See
+[workflow-enrolled creations](../workspaces/worth-query/crates/worth-query/docs/authoring/workflow-enrolled-creations.md).
 
 ### 6.3 Author a definition
 

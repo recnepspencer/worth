@@ -23,6 +23,7 @@ use super::invariant::DecisionReader;
 
 mod indexed_selection;
 mod output_availability;
+pub(in crate::domain_computation::primary_graph) use indexed_selection::resolution_denial;
 mod prepared_selection;
 mod prior_member;
 

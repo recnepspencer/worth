@@ -12,6 +12,7 @@ mod governed_start_path;
 mod transition_roles;
 pub(in crate::domain_computation::primary_graph::application_attempt) use actors::observe as observe_instance_roles;
 pub(in crate::domain_computation::primary_graph::application_attempt) use transition_roles::observe as observe_transition_roles;
+mod owner_custody;
 pub(in crate::domain_computation::primary_graph) mod read_only;
 mod retained_history;
 pub(in crate::domain_computation::primary_graph) use read_only::ReadOnlyWorkflowHistory;
@@ -29,6 +30,7 @@ use crate::domain_computation::primary_graph::workflow::instance::{
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
+mod completed_source;
 mod evidence_budget;
 mod history;
 pub(super) use history::observe_ended_history;
@@ -73,12 +75,15 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Obs
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowTransition
 {
+    pub(super) captured_inputs: Option<std::sync::Arc<crate::domain_computation::primary_graph::workflow::captured_input::WorkflowCapturedInputSupport>>,
     pub(in crate::domain_computation::primary_graph::application_attempt) entity: EntityId,
     pub(in crate::domain_computation::primary_graph::application_attempt) identity: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) settlement:
         SettledWorkflowTransition,
     pub(in crate::domain_computation::primary_graph::application_attempt) assessment_evidence:
         Option<ObservedWorkflowAssessmentEvidence>,
+    pub(in crate::domain_computation::primary_graph::application_attempt) operation_outputs:
+        Option<history::operation_outputs::ObservedOperationOutputs>,
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct ObservedWorkflowAssessmentEvidence

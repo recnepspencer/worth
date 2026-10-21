@@ -23,7 +23,9 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
         let covered: BTreeSet<_> = schema
             .installed_mutation_binding_inventory()
             .filter(|binding| {
-                !binding.workflow_control() && self.entries.contains_key(binding.identity())
+                self.entries
+                    .get(binding.identity())
+                    .is_some_and(|entry| entry.origin == super::HandlerOrigin::CompiledBody)
             })
             .map(|binding| binding.operation_name())
             .collect();
@@ -53,7 +55,7 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
                 Binding::IDENTITY,
             ));
         }
-        self.register_resolved(binding, installed, handler)
+        self.register_resolved(binding, installed, handler, super::HandlerOrigin::Supplier)
     }
 
     pub(in crate::domain_computation::primary_graph) fn register_body<Binding>(
@@ -76,6 +78,50 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
                 Binding::IDENTITY,
             ));
         }
-        self.register_resolved(binding, installed, handler)
+        if Binding::WORKFLOW_CONTROL
+            && handler
+                .body()
+                .creation()
+                .and_then(|creation| creation.signing())
+                .is_none()
+        {
+            return Err(denial(
+                DenialKind::OperationBodyUnavailable,
+                Binding::IDENTITY,
+            ));
+        }
+        self.register_resolved(
+            binding,
+            installed,
+            handler,
+            super::HandlerOrigin::CompiledBody,
+        )
+    }
+}
+
+impl<Schema: ApplicationSchema> super::WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Native approval composition alone selects this compiled control body.
+    /// Ordinary lookup still rejects every control binding before touching it.
+    pub(in crate::domain_computation::primary_graph) fn mutation_body_for_approval<Binding>(
+        &self,
+    ) -> Result<
+        std::sync::Arc<dyn OperationHandler<Schema, Binding>>,
+        super::MutationHandlerExecutionDenial,
+    >
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        if !Binding::WORKFLOW_CONTROL
+            || !self
+                .mutation_handlers
+                .entries
+                .get(Binding::IDENTITY)
+                .is_some_and(|entry| entry.origin == super::HandlerOrigin::CompiledBody)
+        {
+            return Err(super::MutationHandlerExecutionDenial::WorkflowControl);
+        }
+        self.mutation_handlers
+            .get::<Binding>()
+            .ok_or(super::MutationHandlerExecutionDenial::HandlerNotInstalled)
     }
 }

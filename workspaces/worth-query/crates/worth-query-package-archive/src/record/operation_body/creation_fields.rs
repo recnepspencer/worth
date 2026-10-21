@@ -23,12 +23,18 @@ pub(super) fn write(
             ApplicationOperationBodyCreatedField::SigningProvenance { .. } => 7,
             ApplicationOperationBodyCreatedField::CapturedScopeField { .. } => 8,
             ApplicationOperationBodyCreatedField::RelatedField { .. } => 9,
+            ApplicationOperationBodyCreatedField::Computed { .. } => 10,
+            ApplicationOperationBodyCreatedField::CapturedPathField { .. } => 11,
         })?;
         output.text(step.field().entity())?;
         output.text(step.field().aspect())?;
         output.text(step.field().field())?;
         output.text(step.binding().as_str())?;
         match step {
+            ApplicationOperationBodyCreatedField::CapturedPathField { .. } => {
+                super::path_capture::write(output, step)
+            }
+            ApplicationOperationBodyCreatedField::Computed { value, .. } => output.text(value),
             ApplicationOperationBodyCreatedField::Literal { value, .. } => {
                 super::super::foundational_value::write_aspect_value(output, value)
             }
@@ -84,15 +90,17 @@ pub(super) fn decode(
     if has_creation {
         let entity = input.text()?.to_owned();
         let key = input.text()?.to_owned();
-        let fields = decode_sequence(input, budget, 20, |input, _| {
+        let fields = decode_sequence(input, budget, 20, |input, budget| {
             let tag = input.u16()?;
-            if !(matches!(tag, 1 | 2)
-                || (version >= 4 && tag == 3)
-                || (version >= 9 && tag == 4)
-                || (version >= 12 && tag == 5)
-                || (version >= 13 && matches!(tag, 6 | 7))
-                || (version >= 14 && tag == 8)
-                || (version >= 20 && tag == 9))
+            if !matches!(tag, 1 | 2)
+                && !(version >= 4 && tag == 3)
+                && !(version >= 9 && tag == 4)
+                && !(version >= 12 && tag == 5)
+                && !(version >= 13 && matches!(tag, 6 | 7))
+                && !(version >= 14 && tag == 8)
+                && !(version >= 20 && tag == 9)
+                && !(version >= 28 && tag == 10)
+                && !(version >= 29 && tag == 11)
             {
                 return Err(Denial::new(Kind::UnsupportedRecordVariant));
             }
@@ -100,6 +108,7 @@ pub(super) fn decode(
                 ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
             let binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned());
             Ok(match tag {
+                11 => super::path_capture::decode(input, budget, field, binding)?,
                 1 => ApplicationOperationBodyCreatedField::Literal {
                     field,
                     binding,
@@ -141,6 +150,11 @@ pub(super) fn decode(
                 7 => ApplicationOperationBodyCreatedField::SigningProvenance { field, binding },
                 8 => super::classified_capture::decode(input, field, binding)?,
                 9 => super::related_source::decode(input, field, binding)?,
+                10 => ApplicationOperationBodyCreatedField::Computed {
+                    field,
+                    binding,
+                    value: input.text()?.to_owned(),
+                },
                 _ => unreachable!("creation opcode admitted before operands"),
             })
         })?;

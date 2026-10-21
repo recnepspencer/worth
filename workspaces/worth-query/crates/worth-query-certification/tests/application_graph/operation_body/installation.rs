@@ -56,7 +56,12 @@ pub(super) fn install_with_projection<const DESTINATION: u64>() -> (
             )
             .field(DocumentRetentionField::reference(), 7)
             .field(DocumentAuditSourceField::reference(), 7);
-            let document = if matches!(DESTINATION, 25 | 26 | 29) {
+            let document = if matches!(DESTINATION, 113 | 116) {
+                document.field(
+                    DocumentDraftNoteField::reference(),
+                    DOCUMENT_IDENTITY.to_owned(),
+                )
+            } else if matches!(DESTINATION, 25 | 26 | 29) {
                 document.field(DocumentDraftNoteField::reference(), "active".to_owned())
             } else if DESTINATION == 28 {
                 document.field(DocumentDraftNoteField::reference(), String::new())
@@ -64,23 +69,8 @@ pub(super) fn install_with_projection<const DESTINATION: u64>() -> (
                 document
             };
             graph.bind_entity(document)?;
-            if matches!(DESTINATION, 25..=27 | 29) {
-                graph.bind_entity(
-                    WorthQueryApplicationEntitySeed::new(
-                        Audit::reference(),
-                        WorthQueryApplicationEntityKey::new("body-member").unwrap(),
-                    )
-                    .field(AuditIdentityField::reference(), "member".to_owned())
-                    .field(AuditRetentionField::reference(), 7)
-                    .field(AuditPriorRetentionField::reference(), 7),
-                )?;
-                graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-                    DocumentMembers::reference(),
-                    "body-member-edge",
-                    WorthQueryApplicationEntityKey::new("body-document").unwrap(),
-                    WorthQueryApplicationEntityKey::new("body-member").unwrap(),
-                ))?;
-            }
+            output::related::seed_members::<DESTINATION>(graph)?;
+            retirement::seed::seed::<DESTINATION>(graph)?;
             Ok(())
         },
     )

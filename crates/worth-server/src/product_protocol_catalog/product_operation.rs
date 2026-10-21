@@ -17,6 +17,8 @@ pub struct WorthServerProductOperationProtocol {
     requires_basis: bool,
     requires_product_session: bool,
     requires_idempotency_key: bool,
+    #[serde(skip_serializing_if = "is_false")]
+    requires_server_instance: bool,
 }
 
 pub(crate) struct WorthServerProductOperationProtocolParts {
@@ -34,6 +36,7 @@ pub(crate) struct WorthServerProductOperationProtocolParts {
     pub basis_kind: String,
     pub requires_product_session: bool,
     pub requires_idempotency_key: bool,
+    pub requires_server_instance: bool,
 }
 
 impl WorthServerProductOperationProtocol {
@@ -54,6 +57,7 @@ impl WorthServerProductOperationProtocol {
             requires_basis: true,
             requires_product_session: parts.requires_product_session,
             requires_idempotency_key: parts.requires_idempotency_key,
+            requires_server_instance: parts.requires_server_instance,
         }
     }
 
@@ -116,4 +120,12 @@ impl WorthServerProductOperationProtocol {
     pub fn requires_idempotency_key(&self) -> bool {
         self.requires_idempotency_key
     }
+
+    pub fn requires_server_instance(&self) -> bool {
+        self.requires_server_instance
+    }
+}
+
+fn is_false(value: &bool) -> bool {
+    !value
 }

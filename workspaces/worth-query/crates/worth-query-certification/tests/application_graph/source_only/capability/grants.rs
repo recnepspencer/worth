@@ -3,6 +3,8 @@ use super::schema::*;
 use worth_query_host::facade::{
     declaration::application_capability::*, declaration::application_schema::*, *,
 };
+#[path = "grants/recorded_operation.rs"]
+pub(super) mod recorded_operation;
 worth_query_entity!(pub Grant for CapabilitySchema);
 worth_query_aspect!(pub GrantFacts for CapabilitySchema, Grant; identity=AspectIdentity(0x91765001), revision=AspectContractRevision(1));
 worth_query_field!(pub GrantAction for CapabilitySchema, Grant, GrantFacts: u64 => U64ApplicationValueBinding, read_only, equality);
@@ -236,31 +238,37 @@ pub fn declare(
             SetRetention::reference(),
             1,
             1,
+            ApplicationCapabilityRecordedActorRule::not_applicable(),
         ))
         .capability(grant_contract(
             WorkflowInstanceStartCapability::reference(),
             SetRetention::reference(),
             1,
             1,
+            ApplicationCapabilityRecordedActorRule::not_applicable(),
         ))
         .capability(grant_contract(
             WorkflowAdvanceCapability::reference(),
             SetRetention::reference(),
             2,
             2,
+            ApplicationCapabilityRecordedActorRule::not_applicable(),
         ))
         .capability(grant_contract(
             RevocationCapability::reference(),
             RevokeGrant::reference(),
             2,
             2,
+            ApplicationCapabilityRecordedActorRule::not_applicable(),
         ))
+        .capability(recorded_operation::contract())
 }
 fn grant_contract<Capability, Operation, Input>(
     capability: ApplicationCapabilityRef<CapabilitySchema, Capability>,
     operation: ApplicationOperationRef<CapabilitySchema, Operation, Input>,
     action: u64,
     purpose: u64,
+    recorded_actor: ApplicationCapabilityRecordedActorRule,
 ) -> ApplicationCapabilityContract<CapabilitySchema, Capability, Operation, Input>
 where
     Operation: ApplicationOperationMarkerIdentity<CapabilitySchema>,
@@ -327,7 +335,7 @@ where
             ApplicationCapabilityActorComposition::new(
                 ApplicationCapabilitySeparationOfDutyRule::not_applicable(),
                 ApplicationCapabilityDistinctActorRule::not_applicable(),
-                worth_query_decl::facade::application_capability::ApplicationCapabilityRecordedActorRule::not_applicable(),
+                recorded_actor,
             ),
             ApplicationCapabilityPropagationComposition::new(
                 ApplicationCapabilityDelegationRule::forbidden(),

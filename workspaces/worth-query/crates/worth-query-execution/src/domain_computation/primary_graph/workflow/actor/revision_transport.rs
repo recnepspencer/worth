@@ -30,7 +30,9 @@ pub(super) fn capture(
         return Err(invalid());
     }
     Ok(match fact {
-        Fact::Field { .. } | Fact::AbsentField { .. } => fact.clone(),
+        Fact::Field { .. } | Fact::AbsentField { .. } | Fact::IndexedEntitySelection { .. } => {
+            fact.clone()
+        }
         Fact::Relation {
             relation_kind,
             from,

@@ -170,6 +170,8 @@ pub(super) fn one_shot(
         | Kind::CardinalityMismatch
         | Kind::TraversalUnavailable
         | Kind::ProjectionUnavailable
+        | Kind::ExpressionContextUnavailable
+        | Kind::ExpressionContextIncomplete
         | Kind::Projection(..)
         | Kind::ResultBufferLimitExceeded
         | Kind::WorkLimitExceeded

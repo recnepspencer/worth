@@ -16,12 +16,9 @@ use crate::runtime::tests::graph_read_access::support::graph_read_access::author
     admitted_policy_tenant, admitted_policy_tenant_for_mode, canonical_query, session_label,
 };
 use crate::runtime::tests::graph_read_access::support::graph_read_access::hostile_graph_fixture::seed_hostile_frontier_graph;
-use crate::runtime::tests::graph_read_access::support::graph_read_access::read_surface_assertions::{
-    assert_pre_execution_graph_access_denial, read_composition_denial,
-};
 use crate::runtime::tests::graph_read_access::support::graph_read_access::read_surface_declarations::graph_access_family;
 use crate::runtime::tests::graph_read_access::support::graph_read_access_cost_model::{
-    dense_traversal_family, frontier_search_family, projection_only_family, workspace,
+    frontier_search_family, projection_only_family, workspace,
 };
 
 #[test]
@@ -60,14 +57,11 @@ fn closeout_local_anchored_frontier_and_reusable_reads_emit_consumed_access_plan
         .execute(request_execution)
         .expect("frontier read should execute through admitted access plan");
     let frontier_summary = assert_consumed_access_plan_receipt("frontier", &frontier_result);
+    // A hostile frontier still executes inline.
     assert_eq!(
         &frontier_summary.admission_posture,
-        &WorthQueryGraphReadAccessAdmissionPosture::AdmittedPagedStreaming
+        &WorthQueryGraphReadAccessAdmissionPosture::InlineIndexed
     );
-    assert!(frontier_result
-        .receipt()
-        .graph_read_streaming_receipt()
-        .is_some());
 
     let mut reusable_workspace = workspace(
         request_execution,
@@ -87,28 +81,6 @@ fn closeout_local_anchored_frontier_and_reusable_reads_emit_consumed_access_plan
     assert_eq!(
         assert_consumed_access_plan_receipt("reusable", &reusable_result).plan_digest,
         reviewed_plan_digest
-    );
-}
-
-#[test]
-fn closeout_broad_boolean_surface_denies_before_execution() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let mut dense_workspace = workspace(
-        request_execution,
-        "graph-read-access.closeout.surface.dense",
-    );
-    let dense = dense_traversal_family(&mut dense_workspace, "closeout-dense");
-    let dense_denial = read_composition_denial(
-        dense_workspace
-            .execute_read_family(request_execution, &dense)
-            .expect_err("dense broad read must deny before execution"),
-    );
-    let dense_admission = assert_pre_execution_graph_access_denial(&dense_denial);
-    assert_eq!(
-        dense_admission.posture(),
-        &WorthQueryGraphReadAccessAdmissionPosture::Denied
     );
 }
 

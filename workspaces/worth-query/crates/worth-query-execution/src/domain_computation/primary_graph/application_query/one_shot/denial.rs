@@ -54,6 +54,12 @@ pub enum WorthQueryApplicationOneShotDenialKind {
     TraversalUnavailable,
     /// The result projection is unavailable.
     ProjectionUnavailable,
+    /// A requested native expression context has unsupported installed meaning
+    /// or is not an exactly-one result.
+    ExpressionContextUnavailable,
+    /// A requested native expression context was incomplete, withheld by
+    /// disclosure, or truncated. Fresh admission may repair this observation.
+    ExpressionContextIncomplete,
     /// Projecting a result row failed.
     Projection(WorthQueryApplicationProjectionDenialKind),
     /// The read would exceed the result buffer limit.

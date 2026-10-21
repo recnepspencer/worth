@@ -56,10 +56,11 @@ impl WorthQueryProviderAttemptPreparation {
         let Some(binding) = self.workflow_settlement.take() else {
             return Ok((self, None));
         };
-        let external = admission
-            .allowed_graph_contract()
-            .external_effect()
-            .is_declared();
+        let external = crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection::selected_external_contract(
+            self.body_external_emission.as_ref(), admission.allowed_graph_contract().external_effect(),
+        ).map_err(|detail| WorthQueryApplicationAttemptDenial::new(
+            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, detail,
+        ))?.is_some_and(|contract| contract.is_declared());
         let receipt_identity = receipt_identity_from_outcome(
             admission.runtime_authority().as_u64(),
             outcome_identity.get(),
@@ -83,7 +84,7 @@ impl WorthQueryProviderAttemptPreparation {
                 )]),
             });
         } else {
-            visit_workflow_operation_settlement_facts(
+            let transition = visit_workflow_operation_settlement_facts(
                 &binding.workflow_layout,
                 &binding.settlement_basis,
                 &receipt_identity,
@@ -93,6 +94,12 @@ impl WorthQueryProviderAttemptPreparation {
                     Ok::<(), WorthQueryApplicationAttemptDenial>(())
                 },
             )?;
+            crate::domain_computation::primary_graph::workflow::operation_output::append_operation_outputs(
+                &binding.workflow_layout, transition, &binding.binding,
+                self.output_correspondence.native_publication_roles()
+                    .map(|(role, posture, entity, target)| (role, posture, entity, target.clone())),
+                &mut settlement_effects,
+            );
         }
         admission
             .validate_current_authority()

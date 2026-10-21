@@ -20,6 +20,9 @@ Declare through `worth_query_decl::facade::application_schema`:
 - `ApplicationSigningProvenance` and `ApplicationSigningProvenanceBinding`;
 - `ApplicationSigningSubjectProvenance` and
   `ApplicationSigningSubjectProvenanceBinding` for the v2 certified footprint;
+- `ApplicationSigningGraphSubjectProvenance`, its v3 binding, and
+  [`capture_from_path`](./graph-certified-subjects.md) for related source facts
+  and optional local captures;
 - `creation.initialize_from_present_scope(optional_source, required_snapshot)`;
 - `creation.capture_from_scope(source, snapshot, ApplicationOperationBodyCaptureRole)`
   and `capture_from_present_scope` for explicitly classified v2 captures;
@@ -46,6 +49,13 @@ Prepare through the ordinary application entry's `prepare_in_program`, or
 `prepare_capability_in_program` for a capability binding. The retained candidate
 exposes `authentication_intent()`, accepts `sign(&event)`, then `commit(...)`.
 These methods come from `worth_query_host::facade::application_entry`.
+
+For an approval capability whose installed control operation also declares a
+signed creation, use `prepare_workflow_approval_with_body` instead. It returns
+`WorkflowApprovalBodyPreparation::Prepared(signing_request)` or
+`Settled(native_progress)`. `Settled` is a resolved native outcome, not necessarily
+success: inspect its `WorkflowProgressOutcome`, including denials. The sign-only `prepare_workflow_approval` refuses a
+declared body rather than silently skipping it.
 
 ## Core Mental Model
 
@@ -75,7 +85,15 @@ Choose `AuditContext` for copied context that must be authenticated but does not
 determine continued signature validity, such as the document revision or stage
 at signing. Both roles use the same tracked initializer and stale checks; audit
 values remain in the immutable signed snapshot but not in `dependencies()`.
-V2 rejects unclassified scope captures. Classified captures require v2 signing;
+The same candidate can advance bookkeeping with a
+[computed scope assignment](./computed-body-values.md). Capturing CurrentRevision
+as `AuditContext` records its observed pre-sign value, while assigning the native
+`next-revision` result publishes the next value to the root. The normal signing
+intent authenticates both effects. A concurrent revision-only change stales that
+candidate; later changes to audit context alone do not supersede settled evidence.
+This does not permit a computed initializer inside the signed artifact: such an
+initializer lacks an explicit subject/audit capture classification and is refused.
+V2 and v3 reject unclassified scope captures. Classified captures require certified signing;
 they cannot be silently interpreted by an unsigned creation or the legacy profile.
 
 The footprint alone is not a supersession event or an effectiveness decision.
@@ -187,8 +205,8 @@ for authentication-only v1, or `ApplicationSigningSubjectProvenanceBinding` for
 the certified-subject v2 record. The example above uses the v1 initializer;
 with v2, use explicit capture roles as below. Both use the same `signed_by` call. Ordinary
 supplier codecs cannot implement its sealed native provenance-binding contract.
-The binding requires an application program and admits the creation plus every
-initializer, including actor and provenance, in its normal candidate ceilings.
+The binding requires an application program and declared authority for the
+creation and every initializer, including actor and provenance.
 
 ## Real Example
 
@@ -260,7 +278,7 @@ let completion = operation.body()
 ```
 
 The operation still declares its own ordinary permission, capability policy,
-candidate ceilings and any occurrence requirement. The supplier example's
+effect authority and any occurrence requirement. The supplier example's
 information-gathering EnterReview remains unsigned; a distinct later
 CompleteReview requires current verification and an exact operation need.
 A genuine acknowledgement can share the evidence kind and lifecycle but have a
@@ -296,10 +314,70 @@ entity contains exactly one required, unitless, read-only field bound to
 or delete that record or mutate protected associations; only the signed body's
 own history/current links and native consequence owner can do so. A signed body
 cannot simultaneously write the `Subject` values whose preimages it certifies.
-The ordinary handler's candidate ceiling stays unchanged; installation derives
-a separate bounded native consequence reservation and publication touch closure.
+Installation derives the native consequence publication touch closure. Execution
+checks original request authority, observes dependency changes and grows actual
+effect storage fallibly. Only explicit authored subject-impact limits restrict
+the number of affected subjects; no candidate-cardinality forecast supplies a fallback.
 
 ## How It Relates To Other Features
+
+### One approval action with a business attestation
+
+An approval frontier can require a fresh signature and publish an immutable
+business attestation through one action. Declare the attestation on that
+approval capability's `WORKFLOW_CONTROL` operation, install its compiled body
+with `operation_body::<Binding>()`, and register the capability through
+the workflow vocabulary's `.approval::<Capability, Operation, Input>()`.
+The binding uses the usual native body decision and denial types, unit result,
+and its real output contract. Author/start/advance roles cannot accept this
+body; neither can an ordinary workflow `.operation()` registration.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+match request.prepare_workflow_approval_with_body(
+    workflow, instance, &required_approval, &proposal, decision,
+)? {
+    WorkflowApprovalBodyPreparation::Settled(progress) => consume_progress(progress),
+    WorkflowApprovalBodyPreparation::Prepared(signing) => {
+        let intent = signing.authentication_intent().expect("declared signed body").clone();
+        let event = installed_owner.authenticate(credential, principal, intent, scope).await?;
+        consume_progress(signing.sign(&event)?.execute())
+    }
+}
+```
+
+Query retains the original approval decision and its snapshot, evaluates the
+installed body on that same snapshot, appends the native approval effects, and
+seals the combined candidate once. One genuine event authenticates that exact
+candidate; it is not consumed separately for each half. Publication rechecks
+both body and native approval dependencies and publishes both or neither.
+The principal, proposal, decision, native evidence and capability checks remain
+mandatory. No host coordinator or signature-to-grant mapping is involved.
+
+For example, a manager-review body captures the document description as
+`Subject`, the signing stage as `AuditContext`, declares a typed created output,
+and uses the ordinary supersession lifecycle. Its approval node still consumes
+the authored assessment evidence and grants only its native approval meaning.
+Read the attestation through a governed query or its actual transition receipt's
+`outputs_of::<Contract>()`; neither observation becomes reusable authority.
+Another early-verification producer stays independent and cannot supply this
+approval merely because it also contains a signature.
+
+Exact settled replay returns the original native progress before evaluating
+today's body requirements or requesting another event. Changed logical intent
+is not replay. A stale fresh attempt never publishes one half; retain native
+deferred/indeterminate results rather than automatically rerunning it.
+Both Approve and Reject execute the declared body: name its business meaning
+accordingly (for example, "reviewed", not an unconditional "approved").
+
+This join supports the existing bounded scalar signed-creation body, not
+partitioned-computation-producing profiles, enrolled birth, succession, external
+effects, or arbitrary additional native output/emission profiles. Unsupported
+composition is refused rather than dropping carried state. Original request
+interruption, canonicalization failures, admission and publication's exact
+candidate recheck remain enforced without supplier resource forecasts.
+This does not add Store/process durability guarantees.
 
 Workflow operation authority and workflow approval remain separate native
 capabilities. A signature does not advance a workflow or satisfy an approval
@@ -345,22 +423,25 @@ authority. Do not substitute current-value equality for Current lifecycle member
 
 This body form admits one signed creation per candidate. It uses the existing
 bounded scalar body and canonicalization support; unsupported encoding, resource
-or compiler profiles fail closed. Old portable body versions remain unchanged;
+or compiler profiles fail closed. Unitless UInt64 computed scope bookkeeping may
+accompany signing, but `initialize_value` on a signed creation remains unsupported.
+The lifecycle's Subject source-write exclusion is unchanged. Old portable body versions remain unchanged;
 the original signed form and principal operand use body record v13. Explicit
 capture role and source presence use body record v14; earlier versions cannot
 reinterpret its new opcode. The v2 provenance binding has a distinct codec
 identity; it does not reinterpret v1 records or require a build-counter
 schema revision. Unsupported codecs fail installation rather than falling back.
-The lifecycle declaration uses body record v15 without changing v1–v14, requires
-v2 provenance, and operates on the one admitted source kind and its declared
-captures. Fan-out/capacity exhaustion refuses the whole edit, never truncates.
+The original scope-only lifecycle declaration uses body record v15 without changing
+v1–v14 and uses v2 provenance. The [graph-certified profile](./graph-certified-subjects.md)
+uses v3 provenance and body v29 for path captures or a subject-impact bound.
+Fan-out/capacity exhaustion refuses the whole edit, never truncates.
 Effectful program-adoption migration for a lifecycle schema is explicitly
 unsupported until it has a native consequence join; it cannot bypass this law.
 
 Checkpoint restoration preserves signed data and durable idempotency facts, not
 live event or receipt authority. The current-evidence requirement uses body v16;
 v1–v15 records are unchanged and cannot silently acquire the new operand. It
-requires v2 provenance and the declared native lifecycle, and matches only the
+requires certified v2/v3 provenance and the declared native lifecycle, and matches only the
 same canonical active program revision. Related-subject requirements use body
 v18; earlier opcodes/records keep their existing meaning. This selector supports
 one outgoing hop, not arbitrary paths, input-supplied IDs or first/latest selection.
@@ -371,5 +452,7 @@ signature manifestation and UTC evidence are not supplied by this feature.
 ## Related Docs
 
 - [Executable Scope-Bound Operation Bodies](./scope-field-operation-bodies.md)
+- [Shared Computed Body Values](./computed-body-values.md)
+- [Graph-Certified Signature Subjects](./graph-certified-subjects.md)
 - [Ordinary Application Front Door](../foundations/ordinary-application-front-door.md)
 - [Programs and Adoption](../foundations/programs-and-adoption.md)

@@ -12,15 +12,20 @@ use worth_relational::facade::{
 use super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
 
 mod denial;
+mod expression_context;
 mod fact_conversion;
 mod footprint_accounting;
 mod prepared_expectation;
+mod query_context_binding;
+pub(in crate::domain_computation) use query_context_binding::ObservedQueryExpressionContext;
 mod result_set;
 pub(crate) mod retained_dependencies;
 mod retained_parameters;
 mod root_selection;
 mod scope_selector;
+mod workflow_capture;
 pub use denial::{WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind};
+pub(in crate::domain_computation::primary_graph::application_query) use expression_context::RetainedExpressionContext;
 pub use prepared_expectation::WorthQueryPendingSourceExpectation;
 pub(in crate::domain_computation::primary_graph) use prepared_expectation::{
     BoundStableObservedSourceFacts, PreparedObservedSourceExpectation,
@@ -32,8 +37,23 @@ pub use result_set::WorthQueryObservedResultSet;
 /// Pass it to `bind_idempotency` so the idempotency binding covers that source.
 #[derive(Clone, Copy)]
 pub struct WorthQueryBoundSourceExpectation {
+    kind: WorthQuerySourceExpectationKind,
     identity: [u8; 32],
     partition_identity: [u8; 32],
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(in crate::domain_computation) enum WorthQuerySourceExpectationKind {
+    Row,
+    ResultSet,
+}
+impl WorthQuerySourceExpectationKind {
+    pub(in crate::domain_computation) const fn code(self) -> u64 {
+        match self {
+            Self::Row => 1,
+            Self::ResultSet => 2,
+        }
+    }
 }
 
 impl WorthQueryBoundSourceExpectation {
@@ -138,6 +158,7 @@ pub(in crate::domain_computation) struct WorthQueryObservedSourceFootprint {
 /// Opaque proof of the native source projected into one public query row.
 /// It is descriptive input to a later governed mutation, not read authority.
 pub struct WorthQueryObservedSource<Query> {
+    pub(super) expression_context: Option<std::sync::Arc<RetainedExpressionContext>>,
     pub(in crate::domain_computation) runtime_authority: u64,
     pub(in crate::domain_computation) schema_binding: ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation) query_identity: WorthQueryInstalledApplicationQueryIdentity,
@@ -168,6 +189,20 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
 }
 
 impl<Query> WorthQueryObservedSource<Query> {
+    /// The immutable native row and its exact expression schema, if requested
+    /// during the read. Operand `source` is a record in declared projection
+    /// order. This is descriptive data, never read or mutation permission.
+    pub fn expression_context(
+        &self,
+    ) -> Option<(
+        &worth_foundational::expression_api::ExpressionSchema,
+        &worth_foundational::expression_api::ExpressionValue,
+    )> {
+        self.expression_context
+            .as_ref()
+            .map(|context| (context.schema(), context.value()))
+    }
+
     #[doc(hidden)]
     pub fn root_entity_for_test(&self) -> EntityId {
         self.model_root

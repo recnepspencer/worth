@@ -81,6 +81,23 @@ impl<Schema: ApplicationSchema, Operation>
             .map_err(HandlerExecutionDenial::new)?;
         self.reader.body_scalar_capture(identity, &locator, capture)
     }
+    pub(in crate::domain_computation::primary_graph) fn body_field_equivalent<Entity>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+        field: &ApplicationFieldBindingLocus,
+        expected: Option<&AspectValue>,
+        execution: &crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution<'_>,
+    ) -> Result<bool, HandlerExecutionDenial> {
+        let locator = self
+            .tracked_body_locator(identity, field)
+            .map_err(HandlerExecutionDenial::new)?;
+        let required = !self
+            .reader
+            .layout
+            .field_is_optional(field.entity(), &locator);
+        self.reader
+            .body_scalar_equivalent(identity, &locator, expected, required, execution)
+    }
 
     pub(in crate::domain_computation::primary_graph) fn body_principal_value(
         &mut self,
@@ -91,7 +108,7 @@ impl<Schema: ApplicationSchema, Operation>
         self.body_value(&identity, field, capture)
     }
 
-    pub(super) fn body_principal_identity(
+    pub(in crate::domain_computation::primary_graph) fn body_principal_identity(
         &mut self,
         field: &ApplicationFieldBindingLocus,
     ) -> Result<WorthQueryInvariantEntityIdentity<Schema, ()>, HandlerExecutionDenial> {

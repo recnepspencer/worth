@@ -40,7 +40,7 @@ where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
         let layout = self.lease.layout.workflow().clone();
-        let (compiled, mut compile_facts) = reconstruct_compiled_definition(
+        let (compiled, compile_facts) = reconstruct_compiled_definition(
             execution,
             self.lease.handle(),
             self.lease.snapshot(),
@@ -83,6 +83,28 @@ where
                 self.admission.operation(),
             ));
         }
+        let carry = self.observe_fresh_instance_capacity(
+            execution,
+            installed,
+            &compiled,
+            compile_facts,
+            clock,
+        )?;
+        Ok((compiled, carry, supersession))
+    }
+
+    pub(super) fn observe_fresh_instance_capacity<Spec>(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        compiled: &CompiledWorkflowDefinition,
+        mut compile_facts: Vec<WorthQueryApplicationObservedFact>,
+        clock: &WorthQueryRuntimeClock,
+    ) -> Result<WorkflowLineageCarry, WorthQueryApplicationAttemptDenial>
+    where
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        let layout = self.lease.layout.workflow().clone();
         let maximum_instances = usize::try_from(installed.resources().maximum_live_instances())
             .map_err(|_| {
                 denial(
@@ -151,6 +173,6 @@ where
                 declared_deadline,
             )?,
         };
-        Ok((compiled, carry, supersession))
+        Ok(carry)
     }
 }

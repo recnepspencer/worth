@@ -61,8 +61,10 @@ pub(in crate::domain_computation) use handler_fact_boundary::CompletedHandlerFac
 mod observation_admission;
 mod observations;
 mod projected_completion;
+mod projected_extension;
 mod relation_observation;
 mod source_facts;
+mod unique_write_dependencies;
 
 pub(super) use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
 pub use relation_observation::WorthQueryObservedApplicationRelation;
@@ -145,7 +147,15 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
     pub(super) workflow_birth_binding:
         Option<super::workflow_instance_program::WorkflowBirthBindingProof>,
+    pub(super) workflow_succession_binding:
+        Option<super::workflow_instance_program::WorkflowSuccessionBindingProof>,
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
+    pub(super) local_action_settlement:
+        Option<super::workflow_transition_program::LocalActionSettlementProof>,
+    /// Earned optional-effect guard disposition from the same sealed decision.
+    /// It cannot be supplied by a caller or inferred from an absent payload.
+    pub(super) body_external_emission:
+        Option<super::super::operation_body::emission::BodyExternalEffectSelection>,
     pub(super) signed_creation: Option<super::signed_creation::SignedCreationState<Schema>>,
     /// The Unix-epoch millisecond the workflow instance this attempt steps
     /// must commit before; the provider checks it again at commit.
@@ -375,22 +385,11 @@ where
 }
 
 mod entity_resolution;
+mod workflow_actor;
 
 fn denial(
     kind: WorthQueryApplicationAttemptDenialKind,
     subject: impl Into<String>,
 ) -> WorthQueryApplicationAttemptDenial {
     WorthQueryApplicationAttemptDenial::new(kind, subject)
-}
-
-impl<Schema, Operation, Input, Scope, Phase>
-    WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>
-{
-    pub(in crate::domain_computation::primary_graph) fn admitted_workflow_actor(
-        &self,
-    ) -> super::super::workflow::actor::record::WorkflowAdmittedActor {
-        super::super::workflow::actor::record::WorkflowAdmittedActor::from_admission(
-            &self.admission,
-        )
-    }
 }

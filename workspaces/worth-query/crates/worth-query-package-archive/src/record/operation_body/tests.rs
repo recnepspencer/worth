@@ -2,26 +2,57 @@
 use super::*;
 use crate::{binary_output::BinaryOutput, limits::WorthQueryPackageArchiveLimits};
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
+#[path = "tests/children.rs"]
+mod children;
+#[path = "tests/collection_values.rs"]
+mod collection_values;
 #[path = "tests/creation_links.rs"]
 mod creation_links;
+#[path = "tests/creation_reuse.rs"]
+mod creation_reuse;
 #[path = "tests/enrollment.rs"]
 mod enrollment;
+#[path = "tests/external_emission.rs"]
+mod external_emission;
 #[path = "tests/genesis.rs"]
 mod genesis;
+#[path = "tests/input_expectation.rs"]
+mod input_expectation;
 #[path = "tests/optional_input.rs"]
 mod optional_input;
 #[path = "tests/outputs.rs"]
 mod outputs;
+#[path = "tests/path_capture.rs"]
+mod path_capture;
+#[path = "tests/path_input.rs"]
+mod path_input;
+#[path = "tests/path_value.rs"]
+mod path_value;
+mod peers;
 #[path = "tests/principal.rs"]
 mod principal;
+#[path = "tests/principal_links.rs"]
+mod principal_links;
+#[path = "tests/reference_input.rs"]
+mod reference_input;
+#[path = "tests/related_outputs.rs"]
+mod related_outputs;
 #[path = "tests/related_source.rs"]
 mod related_source;
 #[path = "tests/requirements.rs"]
 mod requirements;
+#[path = "tests/retirements.rs"]
+mod retirements;
+#[path = "tests/retiring_replacement.rs"]
+mod retiring_replacement;
 #[path = "tests/signed_evidence.rs"]
 mod signed_evidence;
 #[path = "tests/signing.rs"]
 mod signing;
+#[path = "tests/succession.rs"]
+mod succession;
+#[path = "tests/values.rs"]
+mod values;
 
 #[test]
 fn operation_body_false_literal_roundtrips_and_unknown_version_is_refused() {

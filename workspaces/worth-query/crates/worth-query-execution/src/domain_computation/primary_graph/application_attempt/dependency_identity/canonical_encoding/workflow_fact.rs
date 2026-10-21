@@ -58,13 +58,29 @@ pub(super) fn append(
         }
         WorthQueryApplicationObservedFact::WorkflowHistoryBasis {
             instance,
-            maximum_transitions,
+            requirement,
             transition_count,
             snapshot,
         } => {
             kind(entries, prefix, "workflow-history-basis");
             entity(entries, prefix, "instance", *instance);
-            number(entries, prefix, "maximum-transitions", *maximum_transitions);
+            use crate::domain_computation::primary_graph::application_attempt::fact::WorkflowHistoryRequirement;
+            let tag = match requirement {
+                WorkflowHistoryRequirement::Append {
+                    maximum_transitions,
+                } => {
+                    number(entries, prefix, "maximum-transitions", *maximum_transitions);
+                    "append"
+                }
+                WorkflowHistoryRequirement::Exact => "exact",
+                WorkflowHistoryRequirement::ReplayOnly => "replay-only",
+            };
+            super::push(
+                entries,
+                format!("{prefix}.commit-requirement"),
+                worth_foundational::facade::CanonicalBasisEntryKind::Identity,
+                super::text(tag),
+            );
             number(entries, prefix, "transition-count", *transition_count);
             super::number_u64(entries, prefix, "runtime", snapshot.runtime_instance_id());
             super::number_u64(entries, prefix, "version", snapshot.version_id().0);

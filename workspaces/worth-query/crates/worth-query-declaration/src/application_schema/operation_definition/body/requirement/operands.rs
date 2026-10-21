@@ -22,6 +22,12 @@ pub enum ApplicationOperationBodyRequirementDirection {
 /// A field observation or distinct related-item count, never a caller value.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationOperationBodyRequirementSource {
+    /// Previously admitted values; the exact query declares their recursive
+    /// consumption contract, not an operation-side graph reread permission.
+    QueryContext {
+        mutation_binding: String,
+        query: Box<crate::application_query::ErasedApplicationQueryDefinition>,
+    },
     /// True when at least one current native attestation matches this exact producer.
     SignedEvidence(crate::application_schema::ApplicationSigningEvidenceSource),
     /// Select exactly one outgoing subject, then observe that producer's current evidence.
@@ -43,6 +49,16 @@ pub enum ApplicationOperationBodyRequirementSource {
         from: String,
         to: String,
         direction: ApplicationOperationBodyRequirementDirection,
+    },
+    /// Values from each distinct live outgoing endpoint, in native identity order.
+    RelatedFieldValues {
+        relation: String,
+        from: String,
+        to: String,
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        scalar_family: ScalarAspectType,
+        presence: ApplicationFieldPresence,
     },
     PrincipalIdentity {
         scope: String,
@@ -76,8 +92,10 @@ impl ApplicationOperationBodyRequirementOperand {
 impl ApplicationOperationBodyRequirementSource {
     pub fn scope_entity(&self) -> &str {
         match self {
+            Self::QueryContext { query, .. } => query.scope_entity(),
             Self::SignedEvidence(source) => &source.lifecycle.source_entity,
             Self::RelatedSignedEvidence { from, .. } => from,
+            Self::RelatedFieldValues { from, .. } => from,
             Self::Field { field, .. } => field.entity(),
             Self::PrincipalIdentity { scope, .. } => scope,
             Self::RelatedItemCount {
@@ -93,6 +111,30 @@ impl ApplicationOperationBodyRequirementSource {
     }
     pub fn decision_reads(&self) -> Vec<ApplicationOperationDecisionReadTarget> {
         match self {
+            // Source-expectation facts, not fresh raw reads, carry these dependencies.
+            Self::QueryContext { .. } => Vec::new(),
+            Self::RelatedFieldValues {
+                relation,
+                from,
+                to,
+                field,
+                ..
+            } => vec![
+                ApplicationOperationDecisionReadTarget::Relation {
+                    relation: relation.clone(),
+                    from: from.clone(),
+                    to: to.clone(),
+                },
+                ApplicationOperationDecisionReadTarget::Entity {
+                    entity: from.clone(),
+                },
+                ApplicationOperationDecisionReadTarget::Entity { entity: to.clone() },
+                ApplicationOperationDecisionReadTarget::Field {
+                    entity: field.entity().to_owned(),
+                    aspect: field.aspect().to_owned(),
+                    field: field.field().to_owned(),
+                },
+            ],
             Self::SignedEvidence(source) => source.decision_reads(),
             Self::RelatedSignedEvidence {
                 relation,
@@ -139,8 +181,29 @@ impl ApplicationOperationBodyRequirementSource {
     pub fn expression_type(
         &self,
     ) -> Result<ExpressionType, ApplicationOperationBodyRequirementDenial> {
-        use ScalarAspectType as Scalar;
         let (scalar_family, presence, presence_only) = match self {
+            Self::QueryContext { query, .. } => {
+                if !query.parameters().is_empty()
+                    || query.cardinality()
+                        != crate::application_query::ApplicationQueryCardinality::ExactlyOne
+                {
+                    return Err(ApplicationOperationBodyRequirementDenial::UnsupportedQueryContext);
+                }
+                return Ok(query
+                    .result_shape()
+                    .append_expression_context(
+                        worth_foundational::expression_api::ExpressionSchema::builder(),
+                    )?
+                    .1);
+            }
+            Self::RelatedFieldValues {
+                scalar_family,
+                presence,
+                ..
+            } => {
+                let element = scalar_type(*scalar_family, *presence)?;
+                return Ok(ExpressionType::list(element));
+            }
             Self::SignedEvidence(_) | Self::RelatedSignedEvidence { .. } => {
                 return Ok(ExpressionType::Bool)
             }
@@ -160,26 +223,19 @@ impl ApplicationOperationBodyRequirementSource {
         if presence_only {
             return Ok(ExpressionType::Bool);
         }
-        let ty = match scalar_family {
-            Scalar::Bool => ExpressionType::Bool,
-            Scalar::Int8 => ExpressionType::Integer(IntegerType::Int8),
-            Scalar::Int16 => ExpressionType::Integer(IntegerType::Int16),
-            Scalar::Int32 => ExpressionType::Integer(IntegerType::Int32),
-            Scalar::Int64 => ExpressionType::Integer(IntegerType::Int64),
-            Scalar::UInt8 => ExpressionType::Integer(IntegerType::UInt8),
-            Scalar::UInt16 => ExpressionType::Integer(IntegerType::UInt16),
-            Scalar::UInt32 => ExpressionType::Integer(IntegerType::UInt32),
-            Scalar::UInt64 => ExpressionType::Integer(IntegerType::UInt64),
-            Scalar::Float32 => ExpressionType::Float32,
-            Scalar::Float64 => ExpressionType::Float64,
-            Scalar::Decimal => ExpressionType::Decimal,
-            Scalar::String => ExpressionType::String,
-            _ => return Err(ApplicationOperationBodyRequirementDenial::UnsupportedScalar),
-        };
-        Ok(if presence == ApplicationFieldPresence::Optional {
-            ExpressionType::option(ty)
-        } else {
-            ty
-        })
+        scalar_type(scalar_family, presence)
     }
+}
+
+fn scalar_type(
+    scalar_family: ScalarAspectType,
+    presence: ApplicationFieldPresence,
+) -> Result<ExpressionType, ApplicationOperationBodyRequirementDenial> {
+    let ty = ExpressionType::from_scalar_family(scalar_family)
+        .map_err(|_| ApplicationOperationBodyRequirementDenial::UnsupportedScalar)?;
+    Ok(if presence == ApplicationFieldPresence::Optional {
+        ExpressionType::option(ty)
+    } else {
+        ty
+    })
 }

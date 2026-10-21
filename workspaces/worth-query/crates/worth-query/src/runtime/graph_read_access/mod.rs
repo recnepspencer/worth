@@ -19,7 +19,6 @@ mod selectivity_shape;
 mod selectivity_vocabulary;
 mod shape_derivation;
 mod shape_explanation;
-mod streaming_frontier_execution;
 mod vocabulary;
 
 pub(crate) use access_admission::admit_graph_read_access_for_family_in_authority_with_inventory_and_lookup;
@@ -85,13 +84,10 @@ pub use cost_model::{
     derive_graph_read_cost_evidence, estimate_graph_read_access_cost,
     estimate_graph_read_access_cost_with_planning_observation,
     WorthQueryGraphReadAccessCostEstimate, WorthQueryGraphReadAccessCostEstimateDigest,
-    WorthQueryGraphReadBudget, WorthQueryGraphReadBudgetCheck, WorthQueryGraphReadBudgetClass,
-    WorthQueryGraphReadBudgetClassKind, WorthQueryGraphReadBudgetDigest,
     WorthQueryGraphReadComplexityContract, WorthQueryGraphReadComplexityContractKind,
     WorthQueryGraphReadCostAttributionRow, WorthQueryGraphReadCostEstimateCounters,
     WorthQueryGraphReadCostEstimateStatus, WorthQueryGraphReadCostEstimateStatusKind,
-    WorthQueryGraphReadCostEvidence, WorthQueryGraphReadInlineEphemeralAllowance,
-    WorthQueryGraphReadInlineEphemeralAllowanceKind, WorthQueryGraphReadIntrinsicCostContribution,
+    WorthQueryGraphReadCostEvidence, WorthQueryGraphReadIntrinsicCostContribution,
     WorthQueryGraphReadIntrinsicCostEstimate, WorthQueryGraphReadMemoryByteEstimate,
     WorthQueryGraphReadObservedCostEstimate, WorthQueryGraphReadPlanningObservation,
     WorthQueryGraphReadSupportedCostContribution, WorthQueryGraphReadSupportedCostEstimate,
@@ -165,14 +161,6 @@ pub use selectivity_vocabulary::{
 };
 pub use shape_explanation::{
     WorthQueryGraphReadAccessShapeDerivationCounters, WorthQueryGraphReadAccessShapeExplanation,
-};
-pub(crate) use streaming_frontier_execution::streaming_receipt_for_admitted_read_result;
-pub use streaming_frontier_execution::{
-    WorthQueryGraphReadFrontierCursor, WorthQueryGraphReadStreamingCounters,
-    WorthQueryGraphReadStreamingCursorDenial, WorthQueryGraphReadStreamingCursorDenialKind,
-    WorthQueryGraphReadStreamingCursorSession, WorthQueryGraphReadStreamingPageBudget,
-    WorthQueryGraphReadStreamingPageReceipt, WorthQueryGraphReadStreamingPlan,
-    WorthQueryGraphReadStreamingReceipt,
 };
 pub use vocabulary::{
     WorthQueryGraphReadAccessShapeDigest, WorthQueryGraphReadFanoutPosture,

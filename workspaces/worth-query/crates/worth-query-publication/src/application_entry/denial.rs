@@ -164,6 +164,7 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     ApplicationProgramMismatch,
     RequiresWorkflowTransition,
     WorkflowAuthoritySpent,
+    WorkflowCapturedInput,
     /// This keyed request already consumed its one-shot preparation. Build a new request to retry.
     PreparationSpent,
     WorkflowTransitionCurrentness,
@@ -201,6 +202,9 @@ pub enum WorthQueryApplicationRequestMutationDenial {
     ApplicationProgramMismatch,
     RequiresWorkflowTransition,
     WorkflowAuthoritySpent,
+    WorkflowCapturedInput(
+        worth_query_execution::publication_boundary::workflow_proposal::WorkflowCapturedInputDenial,
+    ),
     /// This keyed request already consumed its one-shot preparation. Build a new request to retry.
     PreparationSpent,
     WorkflowTransitionCurrentness(
@@ -214,6 +218,9 @@ pub enum WorthQueryApplicationRequestMutationDenial {
 impl WorthQueryApplicationRequestMutationDenial {
     pub fn kind(&self) -> WorthQueryApplicationRequestMutationDenialKind {
         match self {
+            Self::WorkflowCapturedInput(_) => {
+                WorthQueryApplicationRequestMutationDenialKind::WorkflowCapturedInput
+            }
             Self::SignedCreation(_) => {
                 WorthQueryApplicationRequestMutationDenialKind::SignedCreation
             }

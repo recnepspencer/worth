@@ -23,7 +23,7 @@ pub(super) fn capture<Schema, Operation, Input, Scope>(
         .facts
         .iter()
         .filter_map(source)
-        .try_fold((0usize, 0usize), |(count, bytes), (_, locator)| {
+        .try_fold((0usize, 0usize), |(count, bytes), (_, locator, _)| {
             Some((
                 count.checked_add(1)?,
                 bytes
@@ -48,7 +48,9 @@ pub(super) fn capture<Schema, Operation, Input, Scope>(
                         .read_truth()
                         .project_snapshot(candidate.read_set.lease.snapshot())
                         .ok_or(Denial::CandidateMismatch)?;
-                    for (entity_id, locator) in candidate.read_set.facts.iter().filter_map(source) {
+                    for (entity_id, locator, absent) in
+                        candidate.read_set.facts.iter().filter_map(source)
+                    {
                         context.checkpoint(1).map_err(stopped)?;
                         // Body decision locators describe planned reads. Native
                         // MVCC revisions require the authoritative locator for
@@ -63,7 +65,7 @@ pub(super) fn capture<Schema, Operation, Input, Scope>(
                             .map_err(|cause| {
                                 Denial::Attempt(WorthQueryApplicationAttemptDenial::from(cause))
                             })?;
-                        if native_revision.is_none() {
+                        if native_revision.is_none() && !absent {
                             return Err(Denial::CandidateMismatch);
                         }
                         revisions.push(Fact::SourceFieldRevision {
@@ -88,14 +90,15 @@ fn source(
 ) -> Option<(
     worth_relational::facade::identity::EntityId,
     &worth_foundational::facade::AspectFieldLocator,
+    bool,
 )> {
     match fact {
         Fact::Field {
             entity_id, locator, ..
-        }
-        | Fact::AbsentField {
+        } => Some((*entity_id, locator, false)),
+        Fact::AbsentField {
             entity_id, locator, ..
-        } => Some((*entity_id, locator)),
+        } => Some((*entity_id, locator, true)),
         _ => None,
     }
 }

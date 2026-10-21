@@ -2,6 +2,7 @@
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct WorkflowOperationBindingProof
 {
+    pub captured_input: Option<crate::domain_computation::primary_graph::WorkflowCapturedInputContract>,
     pub(in crate::domain_computation::primary_graph::application_attempt) binding: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) transition_identity:
         [u8; 32],

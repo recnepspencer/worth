@@ -217,7 +217,7 @@ impl WorthServerProductOperationRuntime {
             admitted_session.as_ref(),
             durable_contract.is_some(),
         )?;
-        let retry_binding = if durable_contract.is_none() {
+        let retry_binding = if declaration.server_replays_response() {
             request
                 .identity()
                 .idempotency_key()

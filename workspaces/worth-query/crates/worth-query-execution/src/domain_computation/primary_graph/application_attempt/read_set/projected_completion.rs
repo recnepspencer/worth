@@ -157,17 +157,13 @@ impl<Schema, Operation, Input, Scope>
                 ))
             });
         }
-        if !key_entities_are_in_scope(key, &self.read_scope) {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::OutsideRealizedReadScope,
-                self.admission.operation(),
-            ));
-        }
-        let read_scope = self.projected_read_scope(key)?;
-        Ok((
-            read_scope,
-            self.observe_scoped_projected_fact(execution, key, read_scope)?,
-        ))
+        observe_projection_dependency(
+            execution,
+            &self.admission,
+            &self.lease,
+            &self.read_scope,
+            key,
+        )
     }
 
     fn observe_scoped_projected_fact(
@@ -176,59 +172,94 @@ impl<Schema, Operation, Input, Scope>
         key: &WorthQueryApplicationFactKey,
         scope: super::InstalledScopePosition,
     ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
-        if !key_entities_are_in_scope(key, &self.read_scope) {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::OutsideRealizedReadScope,
-                self.admission.operation(),
-            ));
-        }
-        if !scope
-            .resolve(self.admission.allowed_graph_contract())
-            .is_some_and(|scope| {
-                super::observation_admission::graph_read_scope_matches_key(scope, key)
-            })
-        {
-            return Err(denial(
+        observe_scoped_dependency(
+            execution,
+            &self.admission,
+            &self.lease,
+            &self.read_scope,
+            key,
+            scope,
+        )
+    }
+}
+
+/// Observes one non-publication dependency under the operation's installed
+/// read scope. Compiled body extensions share this exact admission path.
+pub(super) fn observe_projection_dependency<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
+    lease: &super::super::snapshot_lease::WorthQueryApplicationSnapshotLease,
+    read_scope: &super::super::read_scope::WorthQueryApplicationReadScope,
+    key: &WorthQueryApplicationFactKey,
+) -> Result<
+    (
+        super::InstalledScopePosition,
+        WorthQueryApplicationObservedFact,
+    ),
+    WorthQueryApplicationAttemptDenial,
+> {
+    if !key_entities_are_in_scope(key, read_scope) {
+        return Err(denial(
+            WorthQueryApplicationAttemptDenialKind::OutsideRealizedReadScope,
+            admission.operation(),
+        ));
+    }
+    let position = admission
+        .allowed_graph_contract()
+        .graph_reads()
+        .roles()
+        .iter()
+        .flat_map(|role| role.read_scopes())
+        .find(|scope| super::observation_admission::graph_read_scope_matches_key(scope, key))
+        .and_then(|scope| {
+            super::InstalledScopePosition::from_installed(admission.allowed_graph_contract(), scope)
+        })
+        .ok_or_else(|| {
+            denial(
                 WorthQueryApplicationAttemptDenialKind::UndeclaredDecisionRead,
-                self.admission.operation(),
-            ));
-        }
-        let fact = self.lease.handle().with_runtime(execution, |runtime| {
-            super::fact_observation::observe_fact(
-                execution,
-                runtime,
-                self.lease.snapshot(),
-                &self.layout,
-                key,
+                admission.operation(),
             )
         })?;
-        Ok(fact)
-    }
+    let fact = observe_scoped_dependency(execution, admission, lease, read_scope, key, position)?;
+    Ok((position, fact))
+}
 
-    fn projected_read_scope(
-        &self,
-        key: &WorthQueryApplicationFactKey,
-    ) -> Result<super::InstalledScopePosition, WorthQueryApplicationAttemptDenial> {
-        self.admission
-            .allowed_graph_contract()
-            .graph_reads()
-            .roles()
-            .iter()
-            .flat_map(|role| role.read_scopes())
-            .find(|scope| super::observation_admission::graph_read_scope_matches_key(scope, key))
-            .and_then(|scope| {
-                super::InstalledScopePosition::from_installed(
-                    self.admission.allowed_graph_contract(),
-                    scope,
-                )
-            })
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::UndeclaredDecisionRead,
-                    self.admission.operation(),
-                )
-            })
+fn observe_scoped_dependency<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
+    lease: &super::super::snapshot_lease::WorthQueryApplicationSnapshotLease,
+    read_scope: &super::super::read_scope::WorthQueryApplicationReadScope,
+    key: &WorthQueryApplicationFactKey,
+    scope: super::InstalledScopePosition,
+) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
+    if !key_entities_are_in_scope(key, read_scope) {
+        return Err(denial(
+            WorthQueryApplicationAttemptDenialKind::OutsideRealizedReadScope,
+            admission.operation(),
+        ));
     }
+    if !scope
+        .resolve(admission.allowed_graph_contract())
+        .is_some_and(|scope| super::observation_admission::graph_read_scope_matches_key(scope, key))
+    {
+        return Err(denial(
+            WorthQueryApplicationAttemptDenialKind::UndeclaredDecisionRead,
+            admission.operation(),
+        ));
+    }
+    lease.handle().with_runtime(execution, |runtime| {
+        super::fact_observation::observe_fact(execution, runtime, lease.snapshot(), &lease.layout, key)
+    })
 }
 
 impl<Schema, Operation, Input, Scope>

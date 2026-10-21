@@ -21,6 +21,7 @@ impl WorkflowInstanceState {
             Self::Completed,
             Self::Cancelled,
             Self::Migrated,
+            Self::Terminated,
         ]
         .into_iter()
         .find(|state| state.persisted_tag() == tag)

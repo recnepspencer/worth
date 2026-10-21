@@ -41,6 +41,20 @@ where
             ),
         );
     }
+    if program.read_set.workflow_succession_binding.is_some()
+        || program
+            .read_set
+            .admission
+            .allowed_graph_contract()
+            .body()
+            .is_some_and(|body| body.succession().is_some())
+    {
+        return Err(
+            WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
+                "program migration cannot publish workflow succession",
+            ),
+        );
+    }
     if program.read_set.workflow_birth_binding.is_some()
         || program
             .read_set

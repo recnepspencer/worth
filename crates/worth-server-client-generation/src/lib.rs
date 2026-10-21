@@ -1,6 +1,8 @@
 #![forbid(unsafe_code)]
 
 mod python;
+#[cfg(test)]
+mod tests;
 mod typescript;
 
 pub use python::{

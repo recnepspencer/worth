@@ -373,8 +373,8 @@ Connection methods return `&mut Self` and chain:
 `validate()` enforces these minimums (`ApplicationWorkflowValidationDenialKind`):
 
 - Each assessment has exactly one subject (`MissingAssessmentSubject`); each condition has exactly one subject (`MissingConditionSubject`).
-- Each evidence join receives at least two `assessment_evidence` inputs (`IncompleteEvidenceJoin`).
-- Each approval has exactly one `proposal_for_approval` and exactly one `joined_evidence` (`IncompleteApproval`). So every approval needs an evidence join over at least two assessments.
+- Each evidence join receives one or more distinct `assessment_evidence` inputs (`IncompleteEvidenceJoin` for zero). A singleton is a real nonempty evidence set, not an implied two-check quorum. Duplicated connections remain invalid.
+- Each approval has exactly one `proposal_for_approval` and exactly one `joined_evidence` (`IncompleteApproval`). Every approval therefore needs a nonempty assessed evidence set, not dummy duplicate checks.
 - A guarded operation has at most one `approval_authority` edge, and exactly one when its installed requirement asks for an approval: `requiring_approval` (`MissingWorkflowAuthority`). An unguarded operation has none and explicitly declares `not_applicable()` (`UnexpectedWorkflowAuthority`).
 - After the authority check, each guarded operation has exactly one `operation_input` source (`MissingOperationInput` for zero or multiple sources). Publication and imported drafts use this validation. Native reconstruction refuses unsupported stored definitions before executable readmission without rewriting their original bytes.
 
@@ -776,6 +776,27 @@ Approval refusals surface as attempt denial kinds: `WorkflowApprovalPrincipalSta
 `WorkflowApprovalGrantUnavailable`, `WorkflowApprovalExpired`,
 `WorkflowApprovalDelegationChanged`, and `WorkflowApprovalAuthorityDenied`.
 
+An approval action may also declare an immutable signed business creation on its
+control operation. Use `prepare_workflow_approval_with_body` for that installed
+profile: `Prepared` retains the joint signing request, while `Settled` returns
+a resolved native outcome, including denials. Inspect `WorkflowProgressOutcome`;
+exact committed replay needs no fresh event. The plain sign-only entrance refuses
+attached bodies. Query evaluates the body on the approval's original snapshot
+and publishes both under one consumed event and one atomic candidate. See
+[approval with attestation](../authoring/signed-operation-creations.md#one-approval-action-with-a-business-attestation)
+for declaration, output, resource and unsupported-profile boundaries. Existing
+signature rows never manufacture this approval authority.
+
+Evidence cardinality does not establish reviewer quorum or independence. One
+authored assessment may feed the existing evidence join; `AllRequiredPassing`
+requires that applicable check to be current, completed and passing, while
+`AllRequiredCompleted` requires completion at the join. Approval reconstruction
+still requires every applicable input to be current and passing under either
+policy. Zero authored inputs and zero currently applicable requirements refuse;
+neither produces vacuous approval authority. Do not manufacture two copies of
+one check to satisfy a shape. Author separate checks only when they represent
+separate domain requirements; author reviewer policy separately.
+
 ## Operations
 
 Early domain attestation is separate from the approval control step above. A
@@ -890,6 +911,12 @@ it is not enabled by removing an approval from an old editable definition.
 
 ### Retain and advance the original operation
 
+For a finite command with differently typed business operations, use
+[workflow operation inputs](workflow-operation-inputs.md). The native requirement
+selects a complete installed action and transfers its original description into
+the owner below. The pack does not choose workflow order, retry operations, or
+provide durable whole-command recovery.
+
 Construction is effect-free and retains the original input, conditions, key, branch and issued requirement.
 
 <!-- illustrative -->
@@ -940,6 +967,52 @@ WorkflowProgressOutcome and that owner. Close it through fresh authority; refusa
 retains custody. Assessment evidence acceptance and approval remain separate from
 operation confirmation. Effect completion, workflow terminality and physical
 cleanup remain different facts. Drop performs no settlement.
+
+### Inspect source without advancing dispatch
+
+Use `owner.inspect_source(&fresh_request)` when a guarded operation has performed
+its source mutation but dispatch cannot progress yet. It borrows the retained
+`WorthQuerySourceCompletion` and reports native custody as `Committed`,
+`DispatchPending` or `ExternallySettled`. Fresh exact binding admission, selected
+program, runtime and branch checks precede disclosure, including disclosure that
+source evidence is unavailable. This does not mint a recovery handle, retry a
+transport, release cleanup, spend an occurrence or settle the workflow.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+// The caller retains the original owner and newly authenticated request.
+let inspection = owner.inspect_source(&fresh_request)?;
+let posture = inspection.posture();
+let original_source = inspection.source(); // Borrowed, not a transferred performed witness.
+```
+
+For example, an Investigation-entry operation may have atomically committed a
+new stage, business audit and notification outbox while its notification adapter
+is unavailable. Observe the audit through an ordinary governed query; inspect the
+original receipt's outbox to explain the pending notification. Keep the actual
+returned owner for later fresh advancement:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+// Other progress variants also retain their native owners/evidence.
+let owner = match owner.advance(&fresh_request) {
+    WorthQueryWorkflowOperationAdvance::Refused { operation, denial } => {
+        let view = operation.inspect_source(&fresh_request)?;
+        report_source(view.source(), view.posture(), &denial);
+        operation
+    }
+    other => return retain_progress(other),
+};
+```
+
+`SourceEvidenceUnavailable` is not proof of no mutation: an owner can retain
+unresolved publication or indeterminate custody before source completion is
+established. Other denials preserve fresh admission, native inspection or owner
+posture. Do not reconstruct evidence from business state, replace a refused owner,
+or report delivery/component exit from a `DispatchPending` inspection. This is an
+in-memory owning observation, not Store-backed process-crash recovery.
 
 ### Advanced native workflow execution
 
@@ -1105,8 +1178,9 @@ nonterminal prior point reachable along the forward graph; self, forward,
 terminal and ambiguous routes are refused. A Back edge is explicit caller-driven
 meaning, not an automatic control successor. Only an installed local, unsigned
 native operation body with occurrence authority and explicit empty workflow
-execution requirements can serve it. An installed handler, matching name,
-external effect, or approval floor is insufficient.
+execution requirements can serve it. An installed handler, matching name or
+approval floor is insufficient. A declared external effect uses the completion
+path below; its outbox is not permission to move the cursor.
 
 For example, a return body can require business stage `Review`, assign `Draft`
 and capture the actual source stage and admitted actor in an audit. It should
@@ -1114,34 +1188,39 @@ not clear document fields or supersede signatures merely because the cursor
 returns. Declare certified dependencies separately through native signing
 lifecycle; a later relevant edit, not navigation alone, supersedes them.
 
-Prepare under the return binding's own capability, not the Advance capability.
+Prepare under the return binding's own native admission, not Advance permission.
+Conventional bindings use the installed operation's required abilities and policies;
+capability bindings use their exact installed capability. Do not invent a parallel
+role capability to fit a local action. Authoring, instance start, ordinary Advance
+and cursor navigation retain their separate capability contracts.
 The request supplies intent and logical key, never a destination:
 
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-let required = application.request(&principal, &scope)
-    .on_branch(instance.branch())
-    .mutate(ReturnToDraft { identity: identity.clone() })
+let request = application.request(&principal, &scope).on_branch(instance.branch());
+let original = ReturnToDraft { identity };
+let required = request.advanced().mutate(original.clone())
     .without_source()
     .idempotency(&key)
     .prepare_workflow_back_action(&workflow, instance.clone())?;
 
-let outcome = application.request(&principal, &scope)
-    .on_branch(required.branch())
-    .mutate(ReturnToDraft { identity })
+let operation = request.mutate(original)
     .without_source()
-    .idempotency(&key)
+    .idempotency_owned(key)?
     .for_workflow_operation(&workflow, &required)?
-    .execute_capability_in_program(&program, ExecutionAllocationPolicy::SystemAllocation)?;
+    .retain_operation::<Program, ReturnAction>(workflow.program_runtime())?;
+let outcome = operation.advance(&fresh_request);
 ```
 
-Preparation changes nothing. Query derives input identity from the admitted
-input, checks the binding-associated installed capability, resolves the current
+Preparation changes nothing. Query derives input identity from the original
+typed request identities, checks the binding-selected native admission, resolves the current
 source occurrence and exact route, and retains its facts in the operation
 authority. Normal mutation execution freshly authorizes the request and admits
-the body. Its business effects, audit and native `Returned` settlement publish
-in one candidate. The same compiled route drives incremental progression and
+the body. Without an emitted external effect, its business effects, audit and
+native `Returned` settlement publish in one candidate. With an emitted effect,
+business effects and the outbox publish first; exact owner custody fences the
+frontier until native completion and local-action acceptance below. The same compiled route drives incremental progression and
 cold reconstruction; no second host call moves the cursor after commit.
 
 Retain `required` together with the original input and key until the outcome
@@ -1167,8 +1246,8 @@ no authority. Definitions with neither Back nor global actions retain v4; Back-o
 or changed members refuse readmission and incompatible program adoption cannot
 silently carry the route.
 
-Back does not implement Reopen, an atomic multi-operation Submit, external-effect
-Back, automatic signature invalidation or compensation of earlier performed
+Back does not implement Reopen, an atomic multi-operation Submit,
+automatic signature invalidation or compensation of earlier performed
 effects. For an authored business ending such as Void, use the following surface.
 
 ## Business termination
@@ -1192,38 +1271,108 @@ input justification. Query owns occurrence selection and native ending.
 
 Install the actual local, unsigned body as a vocabulary operation. Like business
 Back, the binding requires program and workflow authority with explicit empty
-workflow execution requirements. External effects and approval floors are not
-supported by this local join. Each binding appears at most once in the global
+workflow execution requirements. Approval floors are not supported by this
+local join; declared external effects retain their ordinary outbox/recovery
+owners and need local-action acceptance below. Each binding appears at most once in the global
 collection, and each action counts against the declared effect ceiling. Multiple
 distinct bindings are allowed; canonical identity retains their exact contracts.
 
-Prepare under the action's own capability, then retain the returned requirement
+Prepare under the action binding's own native admission, then retain the returned requirement
 with the original input and logical key:
 
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
 let intent = VoidRequest { identity, justification };
-let required = application.request(&principal, &scope)
-    .on_branch(instance.branch()).mutate(intent.clone())
+let request = application.request(&principal, &scope).on_branch(instance.branch());
+let required = request.advanced().mutate(intent.clone())
     .without_source().idempotency(&key)
     .prepare_workflow_termination_action(&workflow, instance)?;
 
-let outcome = application.request(&principal, &scope)
-    .on_branch(required.branch()).mutate(intent)
-    .without_source().idempotency(&key)
+let operation = request.mutate(intent)
+    .without_source().idempotency_owned(key)?
     .for_workflow_operation(&workflow, &required)?
-    .execute_capability_in_program(&program, ExecutionAllocationPolicy::SystemAllocation)?;
+    .retain_operation::<Program, EndingAction>(workflow.program_runtime())?;
+let outcome = operation.advance(&fresh_request);
 ```
 
-The issuer derives identity from admitted input and verifies the exact
-binding-associated installed capability. Normal execution freshly authorizes
-and admits the native body. Business writes, audit, receipted `Terminated`
+The issuer derives identity from the original typed request identities and verifies the exact
+binding-selected native admission. Normal execution freshly authorizes
+and admits the native body. Without an emitted effect, business writes, audit, receipted `Terminated`
 settlement, distinct Terminated instance state and live-membership retirement
 publish in one candidate. There is no successor progress update. A denied body
 publishes none of these; a competing forward publication makes the whole
 candidate stale, and a winning ending prevents held forward authority publishing.
 External owner custody must settle first; termination cannot abandon it.
+
+### Complete a local action with an external effect
+
+Retain the original action through the same ordinary owning funnel as other
+guarded operations. Use advanced access only for native route preparation; the
+owner keeps original input, source, preconditions, key and issued requirement:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+// Preserve the native owner on every refusal.
+let required = request.advanced().mutate(original.clone())
+    .without_source().idempotency(&key)
+    .prepare_workflow_termination_action(workflow, instance)?;
+let operation = request.mutate(original).without_source().idempotency_owned(key)?
+    .for_workflow_operation(workflow, &required)?
+    .retain_operation::<Program, EndingAction>(workflow.program_runtime())?;
+let outcome = operation.advance(&fresh_request);
+```
+
+For a source-bound action, both captures use the exact original source, not a
+new observation after the business commit. `advance` can return `Progress`
+after that commit while dispatch remains pending. Business termination status
+may already be committed, but the kernel instance is still live and owes its
+ending. Acknowledgement is not completion. Keep the actual owner; use its
+installed transport recovery or authenticated inbound source, never a second
+mutation, copied receipt, local pending ledger or cursor update.
+
+Once `advance` returns the completed owner, accept it under the original action
+binding's fresh admission: conventional operation abilities/policies or its exact
+installed capability. A Quality-Manager-only ending need not borrow an
+unrelated editor or Advance capability:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let accepted = completed.accept_local_action(&fresh_request, workflow)
+    .map_err(|(original_owner, denial)| retain_refusal(original_owner, denial))?;
+match &accepted.progress {
+    WorkflowProgressOutcome::Completed(step) => show_native_settlement(step),
+    other => retain_native_outcome(other), // commit denial/partial is not successful ending
+}
+// Keep accepted.operation until its separate actual cleanup is discharged.
+```
+
+Acceptance rechecks the exact runtime, pinned program and installed vocabulary,
+original binding/input, native receipt and settled external custody. Native
+selection reobserves the same authored route/frontier and admits only that
+receipt's own pending custody. It publishes `Returned` or `Terminated`—not an
+ordinary forward `Completed` transition. Termination retires live membership
+only with this settlement. A different pending operation cannot be abandoned;
+an issued but unperformed operation instead loses currentness when another
+publication wins. Native proposal publication and frontier movement retain
+custody facts, including absence, against those races.
+
+The separate settlement has a native occurrence-derived idempotency namespace
+while retaining the original client intent. Exact acceptance replay returns its
+original settlement before ended-state rejection, but never before fresh
+authorization. If the declared effect was suppressed, the source already jointly
+settled: acceptance only projects that original receipt, with no new commit.
+An ordinary forward operation cannot use this local-action entrance; use
+`accept_owned_operation` for its corresponding native Advance request.
+
+`Ok` returns both typed progress and the original completed owner; it is not a
+blanket success label. Classify `accepted.progress` and retain any actual pending
+publication or indeterminate carrier. Do not auto-retry stale work, drop recovery
+authority, recapture original input, or equate source-owner close with workflow
+settlement. Live owners are process-local; this API does not serialize them or
+promise Store-backed restart recovery.
 
 Exact retry through the retained requirement returns the original outcome even
 after ending. Different input cannot bind that requirement, and a different key
@@ -1248,6 +1397,159 @@ instance—it does not terminate a business draft before enrollment. Reopen must
 create a fresh instance/round through its own supported join; this API never
 revives an ended instance. Signature supersession remains dependency-owned, not
 an automatic consequence of termination.
+
+## Completed-chain succession
+
+Use succession when an existing subject needs a fresh lifecycle episode after
+its native workflow has completed. It is a deliberately native operation-body
+join, not an ordinary owning-delivery action or permission to revive an instance.
+The supplier authors its business changes and one preserved scope output:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+body.succeed_workflow::<ReviewWorkflow, RenewBinding, ExistingItem>()?;
+```
+
+Install that binding once with `.succession_operation::<RenewBinding, ExistingItem>()`.
+It requires its own capability, program membership, exact Scope/Preserve output,
+and no guarded operation, approval floor, external effect, signing creation or
+birth attachment. A separate unsigned round creation may share the body.
+
+For example, a renewal body can copy values from CurrentRound into a fresh round,
+append round history, replace CurrentRound and change business status. The host
+forwards the native completed predecessor and logical intent, not selected field
+values or a guessed definition:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let required = application.request(&principal, &scope)
+    .on_branch(predecessor.branch()).advanced().mutate(intent.clone())
+    .without_source().idempotency(&key)
+    .prepare_workflow_succession::<ReviewWorkflow, ExistingItem>(&workflow, predecessor)?;
+let outcome = application.request(&principal, &scope)
+    .on_branch(required.branch()).advanced().mutate(intent)
+    .without_source().idempotency(&key)
+    .for_workflow_succession::<ReviewWorkflow, ExistingItem>(&workflow, &required)?
+    .execute_capability_in_program(&program, ExecutionAllocationPolicy::SystemAllocation)?;
+```
+
+Query proves Completed state, absent live membership, exact subject/branch and
+settled owner custody. It derives the predecessor's retained definition pin and
+requires that exact meaning to remain supported by the installed vocabulary.
+The fresh instance starts at that definition's real start with new provenance
+and the currently admitted actor. It inherits no transitions, approvals, evidence,
+performed effects, deadline or spent step budget. Ordinary start and birth keep
+their current-definition restrictions; succession is not a general retained-pin flag.
+
+Business changes, fresh instance and immutable successor-to-predecessor link
+publish together. A completed predecessor has at most one successor, even after
+that successor completes. Competing preparations stale as a whole; no losing
+round or instance may escape. The completed source's exact-history-currentness
+proof cannot issue a progression allowance for that source.
+
+Keep the requirement with its original input/key. Changed input/key refuses the
+handoff without spending it. Exact recorded replay resolves before taking the
+one-shot slot; after a committed result, `required.instance_in(receipt)` projects
+the actual new instance. Neither decoded declarations nor instance references
+grant authority. Preserve native stale, indeterminate and recovery outcomes;
+never automatically retry a stale lifecycle change.
+
+### Reacquire a completed predecessor after checkpoint restoration
+
+Keep the pure `WorthQueryWorkflowInstanceDiscoveryIntent<Schema>` returned by
+the genuine prepared start's `discovery_intent()` before executing that start.
+The same succession funnel accepts it through `WorkflowSuccessionTarget`, or
+accepts a `PublishedWorkflowInstanceRef` while its runtime and branch remain valid.
+The descriptor is descriptive input, not a grant or a serialized live proof.
+
+After restoring a native checkpoint and reinstalling the program and workflow
+vocabulary, authenticate again and prepare under fresh request authority:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+// Application-specific restored runtime, principal, scope, intent and key.
+let required = restored.request(&principal, &scope)
+    .advanced().mutate(intent.clone()).without_source().idempotency(&key)
+    .prepare_workflow_succession::<ReviewWorkflow, ExistingItem>(
+        &workflow, original_start_descriptor,
+    )?;
+```
+
+Continue with `for_workflow_succession` as above. Fresh capability admission
+precedes the tracked identity-index lookup at the mutation basis. Query checks
+the admitted subject, actual branch occurrence, workflow lineage, retained pin,
+and managed original start provenance, then applies the same completed-source,
+history, custody and output-affinity rules. Exact replay uses the original
+logical input/key; it does not create another episode. A prepared start that was
+never published refuses as NotFound. Missing, ambiguous or unavailable lookup
+does not fall back to a graph scan, current instance, or guessed definition.
+
+Do not carry an old published reference or branch handle into the restored
+runtime: their owner fences still refuse it. The proven boundary is native
+checkpoint reconstruction with a retained pure descriptor and fresh command
+admission. Descriptor serialization, OS/process crash recovery and Store durable
+restart are not established by that proof.
+
+This is not a complete business Reopen policy. Applications must additionally
+author which business chain is current when independent chains share one subject,
+permitted destinations and audit behavior. Cross-release adoption, Store crash
+durability and host-owned recovery retention are separate contracts. The live
+requirement is not a serialized restart-stable authority carrier.
+
+### Retained operation correspondence
+
+A performed guarded operation retains its actual output roles, entity types,
+postures and target identities on its native transition. Local body settlement
+captures Existing and same-candidate Created references before native lowering;
+validated external or recovered receipt settlement captures the actual committed
+correspondence. Dispatch alone is not performance. Both paths use the same
+native publisher. Local capture co-publishes with business effects and transition;
+deferred receipt capture co-publishes with native settlement after the business
+receipt exists. Neither adds a separate output-retention commit or host mirror.
+
+The supplier's existing output contract is sufficient. For example:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+// Role declarations and the receipt are supplied by the application.
+let outputs = receipt.outputs_of::<CompleteOutputs>()?;
+let item = outputs.entity::<CompletedItem>()?; // Preserve/ExactlyOne
+let audit = outputs.entity::<ClosingAudit>()?; // Create/ExactlyOne
+```
+
+The receipt projection remains the caller-facing API. Query's native history
+reconstruction validates the stored closure even if the host kept no receipt.
+It does not expose a new public historical output selector or grant execution
+authority from these identities.
+
+Correspondence is immutable history, not a promise that a business entity stays
+live. Target relations permit 0..1 live incidence and retain audit edges; native
+publication emits exactly one historical target, custody prevents later
+attachment, deletion or repointing, and reconstruction requires that historical
+target. Retire outputs and later business deletion must not erase or retarget it.
+Ordinary graph reads remain live-only; reconstruction uses a bounded, explicitly
+audit-inclusive pinned read. Related business fields remain mutable.
+
+New performed-operation transitions use protocol 3 and require a binding plus
+complete output inventory, including an explicit zero count. Legacy protocol-2
+transitions may have absent context; Query does not backfill it from current
+business pointers or pretend it is available. Malformed or incomplete current
+context refuses reconstruction. Output metadata is charged to the existing
+settlement and history budgets; exceeding either refuses rather than truncates.
+
+Two independent completed chains can share a subject, so retaining an output
+alone cannot choose which one may Reopen. Author a
+[succession output match](workflow-succession-output-affinity.md) to compare the
+latest named producer output with the successor body's captured selection.
+This does not make old runtime-owned instance handles usable after checkpoint
+restoration. Use the [original start descriptor under fresh command admission](#reacquire-a-completed-predecessor-after-checkpoint-restoration)
+to prepare succession in the restored runtime. Do not invent handle constructors
+or weaken ForeignOwner checks. Descriptor serialization and process/Store crash
+durability remain separate, unproven boundaries.
 
 ## The ordinary convenience lane
 
@@ -1379,6 +1681,7 @@ until the owner's receipt is accepted. While it is unsettled:
 - cancellation is refused with `WorkflowOperationInOwnerCustody`;
 - migration and fork continuation are refused;
 - program adoption reports the instance as `OperationInOwnerCustody` and gives it no legal disposition.
+- another local action, fresh proposal publication or different ordinary frontier cannot bypass it; matching ordinary requirement recovery remains available.
 
 Accept the owner's receipt (see [Operations](#operations)), then retry.
 
@@ -1480,15 +1783,18 @@ authored definitions. It is not part of the `worth-query-decl` or
 `worth-query-host` facades. The in-repo users are certification and release
 tooling. This guide does not state that application crates may depend on it.
 
-- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream (protocol version `WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`, currently `4`). It retains the exact optional operation evidence contract and inbound wait meaning. Only the current version is supported; predecessor versions are refused before body decoding, without migration or rewriting their bytes.
+- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream. Unchanged profiles retain version `7` and their original bytes. A definition with explicit `CapturedOperationInput` edges uses version `8` (`WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`). Both profiles retain exact execution-evidence, actor/observation policy and action meaning. Readers support versions 7–8; versions before that window or after it are refused without migration. A captured-input tag under version 7 is refused, not reinterpreted.
 - `decode_workflow_definition_draft(bytes, limits)` returns `WorthQueryUntrustedWorkflowDefinitionDraft`. Every count is checked against the draft's limits and the remaining bytes before allocation. Node identities must be in ascending order.
 - `draft.author::<Schema, Spec>(&installed)` rebuilds an `AuthoredWorkflowDefinition` against an installed spec. Operation evidence must exactly match the installed binding: an old absent contract cannot silently acquire an explicit-empty or explicit-required floor. An inbound wait resolves its origin and complete source/effect/protocol/limits contract against the installed typed vocabulary; archive bytes never provide a Rust effect marker. It refuses with `WorthQueryWorkflowDefinitionDraftDenial` and names the node it refuses.
 - A draft carries no instances, approvals, or authority. Decoded bytes mint nothing. The rebuilt definition still validates, binds, and publishes through the ordinary path.
 
-The [Bank payment archive court](../../../../../worth-query-bank-world/crates/bank-courtroom/tests/payment_workflow_archive.rs)
-uses its actual installed workflow spec to reauthor and bind a version 4 wait.
-It also refuses a changed source, a missing operation, and a different Rust
-effect marker with the same portable name.
+The captured-input profile publishes target contracts with the native proposal
+and retains reconstructible native support. Target invocation checks its original
+input/key/source/preconditions, while recorded-actor rules still observe the
+original proposal. Owning execution and recovery retain that correspondence;
+fresh authorization remains mandatory. Portable carriage alone grants no
+execution support or authority. This is not a durable whole-command runner. See
+[workflow operation inputs](workflow-operation-inputs.md).
 
 ## Denials
 

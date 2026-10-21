@@ -1,6 +1,6 @@
 use super::super::provider_execution::{
-    progression_denied, WorthQueryProviderAttemptRegistrationContext,
-    WorthQueryProviderProgressionOutcome, WorthQueryRegisteredProviderAttempt,
+    progression_denied, WorthQueryProviderAttemptRegistrationContext, WorthQueryProviderProgressionOutcome,
+    WorthQueryRegisteredProviderAttempt,
 };
 use super::super::WorthQueryApplicationCommitDenialStage as DenialStage;
 use super::WorthQueryPreparedApplicationProviderAttempt;
@@ -71,6 +71,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
 ) -> Result<WorthQueryRegisteredProviderAttempt<'run>, WorthQueryProviderProgressionOutcome> {
     let inspection = WorthQueryProviderRegistrationInspectionPermit::mint();
     let WorthQueryPreparedApplicationProviderAttempt {
+        local_action_settlement,
         required_output_demand,
         installed_read_scopes,
         facts,
@@ -87,7 +88,12 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
     } = prepared;
     let affinity = match staged.bind_application_attempt(attempt_basis) {
         Ok(affinity) => affinity,
-        Err(()) => return abort_registration(staged, DenialStage::ProviderPlan),
+        Err(()) => {
+            return abort_registration_with_detail(
+                staged,
+                "application attempt does not match the live provider session".into(),
+            )
+        }
     };
     if original_read
         .as_ref()
@@ -147,6 +153,18 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         }
     };
     let expected_steps = effects.shared_expected_steps();
+    let no_external_effect =
+        worth_query_installation::facade::InstalledExternalEffectContract::None;
+    let external_effect = match effects.selected_external_contract(
+        context
+            .admission(&inspection)
+            .allowed_graph_contract()
+            .external_effect(),
+        local_action_settlement.as_ref(),
+    ) {
+        Ok(contract) => contract.unwrap_or(&no_external_effect),
+        Err(detail) => return abort_registration_with_detail(staged, detail.into()),
+    };
     let dispatch_outbox = context.provider(&inspection).register_application_attempt(
         WorthQueryApplicationAttemptRegistration {
             required_output_demand,
@@ -159,10 +177,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             retained_authorization_fact_count: context
                 .admission(&inspection)
                 .graph_work_decision_fact_count(),
-            external_effect: context
-                .admission(&inspection)
-                .allowed_graph_contract()
-                .external_effect(),
+            external_effect,
             preimage_demand: preimage_demand.as_ref(),
             aftermath_causality: context.aftermath_causality(&inspection).cloned(),
             conditional_definition,
@@ -179,13 +194,28 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             staged,
             expected_steps,
         )),
-
-        Err(RegistrationStop::Rejected(_)) => abort_registration(staged, DenialStage::ProviderPlan),
+        Err(RegistrationStop::Rejected(cause)) => abort_registration_with_detail(
+            staged,
+            format!("application attempt registration: {cause:?}"),
+        ),
     }
 }
 
-fn abort_registration<'run, T>(
-    staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
+fn abort_registration_with_detail<T>(
+    staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'_>,
+    detail: String,
+) -> Result<T, WorthQueryProviderProgressionOutcome> {
+    let _ = staged.abort();
+    Err(WorthQueryProviderProgressionOutcome::Denied(
+        super::super::WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
+            DenialStage::ProviderPlan,
+            detail,
+        ),
+    ))
+}
+
+fn abort_registration<T>(
+    staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'_>,
     stage: DenialStage,
 ) -> Result<T, WorthQueryProviderProgressionOutcome> {
     let _ = staged.abort();

@@ -6,6 +6,7 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowCon
 use worth_relational::facade::identity::EntityId;
 
 mod accounting;
+mod captured_inputs;
 mod collection;
 mod locator;
 mod navigation;
@@ -90,6 +91,7 @@ impl SettledWorkflowTransition {
 /// cold rebuild of a completed instance excludes its final terminal settlement.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceProgress {
+    captured_inputs: Option<OrdMap<EntityId, captured_inputs::RetainedCapturedInputs>>,
     head: EntityId,
     next_occurrence: u64,
     retry_counts: OrdMap<(EntityId, ApplicationWorkflowControlOutcome), usize>,
@@ -115,6 +117,7 @@ impl WorkflowInstanceProgress {
     ) -> Self {
         Self {
             head: compiled.start().entity(),
+            captured_inputs: None,
             next_occurrence: 0,
             retry_counts: OrdMap::new(),
             path_depth: 0,
@@ -130,6 +133,7 @@ impl WorkflowInstanceProgress {
 
     pub(super) fn retained_charge_bytes(&self) -> usize {
         std::mem::size_of::<Self>()
+            .saturating_add(self.captured_input_charge_bytes())
             .saturating_add(accounting::map_charge_bytes(&self.retry_counts))
             .saturating_add(accounting::map_charge_bytes(&self.path))
             .saturating_add(accounting::map_charge_bytes(&self.back_edge_iterations))
@@ -155,6 +159,7 @@ impl WorkflowInstanceProgress {
         settled.sort_unstable_by_key(|transition| transition.occurrence());
         let mut progress = Self {
             head: start,
+            captured_inputs: None,
             next_occurrence: 0,
             retry_counts: OrdMap::new(),
             path_depth: 0,

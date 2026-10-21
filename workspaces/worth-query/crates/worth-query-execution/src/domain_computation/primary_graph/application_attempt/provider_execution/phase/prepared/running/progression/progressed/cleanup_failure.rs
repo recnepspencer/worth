@@ -74,6 +74,7 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             | Kind::SigningLifecycleForgery
             | Kind::SigningLifecycleUnavailable
             | Kind::SigningLifecycleEvidenceCapacity { .. }
+            | Kind::SigningLifecycleSubjectCapacity { .. }
             | Kind::SigningLifecycleRepresentationCapacity
             | Kind::SigningLifecycleObservation { .. }
             | Kind::ElevationTransitionRequired

@@ -11,7 +11,6 @@ mod graph_read_access_phase_four_requirement_hardening;
 mod graph_read_access_phase_four_requirements;
 mod graph_read_access_phase_fourteen_authority_parity;
 mod graph_read_access_phase_fourteen_branch_authority;
-mod graph_read_access_phase_nine_streaming_frontier;
 mod graph_read_access_phase_one;
 mod graph_read_access_phase_one_adversarial;
 mod graph_read_access_phase_seven_inventory;

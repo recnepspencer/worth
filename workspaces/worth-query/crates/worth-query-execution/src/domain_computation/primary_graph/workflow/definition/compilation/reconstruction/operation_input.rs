@@ -18,11 +18,47 @@ pub(super) fn admit(
     nodes: &[CompiledWorkflowNode],
     connections: &[CompiledWorkflowConnection],
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    let by_entity = nodes
+        .iter()
+        .map(|node| (node.entity, node))
+        .collect::<HashMap<_, _>>();
     let mut inputs = HashMap::new();
     for connection in connections {
         if matches!(
             connection.kind.as_ref(),
-            CompiledWorkflowConnectionKind::Data(ApplicationWorkflowDataFlow::OperationInput)
+            CompiledWorkflowConnectionKind::Data(
+                ApplicationWorkflowDataFlow::CapturedOperationInput
+            )
+        ) {
+            let source = by_entity.get(&connection.source);
+            let target = by_entity.get(&connection.target);
+            if !matches!(
+                source.map(|node| node.kind()),
+                Some(CompiledWorkflowNodeKind::Operation {
+                    binding: Some(_),
+                    requires_workflow_authority: false,
+                    ..
+                })
+            ) || !matches!(
+                target.map(|node| node.kind()),
+                Some(CompiledWorkflowNodeKind::Operation {
+                    binding: Some(_),
+                    requires_workflow_authority: true,
+                    ..
+                })
+            ) {
+                return Err(WorthQueryApplicationAttemptDenial::new(
+                    WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+                    "captured-operation-input endpoints are not bound control/guarded operations",
+                ));
+            }
+        }
+        if matches!(
+            connection.kind.as_ref(),
+            CompiledWorkflowConnectionKind::Data(
+                ApplicationWorkflowDataFlow::OperationInput
+                    | ApplicationWorkflowDataFlow::CapturedOperationInput
+            )
         ) {
             *inputs.entry(connection.target).or_insert(0_usize) += 1;
         }

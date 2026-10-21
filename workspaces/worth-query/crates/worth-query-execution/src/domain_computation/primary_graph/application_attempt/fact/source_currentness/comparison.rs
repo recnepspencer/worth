@@ -232,7 +232,7 @@ impl WorthQueryApplicationObservedFact {
                 Ok(instances.len() < *maximum_instances && current == *instances)
             }
             Self::WorkflowHistoryBasis {
-                maximum_transitions,
+                requirement,
                 transition_count,
                 snapshot: observed,
                 ..
@@ -240,7 +240,7 @@ impl WorthQueryApplicationObservedFact {
                 runtime,
                 snapshot,
                 observed,
-                *maximum_transitions,
+                *requirement,
                 *transition_count,
             )),
             Self::Field { .. } | Self::AbsentField { .. } | Self::OptionalAspectAbsent { .. } => {

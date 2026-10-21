@@ -17,5 +17,5 @@ pub(in crate::domain_computation::primary_graph) use outcome::{
 };
 pub(in crate::domain_computation::primary_graph) use settlement::{
     visit_terminal_transition_facts, visit_workflow_operation_settlement_facts,
-    visit_workflow_operation_transition_facts, visit_workflow_transition_facts,
+    visit_workflow_transition_facts,
 };

@@ -190,6 +190,7 @@ fn classify_kind(kind: Kind) -> Outcome {
         | Kind::SigningLifecycleForgery
         | Kind::SigningLifecycleUnavailable
         | Kind::SigningLifecycleEvidenceCapacity { .. }
+        | Kind::SigningLifecycleSubjectCapacity { .. }
         | Kind::SigningLifecycleRepresentationCapacity
         | Kind::SigningLifecycleObservation { .. }
         | Kind::ElevationTransitionRequired

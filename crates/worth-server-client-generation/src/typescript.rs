@@ -14,10 +14,12 @@ export interface WorthServerProductOperationDefinition {{
   route: string
   requestSchema: string
   resultSchema: string
+  resultSchemaVersion: number
   resultMaxInlineBytes: number
   requiresProductSession: boolean
   requiresBasis: boolean
   requiresIdempotencyKey: boolean
+  requiresServerInstance: boolean
 }}
 
 export interface WorthServerProductSessionOperationDefinition {{
@@ -27,6 +29,7 @@ export interface WorthServerProductSessionOperationDefinition {{
   requestSchema: string
   responseSchema: string
   requiresProductSession: boolean
+  requiresServerInstance: boolean
 }}
 
 export type WorthServerOperationOutcome<T> =
@@ -83,6 +86,7 @@ export interface WorthServerOperationEnvelope<T> {{
 export interface WorthServerProductSessionResponse {{
   route_kind: 'product_session'
   product_session_identity: string
+  server_instance?: string
   plan_digest: string
 }}
 
@@ -93,7 +97,7 @@ export const worthProductOperations = {{
     );
     for operation in catalog.operations() {
         output.push_str(&format!(
-            "  {:?}: {{\n    name: {:?}, family: {:?}, method: {:?}, route: {:?},\n    requestSchema: {:?}, resultSchema: {:?}, resultMaxInlineBytes: {},\n    requiresProductSession: {}, requiresBasis: {}, requiresIdempotencyKey: {},\n  }},\n",
+            "  {:?}: {{\n    name: {:?}, family: {:?}, method: {:?}, route: {:?},\n    requestSchema: {:?}, resultSchema: {:?}, resultSchemaVersion: {}, resultMaxInlineBytes: {},\n    requiresProductSession: {}, requiresBasis: {}, requiresIdempotencyKey: {}, requiresServerInstance: {},\n  }},\n",
             operation.operation_name(),
             operation.operation_name(),
             client_family(operation.operation_family()),
@@ -101,16 +105,18 @@ export const worthProductOperations = {{
             operation.route(),
             operation.request_schema_identity(),
             operation.result_schema_identity(),
+            operation.result_schema_version(),
             operation.result_max_inline_bytes(),
             operation.requires_product_session(),
             operation.requires_basis(),
             operation.requires_idempotency_key(),
+            operation.requires_server_instance(),
         ));
     }
     output.push_str("} as const satisfies Record<string, WorthServerProductOperationDefinition>\n\nexport const worthProductSessionOperations = {\n");
     for operation in catalog.product_session_operations() {
         output.push_str(&format!(
-            "  {:?}: {{\n    name: {:?}, method: {:?}, route: {:?},\n    requestSchema: {:?}, responseSchema: {:?}, requiresProductSession: {},\n  }},\n",
+            "  {:?}: {{\n    name: {:?}, method: {:?}, route: {:?},\n    requestSchema: {:?}, responseSchema: {:?}, requiresProductSession: {}, requiresServerInstance: {},\n  }},\n",
             operation.operation_name(),
             operation.operation_name(),
             operation.method(),
@@ -118,6 +124,7 @@ export const worthProductOperations = {{
             operation.request_schema_identity(),
             operation.response_schema_identity(),
             operation.requires_product_session(),
+            operation.requires_server_instance(),
         ));
     }
     output.push_str(
@@ -128,6 +135,7 @@ export function decodeWorthServerProductSessionResponse(value: unknown): WorthSe
     !isRecord(value) ||
     value.route_kind !== 'product_session' ||
     typeof value.product_session_identity !== 'string' ||
+    (value.server_instance !== undefined && typeof value.server_instance !== 'string') ||
     typeof value.plan_digest !== 'string'
   ) {
     throw new Error('worth_product_session_response_invalid')
@@ -149,7 +157,7 @@ export function decodeWorthServerOperationOutcome<T>(
   const denial = value.denial
   const failure = value.failure
   if (value.envelope_kind === 'Success' && isResult(result) && denial == null && failure == null) {
-    if (result.schema_identity !== definition.resultSchema) {
+    if (result.schema_identity !== definition.resultSchema || result.schema_version !== definition.resultSchemaVersion) {
       throw new Error('worth_result_schema_mismatch')
     }
     return { kind: 'Success', envelope: value as unknown as WorthServerOperationEnvelope<T>, body: result.body as T }

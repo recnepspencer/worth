@@ -110,6 +110,8 @@ impl<Schema, Operation, Input, Scope>
 }
 
 struct WorthQueryProviderAttemptPreparation {
+    local_action_settlement: Option<super::super::super::workflow_transition_program::LocalActionSettlementProof>,
+    body_external_emission: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
     effect_routes: super::super::super::CompletedFactRoutes,

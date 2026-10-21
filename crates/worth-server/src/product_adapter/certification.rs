@@ -11,6 +11,7 @@ pub enum WorthServerProductAdapterCertificationCode {
     BlankCoordinationLane,
     MissingDurableMutationExecutor,
     IncompatibleDurableMutationCapability,
+    IncompatibleRetryOwner,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -22,6 +22,8 @@ pub(in crate::domain_computation::primary_graph::application_query) use ordinary
 mod completed;
 pub(in crate::domain_computation::primary_graph::application_query) use completed::CompletedOneShotRead;
 mod decode_denial;
+mod result_set_footprint;
+use result_set_footprint::ResultSetFootprint;
 pub(in crate::domain_computation::primary_graph::application_query) use decode_denial::value_decode_denial;
 pub(in crate::domain_computation::primary_graph::application_query) fn complete_one_shot_with_decode<
     Schema,
@@ -61,6 +63,19 @@ where
             plan.principal,
             plan.controls.request_scope(),
         );
+    let expression_context = if plan.retain_expression_context {
+        Some(std::sync::Arc::new(
+            super::super::observed_source::RetainedExpressionContext::retain(
+                plan.query.read_graph(),
+                plan.query.expression_context_schema(),
+                &kernel.raw,
+                plan.controls.request_scope(),
+            )
+            .map_err(|kind| denial(kind, plan.query.name(), plan.query.name()))?,
+        ))
+    } else {
+        None
+    };
     let mut source_footprints = std::mem::take(&mut kernel.raw.source_footprints);
     let result_set_selection = std::sync::Arc::clone(
         kernel
@@ -75,6 +90,13 @@ where
     if let [footprint] = source_footprints.as_mut_slice() {
         footprint.root_selection = Some(std::sync::Arc::clone(&result_set_selection));
     }
+    let set_footprint = ResultSetFootprint::prepare(
+        plan.scope.entity_id(),
+        result_set_selection,
+        expression_context.is_some(),
+        &source_footprints,
+    )
+    .map_err(|kind| denial(kind, plan.query.name(), plan.query.name()))?;
     let request = plan.controls.request_scope();
     let basis_identity = plan.basis.identity().clone();
     let basis_version = plan.basis.version_id();
@@ -93,6 +115,7 @@ where
     );
 
     let query_identifier = std::sync::Arc::new(plan.query.name().to_owned());
+    let result_set_footprint = set_footprint.materialize();
     let branch = std::sync::Arc::new(basis_identity.branch_id().clone());
     let mut observed_sources = Vec::with_capacity(source_footprints.len());
     for footprint in source_footprints {
@@ -114,6 +137,7 @@ where
                 )
             })?;
         observed_sources.push(super::super::WorthQueryObservedSource {
+            expression_context: expression_context.clone(),
             runtime_authority: plan.runtime_authority.as_u64(),
             schema_binding: plan.query.binding_identity().clone(),
             query_identity: plan.query.identity().clone(),
@@ -129,14 +153,6 @@ where
             _marker: PhantomData,
         });
     }
-    let result_set_footprint = super::super::observed_source::WorthQueryObservedSourceFootprint {
-        root: plan.scope.entity_id(),
-        complete: true,
-        entities: Vec::new(),
-        aspects: Vec::new(),
-        adjacencies: Vec::new(),
-        root_selection: Some(result_set_selection),
-    };
     let result_set_meaning = application
         .source_meanings
         .intern_result_set(
@@ -154,6 +170,7 @@ where
         })?;
     let result_set_observation =
         super::super::WorthQueryObservedResultSet::new(super::super::WorthQueryObservedSource {
+            expression_context,
             runtime_authority: plan.runtime_authority.as_u64(),
             schema_binding: plan.query.binding_identity().clone(),
             query_identity: plan.query.identity().clone(),

@@ -6,6 +6,14 @@ use crate::application_entry::mutation::{
 };
 use crate::application_entry::WorthQueryMutationSourcePrepared;
 
+pub(in crate::application_entry::operation) enum WorkflowAdmission {
+    Operation {
+        required: worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowOperation,
+        actor_context: Option<worth_query_execution::publication_boundary::workflow_advance::WorthQueryWorkflowActorContext>,
+    },
+    Birth(worth_query_execution::publication_boundary::workflow_birth::RequiredWorkflowBirth),
+}
+
 impl<S, I, P, A, M> WorthQuerySourceOperationAdmission<S, I, P, A, M>
 where
     S: ApplicationSchema,
@@ -25,11 +33,29 @@ where
         >,
         execution: bool,
     ) {
-        if let Some(required) = &self.workflow {
-            native.workflow_transition_identity = Some(*required.transition_identity_bytes());
-            if execution {
-                native.workflow_authority = Some(required.authority_slot());
+        match &self.workflow {
+            Some(WorkflowAdmission::Operation {
+                required,
+                actor_context,
+            }) => {
+                native.workflow_actor_context = actor_context.clone();
+                native.workflow_captured_input = required
+                    .captured_input_contract(
+                        &worth_query_execution::publication_boundary::program_publication_access(),
+                    )
+                    .cloned();
+                native.workflow_transition_identity = Some(*required.transition_identity_bytes());
+                if execution {
+                    native.workflow_authority = Some(required.authority_slot());
+                }
             }
+            Some(WorkflowAdmission::Birth(required)) => {
+                native.bind_retained_workflow_birth(
+                    *required.identity_bytes(),
+                    execution.then(|| required.authority_slot()),
+                );
+            }
+            None => {}
         }
     }
 }

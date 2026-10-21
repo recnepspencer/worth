@@ -1,6 +1,16 @@
 //! Execution-only body read; no raw-field API enters the application facade.
+mod children;
+mod emission;
+mod path_input;
+mod path_links;
+mod path_value;
+mod principal_link;
+mod reference_input;
+mod retirement;
+mod reuse;
 mod selection;
 mod source;
+mod values;
 use super::super::super::operation_body::{BodyFieldExpectation, PreparedBodySource};
 use super::super::super::{
     application_contribution::advancement_denial, HandlerExecutionDenial,

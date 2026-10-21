@@ -8,6 +8,7 @@
 //! - an internal transport boundary rather than framework-shaped public API
 
 #![forbid(unsafe_code)]
+#![doc = include_str!("../docs/query-source-custody.md")]
 
 mod canonical_digest;
 mod config;
@@ -160,7 +161,7 @@ pub use operator_evidence::{
     WorthServerOperatorEvidencePlan, WorthServerOperatorEvidenceRecord,
 };
 pub use product_adapter::{
-    WorthServerCompletedProductOperation, WorthServerExecutedProductReadBatch,
+    mount_query_source, WorthServerCompletedProductOperation, WorthServerExecutedProductReadBatch,
     WorthServerLoweredProductOperationPlan, WorthServerProductAdapterCertificationCode,
     WorthServerProductAdapterCertificationError, WorthServerProductAdapterExecutionError,
     WorthServerProductAdapterRegistrationReceipt, WorthServerProductAdapterRegistry,
@@ -181,8 +182,14 @@ pub use product_adapter::{
     WorthServerProductOperationSupportSnapshot, WorthServerProductOperationSurfaceDenial,
     WorthServerProductOperationSurfaceDenialCode, WorthServerProductOperationSurfaceDenialFacts,
     WorthServerProductPayloadSchemaValidator, WorthServerProductReadBatchStop,
-    WorthServerProductReadTransport, WorthServerProductSchedulerAdmission,
-    WorthServerScheduledProductOperation,
+    WorthServerProductReadTransport, WorthServerProductRetryOwner,
+    WorthServerProductSchedulerAdmission, WorthServerQuerySourceAdapter,
+    WorthServerScheduledProductOperation, WorthServerSourceCommand, WorthServerSourceCommitPosture,
+    WorthServerSourceConclusion, WorthServerSourceContinuation, WorthServerSourceCustodyLimits,
+    WorthServerSourceCustodyMount, WorthServerSourceDiagnostic,
+    WorthServerSourceDiagnosticCategory, WorthServerSourceKeyedResolution,
+    WorthServerSourceOperation, WorthServerSourcePosture, WorthServerSourcePreparationPhase,
+    WorthServerSourceReply, WorthServerSourceView,
 };
 pub use product_operation_contract::{
     WorthServerProductIdempotencyConflict, WorthServerProductIdempotencyKey,
@@ -256,6 +263,7 @@ pub use response::{
     WorthServerResponsePlan, WorthServerResponseReceipt, WorthServerResponseTransform,
     WorthServerSuccessEnvelope, WorthServerSuccessKind, WorthServerSuccessPayload,
 };
+pub use runtime::{WorthServerInstanceIdentity, WorthServerInstanceSelectionPolicy};
 pub use surfaces::{
     BinarySurface, BinarySurfaceRoot, CompatHttpSurface, CompatHttpSurfaceRoot, IntegrationSurface,
     IntegrationSurfaceRoot, LeaseSurface, LeaseSurfaceRoot, SyncSurface, SyncSurfaceRoot,

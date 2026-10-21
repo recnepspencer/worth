@@ -81,6 +81,8 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     WorkflowDefinitionCompilationUnavailable,
     /// Stored guarded operation meaning lacks exactly one input source.
     WorkflowDefinitionMissingOperationInput,
+    /// Captured-target meaning cannot execute before its native input producer exists.
+    CapturedOperationInputsNotSupported,
     /// A start named a definition its branch has since superseded. A retry
     /// of a recorded start still replays.
     WorkflowDefinitionSuperseded,
@@ -89,7 +91,14 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     WorkflowDefinitionRetired,
     WorkflowInstanceAffinityMismatch,
     WorkflowInstanceAuthorityMismatch,
+    WorkflowInstanceNotCompleted,
+    WorkflowInstanceAlreadySucceeded,
+    WorkflowPredecessorOutputUnavailable,
+    WorkflowPredecessorOutputMismatch,
     WorkflowInstanceIntentIdentityUnavailable,
+    WorkflowInstanceOriginalIntentNotFound,
+    WorkflowInstanceOriginalIntentAmbiguous,
+    WorkflowInstanceOriginalIntentUnavailable,
     /// The instance's lineage has taken its installed number of steps, or
     /// its retained progress would pass the installed byte budget. Recorded
     /// steps still replay and the instance can still be cancelled; ending
@@ -144,6 +153,7 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     /// carries the language denial.
     WorkflowConditionExpressionDenied,
     OperationBodyRequirementExpressionDenied,
+    OperationBodyValueExpressionDenied,
     WorkflowAssessmentEvidenceIncomplete,
     WorkflowAssessmentEvidenceMismatch,
     WorkflowApprovalPrincipalStale,
@@ -199,28 +209,6 @@ impl WorthQueryApplicationAttemptDenial {
             kind,
             subject: subject.into(),
             cause: AttemptDenialCause::None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn condition_expression(
-        subject: impl Into<String>,
-        denial: worth_foundational::expression_api::ExpressionDenial,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationAttemptDenialKind::WorkflowConditionExpressionDenied,
-            subject: subject.into(),
-            cause: AttemptDenialCause::Expression(Box::new(denial)),
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn body_requirement_expression(
-        subject: impl Into<String>,
-        denial: worth_foundational::expression_api::ExpressionDenial,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationAttemptDenialKind::OperationBodyRequirementExpressionDenied,
-            subject: subject.into(),
-            cause: AttemptDenialCause::Expression(Box::new(denial)),
         }
     }
 
@@ -378,6 +366,7 @@ mod allocation_error_source_tests;
 #[cfg(test)]
 mod native_query_cause;
 
+mod expression;
 mod request_read;
 
 mod capacity;

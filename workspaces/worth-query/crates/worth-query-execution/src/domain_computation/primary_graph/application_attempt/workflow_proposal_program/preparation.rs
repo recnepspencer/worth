@@ -62,6 +62,7 @@ where
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         input_identity: [u8; 32],
         source_identity: Option<[u8; 32]>,
+        captured: crate::domain_computation::primary_graph::WorkflowCapturedInputs,
     ) -> Result<
         PreparedWorkflowProposal<Schema, Operation, Input, Scope>,
         WorkflowProposalPreparationDenial,
@@ -130,6 +131,7 @@ where
                 instance,
                 input_identity,
                 source_identity,
+                captured,
                 &self.application().authorization_clock,
             )
             .map_err(WorkflowProposalPreparationDenial::Attempt)
@@ -152,6 +154,30 @@ impl WorthQueryWorkflowProposalAdapter {
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Input: Clone + Send + Sync + 'static,
     {
+        Self::resolve_replay_with_inputs(
+            phase,
+            runtime,
+            admission,
+            idempotency,
+            instance,
+            &crate::domain_computation::primary_graph::WorkflowCapturedInputs::empty(),
+        )
+    }
+
+    pub fn resolve_replay_with_inputs<Schema, Operation, Input, Scope>(
+        phase: &WorthQueryAdvancementPhase<'_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        instance: PublishedWorkflowInstanceRef,
+        captured: &crate::domain_computation::primary_graph::WorkflowCapturedInputs,
+    ) -> Result<Option<WorkflowProposalOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
+    where
+        Schema: ApplicationSchema,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Input: Clone + Send + Sync + 'static,
+    {
+        let idempotency = idempotency.bind_workflow_captured_inputs(captured.identity);
         let phase_request = match phase.execution_request_for(&runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "workflow-phase"))),
@@ -189,6 +215,35 @@ impl WorthQueryWorkflowProposalAdapter {
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        Self::prepare_with_inputs(
+            phase,
+            selected,
+            installed,
+            instance,
+            admission,
+            idempotency,
+            crate::domain_computation::primary_graph::WorkflowCapturedInputs::empty(),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn prepare_with_inputs<Schema, Operation, Input, Scope, Spec>(
+        phase: &WorthQueryAdvancementPhase<'_>,
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        instance: PublishedWorkflowInstanceRef,
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        idempotency: &WorthQueryApplicationIdempotencyBinding,
+        captured: crate::domain_computation::primary_graph::WorkflowCapturedInputs,
+    ) -> Result<
+        PreparedWorkflowProposal<Schema, Operation, Input, Scope>,
+        WorkflowProposalPreparationDenial,
+    >
+    where
+        Schema: ApplicationSchema,
+        Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
         let phase_request = match phase.execution_request_for(&selected.application().product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(WorkflowProposalPreparationDenial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
@@ -202,6 +257,7 @@ impl WorthQueryWorkflowProposalAdapter {
             admission,
             *idempotency.intent_identity(),
             idempotency.source_identity(),
+            captured,
         )
     }
 

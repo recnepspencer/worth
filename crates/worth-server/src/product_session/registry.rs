@@ -20,6 +20,7 @@ use super::{
 
 #[derive(Clone, Debug)]
 pub struct WorthServerProductSessionRegistry {
+    instance: crate::WorthServerInstanceIdentity,
     records: Arc<Mutex<HashMap<String, WorthServerProductSession>>>,
     next_identity: Arc<AtomicU64>,
     counters: Arc<WorthServerCounters>,
@@ -29,17 +30,23 @@ pub struct WorthServerProductSessionRegistry {
 
 impl WorthServerProductSessionRegistry {
     pub(crate) fn new(
+        instance: crate::WorthServerInstanceIdentity,
         counters: Arc<WorthServerCounters>,
         clock: Arc<dyn WorthServerProductSessionClock>,
         termination_observers: Vec<SharedProductSessionTerminationObserver>,
     ) -> Self {
         Self {
+            instance,
             records: Arc::new(Mutex::new(HashMap::new())),
             next_identity: Arc::new(AtomicU64::new(1)),
             counters,
             clock,
             termination_observers: Arc::new(termination_observers),
         }
+    }
+
+    pub fn instance_identity(&self) -> &crate::WorthServerInstanceIdentity {
+        &self.instance
     }
 
     pub fn open_preview(
@@ -165,6 +172,7 @@ impl WorthServerProductSessionRegistry {
         }
         let closed_at_epoch_millis = self.clock.current_time_millis();
         let closed = WorthServerProductSession::new(super::WorthServerProductSessionParts {
+            server_instance: refreshed.server_instance().clone(),
             identity: refreshed.identity().clone(),
             lifecycle: WorthServerProductSessionLifecycle::Closed,
             expiry_posture: WorthServerProductSessionExpiryPosture::Closed {
@@ -240,6 +248,7 @@ impl WorthServerProductSessionRegistry {
         let created_at_epoch_millis = self.clock.current_time_millis();
         let identity = self.mint_identity(resolved_request_context);
         let session = WorthServerProductSession::new(super::WorthServerProductSessionParts {
+            server_instance: self.instance.clone(),
             identity: identity.clone(),
             lifecycle,
             expiry_posture: WorthServerProductSessionExpiryPosture::Active {
@@ -291,7 +300,8 @@ impl WorthServerProductSessionRegistry {
             .workspace_target();
         let branch_target = resolved_request_context.request_context().branch_target();
         WorthServerProductSessionIdentity::new(format!(
-            "product-session:{}:{}:{}:{sequence}",
+            "product-session:{}:{}:{}:{}:{sequence}",
+            self.instance.as_str(),
             workspace_target.tenant_id(),
             workspace_target.workspace_id(),
             branch_target.canonical_label(),
@@ -310,6 +320,7 @@ impl WorthServerProductSessionRegistry {
             return session;
         }
         WorthServerProductSession::new(super::WorthServerProductSessionParts {
+            server_instance: session.server_instance().clone(),
             identity: session.identity().clone(),
             lifecycle: session.lifecycle(),
             expiry_posture: WorthServerProductSessionExpiryPosture::Expired {

@@ -6,6 +6,7 @@ use worth_query_declaration::facade::application_schema::{
 };
 mod evaluation;
 mod value;
+pub(in crate::domain_computation::primary_graph) use evaluation::evaluate_requirement;
 pub(in crate::domain_computation::primary_graph) use evaluation::evaluate_requirements;
 pub(in crate::domain_computation::primary_graph) use value::{
     field_value, PreparedRequirementOperand,
@@ -31,6 +32,9 @@ pub enum WorthQueryOperationBodyRequirementStatus {
 /// The native source the supplier declared as this requirement's guidance target.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryOperationBodyRequirementTarget {
+    QueryContext {
+        query: String,
+    },
     SignedEvidence(
         worth_query_declaration::facade::application_schema::ApplicationSigningEvidenceSource,
     ),
@@ -47,6 +51,12 @@ pub enum WorthQueryOperationBodyRequirementTarget {
         from: String,
         to: String,
         direction: ApplicationOperationBodyRequirementDirection,
+    },
+    RelatedFieldValues {
+        relation: String,
+        from: String,
+        to: String,
+        field: ApplicationFieldBindingLocus,
     },
 }
 
@@ -92,6 +102,23 @@ impl WorthQueryOperationBodyRequirementFinding {
         status: WorthQueryOperationBodyRequirementStatus,
     ) -> Self {
         let target = match requirement.target() {
+            ApplicationOperationBodyRequirementSource::QueryContext { query, .. } => {
+                WorthQueryOperationBodyRequirementTarget::QueryContext {
+                    query: query.name().to_owned(),
+                }
+            }
+            ApplicationOperationBodyRequirementSource::RelatedFieldValues {
+                relation,
+                from,
+                to,
+                field,
+                ..
+            } => WorthQueryOperationBodyRequirementTarget::RelatedFieldValues {
+                relation: relation.clone(),
+                from: from.clone(),
+                to: to.clone(),
+                field: field.clone(),
+            },
             ApplicationOperationBodyRequirementSource::SignedEvidence(source) => {
                 WorthQueryOperationBodyRequirementTarget::SignedEvidence(source.clone())
             }

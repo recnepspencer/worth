@@ -1,4 +1,6 @@
 use super::{ApplicationExternalEffectProtocol, ApplicationStructuredValueBinding};
+mod projection;
+pub use projection::ApplicationExternalEffectPayloadProjection;
 
 /// A retained effect binding whose value may cross an external process boundary.
 pub trait ApplicationExternalEffectBinding: ApplicationStructuredValueBinding {

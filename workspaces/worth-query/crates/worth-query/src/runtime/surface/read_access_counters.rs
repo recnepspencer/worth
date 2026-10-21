@@ -1,7 +1,6 @@
 use crate::identity::hash_parts;
 use crate::runtime::{
     WorthQueryAdmittedGraphReadAccessPlan, WorthQueryGraphReadAccessPlanConsumption,
-    WorthQueryGraphReadStreamingReceipt,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -14,8 +13,6 @@ pub struct WorthQueryGraphReadAccessComplexityCounters {
     planned_access_step_count: usize,
     consumed_access_step_count: usize,
     persistent_artifact_bypass_count: usize,
-    streaming_page_count: usize,
-    streaming_emitted_row_count: usize,
 }
 
 impl WorthQueryGraphReadAccessComplexityCounters {
@@ -51,29 +48,14 @@ impl WorthQueryGraphReadAccessComplexityCounters {
         self.persistent_artifact_bypass_count
     }
 
-    pub fn streaming_page_count(&self) -> usize {
-        self.streaming_page_count
-    }
-
-    pub fn streaming_emitted_row_count(&self) -> usize {
-        self.streaming_emitted_row_count
-    }
-
     pub(in crate::runtime) fn from_execution_parts(
         plan: &WorthQueryAdmittedGraphReadAccessPlan,
         plan_consumption: &WorthQueryGraphReadAccessPlanConsumption,
-        streaming_receipt: Option<&WorthQueryGraphReadStreamingReceipt>,
     ) -> Self {
         let execution = plan_consumption.execution_counters();
         let planned_access_step_count = plan.admission().requirement_set().rows().len();
         let consumed_access_step_count =
             planned_access_step_count * execution.executor_entry_count();
-        let streaming_page_count = streaming_receipt
-            .map(|receipt| receipt.counters().page_count())
-            .unwrap_or(0);
-        let streaming_emitted_row_count = streaming_receipt
-            .map(|receipt| receipt.counters().emitted_row_count())
-            .unwrap_or(0);
         let digest = hash_parts(&[
             "worth_query_graph_read_access_complexity_counters_v1".to_string(),
             format!("plan:{}", plan.digest()),
@@ -94,8 +76,6 @@ impl WorthQueryGraphReadAccessComplexityCounters {
                 "persistent_artifact_bypass:{}",
                 execution.persistent_artifact_bypass_count()
             ),
-            format!("streaming_pages:{streaming_page_count}"),
-            format!("streaming_rows:{streaming_emitted_row_count}"),
         ]);
         Self {
             digest,
@@ -106,8 +86,6 @@ impl WorthQueryGraphReadAccessComplexityCounters {
             planned_access_step_count,
             consumed_access_step_count,
             persistent_artifact_bypass_count: execution.persistent_artifact_bypass_count(),
-            streaming_page_count,
-            streaming_emitted_row_count,
         }
     }
 }

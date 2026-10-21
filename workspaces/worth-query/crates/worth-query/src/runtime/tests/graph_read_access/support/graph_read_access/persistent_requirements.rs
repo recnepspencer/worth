@@ -1,6 +1,6 @@
 use crate::facade::foundation::{
     AspectFieldSelector, AuthoredResultShapeField, EqualityPredicate, OrderingSelector,
-    PresencePredicate, RelationName, TraversalSelector, WorthQueryPredicateOperand,
+    PresencePredicate, TraversalSelector, WorthQueryPredicateOperand,
 };
 use crate::runtime::{
     QuerySchemaView, ScalarAspectType, SchemaFieldView, SchemaRelationView,
@@ -108,32 +108,6 @@ pub fn broad_persistent_family(
         .expect("broad persistent family should admit")
 }
 
-pub fn streaming_frontier_family(
-    workspace: &mut WorthQueryWorkspace,
-    family_name: &str,
-) -> WorthQueryReadFamily {
-    workspace
-        .define_read_family(family_name, |read| {
-            read.explicit_broad_search_frontier_collection(
-                "user",
-                streaming_frontier_schema(),
-                [relation("manager"), relation("mentor")],
-                2,
-                |query| {
-                    query
-                        .project(field("identity", "id"))
-                        .where_equal(equality("status", "value", "active"))
-                        .order_by(
-                            OrderingSelector::ascending("profile", "display_name")
-                                .expect("ordering should build"),
-                        )
-                },
-                |shape| shape.field(result_field("identity", "id", "id")),
-            )
-        })
-        .expect("streaming frontier family should admit")
-}
-
 pub fn persistent_requirement_digest_for_named_family(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace_name: &str,
@@ -233,47 +207,6 @@ fn persistent_requirement_schema() -> QuerySchemaView {
     )
 }
 
-fn streaming_frontier_schema() -> QuerySchemaView {
-    QuerySchemaView::new(
-        "graph-read-access-persistent-streaming-frontier-schema",
-        [
-            SchemaFieldView::new(
-                crate::facade::foundation::AspectName::new("identity")
-                    .expect("schema aspect literal must be valid"),
-                crate::facade::foundation::FieldName::new("id")
-                    .expect("schema field literal must be valid"),
-                ScalarAspectType::String,
-            ),
-            SchemaFieldView::new(
-                crate::facade::foundation::AspectName::new("profile")
-                    .expect("schema aspect literal must be valid"),
-                crate::facade::foundation::FieldName::new("display_name")
-                    .expect("schema field literal must be valid"),
-                ScalarAspectType::String,
-            ),
-            SchemaFieldView::new(
-                crate::facade::foundation::AspectName::new("status")
-                    .expect("schema aspect literal must be valid"),
-                crate::facade::foundation::FieldName::new("value")
-                    .expect("schema field literal must be valid"),
-                ScalarAspectType::String,
-            ),
-        ],
-        [
-            SchemaRelationView::new(
-                crate::facade::foundation::RelationName::new("manager")
-                    .expect("schema relation literal must be valid"),
-                2,
-            ),
-            SchemaRelationView::new(
-                crate::facade::foundation::RelationName::new("mentor")
-                    .expect("schema relation literal must be valid"),
-                2,
-            ),
-        ],
-    )
-}
-
 fn field(aspect: &str, field: &str) -> AspectFieldSelector {
     AspectFieldSelector::new(aspect, field).expect("field selector should build")
 }
@@ -298,8 +231,4 @@ fn equality(aspect: &str, field: &str, value: &str) -> EqualityPredicate {
         WorthQueryPredicateOperand::string(value.to_string()),
     )
     .expect("equality predicate should build")
-}
-
-fn relation(name: &str) -> RelationName {
-    RelationName::new(name).expect("relation name should build")
 }

@@ -17,6 +17,9 @@ use worth_query_admission::facade::{
 };
 
 use super::{PreparedWorkflowAdvance, PreparedWorkflowTransitionReplays};
+#[path = "authentication/signed_body.rs"]
+mod signed_body;
+use signed_body::ApprovalAuthenticationMode;
 
 struct ApprovalDescriptor {
     principal:
@@ -49,6 +52,7 @@ fn matches_outer_approval_identity(
 /// proof; the commit owner rechecks it after replay resolution.
 #[doc(hidden)]
 pub struct PreparedWorkflowApprovalAuthentication<Schema> {
+    mode: ApprovalAuthenticationMode,
     owner: WorthQueryAuthenticationEventSigningOwner<Schema>,
     intent: WorthQueryAuthenticationEventIntent,
     basis: FactPayload,
@@ -94,6 +98,7 @@ impl<Schema> PreparedWorkflowApprovalAuthentication<Schema> {
             .workflow_approval_signing_principal()
             .ok_or(WorthQueryAuthenticationEventDenial::PrincipalMismatch)?;
         Ok(Self {
+            mode: ApprovalAuthenticationMode::Standalone,
             owner,
             intent,
             basis: basis.into(),
@@ -209,7 +214,22 @@ impl<Schema> PreparedWorkflowApprovalAuthentication<Schema> {
         Ok(self)
     }
 
-    pub(super) fn readmit(self) -> Result<(), WorthQueryAuthenticationEventDenial> {
+    pub(super) fn readmit<Operation, Input, Scope>(
+        self,
+        program: &super::super::super::WorthQueryApplicationEffectProgram<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+        >,
+    ) -> Result<(), WorthQueryAuthenticationEventDenial> {
+        if self.mode == ApprovalAuthenticationMode::SignedBody {
+            // The normal signed-creation publication gate performs the actual
+            // event readmission once, after checking the complete candidate.
+            return super::super::super::signed_creation::WorthQuerySignedCreationAdapter::validate_shared_authentication(
+                program, &self.intent, self.descriptor.principal.as_ref(),
+            );
+        }
         let consumed = self
             .consumed
             .ok_or(WorthQueryAuthenticationEventDenial::MissingSigningProof)?;
@@ -261,6 +281,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
         self.validate_approval_descriptor()?;
         match &mut self {
             Self::Transition {
+                program,
                 approval: Some(_),
                 approval_authentication,
                 ..
@@ -268,7 +289,14 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 let pending = approval_authentication
                     .take()
                     .ok_or(WorthQueryAuthenticationEventDenial::MissingSigningProof)?;
-                *approval_authentication = Some(pending.sign(event, principal, scope)?);
+                *approval_authentication = Some(
+                    if pending.mode == ApprovalAuthenticationMode::SignedBody {
+                        super::super::super::signed_creation::WorthQuerySignedCreationAdapter::sign(program, event, principal)?;
+                        pending
+                    } else {
+                        pending.sign(event, principal, scope)?
+                    },
+                );
             }
             Self::ReplayOnly { .. } => {}
             _ => return Err(WorthQueryAuthenticationEventDenial::MissingSigningProof),

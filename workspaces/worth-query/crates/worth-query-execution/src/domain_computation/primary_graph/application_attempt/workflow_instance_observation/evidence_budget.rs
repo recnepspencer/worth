@@ -34,5 +34,6 @@ impl ObservedWorkflowTransition {
             evidence.map(|evidence| evidence.entity),
         )
         .retaining_evidence_bytes(evidence.map_or(0, |evidence| evidence.retained_bytes))
+        .retaining_captured_inputs(self.captured_inputs.clone())
     }
 }

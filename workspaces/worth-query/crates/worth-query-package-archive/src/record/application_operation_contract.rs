@@ -38,6 +38,9 @@ pub(super) fn payload_encoding_work(
     limits: WorthQueryPackageArchiveLimits,
 ) -> Result<RecordPayloadEncodingWork, Denial> {
     let limits = limits.narrowed();
+    if let Some(body) = record.body() {
+        super::operation_body::require_nesting_depth(body, limits.maximum_nesting_depth())?;
+    }
     let mut measure = BinaryEncodingMeasure::default();
     write_record(&mut measure, record)?;
     RecordPayloadEncodingWork::from_measure(&measure, limits)

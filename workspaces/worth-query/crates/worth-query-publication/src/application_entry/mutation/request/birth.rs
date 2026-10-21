@@ -38,6 +38,17 @@ where
         self.workflow_birth_identity
     }
 
+    // The owning request view already borrows its frozen input. Recovery binds
+    // the original identity without consuming the birth's one-shot authority.
+    pub(in crate::application_entry) fn bind_retained_workflow_birth(
+        &mut self,
+        identity: [u8; 32],
+        authority: Option<std::sync::Arc<worth_query_execution::publication_boundary::workflow_birth::WorkflowBirthAuthoritySlot>>,
+    ) {
+        self.workflow_birth_identity = Some(identity);
+        self.workflow_birth_authority = authority;
+    }
+
     pub(in crate::application_entry) fn identities_with_input<'identity>(
         &'identity self,
         input: &'identity ApplicationEncodedInput<

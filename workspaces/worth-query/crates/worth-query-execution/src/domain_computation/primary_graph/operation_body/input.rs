@@ -75,7 +75,8 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
         let created_inputs = body
             .creation()
             .into_iter()
-            .flat_map(|creation| creation.fields())
+            .flat_map(|creation| creation.initialization_sites())
+            .flat_map(|site| site.fields())
             .filter(|step| step.input_member().is_some())
             .map(|step| {
                 (
@@ -84,8 +85,19 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
                     step.input_is_optional(),
                 )
             });
-        for ((member, family, optional), binding) in
-            scope_inputs.chain(created_inputs).zip(bindings)
+        let path_inputs = body
+            .path_input_expectations()
+            .iter()
+            .map(|guard| (guard.member.as_str(), guard.scalar_family, false));
+        for ((member, family, optional), binding) in scope_inputs
+            .chain(created_inputs)
+            .chain(path_inputs)
+            .chain(
+                body.reference_inputs()
+                    .iter()
+                    .map(|reference| (reference.member.as_str(), reference.scalar_family, true)),
+            )
+            .zip(bindings)
         {
             context
                 .checkpoint(u64::try_from(bytes).unwrap_or(u64::MAX))
@@ -159,7 +171,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
     }
 }
 
-fn validate_admitted(
+pub(super) fn validate_admitted(
     execution: &QueryRequestExecution<'_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     profile: worth_query_declaration::facade::application_schema::ApplicationNativeInputDecodeResources,

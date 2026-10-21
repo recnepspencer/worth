@@ -3,6 +3,8 @@ use crate::application_schema::canonical_decision_read_identity::append_decision
 use crate::application_schema::canonical_operation_identity::append_operation_target;
 use crate::application_schema::ApplicationSchemaMember;
 mod creation;
+mod emission;
+mod profile;
 
 pub(super) fn append_body(
     basis: &mut ApplicationSchemaCanonicalBasis,
@@ -11,54 +13,10 @@ pub(super) fn append_body(
     body: &crate::application_schema::ApplicationOperationBodyProgram,
 ) {
     use crate::application_schema::ApplicationOperationBodyScopeField;
-    append_operation_header(
-        basis,
-        prefix,
-        if body.creation().is_some_and(|creation| creation.fields().iter().any(|step| step.related_source().is_some())) {
-            "operation-body-v12"
-        } else if body.creation().is_some_and(|creation| creation.links().iter().any(|link|
-            link.posture == crate::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle)) {
-            "operation-body-v11"
-        } else if body
-            .creation()
-            .is_some_and(|creation| creation.enrollment().is_some())
-        {
-            "operation-body-v10"
-        } else if body
-            .creation()
-            .is_some_and(|creation| !creation.links().is_empty())
-        {
-            "operation-body-v9"
-        } else if !body.outputs().is_empty() {
-            "operation-body-v8"
-        } else if body.has_optional_inputs() {
-            "operation-body-v7"
-        } else if body.explicit_scope_entity().is_some() || body.is_creation_only() {
-            "operation-body-v6"
-        } else if !body.requirements().is_empty() {
-            "operation-body-v5"
-        } else if body.scope_fields().iter().any(|step| {
-            matches!(
-                step,
-                ApplicationOperationBodyScopeField::RequirePresent { .. }
-            )
-        }) {
-            "operation-body-v4"
-        } else if body.scope_fields().iter().any(|step| {
-            matches!(
-                step,
-                ApplicationOperationBodyScopeField::SetOptionalInput { .. }
-                    | ApplicationOperationBodyScopeField::ClearOptional { .. }
-            )
-        }) {
-            "operation-body-v3"
-        } else if body.creation().is_some() {
-            "operation-body-v2"
-        } else {
-            "operation-body-v1"
-        },
-        operation,
-    );
+    append_operation_header(basis, prefix, profile::name(body), operation);
+    if let Some(external_emission) = body.external_emission() {
+        emission::append(basis, prefix, external_emission);
+    }
     if !body.outputs().is_empty() {
         basis.usize(format!("{prefix}.outputs"), body.outputs().len());
         for (index, output) in body.outputs().iter().enumerate() {
@@ -67,6 +25,32 @@ pub(super) fn append_body(
                 &output.canonical_record(),
             );
         }
+    }
+    if !body.retirements().is_empty() {
+        for (index, rule) in body.retirements().iter().enumerate() {
+            basis.text(
+                format!("{prefix}.retirement[{index}]"),
+                &rule.canonical_record(),
+            );
+        }
+    }
+    for (index, guard) in body.path_input_expectations().iter().enumerate() {
+        basis.text(
+            format!("{prefix}.path-input[{index}]"),
+            &guard.canonical_record(),
+        );
+    }
+    for (index, step) in body.path_value_assignments().iter().enumerate() {
+        basis.text(
+            format!("{prefix}.path-value[{index}]"),
+            &step.canonical_record(),
+        );
+    }
+    for (index, reference) in body.reference_inputs().iter().enumerate() {
+        basis.text(
+            format!("{prefix}.reference-input[{index}]"),
+            &reference.canonical_record(),
+        );
     }
     if body.explicit_scope_entity().is_some() || body.is_creation_only() {
         basis.text(
@@ -84,14 +68,24 @@ pub(super) fn append_body(
         }
     }
     basis.usize(format!("{prefix}.steps"), body.scope_fields().len());
+    if !body.values().is_empty() {
+        for (index, value) in body.values().iter().enumerate() {
+            basis.text(
+                format!("{prefix}.value[{index}]"),
+                &value.canonical_record(),
+            );
+        }
+    }
     for (index, step) in body.scope_fields().iter().enumerate() {
         let prefix = format!("{prefix}.step[{index}]");
         basis.text(
             format!("{prefix}.kind"),
             match step {
                 ApplicationOperationBodyScopeField::Expect { .. } => "expect",
+                ApplicationOperationBodyScopeField::ExpectInput { .. } => "expect-input",
                 ApplicationOperationBodyScopeField::Assign { .. } => "assign",
                 ApplicationOperationBodyScopeField::AssignInput { .. } => "assign-input",
+                ApplicationOperationBodyScopeField::AssignValue { .. } => "assign-value",
                 ApplicationOperationBodyScopeField::SetOptionalInput { .. } => "set-optional-input",
                 ApplicationOperationBodyScopeField::AssignOptionalInput { .. } => {
                     "assign-optional-input"
@@ -104,7 +98,9 @@ pub(super) fn append_body(
         basis.text(format!("{prefix}.aspect"), step.field().aspect());
         basis.text(format!("{prefix}.field"), step.field().field());
         basis.text(format!("{prefix}.binding"), step.binding().as_str());
-        if let Some(value) = step.literal_value() {
+        if let ApplicationOperationBodyScopeField::AssignValue { value, .. } = step {
+            basis.text(format!("{prefix}.computed-value"), value);
+        } else if let Some(value) = step.literal_value() {
             basis.value(
                 format!("{prefix}.value"),
                 worth_foundational::facade::canonical_basis_value_for_aspect_value(value),
@@ -132,6 +128,12 @@ pub(super) fn append_body(
     }
     if let Some(creation) = body.creation() {
         creation::append(basis, prefix, creation);
+    }
+    if let Some(succession) = body.succession() {
+        basis.text(
+            format!("{prefix}.succession"),
+            &succession.canonical_record(),
+        );
     }
 }
 

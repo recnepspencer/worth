@@ -15,16 +15,6 @@ const REVISION_RULE_VERSION: &str = "worth-query-application-program-revision-v1
 const REVISION_BASIS_DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.application-program-revision");
 
-/// Canonical work one program revision is allowed to cost.
-///
-/// Meaning larger than this is denied while the program is validated, so a
-/// program can never be identified by an unbounded hash nobody budgeted for.
-const REVISION_WORK_BUDGET: CanonicalDigestWorkBudget =
-    match CanonicalDigestWorkBudget::new(4_096, 1024 * 1024) {
-        Some(budget) => budget,
-        None => panic!("the declared application-program revision budget is nonzero"),
-    };
-
 /// Canonical content identity of one validated application program.
 ///
 /// The revision is derived through Foundational's admitted canonical digest
@@ -75,6 +65,7 @@ impl ApplicationProgramRevision {
     /// refused here and denied there; it is never hashed silently.
     pub(in crate::application_program) fn mint(
         manifest: &ApplicationProgramManifest,
+        budget: CanonicalDigestWorkBudget,
     ) -> Result<Self, ApplicationProgramRevisionBudgetDenial> {
         let basis = prepare_canonical_basis_sequence(
             revision_rule_version(),
@@ -85,11 +76,7 @@ impl ApplicationProgramRevision {
         .expect("a program revision basis is one nonempty domain of unique named loci");
         let ready = canonicalization()
             .digest()
-            .for_sequence_with_budget(
-                basis,
-                CanonicalDigestAlgorithmId::sha256(),
-                REVISION_WORK_BUDGET,
-            )
+            .for_sequence_with_budget(basis, CanonicalDigestAlgorithmId::sha256(), budget)
             .into_result()
             .map_err(exceeded_revision_budget)?;
         Ok(Self(

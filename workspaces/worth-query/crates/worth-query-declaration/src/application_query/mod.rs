@@ -8,6 +8,7 @@ mod dependency_equivalence;
 mod derived_view;
 mod disclosure_contract;
 mod erased_definition;
+mod expression_snapshot;
 mod lane_eligibility;
 mod live_cause;
 mod marker_identity;
@@ -53,6 +54,7 @@ pub use disclosure_contract::{
 pub use erased_definition::{
     ErasedApplicationQueryDefinition, WorthQueryPortableApplicationQueryParts,
 };
+pub use expression_snapshot::ApplicationQueryExpressionSnapshot;
 pub use lane_eligibility::ApplicationQueryLaneEligibility;
 pub use live_cause::{
     ApplicationQueryLiveCauseBinding, ApplicationQueryLiveCauseContract,
@@ -75,7 +77,8 @@ pub use result_relation_selector::{
     ManyResults, OptionalOneResult,
 };
 pub use result_shape::{
-    ApplicationQueryResultField, ApplicationQueryResultRelation, ApplicationQueryResultShape,
+    ApplicationQueryExpressionContextDenial, ApplicationQueryResultField,
+    ApplicationQueryResultRelation, ApplicationQueryResultShape,
     ApplicationQueryResultShapeBuilder, TypedApplicationQueryResultShape,
     WorthQueryPortableApplicationQueryResultFieldParts,
     WorthQueryPortableApplicationQueryResultRelationParts,

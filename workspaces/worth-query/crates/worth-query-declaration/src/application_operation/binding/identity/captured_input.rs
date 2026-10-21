@@ -1,12 +1,15 @@
 //! The exact serialization that derived an input identity, not a second encoding.
 #[cfg(test)]
+#[path = "captured_input/decimal_tests.rs"]
+mod decimal_tests;
+#[cfg(test)]
 #[path = "captured_input/optional_tests.rs"]
 mod optional_tests;
 mod scalar_record;
 
 use super::{ApplicationCanonicalIdentity, ApplicationCanonicalWork};
 use std::sync::Arc;
-use worth_foundational::facade::{AspectValue, InternedString, ScalarAspectType};
+use worth_foundational::facade::{AspectValue, CanonicalDecimal, InternedString, ScalarAspectType};
 
 /// Read-only captured input data. Only native identity encoding constructs it.
 /// It carries no authorization, world observation or currentness authority.
@@ -30,6 +33,8 @@ pub enum ApplicationCanonicalInputDenial {
 pub enum ApplicationCanonicalInputScalar<'a> {
     Inline(AspectValue),
     Text(&'a str),
+    /// Exact captured representation, not admitted Decimal/domain validity.
+    DecimalText(&'a str),
 }
 
 #[cfg(test)]
@@ -121,7 +126,7 @@ impl ApplicationCanonicalInputScalar<'_> {
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
         match self {
             Self::Inline(value) => value.owned_allocation_capacity_bytes(),
-            Self::Text(value) => value.len(),
+            Self::Text(value) | Self::DecimalText(value) => value.len(),
         }
     }
     pub fn into_value(self) -> AspectValue {
@@ -129,6 +134,9 @@ impl ApplicationCanonicalInputScalar<'_> {
             Self::Inline(value) => value,
             Self::Text(value) => {
                 AspectValue::String(InternedString::Raw(String::from(Box::<str>::from(value))))
+            }
+            Self::DecimalText(value) => {
+                AspectValue::Decimal(CanonicalDecimal::new(String::from(Box::<str>::from(value))))
             }
         }
     }

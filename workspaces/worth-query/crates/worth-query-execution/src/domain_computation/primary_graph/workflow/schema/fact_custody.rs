@@ -18,19 +18,19 @@ use super::WorthQueryWorkflowLayout;
 
 #[derive(Clone)]
 struct WorkflowFactCustody {
-    entity_kinds: [KindId; 3],
+    entity_kinds: [KindId; 8],
     instance_kind: KindId,
     started_revision: worth_foundational::facade::AspectFieldLocator,
-    relation_kinds: [KindId; 10],
+    relation_kinds: [KindId; 17],
     /// `(new source kind, relation kind)` pairs that may attach to an
     /// existing fact. Every other existing-endpoint attachment is forbidden.
-    existing_target_links: [(KindId, KindId); 4],
+    existing_target_links: [(KindId, KindId); 7],
 }
 
 // The installed identity predates approval custody; retain its name across
 // semantic versions so diagnostics preserve the same rule lineage.
 const RULE_ID: &str = "worth-query.workflow.publication-immutability";
-const RULE_VERSION: CustomInvariantSemanticVersion = CustomInvariantSemanticVersion::new(1, 4);
+const RULE_VERSION: CustomInvariantSemanticVersion = CustomInvariantSemanticVersion::new(1, 6);
 
 pub(in crate::domain_computation::primary_graph) const fn fact_custody_receipt_contract(
 ) -> (&'static str, u16, u16, Option<u64>) {
@@ -44,11 +44,20 @@ pub(in crate::domain_computation::primary_graph) fn fact_custody_registration(
         instance_kind: layout.instance.entity_kind,
         started_revision: layout.instance.started_program_revision.clone(),
         entity_kinds: [
+            layout.proposal.entity_kind,
+            layout.proposal_coverage.entity_kind,
+            layout.captured_input.entity_kind,
             layout.node.entity_kind,
             layout.connection.entity_kind,
             layout.approval.entity_kind,
+            layout.transition.entity_kind,
+            layout.operation_output.entity_kind,
         ],
         relation_kinds: [
+            layout.transition_proposal_relation,
+            layout.proposal_coverage_relation,
+            layout.captured_input.membership,
+            layout.captured_input.resource,
             layout.definition_node_relation,
             layout.definition_connection_relation,
             layout.definition_start_relation,
@@ -59,8 +68,19 @@ pub(in crate::domain_computation::primary_graph) fn fact_custody_registration(
             layout.approval_evidence_relation,
             layout.instance_migrated_from_relation,
             layout.instance_prior_effect_relation,
+            layout.instance_succeeded_from_relation,
+            layout.operation_output.membership,
+            layout.operation_output.target,
         ],
         existing_target_links: [
+            (
+                layout.captured_input.entity_kind,
+                layout.captured_input.resource,
+            ),
+            (
+                layout.operation_output.entity_kind,
+                layout.operation_output.target,
+            ),
             (
                 layout.approval.entity_kind,
                 layout.approval_proposal_relation,
@@ -76,6 +96,10 @@ pub(in crate::domain_computation::primary_graph) fn fact_custody_registration(
             (
                 layout.instance.entity_kind,
                 layout.instance_prior_effect_relation,
+            ),
+            (
+                layout.instance.entity_kind,
+                layout.instance_succeeded_from_relation,
             ),
         ],
     })
@@ -171,8 +195,17 @@ impl WorkflowFactCustody {
         budget: Option<&dyn CustomInvariantLeaseBudget>,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
         custody_checkpoint(budget, 0)?;
-        if !context.touched().planned_entity_deletes().is_empty()
-            || !context.touched().planned_relation_deletes().is_empty()
+        for entity in context.touched().planned_entity_deletes() {
+            match context
+                .committed_aspect_states()
+                .entity_aspect_state(*entity)
+            {
+                Ok(_) => return Ok(CustomInvariantVerdict::Violation),
+                Err(StructuralReadError::OutsideDeclaredAccess) => (),
+                Err(error) => return Err(read_failure(error)),
+            }
+        }
+        if !context.touched().planned_relation_deletes().is_empty()
             || !context
                 .touched()
                 .planned_relation_endpoint_updates()
@@ -254,6 +287,7 @@ impl WorkflowFactCustody {
         }
         Ok(CustomInvariantVerdict::Pass)
     }
+
     fn provenance_value<'a>(
         &self,
         state: &'a worth_foundational::facade::AuthoritativeRecordAspectState,
@@ -306,70 +340,4 @@ fn read_failure(error: StructuralReadError) -> CustomInvariantExecutionError {
 }
 
 #[cfg(test)]
-mod tests {
-    use worth_relational::facade::{
-        identity::{EntityId, KindId, PartitionId},
-        symbols::ClientKey,
-        transactions::{CreatedEntityRef, EntityReference},
-    };
-
-    use super::WorkflowFactCustody;
-
-    #[test]
-    fn only_a_new_approval_or_successor_may_link_to_an_existing_fact() {
-        let rule = WorkflowFactCustody {
-            instance_kind: KindId(20),
-            started_revision:
-                crate::domain_computation::primary_graph::schema_layout::planned_field_locator(
-                    "workflow-instance",
-                    "started-program-revision",
-                )
-                .unwrap(),
-            entity_kinds: [KindId(1), KindId(2), KindId(3)],
-            relation_kinds: [
-                KindId(4),
-                KindId(5),
-                KindId(6),
-                KindId(7),
-                KindId(8),
-                KindId(9),
-                KindId(10),
-                KindId(11),
-                KindId(12),
-                KindId(13),
-            ],
-            existing_target_links: [
-                (KindId(3), KindId(10)),
-                (KindId(3), KindId(11)),
-                (KindId(20), KindId(12)),
-                (KindId(20), KindId(13)),
-            ],
-        };
-        assert_eq!(
-            worth_relational::facade::runtime::CustomInvariantRule::descriptor(&rule)
-                .operational
-                .maximum_work_units,
-            None
-        );
-        let created = |kind_id| {
-            EntityReference::Created(CreatedEntityRef {
-                partition_id: PartitionId::main(),
-                kind_id,
-                client_key: ClientKey::raw("custody-relation-test"),
-            })
-        };
-        let existing = EntityReference::Existing(EntityId::new(PartitionId::main(), 1, 1));
-        assert!(rule.allows_relation_create(KindId(10), &created(KindId(3)), &existing));
-        assert!(rule.allows_relation_create(KindId(11), &created(KindId(3)), &existing));
-        assert!(rule.allows_relation_create(KindId(9), &created(KindId(1)), &created(KindId(3))));
-        assert!(!rule.allows_relation_create(KindId(10), &created(KindId(1)), &existing));
-        assert!(!rule.allows_relation_create(KindId(9), &created(KindId(3)), &existing));
-        assert!(!rule.allows_relation_create(KindId(10), &existing, &created(KindId(3))));
-        assert!(!rule.allows_relation_create(KindId(10), &existing, &existing));
-        assert!(rule.allows_relation_create(KindId(12), &created(KindId(20)), &existing));
-        assert!(rule.allows_relation_create(KindId(13), &created(KindId(20)), &existing));
-        assert!(!rule.allows_relation_create(KindId(13), &created(KindId(3)), &existing));
-        assert!(!rule.allows_relation_create(KindId(10), &created(KindId(20)), &existing));
-        assert!(!rule.allows_relation_create(KindId(13), &existing, &existing));
-    }
-}
+mod tests;

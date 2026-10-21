@@ -1,4 +1,3 @@
-pub mod async_materialization;
 pub mod authority_assertions;
 pub mod authority_scenarios;
 pub mod hostile_graph_fixture;

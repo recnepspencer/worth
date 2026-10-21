@@ -4,6 +4,8 @@ use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 use std::sync::Arc;
 mod operation_body;
+mod registration;
+use registration::HandlerOrigin;
 
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_program::{
@@ -27,6 +29,7 @@ use super::super::{
 
 #[derive(Clone)]
 struct PendingMutationHandler {
+    origin: HandlerOrigin,
     identity: String,
     handler_identity: String,
     decision_type: TypeId,
@@ -85,57 +88,6 @@ impl<Schema> PendingMutationHandlerRegistry<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Registers the handler against its installed application binding.
-    fn register_resolved<Binding, Handler>(
-        &mut self,
-        binding_identity: &ApplicationSchemaBindingIdentity,
-        installed: &WorthQueryInstalledApplicationMutationBinding<Schema, Binding>,
-        handler: Handler,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-        Handler: OperationHandler<Schema, Binding>,
-    {
-        if installed.operation().binding_identity() != binding_identity {
-            return Err(denial(
-                DenialKind::ForeignMutationHandler,
-                Binding::IDENTITY,
-            ));
-        }
-        if installed.identity() != Binding::IDENTITY
-            || installed.handler_identity() != Binding::HANDLER_IDENTITY
-        {
-            return Err(denial(
-                DenialKind::MutationHandlerMeaningMismatch,
-                Binding::IDENTITY,
-            ));
-        }
-        if Binding::WORKFLOW_CONTROL {
-            return Err(denial(
-                DenialKind::WorkflowControlHandler,
-                Binding::IDENTITY,
-            ));
-        }
-        if self.entries.contains_key(Binding::IDENTITY) {
-            return Err(denial(
-                DenialKind::DuplicateMutationHandler,
-                Binding::IDENTITY,
-            ));
-        }
-        self.entries.insert(
-            Binding::IDENTITY.to_owned(),
-            PendingMutationHandler {
-                identity: Binding::IDENTITY.to_owned(),
-                handler_identity: Binding::HANDLER_IDENTITY.to_owned(),
-                decision_type: TypeId::of::<Binding::Decision>(),
-                denial_type: TypeId::of::<Binding::Denial>(),
-                value: Arc::new(TypedHandlerSlot::<Schema, Binding> {
-                    handler: Arc::new(handler),
-                }),
-            },
-        );
-        Ok(())
-    }
     pub(in crate::domain_computation::primary_graph) fn seal(
         &self,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
@@ -151,7 +103,13 @@ where
         let handled = || {
             installed_schema
                 .installed_mutation_binding_inventory()
-                .filter(|descriptor| !descriptor.workflow_control())
+                .filter(|descriptor| {
+                    !descriptor.workflow_control()
+                        || self
+                            .entries
+                            .get(descriptor.identity())
+                            .is_some_and(|entry| entry.origin == HandlerOrigin::CompiledBody)
+                })
         };
         if handled().count() != self.entries.len() {
             return Err(denial(

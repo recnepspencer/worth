@@ -462,7 +462,7 @@ it to the completed operation definition, bind the same completed schema through
 program authoring's `with_schema`, and install with `setup.operation_body::<Binding>()`.
 Its literals, flat canonical-input assignments, optional Set/Clear and one-level
 Option-valued replacement/initialization, tracked
-preimage initializers and field/count expression requirements enter canonical
+preimage initializers and field/count/child-field-list expression requirements enter canonical
 schema/program meaning and drive native tracked execution. A replacement handler
 is denied. A creation-only body declares `in_scope(Entity::reference())`; it does
 not need a dummy scope write or bootstrapped business entity. Fixed output uses
@@ -871,6 +871,17 @@ through fallible `idempotency_owned`, `for_workflow_operation`, the installed
 action's `retain_operation`, and fresh owning `advance`/`close`.
 Do not invent signed/unsigned authorization modes, dummy approvals, host permit
 flags, or a parallel state machine to bridge it.
+
+When the approval action must also publish a business attestation, attach its
+compiled signed body to that approval control and call
+`prepare_workflow_approval_with_body`. Query joins both into one candidate on
+the original snapshot and consumes one genuine event. Plain
+`prepare_workflow_approval` refuses an attached body; it never ignores it.
+`Settled` carries the resolved native outcome, including denials; inspect it.
+Exact committed replay precedes new body evaluation or authentication.
+This is explicit same-action composition, not conversion of old signature
+rows into grants. See [approval with attestation](./authoring/signed-operation-creations.md#one-approval-action-with-a-business-attestation)
+for the supported scalar profile and refusal boundaries.
 
 The full contract is in the
 [workflows guide, Operations](foundations/workflows.md#operations); the
@@ -1406,7 +1417,7 @@ Application API guides:
 
 - [`worth-query-decl` README](../../worth-query-decl/README.md) and [`worth-query-host` README](../../worth-query-host/README.md)
 - [Ordinary Application Front Door](./foundations/ordinary-application-front-door.md)
-- [Executable Scope-Field Operation Bodies](./authoring/scope-field-operation-bodies.md)
+- [Executable Scope-Field Operation Bodies](./authoring/scope-field-operation-bodies.md): author scalar effects and typed Scope/Related/Create output correspondence once; related outputs preserve the single tracked preimage, not a post-commit lookup or workflow-currentness proof.
 - [Signed Operation Creations](./authoring/signed-operation-creations.md): immutable early attestation, not a replacement for workflow approval authority.
 - [Branches And Previews](./foundations/branches-and-previews.md)
 - [Application Authorization And Emergency Elevation](./capabilities/application-authorization-and-emergency-elevation.md)

@@ -184,8 +184,8 @@ if let Some(completion) = outcome.completed() {
 
 - [Read Composition](read-composition.md) describes collection predicates,
   projections, and traversal meaning.
-- [Graph Read Access Planning](graph-read-access-planning.md) covers bounded
-  streaming and graph-frontier cursor sessions for admitted graph shapes.
+- [Graph Read Access Planning](graph-read-access-planning.md) covers access
+  requirements and admission postures for graph-shaped reads.
 - [Live Views](../runtime-surfaces/live-views.md) covers managed query-shaped
   collection maintenance.
 - [Support Matrix And Admission](../foundations/support-matrix-and-admission.md)

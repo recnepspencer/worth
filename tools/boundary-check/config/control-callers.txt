@@ -436,6 +436,7 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/grant_commands.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/interleaving.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/recovery.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/workflow/captured_actor.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_branch_affinity.rs
 
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/stale_retry.rs

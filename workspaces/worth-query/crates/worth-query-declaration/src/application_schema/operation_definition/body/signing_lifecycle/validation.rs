@@ -7,8 +7,8 @@ use crate::application_schema::{
     ApplicationFieldPresence as Presence, ApplicationOperationBodyProgram as Body,
     ApplicationOperationProgramTarget as Target, ApplicationRelationCrossContextPolicy,
     ApplicationRelationDeletionPolicy, ApplicationScalarValueBinding,
-    ApplicationSchemaMember as Member, ApplicationSigningSubjectProvenanceBinding,
-    ApplicationSigningSupersessionBinding,
+    ApplicationSchemaMember as Member, ApplicationSigningGraphSubjectProvenanceBinding,
+    ApplicationSigningSubjectProvenanceBinding, ApplicationSigningSupersessionBinding,
 };
 #[cfg(test)]
 mod tests;
@@ -17,7 +17,7 @@ pub(in crate::application_schema::operation_definition::body) fn validate_creati
     creation: &Creation,
 ) -> bool {
     let Some(spec) = creation.signing_lifecycle() else {
-        return true;
+        return creation.subject_impact_bound().is_none();
     };
     let Some(signing) = creation.signing() else {
         return false;
@@ -25,7 +25,7 @@ pub(in crate::application_schema::operation_definition::body) fn validate_creati
     spec.maximum_evidence > 0 && !spec.consequence_relation.is_empty()
         && spec.history_relation != spec.current_relation && spec.current_relation != spec.consequence_relation
         && creation.fields().iter().any(|field| matches!(field, Field::SigningProvenance { field, binding }
-            if field == signing.provenance() && *binding == ApplicationSigningSubjectProvenanceBinding::IDENTITY))
+            if field == signing.provenance() && (*binding == ApplicationSigningSubjectProvenanceBinding::IDENTITY || *binding == ApplicationSigningGraphSubjectProvenanceBinding::IDENTITY)))
         && creation.links().iter().any(|link| link.relation == spec.history_relation
             && link.from == spec.source_entity && link.to == creation.entity() && link.direction == Direction::FromScope)
         && creation.links().iter().any(|link| link.relation == spec.current_relation
@@ -41,13 +41,13 @@ pub(in crate::application_schema::operation_definition::body) fn validate(
     let Some(creation) = body.creation() else {
         return true;
     };
-    if !validate_creation(creation) {
+    if !validate_creation(creation) || !validate_subject_writes(body) {
         return false;
     }
     let Some(spec) = creation.signing_lifecycle() else {
         return true;
     };
-    if body.scope_entity() != Some(spec.source_entity.as_str()) || !validate_subject_writes(body) {
+    if body.scope_entity() != Some(spec.source_entity.as_str()) {
         return false;
     }
     let mut record_fields = 0;
@@ -83,7 +83,7 @@ pub(in crate::application_schema::operation_definition::body) fn validate(
             }
             Member::OperationProgram { target: Target::Unlink { relation, .. }, .. }
                 if relation == &spec.history_relation || relation == &spec.current_relation || relation == &spec.consequence_relation => return false,
-            Member::OperationBody { body: other, .. } if other.creation().is_some_and(|other|
+            Member::OperationBody { body: other, .. } if other.creation().into_iter().flat_map(|root|root.initialization_sites()).any(|other|
                 other.entity() == creation.entity() && other.signing_lifecycle() != Some(spec)) => return false,
             _ => {}
         }
@@ -95,7 +95,54 @@ pub(in crate::application_schema::operation_definition::body) fn validate(
 pub(in crate::application_schema::operation_definition::body) fn validate_subject_writes(
     body: &Body,
 ) -> bool {
-    body.creation().is_none_or(|creation| creation.signing_lifecycle().is_none() || creation.fields().iter().all(|field|
-        !matches!(field, Field::CapturedScopeField { source, role: super::super::ApplicationOperationBodyCaptureRole::Subject, .. }
-            if body.scope_fields().iter().any(|step| step.write_target().is_some() && step.field() == source))))
+    body.creation().is_none_or(|creation| {
+        creation.signing().is_none()
+            || creation.fields().iter().all(|field| {
+                let source = match field {
+                    Field::CapturedScopeField {
+                        source,
+                        role: super::super::ApplicationOperationBodyCaptureRole::Subject,
+                        ..
+                    } => Some((source, None)),
+                    Field::CapturedPathField {
+                        source,
+                        role: super::super::ApplicationOperationBodyCaptureRole::Subject,
+                        ..
+                    } => Some((&source.field, Some(&source.path))),
+                    _ => None,
+                };
+                source.is_none_or(|(source, path)| {
+                    let scope_write = path.is_none_or(|path| path.steps().is_empty())
+                        && body
+                            .scope_fields()
+                            .iter()
+                            .any(|step| step.write_target().is_some() && step.field() == source);
+                    let path_write = body.path_value_assignments().iter().any(|step| {
+                        &step.target.field == source
+                            && path.map_or_else(
+                                || step.target.path.steps().is_empty(),
+                                |path| &step.target.path == path,
+                            )
+                    });
+                    let retarget = path.is_some_and(|path| {
+                        path.steps().iter().any(|step| {
+                            body.reference_inputs()
+                                .iter()
+                                .any(|reference| reference.relation == step.relation())
+                                || body
+                                    .creation()
+                                    .into_iter()
+                                    .flat_map(|c| c.initialization_sites())
+                                    .flat_map(|c| {
+                                        c.links()
+                                            .iter()
+                                            .chain(c.path_links().iter().map(|p| &p.link))
+                                    })
+                                    .any(|link| link.relation == step.relation())
+                        })
+                    });
+                    !scope_write && !path_write && !retarget
+                })
+            })
+    })
 }

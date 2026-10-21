@@ -20,6 +20,9 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
     });
     let steps = body.scope_fields().iter().enumerate().map(|(index, step)| {
         let (source_name, source) = match step {
+            ApplicationOperationBodyScopeField::AssignValue { value, .. } => {
+                ("computed-value", value.clone())
+            }
             ApplicationOperationBodyScopeField::Expect { value, .. }
             | ApplicationOperationBodyScopeField::Assign { value, .. } => (
                 "literal",
@@ -27,7 +30,12 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
                     .as_str()
                     .to_owned(),
             ),
-            ApplicationOperationBodyScopeField::AssignInput {
+            ApplicationOperationBodyScopeField::ExpectInput {
+                member,
+                scalar_family,
+                ..
+            }
+            | ApplicationOperationBodyScopeField::AssignInput {
                 member,
                 scalar_family,
                 ..
@@ -76,7 +84,9 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
                     "kind",
                     match step {
                         ApplicationOperationBodyScopeField::Expect { .. } => "expect",
+                        ApplicationOperationBodyScopeField::ExpectInput { .. } => "expect-input",
                         ApplicationOperationBodyScopeField::Assign { .. } => "assign",
+                        ApplicationOperationBodyScopeField::AssignValue { .. } => "assign-value",
                         ApplicationOperationBodyScopeField::AssignInput { .. } => "assign-input",
                         ApplicationOperationBodyScopeField::SetOptionalInput { .. } => {
                             "set-optional-input"
@@ -118,12 +128,58 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
         .fields()
         .iter()
         .any(|step| step.source_field().is_some());
+    let created = creation_record(creation);
+    framed_record(
+        if has_requirement {
+            "operation-body-v5"
+        } else if has_optional {
+            "operation-body-v4"
+        } else if has_scope_source {
+            "operation-body-v3"
+        } else {
+            "operation-body-v2"
+        },
+        [("scope", scope), ("creation", created)],
+    )
+}
+
+pub(super) fn creation_record(
+    creation: &crate::application_schema::ApplicationOperationBodyCreation,
+) -> String {
+    let has_scope_source = creation
+        .fields()
+        .iter()
+        .any(|step| step.source_field().is_some());
     let has_principal_source = creation
         .fields()
         .iter()
         .any(|step| step.principal_source().is_some());
     let fields = creation.fields().iter().enumerate().map(|(index, step)| {
         let (source_name, source) = match step {
+            ApplicationOperationBodyCreatedField::CapturedPathField {
+                source,
+                scalar_family,
+                role,
+                target_presence,
+                ..
+            } => (
+                "classified-path-field",
+                framed_record(
+                    "classified-path-source-v1",
+                    [
+                        ("path", source.canonical_record()),
+                        ("family", scalar_family.canonical_name().to_owned()),
+                        ("role", role.canonical_name().to_owned()),
+                        (
+                            "target-presence",
+                            target_presence.canonical_name().to_owned(),
+                        ),
+                    ],
+                ),
+            ),
+            ApplicationOperationBodyCreatedField::Computed { value, .. } => {
+                ("computed-value", value.clone())
+            }
             ApplicationOperationBodyCreatedField::Literal { value, .. } => (
                 "literal",
                 worth_foundational::facade::prepare_aspect_value_identity_basis(value)
@@ -260,7 +316,7 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
             ],
         )
     });
-    let created = framed_record(
+    framed_record(
         if has_principal_source {
             "operation-body-creation-v3"
         } else if has_scope_source {
@@ -276,17 +332,5 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
                 framed_record("fields-v1", fields.map(|field| ("field", field))),
             ),
         ],
-    );
-    framed_record(
-        if has_requirement {
-            "operation-body-v5"
-        } else if has_optional {
-            "operation-body-v4"
-        } else if has_scope_source {
-            "operation-body-v3"
-        } else {
-            "operation-body-v2"
-        },
-        [("scope", scope), ("creation", created)],
     )
 }

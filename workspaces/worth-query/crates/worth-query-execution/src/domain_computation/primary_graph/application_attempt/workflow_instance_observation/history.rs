@@ -12,6 +12,9 @@ use worth_query_installation::facade::WorthQueryWorkflowHistoryReconstructionBud
 use worth_relational::facade::identity::EntityId;
 
 mod budget;
+mod captured_inputs;
+pub(super) mod operation_outputs;
+use super::super::fact::WorkflowHistoryRequirement;
 use super::super::fact::{observe_adjacency_checked, AdjacencyObservationDenial};
 use budget::HistoryReconstructionCharge;
 
@@ -186,6 +189,14 @@ pub(super) fn observe(
             transition.to,
             &mut scratch,
         )?;
+        let operation_outputs = operation_outputs::observe(
+            execution,
+            runtime,
+            snapshot,
+            layout,
+            transition.to,
+            &mut charge,
+        )?;
         let identity = match super::observe_field_value(
             runtime,
             execution,
@@ -229,11 +240,28 @@ pub(super) fn observe(
             transition.to,
             &mut scratch,
         )?;
+        let captured_inputs = match nodes {
+            HistoryNodes::Compiled(compiled) => captured_inputs::observe(
+                execution,
+                runtime,
+                snapshot,
+                layout,
+                compiled,
+                instance,
+                settlement.node(),
+                transition.to,
+                &mut charge,
+                &mut scratch,
+            )?,
+            HistoryNodes::Recorded => None,
+        };
         settled.push(ObservedWorkflowTransition {
+            captured_inputs,
             entity: transition.to,
             identity,
             settlement,
             assessment_evidence,
+            operation_outputs,
         });
     }
     // Every read above used this immutable native basis. A compact exact-basis
@@ -243,12 +271,14 @@ pub(super) fn observe(
         transitions: settled,
         facts: vec![WorthQueryApplicationObservedFact::WorkflowHistoryBasis {
             instance,
-            maximum_transitions: match basis {
-                HistoryBasis::Advance { inherited_steps } => {
-                    maximum_transitions.saturating_sub(inherited_steps)
+            requirement: match basis {
+                HistoryBasis::Advance { inherited_steps } => WorkflowHistoryRequirement::Append {
+                    maximum_transitions: maximum_transitions.saturating_sub(inherited_steps),
+                },
+                HistoryBasis::Close => WorkflowHistoryRequirement::Exact,
+                HistoryBasis::Ended | HistoryBasis::ReadOnly => {
+                    WorkflowHistoryRequirement::ReplayOnly
                 }
-                HistoryBasis::Close => transition_count.saturating_add(1),
-                HistoryBasis::Ended | HistoryBasis::ReadOnly => transition_count,
             },
             transition_count,
             snapshot: snapshot.clone(),

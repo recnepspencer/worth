@@ -17,6 +17,7 @@ fn replacement_v19_roundtrips_its_distinct_posture_and_nested_accounting() {
                 key: "current".into(),
                 direction: Direction::FromScope,
                 posture: Posture::ReplaceSingle,
+                source: Default::default(),
             }]);
     let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
         "Root".into(),
@@ -61,6 +62,7 @@ fn creation_link_directions_roundtrip_and_old_record_cannot_consume_them() {
             key: "ownership".to_owned(),
             direction,
             posture: worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkPosture::Append,
+            source: Default::default(),
         }]);
         let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
             "Root".to_owned(),
