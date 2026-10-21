@@ -42,19 +42,13 @@ type LiveLease<'application, Schema, Intent> = WorthQueryApplicationLiveLease<
 pub struct WorthQueryApplicationLiveLimits {
     pub(super) buffer_capacity: usize,
     pub(super) maximum_results: usize,
-    pub(super) maximum_work: Option<usize>,
 }
 
 impl WorthQueryApplicationLiveLimits {
-    pub const fn bounded(
-        buffer_capacity: usize,
-        maximum_results: usize,
-        maximum_work: Option<usize>,
-    ) -> Self {
+    pub const fn bounded(buffer_capacity: usize, maximum_results: usize) -> Self {
         Self {
             buffer_capacity,
             maximum_results,
-            maximum_work,
         }
     }
 }

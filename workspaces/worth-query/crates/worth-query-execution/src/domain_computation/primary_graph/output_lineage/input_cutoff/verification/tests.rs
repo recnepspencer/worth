@@ -1,24 +1,17 @@
 //! The currentness allowance decides reuse against a real native fact.
 
-use worth_foundational::facade::{AspectFieldLocator, LocatorAuthority};
-use worth_relational::facade::mvcc::CompanionPreflightBudget;
+use worth_foundational::facade::AspectFieldLocator;
+use worth_foundational::facade::LocatorAuthority;
 
-use super::{marked_facts_permit_reuse, InvalidationEditAdmission};
-use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationObservedFact,
-    tests::fixture::{installed_authorization_world, live_scope, AccountStatus},
-    WorthQueryPrincipalResolutionMode,
-};
-
-fn currentness(work: u64) -> InvalidationEditAdmission {
-    InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(work),
-        maximum_preparation_bytes: None,
-    })
-}
+use super::marked_facts_permit_reuse;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world;
+use crate::domain_computation::primary_graph::tests::fixture::live_scope;
+use crate::domain_computation::primary_graph::tests::fixture::AccountStatus;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 
 #[test]
-fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_stopping() {
+fn a_marked_fact_is_reverified_at_the_real_native_snapshot() {
     let world = installed_authorization_world(true);
     world
         .application
@@ -75,45 +68,12 @@ fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_s
 
                     // An ample allowance proves the marked fact current, so any `false`
                     // below comes from exhaustion alone, never from a changed source.
-                    let mut ample = currentness(1 << 20);
-                    let full = ample.charged_work();
-                    assert!(matches!(
-                        marked_facts_permit_reuse(
-                            &execution, &facts, runtime, &snapshot, &mut ample
-                        ),
-                        Ok(true)
-                    ));
-                    let required = ample.charged_work() - full;
-                    assert!(required > 1, "re-verification costs a visit plus its probe");
 
-                    // Every smaller allowance runs out inside re-verification. Each one
-                    // selects Fresh and leaves the demand running instead of returning
-                    // a terminal stop.
-                    for work in 1..required {
-                        assert!(
-                            matches!(
-                                marked_facts_permit_reuse(
-                                    &execution,
-                                    &facts,
-                                    runtime,
-                                    &snapshot,
-                                    &mut currentness(work)
-                                ),
-                                Ok(false)
-                            ),
-                            "currentness work {work} of {required} must select Fresh"
-                        );
-                    }
                     assert!(matches!(
-                        marked_facts_permit_reuse(
-                            &execution,
-                            &facts,
-                            runtime,
-                            &snapshot,
-                            &mut currentness(required)
-                        ),
+                        marked_facts_permit_reuse(&execution, &facts, runtime, &snapshot),
                         Ok(true)
                     ));
+
                     runtime.snapshots().release_snapshot(&snapshot).unwrap();
                 });
         })
@@ -121,33 +81,35 @@ fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_s
 }
 
 #[test]
-fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
-    use crate::domain_computation::{
-        authorization::WorthQueryOperationScopeEntityBinding,
-        primary_graph::{
-            application_attempt::{
-                CompletedHandlerFactBoundary, PreparedDecisionReuseContext,
-                WorthQueryApplicationOutputPosture, WorthQueryCheckpointOutputRole,
-            },
-            application_contribution::{
-                InstalledProducerEdition, PriorAbsence, WorthQueryDecisionContextDependencies,
-                WorthQueryProducerInputReuseContract,
-            },
-            application_query::WorthQueryObservedSourceSelection,
-            output_binding_identity::OutputBindingIdentity,
-            output_lineage::{
-                invalidation::{SettlementRegistration, SourceSettlementCurrentness},
-                recorded_output::{RecordedOutput, RecordedOutputMutable},
-                retained_computation::RecordedComputation,
-                ComputationSourceEvidence, PreparedInputReuseKey, PreparedNativeOutputWitness,
-                ProductCoordinate, RecordedSettlementIdentity, SemanticSource,
-                WorthQueryApplicationOutputCorrespondence,
-            },
-            DecisionContextUse,
-        },
-    };
+fn a_clean_settlement_reuses_without_fact_reverification() {
+    use crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding;
+    use crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary;
+    use crate::domain_computation::primary_graph::application_attempt::PreparedDecisionReuseContext;
+    use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture;
+    use crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole;
+    use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
+    use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
+    use crate::domain_computation::primary_graph::application_contribution::WorthQueryDecisionContextDependencies;
+    use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerInputReuseContract;
+    use crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceSelection;
+    use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+    use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistration;
+    use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
+    use crate::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutput;
+    use crate::domain_computation::primary_graph::output_lineage::recorded_output::RecordedOutputMutable;
+    use crate::domain_computation::primary_graph::output_lineage::retained_computation::RecordedComputation;
+    use crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence;
+    use crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey;
+    use crate::domain_computation::primary_graph::output_lineage::PreparedNativeOutputWitness;
+    use crate::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+    use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+    use crate::domain_computation::primary_graph::output_lineage::SemanticSource;
+    use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputCorrespondence;
+    use crate::domain_computation::primary_graph::DecisionContextUse;
     use crate::equality_type_id::EqualityTypeId as TypeId;
-    use std::sync::{Arc, Mutex, OnceLock};
+    use std::sync::Arc;
+    use std::sync::Mutex;
+    use std::sync::OnceLock;
 
     let world = installed_authorization_world(true);
     world
@@ -252,12 +214,10 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
                         locator: locator.clone(),
                         native_revision: Some(revision),
                     }]);
-                let mut admission = currentness(1 << 20);
+
                 let witness = PreparedNativeOutputWitness::prepare_republication(
                     &correspondence,
                     graph.layout(),
-                    owner,
-                    &mut admission,
                 )
                 .unwrap()
                 .expect("the installed Account admits its native witness")
@@ -265,39 +225,31 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
                 .unwrap();
                 let evidence = ComputationSourceEvidence::for_test(false);
                 owner
-                    .register_settlement(
-                        SettlementRegistration {
-                            work_membership: None,
-                            identity: Arc::clone(&identity),
-                            facts: evidence.retain_facts(Arc::clone(&facts)),
-                            output_facts: None,
-                            read_basis: selected.clone(),
-                            stale_at_read_basis: Default::default(),
-                            requirement: None,
-                            upstream: Default::default(),
-                        },
-                        &mut admission,
-                    )
+                    .register_settlement(SettlementRegistration {
+                        computation: None,
+                        work_membership: None,
+                        identity: Arc::clone(&identity),
+                        facts: evidence.retain_facts(Arc::clone(&facts)),
+                        output_facts: None,
+                        read_basis: selected.clone(),
+                        stale_at_read_basis: Default::default(),
+                        requirement: None,
+                        upstream: Default::default(),
+                    })
                     .unwrap();
                 assert!(
                     matches!(
-                        owner.currentness(&selected, &identity, &mut admission),
+                        owner.currentness(&selected, &identity),
                         Ok(SourceSettlementCurrentness::Clean)
                     ),
                     "the native settlement must start Clean"
                 );
                 assert!(
                     matches!(
-                        marked_facts_permit_reuse(
-                            &execution,
-                            facts.iter(),
-                            runtime,
-                            &snapshot,
-                            &mut currentness(1)
-                        ),
-                        Ok(false)
+                        marked_facts_permit_reuse(&execution, facts.iter(), runtime, &snapshot),
+                        Ok(true)
                     ),
-                    "one unit cannot load the native handler fact"
+                    "the native probe confirms the original handler fact"
                 );
 
                 let boundary = CompletedHandlerFactBoundary::completed_for_test(1);
@@ -305,9 +257,9 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
                     .seal_decision_reuse(context(), DecisionContextUse::default())
                     .unwrap();
                 let row = RecordedOutput {
+                    required_publication: None,
                     computation_source: evidence,
                     native_prior_checkpoint: None,
-                    _retained_capacity: None,
                     performed_origin: None,
                     consumed_outputs: Arc::from([]),
                     completed_handler_facts: Some(boundary),
@@ -329,7 +281,7 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
                 let candidate = super::RetainedInputCutoffCandidate::from_exact_cell(Arc::new(
                     OnceLock::from(row),
                 ));
-                let mut allowance = currentness(1);
+
                 let decision = candidate
                     .eligible_for_reuse(
                         &execution,
@@ -340,18 +292,11 @@ fn a_clean_settlement_reuses_with_one_unit_and_no_fact_load() {
                         &snapshot,
                         &selected,
                         owner,
-                        &mut admission,
-                        &mut allowance,
                     )
                     .unwrap();
                 assert!(
                     decision.is_some(),
                     "a Clean settlement must reuse without loading its facts"
-                );
-                assert_eq!(
-                    allowance.remaining_work(),
-                    Some(1),
-                    "Clean reuse must spend zero currentness units"
                 );
                 runtime.snapshots().release_snapshot(&snapshot).unwrap();
             });

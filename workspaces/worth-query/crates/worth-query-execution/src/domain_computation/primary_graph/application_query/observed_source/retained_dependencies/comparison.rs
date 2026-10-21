@@ -1,12 +1,10 @@
-//! One observation, one execution and one cumulative native comparison meter.
+//! Validate retained outputs and original query dependencies at one selected image.
 use super::*;
-pub(super) mod observation;
-use crate::domain_computation::primary_graph::{
-    application_attempt::retained_decision_facts::StorageControl,
-    output_reuse::{first_moved_fact, retained_fact_denial},
-    request_allocation_control::RequestAllocationControl,
-    WorthQueryOutputDemandSettlement,
-};
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
+use crate::domain_computation::primary_graph::output_reuse::first_moved_fact;
+use crate::domain_computation::primary_graph::output_reuse::retained_fact_denial;
+use crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
@@ -19,24 +17,18 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         request: &WorthQueryRequestScope,
         settlements: impl IntoIterator<Item = &'s WorthQueryOutputDemandSettlement>,
         dependencies: &WorthQueryRetainedQueryDependencies,
-        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryRequiredSetCurrentnessDenial> {
         let runtime = self.application();
         let execution = phase
             .checked_execution_request_for(&runtime.product_runtime)
             .map_err(execution_denial)?;
         let control = RequestAllocationControl::new(request, execution.allocation_policy());
-        let mut admission = self.request_admission(maximum_work);
-        let outcome = runtime
+
+        runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |relational| {
-                self.require_current_settlements_in(
-                    execution,
-                    relational,
-                    settlements,
-                    &mut admission,
-                )?;
+                self.require_current_settlements_in(execution, relational, settlements)?;
                 for source in dependencies.sources.elements() {
                     self.require_current_dependency_in(
                         &execution,
@@ -44,32 +36,46 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         source,
                         control.policy(),
                         request,
-                        &mut admission,
                     )?;
                 }
                 Ok(())
-            });
-        observation::record(runtime, admission.charged_work());
-        outcome
+            })
     }
     // Single-member comparison is owner-local. It issues no complete-set proof;
-    // production's loop lends the SAME admission to every member.
+    // production validates each member at the same selected native image.
     pub(super) fn require_current_dependency_in(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &worth_relational::facade::runtime::RelationalRuntime,
-        source: &WorthQueryObservedSource<()>,
+        source: &super::RetainedQuerySource,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         request: &WorthQueryRequestScope,
-        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<(), WorthQueryRequiredSetCurrentnessDenial> {
         let runtime = self.application();
         policy.check_live().map_err(storage)?;
-        admit_descriptor(admission, source)?;
-        self.validate_dependency(source, false)?;
+
+        self.validate_dependency(&source.source, false)?;
+        let selected = if source.coverage.is_some() {
+            super::coverage::selected_basis(relational, self.application_basis().snapshot_handle())?
+        } else {
+            None
+        };
+        if let (Some(coverage), Some(selected)) = (&source.coverage, &selected)
+            && runtime
+                .primary_provider
+                .graph
+                .source_owner
+                .invalidation_owner
+                .query_facts_clean_at(coverage, selected, policy)
+                .map_err(super::coverage::coverage_stop)?
+                .is_some()
+        {
+            return Ok(());
+        }
+        let retained = source;
+        let source = &retained.source;
         let prepared = source.admit_fact_materialization(
             &runtime.primary_provider.graph.layout,
-            admission,
             &source.query_identifier,
         )?;
         let facts = prepared.into_facts(StorageControl::new(policy, Some(request)))?;
@@ -78,7 +84,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             relational,
             self.application_basis().snapshot_handle(),
             facts.iter(),
-            admission,
         ) {
             Ok(None) => {}
             Ok(Some(fact)) => {
@@ -94,6 +99,16 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 )
             }
         }
+        if let (Some(coverage), Some(selected)) = (&retained.coverage, &selected) {
+            runtime
+                .primary_provider
+                .graph
+                .source_owner
+                .invalidation_owner
+                .reestablish_query_read(coverage, selected, policy)
+                .map_err(super::coverage::coverage_stop)?;
+        }
+        policy.check_live().map_err(storage)?;
         Ok(())
     }
 }

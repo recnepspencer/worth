@@ -92,7 +92,7 @@ impl Body {
 }
 pub(super) fn validate(operation: &str, body: &Body, members: &[Member]) -> Result<(), Denial> {
     if !body.has_supported_child_creations() {
-        return Err(Denial::MissingOperationProgramDependency);
+        return Err(Denial::program_body_dependency(operation));
     }
     for child in body
         .creation()
@@ -105,7 +105,7 @@ pub(super) fn validate(operation: &str, body: &Body, members: &[Member]) -> Resu
             if relation==&link.relation && from==&link.from && to==&link.to
                 && integrity.cardinality.target_max==Some(1) && integrity.cross_context_policy()==ApplicationRelationCrossContextPolicy::Forbid))
             || !members.iter().any(|m|matches!(m,Member::OperationProgram{operation:op,target} if op==operation && target==&link.program_target())) {
-            return Err(Denial::MissingOperationProgramDependency);
+            return Err(Denial::program_body_dependency(operation));
         }
         }
     }

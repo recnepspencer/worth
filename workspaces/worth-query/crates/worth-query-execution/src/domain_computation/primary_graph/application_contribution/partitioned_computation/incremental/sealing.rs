@@ -1,34 +1,80 @@
-//! Sealing compares every carried fact before retaining a completed run.
+//! Sealing consumes same-snapshot validation or compares every carried fact.
 
 use super::retained::*;
 use super::{CompletedComputationRetention, SealedComputationRetention};
 use crate::domain_computation::primary_graph::application_attempt::SealedComputationFacts;
 
 impl CompletedComputationRetention {
+    /// New index storage is admitted before seal builds it, with the run's
+    /// existing request reservation held until lineage retention takes custody.
+    pub(in crate::domain_computation::primary_graph) fn reserve_fact_index(
+        &mut self,
+        bytes: Option<u64>,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        Option<worth_execution::ExecutionMemoryReservation>,
+        crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial,
+    > {
+        use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
+        match self {
+            Self::Produced(run) => {
+                run.tree_memory
+                    .grow(bytes.ok_or(Resource::CapacityOverflow)?)?;
+                Ok(None)
+            }
+            // No retained run can hold temporary attribution. Its caller's
+            // explicit allocation policy owns that storage until completion.
+            Self::Absent(_) => match (bytes, policy) {
+                (Some(bytes), worth_execution::ExecutionAllocationPolicy::Execution(lease)) => {
+                    lease
+                        .reserve_memory(bytes)
+                        .map(Some)
+                        .map_err(super::super::super::execution_denial::memory_denial)
+                }
+                _ => Ok(None),
+            },
+        }
+    }
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn seal(
         self,
         facts: Option<SealedComputationFacts>,
     ) -> Result<SealedComputationRetention, ()> {
+        self.seal_at_optional(facts, None)
+    }
+    pub(in crate::domain_computation::primary_graph) fn seal_at(
+        self,
+        facts: Option<SealedComputationFacts>,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    ) -> Result<SealedComputationRetention, ()> {
+        self.seal_at_optional(facts, Some(snapshot))
+    }
+    fn seal_at_optional(
+        self,
+        facts: Option<SealedComputationFacts>,
+        snapshot: Option<&worth_relational::facade::snapshots::SnapshotHandle>,
+    ) -> Result<SealedComputationRetention, ()> {
         match self {
-            Self::Produced(run) => {
-                run.seal(facts.expect("one completed run retains its fact attribution"))
-            }
+            Self::Produced(run) => run.seal_at(
+                facts.expect("one completed run retains its fact attribution"),
+                snapshot,
+            ),
             Self::Absent(reason) => Ok(SealedComputationRetention::Absent(reason)),
         }
     }
 }
 
 impl CompletedComputationRun {
-    /// Seals the run over the facts seal observed. Every fact a carried call
-    /// read must be the fact the prior run read: the law that makes a carried
-    /// call's answer the answer a full run computes. A call the run did not
-    /// carry, such as a removed item's key, holds no fact. `Err` when one
-    /// moved.
-    pub(in crate::domain_computation::primary_graph) fn seal(
+    /// Unqualified carriage compares original prior facts. Native-qualified
+    /// carriage is consumed only at the exact reader snapshot that checked it.
+    fn seal_at(
         self,
         facts: SealedComputationFacts,
+        snapshot: Option<&worth_relational::facade::snapshots::SnapshotHandle>,
     ) -> Result<SealedComputationRetention, ()> {
-        if let Some(carried) = &self.carried {
+        if let Some(carried) = &self.carried
+            && !(snapshot.is_some() && snapshot == carried.validated_at.as_ref())
+        {
             let unchanged = carried
                 .prior
                 .facts
@@ -42,22 +88,24 @@ impl CompletedComputationRun {
                 return Err(());
             }
         }
-        let bytes = self
-            .typed_bytes
-            .zip(facts.charged_bytes())
-            .and_then(|(typed, facts)| typed.checked_add(facts));
+        let checked_calls = facts.bind_call_shape(
+            self.call_sequence.shape(),
+            self.carried
+                .as_ref()
+                .and_then(|carried| carried.prior.checked_calls.as_ref()),
+        );
+
         Ok(SealedComputationRetention::Produced(SealedComputationRun {
             state: RetainedComputation {
                 basis: self.basis,
                 typed: self.typed,
                 facts,
-                bytes,
+                checked_calls,
             },
             cloned_from: self.carried.map(|carried| carried.prior),
             tree_memory: RunTreeMemory {
                 _held: self.tree_memory,
                 _routing: self.routing_memory,
-                _steps: self.steps_memory,
             },
         }))
     }

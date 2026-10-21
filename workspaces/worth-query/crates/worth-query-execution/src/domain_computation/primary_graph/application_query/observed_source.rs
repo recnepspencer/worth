@@ -11,8 +11,6 @@ use worth_relational::facade::{
 
 use super::resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
 
-mod admitted_clone;
-mod admitted_epoch;
 mod denial;
 mod expression_context;
 mod fact_conversion;
@@ -26,8 +24,6 @@ mod retained_parameters;
 mod root_selection;
 mod scope_selector;
 mod workflow_capture;
-pub(in crate::domain_computation::primary_graph) use admitted_clone::WorthQueryObservedSourceCloneStop;
-pub(in crate::domain_computation::primary_graph) use admitted_epoch::WorthQueryObservedEpochStop;
 pub use denial::{WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind};
 pub(in crate::domain_computation::primary_graph::application_query) use expression_context::RetainedExpressionContext;
 pub use prepared_expectation::WorthQueryPendingSourceExpectation;
@@ -174,8 +170,7 @@ pub struct WorthQueryObservedSource<Query> {
     pub(in crate::domain_computation) model_root: EntityId,
     pub(super) source_meaning: std::sync::Arc<source_identity::WorthQueryObservedSourceMeaning>,
     pub(super) scope_selector: std::sync::Arc<WorthQueryObservedScopeSelector>,
-    pub(super) _descriptor_charge:
-        std::sync::Arc<super::resource_lifecycle::WorthQueryRetainedSourceCharge>,
+
     pub(in crate::domain_computation) _marker: PhantomData<fn() -> Query>,
 }
 

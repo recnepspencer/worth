@@ -1,6 +1,28 @@
 //! The one operation-scoped reader envelope for owned and borrowed projections.
 use super::*;
 
+/// The optional real source-query loan an admitted projection may read through.
+pub(super) struct SourceAccess<'access, Schema> {
+    pub(super) source_query: Option<
+        &'access crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+            'access,
+            Schema,
+        >,
+    >,
+    pub(super) source_context_use: Option<
+        &'access std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>,
+    >,
+}
+
+impl<Schema> SourceAccess<'_, Schema> {
+    pub(super) const fn none() -> Self {
+        Self {
+            source_query: None,
+            source_context_use: None,
+        }
+    }
+}
+
 pub(super) fn project<Schema, Operation, Input, Scope, Output>(
     authority: &WorthQueryApplicationInvariantProjectionAuthority<Schema>,
     reader: &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
@@ -10,6 +32,7 @@ pub(super) fn project<Schema, Operation, Input, Scope, Output>(
         &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
         &WorthQueryInvariantEntityIdentity<Schema, Scope>,
     ) -> Output,
+    source_access: SourceAccess<'_, Schema>,
 ) -> (Output, DecisionReads) {
     reader.selected_product_occurrence = Some(product.observation().lifecycle_incarnation());
     reader.selected_product_generation = Some(product.observation().reference_generation().get());
@@ -19,6 +42,8 @@ pub(super) fn project<Schema, Operation, Input, Scope, Output>(
         .map_or_else(DecisionReads::default, DecisionReads::with_prior);
     let mut operation_reader = WorthQueryApplicationOperationInvariantProjectionReader {
         reader,
+        source_query: source_access.source_query,
+        source_context_use: source_access.source_context_use,
         admitted_contracts: Some(admission.allowed_graph_contract()),
         runtime_authority: authority.runtime_authority,
         binding_identity: &authority.binding_identity,

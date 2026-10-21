@@ -15,6 +15,10 @@ use crate::transactions::data::{MergedCommitPlan, PublishedMergeExecutionAuthori
 
 #[derive(Deserialize)]
 pub(crate) struct CanonicalEnvelopeWire<'a> {
+    required_output_codec_retirements:
+        Vec<std::sync::Arc<super::CanonicalRequiredOutputCodecRetirement>>,
+    #[serde(default)]
+    required_output_origin: Option<std::sync::Arc<super::CanonicalRequiredOutputOrigin>>,
     commit: RelationalCommitReceipt,
     branch_context: BranchId,
     branch_cell_checkpoint: Option<crate::branch::RelationalBranchCellCheckpoint>,
@@ -61,7 +65,9 @@ impl CanonicalEnvelopeWire<'_> {
             );
         }
         let symbol_texts = self.symbol_texts.readmit(execution)?;
-        Ok(super::CanonicalCommitEnvelope {
+        let envelope = super::CanonicalCommitEnvelope {
+            required_output_codec_retirements: self.required_output_codec_retirements,
+            required_output_origin: self.required_output_origin,
             commit: self.commit,
             branch_context: self.branch_context,
             branch_cell_checkpoint: self.branch_cell_checkpoint,
@@ -84,6 +90,12 @@ impl CanonicalEnvelopeWire<'_> {
             schema_continuation_descriptor: self.schema_continuation_descriptor,
             schema_reconciliation_descriptor: self.schema_reconciliation_descriptor,
             descriptor_semantics_version: self.descriptor_semantics_version,
-        })
+        };
+        if !envelope.codec_retirement_headers_valid() {
+            return Err(
+                crate::symbols::data::RelationalFieldTextAdmissionDenial::InvalidSymbolDictionary,
+            );
+        }
+        Ok(envelope)
     }
 }

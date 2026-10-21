@@ -58,7 +58,8 @@ impl ExecutionAllocationDenialKind {
     }
 }
 
-/// Owner-produced refusal; a quote exists only after checked payload layout.
+/// Owner-produced refusal; a quote exists after an explicit payload byte bound
+/// or a physical backing layout has been checked.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExecutionAllocationDenial {
     kind: ExecutionAllocationDenialKind,
@@ -81,6 +82,18 @@ impl ExecutionAllocationDenial {
     }
     pub fn requested_payload_bytes(&self) -> Option<u64> {
         self.requested_payload_bytes
+    }
+}
+
+impl From<crate::MemoryLimitDenial> for ExecutionAllocationDenial {
+    fn from(cause: crate::MemoryLimitDenial) -> Self {
+        Self::new(
+            ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(cause)),
+            Some(match cause {
+                crate::MemoryLimitDenial::Capacity { requested, .. }
+                | crate::MemoryLimitDenial::CounterOverflow { requested, .. } => requested,
+            }),
+        )
     }
 }
 

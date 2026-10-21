@@ -14,22 +14,18 @@ mod displaced_generation;
 mod equal_field_write;
 #[path = "native_journey_tests/equality.rs"]
 mod equality;
-#[path = "native_journey_tests/equality_expiration.rs"]
-mod equality_expiration;
-#[path = "native_journey_tests/full_ledger.rs"]
-mod full_ledger;
 #[path = "native_journey_tests/full_verification.rs"]
 mod full_verification;
 #[path = "native_journey_tests/local_requirement.rs"]
 mod local_requirement;
 #[path = "native_journey_tests/logical_work_scale.rs"]
 mod logical_work_scale;
-#[path = "native_journey_tests/marking_ceiling.rs"]
-mod marking_ceiling;
-#[path = "native_journey_tests/reestablishment.rs"]
-mod reestablishment;
+#[path = "native_journey_tests/posting_continuation.rs"]
+mod posting_continuation;
 #[path = "native_journey_tests/scope_hierarchy.rs"]
 mod scope_hierarchy;
+#[path = "native_journey_tests/unwatched.rs"]
+mod unwatched;
 // Fixture evidence carries no performed output projection, so the
 // equivalence oracle correctly refuses it; this proof is about metering.
 #[path = "native_journey_tests/pending_own_evidence.rs"]
@@ -42,56 +38,58 @@ mod replay_propagation;
 mod request_recording;
 #[path = "native_journey_tests/required_hints.rs"]
 mod required_hints;
-#[path = "native_journey_tests/retained_categories.rs"]
-mod retained_categories;
-#[path = "native_journey_tests/shared_versions.rs"]
-mod shared_versions;
+#[path = "native_journey_tests/retained_headroom.rs"]
+mod retained_headroom;
 #[path = "native_journey_tests/transitive_propagation.rs"]
 mod transitive_propagation;
 #[path = "native_journey_tests/unchanged_history.rs"]
 mod unchanged_history;
-#[path = "native_journey_tests/undeclared_change.rs"]
-mod undeclared_change;
 #[path = "native_journey_tests/verified_current.rs"]
 mod verified_current;
 
-#[path = "native_journey_tests/consumed_custody.rs"]
-mod consumed_custody;
 #[path = "native_journey_tests/shared_fact_custody.rs"]
 mod shared_fact_custody;
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::{collections::BTreeMap, sync::Arc};
+use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use im::OrdSet;
-use worth_foundational::facade::{
-    AspectFieldLocator, AspectValue, InternedString, LocatorAuthority,
-};
-use worth_relational::facade::{
-    identity::EntityId,
-    mvcc::{RelationalPublicationOutcome, RelationalTransactionIntent},
-    runtime::{PositionedRelationalSnapshot, RelationalRuntime},
-    snapshots::SnapshotHandle,
-    transactions::{
-        AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
-        WorkerIntentBatch,
-    },
-};
+use worth_foundational::facade::AspectFieldLocator;
+use worth_foundational::facade::AspectValue;
+use worth_foundational::facade::InternedString;
+use worth_foundational::facade::LocatorAuthority;
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::mvcc::RelationalPublicationOutcome;
+use worth_relational::facade::mvcc::RelationalTransactionIntent;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
+use worth_relational::facade::transactions::AspectFieldPatch;
+use worth_relational::facade::transactions::EntityMutationIntent;
+use worth_relational::facade::transactions::MutationIntent;
+use worth_relational::facade::transactions::UpdateEntityFieldsIntent;
+use worth_relational::facade::transactions::WorkerIntentBatch;
 
-use super::super::{ProductCoordinate, RecordedSettlementIdentity, SemanticSource};
-use super::{SettlementRegistration, SourceInvalidationOwner, SourceSettlementCurrentness};
-use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationObservedFact,
-    tests::fixture::{
-        installed_authorization_world, live_scope, release_test_commit_snapshot, AccountLabel,
-        AccountStatus,
-    },
-    WorthQueryPrincipalResolutionMode,
-};
+use super::super::ProductCoordinate;
+use super::super::RecordedSettlementIdentity;
+use super::super::SemanticSource;
+use super::SettlementRegistration;
+use super::SourceInvalidationOwner;
+use super::SourceSettlementCurrentness;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world;
+use crate::domain_computation::primary_graph::tests::fixture::live_scope;
+use crate::domain_computation::primary_graph::tests::fixture::release_test_commit_snapshot;
+use crate::domain_computation::primary_graph::tests::fixture::AccountLabel;
+use crate::domain_computation::primary_graph::tests::fixture::AccountStatus;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 
 struct StatusOutput;
 
-fn snapshot(runtime: &RelationalRuntime) -> (SnapshotHandle, PositionedRelationalSnapshot) {
+pub(super) fn snapshot(
+    runtime: &RelationalRuntime,
+) -> (SnapshotHandle, PositionedRelationalSnapshot) {
     let basis = runtime
         .admit_branch_basis(&runtime.main_branch_identity())
         .unwrap();
@@ -103,7 +101,7 @@ fn snapshot(runtime: &RelationalRuntime) -> (SnapshotHandle, PositionedRelationa
     (handle, proof)
 }
 
-fn write_field(
+pub(super) fn write_field(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     entity: EntityId,
@@ -155,7 +153,7 @@ fn write_batch(
     runtime.settle_performed_publication(performed).unwrap()
 }
 
-fn field_fact(
+pub(super) fn field_fact(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     handle: &SnapshotHandle,
@@ -189,8 +187,8 @@ fn register(
     upstream: OrdSet<Arc<RecordedSettlementIdentity>>,
 ) {
     owner
-        .register_settlement(
-            SettlementRegistration {
+        .register_settlement(SettlementRegistration {
+                computation: None,
                 work_membership: None,
                 identity,
                 facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, facts),
@@ -199,9 +197,7 @@ fn register(
                 stale_at_read_basis: im::OrdSet::new(),
                 requirement: None,
                 upstream,
-            },
-            &mut owner.edit_admission(),
-        )
+            })
         .expect("native aligned settlement registers");
 }
 
@@ -210,9 +206,7 @@ fn currentness(
     basis: &PositionedRelationalSnapshot,
     identity: &RecordedSettlementIdentity,
 ) -> SourceSettlementCurrentness {
-    owner
-        .currentness(basis, identity, &mut owner.edit_admission())
-        .unwrap()
+    owner.currentness(basis, identity).unwrap()
 }
 
 #[test]

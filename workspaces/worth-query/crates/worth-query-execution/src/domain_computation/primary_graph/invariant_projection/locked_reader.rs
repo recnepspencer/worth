@@ -42,6 +42,8 @@ pub use traversal_denial::{
 /// It resolves entities by identity field, reads fields, traverses relations,
 /// and summarizes aggregates. Every read is charged to the projection's work.
 pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
+    pub(super) value_bindings: &'runtime worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
+    pub(super) value_decode: &'runtime super::super::value_decode::ValueDecodeSession<'runtime>,
     pub(super) execution: &'runtime worth_execution::ExecutionRequest<'runtime, 'runtime>,
     pub(super) runtime: &'runtime mut worth_relational::facade::runtime::RelationalRuntime,
     pub(super) layout: &'runtime super::super::schema_layout::WorthQueryPrimaryGraphLayout,
@@ -224,6 +226,7 @@ where
             output,
             snapshot: WorthQueryApplicationInvariantProjectionSnapshot {
                 graph: self.graph.clone(),
+                value_bindings: self.value_bindings.clone(),
                 layout: Arc::clone(&self.layout),
                 basis: Some(basis),
                 snapshot: Some(snapshot),

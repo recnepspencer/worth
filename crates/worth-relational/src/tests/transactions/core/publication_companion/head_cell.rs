@@ -17,13 +17,6 @@ impl RelationalPublicationCompanion for UnindexedCompanion {
     }
 }
 
-fn budget() -> CompanionPreflightBudget {
-    CompanionPreflightBudget {
-        maximum_work_visits: Some(32),
-        maximum_preparation_bytes: None,
-    }
-}
-
 #[test]
 fn head_cell_uses_the_new_head_after_an_unindexed_publication() {
     let host_request = crate::test_execution_policy::serial_request();
@@ -40,7 +33,7 @@ fn head_cell_uses_the_new_head_after_an_unindexed_publication() {
         .publication_companion_port()
         .begin_required_registration()
         .unwrap()
-        .activate(Arc::new(UnindexedCompanion), budget())
+        .activate(Arc::new(UnindexedCompanion))
         .unwrap();
     let committed = create_entity_outcome(execution, &runtime, "unindexed-publication");
     let head = runtime
@@ -112,13 +105,10 @@ fn contention(execution: &worth_execution::ExecutionRequest<'_, '_>, independent
         .publication_companion_port()
         .begin_required_registration()
         .unwrap()
-        .activate(
-            Arc::new(HeldPreparedCompanion {
-                prepared,
-                release: Mutex::new(observe_release),
-            }),
-            budget(),
-        )
+        .activate(Arc::new(HeldPreparedCompanion {
+            prepared,
+            release: Mutex::new(observe_release),
+        }))
         .unwrap();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
@@ -193,7 +183,7 @@ fn a_panicking_head_install_cannot_poison_source_publication() {
         .publication_companion_port()
         .begin_required_registration()
         .unwrap()
-        .activate(Arc::new(UnindexedCompanion), budget())
+        .activate(Arc::new(UnindexedCompanion))
         .unwrap();
     let initial = Arc::new(DropCounter(Arc::new(AtomicUsize::new(0))));
     let dropped = Arc::clone(&initial.0);

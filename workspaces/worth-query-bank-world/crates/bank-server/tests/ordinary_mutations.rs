@@ -208,7 +208,7 @@ fn account_activity(
         .runtime
         .account_activity(account)
         .as_principal(principal)
-        .execute(BankReadControls::current(request, 128, 8_192).unwrap())
+        .execute(BankReadControls::current(request, 128).unwrap())
         .expect("account activity must be readable")
         .rows()[0]
         .entries()
@@ -216,7 +216,7 @@ fn account_activity(
 }
 
 fn read_controls() -> BankReadControls {
-    BankReadControls::current(request_scope(), 128, 10_000).unwrap()
+    BankReadControls::current(request_scope(), 128).unwrap()
 }
 
 fn key(value: &str) -> BankIdempotencyKey {

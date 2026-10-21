@@ -2,16 +2,13 @@
 
 use super::inventory::WorkflowAdoptionInventoryRequest;
 use super::WorkflowAdoptionReadDenial as Denial;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use worth_relational::facade::{
-    branch::AdmittedRelationalBranchBasis,
-    indexes::{
-        BoundedEntityFieldLookupAdmissionStop, BoundedEntityFieldLookupDenial,
-        BoundedEntityFieldLookupDenialKind, DerivedIndexMaintenanceDenialKind,
-    },
-    mvcc::CompanionPreflightBudget,
-    runtime::{RelationalRuntime, VisibilityProjectionView},
-};
+
+use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
+use worth_relational::facade::indexes::BoundedEntityFieldLookupDenial;
+use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;
+use worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::runtime::VisibilityProjectionView;
 
 pub(super) fn is_empty(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -19,20 +16,15 @@ pub(super) fn is_empty(
     basis: &AdmittedRelationalBranchBasis,
     view: &VisibilityProjectionView,
     request: &WorkflowAdoptionInventoryRequest<'_>,
-) -> Result<(bool, usize), Denial> {
+) -> Result<bool, Denial> {
     // This is the caller's remaining selection allowance, not a new host
     // allowance. Its exact charge is returned and deducted before truth reads.
-    let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(request.maximum_work_units as u64),
-        maximum_preparation_bytes: Some(request.maximum_preparation_bytes),
-    });
+
     let lineage = &request.layout.lineage;
     // Currency is one logical metadata selection. The native owner pays its
     // real branch-key comparisons/copies and any authentic fork preparation
     // on this same original execution, even when the selected index is warm.
-    admission
-        .charge_external_work(1)
-        .map_err(Denial::Preparation)?;
+
     runtime.index_authority().ensure_field_index_for_basis(
         lineage.identity_index_id,
         basis,
@@ -43,9 +35,7 @@ pub(super) fn is_empty(
         DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded => Denial::IndexMaintenanceWorkLimit,
         _ => Denial::SelectedIndexUnavailable,
     })?;
-    admission
-        .charge_external_work(1)
-        .map_err(Denial::Preparation)?;
+
     let selected = runtime
         .index_access()
         .prepare_entity_field_lookup(
@@ -56,20 +46,9 @@ pub(super) fn is_empty(
             execution,
         )
         .map_err(index_denial)?;
-    let empty = selected
-        .population_is_empty_with_admission(execution, || admission.charge_external_work(1))
-        .map_err(|stop| match stop {
-            BoundedEntityFieldLookupAdmissionStop::Admission(cause) => Denial::Preparation(cause),
-            BoundedEntityFieldLookupAdmissionStop::Lookup(cause) => index_denial(cause),
-            BoundedEntityFieldLookupAdmissionStop::AccountingOverflow
-            | BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired => {
-                Denial::SelectedIndexUnavailable
-            }
-        })?;
-    Ok((
-        empty,
-        usize::try_from(admission.charged_work()).expect("selected work fits its native count"),
-    ))
+    selected
+        .population_is_empty(execution)
+        .map_err(index_denial)
 }
 
 fn index_denial(cause: BoundedEntityFieldLookupDenial) -> Denial {

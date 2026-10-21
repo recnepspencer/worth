@@ -14,3 +14,7 @@ mod fixtures;
 mod judgement;
 mod locus_parity;
 mod slot_identity;
+
+mod relation_boundaries;
+mod relation_fixtures;
+mod relation_judgement;

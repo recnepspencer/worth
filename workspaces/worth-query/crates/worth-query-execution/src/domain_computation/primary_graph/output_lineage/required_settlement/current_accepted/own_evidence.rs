@@ -6,14 +6,11 @@ impl AcceptedCurrentCandidate {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, ConsumedOutputVerificationStop> {
         // An old dependency set cannot constrain a consumer whose own native
         // evidence has changed. Missing evidence cannot reject the old edges.
         // This only requests disclosure, never Current.
-        admission
-            .charge_external_work(3)
-            .map_err(|_| ConsumedOutputVerificationStop::WorkExhausted)?;
+
         let facts = self
             .selected
             .recorded()
@@ -38,7 +35,6 @@ impl AcceptedCurrentCandidate {
             witness,
             runtime,
             snapshot,
-            admission,
         ) {
             Ok(false) => Ok(false),
             Ok(true) | Err(ConsumedOutputVerificationStop::Unavailable) => Ok(true),

@@ -33,8 +33,7 @@ pub(crate) use history::{
 };
 pub use history::{RelationalBranchSharingCostCounters, RelationalPhase4ReferenceCostCounters};
 pub(crate) use indexing::{
-    ExactLookupInputs, IndexDefinitionReadBinding, IndexingState, IndexingSubsystem,
-    PreparedGenerationBatch,
+    IndexDefinitionReadBinding, IndexingState, IndexingSubsystem, PreparedGenerationBatch,
 };
 pub(crate) use lineage::{LineageState, LineageSubsystem, ValidatedLineageEventBatch};
 pub(crate) use lineage_identity::LineageIdentityAllocator;
@@ -50,6 +49,7 @@ pub(crate) use storage::{
     PartitionEdition, PartitionEditionCopyLane, PartitionEditionWriter, StorageSubsystem,
 };
 pub(crate) use visibility::{
-    PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotSlotReservation,
-    ReplayRetentionState, SnapshotHandleBinding, VisibilityResidency, VisibilitySubsystem,
+    PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,
+    PublishedSnapshotSlotReservation, ReplayRetentionState, SnapshotHandleBinding,
+    VisibilityResidency, VisibilitySubsystem,
 };

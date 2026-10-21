@@ -80,17 +80,11 @@ where
     pub(in crate::domain_computation::primary_graph) fn into_parts(
         self,
         registry: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry,
-        owner: &crate::domain_computation::primary_graph::SourceInvalidationOwner,
-        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<
         PreparedHandlerParts<'authority, Schema, Binding>,
         crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
     > {
-        let inputs = registry.admit_prepared_inputs(
-            self.projection.prepared_current_inputs(),
-            owner,
-            admission,
-        )?;
+        let inputs = registry.admit_prepared_inputs(self.projection.prepared_current_inputs())?;
         let Self {
             plan,
             execution: _,

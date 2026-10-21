@@ -71,10 +71,8 @@ impl RetainedCauseStorePublicationDraft {
                 .checked_add(prepared.required_charge())
                 .map_err(map_accounting)?,
         )?;
-        let ceiling = self
-            .maximum_root
-            .checked_sub(other)
-            .map_err(map_accounting)?;
+        // admit_root_peak already reserved this exact publication footprint.
+        let ceiling = prepared.required_charge();
         prepared
             .publish(ceiling)
             .map_err(|(_, denial)| map_vector_capacity(denial))?;
@@ -147,10 +145,8 @@ impl RetainedCauseStorePublicationDraft {
                 .checked_add(prepared.required_charge())
                 .map_err(map_accounting)?,
         )?;
-        let ceiling = self
-            .maximum_root
-            .checked_sub(other)
-            .map_err(map_accounting)?;
+        // admit_root_peak already reserved this exact publication footprint.
+        let ceiling = prepared.required_charge();
         prepared
             .publish(ceiling)
             .map_err(|(_, denial)| map_vector_capacity(denial))?;

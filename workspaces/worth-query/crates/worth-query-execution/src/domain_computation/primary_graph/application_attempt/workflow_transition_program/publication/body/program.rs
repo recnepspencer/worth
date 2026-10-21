@@ -1,7 +1,9 @@
 //! Extend the approval's actual readset, build its installed body, then append native effects.
 use super::*;
 use crate::domain_computation::primary_graph::{
-    application_entry::mutation::{build_handler_candidate, DecisionReader, HandlerResult},
+    application_entry::mutation::{
+        build_handler_candidate, DecisionReader, HandlerInterruption, HandlerResult,
+    },
     DecisionContextUse,
 };
 use std::cell::Cell;
@@ -68,6 +70,7 @@ where
         ));
     }
     let context = Cell::new(DecisionContextUse::default());
+    let interruption = Cell::new(None);
     let operation_scope = read_set.admission.operation_scope_binding().clone();
     let (plan, projection, _) = runtime
         .mutation_projection
@@ -84,6 +87,7 @@ where
                     identities,
                     execution,
                     &context,
+                    &interruption,
                 );
                 handler.prepare_decision(identities.mutation_input(), &mut reader)
             },
@@ -92,6 +96,14 @@ where
         .map_err(|cause| {
             WorkflowApprovalBodyDenial::Handler(MutationHandlerExecutionDenial::Projection(cause))
         })?;
+    // A decision can swallow its poll result, but cannot turn an observed
+    // interruption into a prepared body decision.
+    if let Some(interruption) = interruption.get() {
+        return Err(match interruption {
+            HandlerInterruption::Cancelled => WorkflowApprovalBodyDenial::Cancelled,
+            HandlerInterruption::DeadlineExceeded => WorkflowApprovalBodyDenial::DeadlineExceeded,
+        });
+    }
     let decision = ready(plan.run(execution))?;
     read_set
         .admission

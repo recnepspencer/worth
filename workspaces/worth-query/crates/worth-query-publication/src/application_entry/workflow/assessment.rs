@@ -216,6 +216,8 @@ where
 /// Whether an assessment demand has settled yet.
 pub enum WorthQueryWorkflowAssessmentDemandProgress<Query> {
     Pending,
+    /// The same owner made native progress and remains runnable.
+    Progressed,
     Settled(WorthQueryWorkflowAssessmentDemandSettlement<Query>),
 }
 

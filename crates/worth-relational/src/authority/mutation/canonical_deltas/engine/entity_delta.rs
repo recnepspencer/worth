@@ -8,13 +8,13 @@ use crate::authority::mutation::canonical_deltas::patch_authority::{
     authoritative_patch_binding_evidence, evaluate_authoritative_patch_delta,
 };
 use crate::authority::mutation::field_versions::changed_fields;
-use crate::authority::mutation::MutationWorkspace;
+use crate::capabilities::AspectPlanSource;
 
 use super::delta_assembly::{assemble_delta, evaluate_bindings};
 use super::state_views::EntityAuthoritativeState;
 
 pub(super) fn evaluate_entity_lifecycle_delta(
-    workspace: &MutationWorkspace<'_>,
+    plans: &impl AspectPlanSource,
     entity_id: crate::identity::data::EntityId,
     kind_id: crate::identity::data::KindId,
     authoritative_patch: Option<&worth_foundational::facade::AuthoritativeRecordAspectPatch>,
@@ -22,7 +22,7 @@ pub(super) fn evaluate_entity_lifecycle_delta(
 ) -> Result<CanonicalRecordAspectDelta, CanonicalDeltaError> {
     match authoritative_patch {
         Some(authoritative_patch) => {
-            let plan = workspace
+            let plan = plans
                 .entity_aspect_plan(kind_id)
                 .ok_or(CanonicalDeltaError::MissingEntityAspectPlan { kind_id })?;
             Ok(evaluate_authoritative_patch_delta(
@@ -34,7 +34,7 @@ pub(super) fn evaluate_entity_lifecycle_delta(
             ))
         }
         None => evaluate_entity_delta(
-            workspace,
+            plans,
             entity_id,
             kind_id,
             EntityAuthoritativeState {
@@ -49,7 +49,7 @@ pub(super) fn evaluate_entity_lifecycle_delta(
 }
 
 pub(super) fn evaluate_entity_update_delta(
-    workspace: &MutationWorkspace<'_>,
+    plans: &impl AspectPlanSource,
     entity_id: crate::identity::data::EntityId,
     kind_id: crate::identity::data::KindId,
     old_state: EntityAuthoritativeState<'_>,
@@ -58,11 +58,11 @@ pub(super) fn evaluate_entity_update_delta(
 ) -> Result<CanonicalRecordAspectDelta, CanonicalDeltaError> {
     match authoritative_patch {
         Some(authoritative_patch) => {
-            let plan = workspace
+            let plan = plans
                 .entity_aspect_plan(kind_id)
                 .ok_or(CanonicalDeltaError::MissingEntityAspectPlan { kind_id })?;
             let mut delta = evaluate_entity_delta(
-                workspace,
+                plans,
                 entity_id,
                 kind_id,
                 old_state,
@@ -97,7 +97,7 @@ pub(super) fn evaluate_entity_update_delta(
             Ok(delta)
         }
         None => evaluate_entity_delta(
-            workspace,
+            plans,
             entity_id,
             kind_id,
             old_state,
@@ -108,14 +108,14 @@ pub(super) fn evaluate_entity_update_delta(
 }
 
 pub(super) fn evaluate_entity_delta(
-    workspace: &MutationWorkspace<'_>,
+    plans: &impl AspectPlanSource,
     entity_id: crate::identity::data::EntityId,
     kind_id: crate::identity::data::KindId,
     old_state: EntityAuthoritativeState<'_>,
     new_state: EntityAuthoritativeState<'_>,
     structural_change: RecordStructuralChange,
 ) -> Result<CanonicalRecordAspectDelta, CanonicalDeltaError> {
-    let plan = workspace
+    let plan = plans
         .entity_aspect_plan(kind_id)
         .ok_or(CanonicalDeltaError::MissingEntityAspectPlan { kind_id })?;
     let evaluated_bindings = evaluate_bindings(

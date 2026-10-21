@@ -1,9 +1,8 @@
 use super::*;
 
 #[test]
-fn retained_mutation_binding_checks_current_issuer_and_original_stop() {
+fn retained_mutation_binding_checks_current_issuer() {
     use crate::facade::WorthQueryApplicationOperationInstallationDenialKind as DenialKind;
-    use crate::installed_index::WorthQueryRetainedMutationBindingAdmissionStop as Stop;
 
     let index = installed_mutation_index();
     let schema = index
@@ -13,7 +12,7 @@ fn retained_mutation_binding_checks_current_issuer_and_original_stop() {
         .installed_mutation_binding::<MutationBinding>()
         .unwrap();
     let current = index
-        .validate_retained_mutation_binding_admitted(&schema, &binding, |_, _| Ok::<_, ()>(()))
+        .validate_retained_mutation_binding(&schema, &binding)
         .unwrap();
     assert_eq!(
         current.operation().operation(),
@@ -23,23 +22,17 @@ fn retained_mutation_binding_checks_current_issuer_and_original_stop() {
 
     let rebuilt = index.rebuild();
     assert!(rebuilt
-        .validate_retained_mutation_binding_admitted(&schema, &binding, |_, _| Ok::<_, ()>(()))
+        .validate_retained_mutation_binding(&schema, &binding)
         .is_ok());
     let successor = index.successor_generation();
     assert!(matches!(
-        successor.validate_retained_mutation_binding_admitted(&schema, &binding, |_, _| Ok::<_, ()>(())),
-        Err(Stop::Installation(denial)) if denial.kind() == DenialKind::StaleGeneration
+        successor.validate_retained_mutation_binding(&schema, &binding),
+        Err(denial) if denial.kind() == DenialKind::StaleGeneration
     ));
     let foreign = installed_mutation_index();
     assert!(matches!(
-        foreign.validate_retained_mutation_binding_admitted(&schema, &binding, |_, _| Ok::<_, ()>(())),
-        Err(Stop::Installation(denial)) if denial.kind() == DenialKind::ForeignRuntime
-    ));
-    assert!(matches!(
-        index.validate_retained_mutation_binding_admitted(&schema, &binding, |_, _| Err::<(), _>(
-            "work"
-        )),
-        Err(Stop::Admission("work"))
+        foreign.validate_retained_mutation_binding(&schema, &binding),
+        Err(denial) if denial.kind() == DenialKind::ForeignRuntime
     ));
 }
 

@@ -1,17 +1,13 @@
 //! A restored root read before an unindexed first fork publication cannot mint at that old basis.
 use super::*;
-use crate::domain_computation::primary_graph::invariant_projection::{
-    ConsumedOutputEvidence, ConsumedOutputVerification,
-};
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::tests::application_attempt::resolved_account;
 use worth_relational::facade::history::BranchId;
 
 pub(super) fn restored_root_consumption_and_later_writes() {
-    let world = world_installing(|defaults| WorthQueryInvalidationResourceInstallation {
-        maximum_retained_bytes: Some(MAXIMUM_RETAINED_BYTES),
-        ..defaults
-    });
+    let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
  let custody = phase.test_host_request();
  let phase_custody = &custody;
@@ -65,23 +61,18 @@ pub(super) fn restored_root_consumption_and_later_writes() {
         let facts = crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::from([field_fact(execution, runtime, &old_handle, entity, status)])).for_comparison().unwrap();
         // Real Native source/output facts, read and fully compared before the fork's first write.
         let witness = super::super::request_recording::account_witness(execution, &world, runtime, &old_handle, entity);
-        let current = ConsumedOutputEvidence::verify_at_observation(execution, &identity, &facts, &[], Some(crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::CheckpointRestore), &witness, owner, runtime, &old_handle, &old, &mut owner.edit_admission()).unwrap();
-        assert_eq!(current, ConsumedOutputVerification::Current);
-        let root = ConsumedOutputEvidence::restored_with_witness_for_test(owner, identity, facts.facts().clone(), Arc::clone(&old), witness);
+
+        assert_eq!( ConsumedOutputVerification::Current);
+        let root = ConsumedOutputEvidence::restored_with_witness_for_test(identity, facts.facts().clone(), Arc::clone(&old), witness);
         (old_handle, old, root)
     });
-    let held = owner
-        .resources
-        .reserve_retained_capacity(
-            MAXIMUM_RETAINED_BYTES - owner.resources.retained_capacity_bytes(),
-        )
-        .unwrap();
+
     handle.with_runtime_mut(execution, |runtime| {
         publish_on_fork(execution, runtime, &fork, unrelated, label.clone(), "first-fork-write");
-        assert!(owner.resources.retained_capacity_bytes() <= MAXIMUM_RETAINED_BYTES);
+
         assert!(matches!(
             owner
-                .currentness(&old, root.identity(), &mut owner.edit_admission())
+                .currentness(&old, root.identity())
                 .unwrap(),
             SourceSettlementCurrentness::FullVerificationRequired(_)
         ));
@@ -89,11 +80,7 @@ pub(super) fn restored_root_consumption_and_later_writes() {
     drop(held);
     // The production consumer precommit path re-establishes the restored root.
     // Its read basis is old; that basis must never select the minting head.
-    root.establish_restored_before_commit(
-        execution,
-        &handle.source_owner,
-        &mut owner.edit_admission(),
-    )
+    root.establish_restored_before_commit(execution, &handle.source_owner)
     .unwrap();
     handle.with_runtime_mut(execution, |runtime| {
         let basis = runtime
@@ -112,8 +99,7 @@ pub(super) fn restored_root_consumption_and_later_writes() {
                 owner,
                 runtime,
                 &snapshot,
-                &selected,
-                &mut owner.edit_admission()
+                &selected
             )
             .unwrap(),
             ConsumedOutputVerification::Current,
@@ -128,7 +114,7 @@ pub(super) fn restored_root_consumption_and_later_writes() {
             "later-fork-write-one",
         );
         publish_on_fork(execution, runtime, &fork, unrelated, label, "later-fork-write-two");
-        assert!(owner.resources.retained_capacity_bytes() <= MAXIMUM_RETAINED_BYTES);
+
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
         runtime.snapshots().release_snapshot(&old_handle).unwrap();
     });

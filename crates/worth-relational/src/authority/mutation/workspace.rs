@@ -213,3 +213,21 @@ impl<'a> MutationWorkspace<'a> {
         }
     }
 }
+
+impl crate::capabilities::AspectPlanSource for MutationWorkspace<'_> {
+    fn aspect_plan_catalog(&self) -> &AspectContractPlanCatalog {
+        self.aspect_plans
+    }
+    fn entity_aspect_plan(
+        &self,
+        kind_id: crate::identity::data::KindId,
+    ) -> Option<&LoweredAspectContractPlan> {
+        MutationWorkspace::entity_aspect_plan(self, kind_id)
+    }
+    fn relation_aspect_plan(
+        &self,
+        kind_id: crate::identity::data::KindId,
+    ) -> Option<&LoweredAspectContractPlan> {
+        MutationWorkspace::relation_aspect_plan(self, kind_id)
+    }
+}

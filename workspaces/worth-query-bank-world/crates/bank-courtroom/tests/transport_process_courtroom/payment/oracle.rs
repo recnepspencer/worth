@@ -25,7 +25,7 @@ pub(super) fn snapshot(
     source: AccountId,
     destination: AccountId,
 ) -> PaymentAccounts {
-    let controls = || BankReadControls::current(support::request_scope(), 128, 10_000).unwrap();
+    let controls = || BankReadControls::current(support::request_scope(), 128).unwrap();
     let source_balance = runtime
         .query(account_summary(source))
         .as_principal(approver)

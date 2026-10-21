@@ -66,6 +66,12 @@ impl ExecutionResourceLease<'_> {
 }
 
 impl LeaseMemory {
+    pub(in crate::authority) fn status(&self) -> super::ExecutionLeaseStatus {
+        super::ExecutionLeaseStatus {
+            node: Arc::clone(&self.node),
+        }
+    }
+
     pub(in crate::authority) const fn bytes(&self) -> u64 {
         self.bytes
     }

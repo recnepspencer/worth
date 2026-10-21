@@ -202,8 +202,9 @@ fn payment_workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling 
 }
 
 pub(crate) fn bank_application_limits() -> WorthQueryInMemoryApplicationLimits {
-    let queries = WorthQueryApplicationQueryResourceProfile::bounded(32_768, 262_144, 32_768, 64)
-        .expect("bank application-query resource profile is statically non-zero");
+    let queries = WorthQueryApplicationQueryResourceProfile::new(
+        std::num::NonZeroUsize::new(64).expect("native graph concurrency is nonzero"),
+    );
     WorthQueryInMemoryApplicationLimits::new(
         super::product_world_resources::bank_product_world_resources(),
         queries,

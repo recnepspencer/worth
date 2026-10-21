@@ -1,5 +1,5 @@
 //! Compare reader-visible values and retained debt after every operation.
-use super::super::super::refreshed_rejoin::infallible;
+
 use super::*;
 pub(super) fn compare(
     world: &World<'_>,
@@ -17,11 +17,7 @@ pub(super) fn compare(
     let mut differences = Vec::new();
     for (id, key) in world.keys.iter().enumerate() {
         let physical = state.records.get(key);
-        let observation = infallible(super::super::super::claim_readthrough::observe_row(
-            &state.records,
-            key,
-            &mut OracleWalk::after_effect(),
-        ));
+        let observation = super::super::super::claim_readthrough::observe_row(&state.records, key);
         let (awaited, required, held) =
             (observation.awaited, observation.required, observation.held);
         if (awaited, required, held)
@@ -173,33 +169,6 @@ pub(super) fn compare(
             .collect();
         if actual_members != expected_members {
             differences.push("final member set differs".into());
-        }
-        let word = std::mem::size_of::<usize>();
-        let pointer = std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
-        let member_layout =
-            std::mem::size_of::<WorthQueryOutputDemandKey>() + 13 * pointer + 16 * word;
-        let required = expected_members
-            .iter()
-            .map(|key| member_layout + key.producer.len())
-            .sum::<usize>()
-            + world
-                .model
-                .rows
-                .values()
-                .map(|r| r.claim_slots * pointer)
-                .sum::<usize>();
-        let actual_totals = [
-            state.required_reserved_bytes,
-            state.obligation_reserved_bytes,
-            state
-                .required_custody_retained_bytes
-                .load(std::sync::atomic::Ordering::Acquire),
-        ];
-        if actual_totals != [required, 0, 0] {
-            differences.push(format!(
-                "final reserved totals {actual_totals:?} != {:?}",
-                [required, 0, 0]
-            ));
         }
     }
     if quiescent && (state.closed_cleanup.len() != 0 || state.custody_cleanup.len != 0) {

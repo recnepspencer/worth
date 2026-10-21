@@ -46,7 +46,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 product,
                 application_basis,
                 controls.maximum_results,
-                controls.maximum_work,
                 controls.request,
             ),
         ))
@@ -181,11 +180,7 @@ mod tests {
             .with_host_advancement(|phase| application.on_branch(root).select(&phase).unwrap())
             .expect("the fixture read owns its installed host call");
         let scope = live_scope();
-        let controls = WorthQueryProductQueryControls::new(
-            NonZeroUsize::new(1).unwrap(),
-            Some(NonZeroUsize::new(64).unwrap()),
-            &scope,
-        );
+        let controls = WorthQueryProductQueryControls::new(NonZeroUsize::new(1).unwrap(), &scope);
         let denied = application
             .with_host_advancement(|phase| {
                 let execution = phase

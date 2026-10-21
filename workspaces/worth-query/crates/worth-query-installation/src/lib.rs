@@ -229,8 +229,9 @@ pub mod facade {
         WorthQueryRetainedApplicationQueryGraphObligations,
     };
     pub use crate::application_schema::{
-        InstalledInboundOccurrenceContract, WorthQueryInstalledApplicationAspectContract,
-        WorthQueryInstalledApplicationAspectLocus, WorthQueryInstalledApplicationContribution,
+        AdmittedFieldBindingStop, InstalledInboundOccurrenceContract,
+        WorthQueryInstalledApplicationAspectContract, WorthQueryInstalledApplicationAspectLocus,
+        WorthQueryInstalledApplicationContribution,
         WorthQueryInstalledApplicationContributionCatalog, WorthQueryInstalledApplicationInvariant,
         WorthQueryInstalledApplicationInvariantCatalog,
         WorthQueryInstalledApplicationInvariantDescriptor, WorthQueryInstalledApplicationSchema,
@@ -238,7 +239,7 @@ pub mod facade {
         WorthQueryInstalledApplicationSchemaContractCatalogCounters,
         WorthQueryInstalledApplicationSchemaDenial, WorthQueryInstalledApplicationSchemaDenialKind,
         WorthQueryInstalledApplicationValueBinding,
-        WorthQueryInstalledApplicationValueBindingCatalog,
+        WorthQueryInstalledApplicationValueBindingCatalog, WorthQueryInstalledValueMeaningDenial,
     };
     pub use crate::canonical_work::{
         WorthQueryCanonicalWorkEvidence, WorthQueryCanonicalWorkPhases,
@@ -272,9 +273,7 @@ pub mod facade {
     pub use crate::installed_handle_denial::{
         WorthQueryDomainHandleDenial, WorthQueryDomainHandleDenialKind,
     };
-    pub use crate::installed_index::{
-        WorthQueryCurrentRetainedMutationBinding, WorthQueryRetainedMutationBindingAdmissionStop,
-    };
+    pub use crate::installed_index::WorthQueryCurrentRetainedMutationBinding;
     pub use crate::installed_index::{
         WorthQueryInstalledPackageAuthority, WorthQueryInstalledPackageIndex,
         WorthQueryInstalledPackageIndexCounters, WorthQueryInstalledPackageIndexDenial,

@@ -2,22 +2,15 @@ use super::super::WorthQueryApplicationRequestQueryDenial as ItemDenial;
 use super::*;
 use std::num::NonZeroUsize;
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryAdmittedDisclosedApplicationResult, WorthQueryApplicationBatchReadDenial,
-    WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryBatchMemory,
+    WorthQueryApplicationBatchReadDenial, WorthQueryApplicationQueryAccessContext,
     WorthQueryPrincipalResolutionMode, WorthQueryProductQueryControls,
     WorthQueryRetainedBatchQueryAdmissionDenial,
 };
 
-pub(super) enum BatchExecutionPolicy {
-    Explicit(WorthQueryApplicationQueryBatchLimits),
-    Installed(Option<WorthQueryApplicationQueryBatchLimits>),
-}
-
 pub(super) fn execute<Schema: ApplicationSchema, Intent: ApplicationQueryIntent<Schema>>(
 phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     request: WorthQueryApplicationQueryBatchRequest<'_, '_, '_, Schema, Intent>,
-    policy: BatchExecutionPolicy,
-    query_limits: Option<(NonZeroUsize, NonZeroUsize)>,
+    query_limits: Option<NonZeroUsize>,
 ) -> Result<crate::domain_computation::WorthQueryPublishedApplicationQueryBatch<
     <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
     <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
@@ -32,27 +25,17 @@ where
         .installed_schema()
         .installed_query_binding::<Intent::Binding>()
         .map_err(|cause| item(0, ItemDenial::BindingInstallation(cause)))?;
-    let admission = match policy {
-        BatchExecutionPolicy::Explicit(limits) => {
-            WorthQueryApplicationQueryBatchAdmission::new(limits)
-        }
-        BatchExecutionPolicy::Installed(limits) => {
-            let plan = request
-                .application
-                .plan_application_query_batch_reads(&binding, request.intents.len())
-                .map_err(|denial| resource(None, denial))?;
-            let admission = request
-                .application
-                .application_query_batch_from_installed_reads(&[plan])
-                .map_err(|denial| resource(None, denial))?;
-            match limits {
-                Some(limits) => admission.narrow_and_freeze_planned_reads(limits),
-                None => admission.freeze_planned_reads(),
-            }
-            .map_err(|denial| resource(None, denial))?;
-            admission
-        }
-    };
+    let plan = request
+        .application
+        .plan_application_query_batch_reads(&binding, request.intents.len())
+        .map_err(|denial| resource(None, denial))?;
+    let admission = request
+        .application
+        .application_query_batch_from_installed_reads(&[plan])
+        .map_err(|denial| resource(None, denial))?;
+    admission
+        .freeze_planned_reads()
+        .map_err(|denial| resource(None, denial))?;
     admission
         .admit_items(request.intents.len())
         .map_err(|denial| resource(None, denial))?;
@@ -60,8 +43,8 @@ where
         .application
         .resolve_application_query_limits(binding.limits());
     let item_limits = match query_limits {
-        Some((results, work)) => item_limits
-            .narrow(results, Some(work))
+        Some(results) => item_limits
+            .narrow(results)
             .map_err(|cause| item(0, ItemDenial::Limit(cause)))?,
         None => item_limits,
     };
@@ -74,17 +57,15 @@ where
         .application
         .select_application_read_observation(phase, &request.observation)
         .map_err(|cause| item(0, ItemDenial::ProductSelection(cause)))?;
-    let vector_bytes = request.intents.len().checked_mul(
-        std::mem::size_of::<WorthQueryAdmittedDisclosedApplicationResult<
-            <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
-            <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
-        >>() + std::mem::size_of::<WorthQueryApplicationQueryBatchMemory>()
-    ).ok_or_else(|| resource(None, WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow))?;
-    let staging_claim = admission
-        .claim_publication_memory(vector_bytes)
-        .map_err(|denial| resource(None, denial))?;
-    let mut staged = Vec::with_capacity(request.intents.len());
-    let mut claims = Vec::with_capacity(request.intents.len());
+    let mut staged = Vec::new();
+    staged
+        .try_reserve_exact(request.intents.len())
+        .map_err(|_| {
+            resource(
+                None,
+                WorthQueryApplicationQueryBatchResourceDenial::AllocationFailed,
+            )
+        })?;
     for (index, intent) in request.intents.into_iter().enumerate() {
         checkpoint(request.scope)?;
         // Application-authored parameter/scope callbacks precede framework
@@ -115,7 +96,6 @@ where
             .unwrap_or(NonZeroUsize::MAX);
         let controls = WorthQueryProductQueryControls::new(
             item_limits.maximum_results().min(query_maximum),
-            item_limits.maximum_work(),
             request.scope,
         );
         let plan = selected
@@ -147,18 +127,12 @@ where
                     item(index, ItemDenial::Execution(cause))
                 }
             })?;
-        let (result, claim) = result.into_parts();
+        let result = result.into_result();
         staged.push(result.into_admitted_disclosed());
-        claims.push(claim);
     }
     checkpoint(request.scope)?;
-    crate::domain_computation::application_batch_result::publish_batch(
-        staged,
-        claims,
-        staging_claim,
-        &admission,
-    )
-    .map_err(|denial| resource(None, denial))
+    crate::domain_computation::application_batch_result::publish_batch(staged)
+        .map_err(|denial| resource(None, denial))
 }
 
 fn item(index: usize, cause: ItemDenial) -> WorthQueryApplicationQueryBatchDenial {

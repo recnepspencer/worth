@@ -13,6 +13,16 @@ mod declarations;
 mod keyless;
 mod owned;
 mod prepared;
+mod retained;
+mod retained_input;
+mod retained_run;
+pub use retained::RetainedMapDenial;
+pub use retained_input::RetainedMapInput;
+pub(super) use retained_run::finish_native_outcome;
+pub use retained_run::{
+    ExecutionRetainedPrefix, ExecutionRetainedRun, RetainedRunDenial, RetainedRunMetrics,
+    RetainedRunOutcome,
+};
 mod storage;
 use access::access_memory_bytes;
 use declarations::{check_read_key_order, check_read_write_conflicts};
@@ -27,7 +37,7 @@ pub use crate::oracle::OracleMismatch;
 
 /// A leased run under an automatic posture runs native; every other run is
 /// serial.
-fn backend_for(lease: Option<&ExecutionResourceLease<'_>>) -> BackendKind {
+pub(super) fn backend_for(lease: Option<&ExecutionResourceLease<'_>>) -> BackendKind {
     if lease.is_some_and(|value| value.resolved_posture() == ExecutionPosture::Automatic) {
         BackendKind::Native
     } else {

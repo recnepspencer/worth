@@ -9,6 +9,7 @@ use super::super::{
 };
 use super::DecisionContextUse;
 
+mod interruption;
 mod operation_body;
 mod predecode_admission;
 
@@ -66,6 +67,7 @@ where
     identities: &'borrow ApplicationMutationIdentities<'borrow, Schema, Binding>,
     execution: &'borrow QueryRequestExecution<'borrow>,
     context_use: &'borrow Cell<DecisionContextUse>,
+    interruption: &'borrow Cell<Option<HandlerInterruption>>,
 }
 
 impl<'borrow, 'reader, 'runtime, Schema, Binding>
@@ -74,6 +76,7 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
+    #[allow(clippy::too_many_arguments)]
     pub(in crate::domain_computation::primary_graph) fn new(
         reader: &'borrow mut WorthQueryApplicationOperationInvariantProjectionReader<
             'reader,
@@ -90,6 +93,7 @@ where
         identities: &'borrow ApplicationMutationIdentities<'borrow, Schema, Binding>,
         execution: &'borrow QueryRequestExecution<'borrow>,
         context_use: &'borrow Cell<DecisionContextUse>,
+        interruption: &'borrow Cell<Option<HandlerInterruption>>,
     ) -> Self {
         Self {
             reader,
@@ -99,6 +103,7 @@ where
             identities,
             execution,
             context_use,
+            interruption,
         }
     }
 
@@ -158,18 +163,11 @@ where
         self.operation_scope_binding
     }
 
+    /// Polls real request interruption without making it decision data.
+    /// Preparation retains the first failure and refuses the returned plan,
+    /// even when the handler catches or ignores this result.
     pub fn checkpoint(&self) -> Result<(), HandlerInterruption> {
-        self.context_use
-            .set(self.context_use.get().request_context());
-        self.execution
-            .interruption()
-            .map_or(Ok(()), |interruption| {
-                use crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption as Stop;
-                Err(match interruption {
-                    Stop::Cancelled => HandlerInterruption::Cancelled,
-                    Stop::DeadlineExceeded => HandlerInterruption::DeadlineExceeded,
-                })
-            })
+        interruption::checkpoint(self.execution, self.interruption)
     }
 
     /// The operation's reader, for a partitioned computation this handler

@@ -1,11 +1,14 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use std::sync::Arc;
 
-use worth_query_installation::facade::{ApplicationSchema, ApplicationSchemaBindingIdentity};
+use worth_query_installation::facade::ApplicationSchema;
+use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-use crate::basis::{WorthQueryProductBranchAdmissionDenial, WorthQueryProductObservationLease};
+use crate::basis::WorthQueryProductBranchAdmissionDenial;
+use crate::basis::WorthQueryProductObservationLease;
 
-use super::super::{WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation};
+use super::super::WorthQueryPrimaryGraphApplicationRuntime;
+use super::super::WorthQuerySelectedProductOperation;
 
 /// Owner-retained authority for reading one exact World product occurrence.
 ///
@@ -14,8 +17,6 @@ pub struct WorthQueryApplicationReadObservation {
     runtime_authority: u64,
     schema_binding: ApplicationSchemaBindingIdentity,
     product: WorthQueryProductObservationLease,
-    _required_custody:
-        Option<super::super::application_output_demand::RequiredOutputCustodyCapacity>,
 }
 
 impl WorthQueryApplicationReadObservation {
@@ -30,14 +31,12 @@ impl WorthQueryApplicationReadObservation {
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
             product,
-            _required_custody: None,
         })
     }
 
     pub(in crate::domain_computation::primary_graph) fn from_product_funded<Schema>(
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         product: WorthQueryProductObservationLease,
-        custody: super::super::application_output_demand::RequiredOutputCustodyCapacity,
     ) -> Arc<Self>
     where
         Schema: ApplicationSchema,
@@ -46,7 +45,6 @@ impl WorthQueryApplicationReadObservation {
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
             product,
-            _required_custody: Some(custody),
         })
     }
 

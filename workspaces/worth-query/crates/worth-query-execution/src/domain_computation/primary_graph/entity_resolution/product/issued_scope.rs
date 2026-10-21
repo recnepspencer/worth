@@ -70,7 +70,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         >,
         value: Value,
         request: &WorthQueryRequestScope,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         WorthQueryIssuedSelectedScope<'selected, 'runtime, Schema, Entity>,
         WorthQueryEntityResolutionDenial,
@@ -80,10 +79,46 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
-        let scope = self.resolve_entity_admitted(execution, field, value, request, admission)?;
-        admission
-            .charge_external_work(1)
-            .map_err(|stop| selected_index_admission_denial(stop, scope.entity_name()))?;
+        self.resolve_query_scope_issued_with_native_access(execution, field, value, request, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn resolve_query_scope_issued_with_native_access<
+        'selected,
+        Aspect,
+        Entity,
+        Field,
+        Value,
+        Write,
+        Unit,
+    >(
+        &'selected self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        field: ApplicationFieldRef<
+            Schema,
+            Entity,
+            Aspect,
+            Field,
+            Value,
+            Write,
+            EqualityPredicate,
+            Unit,
+        >,
+        value: Value,
+        request: &WorthQueryRequestScope,
+
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
+    ) -> Result<
+        WorthQueryIssuedSelectedScope<'selected, 'runtime, Schema, Entity>,
+        WorthQueryEntityResolutionDenial,
+    >
+    where
+        Field: DeclaredApplicationFieldValue<Value = Value>,
+        Write: WritePosture,
+        Unit: ApplicationFieldUnit,
+    {
+        let scope = self
+            .resolve_entity_admitted_with_native_access(execution, field, value, request, native)?;
+
         Ok(WorthQueryIssuedSelectedScope {
             scope,
             selected: self,
@@ -114,7 +149,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         >,
         selector: &WorthQueryObservedScopeSelector,
         request: &WorthQueryRequestScope,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         WorthQueryIssuedSelectedScope<'selected, 'runtime, Schema, Entity>,
         WorthQueryEntityResolutionDenial,
@@ -124,11 +158,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
-        let scope =
-            self.resolve_retained_query_scope(execution, field, selector, request, admission)?;
-        admission
-            .charge_external_work(1)
-            .map_err(|stop| selected_index_admission_denial(stop, scope.entity_name()))?;
+        let scope = self.resolve_retained_query_scope(execution, field, selector, request)?;
+
         Ok(WorthQueryIssuedSelectedScope {
             scope,
             selected: self,

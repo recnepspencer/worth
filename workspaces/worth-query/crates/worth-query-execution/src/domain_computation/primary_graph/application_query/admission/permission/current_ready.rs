@@ -15,11 +15,7 @@ pub(in crate::domain_computation::primary_graph) struct SealedCurrentReadyQueryP
 impl SealedCurrentReadyQueryPermission<'_> {
     pub(in crate::domain_computation::primary_graph) fn validate_request(
         &self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
-        admission
-            .charge_external_work(1)
-            .map_err(|_| work_denial())?;
         super::super::super::admission_preparation::validate_admission_request(
             self._request,
             self.query_name,
@@ -57,7 +53,6 @@ where
     pub(in crate::domain_computation::primary_graph) fn seal_current_ready<'basis>(
         &'basis self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         Option<SealedCurrentReadyQueryPermission<'basis>>,
         WorthQueryApplicationQueryAdmissionDenial,
@@ -69,19 +64,15 @@ where
                 execution,
                 &self.security_product,
                 &self.basis,
-                admission,
             )
             .map_err(|stop| match stop {
-                SelectedPermissionSecurityStop::Admission(stop) => resource_denial(stop),
                 SelectedPermissionSecurityStop::AccountingOverflow => work_denial(),
                 SelectedPermissionSecurityStop::World => denial(
                     WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis,
                     self.query.name(),
                 ),
             })?;
-        admission
-            .charge_external_work(1)
-            .map_err(|_| work_denial())?;
+
         super::super::super::admission_preparation::validate_admission_request(
             self.controls.request_scope(),
             self.query.name(),

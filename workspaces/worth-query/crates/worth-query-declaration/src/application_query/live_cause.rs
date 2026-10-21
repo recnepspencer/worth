@@ -38,39 +38,6 @@ pub trait ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>:
     ) -> <Self::TargetIdentityBinding as ApplicationScalarValueBinding>::Value;
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub struct ApplicationQueryLiveResourceContract {
-    maximum_buffered_causes: u64,
-    maximum_work_per_delivery: u64,
-    maximum_retained_payload_bytes: u64,
-}
-
-impl ApplicationQueryLiveResourceContract {
-    pub const fn bounded(
-        maximum_buffered_causes: u64,
-        maximum_work_per_delivery: u64,
-        maximum_retained_payload_bytes: u64,
-    ) -> Self {
-        Self {
-            maximum_buffered_causes,
-            maximum_work_per_delivery,
-            maximum_retained_payload_bytes,
-        }
-    }
-
-    pub const fn maximum_buffered_causes(self) -> u64 {
-        self.maximum_buffered_causes
-    }
-
-    pub const fn maximum_work_per_delivery(self) -> u64 {
-        self.maximum_work_per_delivery
-    }
-
-    pub const fn maximum_retained_payload_bytes(self) -> u64 {
-        self.maximum_retained_payload_bytes
-    }
-}
-
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationQueryLiveCauseContract {
     binding_type: WorthQueryPortableTypeIdentity,
@@ -83,7 +50,6 @@ pub struct ApplicationQueryLiveCauseContract {
     target_field: (String, String, String),
     target_value_type: WorthQueryPortableTypeIdentity,
     target_mode: ApplicationQueryLiveTargetMode,
-    resources: ApplicationQueryLiveResourceContract,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -102,7 +68,6 @@ pub struct WorthQueryPortableApplicationQueryLiveCauseParts {
     pub target_field: String,
     pub target_value_type: WorthQueryPortableTypeIdentity,
     pub target_mode: ApplicationQueryLiveTargetMode,
-    pub resources: ApplicationQueryLiveResourceContract,
 }
 
 impl ApplicationQueryLiveCauseContract {
@@ -118,7 +83,6 @@ impl ApplicationQueryLiveCauseContract {
             target_field: (parts.target_entity, parts.target_aspect, parts.target_field),
             target_value_type: parts.target_value_type,
             target_mode: parts.target_mode,
-            resources: parts.resources,
         }
     }
 
@@ -186,10 +150,6 @@ impl ApplicationQueryLiveCauseContract {
         self.target_mode
     }
 
-    pub const fn resources(&self) -> ApplicationQueryLiveResourceContract {
-        self.resources
-    }
-
     #[allow(clippy::too_many_arguments)]
     pub(super) fn typed<
         Schema,
@@ -230,7 +190,7 @@ impl ApplicationQueryLiveCauseContract {
             EqualityPredicate,
             TargetUnit,
         >,
-        resources: ApplicationQueryLiveResourceContract,
+
         target_mode: ApplicationQueryLiveTargetMode,
     ) -> Self
     where
@@ -268,7 +228,6 @@ impl ApplicationQueryLiveCauseContract {
             ),
             target_value_type: Binding::TargetIdentityBinding::IDENTITY,
             target_mode,
-            resources,
         }
     }
 }

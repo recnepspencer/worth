@@ -17,5 +17,5 @@ impl ParameterSchemaBinding for MembershipSchema {}
 impl MembershipSchemaBinding for MembershipSchema {}
 mod installation;
 mod program;
-pub(super) use installation::{install, install_program};
+pub(super) use installation::{install, install_program, install_with_isolated_cycle};
 pub(crate) use program::{Fanout, FanoutRoot, MembershipProgram, MembershipRoot};

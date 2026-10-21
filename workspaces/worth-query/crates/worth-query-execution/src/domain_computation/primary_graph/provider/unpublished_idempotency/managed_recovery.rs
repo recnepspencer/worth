@@ -1,11 +1,12 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use worth_runtime_world::facade::ProductUnpublishedRecoveryHandle;
 
-use super::{
-    WorthQueryUnpublishedIdempotencyEntry, WorthQueryUnpublishedIdempotencyKey,
-    WorthQueryUnpublishedIdempotencyPosture as Posture, WorthQueryUnpublishedIdempotencyStore,
-};
+use super::WorthQueryUnpublishedIdempotencyEntry;
+use super::WorthQueryUnpublishedIdempotencyKey;
+use super::WorthQueryUnpublishedIdempotencyPosture as Posture;
+use super::WorthQueryUnpublishedIdempotencyStore;
 use crate::domain_computation::primary_graph::provider::ManagedUnpublishedAttempt;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -13,7 +14,6 @@ pub(in crate::domain_computation::primary_graph::provider) enum ManagedUnpublish
     Missing,
     Busy,
     Capacity,
-    Admission(worth_relational::facade::mvcc::CompanionPreflightStop),
 }
 
 /// Checked-out custody of the exact World partial. Dropping a failed
@@ -94,70 +94,23 @@ impl ManagedUnpublishedRecoveryGuard {
         successor: &ProductUnpublishedRecoveryHandle,
     ) -> Result<(), ManagedUnpublishedRecoveryStop> {
         assert!(self.prepared_successor.is_none());
-        let admission = self
-            .attempt
-            .as_mut()
-            .expect("checked-out recovery retains its attempt")
-            .publication_admission_mut();
         let mut store = self
             .store
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let maximum = store
-            .maximum_recovery_mappings()
-            .ok_or(ManagedUnpublishedRecoveryStop::Capacity)?;
-        // The selected scan, possible relocation of initialized Vec slots,
-        // and both terminal removals are all bounded before World executes.
-        let relocated = if store.by_recovery.len() == store.by_recovery.capacity() {
-            store.by_recovery.len()
-        } else {
-            0
-        };
-        let scans = maximum
-            .checked_mul(2)
-            .and_then(|terminal| terminal.checked_add(store.by_recovery.len()))
-            .and_then(|work| work.checked_add(relocated))
-            // finish performs both the selected provider-key lookup and its
-            // removal. Bound those paths at the installed entry ceiling,
-            // since unrelated reservations may arrive while World executes.
-            .and_then(|work| {
-                let path = provider_key_navigation_work(maximum)?;
-                let name_bytes = self.key.0.comparison_name_len();
-                let compared = path.checked_mul(name_bytes)?;
-                work.checked_add(path.checked_add(compared)?.checked_mul(2)?)
-            })
-            .and_then(|work| work.checked_add(2))
-            .ok_or(ManagedUnpublishedRecoveryStop::Capacity)?;
-        admission
-            .charge_external_work(
-                u64::try_from(scans).map_err(|_| ManagedUnpublishedRecoveryStop::Capacity)?,
-            )
-            .map_err(ManagedUnpublishedRecoveryStop::Admission)?;
         if successor == &self.handle {
             return Ok(());
         }
         if store.recovery_key(successor).is_some() {
             return Err(ManagedUnpublishedRecoveryStop::Busy);
         }
-        if store.by_recovery.len() >= maximum {
-            return Err(ManagedUnpublishedRecoveryStop::Capacity);
-        }
-        if store.by_recovery.len() == store.by_recovery.capacity() {
-            let bytes = store
-                .by_recovery
-                .len()
-                .checked_add(1)
-                .ok_or(ManagedUnpublishedRecoveryStop::Capacity)?
-                .checked_mul(std::mem::size_of::<(
-                    ProductUnpublishedRecoveryHandle,
-                    WorthQueryUnpublishedIdempotencyKey,
-                )>())
+        if let Some(maximum) = store.maximum_entries {
+            let maximum = maximum
+                .checked_mul(2)
                 .ok_or(ManagedUnpublishedRecoveryStop::Capacity)?;
-            admission
-                .admit_read_scratch(
-                    u64::try_from(bytes).map_err(|_| ManagedUnpublishedRecoveryStop::Capacity)?,
-                )
-                .map_err(ManagedUnpublishedRecoveryStop::Admission)?;
+            if store.by_recovery.len() >= maximum {
+                return Err(ManagedUnpublishedRecoveryStop::Capacity);
+            }
         }
         store
             .by_recovery
@@ -221,19 +174,6 @@ impl ManagedUnpublishedRecoveryGuard {
         self.armed = false;
         drop(removed);
     }
-}
-
-/// A B-tree root can contain one key; every deeper level needs at least
-/// five keys per non-root node. One selected lookup compares at most eleven
-/// keys per possible level, and never compares the same stored key twice.
-fn provider_key_navigation_work(entries: usize) -> Option<usize> {
-    let mut minimum = 1usize;
-    let mut levels = 1usize;
-    while minimum < entries {
-        minimum = minimum.checked_mul(6)?.checked_add(5)?;
-        levels = levels.checked_add(1)?;
-    }
-    entries.min(levels.checked_mul(11)?).checked_add(1)
 }
 
 impl Drop for ManagedUnpublishedRecoveryGuard {

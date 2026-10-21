@@ -185,7 +185,7 @@ impl HistoryMetadataLedger {
         &self,
         reservation: HistoryReservationCharge,
         promised: HistoryMetadataCharge,
-        maximum: usize,
+        maximum: Option<usize>,
     ) -> Result<HistoryMetadataReservationPreview, HistoryMetadataLedgerDenial> {
         let requested = reservation
             .total()
@@ -203,7 +203,7 @@ impl HistoryMetadataLedger {
             .promised_installation
             .checked_add(promised.total())
             .ok_or(HistoryMetadataLedgerDenial::ArithmeticOverflow)?;
-        if total_occupancy > maximum {
+        if let Some(maximum) = maximum.filter(|maximum| total_occupancy > *maximum) {
             return Err(HistoryMetadataLedgerDenial::Capacity {
                 maximum,
                 used: self.total_occupancy,

@@ -41,7 +41,7 @@ fn page_resume_and_live_entries_refuse_before_their_own_reader() {
             .account_activity(fixture.personal_account)
             .as_principal(&owner)
     };
-    let controls = || BankReadControls::current(request_scope(), 1, 4_096).unwrap();
+    let controls = || BankReadControls::current(request_scope(), 1).unwrap();
     let live_controls = || LiveControls::bounded(request_scope(), 16, 8, Some(2_048)).unwrap();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));

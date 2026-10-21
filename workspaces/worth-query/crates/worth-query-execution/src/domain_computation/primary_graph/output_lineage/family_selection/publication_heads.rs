@@ -13,20 +13,13 @@ struct Head<'a> {
 }
 
 #[derive(Default)]
-pub(super) struct PublicationHeads<'a> {
+pub(in crate::domain_computation::primary_graph::output_lineage) struct PublicationHeads<'a> {
     members: BTreeMap<Member<'a>, Head<'a>>,
     unbound: Vec<(&'a str, &'a RecordedOutput)>,
 }
 
 impl<'a> PublicationHeads<'a> {
-    /// One role lookup plus the finite balanced-tree comparison bound.
-    /// Storage and selection scale with offered heads, never older history.
-    pub(super) fn admission_work(&self) -> usize {
-        let levels = usize::BITS as usize - self.members.len().max(1).leading_zeros() as usize;
-        1 + 11 * levels
-    }
-
-    pub(super) fn insert(
+    pub(in crate::domain_computation::primary_graph::output_lineage) fn insert(
         &mut self,
         partition: Option<[u8; 32]>,
         role: &'a str,
@@ -77,7 +70,9 @@ impl<'a> PublicationHeads<'a> {
         }
     }
 
-    pub(super) fn finish(self) -> (Vec<(&'a str, &'a RecordedOutput)>, bool) {
+    pub(in crate::domain_computation::primary_graph::output_lineage) fn finish(
+        self,
+    ) -> (Vec<(&'a str, &'a RecordedOutput)>, bool) {
         let mut heads = self.unbound;
         let mut ambiguous = false;
         for ((_, role, _), head) in self.members {

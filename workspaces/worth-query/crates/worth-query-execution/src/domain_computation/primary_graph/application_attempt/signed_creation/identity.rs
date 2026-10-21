@@ -1,6 +1,7 @@
 //! Canonical signed subject and candidate identity; no runtime ordinals enter meaning.
 use super::super::WorthQueryApplicationRealizedEffect as Effect;
 use super::sealing::WorthQuerySignedCreationPreparationDenial as Denial;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::collections::BTreeMap;
 use worth_foundational::facade::{
     canonical_basis_value_for_aspect_value, AspectFieldLocator, AspectValue, CanonicalBasisDomain,
@@ -236,7 +237,7 @@ pub(super) fn candidate(
 pub(super) fn subject(
     fields: &BTreeMap<AspectFieldLocator, AspectValue>,
     scope: EntityId,
-    facts: &[super::super::WorthQueryApplicationObservedFact],
+    facts: &(impl FactSequence + ?Sized),
     request: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<

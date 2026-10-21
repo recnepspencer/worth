@@ -1,13 +1,13 @@
+use super::fixture_values::PositiveLength;
+use super::runtime_api::primary_graph::{
+    WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
+    WorthQueryApplicationProjectionRow,
+};
 use super::*;
 use std::marker::PhantomData;
-use worth_query_consumer_values::PositiveLength;
 use worth_query_decl::facade::{
     application_query::*, application_schema::*, worth_query_portable_type,
     worth_query_structured_value_binding,
-};
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
-    WorthQueryApplicationProjectionRow,
 };
 
 #[derive(Clone, Debug)]
@@ -208,7 +208,7 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema> for PlanarRe
     type PrincipalIdentity = u64;
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.certification.planar-read.v1";
-    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::bounded(1, 128);
+    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Body,

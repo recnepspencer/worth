@@ -142,6 +142,9 @@ where
         );
     }
 
+    if !read_set.effect_routes.matches_body(&read_set.facts) {
+        return Err(WorthQueryProgramMigrationPreparationDenial::ForeignCandidate);
+    }
     let source_product = read_set.lease.product().observation().clone();
     let mutation_partition = application
         .issue_application_mutation_partition()
@@ -150,7 +153,8 @@ where
     let batch = prepare_program_migration_batch(
         read_set.lease.layout.unique_fields(),
         mutation_partition,
-        &read_set.facts,
+        read_set.effect_routes,
+        &|entity, aspect| read_set.lease.layout.aspect_contract(entity, aspect),
         effects,
     )?;
     Ok((source_product, batch, effect_count))

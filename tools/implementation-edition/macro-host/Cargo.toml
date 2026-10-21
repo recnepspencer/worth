@@ -1,0 +1,15 @@
+[package]
+name = "implementation-edition-macro-host"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+publish = false
+
+[dependencies]
+wasmi = { git = "https://github.com/wasmi-labs/wasmi", rev = "2970aa871cc1001b57b267ccecdcd1e42306199e", default-features = false, features = ["stable", "std", "validate", "portable-dispatch"] }
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "deny"

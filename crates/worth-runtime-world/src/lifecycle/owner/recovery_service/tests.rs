@@ -187,7 +187,7 @@ fn caller_loss_preserves_relational_settlement_custody_and_catalog_capacity() {
             .state
             .recovery
             .reserve_product_unpublished(owner.owner_identity()),
-        Err(crate::recovery::RecoveryCatalogDenial::CapacityExhausted { maximum: 1 })
+        Err(crate::recovery::RecoveryCatalogDenial::CapacityExhausted { maximum: Some(1) })
     ));
 }
 

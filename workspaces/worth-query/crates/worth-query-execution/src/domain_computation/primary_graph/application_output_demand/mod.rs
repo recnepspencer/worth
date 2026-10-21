@@ -1,59 +1,67 @@
 pub(in crate::domain_computation::primary_graph) use registry::ConsumerCustody;
+pub(in crate::domain_computation::primary_graph) use registry::LivePublicationHead;
+pub(in crate::domain_computation::primary_graph) use registry::PublicationHeadSelection;
 pub(in crate::domain_computation::primary_graph) use registry::RunningSelectedExecution;
-pub(in crate::domain_computation::primary_graph) use registry::{
-    LivePublicationHead, PublicationHeadSelection,
-};
 mod currentness;
 mod readiness_delivery;
 mod recovered_outputs;
 mod registry;
-pub(in crate::domain_computation::primary_graph) use registry::{
-    AdmittedRequiredWave, PreparedRequiredInputs,
-};
+pub(in crate::domain_computation::primary_graph) use registry::AdmittedRequiredWave;
+pub(in crate::domain_computation::primary_graph) use registry::PreparedRequiredInputs;
 mod settlement;
 
 pub use readiness_delivery::WorthQueryOutputReadinessDeliveryEvidence;
 pub(super) use recovered_outputs::WorthQueryRecoveredOutputs;
+pub(super) use registry::AcceptedCheckpointFactSource;
+pub(super) use registry::BoundOutputSource;
+pub(super) use registry::CheckpointOutputSlot;
+pub(super) use registry::DemandAdmissionKind;
 pub(in crate::domain_computation::primary_graph) use registry::HeldRequiredSuccessor;
+pub(super) use registry::OutputRefreshPredecessor;
+pub(super) use registry::OutputRowStage;
 pub(in crate::domain_computation::primary_graph) use registry::PendingUpstream;
+pub(super) use registry::PreparedOutputRootKind;
 pub(in crate::domain_computation::primary_graph) use registry::PreparedPrerequisiteClaims;
+pub(super) use registry::PreparedReadyBacking;
+pub(super) use registry::PreparedSelectedCheckpointFinish;
+pub(super) use registry::ReadyCompletion;
 pub(in crate::domain_computation::primary_graph) use registry::ReplacedRequiredWorkHint;
 pub(in crate::domain_computation::primary_graph) use registry::RequestedOutputReadClaims;
+pub(in crate::domain_computation) use registry::RequiredOutputDemandContext;
+pub(in crate::domain_computation) use registry::RequiredOutputExecution;
+pub(in crate::domain_computation::primary_graph) use registry::RequiredRefreshRejection;
 pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkClaim;
 pub(in crate::domain_computation::primary_graph) use registry::RequiredWorkMembership;
 pub(in crate::domain_computation::primary_graph) use registry::RetainedOutputReadmissionSource;
+pub(super) use registry::SelectedCheckpointFinishStop;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedOutputAdmission;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedReadyReadmission;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredRefreshClaim;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredWork;
 pub(in crate::domain_computation::primary_graph) use registry::SelectedRequiredWorkKind;
+pub(super) use registry::WorthQueryAcceptedOutputAuthority;
+pub(super) use registry::WorthQueryAcceptedOutputCheckpointIdentity;
+pub(super) use registry::WorthQueryAcceptedOutputCheckpointPosture;
+pub(super) use registry::WorthQueryCompletedOutputDemand;
+pub(super) use registry::WorthQueryOutputCheckpoint;
+pub(super) use registry::WorthQueryOutputClaimIdentity;
+pub(super) use registry::WorthQueryOutputDemandAdvanceAdmission;
+pub(super) use registry::WorthQueryOutputDemandInterest;
+pub(super) use registry::WorthQueryOutputDemandKey;
 pub use registry::WorthQueryOutputDemandNotifications;
-pub use registry::{
-    required_custody_layout_for_test, required_handoff_custody_bytes_for_test,
-    required_ready_custody_bytes_for_test, RequiredCustodyLayoutForTest,
-};
-pub(super) use registry::{
-    AcceptedCheckpointFactSource, BoundOutputSource, CheckpointOutputSlot, DemandAdmissionKind,
-    OutputRefreshPredecessor, OutputRowStage, PreparedOutputRootKind, PreparedReadyBacking,
-    PreparedSelectedCheckpointFinish, ReadyCompletion, RequiredOutputCustodyCapacity,
-    SelectedCheckpointFinishStop, WorthQueryAcceptedOutputAuthority,
-    WorthQueryAcceptedOutputCheckpointIdentity, WorthQueryAcceptedOutputCheckpointPosture,
-    WorthQueryCompletedOutputDemand, WorthQueryOutputCheckpoint, WorthQueryOutputClaimIdentity,
-    WorthQueryOutputDemandAdvanceAdmission, WorthQueryOutputDemandInterest,
-    WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry, WorthQueryOutputSchedulingResult,
-    WorthQueryPendingOutputDelivery, WorthQueryPerformedOutputDemandSource,
-    WorthQueryReadmittedAcceptedOutput, WorthQueryRequiredOutputSourcePreparation,
-    WorthQueryRestoredAcceptedOutput,
-};
-pub(in crate::domain_computation) use registry::{
-    RequiredOutputDemandContext, RequiredOutputExecution,
-};
-pub use settlement::{WorthQueryOutputDemandSettlement, WorthQueryOutputSettlementPosture};
+pub(super) use registry::WorthQueryOutputDemandRegistry;
+pub(super) use registry::WorthQueryOutputSchedulingResult;
+pub(super) use registry::WorthQueryPendingOutputDelivery;
+pub(super) use registry::WorthQueryPerformedOutputDemandSource;
+pub(super) use registry::WorthQueryReadmittedAcceptedOutput;
+pub(super) use registry::WorthQueryRequiredOutputSourcePreparation;
+pub(super) use registry::WorthQueryRestoredAcceptedOutput;
+pub use settlement::WorthQueryOutputDemandSettlement;
+pub use settlement::WorthQueryOutputSettlementPosture;
 
-pub(in crate::domain_computation::primary_graph) use registry::join_observation::{
-    observe_required_refresh_stop, observe_retained_source_selection, observe_stable_join_admission,
-};
+pub(in crate::domain_computation::primary_graph) use registry::join_observation::observe_required_refresh_stop;
+pub(in crate::domain_computation::primary_graph) use registry::join_observation::observe_retained_source_selection;
+pub(in crate::domain_computation::primary_graph) use registry::join_observation::observe_stable_join_admission;
 
-pub use registry::{
-    WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
-};
+pub use registry::WorthQueryDiscoveredRetentionControlDenial;
+pub use registry::WorthQueryDiscoveredRetentionReservationForTest;

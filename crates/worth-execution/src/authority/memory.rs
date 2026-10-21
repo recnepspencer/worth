@@ -236,6 +236,13 @@ mod lock_order_tests;
 mod optional_tests;
 
 impl ExecutionMemoryReservation {
+    pub(in crate::authority) fn allocation_status(&self) -> Option<super::ExecutionLeaseStatus> {
+        match &self.held {
+            Held::Lease(memory) => Some(memory.status()),
+            Held::Serial { .. } => None,
+        }
+    }
+
     pub fn reserve_in_scope(
         lease: Option<&ExecutionResourceLease<'_>>,
         bytes: u64,

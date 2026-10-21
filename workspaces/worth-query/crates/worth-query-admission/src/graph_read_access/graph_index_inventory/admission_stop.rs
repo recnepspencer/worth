@@ -5,6 +5,11 @@ use crate::graph_read_access::AdmittedDigestTextStop;
 #[derive(Debug)]
 pub enum WorthQueryGraphIndexInventoryAdmissionStop<Stop> {
     Admission(Stop),
+    Preparation {
+        cause: Stop,
+        context:
+            crate::canonical_identity_derivation::WorthQueryCanonicalIdentityPreparationContext,
+    },
     AccountingOverflow,
     AllocationUnavailable,
     UnsupportedPreparation,
@@ -34,6 +39,9 @@ impl<Stop> From<WorthQueryCanonicalIdentityStop<Stop>>
     fn from(stop: WorthQueryCanonicalIdentityStop<Stop>) -> Self {
         match stop {
             WorthQueryCanonicalIdentityStop::Admission(stop) => Self::Admission(stop),
+            WorthQueryCanonicalIdentityStop::Preparation { cause, context } => {
+                Self::Preparation { cause, context }
+            }
             WorthQueryCanonicalIdentityStop::AccountingOverflow => Self::AccountingOverflow,
             WorthQueryCanonicalIdentityStop::AllocationUnavailable => Self::AllocationUnavailable,
             WorthQueryCanonicalIdentityStop::Derivation(_)

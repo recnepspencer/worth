@@ -6,8 +6,6 @@ fn case(transitive: bool, changed_own_source: bool) {
         None,
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard(),
         4096,
-        128 * 1024 * 1024,
-        Some(1_000_000),
         |graph| {
             source_world::seed(graph);
             ring_world::seed::<1>(graph);

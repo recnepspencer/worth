@@ -83,6 +83,7 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
                 Some(&mut expected_handoff),
                 None,
                 None,
+                None,
             )
             .map_err(ReduceCertificationFailure::Run)?
         };
@@ -108,6 +109,7 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
                 BackendKind::Perturbation(seed),
                 true,
                 Some(&mut actual_handoff),
+                None,
                 None,
                 None,
             )

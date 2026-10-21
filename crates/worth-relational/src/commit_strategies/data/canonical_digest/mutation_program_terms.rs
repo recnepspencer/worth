@@ -152,6 +152,10 @@ fn write_relation_mutation_intent(
             bytes.tag(1);
             write_update_relation_endpoints_intent(bytes, intent);
         }
+        RelationMutationIntent::Revalidate(intent) => {
+            bytes.tag(4);
+            bytes.relation_id(intent.relation_id);
+        }
         RelationMutationIntent::Delete(intent) => {
             bytes.tag(2);
             write_delete_relation_intent(bytes, intent);

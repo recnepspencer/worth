@@ -1,50 +1,81 @@
-//! Remove one row's posting memberships without retaining intermediate trees.
-use super::super::admission::PreparedTreeEdits;
-use super::{
-    debit, index_capacity, Arc, CompanionPreflightStop, FactPosting, FactPostingKey, MarkState,
-    OrdSet, RecordedSettlementIdentity, RetainedIndexAdmission, SettlementMarks,
-};
+//! Detach one exact settlement; physical keys leave only with the final binding.
+
+use super::*;
 
 pub(super) fn remove(
     state: &mut MarkState,
     identity: &Arc<RecordedSettlementIdentity>,
-    row: &SettlementMarks,
-    admission: &mut impl RetainedIndexAdmission,
+    projection: &Arc<PostingProjection>,
 ) -> Result<(), CompanionPreflightStop> {
-    let mut map_edits = PreparedTreeEdits::<Arc<FactPostingKey>, OrdSet<FactPosting>>::new();
-    for (key, ordinals) in &row.posting_ordinals {
-        admission.work(1)?;
-        admission.key_read(key, state.postings.len())?;
-        let Some(mut postings) = state.postings.get(key).cloned() else {
-            continue;
-        };
-        let mut set_edits = PreparedTreeEdits::<FactPosting, ()>::new();
-        for ordinal in ordinals {
-            let posting = FactPosting {
-                settlement: Arc::clone(identity),
-                ordinal: *ordinal,
-            };
-            admission.work(1)?;
-            set_edits.remove(postings.len(), admission)?;
-            if postings.remove(&posting).is_some() {
-                debit(&mut state.posting_count, 1)?;
-            }
-        }
-        if postings.is_empty() {
-            map_edits.key_remove(key, state.postings.len(), admission)?;
-            state.postings.remove(key);
-            let key_bytes = key
-                .owned_payload_capacity_bytes()
-                .and_then(|n| n.checked_add(index_capacity::arc_bytes::<FactPostingKey>()?))
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-            debit(&mut state.key_payload_bytes, key_bytes)?;
-            // The removed bucket and its edited set are dropped here. Its old
-            // image remains owned by the predecessor; no new set survives.
-        } else {
-            set_edits.retain(postings.len(), admission)?;
-            map_edits.key_insert(key, state.postings.len(), admission)?;
-            state.postings.insert(Arc::clone(key), postings);
-        }
+    crate::domain_computation::primary_graph::fact_verification_observation::posting_registration();
+    let id = projection.id;
+
+    let Some(existing) = state.posting_bindings.get(&id) else {
+        return Err(CompanionPreflightStop::SelectedSourceMismatch);
+    };
+    let existing = existing
+        .settlements()
+        .ok_or(CompanionPreflightStop::SelectedSourceMismatch)?;
+    if !Arc::ptr_eq(&existing.projection, projection) || !existing.settlements.contains(identity) {
+        return Err(CompanionPreflightStop::SelectedSourceMismatch);
     }
-    map_edits.retain(state.postings.len(), admission)
+    let mut binding = existing.clone();
+
+    binding.settlements.remove(identity);
+    if !binding.settlements.is_empty() {
+        state
+            .posting_bindings
+            .insert(id, Arc::new(PostingBindings::Settlements(binding)));
+        return Ok(());
+    }
+    remove_physical(state, id, &projection.ordinals)
+}
+
+/// Remove exactly one physical reader projection; retained historical roots keep theirs.
+pub(in super::super) fn remove_physical(
+    state: &mut MarkState,
+    id: u64,
+    keys: &im::OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
+) -> Result<(), CompanionPreflightStop> {
+    for key in keys.keys() {
+        detach_key(state, id, key)?;
+    }
+
+    state.posting_bindings.remove(&id);
+    Ok(())
+}
+
+/// Deferred read cleanup owns only the touched bucket, never its old footprint.
+pub(in super::super) fn remove_physical_key(
+    state: &mut MarkState,
+    id: u64,
+    key: &FactPostingKey,
+) -> Result<(), CompanionPreflightStop> {
+    detach_key(state, id, key)?;
+    Ok(())
+}
+
+fn detach_key(
+    state: &mut MarkState,
+    id: u64,
+    key: &FactPostingKey,
+) -> Result<(), CompanionPreflightStop> {
+    crate::domain_computation::primary_graph::fact_verification_observation::posting_registration();
+
+    let Some((stored_key, groups)) = state.postings.get_key_value(key) else {
+        return Err(CompanionPreflightStop::SelectedSourceMismatch);
+    };
+    let stored_key = Arc::clone(stored_key);
+    let mut groups = groups.clone();
+
+    if groups.remove(&id).is_none() {
+        return Err(CompanionPreflightStop::SelectedSourceMismatch);
+    }
+    debit(&mut state.posting_count, 1)?;
+    if groups.is_empty() {
+        state.postings.remove(key);
+    } else {
+        state.postings.insert(stored_key, groups);
+    }
+    Ok(())
 }

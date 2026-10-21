@@ -208,6 +208,7 @@ where
             }))
         },
     )?;
+
     let (same_bits, work, span) = match checked {
         Ok(result) => result?,
         Err(payload) => std::panic::resume_unwind(payload),
@@ -216,10 +217,11 @@ where
         same_bits,
         "the run's result differs from the certified one under seed {seed}"
     );
+
     assert_eq!(
         report.charged_work(),
         work,
-        "the run's charged work differs from the certified one under seed {seed}"
+        "native canonical work differs under seed {seed}"
     );
     assert_eq!(
         report.charged_span(),

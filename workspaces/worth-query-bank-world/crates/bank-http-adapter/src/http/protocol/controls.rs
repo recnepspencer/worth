@@ -42,19 +42,13 @@ impl<'de> Deserialize<'de> for BankHttpProtocolVersion {
 pub struct BankHttpRequestControls {
     pub deadline_milliseconds: u64,
     pub maximum_results: usize,
-    pub maximum_work: usize,
 }
 
 impl BankHttpRequestControls {
-    pub const fn new(
-        deadline_milliseconds: u64,
-        maximum_results: usize,
-        maximum_work: usize,
-    ) -> Self {
+    pub const fn new(deadline_milliseconds: u64, maximum_results: usize) -> Self {
         Self {
             deadline_milliseconds,
             maximum_results,
-            maximum_work,
         }
     }
 }

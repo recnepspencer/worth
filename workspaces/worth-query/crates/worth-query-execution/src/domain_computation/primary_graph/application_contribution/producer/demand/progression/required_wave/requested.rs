@@ -1,10 +1,11 @@
 //! Progress the exact pending output an initial producer actually requested.
-use super::super::super::required_continuations::{
-    resume_held_upstream, ContinuationCustody, HeldUpstream, RequiredContinuations,
-};
-use super::super::{
-    WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
-};
+use super::super::super::required_continuations::resume_held_upstream;
+use super::super::super::required_continuations::ContinuationCustody;
+use super::super::super::required_continuations::HeldUpstream;
+use super::super::super::required_continuations::RequiredContinuations;
+use super::super::WorthQueryAdmittedOutputDemand;
+use super::super::WorthQueryOutputDemandAdvance;
+use super::super::WorthQueryProducerOutputFamily;
 use super::drive::drive_required_wave;
 use super::queued::QueuedRequiredRoots;
 use super::*;
@@ -21,7 +22,6 @@ pub(in super::super) fn advance_requested_output<Schema, Family>(
     authority: &super::super::super::super::WorthQueryProducerCommitAuthority,
     stop: &mut WorthQueryOutputDemandDenial,
     performed: &std::cell::RefCell<performed::PerformedMembers>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
@@ -31,12 +31,10 @@ where
         return Ok(None);
     };
     // A packet is scheduling evidence for exactly the native basis that issued it.
-    let (shared, positioned) =
-        selection::select_required_basis(execution, runtime, branch, admission)?;
+    let (shared, positioned) = selection::select_required_basis(execution, runtime, branch)?;
     let upstream = runtime.output_demands.requested_ready_readmission(
         &requested,
         &positioned,
-        admission,
         &mut demand.required_continuations.requested,
     )?;
     let (anchor_ready, shared, positioned) = match upstream {
@@ -52,12 +50,11 @@ where
                 branch,
                 ContinuationCustody::Queue(&mut demand.required_continuations),
                 &head,
-                admission,
                 performed,
             )? {
                 HeldUpstream::Ready(ready) => {
                     let (shared, positioned) =
-                        selection::select_required_basis(execution, runtime, branch, admission)?;
+                        selection::select_required_basis(execution, runtime, branch)?;
                     (ready, shared, positioned)
                 }
                 HeldUpstream::Unfinished | HeldUpstream::GaveBack => {
@@ -76,7 +73,6 @@ where
             .product()
             .observation()
             .lifecycle_incarnation(),
-        admission,
     )?;
     let wave = RequiredWaveSelection::from_basis(
         shared,
@@ -102,7 +98,6 @@ where
         &mut queue,
         &mut frame_custody,
         performed,
-        admission,
     );
     frame_custody.hold_unfinished(&runtime.output_demands);
     result

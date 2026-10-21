@@ -52,6 +52,8 @@ fn select_entity_working_set_layout(
     EntityWorkingSetLayout::AoSoACandidate { chunk_width }
 }
 
+// Some(empty) admits a supported plan needing no existing entity payload.
+// None declines sparse materialization; it must never authorize a shape-only clone.
 fn sparse_entity_slots_for_plan(
     clone_mode: PartitionCloneMode,
     merged_plan: &MergedCommitPlan,
@@ -106,8 +108,7 @@ fn sparse_entity_slots_for_plan(
     }
 
     let total_slots: usize = slots_by_partition.values().map(BTreeSet::len).sum();
-    (total_slots > 0
-        && total_slots <= AOSOA_SPARSE_ENTITY_SLOT_LIMIT
+    (total_slots <= AOSOA_SPARSE_ENTITY_SLOT_LIMIT
         && slots_by_partition.len() <= AOSOA_SPARSE_PARTITION_LIMIT)
         .then_some(slots_by_partition)
 }
@@ -261,6 +262,11 @@ pub(crate) fn prepare_authoritative_working_state_scope_for_base(
     }
     phase_timing.draft_structural_summary_micros = summary_started.elapsed().as_micros() as u64;
     let clone_mode = match structural_summary.commit_topology {
+        // The read demand cannot use an entity-only image: real relation and
+        // endpoint preimages must reach judgment without claiming a graph write.
+        CommitTopology::FlatEntityBatch if merged_plan.revalidates_relations() => {
+            PartitionCloneMode::Full
+        }
         CommitTopology::FlatEntityBatch => PartitionCloneMode::EntityOnly,
         CommitTopology::GraphMutation => PartitionCloneMode::GraphSparseEntities,
         CommitTopology::BranchMerge => PartitionCloneMode::Full,
@@ -276,6 +282,18 @@ pub(crate) fn prepare_authoritative_working_state_scope_for_base(
                 .unwrap_or(0)
         })
         .sum();
+    let sparse_entity_slots = sparse_entity_slots_for_plan(clone_mode, merged_plan, footprint);
+    let sparse_relation_overlay_partitions =
+        sparse_relation_overlay_partitions_for_plan(clone_mode, merged_plan, footprint);
+    // Sparse relations cannot supply an unavailable entity preimage. This is
+    // the sole production admission into sparse working-state construction.
+    let clone_mode = if matches!(clone_mode, PartitionCloneMode::GraphSparseEntities)
+        && sparse_entity_slots.is_none()
+    {
+        PartitionCloneMode::Full
+    } else {
+        clone_mode
+    };
     let cloned_relation_slots = if matches!(clone_mode, PartitionCloneMode::Full) {
         structural_summary
             .touched_partitions
@@ -289,17 +307,6 @@ pub(crate) fn prepare_authoritative_working_state_scope_for_base(
             .sum()
     } else {
         0
-    };
-    let sparse_entity_slots = sparse_entity_slots_for_plan(clone_mode, merged_plan, footprint);
-    let sparse_relation_overlay_partitions =
-        sparse_relation_overlay_partitions_for_plan(clone_mode, merged_plan, footprint);
-    let clone_mode = if matches!(clone_mode, PartitionCloneMode::GraphSparseEntities)
-        && sparse_entity_slots.is_none()
-        && sparse_relation_overlay_partitions.is_none()
-    {
-        PartitionCloneMode::Full
-    } else {
-        clone_mode
     };
     let sparse_entity_slot_count = sparse_entity_slots
         .as_ref()

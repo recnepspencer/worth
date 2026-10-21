@@ -1,7 +1,10 @@
 //! Binding without an admission must not read pending completed custody as truth.
-use super::super::{BoundOutputSource, PreparedOutputRootKind, SourceCustody};
+use super::super::BoundOutputSource;
+use super::super::PreparedOutputRootKind;
+use super::super::SourceCustody;
 use super::*;
-use crate::domain_computation::primary_graph::tests::{fixture, recoverable_commit_support};
+use crate::domain_computation::primary_graph::tests::fixture;
+use crate::domain_computation::primary_graph::tests::recoverable_commit_support;
 use crate::equality_type_id::EqualityTypeId;
 
 #[test]
@@ -86,13 +89,7 @@ fn registry_binding_reader_resolves_completed_custody_note() {
             registry
         };
         let eager = make();
-        super::super::refreshed_rejoin::infallible(
-            eager
-                .state
-                .lock()
-                .unwrap()
-                .prune_completed_custody(&mut OracleWalk::after_effect()),
-        );
+        eager.state.lock().unwrap().prune_completed_custody();
         eager
             .bind_prepared_output_source(&current_commit, selected.clone())
             .unwrap();
@@ -122,20 +119,7 @@ fn registry_binding_reader_resolves_completed_custody_note() {
             "seed {seed}"
         );
         assert_eq!(b.source_custody.len(), a.source_custody.len());
-        assert_eq!(
-            (
-                b.record_retained_bytes
-                    .load(std::sync::atomic::Ordering::Acquire),
-                b.required_reserved_bytes,
-                b.obligation_reserved_bytes
-            ),
-            (
-                a.record_retained_bytes
-                    .load(std::sync::atomic::Ordering::Acquire),
-                a.required_reserved_bytes,
-                a.obligation_reserved_bytes
-            )
-        );
+
         assert!(b.records.is_empty());
     }
 }

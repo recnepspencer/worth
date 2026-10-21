@@ -1,9 +1,9 @@
+use super::runtime_api::application_invariants::*;
 use super::*;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
-use worth_query_host::facade::application_invariants::*;
 
 pub const INVARIANT_PROBE_STANDARD: usize = 0;
 pub const INVARIANT_PROBE_UNDECLARED_ACCESS: usize = 1;

@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::collections::BTreeMap;
 
 use worth_relational::facade::transactions::EntityReference;
@@ -144,7 +145,7 @@ fn validate_installed_contract<Schema, Operation, Input, Scope>(
 
 fn validate_lifecycle_facts(
     binding: &WorthQueryMandatoryReviewBinding,
-    facts: &[super::WorthQueryApplicationObservedFact],
+    facts: &(impl FactSequence + ?Sized),
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     let approved = binding.mandatory().approved();
     let requested = approved.request_binding();

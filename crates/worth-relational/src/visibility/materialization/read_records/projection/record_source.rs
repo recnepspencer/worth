@@ -1,5 +1,5 @@
 use super::*;
-use crate::identity::data::{EntityId, RelationId, VersionId};
+use crate::identity::data::VersionId;
 
 impl super::ProjectionRecordSource for VisibilityProjectionView {
     fn selected_root(&self) -> Option<&std::sync::Arc<crate::branch::RelationalBranchRoot>> {
@@ -10,25 +10,5 @@ impl super::ProjectionRecordSource for VisibilityProjectionView {
     }
     fn version_id(&self) -> VersionId {
         self.version_id()
-    }
-    fn authoritative_entity_record(
-        &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-        id: EntityId,
-    ) -> Result<
-        Option<crate::storage::data::EntityReadRecord>,
-        crate::execution::RelationalExecutionDenialCause,
-    > {
-        self.authoritative_entity_record(request, id)
-    }
-    fn authoritative_relation_record(
-        &self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-        id: RelationId,
-    ) -> Result<
-        Option<crate::storage::data::RelationReadRecord>,
-        crate::execution::RelationalExecutionDenialCause,
-    > {
-        self.authoritative_relation_record(request, id)
     }
 }

@@ -146,8 +146,7 @@ pub use programs::{
 };
 pub use query::WorthQueryApplicationQueryRequest;
 pub use query_batch::{
-    WorthQueryApplicationBoundedQueryBatchRequest, WorthQueryApplicationQueryBatchDenial,
-    WorthQueryApplicationQueryBatchRequest,
+    WorthQueryApplicationQueryBatchDenial, WorthQueryApplicationQueryBatchRequest,
 };
 pub use request::{
     WorthQueryApplicationBranchSetRequest, WorthQueryApplicationHistorySelectionDenial,
@@ -206,6 +205,4 @@ pub use workflow::{
     WorthQueryWorkflowProposalPreparationDenial, WorthQueryWorkflowProposalPreparationDenialKind,
     WorthQueryWorkflowProposalRequest, WorthQueryWorkflowSuccessionBindingDenial,
 };
-pub use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationQueryBatchLimits, WorthQueryApplicationQueryBatchResourceDenial,
-};
+pub use worth_query_execution::facade::primary_graph::WorthQueryApplicationQueryBatchResourceDenial;

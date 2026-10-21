@@ -15,7 +15,9 @@ mod read_observation;
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryNativeMarkingWork {
     pub posting_key_lookups: u64,
-    // Includes repeated matches of one ordinal through different posting keys.
+    // Includes repeated matches through different keys and genuinely discovered
+    // queued pairs when a later stop precedes marking. No pair is counted twice
+    // within one key, and unchanged physical sharing never erases logical fanout.
     pub matched_fact_postings: u64,
     pub marked_fact_ordinals: u64,
     // Includes directly marked roots and equality predecessors as well as
@@ -30,12 +32,6 @@ pub struct WorthQueryNativeMarkingWork {
 pub enum WorthQueryNativeMarkingPrecision {
     Exact(WorthQueryNativeMarkingWork),
     DeclaredChangeUnavailable,
-    /// Matched fan-out exceeded the installed marking ceiling. Preparation
-    /// falls back to a discontinuity; counts record the work spent before it.
-    MarkingCeilingExceeded(WorthQueryNativeMarkingWork),
-    /// The marked version exceeded the installed retained capacity.
-    /// Preparation falls back to a discontinuity after the counted marking.
-    RetainedCapacityExhausted(WorthQueryNativeMarkingWork),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

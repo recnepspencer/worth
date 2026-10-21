@@ -1,21 +1,20 @@
 //! Governed dependency marks on the existing native envelope and canonical touched-fact stream.
-use super::{admission::WorthQueryWorkflowReadDenial as Denial, *};
-use crate::domain_computation::primary_graph::{
-    application_installation::WorthQueryWorkflowVocabulary,
-    live_delivery::{WorthQueryLiveSourcePoll, WorthQueryLiveSubscription},
-    output_lineage::invalidation::{
-        CommitTouchEntities, CommitTouchInterest, CommitTouchesStop, InvalidationEditAdmission,
-    },
-    WorthQueryAdvancementPhase, WorthQuerySelectedProductOperation,
-};
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
-use worth_query_declaration::facade::application_program::{
-    ApplicationWorkflowReadBinding, ApplicationWorkflowReadRoute, ApplicationWorkflowSpec,
-};
+use super::admission::WorthQueryWorkflowReadDenial as Denial;
+use super::*;
+use crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary;
+use crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveSourcePoll;
+use crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveSubscription;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::CommitTouchEntities;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::CommitTouchInterest;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowReadBinding;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowReadRoute;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 use worth_query_installation::facade::ApplicationSchema;
-use worth_relational::facade::{mvcc::CompanionPreflightBudget, publication::PatchStreamPosition};
+use worth_relational::facade::publication::PatchStreamPosition;
 /// Coarse invalidation of an immutable view. No mark refreshes its retained data or grants authority.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowHistoryMark {
@@ -168,13 +167,6 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
                     every_commit: false,
                 },
             );
-        let batch = match batch {
-            Ok(batch) => batch,
-            Err(CommitTouchesStop::RequiresReconstruction { .. }) => {
-                interest.discontinuous = true;
-                return Ok(WorthQueryWorkflowHistoryMark::Overflow);
-            }
-        };
         interest.touches = batch.next_cursor;
         interest.cursor = next;
         if !batch.commits.is_empty() {
@@ -209,24 +201,8 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
                 ApplicationWorkflowReadRoute::Subject,
             )
             .map_err(Denial::Installation)?;
-        let profile = self
-            .application()
-            .runtime
-            .application_query_resource_profile();
-        let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: profile.maximum_work().map(|work| work.get() as u64),
-            maximum_preparation_bytes: Some(profile.maximum_inline_index_bytes().get() as u64),
-        });
-        target.admit(
-            self,
-            data,
-            phase,
-            &binding,
-            principal,
-            input,
-            request,
-            &mut admission,
-        )?;
+
+        target.admit(self, data, phase, &binding, principal, input, request)?;
         Ok(*workflow.support_identity_bytes())
     }
 }

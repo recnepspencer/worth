@@ -1,4 +1,4 @@
-//! Native reports and separate real retention ledgers; none is a total-heap measurement.
+//! Native execution reports and actual registry population.
 use super::*;
 use worth_query_host::facade::primary_graph::{
     advancement_observations_on_this_thread_for_test,
@@ -7,19 +7,11 @@ use worth_query_host::facade::primary_graph::{
 #[derive(Debug)]
 pub(super) struct Retained {
     pub rows: usize,
-    pub record_bytes: usize,
-    pub required_bytes: usize,
 }
 pub(super) fn retained(runtime: &Runtime) -> Retained {
     let runtime = runtime.runtime();
     Retained {
         rows: runtime.registry_row_count_for_test(),
-        record_bytes: runtime.registry_record_retained_bytes_for_test(),
-        required_bytes: runtime
-            .required_custody_breakdown_for_test()
-            .iter()
-            .map(|(_, _, bytes)| bytes)
-            .sum(),
     }
 }
 pub(super) struct Measure {
@@ -32,7 +24,6 @@ pub(super) struct Work {
     pub execution_span: u64,
     pub signal_checkpoint_work: u64,
     pub phases: usize,
-    pub comparison_work: Vec<u64>,
     pub whole_rows: u64,
 }
 impl Measure {
@@ -40,16 +31,13 @@ impl Measure {
         let observation = WorthQueryExecutionObservation::install_on_this_thread();
         advancement_observations_on_this_thread_for_test();
         signal_request_charges_on_this_thread_for_test();
-        runtime
-            .runtime()
-            .take_required_set_comparison_work_for_test();
         Self {
             _observation: observation,
             whole_rows: runtime.runtime().whole_registry_rows_visited_for_test(),
         }
     }
     pub fn finish(self, runtime: &Runtime) -> Work {
-        // Capture before any diagnostic custody breakdown walks registry records.
+        // Capture before inspecting the receiver's registry population.
         let whole_rows = runtime.runtime().whole_registry_rows_visited_for_test() - self.whole_rows;
         let reports = advancement_observations_on_this_thread_for_test();
         assert!(
@@ -70,9 +58,6 @@ impl Measure {
                 .into_iter()
                 .sum(),
             phases: reports.len(),
-            comparison_work: runtime
-                .runtime()
-                .take_required_set_comparison_work_for_test(),
             whole_rows,
         }
     }
@@ -90,21 +75,6 @@ pub(super) fn native_allocation(
     .unwrap()
 }
 
-impl Work {
-    pub(super) fn empty_comparison(&self) {
-        assert!(self.comparison_work.is_empty());
-    }
-    pub(super) fn one_complete_comparison(&self) -> u64 {
-        assert_eq!(
-            self.comparison_work.len(),
-            1,
-            "one complete-set guard, never per-member proxy meters"
-        );
-        let work = self.comparison_work[0];
-        assert!(work > 0);
-        work
-    }
-}
 #[derive(Debug)]
 pub(super) struct Stages {
     pub traversal: Work,

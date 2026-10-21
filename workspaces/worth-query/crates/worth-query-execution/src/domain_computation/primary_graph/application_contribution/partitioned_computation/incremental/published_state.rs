@@ -1,7 +1,7 @@
 //! Certification observes published and discarded retention without execution authority.
 use super::retained::RetainedPartitions;
 use super::WorthQueryPartitionedComputationFullCause as Cause;
-use crate::domain_computation::primary_graph::output_lineage::CustodiedComputation;
+use crate::domain_computation::primary_graph::application_contribution::RetainedComputation;
 use std::sync::Arc;
 use worth_execution::{CanonicalBits, ChargedBytes};
 use worth_query_declaration::facade::application_operation::application_computation_item_digest;
@@ -9,7 +9,7 @@ use worth_query_declaration::facade::application_program::ApplicationComputation
 
 #[derive(Clone)]
 pub struct WorthQueryPublishedComputationStateForTest {
-    state: Option<Arc<CustodiedComputation>>,
+    state: Option<Arc<RetainedComputation>>,
     absence: Option<Cause>,
 }
 
@@ -27,7 +27,7 @@ thread_local! {
 }
 
 pub(in crate::domain_computation::primary_graph) fn observe_published(
-    state: Option<&Arc<CustodiedComputation>>,
+    state: Option<&Arc<RetainedComputation>>,
     absence: Option<Cause>,
 ) {
     if !crate::domain_computation::execution_observation::is_installed() {
@@ -76,14 +76,6 @@ pub(in crate::domain_computation) fn observe_discarded(
 }
 
 impl WorthQueryPublishedComputationStateForTest {
-    /// The measured full state charge, including the custodied allocation.
-    /// This reads payload measurement, not the runtime ledger or ticket.
-    pub fn retained_bytes_for_test(&self) -> Option<u64> {
-        self.state
-            .as_ref()
-            .and_then(|state| CustodiedComputation::retained_bytes_for(state))
-    }
-
     /// Compare the fields the next run reads under the supplied item binding
     /// correspondence. Each state's stored digests must encode its actual
     /// items: different installations intentionally encode different authority
@@ -155,7 +147,13 @@ impl WorthQueryPublishedComputationStateForTest {
                 b.partitions.get(identity).is_some_and(|next| {
                     same_key(&partition.key, &next.key)
                         && partition.key_bytes == next.key_bytes
-                        && partition.kernel_steps == next.kernel_steps
+                        && a.native_run
+                            .result(*identity)
+                            .zip(b.native_run.result(*identity))
+                            .is_some_and(|(left, right)| {
+                                left.has_same_native_cost(right)
+                                    && bits(left.value()) == bits(right.value())
+                            })
                         && a.tree.leaf(*identity).map(bits) == b.tree.leaf(*identity).map(bits)
                 })
             })

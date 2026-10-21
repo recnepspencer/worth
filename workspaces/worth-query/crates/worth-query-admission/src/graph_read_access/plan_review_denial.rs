@@ -1,6 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGraphReadPlanReviewDenialKind {
-    BudgetExceeded,
     RequiredAsyncMaterialization,
     RequiredAccessCapabilityRegistration,
     RequiredPersistentIndex,
@@ -23,7 +22,6 @@ impl WorthQueryGraphReadPlanReviewDenial {
 
     pub const fn as_str(&self) -> &'static str {
         match self.kind {
-            WorthQueryGraphReadPlanReviewDenialKind::BudgetExceeded => "budget_exceeded",
             WorthQueryGraphReadPlanReviewDenialKind::RequiredAsyncMaterialization => {
                 "required_async_materialization"
             }

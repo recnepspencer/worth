@@ -1,3 +1,4 @@
+use super::super::demand::ProducerPublicationStale;
 use super::denial::{denial, failed, handler_execution_failed, request_authority_stop};
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::primary_graph as graph;
@@ -129,10 +130,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     {
         return Err(request_authority_stop(identity, authority));
     }
-    // A companion with no room for this commit met a budget of the advance
-    // that ran it; the producer did not fail, and its row stays claimable.
-    if let Some((kind, stop)) = refused_budget(&outcome) {
-        return Err(denial(kind, identity.to_owned()).with_publication_companion_stop(stop));
+    // A stopped native companion preflight belongs to this advance. A budget
+    // refusal or replaced selected image leaves the original producer claimable.
+    if let Some(refused) = refused_preflight(identity, &outcome) {
+        return Err(refused);
     }
     match outcome {
         WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
@@ -164,11 +165,16 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 .into_prerequisite_denial()
                 .expect("required prerequisite deferral retains its actual denial"))
         }
-        WorthQueryApplicationCommitOutcome::Stale(_)
-        | WorthQueryApplicationCommitOutcome::ProductStale(_) => Err(denial(
+        WorthQueryApplicationCommitOutcome::Stale(stale) => Err(denial(
             WorthQueryOutputDemandDenialKind::PublicationStale,
             identity.to_owned(),
-        )),
+        )
+        .with_publication_stale(Some(ProducerPublicationStale::CommitDecisionFacts(stale)))),
+        WorthQueryApplicationCommitOutcome::ProductStale(stale) => Err(denial(
+            WorthQueryOutputDemandDenialKind::PublicationStale,
+            identity.to_owned(),
+        )
+        .with_publication_stale(Some(ProducerPublicationStale::product_head(&stale)))),
         WorthQueryApplicationCommitOutcome::Cancelled => Err(denial(
             WorthQueryOutputDemandDenialKind::Cancelled,
             identity.to_owned(),
@@ -188,7 +194,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         WorthQueryApplicationCommitOutcome::Denied(commit_denial) => {
             use WorthQueryApplicationCommitDenialKind as Kind;
             let kind = commit_denial.kind();
-            let capacity = commit_denial.output_verification_capacity_stop();
             let execution = commit_denial
                 .execution_denial_cause()
                 .map(|cause| (commit_denial.stage(), cause));
@@ -196,7 +201,12 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 Kind::ProductBasisStale => denial(
                     WorthQueryOutputDemandDenialKind::PublicationStale,
                     identity.to_owned(),
-                ),
+                )
+                .with_publication_stale(Some(
+                    ProducerPublicationStale::CommitProductBasisStale {
+                        stage: commit_denial.stage(),
+                    },
+                )),
                 Kind::IdempotencyIntentDrift => denial(
                     WorthQueryOutputDemandDenialKind::ProducerUnavailable,
                     format!("{identity}: {commit_denial:?}"),
@@ -220,8 +230,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 | Kind::IndexGenerationIdentityExhausted
                 | Kind::IdempotencyReceiptNotRetained { .. }
                 | Kind::IdempotencyIntentUnverifiable
-                | Kind::MutationBindingMismatch
-                | Kind::MutationInputMismatch
                 | Kind::OperationBodyExecutionRequired
                 | Kind::SignedCreationAuthentication { .. }
                 | Kind::SignedEntityImmutable
@@ -231,6 +239,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 | Kind::SigningLifecycleSubjectCapacity { .. }
                 | Kind::SigningLifecycleRepresentationCapacity
                 | Kind::SigningLifecycleObservation { .. }
+                | Kind::MutationBindingMismatch
+                | Kind::MutationInputMismatch
                 | Kind::ElevationTransitionRequired
                 | Kind::ElevationRequestProgramMismatch
                 | Kind::ElevationApprovalProgramMismatch
@@ -246,7 +256,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 | Kind::RecoveryHandoffMismatch { .. } => failed(identity, commit_denial),
             };
             Err(failure
-                .with_capacity_stop(capacity)
                 .with_commit_denial_kind(kind)
                 .with_commit_execution_denial(execution))
         }
@@ -277,27 +286,29 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     }
 }
 
-/// The budget a publication companion had no room in when it refused the
-/// commit: the request's work, or what the index and its preparation retain.
-fn refused_budget(
+/// Native preflight refuses this advance before effects. Preserve original
+/// budgets and a replaced selected image as retryable owner outcomes.
+fn refused_preflight(
+    identity: &str,
     outcome: &WorthQueryApplicationCommitOutcome,
-) -> Option<(
-    WorthQueryOutputDemandDenialKind,
-    worth_relational::facade::mvcc::CompanionPreflightStop,
-)> {
+) -> Option<WorthQueryOutputDemandDenial> {
     use graph::WorthQueryApplicationCommitDeferredKind as Deferred;
     use worth_relational::facade::mvcc::{
         CompanionPreflightStop as Stop, RelationalPublicationDeferred::CompanionPreflight,
     };
-    let stop = match outcome {
+    let (stop, origin) = match outcome {
         WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => match no_effect.cause() {
-            WorthQueryApplicationNoEffectCause::RelationalDeferred(CompanionPreflight(stop)) => {
-                stop
-            }
+            WorthQueryApplicationNoEffectCause::RelationalDeferred(CompanionPreflight(stop)) => (
+                stop,
+                ProducerPublicationStale::CommitNoEffectPreflight(stop),
+            ),
             _ => return None,
         },
         WorthQueryApplicationCommitOutcome::Deferred(deferred) => match deferred.kind() {
-            Deferred::RelationalDeferred(CompanionPreflight(stop)) => stop,
+            Deferred::RelationalDeferred(CompanionPreflight(stop)) => (
+                stop,
+                ProducerPublicationStale::CommitDeferredPreflight(stop),
+            ),
             _ => return None,
         },
         WorthQueryApplicationCommitOutcome::CleanupRequired(_)
@@ -314,18 +325,23 @@ fn refused_budget(
         | WorthQueryApplicationCommitOutcome::Indeterminate(_) => return None,
     };
     let kind = match stop {
+        Stop::SelectedSourceMismatch => Some(WorthQueryOutputDemandDenialKind::PublicationStale),
         Stop::WorkExhausted { .. }
         | Stop::WorkExhaustedWithoutRequirement { .. }
-        | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+        | Stop::WorkCounterOverflow => Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded),
         Stop::PreparationMemoryExhausted { .. }
         | Stop::PreparationMemoryCounterOverflow
-        | Stop::RetainedCompanionCounterOverflow { .. }
         | Stop::RetainedCompanionCapacityExhausted { .. } => {
-            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+            Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
         }
-        _ => return None,
-    };
-    Some((kind, stop))
+        _ => None,
+    }?;
+    let stale = (stop == Stop::SelectedSourceMismatch).then_some(origin);
+    Some(
+        denial(kind, identity.to_owned())
+            .with_publication_stale(stale)
+            .with_publication_companion_stop(stop),
+    )
 }
 
 #[cfg(test)]

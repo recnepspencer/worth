@@ -23,18 +23,17 @@ pub use entry_observation::{
 };
 pub(in crate::domain_computation::primary_graph::application_query) use work_observation::OneShotReadWorkObservation;
 
-use super::resource_lifecycle::WorthQueryApplicationResultBufferReservation;
 use super::{
-    projection::{
-        WorthQueryApplicationDisclosedProjectionTree, WorthQueryApplicationProjectionNode,
-    },
+    projection::WorthQueryApplicationDisclosedProjectionTree,
     WorthQueryAdmittedApplicationQueryPlan,
 };
 pub(super) use denial::{managed_read_denial, read_execution_denial, relational_read_denial};
 pub(super) use denial::{
     WorthQueryApplicationReadExecutionDenial, WorthQueryApplicationReadExecutionDenialKind,
 };
-pub(super) use kernel_outcome::{project_non_live_kernel, NonLiveKernelReceiptEvidence};
+pub(super) use kernel_outcome::{
+    project_non_live_kernel_with_decode, NonLiveKernelReceiptEvidence,
+};
 pub(super) use live_target::read_live_target;
 use root_selection::select_bounded_roots;
 use tree_materialization::materialize_result_tree;
@@ -66,12 +65,10 @@ pub(super) struct RawOneShotRows {
 
 pub(super) struct RawNonLiveKernelOutcome {
     pub(super) raw: RawOneShotRows,
-    pub(super) result_buffer: WorthQueryApplicationResultBufferReservation,
 }
 
 pub(super) struct RawLiveKernelOutcome {
     pub(super) raw: RawOneShotRows,
-    pub(super) result_buffer: WorthQueryApplicationResultBufferReservation,
 }
 
 pub(super) fn read_bounded_root_rows<
@@ -96,9 +93,8 @@ pub(super) fn read_bounded_root_rows<
         PrincipalIdentity,
         Scope,
     >,
-    result_buffer: WorthQueryApplicationResultBufferReservation,
+
     spent: Option<&OneShotReadWorkObservation<'_>>,
-    maximum_work: Option<usize>,
 ) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
     let read = read_plan::ReadPlan::of(plan);
     let pinned = pin_runtime_read(
@@ -114,9 +110,7 @@ pub(super) fn read_bounded_root_rows<
         execution,
         graph,
         &read_plan::ReadPlan::of(plan),
-        result_buffer,
         spent,
-        maximum_work,
         ReadInterruption::Query(plan.controls.request_scope()),
     )
 }
@@ -126,24 +120,15 @@ pub(super) fn read_prepared_root_rows(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &read_plan::ReadPlan<'_>,
-    mut result_buffer: WorthQueryApplicationResultBufferReservation,
+
     spent: Option<&OneShotReadWorkObservation<'_>>,
-    maximum_work: Option<usize>,
+
     interruption: ReadInterruption<'_>,
 ) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
     entry_observation::record_kernel_entry(plan.root);
     let contract = plan.contract;
-    let selection = select_bounded_roots(
-        runtime,
-        execution,
-        graph,
-        plan,
-        &mut result_buffer,
-        true,
-        spent,
-        maximum_work,
-        interruption,
-    )?;
+    let selection =
+        select_bounded_roots(runtime, execution, graph, plan, true, spent, interruption)?;
     validate_read_cardinality(contract.cardinality(), selection.candidates.len(), plan)?;
     let tree = materialize_result_tree(
         execution,
@@ -156,28 +141,11 @@ pub(super) fn read_prepared_root_rows(
         &selection.candidates,
         selection.selected_predicate_source.as_ref(),
         selection.root_path_source.as_ref(),
-        maximum_work.map(|maximum| maximum.saturating_sub(selection.work_units)),
         ResultTreeCollectionSelection::Complete,
         interruption,
-        &mut result_buffer,
         spent,
     )?;
     let actual_work = selection.work_units.saturating_add(tree.work_units);
-    if maximum_work.is_some_and(|maximum| actual_work > maximum) {
-        return Err(read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-            plan.name,
-        ));
-    }
-    verify_result_tree_accounting(
-        &result_buffer,
-        tree.rows.raw_rows(),
-        tree.rows.capacity(),
-        &tree.source_footprints,
-        tree.source_footprints.capacity(),
-        selection.result_set_source.as_deref(),
-        plan.name,
-    )?;
     Ok(RawNonLiveKernelOutcome {
         raw: RawOneShotRows {
             rows: tree.rows,
@@ -205,54 +173,8 @@ pub(super) fn read_prepared_root_rows(
             has_more: false,
             actual_work,
         },
-        result_buffer,
     })
 }
 
 mod continuation_page;
 pub(super) use continuation_page::read_continuation_page;
-
-fn verify_result_tree_accounting(
-    reservation: &WorthQueryApplicationResultBufferReservation,
-    rows: &[WorthQueryApplicationProjectionNode],
-    row_capacity: usize,
-    source_footprints: &[super::observed_source::WorthQueryObservedSourceFootprint],
-    source_footprint_capacity: usize,
-    result_set_source: Option<&super::observed_source::WorthQueryObservedRootSelection>,
-    subject: &str,
-) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-    let retained_bytes = rows
-        .iter()
-        .map(WorthQueryApplicationProjectionNode::retained_bytes)
-        .fold(
-            row_capacity.saturating_mul(std::mem::size_of::<WorthQueryApplicationProjectionNode>()),
-            usize::saturating_add,
-        );
-    let retained_bytes = source_footprints
-        .iter()
-        .map(super::observed_source::WorthQueryObservedSourceFootprint::retained_bytes)
-        .fold(
-            retained_bytes.saturating_add(source_footprint_capacity.saturating_mul(
-                std::mem::size_of::<super::observed_source::WorthQueryObservedSourceFootprint>(),
-            )),
-            usize::saturating_add,
-        );
-    let retained_bytes = source_footprints
-        .iter()
-        .fold(retained_bytes, |bytes, footprint| {
-            bytes.saturating_add(
-                footprint
-                    .root_selection
-                    .as_ref()
-                    .map_or(0, |source| source.retained_bytes()),
-            )
-        });
-    let retained_bytes = retained_bytes
-        .saturating_add(result_set_source.map_or(0, |source| source.retained_bytes()));
-    reservation.verify_retained(retained_bytes).map_err(|()| {
-        read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::ResultBufferLimitExceeded,
-            subject,
-        )
-    })
-}

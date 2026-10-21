@@ -17,10 +17,10 @@ impl<'de: 'a, 'a> serde::Deserialize<'de> for CheckpointFileWire<'a> {
                 mut map: A,
             ) -> Result<Self::Value, A::Error> {
                 if map.next_key::<&'de str>()? != Some("checkpoint_protocol_version")
-                    || map.next_value::<u16>()? != 4
+                    || map.next_value::<u16>()? != super::CHECKPOINT_PROTOCOL_VERSION
                 {
                     return Err(serde::de::Error::custom(
-                        "unsupported native checkpoint format; v4 required first",
+                        "unsupported native checkpoint format; v5 required first",
                     ));
                 }
                 if map.next_key::<&'de str>()? != Some("checkpoint") {
@@ -91,7 +91,7 @@ impl CheckpointFileWire<'_> {
             .map(|commit| commit.readmit(execution))
             .collect::<Result<Vec<_>, _>>()?;
         PersistedDurableCheckpointFile {
-            checkpoint_protocol_version: 4,
+            checkpoint_protocol_version: super::CHECKPOINT_PROTOCOL_VERSION,
             checkpoint: PersistedDurableCheckpoint {
                 coverage: input.coverage,
                 branch_cells: input.branch_cells,

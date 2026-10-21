@@ -1,28 +1,29 @@
 //! The admitted output handle's frozen source meaning is the only fallback read.
 
-use std::num::NonZeroUsize;
-
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
-use worth_query_installation::facade::{
-    ApplicationSchema, WorthQueryInstalledQueryBindingAdmissionStop,
-};
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-use super::{
-    denial, FamilySourceQuery, FamilySourceValue, InvalidationEditAdmission,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind, WorthQueryProducerOutputFamily,
-};
-use crate::domain_computation::primary_graph::{
-    application_query::FreshQueryPermissionStop,
-    product_operation::SelectedQueryBasisRetentionStop, WorthQueryApplicationOneShotDenial,
-    WorthQueryApplicationOneShotDenialKind, WorthQueryApplicationOutputDemandSource,
-    WorthQueryApplicationProjection, WorthQueryApplicationQueryAdmissionDenial,
-    WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryApplicationQueryControls,
-    WorthQueryEntityResolutionDenial, WorthQueryObservedSource,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionDenial,
-};
+use super::denial;
+use super::FamilySourceQuery;
+use super::FamilySourceValue;
+use super::WorthQueryOutputDemandDenial;
+use super::WorthQueryOutputDemandDenialKind;
+use super::WorthQueryProducerOutputFamily;
+use crate::domain_computation::primary_graph::application_query::FreshQueryPermissionStop;
+use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenial;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource;
+use crate::domain_computation::primary_graph::WorthQueryApplicationProjection;
+use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial;
+use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind;
+use crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls;
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial;
+use crate::domain_computation::primary_graph::WorthQueryObservedSource;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial;
 
 pub(super) fn read_retained_source<Schema, Family>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -31,7 +32,6 @@ pub(super) fn read_retained_source<Schema, Family>(
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
     branch: crate::basis::WorthQueryProductBranch,
-    request_admission: &mut InvalidationEditAdmission,
 ) -> Result<
     WorthQueryApplicationOutputDemandSource<
         FamilySourceQuery<Schema, Family>,
@@ -49,42 +49,26 @@ where
     // Schema and installed-query getters, limit headers, the three bounded
     // minimum operands, and the callback's retained-source argument precede
     // the Query owner's one-shot execution allowance.
-    request_admission
-        .charge_external_work(12)
-        .map_err(|_| work_denial())?;
+
     let installed = runtime
         .installed_schema()
-        .installed_query_binding_admitted::<Family::Source, _>(&mut |work, bytes| {
-            request_admission.charge_external_work(work)?;
-            request_admission.admit_read_scratch(bytes)
-        })
-        .map_err(|stop| match stop {
-            WorthQueryInstalledQueryBindingAdmissionStop::Installation(error) => denial(
+        .installed_query_binding::<Family::Source>()
+        .map_err(|error| {
+            denial(
                 WorthQueryOutputDemandDenialKind::SourceQueryInstallation(error.kind()),
                 "",
-            ),
-            WorthQueryInstalledQueryBindingAdmissionStop::Admission(stop) => resource_denial(stop),
-            WorthQueryInstalledQueryBindingAdmissionStop::AccountingOverflow => work_denial(),
+            )
         })?;
     let selected = runtime
         .on_branch(branch)
         .select_with_request(execution)
         .map_err(|stop| WorthQueryOutputDemandDenial::product_selection(stop, ""))?;
     let shared = selected
-        .prepare_shared_query_basis(request_admission)
+        .prepare_shared_query_basis()
         .map_err(|(_, stop)| resource_denial(stop))?;
     let installed_limits = runtime.resolve_application_query_limits(installed.limits());
-    let ceiling = installed_limits
-        .maximum_work()
-        .map(NonZeroUsize::get)
-        .into_iter()
-        .chain(request_admission.remaining_work())
-        .min();
-    let maximum_work = ceiling
-        .map(|work| NonZeroUsize::new(work).ok_or_else(work_denial))
-        .transpose()?;
     let (product, basis) = runtime
-        .retain_selected_query_basis_admitted(&shared, request_admission)
+        .retain_selected_query_basis_admitted(&shared)
         .map_err(|stop| match stop {
             SelectedQueryBasisRetentionStop::Basis => denial(
                 WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
@@ -97,9 +81,7 @@ where
         product,
         basis,
         installed_limits.maximum_results(),
-        maximum_work,
         request,
-        request_admission,
     )
     .map_err(resource_denial)?;
     runtime
@@ -110,19 +92,18 @@ where
             retained,
             shared.selected(),
             controls,
-            request_admission,
-            |permission, admission| {
+            |permission| {
                 let plan = runtime
-                    .finish_prepared_application_query_permission(execution, permission, admission)
+                    .finish_prepared_application_query_permission(execution, permission)
                     .map_err(query_admission_denial)?;
                 let read = runtime
-                    .execute_application_query_one_shot_admitted(execution, plan, admission)
+                    .execute_application_query_one_shot_admitted(execution, plan)
                     .map_err(|stop| {
-                        use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop as Stop;
+use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop as Stop;
                         match stop {
                             Stop::Admission(stop) => resource_denial(stop),
                             Stop::Execution(stop) => query_execution_denial(stop),
-                            Stop::WorkUnavailable | Stop::WorkCounterOverflow
+                            Stop::WorkCounterOverflow
                             | Stop::WorkAccountingMismatch => work_denial(),
                         }
                     })?;

@@ -142,9 +142,9 @@ impl Court {
         let slot = records.len();
         let computation_source = ComputationSourceEvidence::unavailable();
         let recorded = RecordedOutput {
+            required_publication: None,
             computation_source,
             native_prior_checkpoint: None,
-            _retained_capacity: None,
             performed_origin: None,
             consumed_outputs: Arc::from([]),
             completed_handler_facts: None,
@@ -179,26 +179,17 @@ impl Court {
     }
 
     fn resolve(&self) -> WorthQueryCurrentOutputFamilyResolution {
-        self.resolve_budgeted(128).unwrap()
-    }
-
-    fn resolve_budgeted(
-        &self,
-        budget: usize,
-    ) -> Result<
-        WorthQueryCurrentOutputFamilyResolution,
-        worth_relational::facade::mvcc::CompanionPreflightStop,
-    > {
-        self.lineage.resolve_current_family(
-            &worth_execution::ExecutionRequest::serial(&self.request),
-            self.source.runtime_authority,
-            &self.source.schema,
-            self.source.scope,
-            "family",
-            self.coordinate.occurrence,
-            self.coordinate.generation,
-            Some(budget),
-        )
+        self.lineage
+            .resolve_current_family(
+                &worth_execution::ExecutionRequest::serial(&self.request),
+                self.source.runtime_authority,
+                &self.source.schema,
+                self.source.scope,
+                "family",
+                self.coordinate.occurrence,
+                self.coordinate.generation,
+            )
+            .expect("the installed family resolves")
     }
 
     fn inherit_settlement<Target: 'static, Origin: 'static>(

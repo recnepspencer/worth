@@ -36,8 +36,18 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
         <TopologyContribution as WorthQueryApplicationContribution<CheckpointSchema>>::contracts(
             contracts,
         )?;
-        contracts.producer::<RegionOutputProducer<CheckpointSchema, REUSE, MODE>>()?;
-        contracts.conditional::<RegionOutputReadiness<CheckpointSchema, REUSE, MODE>>()?;
+        if matches!(
+            MODE,
+            collection::LIFECYCLE
+                | collection::CONFLICTING_READINESS
+                | collection::ORPHAN_OPERATION
+                | collection::ORPHAN_STAGE
+        ) {
+            collection::lifecycle::contracts::<MODE>(contracts)?;
+        } else {
+            contracts.producer::<RegionOutputProducer<CheckpointSchema, REUSE, MODE>>()?;
+            contracts.conditional::<RegionOutputReadiness<CheckpointSchema, REUSE, MODE>>()?;
+        }
         Ok(())
     }
 
@@ -45,45 +55,78 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
         configuration: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, CheckpointSchema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
-        let installed = setup
-            .partitioned_computation::<PlanarFinalOutputFeature, OracleTotals<WORK>, _>(
-                OracleOwner::<MODE>,
-            )?;
-        let handler = RegionOutputHandler::running(move |reader, set| {
-            let mut plan =
-                worth_query_host::facade::primary_graph::WorthQueryDecisionPlan::immediate(
-                    worth_query_host::facade::primary_graph::HandlerResult::Completed(None),
-                );
-            for _ in 0..RUNS {
-                decision_plan::begin();
-                let prepared = if MODE == 3 || super::differential::reference::model_replay() {
-                    installed.prepare_without_reuse_for_test(reader, set)
-                } else if super::branch_sharing::reinstallation_requested() {
-                    installed.prepare_after_reinstallation_for_test(reader, set)
-                } else {
-                    installed.prepare(reader, set)
-                };
-                plan = plan
-                    .zip(decision_plan::prepared(prepared, |_| {}))
-                    .map(|(_, value)| value);
-            }
-            plan
-        });
-        let handler = if MODE == 2 {
-            handler.with_generated_payload()
+        if matches!(
+            MODE,
+            collection::LIFECYCLE
+                | collection::CONFLICTING_READINESS
+                | collection::ORPHAN_OPERATION
+                | collection::ORPHAN_STAGE
+        ) {
+            collection::lifecycle::configure::<WORK, MODE>(setup)?;
+            setup
+                .handler::<RegionOutputBinding<CheckpointSchema>, _>(RegionOutputHandler::idle())?;
         } else {
-            handler.preserving_payload()
-        };
-        setup.handler::<RegionOutputBinding<CheckpointSchema>, _>(handler)?;
+            collection::lifecycle::idle(setup)?;
+            let installed = if MODE == collection::CHECKED {
+                setup.derived_collection::<PlanarFinalOutputFeature, collection::RegionCollection<WORK>, _>(OracleOwner::<MODE>)?
+            } else if MODE == collection::MISBOUND {
+                setup.derived_collection::<PlanarFinalOutputFeature, collection::MisboundCollection<WORK>, _>(OracleOwner::<MODE>)?
+            } else {
+                setup.partitioned_computation::<PlanarFinalOutputFeature, OracleTotals<WORK>, _>(
+                    OracleOwner::<MODE>,
+                )?
+            };
+            let handler = RegionOutputHandler::running(move |reader, set| {
+                let mut plan =
+                    worth_query_host::facade::primary_graph::WorthQueryDecisionPlan::immediate(
+                        worth_query_host::facade::primary_graph::HandlerResult::Completed(None),
+                    );
+                for _ in 0..RUNS {
+                    decision_plan::begin();
+                    let prepared = if MODE == 3 || super::differential::reference::model_replay() {
+                        installed.prepare_without_reuse_for_test(reader, set)
+                    } else if super::branch_sharing::reinstallation_requested() {
+                        installed.prepare_after_reinstallation_for_test(reader, set)
+                    } else {
+                        installed.prepare(reader, set)
+                    };
+                    plan = plan
+                        .zip(decision_plan::prepared(prepared, |_| {}))
+                        .map(|(_, value)| value);
+                }
+                if collection::declared(MODE) {
+                    plan.and_then(|value| {
+                        match value {
+                    Some(value) => {
+                        worth_query_host::facade::primary_graph::HandlerResult::Completed(Some(
+                            value,
+                        ))
+                    }
+                    None => worth_query_host::facade::primary_graph::HandlerResult::DomainDenied(
+                        worth_query_consumer_values::PlanarMutationDenial::MissingCoordinate,
+                    ),
+                }
+                    })
+                } else {
+                    plan
+                }
+            });
+            let handler = if MODE == 2 {
+                handler.with_generated_payload()
+            } else {
+                handler.preserving_payload()
+            };
+            setup.handler::<RegionOutputBinding<CheckpointSchema>, _>(handler)?;
+            setup.producer::<RegionOutputProducer<CheckpointSchema, REUSE, MODE>>(
+                RegionOutputProvider::<MODE>,
+            )?;
+            setup.conditional::<RegionOutputReadiness<CheckpointSchema, REUSE, MODE>>(())?;
+        }
         let unretained =
             owner::running::<program::UnretainedTotals<WORK>, _>(setup, owner::RegionTotalsOwner)?;
         setup.handler::<RegionTotalsDemandBinding<CheckpointSchema>, _>(unretained)?;
         setup.handler::<EntryEditBinding<CheckpointSchema>, _>(EntryEditHandler)?;
         super::super::entry_correction::configure(setup)?;
-        setup.producer::<RegionOutputProducer<CheckpointSchema, REUSE, MODE>>(
-            RegionOutputProvider::<MODE>,
-        )?;
-        setup.conditional::<RegionOutputReadiness<CheckpointSchema, REUSE, MODE>>(())?;
         if MODE == 4 {
             let provider = crate::InitialPlanarProvider::new(
                 std::sync::Arc::clone(&configuration.producer_authorization_denials),
@@ -123,17 +166,22 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
             >>()
     }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        demand_policy::feature_specs_with_final_output(
-            required_chain::output_feature_spec(),
-            demand_policy::final_output_feature::<RegionArtifact>()
+        let output = demand_policy::final_output_feature::<RegionArtifact>()
                 .managed_computation::<OracleTotals<WORK>>()
                 .managed_computation::<program::UnretainedTotals<WORK>>()
                 .conditional_operation::<TotalRegionOutput>()
                 .action::<EntryEditBinding<CheckpointSchema>, super::source_delivery::RetainedEntry>().finish_action()
                 .action::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema>, super::source_delivery::CorrectEntryCompletion>().finish_action()
                 .native_action::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema, true>>().finish_action()
-                .native_action::<RegionTotalsDemandBinding<CheckpointSchema>>().finish_action()
-                .finish(),
+                .native_action::<RegionTotalsDemandBinding<CheckpointSchema>>().finish_action();
+        let output = if collection::declared(MODE) {
+            output.derived_collection::<collection::RegionCollection<WORK>>()
+        } else {
+            output
+        };
+        demand_policy::feature_specs_with_final_output(
+            required_chain::output_feature_spec(),
+            output.finish(),
         )
     }
 }
@@ -154,7 +202,6 @@ pub(super) type Request<'application, 'principal, 'scope> =
 pub(in super::super) const SCOPE: &str = "anchor-isolated";
 /// The scope's seeded ordinate, which names the even set, and the one that
 /// names the odd set.
-pub(super) const RETAINED_POSITIONS: usize = 4;
 pub(super) const EVEN_Y: u64 = 50;
 pub(super) const ODD_Y: u64 = 51;
 
@@ -195,24 +242,7 @@ pub(super) fn install_variant_with_observations<
     seed: impl FnOnce(&mut Graph),
 ) -> Application<REUSE, WORK, RUNS, MODE> {
     const RETAINED_COMMITS: u64 = 32;
-    let positions = RETAINED_POSITIONS;
-    // The scale host gives all retention owners the same ample ceiling;
-    // this proof judges request work rather than retained-capacity stops.
-    // Preparation can coexist with four complete images.
-    let retained_bytes = if additional_observations == 0 {
-        128 * 1024 * 1024
-    } else {
-        1 << 40
-    };
-    let invalidation = worth_query_host::facade::runtime::WorthQueryInvalidationResources::install(
-        worth_query_host::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
-            1_000_000,
-            4 * retained_bytes,
-            retained_bytes,
-            positions,
-        ),
-    )
-    .expect("four retained image bounds fit preparation");
+    let invalidation = worth_query_host::facade::runtime::WorthQueryInvalidationResources::new();
     let limits = support::observation::limits_with_history_room(
         RETAINED_COMMITS + additional_observations,
         16 + additional_observations,

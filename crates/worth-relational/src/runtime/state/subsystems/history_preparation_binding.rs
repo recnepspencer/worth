@@ -69,6 +69,13 @@ impl RelationalPreparationHistory {
         VersionId(self.version_ids.load(Ordering::Relaxed).saturating_sub(1))
     }
 
+    pub(crate) fn canonical_envelope_for_version(
+        &self,
+        version: VersionId,
+    ) -> Option<Arc<CanonicalCommitEnvelope>> {
+        self.canonical_routes.by_version(version)
+    }
+
     pub(crate) fn publication_requires_settlement(&self, commit_id: CommitId) -> bool {
         self.canonical_routes.has_unsettled_performed_publication() == Some(commit_id)
     }

@@ -11,7 +11,7 @@ fn a_consumer_of_an_equally_republished_root_decides_again_when_the_root_changes
     let _equivalence =
         primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
+    let application = install(None, ring_world::seed::<1>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3f00);
@@ -70,7 +70,7 @@ fn a_held_root_follows_a_refresh_of_its_equal_republication() {
     let _equivalence =
         primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
+    let application = install(None, ring_world::seed::<1>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3f40);
@@ -117,7 +117,7 @@ fn an_equal_root_republication_clears_the_marks_below_it() {
     let _equivalence =
         primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
+    let application = install(None, ring_world::seed::<1>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3f80);

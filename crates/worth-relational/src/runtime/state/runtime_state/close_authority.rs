@@ -32,6 +32,15 @@ impl RelationalRuntimeCloseAuthority {
 }
 
 impl RelationalRuntimeCloseAuthority {
+    pub(super) fn exclusively_holds_runtime_bindings(
+        &self,
+        owner: &super::RelationalRuntimeOwner,
+        publication: &super::RelationalRuntimePublicationOwner,
+    ) -> bool {
+        owner.held_only_by_owner_and_close(&self.lifecycle)
+            && publication.held_only_by_owner_and_close(&self.publication)
+    }
+
     /// Close the owner on the owner's own thread, before the owner releases
     /// anything the close depends on.
     ///

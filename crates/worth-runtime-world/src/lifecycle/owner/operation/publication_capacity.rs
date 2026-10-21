@@ -4,7 +4,7 @@ use crate::budget::RuntimeWorldBudgetLimit;
 
 #[derive(Debug)]
 struct PublicationAttemptCapacityState {
-    maximum: usize,
+    maximum: Option<usize>,
     active: usize,
 }
 
@@ -58,10 +58,10 @@ impl RuntimeWorldPublicationCapacityLedger {
 
     pub(crate) fn reserve(&self) -> Result<ReservedPublicationAttemptCapacity, ()> {
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        if state.active >= state.maximum {
+        if state.maximum.is_some_and(|maximum| state.active >= maximum) {
             return Err(());
         }
-        state.active += 1;
+        state.active = state.active.checked_add(1).ok_or(())?;
         Ok(ReservedPublicationAttemptCapacity {
             ledger: self.clone(),
             armed: true,

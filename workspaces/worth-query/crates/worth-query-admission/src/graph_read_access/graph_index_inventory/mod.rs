@@ -15,7 +15,6 @@ pub use lifecycle::{WorthQueryGraphIndexLifecycleClass, WorthQueryGraphIndexLife
 pub use match_report::{
     WorthQueryGraphIndexInventoryMatch, WorthQueryGraphIndexInventoryMatchReport,
 };
-pub(crate) use planner::match_graph_index_inventory_for_requirements_admitted;
 pub use planner::{
     match_current_graph_index_inventory_for_requirements,
     match_graph_index_inventory_for_requirements,

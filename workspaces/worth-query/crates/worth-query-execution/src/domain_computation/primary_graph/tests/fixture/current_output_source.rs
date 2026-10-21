@@ -37,7 +37,7 @@ impl ApplicationQueryBinding<IdentityExecutionSchema> for TestAccountSourceBindi
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
 
     const IDENTITY: &'static str = "worth.query.test.account-source.v1";
-    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::bounded(1, 1);
+    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
 
     fn scope_field() -> worth_query_declaration::facade::application_schema::ApplicationFieldRef<
         IdentityExecutionSchema,

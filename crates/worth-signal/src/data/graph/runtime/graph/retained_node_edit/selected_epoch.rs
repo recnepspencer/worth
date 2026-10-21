@@ -17,7 +17,7 @@ impl NodeArena {
         &self,
         ledger: &Arc<SignalConditionalRetentionLedger>,
         selections: &[(usize, SelectedNodeRole)],
-        maximum: Charge,
+        maximum: Option<Charge>,
         work: &mut Work,
         edit: impl FnOnce(&mut [SelectedNodeDraft], &mut Work) -> R,
     ) -> Result<RetainedNodeEditPreparation<R>, RetainedNodeEditDenial> {
@@ -114,20 +114,20 @@ impl NodeArena {
                     ],
                 )
                 .map_err(RetainedNodeEditDenial::Accounting)?;
-                if required > maximum {
+                if let Some(maximum) = maximum.filter(|maximum| required > *maximum) {
                     return Err(RetainedNodeEditDenial::CapacityExhausted { maximum, required });
                 }
                 let custody = reservation_admission::reserve_staged_roots(ledger, required)?;
                 let hot_charge = hot
-                    .publish(maximum)
+                    .publish(required)
                     .map_err(|(_, d)| map_capacity_denial(d))?;
                 let warm_charge = warm
-                    .publish(maximum)
+                    .publish(required)
                     .map_err(|(_, d)| map_capacity_denial(d))?;
                 let cold_charge = cold
                     .map(|prepared| {
                         prepared
-                            .publish(maximum)
+                            .publish(required)
                             .map_err(|(_, d)| map_capacity_denial(d))
                     })
                     .transpose()?

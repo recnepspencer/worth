@@ -1,14 +1,20 @@
 use std::sync::Arc;
 
-use worth_query_host::facade::{
-    admission, application_installation, declaration, domain, primary_graph, runtime,
-};
+use worth_query_host::facade::admission;
+use worth_query_host::facade::application_installation;
+use worth_query_host::facade::declaration;
+use worth_query_host::facade::domain;
+use worth_query_host::facade::primary_graph;
+use worth_query_host::facade::runtime;
 
-use super::adapters::{ClockController, ClockSource, IdentityAdapter};
-use super::conditional_contribution::{
-    InstalledTemporalConditional, TemporalConditional, TemporalContributionConfiguration,
-};
-use super::program::{self, TemporalExampleProgram};
+use super::adapters::ClockController;
+use super::adapters::ClockSource;
+use super::adapters::IdentityAdapter;
+use super::conditional_contribution::InstalledTemporalConditional;
+use super::conditional_contribution::TemporalConditional;
+use super::conditional_contribution::TemporalContributionConfiguration;
+use super::program;
+use super::program::TemporalExampleProgram;
 use super::schema::*;
 
 pub struct ExampleApplication {
@@ -59,8 +65,10 @@ pub(crate) fn example_limits(
     };
     application_installation::WorthQueryInMemoryApplicationLimits::new(
         world,
-        runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
-            .expect("valid query limits"),
+        runtime::WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
+        )
+        .expect("valid query limits"),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     )
 }
@@ -167,15 +175,7 @@ pub(crate) fn product_world_resources() -> runtime::WorthQueryProductWorldResour
             },
         },
         runtime::WorthQueryProductWorldClock::start(),
-        worth_query_execution::facade::runtime::WorthQueryInvalidationResources::install(
-            worth_query_execution::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
-                1_000_000,
-                64 * 1_024 * 1_024,
-                128 * 1_024 * 1_024,
-                128,
-            ),
-        )
-        .expect("the Query invalidation installation is valid"),
+        worth_query_execution::facade::runtime::WorthQueryInvalidationResources::new(),
         execution_policy,
     )
     .expect("the example World resources are valid")

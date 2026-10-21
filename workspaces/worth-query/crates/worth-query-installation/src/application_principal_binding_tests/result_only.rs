@@ -33,8 +33,6 @@ fn result_only_macro_installs_without_a_mechanical_work_number() {
     let explicit = schema
         .installed_query_binding::<PrincipalQueryBinding>()
         .unwrap();
-    assert_eq!(ResultOnlyQueryBinding::LIMITS.maximum_work(), None);
-    assert_eq!(ordinary.limits().maximum_work(), None);
     assert_eq!(ordinary.limits().maximum_results().get(), 8);
     assert_eq!(
         ordinary.query().identity(),

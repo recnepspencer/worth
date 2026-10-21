@@ -4,9 +4,8 @@ mod preparation;
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 pub(super) use preparation::prepare_authorized;
-use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationScopeBinding,
-};
+use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+use worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding;
 
 type MutationScope<Schema, Binding> = <<Operation<Schema, Binding> as ApplicationMutationBinding<
     Schema,
@@ -15,12 +14,10 @@ type MutationScope<Schema, Binding> = <<Operation<Schema, Binding> as Applicatio
 #[allow(clippy::too_many_arguments)]
 pub(super) fn execute_authorized<Schema, Binding>(
     phase: &WorthQueryAdvancementPhase<'_>,
-
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
-        '_,
-        Schema,
-    >,
+    shared: &crate::domain_computation::primary_graph::SharedSelectedProductOperation<'_, Schema>,
+    external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    request_scope: &WorthQueryRequestScope,
     principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
         Schema,
         <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Principal,
@@ -43,8 +40,6 @@ pub(super) fn execute_authorized<Schema, Binding>(
     successor_of: Option<[u8; 32]>,
     commit_authority: WorthQueryProducerCommitAuthority,
     edition: super::super::InstalledProducerEdition,
-    limits: WorthQueryOutputDemandLimits,
-    request_admission: &mut InvalidationEditAdmission,
     producer_contacts: &mut usize,
 ) -> Result<ProducerExecutionOutcome, ProducerExecutionStop>
 where
@@ -65,7 +60,9 @@ where
     let plan = prepare_authorized::<Schema, Binding>(
         phase,
         runtime,
-        selected,
+        shared,
+        external_principal,
+        request_scope,
         principal,
         admission,
         required_output,
@@ -77,9 +74,7 @@ where
         successor_of,
         commit_authority,
         edition,
-        limits,
-        request_admission,
         producer_contacts,
     )?;
-    super::canonical_apply::run_one(plan, member_execution, request_admission)
+    super::canonical_apply::run_one(plan, member_execution)
 }

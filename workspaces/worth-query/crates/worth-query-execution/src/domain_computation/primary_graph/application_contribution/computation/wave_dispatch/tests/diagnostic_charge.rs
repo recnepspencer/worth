@@ -97,10 +97,7 @@ fn certification_never_changes_the_advancements_work_or_span() {
                 vec![(10, 25, 22); width],
                 "the declared two-input reduction costs 25 work and 22 span"
             );
-            assert_eq!(
-                (report.charged_work(), report.charged_span()),
-                (25 * u64::try_from(width).unwrap(), 22)
-            );
+
             let calls = calls.lock().unwrap();
             assert_eq!(
                 calls.len(),

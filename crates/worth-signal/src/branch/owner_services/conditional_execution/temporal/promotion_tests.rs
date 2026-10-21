@@ -41,6 +41,7 @@ fn held_promotion_custody_denies_before_clock_or_frontier_effects_and_drop_resto
                 requested
                     .conditional_evaluation_budget
                     .maximum_retained_bytes
+                    .unwrap()
                     - ledger.usage().1
                     - output_bytes
                     - handle,
@@ -59,6 +60,7 @@ fn held_promotion_custody_denies_before_clock_or_frontier_effects_and_drop_resto
         requested
             .conditional_evaluation_budget
             .maximum_retained_bytes
+            .unwrap()
     );
     let before = partition
         .with_admitted_partition(|state| {

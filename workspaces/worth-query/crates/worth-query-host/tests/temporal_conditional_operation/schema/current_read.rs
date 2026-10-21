@@ -38,5 +38,5 @@ worth_query_query_binding!(
         worth_query_decl::facade::application_schema::NoApplicationUnit,
     field IntentIdentityField::reference(),
     value TemporalIntentReadRequest::into_identity,
-    limits results 1, work 64
+    limits results 1
 );

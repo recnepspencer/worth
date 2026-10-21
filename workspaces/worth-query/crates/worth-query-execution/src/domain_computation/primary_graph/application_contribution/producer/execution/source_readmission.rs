@@ -1,31 +1,37 @@
-use std::num::NonZeroUsize;
-
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
-use worth_query_declaration::facade::application_query::{
-    ApplicationQueryBinding, ApplicationQueryScopeBinding,
-};
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
+use worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 
-use super::{
-    denial, failed, principal_rejected, query_admission_denied, query_execution_denied,
-    scope_rejected, ProducerExecutionStop, SourceBinding, SourceQuery, SourceValue,
-    WorthQueryApplicationProducerBinding, WorthQueryOutputDemandDenialKind,
-};
+use super::denial;
+use super::failed;
+use super::principal_rejected;
+use super::query_admission_denied;
+use super::query_execution_denied;
+use super::scope_rejected;
+use super::ProducerExecutionStop;
+use super::SourceBinding;
+use super::SourceQuery;
+use super::SourceValue;
+use super::WorthQueryApplicationProducerBinding;
+use super::WorthQueryOutputDemandDenialKind;
 use crate::basis::WorthQueryProductBranch;
-use crate::domain_computation::primary_graph::output_lineage::{
-    invalidation::{InvalidationEditAdmission, SettlementRegistrationStop},
-    AcceptedCurrentCandidate, CurrentAcceptedResult, CurrentAcceptedStop,
-};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationEntityIdentity, WorthQueryApplicationProjection,
-    WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryControls,
-    WorthQueryAuthenticatedPrincipal, WorthQueryObservedSource, WorthQueryOutputDemandDenial,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrincipalResolutionMode,
-    WorthQuerySelectedProductOperation,
-};
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::output_lineage::AcceptedCurrentCandidate;
+use crate::domain_computation::primary_graph::output_lineage::CurrentAcceptedResult;
+use crate::domain_computation::primary_graph::output_lineage::CurrentAcceptedStop;
+use crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity;
+use crate::domain_computation::primary_graph::WorthQueryApplicationProjection;
+use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext;
+use crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls;
+use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
+use crate::domain_computation::primary_graph::WorthQueryObservedSource;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 
 mod current_product;
 mod ready;
@@ -81,7 +87,6 @@ pub(super) fn authorize_retained_source<'runtime, Schema, Binding>(
     request: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<AuthorizedRetainedSource<'runtime, Schema, Binding>, ProducerExecutionStop>
 where
     Schema: ApplicationSchema + 'static,
@@ -105,7 +110,6 @@ where
         request,
         retained,
         &selected,
-        admission,
     )?;
     Ok(AuthorizedRetainedSource {
         installed,
@@ -125,7 +129,6 @@ pub(super) fn authorize_retained_source_on_selected<Schema, Binding>(
     request: &WorthQueryRequestScope,
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<RetainedSourceAuthority<Schema, Binding>, ProducerExecutionStop>
 where
     Schema: ApplicationSchema + 'static,
@@ -153,7 +156,6 @@ where
             external_principal,
             request,
             WorthQueryPrincipalResolutionMode::Ordinary,
-            admission,
         )
         .map_err(|error| principal_rejected(Binding::IDENTITY, error))?;
     let scope = selected
@@ -162,7 +164,6 @@ where
             SourceBinding::<Schema, Binding>::scope_field(),
             retained.retained_scope_selector(),
             request,
-            admission,
         )
         .map_err(|error| scope_rejected(Binding::IDENTITY, error))?;
     Ok((installed, principal, scope))
@@ -175,7 +176,7 @@ pub(super) fn readmit_source<Schema, Binding>(
     request: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
-    admission: &mut InvalidationEditAdmission,
+
     edition: super::super::InstalledProducerEdition,
 ) -> Result<
     super::super::demand::disclosure::FreshOutputDisclosure<
@@ -197,7 +198,6 @@ where
         request,
         branch,
         retained,
-        admission,
     )?;
     readmit_authorized_source::<Schema, Binding>(
         execution,
@@ -206,7 +206,6 @@ where
         request,
         branch,
         retained,
-        admission,
         edition,
         authorized,
     )
@@ -222,7 +221,7 @@ pub(super) fn readmit_authorized_source<'runtime, Schema, Binding>(
     request: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
-    admission: &mut InvalidationEditAdmission,
+
     edition: super::super::InstalledProducerEdition,
     authorized: AuthorizedRetainedSource<'runtime, Schema, Binding>,
 ) -> Result<
@@ -248,50 +247,19 @@ where
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
     let installed_limits = runtime.resolve_application_query_limits(installed.limits());
     let maximum_results = installed_limits.maximum_results();
-    let query_ceiling = installed_limits
-        .maximum_work()
-        .map(NonZeroUsize::get)
-        .into_iter()
-        .chain(admission.remaining_work())
-        .min();
-    let maximum_work = query_ceiling
-        .map(|work| {
-            NonZeroUsize::new(work).ok_or_else(|| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    Binding::IDENTITY,
-                )
-            })
-        })
-        .transpose()?;
     let (_, product, application_basis) = selected.into_parts();
     let controls = WorthQueryApplicationQueryControls::product_one_shot(
         product,
         application_basis,
         maximum_results,
-        maximum_work,
         request,
     );
     let plan = runtime
-        .readmit_application_query_from_observed(
-            execution, query, &access, retained, controls, admission,
-        )
+        .readmit_application_query_from_observed(execution, query, &access, retained, controls)
         .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?;
     let read = runtime
         .execute_application_query_one_shot_with_request(execution, plan)
         .map_err(|error| query_execution_denied(Binding::IDENTITY, error))?;
-    let read_work = u64::try_from(read.receipt().total_work_units()).map_err(|_| {
-        denial(
-            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-            Binding::IDENTITY,
-        )
-    })?;
-    admission.charge_external_work(read_work).map_err(|_| {
-        denial(
-            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-            Binding::IDENTITY,
-        )
-    })?;
 
     super::super::demand::disclosure::validate_readmitted(
         execution,
@@ -302,7 +270,6 @@ where
         branch,
         read.into_admitted_disclosed().into_output_demand_source(),
         edition,
-        admission,
         Binding::IDENTITY,
     )
     .map_err(ProducerExecutionStop::ExecutionStopped)

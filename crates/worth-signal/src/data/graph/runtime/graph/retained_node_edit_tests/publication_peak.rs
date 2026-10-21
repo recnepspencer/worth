@@ -47,7 +47,7 @@ fn growing_warm_before_shrinking_cold_requires_the_intermediate_capacity() {
         .prepare_retained_node_edits(
             &test_ledger(),
             &[0],
-            final_charge,
+            Some(final_charge),
             &mut Work::new(Some(CAPACITY_SCENARIO_WORK)),
             transfer_payload,
         )
@@ -63,7 +63,7 @@ fn growing_warm_before_shrinking_cold_requires_the_intermediate_capacity() {
         .prepare_retained_node_edits(
             &test_ledger(),
             &[0],
-            peak,
+            Some(peak),
             &mut Work::new(Some(CAPACITY_SCENARIO_WORK)),
             transfer_payload,
         )

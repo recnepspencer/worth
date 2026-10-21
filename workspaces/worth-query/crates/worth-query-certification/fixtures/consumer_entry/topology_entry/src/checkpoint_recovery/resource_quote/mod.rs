@@ -10,7 +10,7 @@ mod producer;
 mod program;
 mod readiness;
 mod source;
-use composition::{QuoteContribution, QuoteSchema};
+use composition::QuoteSchema;
 use operation::*;
 pub(crate) use producer::Producer;
 use source::*;

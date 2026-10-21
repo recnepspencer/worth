@@ -72,6 +72,10 @@ impl RelationalBranchRoot {
             entity_slot_count,
             relation_slot_count,
             content_accumulator,
+            output_publication_positions:
+                crate::history::data::RequiredOutputPublicationPositions::unresolved_at(
+                    envelope.commit.commit_id,
+                ),
             schema_authority,
             committed: Some(RelationalCommittedBranchRoot {
                 descriptor,
@@ -156,6 +160,10 @@ impl RelationalBranchRoot {
             entity_slot_count: self.entity_slot_count,
             relation_slot_count: self.relation_slot_count,
             content_accumulator: self.content_accumulator,
+            output_publication_positions:
+                crate::history::data::RequiredOutputPublicationPositions::unresolved_at(
+                    committed.canonical_envelope.commit.commit_id,
+                ),
             schema_authority: Arc::clone(&self.schema_authority),
             committed: Some(committed),
         })

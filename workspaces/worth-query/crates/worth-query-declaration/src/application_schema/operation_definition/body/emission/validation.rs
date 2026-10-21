@@ -16,7 +16,7 @@ pub(crate) fn validate_emission(
         super::ApplicationOperationBodyExternalPayloadSource::Evaluation { .. }
     ) && body.values().is_empty()
     {
-        return Err(Denial::MissingOperationProgramDependency);
+        return Err(Denial::program_body_dependency(operation));
     }
     if let super::ApplicationOperationBodyExternalPayloadSource::QueryContext {
         mutation_binding,
@@ -33,7 +33,7 @@ pub(crate) fn validate_emission(
             members,
         ) || Some(query.scope_entity()) != body.scope_entity())
     {
-        return Err(Denial::MissingOperationProgramDependency);
+        return Err(Denial::program_body_dependency(operation));
     }
     let bound = emission.maximum_payload_bytes != 0
         && members.iter().any(|member| matches!(member, Member::Effect { effect, payload_type } if effect == &emission.effect && payload_type == &emission.payload_binding))
@@ -45,6 +45,6 @@ pub(crate) fn validate_emission(
     if bound {
         Ok(())
     } else {
-        Err(Denial::MissingOperationProgramDependency)
+        Err(Denial::program_body_dependency(operation))
     }
 }

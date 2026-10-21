@@ -56,56 +56,29 @@ impl<Schema, Operation, Input, Scope>
             projection.scope,
         );
         let mut facts = Vec::new();
-        let mut scopes = Vec::new();
-        for key in keys {
-            let (read_scope, fact) = super::projected_completion::observe_projection_dependency(
-                execution,
-                &self.admission,
-                &self.lease,
-                &scope,
-                &key,
-            )?;
-            scopes.push(read_scope);
+        for key in keys.iter() {
+            let (_installed_position, fact) =
+                super::projected_completion::observe_projection_dependency(
+                    execution,
+                    &self.admission,
+                    &self.lease,
+                    &scope,
+                    key,
+                )?;
             facts.push(fact);
         }
+        drop(keys);
         facts.extend(projection.source_facts.into_values());
         // Both proven sets came from this one lease. Keep the complete native
         // prefix (and its existing indices), even when the body also reads a locus.
         // Publication must satisfy BOTH observations; a stale native obligation
-        // cannot be replaced by a new body observation.
+        // cannot be replaced by a new body observation. Installed scope
+        // positions describe only the completed projection prefix; every
+        // appended fact was admitted against its installed scope just above.
         self.append_completed_facts(facts, allocation)?;
-        let scope_count = self
-            .installed_read_scopes
-            .len()
-            .checked_add(scopes.len())
-            .ok_or_else(|| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
-                    self.admission.operation(),
-                )
-            })?;
-        let empty = admit_array(
-            0,
-            std::iter::empty(),
-            allocation,
-            self.admission.operation(),
-            || Ok(()),
-        )?;
-        let old = std::mem::replace(&mut self.installed_read_scopes, empty);
-        self.installed_read_scopes = admit_array(
-            scope_count,
-            old.into_iter().chain(scopes),
-            allocation,
-            self.admission.operation(),
-            || {
-                self.admission
-                    .validate_current_authority()
-                    .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
-            },
-        )?;
         self.consumed_outputs
             .extend(projection.consumed_outputs.into_values());
-        let retained = retained.seal(None).map_err(|()| {
+        let retained = retained.seal_at(None, self.lease.snapshot()).map_err(|()| {
             denial(
                 WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
                 self.admission.operation(),

@@ -9,7 +9,6 @@ impl AcceptedCurrentCandidate {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, CurrentAcceptedStop> {
         let origin = self.selected.recorded().computation_source;
         // Native publication can prove that its own effect replaced an input.
@@ -21,7 +20,7 @@ impl AcceptedCurrentCandidate {
             return Ok(true);
         }
         if !self
-            .own_evidence_is_current(request_execution, runtime, snapshot, admission)
+            .own_evidence_is_current(request_execution, runtime, snapshot)
             .map_err(CurrentAcceptedStop::Closure)?
         {
             return Ok(true);
@@ -33,7 +32,6 @@ impl AcceptedCurrentCandidate {
             runtime,
             snapshot,
             selected,
-            admission,
         ) {
             Ok(answer) => Ok(answer != ConsumedOutputVerification::Current),
             // Missing certification is not evidence of a changed input.

@@ -23,18 +23,11 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
-    pub fn encode_admitted<F, E>(
+    pub fn encode(
         key: Binding::IdempotencyKey,
         input: Binding::Input,
-        admission: &mut F,
-    ) -> Result<Self, ApplicationMutationIdentityAdmittedDenial<E>>
-    where
-        F: FnMut(CanonicalEncodingCharge) -> Result<(), E>,
-        E: Debug,
-    {
-        let encoded = ApplicationMutationIdentities::<Schema, Binding>::encode_admitted(
-            &key, &input, admission,
-        )?;
+    ) -> Result<Self, ApplicationMutationIdentityDenial> {
+        let encoded = ApplicationMutationIdentities::<Schema, Binding>::encode(&key, &input)?;
         let key_identity = encoded.key_identity;
         let input_identity = encoded.input_identity;
         let work = encoded.work;

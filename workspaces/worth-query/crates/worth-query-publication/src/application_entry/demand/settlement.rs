@@ -10,6 +10,8 @@ use worth_query_execution::facade::primary_graph::{
 /// Whether an output demand has settled yet.
 pub enum WorthQueryApplicationOutputDemandProgress<Query> {
     Pending,
+    /// The same owner made native progress and remains runnable.
+    Progressed,
     Settled(WorthQueryApplicationOutputDemandSettlement<Query>),
 }
 
@@ -19,18 +21,12 @@ pub struct WorthQueryApplicationOutputDemandSettlement<Query> {
     retained: Arc<WorthQueryOutputDemandSettlement>,
     observation: super::super::WorthQueryApplicationReadObservation,
     source: WorthQueryObservedSource<Query>,
-    checkpoint_readmission_work_units: u64,
-    checkpoint_readmission_work_bound: u64,
-    checkpoint_readmission_charged_preparation_bytes: u64,
 }
 
 impl<Query> WorthQueryApplicationOutputDemandSettlement<Query> {
     pub(in crate::application_entry) fn new(
         retained: Arc<WorthQueryOutputDemandSettlement>,
         source: WorthQueryObservedSource<Query>,
-        checkpoint_readmission_work_units: u64,
-        checkpoint_readmission_work_bound: u64,
-        checkpoint_readmission_charged_preparation_bytes: u64,
     ) -> Self {
         let observation =
             super::super::WorthQueryApplicationReadObservation::new(retained.retained_read());
@@ -38,9 +34,6 @@ impl<Query> WorthQueryApplicationOutputDemandSettlement<Query> {
             retained,
             observation,
             source,
-            checkpoint_readmission_work_units,
-            checkpoint_readmission_work_bound,
-            checkpoint_readmission_charged_preparation_bytes,
         }
     }
 
@@ -87,24 +80,6 @@ impl<Query> WorthQueryApplicationOutputDemandSettlement<Query> {
     /// initiated while another handle advances are excluded.
     pub fn producer_contacts_in_this_demand(&self) -> usize {
         self.retained.producer_contacts_in_this_demand()
-    }
-
-    /// Charged owner work comparing this demand's checkpoint output before reuse.
-    pub const fn checkpoint_readmission_work_units(&self) -> u64 {
-        self.checkpoint_readmission_work_units
-    }
-
-    /// Saturating sum of owner-computed charged-work ceilings for accepted
-    /// checkpoint readmissions; excludes decoding, rejected candidates and
-    /// adoption. `u64::MAX` marks saturation, not a finite aggregate guarantee.
-    pub const fn checkpoint_readmission_work_bound(&self) -> u64 {
-        self.checkpoint_readmission_work_bound
-    }
-
-    /// Largest admitted scratch bound among this demand's accepted checkpoint
-    /// readmissions. This is not measured allocation or resident memory.
-    pub const fn checkpoint_readmission_charged_preparation_bytes(&self) -> u64 {
-        self.checkpoint_readmission_charged_preparation_bytes
     }
 
     pub(in crate::application_entry) fn retained_settlement(

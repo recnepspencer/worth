@@ -144,10 +144,6 @@ impl<'view> IndexProjectionSource<'view> {
             .with_entity_record(execution, entity_id, before, inspect)
     }
 
-    pub(in crate::indexes) fn candidate_entity_bytes(&self, entity_id: EntityId) -> u64 {
-        self.projection.candidate_entity_bytes_for_id(entity_id)
-    }
-
     pub(in crate::indexes) fn with_relation<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

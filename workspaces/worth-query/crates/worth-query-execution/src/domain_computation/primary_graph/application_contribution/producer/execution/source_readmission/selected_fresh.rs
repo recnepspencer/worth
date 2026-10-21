@@ -1,10 +1,9 @@
 //! Source disclosure for an exact required cue on the wave's selected Product.
 
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_query::{PreparedApplicationQueryPermission, WorthQueryAdmittedOneShotStop},
-    product_operation::SharedSelectedProductOperation,
-};
+use crate::domain_computation::primary_graph::application_query::PreparedApplicationQueryPermission;
+use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop;
+use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 
 type Parameters<Schema, Binding> = <<SourceBinding<Schema, Binding> as ApplicationQueryBinding<
@@ -40,7 +39,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
     shared: &SharedSelectedProductOperation<'_, Schema>,
     edition: super::super::super::InstalledProducerEdition,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<
     super::super::super::demand::disclosure::FreshOutputDisclosure<
         SourceQuery<Schema, Binding>,
@@ -55,16 +53,15 @@ where
         WorthQueryApplicationProjection<Schema, SourceQuery<Schema, Binding>>,
 {
     let plan = runtime
-        .finish_prepared_application_query_permission(execution, permission, admission)
+        .finish_prepared_application_query_permission(execution, permission)
         .map_err(|stop| query_admission_denied(Binding::IDENTITY, stop))?;
     let read = runtime
-        .execute_application_query_one_shot_admitted(execution, plan, admission)
+        .execute_application_query_one_shot_admitted(execution, plan)
         .map_err(|stop| match stop {
             WorthQueryAdmittedOneShotStop::Admission(stop) => {
                 ready::ready_resource_denial(Binding::IDENTITY, stop)
             }
-            WorthQueryAdmittedOneShotStop::WorkUnavailable
-            | WorthQueryAdmittedOneShotStop::WorkCounterOverflow
+            WorthQueryAdmittedOneShotStop::WorkCounterOverflow
             | WorthQueryAdmittedOneShotStop::WorkAccountingMismatch => {
                 ready::ready_work_denial(Binding::IDENTITY)
             }
@@ -85,7 +82,6 @@ where
         shared,
         read.into_admitted_disclosed().into_output_demand_source(),
         edition,
-        admission,
         Binding::IDENTITY,
     )
     .map_err(ProducerExecutionStop::ExecutionStopped)

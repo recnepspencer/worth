@@ -187,17 +187,12 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         )?;
         prepared.reconstructed_intent_count = reconstruction.intents.len();
         prepared.commit_watch = commit_watch::WorthQueryConditionalCommitWatchSet::successor(
+            execution,
             None,
             &reconstruction.intents,
             prepared.lowering.as_ref(),
-            reconstruction.intents.len(),
-        )
-        .map_err(|detail| {
-            super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
-                super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::RetentionCapacityExhausted,
-                detail,
-            )
-        })?;
+            Some(reconstruction.intents.len()),
+        )?;
         prepared.authoritative_reconstruction = Box::new(reconstruction);
         Ok(prepared)
     }
@@ -241,9 +236,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         };
         let sequence = observation.sequence();
         let coordinate = observation.observed_time().nanoseconds();
-        let mut rebuilt = false;
         self.pending_invalidations.carry_owed();
-        let authoritative = loop {
+        let authoritative = {
             let Some(affinity) = self.active_affinity.as_ref() else {
                 return authoritative_clock_progression::runtime_rejection(
                     "conditional clock observation requires a selected product binding"
@@ -257,7 +251,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 entities: self.commit_watch.entities().into(),
                 every_commit: self.commit_watch.includes_whole_graph() || self.bootstrap_commit_catch_up_pending,
             };
-            let stop = match authoritative_clock_progression::reconsider_authoritative_clock_work(phase,
+            match authoritative_clock_progression::reconsider_authoritative_clock_work(phase,
                 authoritative_clock_progression::AuthoritativeClockWork {
                     runtime,
                     bridge,
@@ -274,24 +268,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                     truth,
                 },
             ) {
-                Ok(progress) => break progress,
-                Err(stop) => stop,
-            };
-            match stop {
-                // A busy branch overran the retained window: heal in place by
-                // rebuilding from the selected truth, then progress once more.
-                authoritative_clock_progression::AuthoritativeClockStop::Lagging { resume_after } if !rebuilt => {
-                    rebuilt = true;
-                    if let Err(denial) = self.rebuild_lagging_evaluation_binding(&execution, bridge, runtime, truth, resume_after) {
-                        return authoritative_clock_progression::reconstruction_failure(denial);
-                    }
-                }
-                authoritative_clock_progression::AuthoritativeClockStop::Lagging { .. } => {
-                    return authoritative_clock_progression::runtime_rejection(
-                        "conditional commit cursor lagged again after reconstruction".to_string(),
-                    );
-                }
-                authoritative_clock_progression::AuthoritativeClockStop::Failed(outcome) => return outcome,
+                Ok(progress) => progress,
+                Err(authoritative_clock_progression::AuthoritativeClockStop::Failed(outcome)) => return outcome,
             }
         };
         let signal_basis = self

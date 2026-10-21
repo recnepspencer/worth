@@ -1,7 +1,7 @@
-//! Retained candidate selection pays the request's meter on every exit.
+//! Select retained candidates under the caller's native request.
 
 use super::*;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 /// The latest output one binding recorded for a source, with everything
@@ -30,40 +30,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryRetainedOutput
 }
 
 impl WorthQueryApplicationOutputLineage {
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn retained_output_candidates(
-        &self,
-        runtime_authority: u64,
-        schema: &ApplicationSchemaBindingIdentity,
-        scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
-        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
-        generation: u64,
-        output_bindings: &[TypeId],
-        source_partition_identity: [u8; 32],
-        maximum_work: usize,
-    ) -> Result<(Vec<WorthQueryRetainedOutputCandidate>, usize), CompanionPreflightStop> {
-        let mut admission = InvalidationEditAdmission::new(
-            worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: Some(maximum_work as u64),
-                maximum_preparation_bytes: None,
-            },
-        );
-        let candidates = self.retained_output_candidates_metered(
-            runtime_authority,
-            schema,
-            scope,
-            occurrence,
-            generation,
-            output_bindings,
-            source_partition_identity,
-            &worth_execution::ExecutionRequest::serial(
-                &crate::test_request_policy::serial_request(),
-            ),
-            &mut admission,
-        )?;
-        Ok((candidates, admission.charged_work() as usize))
-    }
-
     /// Each binding's latest retained output, with every lookup reserved on
     /// the request's meter before it reads. A lookup that runs out keeps its
     /// reservation spent.
@@ -77,7 +43,6 @@ impl WorthQueryApplicationOutputLineage {
         output_bindings: &[TypeId],
         source_partition_identity: [u8; 32],
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Vec<WorthQueryRetainedOutputCandidate>, CompanionPreflightStop> {
         let mut candidates = Vec::new();
         for output_binding in output_bindings {
@@ -90,7 +55,6 @@ impl WorthQueryApplicationOutputLineage {
                     .expect("output family binding is installed"),
             };
             if !self.by_source.contains_key(&source) {
-                admission.charge_external_work(1)?;
                 continue;
             }
             let mut coordinate = ProductCoordinate {
@@ -103,13 +67,7 @@ impl WorthQueryApplicationOutputLineage {
                     .map_err(|stop| CompanionPreflightStop::Execution(stop.into()))?;
                 let recorded = self
                     .partition_index
-                    .latest_admitted(
-                        execution,
-                        &source,
-                        coordinate,
-                        source_partition_identity,
-                        admission,
-                    )?
+                    .latest_admitted(execution, &source, coordinate, source_partition_identity)?
                     .map(|(generation, slot)| {
                         self.recorded_at_partition_slot(
                             &source,

@@ -1,16 +1,19 @@
 use worth_query_declaration::facade::authentication::WorthQueryPrincipalMappingStatus;
-use worth_query_execution::facade::{
-    application_contribution::WorthQueryBootstrapAdvancementPhase,
-    primary_graph::WorthQueryApplicationPrincipalKey, runtime::WorthQueryExecutionRuntimeInstaller,
-};
-use worth_query_installation::facade::{
-    WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
-    WorthQueryPortableDomainIdentity, WorthQueryPortableDomainPackage,
-};
+use worth_query_execution::facade::application_contribution::WorthQueryBootstrapAdvancementPhase;
+use worth_query_execution::facade::primary_graph::WorthQueryApplicationPrincipalKey;
+use worth_query_execution::facade::runtime::WorthQueryExecutionRuntimeInstaller;
+use worth_query_installation::facade::WorthQueryInstallationAdmissionProfile;
+use worth_query_installation::facade::WorthQueryInstallationGeneration;
+use worth_query_installation::facade::WorthQueryPortableDomainIdentity;
+use worth_query_installation::facade::WorthQueryPortableDomainPackage;
 
-use super::super::declaration::{PublicationAuthorizationSchema, PublicationIdentityBinding};
-use super::{authentication, baseline_graph, scenario};
-use super::{CompositionScenario, InstalledWorld};
+use super::super::declaration::PublicationAuthorizationSchema;
+use super::super::declaration::PublicationIdentityBinding;
+use super::authentication;
+use super::baseline_graph;
+use super::scenario;
+use super::CompositionScenario;
+use super::InstalledWorld;
 
 pub(super) fn install_world(composition_scenario: CompositionScenario) -> InstalledWorld {
     let resources = product_world_resources();
@@ -119,15 +122,7 @@ fn product_world_resources(
             },
         },
         query_runtime::WorthQueryProductWorldClock::start(),
-        worth_query_execution::facade::runtime::WorthQueryInvalidationResources::install(
-            worth_query_execution::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
-                1_000_000,
-                64 * 1_024 * 1_024,
-                128 * 1_024 * 1_024,
-                128,
-            ),
-        )
-        .expect("the Query invalidation installation is valid"),
+        worth_query_execution::facade::runtime::WorthQueryInvalidationResources::new(),
         execution_policy,
     )
     .expect("the publication courtroom Product World resources are valid")

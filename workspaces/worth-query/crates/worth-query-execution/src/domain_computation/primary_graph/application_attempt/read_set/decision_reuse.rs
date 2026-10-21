@@ -85,17 +85,11 @@ impl PreparedDecisionReuseContext {
 
     /// A fresh invocation can compare its descriptive admitted context with
     /// prior completed evidence without pretending the new handler ran.
-    pub(in crate::domain_computation::primary_graph) fn matches_completed<E>(
+    pub(in crate::domain_computation::primary_graph) fn matches_completed(
         &self,
         prior: &CompletedDecisionReuseProof,
-        mut admit: impl FnMut(u64) -> Result<(), E>,
-    ) -> Result<bool, E> {
-        let work = 1
-            + u64::from(self.key.is_some())
-            + if self.principal.is_some() { 10 } else { 0 }
-            + if self.scope.is_some() { 5 } else { 0 };
-        admit(work)?;
-        Ok(self.key == prior.key && self.principal == prior.principal && self.scope == prior.scope)
+    ) -> bool {
+        self.key == prior.key && self.principal == prior.principal && self.scope == prior.scope
     }
 }
 
@@ -127,12 +121,7 @@ mod tests {
             .seal_decision_reuse(capture(), DecisionContextUse::default())
             .unwrap();
         let mut charged = 0;
-        assert!(capture()
-            .matches_completed(&completed, |work| {
-                charged += work;
-                Ok::<_, ()>(())
-            })
-            .unwrap());
+        assert!(capture().matches_completed(&completed));
         assert_eq!(charged, 1);
         let declared_key = WorthQueryProducerInputReuseContract::canonical_bitwise(
             WorthQueryDecisionContextDependencies::KEY,
@@ -145,8 +134,7 @@ mod tests {
         assert!(
             !PreparedDecisionReuseContext::new(declared_key, Some([8; 32]), None, None)
                 .unwrap()
-                .matches_completed(&completed_key, |_| Ok::<_, ()>(()))
-                .unwrap()
+                .matches_completed(&completed_key)
         );
         assert!(boundary
             .seal_decision_reuse(
@@ -157,5 +145,11 @@ mod tests {
         assert!(boundary
             .seal_decision_reuse(capture(), DecisionContextUse::default().key_for_test())
             .is_none());
+        for untracked in [
+            DecisionContextUse::default().managed_computation(),
+            DecisionContextUse::default().request_context_for_test(),
+        ] {
+            assert!(boundary.seal_decision_reuse(capture(), untracked).is_none());
+        }
     }
 }

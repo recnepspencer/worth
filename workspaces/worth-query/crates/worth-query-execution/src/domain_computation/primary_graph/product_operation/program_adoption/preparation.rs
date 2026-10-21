@@ -176,6 +176,8 @@ pub struct WorthQueryPreparedBranchAdoption {
         crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
     pub(super) support_custody:
         crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportCustody,
+    // Last to drop: physical backing releases before its retained grant.
+
 }
 
 impl WorthQueryPreparedBranchAdoption {

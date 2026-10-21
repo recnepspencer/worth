@@ -11,11 +11,7 @@ impl RequiredWorkClaim {
     pub(in crate::domain_computation::primary_graph) fn same_record(
         &self,
         ready: &SelectedReadyReadmission,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work(1)
-            .map_err(|_| selection::work_denial())?;
         Ok(Arc::ptr_eq(&self.membership, &ready.membership))
     }
     /// Owner tests exercise overlapping selected versions outside an advance.

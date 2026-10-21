@@ -4,9 +4,9 @@ use crate::identity::data::PartitionId;
 
 use super::PartitionState;
 mod memory;
-pub(crate) use memory::{
-    collect_partition_ids, partition_id_bytes, PartitionIdMemory, PartitionIdsDenial,
-};
+#[cfg(test)]
+use memory::partition_id_bytes;
+pub(crate) use memory::{collect_partition_ids, PartitionIdMemory, PartitionIdsDenial};
 
 pub(crate) trait PartitionAccess: Sync {
     fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState>;

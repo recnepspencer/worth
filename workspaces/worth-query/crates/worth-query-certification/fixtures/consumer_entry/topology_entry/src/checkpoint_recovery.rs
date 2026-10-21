@@ -21,7 +21,6 @@ use worth_query_host::facade::{
 
 use super::*;
 mod advancement_currentness;
-mod cached_locator_checkpoint;
 mod clean_reuse;
 pub(crate) mod computation_partition;
 mod current_family_output;
@@ -46,6 +45,7 @@ mod support;
 use support::{authenticate, install, length};
 
 mod observation_scope;
+mod output_availability;
 use observation_scope::checkpoint_recovery_test_guard;
 
 worth_query_application! {
@@ -305,7 +305,8 @@ fn settle_for<'application, 'principal, 'scope>(
                 .advance(application, request)
                 .expect("the program output advances")
             {
-                WorthQueryApplicationProgramOutputProgress::Pending => None,
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed => None,
                 WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
             }
         })

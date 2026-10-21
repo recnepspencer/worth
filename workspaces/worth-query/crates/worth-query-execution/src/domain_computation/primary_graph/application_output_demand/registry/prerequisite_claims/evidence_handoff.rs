@@ -5,6 +5,12 @@ use crate::domain_computation::primary_graph::{
 };
 
 impl PreparedPrerequisiteClaims {
+    pub(in crate::domain_computation::primary_graph) fn native_publication_family(
+        &self,
+    ) -> &'static str {
+        self.context.publication_family()
+    }
+
     /// Borrow the exact managed producer key; publication pays for its own copy.
     pub(in crate::domain_computation::primary_graph) fn native_prior_checkpoint_input(
         &self,

@@ -34,6 +34,7 @@ pub type WorthQueryInstalledBoundPrincipal<Schema, Binding> = WorthQueryInstalle
     <Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentityBinding,
 >;
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryInstalledQueryBindingAdmissionStop<E> {
     Installation(WorthQueryApplicationQueryInstallationDenial),
     Admission(E),

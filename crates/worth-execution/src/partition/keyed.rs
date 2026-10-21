@@ -1,10 +1,12 @@
-use std::collections::{BTreeMap, BTreeSet};
-use std::mem::size_of;
-
-use worth_foundational::PartitionIdentity;
-
+//! Ordered keyed grouping. Runtime edits admit only new path and group copies.
+mod retained;
 use super::{PartitionItemId, PartitionWork};
-use crate::report::ChargedBytes;
+use crate::{
+    ChargedBytes, ExecutionAllocationPolicy, ExecutionOrderedMap, ExecutionOrderedMapDenial,
+};
+use std::collections::BTreeSet;
+use std::sync::Arc;
+use worth_foundational::PartitionIdentity;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeyedItem<K> {
@@ -12,253 +14,189 @@ pub struct KeyedItem<K> {
     pub key: K,
     pub partition: PartitionIdentity,
 }
-
+impl<K: ChargedBytes> ChargedBytes for KeyedItem<K> {
+    fn additional_charged_bytes(&self) -> u64 {
+        self.key.additional_charged_bytes()
+    }
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeyedDenial {
     IdentityCollision { partition: PartitionIdentity },
     KeyIdentityChanged { partition: PartitionIdentity },
 }
-
-/// Why an admitted keyed edit changed nothing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum KeyedEditDenial<Admission> {
+pub enum KeyedEditDenial<A> {
     Keyed(KeyedDenial),
-    /// The caller's memory refused the partitioner's retained bound.
-    Admission(Admission),
-    /// The retained bound does not fit a byte count.
+    Admission(A),
     BoundOverflow,
 }
-
-/// Retained key grouping. The caller supplies a stable identity for each key;
-/// different keys may never alias the same partition identity. A key is
-/// retained three times, once on its item and twice for its group, and each
-/// copy's heap is charged; a key's clone owns no more heap than the key.
+#[derive(Clone)]
+struct Group {
+    partition: PartitionIdentity,
+    members: Arc<retained::Members>,
+}
+impl ChargedBytes for Group {
+    fn additional_charged_bytes(&self) -> u64 {
+        0
+    }
+}
+fn member_bytes() -> u64 {
+    (11 * size_of::<PartitionItemId>() + 16 * size_of::<usize>()) as u64
+}
+/// One routing authority. A clone shares exact ordered cells and their original
+/// grants. Owned key clones must not exceed the key's ChargedBytes bound.
 pub struct KeyedPartitioner<K> {
-    items: BTreeMap<PartitionItemId, KeyedItem<K>>,
-    keys: BTreeMap<K, (PartitionIdentity, BTreeSet<PartitionItemId>)>,
-    identities: BTreeMap<PartitionIdentity, K>,
-    /// The heap every retained copy of a key owns.
+    items: ExecutionOrderedMap<PartitionItemId, KeyedItem<K>>,
+    keys: ExecutionOrderedMap<K, Group>,
+    identities: ExecutionOrderedMap<PartitionIdentity, K>,
     key_bytes: u64,
 }
-
-impl<K: Ord + Clone> Default for KeyedPartitioner<K> {
+impl<K> Default for KeyedPartitioner<K> {
     fn default() -> Self {
         Self {
-            items: BTreeMap::new(),
-            keys: BTreeMap::new(),
-            identities: BTreeMap::new(),
+            items: Default::default(),
+            keys: Default::default(),
+            identities: Default::default(),
             key_bytes: 0,
         }
     }
 }
-
+impl<K> Clone for KeyedPartitioner<K> {
+    fn clone(&self) -> Self {
+        Self {
+            items: self.items.clone(),
+            keys: self.keys.clone(),
+            identities: self.identities.clone(),
+            key_bytes: self.key_bytes,
+        }
+    }
+}
 impl<K: Ord + Clone + ChargedBytes> KeyedPartitioner<K> {
     pub fn new() -> Self {
         Self::default()
     }
-
     pub fn route(&self, item: PartitionItemId) -> Option<PartitionIdentity> {
-        self.items.get(&item).map(|entry| entry.partition)
+        self.items.get(&item).map(|v| v.partition)
     }
-
-    /// The full key owning this compact partition identity.
     pub fn key(&self, partition: PartitionIdentity) -> Option<&K> {
         self.identities.get(&partition)
     }
-
     pub fn members(&self, partition: PartitionIdentity) -> Option<&BTreeSet<PartitionItemId>> {
-        self.identities
-            .get(&partition)
-            .and_then(|key| self.keys.get(key).map(|(_, members)| members))
+        self.key(partition)
+            .and_then(|key| self.keys.get(key).map(|group| &group.members.values))
     }
-
-    /// Every partition that holds an item, in ascending identity order.
-    pub fn partitions(&self) -> impl Iterator<Item = PartitionIdentity> + '_ {
+    pub fn partitions(&self) -> impl ExactSizeIterator<Item = PartitionIdentity> + '_ {
         self.identities.keys().copied()
     }
-
-    /// What the partitioner retains now, as `retained_bytes` counts it, or
-    /// `None` when that does not fit a byte count.
+    /// Complete reachable capacity, separate from actual new allocation.
     pub fn charged_bytes(&self) -> Option<u64> {
         Self::retained_bytes(self.items.len(), self.keys.len(), self.key_bytes)
     }
-
-    /// A copy holding only the items `keep` names, each in the partition it
-    /// has here: the partitioner that upserting exactly those items would
-    /// leave. Before the copy is built, `admit` is offered its retained
-    /// bound, counted as `upsert` counts it; a refusal builds nothing.
-    /// `keep` must return the same answer on both passes. Bound counting walks
-    /// retained key groups without proportional allocation; after admission,
-    /// copying evaluates every item again in ascending item identity order.
-    pub fn kept<Admission>(
-        &self,
-        mut keep: impl FnMut(PartitionItemId) -> bool,
-        admit: impl FnOnce(u64) -> Result<(), Admission>,
-    ) -> Result<Self, KeyedEditDenial<Admission>> {
-        let (mut item_count, mut key_count, mut key_bytes) = (0_usize, 0_usize, 0_u64);
-        for (_, members) in self.keys.values() {
-            let mut first = true;
-            for item in members {
-                if !keep(*item) {
-                    continue;
-                }
-                let entry = &self.items[item];
-                item_count = item_count
-                    .checked_add(1)
-                    .ok_or(KeyedEditDenial::BoundOverflow)?;
-                let copies = if first {
-                    key_count = key_count
-                        .checked_add(1)
-                        .ok_or(KeyedEditDenial::BoundOverflow)?;
-                    first = false;
-                    3
-                } else {
-                    1
-                };
-                key_bytes = entry
-                    .key
-                    .additional_charged_bytes()
-                    .checked_mul(copies)
-                    .and_then(|bytes| key_bytes.checked_add(bytes))
-                    .ok_or(KeyedEditDenial::BoundOverflow)?;
-            }
-        }
-        let bound = Self::retained_bytes(item_count, key_count, key_bytes)
-            .ok_or(KeyedEditDenial::BoundOverflow)?;
-        admit(bound).map_err(KeyedEditDenial::Admission)?;
-        let mut copy = Self::default();
-        for entry in self.items.values().filter(|entry| keep(entry.item)) {
-            let key_heap = entry.key.additional_charged_bytes();
-            if !copy.keys.contains_key(&entry.key) {
-                let (identity_key, group_key) = (entry.key.clone(), entry.key.clone());
-                copy.key_bytes = copy
-                    .key_bytes
-                    .saturating_add(identity_key.additional_charged_bytes())
-                    .saturating_add(group_key.additional_charged_bytes());
-                copy.identities.insert(entry.partition, identity_key);
-                copy.keys
-                    .insert(group_key, (entry.partition, BTreeSet::new()));
-            }
-            if let Some((_, members)) = copy.keys.get_mut(&entry.key) {
-                members.insert(entry.item);
-            }
-            copy.key_bytes = copy.key_bytes.saturating_add(key_heap);
-            copy.items.insert(entry.item, entry.clone());
-        }
-        Ok(copy)
-    }
-
-    /// The most bytes the partitioner retains with `items` items in `keys`
-    /// keys whose retained copies own `key_bytes` of heap, beyond its own
-    /// inline value: every item's entry and membership, every key's group and
-    /// identity entry, and the keys' heap.
     pub fn retained_bytes(items: usize, keys: usize, key_bytes: u64) -> Option<u64> {
-        let per_item = size_of::<(PartitionItemId, KeyedItem<K>)>()
-            .checked_add(size_of::<PartitionItemId>())?;
-        let per_key = size_of::<(K, (PartitionIdentity, BTreeSet<PartitionItemId>))>()
-            .checked_add(size_of::<(PartitionIdentity, K)>())?;
-        let bytes = items
-            .checked_mul(per_item)?
-            .checked_add(keys.checked_mul(per_key)?)?;
-        u64::try_from(bytes).ok()?.checked_add(key_bytes)
+        use crate::storage::ordered::node::cell_bytes;
+        let item = cell_bytes::<PartitionItemId, KeyedItem<K>>()
+            .ok()?
+            .checked_add(member_bytes())?;
+        let group = cell_bytes::<K, Group>()
+            .ok()?
+            .checked_add(cell_bytes::<PartitionIdentity, K>().ok()?)?
+            .checked_add((size_of::<retained::Members>() + 2 * size_of::<usize>()) as u64)?;
+        (items as u64)
+            .checked_mul(item)?
+            .checked_add((keys as u64).checked_mul(group)?)?
+            .checked_add(key_bytes)
     }
-
-    /// Routes `entry`. Before anything changes, `admit` is offered the
-    /// retained bound after the edit; a refusal leaves the partitioner as it
-    /// was.
-    pub fn upsert<Admission>(
+    /// Explicit offline construction with a complete caller-held capacity
+    /// admission. Native runtime callers use upsert_in, whose cells own grants.
+    pub fn upsert<A>(
         &mut self,
         entry: KeyedItem<K>,
-        admit: impl FnOnce(u64) -> Result<(), Admission>,
-    ) -> Result<PartitionWork, KeyedEditDenial<Admission>> {
-        if let Some((identity, _)) = self.keys.get(&entry.key)
-            && *identity != entry.partition
-        {
-            return Err(KeyedEditDenial::Keyed(KeyedDenial::KeyIdentityChanged {
-                partition: *identity,
-            }));
-        }
-        if self
-            .identities
-            .get(&entry.partition)
-            .is_some_and(|key| key != &entry.key)
-        {
-            return Err(KeyedEditDenial::Keyed(KeyedDenial::IdentityCollision {
-                partition: entry.partition,
-            }));
-        }
-        let previous_heap = self
-            .items
-            .get(&entry.item)
-            .map_or(0, |previous| previous.key.additional_charged_bytes());
-        let key_heap = entry.key.additional_charged_bytes();
-        let new_key = !self.keys.contains_key(&entry.key);
-        let items = self.items.len() + usize::from(!self.items.contains_key(&entry.item));
-        let keys = self.keys.len() + usize::from(new_key);
-        let bound = key_heap
-            .checked_mul(if new_key { 3 } else { 1 })
-            .and_then(|added| {
-                self.key_bytes
-                    .saturating_sub(previous_heap)
-                    .checked_add(added)
+        admit: impl FnOnce(u64) -> Result<(), A>,
+    ) -> Result<PartitionWork, KeyedEditDenial<A>> {
+        self.check(&entry).map_err(KeyedEditDenial::Keyed)?;
+        let bytes = self.quote(&entry).ok_or(KeyedEditDenial::BoundOverflow)?;
+        admit(bytes).map_err(KeyedEditDenial::Admission)?;
+        self.upsert_in(&entry, ExecutionAllocationPolicy::SystemAllocation)
+            .map_err(|why| match why {
+                KeyedEditDenial::Keyed(k) => KeyedEditDenial::Keyed(k),
+                _ => KeyedEditDenial::BoundOverflow,
             })
-            .and_then(|key_bytes| Self::retained_bytes(items, keys, key_bytes))
-            .ok_or(KeyedEditDenial::BoundOverflow)?;
-        admit(bound).map_err(KeyedEditDenial::Admission)?;
-        if self.items.get(&entry.item) == Some(&entry) {
-            return Ok(PartitionWork::default());
+    }
+    /// Explicit offline removal. Admitted runtime path removal can allocate
+    /// replacement ancestors and therefore uses remove_in.
+    pub fn remove(&mut self, item: PartitionItemId) -> PartitionWork {
+        self.remove_in(item, ExecutionAllocationPolicy::SystemAllocation)
+            .expect("offline grouping capacity remains representable")
+    }
+    /// Honest full subset reconstruction; it is not the ordinary rekey path.
+    /// `keep` returns the same answer during the quote and construction passes.
+    pub fn kept<A>(
+        &self,
+        mut keep: impl FnMut(PartitionItemId) -> bool,
+        admit: impl FnOnce(u64) -> Result<(), A>,
+    ) -> Result<Self, KeyedEditDenial<A>> {
+        let (mut items, mut groups, mut heap) = (0usize, 0usize, 0u64);
+        for (key, group) in &self.keys {
+            let mut first = true;
+            for item in &group.members.values {
+                if keep(*item) {
+                    items = items.checked_add(1).ok_or(KeyedEditDenial::BoundOverflow)?;
+                    groups = groups
+                        .checked_add(usize::from(first))
+                        .ok_or(KeyedEditDenial::BoundOverflow)?;
+                    heap = heap
+                        .checked_add(
+                            key.additional_charged_bytes()
+                                .checked_mul(if first { 3 } else { 1 })
+                                .ok_or(KeyedEditDenial::BoundOverflow)?,
+                        )
+                        .ok_or(KeyedEditDenial::BoundOverflow)?;
+                    first = false;
+                }
+            }
         }
-        let rerouted = self
+        admit(Self::retained_bytes(items, groups, heap).ok_or(KeyedEditDenial::BoundOverflow)?)
+            .map_err(KeyedEditDenial::Admission)?;
+        let mut next = Self::new();
+        for entry in self.items.values().filter(|v| keep(v.item)) {
+            next.upsert_in(entry, ExecutionAllocationPolicy::SystemAllocation)
+                .map_err(|_| KeyedEditDenial::BoundOverflow)?;
+        }
+        Ok(next)
+    }
+    fn check(&self, entry: &KeyedItem<K>) -> Result<(), KeyedDenial> {
+        if let Some(group) = self.keys.get(&entry.key)
+            && group.partition != entry.partition
+        {
+            return Err(KeyedDenial::KeyIdentityChanged {
+                partition: group.partition,
+            });
+        }
+        if self.key(entry.partition).is_some_and(|k| k != &entry.key) {
+            return Err(KeyedDenial::IdentityCollision {
+                partition: entry.partition,
+            });
+        }
+        Ok(())
+    }
+    fn quote(&self, entry: &KeyedItem<K>) -> Option<u64> {
+        let old = self
             .items
             .get(&entry.item)
-            .is_none_or(|old| old.partition != entry.partition);
-        self.remove(entry.item);
-        if !self.keys.contains_key(&entry.key) {
-            let (identity_key, group_key) = (entry.key.clone(), entry.key.clone());
-            self.key_bytes = self
-                .key_bytes
-                .saturating_add(identity_key.additional_charged_bytes())
-                .saturating_add(group_key.additional_charged_bytes());
-            self.identities.insert(entry.partition, identity_key);
-            self.keys
-                .insert(group_key, (entry.partition, BTreeSet::new()));
-        }
-        if let Some((_, members)) = self.keys.get_mut(&entry.key) {
-            members.insert(entry.item);
-        }
-        self.key_bytes = self.key_bytes.saturating_add(key_heap);
-        self.items.insert(entry.item, entry);
-        Ok(PartitionWork {
-            items_rerouted: u64::from(rerouted),
-            members_visited: 1,
-            ..PartitionWork::default()
-        })
-    }
-
-    /// Removes `item`; the retained bound only shrinks, so nothing is
-    /// admitted.
-    pub fn remove(&mut self, item: PartitionItemId) -> PartitionWork {
-        let Some(entry) = self.items.remove(&item) else {
-            return PartitionWork::default();
-        };
-        let mut released = entry.key.additional_charged_bytes();
-        let Some((_, members)) = self.keys.get_mut(&entry.key) else {
-            unreachable!()
-        };
-        members.remove(&item);
-        if members.is_empty() {
-            if let Some((group_key, _)) = self.keys.remove_entry(&entry.key) {
-                released = released.saturating_add(group_key.additional_charged_bytes());
-            }
-            if let Some(identity_key) = self.identities.remove(&entry.partition) {
-                released = released.saturating_add(identity_key.additional_charged_bytes());
-            }
-        }
-        self.key_bytes = self.key_bytes.saturating_sub(released);
-        PartitionWork {
-            items_rerouted: 1,
-            members_visited: 1,
-            ..PartitionWork::default()
-        }
+            .map_or(0, |v| v.key.additional_charged_bytes());
+        let fresh = !self.keys.contains_key(&entry.key);
+        let heap = self.key_bytes.checked_sub(old)?.checked_add(
+            entry
+                .key
+                .additional_charged_bytes()
+                .checked_mul(if fresh { 3 } else { 1 })?,
+        )?;
+        Self::retained_bytes(
+            self.items.len() + usize::from(!self.items.contains_key(&entry.item)),
+            self.keys.len() + usize::from(fresh),
+            heap,
+        )
     }
 }
+#[cfg(test)]
+mod tests;

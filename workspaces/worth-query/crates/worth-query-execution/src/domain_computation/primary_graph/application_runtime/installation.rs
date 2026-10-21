@@ -102,6 +102,7 @@ pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_
     output_readiness: Vec<
         Box<dyn super::super::application_contribution::PendingOutputReadiness<Schema>>,
     >,
+    expected_conditional_bindings: usize,
     producers: &super::super::application_contribution::WorthQueryInstalledApplicationProducerRegistry<Schema>,
 ) -> Result<
     WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -126,14 +127,8 @@ where
         .mutation_handlers
         .seal(&installed_schema, bootstrap.graph.binding_identity())
         .map_err(super::super::conditional_operation::publication_denial)?;
-    let expected = runtime
-        .installed_packages()
-        .installed_conditional_node_count_for_schema(
-            installed_schema.owner(),
-            installed_schema.schema_name(),
-        );
     super::super::conditional_operation::require_complete_binding_inventory(
-        expected,
+        expected_conditional_bindings,
         &bindings,
         output_readiness.len(),
     )?;
@@ -322,7 +317,6 @@ where
         fault_port,
         maximum_concurrent_graph_work,
         resource_support,
-        runtime.branch_coordination_resource_profile(),
     );
     primary_provider
         .graph

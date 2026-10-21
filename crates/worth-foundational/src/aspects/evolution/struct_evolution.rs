@@ -7,6 +7,16 @@ pub fn classify_struct_evolution(
     left: &StructAspectShape,
     right: &StructAspectShape,
 ) -> AspectEvolutionVerdict {
+    if left.fields().iter().any(|field| {
+        right
+            .field(field.key())
+            .is_some_and(|next| field.codec() != next.codec())
+    }) {
+        return AspectEvolutionVerdict::new(
+            AspectEvolutionKind::Incompatible,
+            "struct field codec meaning changed",
+        );
+    }
     let left_keys: BTreeSet<_> = left.fields().iter().map(FieldDeclaration::key).collect();
     let right_keys: BTreeSet<_> = right.fields().iter().map(FieldDeclaration::key).collect();
 

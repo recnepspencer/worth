@@ -4,7 +4,9 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_declaration::facade::application_operation::ApplicationMutationIdentityDenial;
 
+mod content_identity;
 mod source_readmission;
+pub(super) use content_identity::identity_failed;
 pub(super) use source_readmission::{query_admission_denied, query_execution_denied};
 
 /// A rejected caller cannot terminally fail the output shared by other callers.
@@ -135,7 +137,10 @@ pub(super) fn execution_failed(
 ) -> ProducerExecutionStop {
     let error = match error {
         MutationHandlerExecutionDenial::Handler(error) => {
-            return handler_execution_failed(subject, error).into()
+            if let Some(stop) = availability_stop(&error) {
+                return request_admission_rejected(stop);
+            }
+            return handler_execution_failed(subject, error).into();
         }
         error => error,
     };
@@ -244,6 +249,9 @@ pub(super) fn handler_execution_failed(
     subject: &str,
     error: crate::domain_computation::primary_graph::HandlerExecutionDenial,
 ) -> WorthQueryOutputDemandDenial {
+    if let Some(stop) = availability_stop(&error) {
+        return stop;
+    }
     match error
         .downcast::<crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenial>()
     {
@@ -258,6 +266,19 @@ pub(super) fn handler_execution_failed(
         }
         Err(error) => failed(subject, error),
     }
+}
+
+fn availability_stop(
+    error: &(dyn std::error::Error + 'static),
+) -> Option<WorthQueryOutputDemandDenial> {
+    let mut source = Some(error);
+    while let Some(error) = source {
+        if let Some(stop) = error.downcast_ref::<crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial>() {
+            return Some(stop.demand_stop());
+        }
+        source = error.source();
+    }
+    None
 }
 
 /// The producer's key or input did not encode; the denial names which one.
@@ -304,23 +325,6 @@ mod tests {
                 Invariant::RetentionCapacityExhausted
             )),
             Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
-        );
-    }
-
-    #[test]
-    fn a_projection_capacity_stop_is_not_a_failed_producer_output() {
-        let (handler, projection) = crate::domain_computation::primary_graph::tests::fixture::retained_output_capacity::project_at_full_ledger();
-        assert_eq!(handler, crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenialKind::RetentionCapacityExhausted);
-        let stopped = execution_failed(
-            "full ledger",
-            MutationHandlerExecutionDenial::Projection(projection),
-        );
-        let ProducerExecutionStop::ExecutionStopped(denial) = stopped else {
-            panic!("this is the caller's stop");
-        };
-        assert_eq!(
-            denial.kind(),
-            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         );
     }
 }

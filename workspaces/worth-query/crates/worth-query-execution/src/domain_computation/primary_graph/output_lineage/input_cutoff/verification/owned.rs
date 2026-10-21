@@ -1,5 +1,6 @@
 //! Move the verified native basis with a suspended owner publication.
 use super::*;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 
 pub(in crate::domain_computation::primary_graph) enum OwnedInputCutoffDecision {
     Fresh {
@@ -28,8 +29,6 @@ impl RetainedInputCutoffCandidate {
         runtime: &RelationalRuntime,
         basis: PreparedInputCutoffBasis<'_>,
         owner: &SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
-        currentness: &mut InvalidationEditAdmission,
     ) -> Result<OwnedInputCutoffDecision, InputCutoffVerificationStop> {
         match self.verify_for_reuse(
             execution,
@@ -39,8 +38,6 @@ impl RetainedInputCutoffCandidate {
             runtime,
             &basis,
             owner,
-            admission,
-            currentness,
         )? {
             InputCutoffDecision::Fresh { key, context } => {
                 Ok(OwnedInputCutoffDecision::Fresh { key, context })
@@ -77,16 +74,11 @@ impl OwnedVerifiedInputCutoff {
         runtime: &RelationalRuntime,
         basis: PreparedInputCutoffBasis<'_>,
         owner: &SourceInvalidationOwner,
-        source_facts: &[WorthQueryApplicationObservedFact],
-        admission: &mut InvalidationEditAdmission,
+        source_facts: &(impl FactSequence + ?Sized),
     ) -> Result<Self, InputCutoffVerificationStop> {
-        let (snapshot, selected) = basis.in_runtime(runtime, admission)?;
-        admission.charge_external_work(
-            u64::try_from(self.selected.branch_id().0.len())
-                .map_err(|_| InputCutoffVerificationStop::WorkExhausted)?
-                .checked_add(8)
-                .ok_or(InputCutoffVerificationStop::WorkExhausted)?,
-        )?;
+        observation::reach(Gate::PublicationSource);
+        let (snapshot, selected) = basis.in_runtime(runtime)?;
+
         if self.selected == *selected {
             return Ok(self);
         }
@@ -95,6 +87,7 @@ impl OwnedVerifiedInputCutoff {
         {
             return Err(InputCutoffVerificationStop::SelectedSourceMismatch);
         }
+        observation::reach(Gate::PublicationPrefix);
         let prefix = self
             .candidate
             .completed_handler_fact_count()
@@ -102,14 +95,17 @@ impl OwnedVerifiedInputCutoff {
         if prefix > self.verified_facts.len()
             || !facts_are_current(
                 execution,
-                self.verified_facts.iter().take(prefix).chain(source_facts),
+                self.verified_facts
+                    .iter()
+                    .take(prefix)
+                    .chain(source_facts.iter()),
                 runtime,
                 snapshot,
-                admission,
             )?
         {
             return Err(InputCutoffVerificationStop::CurrentnessRaced);
         }
+        observation::reach(Gate::PublicationConsumedOutputs);
         let current = ConsumedOutputEvidence::verify_many_with_admission(
             execution,
             self.verified_consumed
@@ -119,9 +115,11 @@ impl OwnedVerifiedInputCutoff {
             runtime,
             snapshot,
             selected,
-            admission,
         )
         .map_err(|stop| match stop {
+            stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_) => {
+                InputCutoffVerificationStop::OutputObservation(stop)
+            }
             ConsumedOutputVerificationStop::Execution(cause) => {
                 InputCutoffVerificationStop::Execution(cause)
             }
@@ -142,12 +140,15 @@ impl OwnedVerifiedInputCutoff {
                 InputCutoffVerificationStop::Admission(CompanionPreflightStop::Interrupted(event))
             }
         })?;
-        if !matches!(current, ConsumedOutputVerification::Current)
-            || !self
-                .candidate
-                .native_output_witness()
-                .ok_or(InputCutoffVerificationStop::CurrentnessRaced)?
-                .unchanged_in(runtime, snapshot, admission)?
+        if !matches!(current, ConsumedOutputVerification::Current) {
+            return Err(InputCutoffVerificationStop::CurrentnessRaced);
+        }
+        observation::reach(Gate::PublicationOutput);
+        if !self
+            .candidate
+            .native_output_witness()
+            .ok_or(InputCutoffVerificationStop::CurrentnessRaced)?
+            .unchanged_in(runtime, snapshot)?
         {
             return Err(InputCutoffVerificationStop::CurrentnessRaced);
         }

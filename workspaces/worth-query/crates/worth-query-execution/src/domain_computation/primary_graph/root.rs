@@ -1,3 +1,4 @@
+pub(super) mod application_publication;
 mod runtime_access;
 mod snapshot_release;
 
@@ -22,6 +23,8 @@ use index_installation::{register_primary_graph_indexes, IndexInstallationPostur
 /// Query integration code receives a separate hidden handle so product
 /// consumers cannot bypass installed Query authority.
 pub struct WorthQueryPrimaryGraph {
+    pub(super) application_publication:
+        Option<Arc<application_publication::ApplicationPublication>>,
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     relational_runtime_instance_id: u64,
@@ -88,6 +91,7 @@ impl WorthQueryPrimaryGraph {
             WorthQueryRelationalSourceOwner::new(runtime, "primary", invalidation_resources)
                 .expect("the installed primary graph role is canonical");
         Ok(Self {
+            application_publication: None,
             runtime_authority,
             relational_runtime_instance_id,
             binding_identity,
@@ -188,6 +192,7 @@ impl WorthQueryPrimaryGraph {
             .collect::<Vec<_>>()
             .into();
         WorthQueryPrimaryGraphIntegrationHandle {
+            application_publication: self.application_publication.clone(),
             source_owner: self.source_owner.clone(),
             layout: Arc::clone(&self.layout),
             primary_index_ids,
@@ -227,6 +232,8 @@ impl std::fmt::Debug for WorthQueryPrimaryGraph {
 #[doc(hidden)]
 #[derive(Clone)]
 pub struct WorthQueryPrimaryGraphIntegrationHandle {
+    pub(super) application_publication:
+        Option<Arc<application_publication::ApplicationPublication>>,
     pub(super) source_owner: WorthQueryRelationalSourceOwner,
     pub(super) layout: Arc<WorthQueryPrimaryGraphLayout>,
     pub(super) primary_index_ids: Arc<[worth_relational::facade::indexes::DerivedIndexId]>,

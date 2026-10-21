@@ -53,10 +53,15 @@ fn owner_constructor_installs_the_configured_recovery_metadata_ceiling() {
         fixture.owner_inputs(budgets(37), RuntimeWorldClock::from_source(FixedClock)),
     )
     .expect("managed owner construction");
-    let recovery_debug = format!("{:?}", owner.state.recovery);
-
     assert!(
-        recovery_debug.contains("maximum_metadata_bytes: 37"),
-        "the installed recovery catalog must retain the configured metadata ceiling: {recovery_debug}"
+        matches!(
+            owner
+                .state
+                .recovery
+                .reserve_product_unpublished(owner.owner_identity()),
+            Err(crate::recovery::RecoveryCatalogDenial::CapacityExhausted { maximum: Some(2) })
+        ),
+        "the actual metadata reservation must refuse before any effect"
     );
+    assert_eq!(owner.state.recovery.reserved_slots(), 0);
 }

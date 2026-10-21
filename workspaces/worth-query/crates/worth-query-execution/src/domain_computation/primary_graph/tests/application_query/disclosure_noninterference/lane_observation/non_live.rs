@@ -2,8 +2,8 @@ use super::super::super::super::fixture::{
     admit_touch_account_capability, governed_live_account_parameters,
 };
 use super::{
-    buffer_limit, capture_lane, one, ContinuationObservation, GovernedObservationContext,
-    GraphWorkOccurrences, LaneObservation,
+    capture_lane, one, ContinuationObservation, GovernedObservationContext, GraphWorkOccurrences,
+    LaneObservation,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryResumeControls,
@@ -33,7 +33,6 @@ pub(super) fn observe_one_shot(
             governed_live_account_parameters("account-1"),
             crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 one(),
-                Some(buffer_limit()),
                 context.request,
             ),
         )
@@ -73,7 +72,6 @@ pub(super) fn observe_continuation(
             governed_live_account_parameters("account-1"),
             crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                 one(),
-                Some(buffer_limit()),
                 context.request,
             ),
         )
@@ -108,11 +106,7 @@ pub(super) fn observe_continuation(
             fresh,
             governed_live_account_parameters("account-1"),
             continuation,
-            WorthQueryApplicationQueryResumeControls::new(
-                one(),
-                Some(buffer_limit()),
-                context.request,
-            ),
+            WorthQueryApplicationQueryResumeControls::new(one(), context.request),
         )
         .unwrap();
     let page = context

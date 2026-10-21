@@ -12,7 +12,7 @@ mod tests;
 
 pub(super) fn validate_signed_creations(members: &[Member]) -> Result<(), Denial> {
     for member in members {
-        let Member::OperationBody { body, .. } = member else {
+        let Member::OperationBody { operation, body } = member else {
             continue;
         };
         for creation in body
@@ -20,7 +20,7 @@ pub(super) fn validate_signed_creations(members: &[Member]) -> Result<(), Denial
             .into_iter()
             .flat_map(|c| c.initialization_sites())
         {
-            super::classified_capture::validate_creation(creation).map_err(|_| denied())?;
+            super::classified_capture::validate_creation(creation).map_err(|_| denied(operation))?;
             let provenance_count = creation
                 .fields()
                 .iter()
@@ -28,7 +28,7 @@ pub(super) fn validate_signed_creations(members: &[Member]) -> Result<(), Denial
                 .count();
             let Some(signing) = creation.signing() else {
                 if provenance_count != 0 {
-                    return Err(denied());
+                    return Err(denied(operation));
                 }
                 continue;
             };
@@ -37,12 +37,12 @@ pub(super) fn validate_signed_creations(members: &[Member]) -> Result<(), Denial
             || provenance_count != 1 || actor(creation).is_none()
             || !creation.fields().iter().any(|field| matches!(field, Step::SigningProvenance { field, binding }
                 if field == signing.provenance() && ApplicationSigningProvenanceEncoding::for_binding(binding).is_some())) {
-            return Err(denied());
+            return Err(denied(operation));
         }
             for target in [signing.actor(), signing.provenance()] {
                 if !members.iter().any(|member| matches!(member, Member::Field { entity, aspect, field, presence: Presence::Required, writable: false, unit: None, .. }
                 if entity == target.entity() && aspect == target.aspect() && field == target.field())) {
-                return Err(denied());
+                return Err(denied(operation));
             }
             }
             for member in members {
@@ -60,17 +60,17 @@ pub(super) fn validate_signed_creations(members: &[Member]) -> Result<(), Denial
                                 && step.field().field() == field
                         }) =>
                     {
-                        return Err(denied())
+                        return Err(denied(operation))
                     }
                     Member::Field {
                         entity,
                         writable: true,
                         ..
-                    } if entity == creation.entity() => return Err(denied()),
+                    } if entity == creation.entity() => return Err(denied(operation)),
                     Member::OperationProgram {
                         target: Target::Delete { entity },
                         ..
-                    } if entity == creation.entity() => return Err(denied()),
+                    } if entity == creation.entity() => return Err(denied(operation)),
                     Member::OperationProgram {
                         operation,
                         target: Target::Create { entity },
@@ -96,7 +96,7 @@ pub(super) fn validate_signed_creations(members: &[Member]) -> Result<(), Denial
                                 })
                             })
                         {
-                            return Err(denied());
+                            return Err(denied(operation));
                         }
                     }
                     _ => {}
@@ -131,6 +131,6 @@ fn actor(
         _ => None,
     })
 }
-fn denied() -> Denial {
-    Denial::MissingOperationProgramDependency
+fn denied(operation: &str) -> Denial {
+    Denial::program_body_dependency(operation)
 }

@@ -62,7 +62,7 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
         })
         .expect("the fixture read owns its installed host call");
     assert_eq!(work.field_reads(), 1);
-    let reads = world
+    let mut effects = world
         .application
         .with_host_advancement(|phase| {
             world
@@ -74,12 +74,6 @@ fn present_predecode_field_stales_after_a_competing_actual_change() {
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
-    let mut effects = world
-        .application
-        .with_host_advancement(|phase| {
-            reads
                 .complete_projected_dependencies(
                     &phase,
                     crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

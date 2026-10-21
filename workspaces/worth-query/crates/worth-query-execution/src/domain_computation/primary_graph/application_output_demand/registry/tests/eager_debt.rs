@@ -92,7 +92,6 @@ fn registry_eager_owned_closed_note_does_not_name_a_reused_key() {
             super::super::DemandAdmissionKind::Ordinary,
             None,
             None,
-            &mut record_admission(),
         )
         .unwrap();
     {

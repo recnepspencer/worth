@@ -1,5 +1,7 @@
 //! End a discarded frame without orphaning its undelivered publication.
-use super::refreshed_rejoin::{infallible, occurrence_rows, refresh_order, superseded};
+use super::refreshed_rejoin::occurrence_rows;
+use super::refreshed_rejoin::refresh_order;
+use super::refreshed_rejoin::superseded;
 use super::*;
 
 enum DeliveryOwner {
@@ -36,7 +38,7 @@ impl WorthQueryOutputDemandInterest {
                         record.work_membership.as_ref().map(|member| Arc::clone(member.key_arc()))
                     });
                     if let Some(key) = cleanup {
-                        state.defer_terminal_cleanup(&key, 0);
+                        state.defer_terminal_cleanup(&key);
                     }
                 }
             }
@@ -60,12 +62,7 @@ fn delivery_owner(state: &DemandRegistryState, key: &WorthQueryOutputDemandKey) 
     // retain truth, but cannot own that executable entry.
     if record.readmission_source.is_some()
         && super::admission::accepts_semantic_join(record)
-        && infallible(occurrence_rows(
-            &state.records,
-            key,
-            &mut super::lifecycle::release::CleanupWalk::new(),
-        ))
-        .any(|(other, row)| {
+        && occurrence_rows(&state.records, key).any(|(other, row)| {
             refresh_order(other, key) == Some(std::cmp::Ordering::Less)
                 && row.interests != 0
                 && superseded(row)

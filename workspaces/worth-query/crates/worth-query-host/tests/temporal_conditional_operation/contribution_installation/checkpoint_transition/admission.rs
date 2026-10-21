@@ -32,7 +32,7 @@ fn request(bytes: u64, cancellation: CancellationToken) -> LeaseRequest {
     }
 }
 
-fn author_record(
+pub(super) fn author_record(
     writer: &mut application_installation::WorthQueryCheckpointMigrationWriter<
         '_,
         TemporalHostSchema,
@@ -49,7 +49,7 @@ fn author_record(
     )
 }
 
-fn assert_target_record(
+pub(super) fn assert_target_record(
     checkpoint: application_installation::WorthQueryApplicationCheckpoint,
     value: u64,
 ) {
@@ -243,4 +243,70 @@ fn checkpoint_transition_cancelled_repair_preserves_deferred_phase_and_clears_st
     assert_eq!(checkpoint.charged_payload_bytes(), None);
     assert_target_record(checkpoint, 131);
     assert_eq!(calls, 1);
+}
+
+#[test]
+fn original_request_deferred_repair_returns_same_custody_on_entry_and_work_stops() {
+    use worth_execution::{ExecutionRequest, ExecutionWorkCeiling};
+    let _serial = serial_guard();
+    let (source, predecessor) = source();
+    let lease = primary_graph::query_test_execution_authority_for_test()
+        .request_lease(super::original_request::request(CancellationToken::new()))
+        .unwrap();
+    let original = ExecutionRequest::leased(&lease);
+    let mut calls = 0;
+    let denial =
+        super::original_request::transition_original(original, source, predecessor, |writer, _| {
+            calls += 1;
+            author_record(writer, "original-deferred-record", 139)?;
+            // Actual owner control remains at this existing allowlisted caller.
+            writer.fail_next_durable_append_for_test(&original);
+            Ok(())
+        })
+        .err()
+        .expect("native append fault must return genuine deferred custody");
+    let InstallationDenial::CheckpointTransitionDeferred(pending) = denial else {
+        panic!("expected native deferred custody: {denial:?}");
+    };
+    let cancel = worth_query_host::facade::runtime::CancellationSource::new();
+    let cancelled = primary_graph::query_test_execution_authority_for_test()
+        .request_lease(super::original_request::request(cancel.token()))
+        .unwrap();
+    cancel.cancel();
+    let pending = pending
+        .repair_to_checkpoint_with_request(ExecutionRequest::leased(&cancelled))
+        .expect_err("opening refusal must return the same deferred capsule");
+    let Some(CaptureDenial::Execution(cause)) = pending.capture_denial() else {
+        panic!("typed original cancellation retained");
+    };
+    super::original_request::assert_cancelled(cause);
+    let exhausted = primary_graph::query_test_execution_authority_for_test()
+        .request_lease(super::original_request::request(CancellationToken::new()))
+        .unwrap();
+    let execution = ExecutionRequest::leased(&exhausted);
+    let (pending, _) = ExecutionWorkCeiling::new(Some(1024))
+        .run_with_checkpoint(Some(&exhausted), None, |context| {
+            let remaining = context
+                .remaining_work()
+                .expect("this native fixture installs a finite work ceiling");
+            context.checkpoint_cost(remaining, remaining).unwrap();
+            assert!(context.checkpoint_cost(1, 1).is_err());
+            pending
+                .repair_to_checkpoint_with_request(execution)
+                .expect_err("the original native work refusal cannot be reopened")
+        })
+        .unwrap();
+    let Some(CaptureDenial::Execution(cause)) = pending.capture_denial() else {
+        panic!("typed original work stop retained");
+    };
+    super::original_request::assert_work(cause);
+    let fresh = primary_graph::query_test_execution_authority_for_test()
+        .request_lease(super::original_request::request(CancellationToken::new()))
+        .unwrap();
+    let checkpoint = pending
+        .repair_to_checkpoint_with_request(ExecutionRequest::leased(&fresh))
+        .expect("fresh funding repairs the original performed transition");
+    assert!(checkpoint.charged_payload_bytes().is_some());
+    assert_eq!(calls, 1, "repair never reruns the author callback");
+    assert_target_record(checkpoint, 139);
 }

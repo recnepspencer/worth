@@ -75,7 +75,7 @@ pub(super) fn rebuild_runtime_from_plan(
     let mut checkpoint_work = None;
     if let Some(checkpoint) = plan.checkpoint.take() {
         let mut work = crate::durability::data::CheckpointRestoreWork::default();
-        restore_checkpoint_state(&mut restored, checkpoint, &mut work)?;
+        restore_checkpoint_state(execution, &mut restored, checkpoint, &mut work)?;
         checkpoint_work = Some(work);
     }
     // Tail replay performs ordinary compare-and-publish cutovers. Seed its

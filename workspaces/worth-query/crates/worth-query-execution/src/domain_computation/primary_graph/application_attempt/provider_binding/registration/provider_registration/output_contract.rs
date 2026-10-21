@@ -6,6 +6,12 @@ use super::WorthQueryPrimaryGraphApplicationAttempt;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture;
 
 impl WorthQueryPrimaryGraphApplicationAttempt {
+    pub(in crate::domain_computation::primary_graph) fn native_publication_roles(
+        &self,
+    ) -> impl ExactSizeIterator<Item = (&str, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture, &str, &worth_relational::facade::transactions::EntityReference)> + Clone{
+        self.effects.native_publication_roles()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn native_witness_roles(
         &self,
     ) -> impl ExactSizeIterator<Item = (&str, WorthQueryApplicationOutputPosture, &str)> + Clone

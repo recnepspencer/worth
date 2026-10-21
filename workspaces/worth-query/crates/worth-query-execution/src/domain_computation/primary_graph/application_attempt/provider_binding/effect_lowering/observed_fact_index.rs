@@ -1,8 +1,7 @@
-use std::collections::BTreeMap;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 
 use worth_foundational::facade::{
     prepare_aspect_value_identity_basis, AspectFieldLocator, AspectKey, AspectValue,
-    CanonicalAspectValueIdentityBasis,
 };
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
 use worth_relational::facade::indexes::DerivedIndexId;
@@ -15,119 +14,40 @@ use super::super::{
 /// previous first-match semantics while avoiding a full fact scan per effect.
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_binding) struct ObservedFactIndex<
     'facts,
+    Facts: FactSequence + ?Sized,
 > {
-    facts: &'facts [WorthQueryApplicationObservedFact],
-    fields: BTreeMap<EntityId, BTreeMap<AspectFieldLocator, usize>>,
-    aspects: BTreeMap<EntityId, BTreeMap<AspectKey, Option<bool>>>,
-    entities: BTreeMap<EntityId, usize>,
-    relations: BTreeMap<RelationId, usize>,
-    selections: BTreeMap<SelectionKey, usize>,
+    facts: &'facts Facts,
+    routes:
+        std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::FactRoutes>,
 }
 
-type SelectionKey = (
-    DerivedIndexId,
-    KindId,
-    AspectFieldLocator,
-    CanonicalAspectValueIdentityBasis,
-);
-
-impl<'facts> ObservedFactIndex<'facts> {
+impl<'facts, Facts: FactSequence + ?Sized> ObservedFactIndex<'facts, Facts> {
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph::application_attempt::provider_binding) fn new(
-        facts: &'facts [WorthQueryApplicationObservedFact],
+        facts: &'facts Facts,
     ) -> Self {
-        let mut index = Self {
-            facts,
-            fields: BTreeMap::new(),
-            aspects: BTreeMap::new(),
-            entities: BTreeMap::new(),
-            relations: BTreeMap::new(),
-            selections: BTreeMap::new(),
+        use crate::domain_computation::primary_graph::application_attempt::{
+            retained_decision_facts::StorageControl, FactRoutes,
         };
-        for (position, fact) in facts.iter().enumerate() {
-            match fact {
-                WorthQueryApplicationObservedFact::AspectPresence {
-                    entity_id,
-                    aspect,
-                    present,
-                    ..
-                } => {
-                    index
-                        .aspects
-                        .entry(*entity_id)
-                        .or_default()
-                        .entry(aspect.clone())
-                        .and_modify(|prior| {
-                            if *prior != Some(*present) {
-                                *prior = None;
-                            }
-                        })
-                        .or_insert(Some(*present));
-                }
-                WorthQueryApplicationObservedFact::Entity { entity_id, .. } => {
-                    index.entities.entry(*entity_id).or_insert(position);
-                }
-                WorthQueryApplicationObservedFact::Field {
-                    entity_id, locator, ..
-                }
-                | WorthQueryApplicationObservedFact::AbsentField {
-                    entity_id, locator, ..
-                } => {
-                    if matches!(fact, WorthQueryApplicationObservedFact::Field { .. }) {
-                        index
-                            .aspects
-                            .entry(*entity_id)
-                            .or_default()
-                            .entry(locator.aspect().aspect_key().clone())
-                            .and_modify(|prior| {
-                                if *prior != Some(true) {
-                                    *prior = None;
-                                }
-                            })
-                            .or_insert(Some(true));
-                    }
-                    index
-                        .fields
-                        .entry(*entity_id)
-                        .or_default()
-                        .entry(locator.clone())
-                        .or_insert(position);
-                }
-                WorthQueryApplicationObservedFact::Relation {
-                    matching_relations, ..
-                } => {
-                    for relation_id in matching_relations {
-                        index.relations.entry(*relation_id).or_insert(position);
-                    }
-                }
-                WorthQueryApplicationObservedFact::Adjacency { relations, .. } => {
-                    for relation in relations {
-                        index
-                            .relations
-                            .entry(relation.relation_id)
-                            .or_insert(position);
-                    }
-                }
-                WorthQueryApplicationObservedFact::IndexedEntitySelection {
-                    index_id,
-                    entity_kind,
-                    locator,
-                    value,
-                    ..
-                } => {
-                    index
-                        .selections
-                        .entry((
-                            *index_id,
-                            *entity_kind,
-                            locator.clone(),
-                            prepare_aspect_value_identity_basis(value),
-                        ))
-                        .or_insert(position);
-                }
-                _ => {}
-            }
-        }
-        index
+        let routes = FactRoutes::build_iter(
+            facts.iter(),
+            0,
+            None,
+            StorageControl::new(
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                None,
+            ),
+        )
+        .expect("unrestricted full effect routing");
+        Self { facts, routes }
+    }
+    pub(in crate::domain_computation::primary_graph::application_attempt::provider_binding) fn completed(
+        facts: &'facts Facts,
+        routes: std::sync::Arc<
+            crate::domain_computation::primary_graph::application_attempt::FactRoutes,
+        >,
+    ) -> Self {
+        Self { facts, routes }
     }
 
     pub(super) fn aspect_presence(
@@ -135,15 +55,9 @@ impl<'facts> ObservedFactIndex<'facts> {
         entity: EntityId,
         aspect: &AspectKey,
     ) -> Result<bool, WorthQueryApplicationAttemptDenial> {
-        match self
-            .aspects
-            .get(&entity)
-            .and_then(|aspects| aspects.get(aspect))
-        {
-            Some(Some(present)) => Ok(*present),
-            Some(None) => Err(progression_denial()),
-            None => Err(progression_denial()),
-        }
+        self.routes
+            .aspect_presence(entity, aspect)
+            .ok_or_else(progression_denial)
     }
 
     /// The entity kind the sealed fact for this field records.
@@ -153,15 +67,34 @@ impl<'facts> ObservedFactIndex<'facts> {
         locator: &AspectFieldLocator,
     ) -> Result<KindId, WorthQueryApplicationAttemptDenial> {
         match self
-            .fields
-            .get(&entity_id)
-            .and_then(|fields| fields.get(locator))
-            .map(|position| &self.facts[*position])
+            .routes
+            .field(entity_id, locator)
+            .map(|position| self.facts.get(position).expect("indexed observed fact"))
         {
             Some(
                 WorthQueryApplicationObservedFact::Field { kind, .. }
-                | WorthQueryApplicationObservedFact::AbsentField { kind, .. },
+                | WorthQueryApplicationObservedFact::AbsentField { kind, .. }
+                | WorthQueryApplicationObservedFact::OptionalAspectAbsent { kind, .. },
             ) => Ok(*kind),
+            _ => Err(progression_denial()),
+        }
+    }
+
+    pub(super) fn aspect_absent(
+        &self,
+        entity: EntityId,
+        locator: &AspectFieldLocator,
+    ) -> Result<bool, WorthQueryApplicationAttemptDenial> {
+        match self
+            .routes
+            .field(entity, locator)
+            .map(|i| self.facts.get(i).expect("indexed observed fact"))
+        {
+            Some(WorthQueryApplicationObservedFact::OptionalAspectAbsent { .. }) => Ok(true),
+            Some(
+                WorthQueryApplicationObservedFact::Field { .. }
+                | WorthQueryApplicationObservedFact::AbsentField { .. },
+            ) => Ok(false),
             _ => Err(progression_denial()),
         }
     }
@@ -182,9 +115,9 @@ impl<'facts> ObservedFactIndex<'facts> {
             prepare_aspect_value_identity_basis(value),
         );
         match self
-            .selections
-            .get(&key)
-            .map(|position| &self.facts[*position])
+            .routes
+            .selection(&key)
+            .map(|position| self.facts.get(position).expect("indexed observed fact"))
         {
             Some(WorthQueryApplicationObservedFact::IndexedEntitySelection {
                 candidates, ..
@@ -198,10 +131,14 @@ impl<'facts> ObservedFactIndex<'facts> {
         entity_id: EntityId,
         locator: &AspectFieldLocator,
     ) -> Result<String, WorthQueryApplicationAttemptDenial> {
-        self.fields
-            .get(&entity_id)
-            .and_then(|fields| fields.get(locator))
-            .map(|position| self.facts[*position].locator_identity())
+        self.routes
+            .field(entity_id, locator)
+            .map(|position| {
+                self.facts
+                    .get(position)
+                    .expect("indexed observed fact")
+                    .locator_identity()
+            })
             .ok_or_else(progression_denial)
     }
 
@@ -209,9 +146,14 @@ impl<'facts> ObservedFactIndex<'facts> {
         &self,
         entity_id: EntityId,
     ) -> Result<String, WorthQueryApplicationAttemptDenial> {
-        self.entities
-            .get(&entity_id)
-            .map(|position| self.facts[*position].locator_identity())
+        self.routes
+            .entity(entity_id)
+            .map(|position| {
+                self.facts
+                    .get(position)
+                    .expect("indexed observed fact")
+                    .locator_identity()
+            })
             .ok_or_else(progression_denial)
     }
 
@@ -219,9 +161,14 @@ impl<'facts> ObservedFactIndex<'facts> {
         &self,
         relation_id: RelationId,
     ) -> Result<String, WorthQueryApplicationAttemptDenial> {
-        self.relations
-            .get(&relation_id)
-            .map(|position| self.facts[*position].locator_identity())
+        self.routes
+            .relation(relation_id)
+            .map(|position| {
+                self.facts
+                    .get(position)
+                    .expect("indexed observed fact")
+                    .locator_identity()
+            })
             .ok_or_else(progression_denial)
     }
 }
@@ -232,6 +179,38 @@ mod tests {
     use worth_foundational::facade::{AspectKey, FieldKey};
     use worth_relational::facade::identity::{KindId, PartitionId};
     use worth_relational::facade::transactions::planned_single_field_locator;
+
+    #[test]
+    fn completed_routes_refuse_equal_unrelated_backing_and_keep_first_ordinal() {
+        use crate::domain_computation::primary_graph::application_attempt::{
+            retained_decision_facts::StorageControl, FactContent,
+        };
+        use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+        use worth_execution::ExecutionAllocationPolicy;
+        let locator = planned_single_field_locator(
+            AspectKey::new("details").unwrap(),
+            FieldKey::new("value").unwrap(),
+        );
+        let entity = EntityId::new(PartitionId::new(1), 7, 1);
+        let fact = WorthQueryApplicationObservedFact::AbsentField {
+            entity_id: entity,
+            kind: KindId(7),
+            locator: locator.clone(),
+        };
+        let body: FactPayload = std::sync::Arc::<[_]>::from([fact.clone(), fact.clone()]).into();
+        let unrelated: FactPayload = std::sync::Arc::<[_]>::from([fact.clone(), fact]).into();
+        let control = StorageControl::new(ExecutionAllocationPolicy::SystemAllocation, None);
+        let (content, _) = FactContent::build(body.clone(), control).unwrap();
+        assert!(content.effect_routes(&unrelated).is_none());
+        assert!(!content
+            .effect_routes(&body)
+            .unwrap()
+            .matches_body(&unrelated));
+        let (_, routes) = content.effect_routes(&body).unwrap().into_parts();
+        assert_eq!(routes.field(entity, &locator), Some(0));
+        let index = ObservedFactIndex::completed(&body, routes);
+        assert_eq!(index.field_kind(entity, &locator).unwrap(), KindId(7));
+    }
 
     #[test]
     fn many_field_targets_resolve_from_one_sealed_index() {

@@ -1,10 +1,9 @@
 //! Basis-bound admission of a prepared member by the required-set owner.
 use super::super::WorthQueryOutputDemandRegistry;
-use crate::domain_computation::primary_graph::{
-    application_contribution::OwnerPlan, invariant_projection::PreparedCurrentInputs,
-    output_lineage::invalidation::InvalidationEditAdmission, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind,
-};
+use crate::domain_computation::primary_graph::application_contribution::OwnerPlan;
+use crate::domain_computation::primary_graph::invariant_projection::PreparedCurrentInputs;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 /// No driver can mint this from a dependency name, level or readiness flag.
@@ -18,11 +17,7 @@ impl PreparedRequiredInputs {
     pub(in crate::domain_computation::primary_graph) fn accepts_basis(
         &self,
         basis: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work(4)
-            .map_err(|_| work_denial())?;
         Ok((self.runtime, self.root) == (basis.runtime_instance_id(), basis.root_id()))
     }
 }
@@ -30,10 +25,8 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn admit_prepared_inputs(
         &self,
         inputs: PreparedCurrentInputs<'_>,
-        owner: &crate::domain_computation::primary_graph::SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedRequiredInputs, WorthQueryOutputDemandDenial> {
-        self.admit_current_outputs(inputs.native_basis(), inputs.consumed(), owner, admission)
+        self.admit_current_outputs(inputs.native_basis(), inputs.consumed())
     }
 
     // Only this registry owner can interpret sealed current-output evidence.
@@ -43,17 +36,12 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         (runtime, root): (u64, u64),
         consumed: impl Iterator<Item = &'a crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
-        owner: &crate::domain_computation::primary_graph::SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedRequiredInputs, WorthQueryOutputDemandDenial> {
         let state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         for consumed in consumed {
-            admission
-                .charge_external_work(4)
-                .map_err(|_| work_denial())?;
             if consumed.current_read_basis() != (runtime, root) {
                 return Err(WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::ForeignSettlement,
@@ -62,27 +50,23 @@ impl WorthQueryOutputDemandRegistry {
             }
             let Some(key) = state
                 .settlement_keys
-                .get_exact_admitted(consumed.identity(), admission)?
+                .get_exact_admitted(consumed.identity())?
             else {
                 // A sealed current native read already names a committed output.
                 // Recovery or row reclamation can leave it without an executable
                 // delivery. Completion still owns its retained prerequisite claim.
                 continue;
             };
-            state.charge_record_lookup(&key, admission)?;
+
             let Some(record) = state.records.get(key.as_ref()) else {
                 return Err(foreign_denial());
             };
-            admission
-                .charge_external_work(1)
-                .map_err(|_| work_denial())?;
+
             if let Err(denied) = require_committed(record) {
                 // Current native data can precede its managed Ready delivery.
                 // Carry the exact funded read so the wave owner resumes that
                 // checkpoint, then verifies again before dispatching compute.
-                let requested = consumed
-                    .requested_read(owner, admission)
-                    .map_err(requested_read_denial)?;
+                let requested = consumed.requested_read().map_err(requested_read_denial)?;
                 return Err(denied.with_requested_output(requested));
             }
         }
@@ -93,12 +77,7 @@ impl WorthQueryOutputDemandRegistry {
         })
     }
 }
-fn work_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        "required wave input admission exceeds request work",
-    )
-}
+
 fn foreign_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::ForeignSettlement,
@@ -109,9 +88,8 @@ fn foreign_denial() -> WorthQueryOutputDemandDenial {
 fn requested_read_denial(
     stop: worth_relational::facade::mvcc::CompanionPreflightStop,
 ) -> WorthQueryOutputDemandDenial {
-    use worth_relational::facade::mvcc::{
-        CompanionPreflightStop as Stop, RelationalOperationInterruption,
-    };
+    use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
+    use worth_relational::facade::mvcc::RelationalOperationInterruption;
     let kind = match stop {
         Stop::Execution(cause) => {
             crate::domain_computation::primary_graph::output_reuse::read_denial(cause).kind()
@@ -177,23 +155,16 @@ impl WorthQueryOutputDemandRegistry {
         basis: &'basis PositionedRelationalSnapshot,
         keys: worth_proof::CanonicalUniqueVec<Key>,
         plans: Vec<OwnerPlan<'owner, Value, Stop>>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedWave<'basis, 'owner, Key, Value, Stop>, WorthQueryOutputDemandDenial> {
         if keys.as_slice().len() != plans.len() {
             return Err(foreign_denial());
         }
         for plan in &plans {
-            admission
-                .charge_external_work(2)
-                .map_err(|_| work_denial())?;
             match plan.prepared_inputs() {
                 Some(inputs)
                     if {
-                        admission
-                            .charge_external_work(1)
-                            .map_err(|_| work_denial())?;
                         std::sync::Arc::ptr_eq(&self.state, &inputs.owner.state)
-                            && inputs.accepts_basis(basis, admission)?
+                            && inputs.accepts_basis(basis)?
                     } => {}
                 Some(_) => {
                     return Err(WorthQueryOutputDemandDenial::new(

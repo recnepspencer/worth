@@ -179,5 +179,5 @@ fn missing_capability_fails_the_public_governance_query_at_capability_admission(
 }
 
 fn controls() -> BankReadControls {
-    BankReadControls::current(request_scope(), 4, 20_000).unwrap()
+    BankReadControls::current(request_scope(), 4).unwrap()
 }

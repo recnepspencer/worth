@@ -1,5 +1,9 @@
+#[cfg(test)]
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
+#[cfg(test)]
 use worth_relational::facade::identity::EntityId;
 
+#[cfg(test)]
 use super::super::effect_program::WorthQueryApplicationRealizedEffect;
 use super::super::WorthQueryApplicationObservedFact;
 
@@ -12,9 +16,26 @@ use super::super::WorthQueryApplicationObservedFact;
 pub(in crate::domain_computation::primary_graph) struct OutputCurrentnessFacts {
     facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     moved_by_own_effect: std::sync::Arc<[usize]>,
+    carry: Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry,
+    >,
 }
 
 impl OutputCurrentnessFacts {
+    pub(in crate::domain_computation::primary_graph) fn rebase_carry(
+        &self,
+    ) -> Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry,
+    > {
+        self.carry.clone()
+    }
+    pub(super) fn with_rebase_carry(
+        mut self,
+        carry: Option<crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry>,
+    ) -> Self {
+        self.carry = carry;
+        self
+    }
     pub(in crate::domain_computation::primary_graph) const fn facts(
         &self,
     ) -> &crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload {
@@ -33,6 +54,7 @@ impl From<std::sync::Arc<[WorthQueryApplicationObservedFact]>> for OutputCurrent
     fn from(facts: std::sync::Arc<[WorthQueryApplicationObservedFact]>) -> Self {
         Self {
             facts: facts.into(),
+            carry: None,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }
@@ -48,11 +70,33 @@ impl From<crate::domain_computation::primary_graph::output_lineage::ComparableSo
     ) -> Self {
         Self {
             facts: facts.facts().clone(),
+            carry: None,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }
 }
 
+pub(super) fn complete_content_currentness_facts(
+    facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    moved: Vec<usize>,
+    reusable: bool,
+) -> OutputCurrentnessFacts {
+    if reusable {
+        OutputCurrentnessFacts {
+            facts,
+            carry: None,
+            moved_by_own_effect: moved.into(),
+        }
+    } else {
+        OutputCurrentnessFacts {
+            facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from([]).into(),
+            carry: None,
+            moved_by_own_effect: std::sync::Arc::from([]),
+        }
+    }
+}
+
+#[cfg(test)]
 pub(super) fn complete_output_currentness_facts(
     facts: Vec<WorthQueryApplicationObservedFact>,
     moved_by_own_effect: Vec<usize>,
@@ -60,6 +104,7 @@ pub(super) fn complete_output_currentness_facts(
     if facts.iter().all(is_output_currentness_fact) {
         OutputCurrentnessFacts {
             facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from(facts).into(),
+            carry: None,
             moved_by_own_effect: moved_by_own_effect.into(),
         }
     } else {
@@ -68,15 +113,17 @@ pub(super) fn complete_output_currentness_facts(
         // dependency digest still governs idempotency separately.
         OutputCurrentnessFacts {
             facts: std::sync::Arc::<[WorthQueryApplicationObservedFact]>::from([]).into(),
+            carry: None,
             moved_by_own_effect: std::sync::Arc::from([]),
         }
     }
 }
 
-fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> bool {
+pub(super) fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> bool {
     matches!(
         fact,
         WorthQueryApplicationObservedFact::RetiredOutputEntity { .. }
+            | WorthQueryApplicationObservedFact::SourcePublication { .. }
             | WorthQueryApplicationObservedFact::SourceEntity { .. }
             | WorthQueryApplicationObservedFact::SourceAspectRevision { .. }
             | WorthQueryApplicationObservedFact::SourceFieldRevision { .. }
@@ -84,6 +131,7 @@ fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> bool 
             | WorthQueryApplicationObservedFact::Entity { .. }
             | WorthQueryApplicationObservedFact::Field { .. }
             | WorthQueryApplicationObservedFact::AbsentField { .. }
+            | WorthQueryApplicationObservedFact::OptionalAspectAbsent { .. }
             | WorthQueryApplicationObservedFact::AspectPresence { .. }
             | WorthQueryApplicationObservedFact::Relation { .. }
             | WorthQueryApplicationObservedFact::Adjacency { .. }
@@ -91,8 +139,9 @@ fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFact) -> bool 
     )
 }
 
+#[cfg(test)]
 pub(super) fn normalized_output_facts(
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &(impl FactSequence + ?Sized),
     effects: &[WorthQueryApplicationRealizedEffect],
 ) -> Vec<WorthQueryApplicationObservedFact> {
     facts
@@ -170,6 +219,7 @@ pub(super) fn normalized_output_facts(
         .collect()
 }
 
+#[cfg(test)]
 fn replacement_field_value<'effect>(
     entity_id: EntityId,
     locator: &worth_foundational::facade::AspectFieldLocator,

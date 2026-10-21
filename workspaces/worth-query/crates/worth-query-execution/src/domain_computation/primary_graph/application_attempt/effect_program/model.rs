@@ -97,6 +97,8 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
     pub(in crate::domain_computation::primary_graph::application_attempt) output_currentness_facts:
         Option<super::super::OutputCurrentnessFacts>,
+    // Last to drop: physical backing releases before its retained grant.
+
 }
 
 impl<Schema, Operation, Input, Scope>
@@ -145,6 +147,8 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
     pub(super) output_correspondence:
         super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     pub(super) creation_partition: Option<WorthQueryApplicationCreationPartition>,
+    // Last to drop: physical backing releases before its retained grant.
+
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

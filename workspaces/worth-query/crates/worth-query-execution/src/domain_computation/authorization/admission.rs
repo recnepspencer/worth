@@ -1,22 +1,21 @@
 //! Conventional authorization admission facade.
 
-use super::{WorthQueryAuthorizationDecisionFact, WorthQueryPrincipalCurrentnessDependency};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
-};
-use worth_query_installation::facade::{
-    ApplicationSchemaBindingIdentity, WorthQueryInstalledAbilityRequirement,
-};
+use super::WorthQueryAuthorizationDecisionFact;
+use super::WorthQueryPrincipalCurrentnessDependency;
+use crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity;
+use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
+use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
+use worth_query_installation::facade::WorthQueryInstalledAbilityRequirement;
 
 mod operation_observation;
 mod requirement_observation;
 mod validation;
 
-pub(in crate::domain_computation) use requirement_observation::AdmittedQueryAuthorizationStop;
-pub(super) use validation::{admit_request, operation_scope_binding, validate_static_authority};
-pub(in crate::domain_computation::authorization) use validation::{
-    validate_static_authority_retained, WorthQueryRetainedMutationStaticStop,
-};
+pub(super) use validation::admit_request;
+pub(super) use validation::operation_scope_binding;
+pub(super) use validation::validate_static_authority;
+pub(in crate::domain_computation::authorization) use validation::validate_static_authority_retained;
+pub(in crate::domain_computation::authorization) use validation::WorthQueryRetainedMutationStaticStop;
 
 pub(in crate::domain_computation::authorization) struct WorthQueryConventionalAuthorizationDecisionPermit(
     (),

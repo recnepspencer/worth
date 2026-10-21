@@ -10,15 +10,11 @@ impl DemandProgressionProvenance {
         &self,
         supplied: &WorthQueryProducerCommitAuthority,
         installed_edition: &InstalledProducerEdition,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work(1)
-            .map_err(|_| empty_work_denial())?;
         let Self::RequiredSuccessor(required) = self else {
             return Ok(());
         };
-        required.validate_for_execution(supplied, installed_edition, admission)
+        required.validate_for_execution(supplied, installed_edition)
     }
 }
 
@@ -27,43 +23,10 @@ impl RequiredSuccessorProvenance {
         &self,
         supplied: &WorthQueryProducerCommitAuthority,
         installed_edition: &InstalledProducerEdition,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         // Read the two mode tags and the stored edition before selecting the
         // variable-width comparison below.
-        admission
-            .charge_external_work(3)
-            .map_err(|_| empty_work_denial())?;
-        let mode_work = match (&self.commit_authority, supplied) {
-            (
-                WorthQueryProducerCommitAuthority::SelectedProgram {
-                    identity: expected, ..
-                },
-                WorthQueryProducerCommitAuthority::SelectedProgram {
-                    identity: actual, ..
-                },
-            ) => {
-                admission
-                    .charge_external_work(2)
-                    .map_err(|_| empty_work_denial())?;
-                expected
-                    .as_str()
-                    .len()
-                    .checked_add(actual.as_str().len())
-                    .and_then(|work| work.checked_add(64 + 2))
-                    .ok_or_else(empty_work_denial)?
-            }
-            _ => 2,
-        };
-        let edition_work = std::mem::size_of::<InstalledProducerEdition>()
-            .checked_mul(2)
-            .ok_or_else(empty_work_denial)?;
-        let compare_work = mode_work
-            .checked_add(edition_work)
-            .ok_or_else(empty_work_denial)?;
-        admission
-            .charge_external_work(u64::try_from(compare_work).map_err(|_| empty_work_denial())?)
-            .map_err(|_| empty_work_denial())?;
+
         let same_mode = match (&self.commit_authority, supplied) {
             (
                 WorthQueryProducerCommitAuthority::Ordinary,
@@ -99,8 +62,4 @@ impl RequiredSuccessorProvenance {
         }
         Ok(())
     }
-}
-
-fn empty_work_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "")
 }

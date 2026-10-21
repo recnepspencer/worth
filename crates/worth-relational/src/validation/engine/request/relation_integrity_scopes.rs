@@ -191,6 +191,11 @@ impl<'access, 'runtime, 'scope, 'authority>
                     spec.replacement.client_key.clone(),
                 )?;
             }
+            MutationIntent::Relation(
+                crate::transactions::data::RelationMutationIntent::Revalidate(spec),
+            ) => {
+                self.collect_revalidated_relation(spec.relation_id)?;
+            }
             MutationIntent::Entity(EntityMutationIntent::Revalidate(spec)) => {
                 self.collect_revalidated_entity(spec.entity_id)?;
             }
@@ -286,6 +291,25 @@ impl<'access, 'runtime, 'scope, 'authority>
         if scan_full && both_existing {
             include_existing_entity_reference(&mut self.touched_relation_targets, source);
             include_existing_entity_reference(&mut self.touched_relation_sources, target);
+        }
+        self.check_live()
+    }
+
+    fn collect_revalidated_relation(
+        &mut self,
+        relation_id: RelationId,
+    ) -> Result<(), TransactionCommitError> {
+        self.check_live()?;
+        if let Some((kind, source, target)) =
+            relation_scope_details_for_id(&self.state_view, relation_id)
+        {
+            self.scopes
+                .entry(kind)
+                .or_default()
+                .minimum_touched_entities
+                .extend([source, target]);
+            self.touched_relation_sources.extend([source, target]);
+            self.touched_relation_targets.extend([source, target]);
         }
         self.check_live()
     }

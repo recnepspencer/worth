@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 #[test]
-fn shared_original_facts_fund_once_and_survive_restored_prerequisite_custody() {
+fn shared_original_facts_survive_restored_prerequisite_custody() {
     let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
@@ -44,36 +44,26 @@ fn shared_original_facts_fund_once_and_survive_restored_prerequisite_custody() {
             assert_eq!(ConsumedOutputEvidence::verify_at_observation(
                 &execution, &identity, &facts, &[],
                 Some(super::super::FullVerificationReason::CheckpointRestore),
-                &witness, owner, runtime, &snapshot_handle, &basis, &mut owner.edit_admission(),
+                &witness, owner, runtime, &snapshot_handle, &basis,
             ).unwrap(), ConsumedOutputVerification::Current);
-            assert_eq!(owner.resources.consumed_capacity_observation(owner.runtime_instance_id), (0, 0));
-            let baseline = owner.resources.retained_capacity_bytes();
-            let first = ConsumedOutputEvidence::restored_with_witness_for_test(
-                owner, Arc::clone(&identity), facts.facts().clone(), Arc::clone(&basis), Arc::clone(&witness),
-            );
-            let first_bytes = owner.resources.retained_capacity_bytes() - baseline;
-            let before_second = owner.resources.retained_capacity_bytes();
-            let second = ConsumedOutputEvidence::restored_with_witness_for_test(
-                owner, Arc::clone(&identity), facts.facts().clone(), Arc::clone(&basis), witness,
-            );
-            let second_bytes = owner.resources.retained_capacity_bytes() - before_second;
-            assert!(second_bytes > 0, "another reader still funds its own basis and metadata");
-            assert!(second_bytes < first_bytes,
-                "another reader of the SAME original fact backing must not fund that backing twice: first={first_bytes}, second={second_bytes}");
+
+
+            let first = ConsumedOutputEvidence::restored_with_witness_for_test(Arc::clone(&identity), facts.facts().clone(), Arc::clone(&basis), Arc::clone(&witness));
+
+
+            let second = ConsumedOutputEvidence::restored_with_witness_for_test(Arc::clone(&identity), facts.facts().clone(), Arc::clone(&basis), witness);
 
             (snapshot_handle, basis, identity, facts, first, second)
         });
-        first.establish_restored_before_commit(
-                &execution, &handle.source_owner, &mut owner.edit_admission(),
-            ).unwrap();
-            assert!(matches!(owner.currentness(&basis, &identity, &mut owner.edit_admission()).unwrap(),
+        first.establish_restored_before_commit(&execution, &handle.source_owner).unwrap();
+            assert!(matches!(owner.currentness(&basis, &identity).unwrap(),
                 SourceSettlementCurrentness::Clean));
-            assert!(first.claim_verified_checkpoint_root(owner, &mut owner.edit_admission()).unwrap(),
+            assert!(first.claim_verified_checkpoint_root(owner).unwrap(),
                 "actual restored prerequisite custody must be established, not bypassed");
         handle.with_runtime_mut(&execution, |runtime| {
             assert_eq!(ConsumedOutputEvidence::verify_many_with_admission(
                 &execution, &[first.clone(), second.clone()], owner, runtime, &snapshot_handle,
-                &basis, &mut owner.edit_admission(),
+                &basis,
             ).unwrap(), ConsumedOutputVerification::Current);
             let (current_handle, current_basis) = snapshot(runtime);
             assert_eq!(current_basis, *basis,
@@ -82,14 +72,12 @@ fn shared_original_facts_fund_once_and_survive_restored_prerequisite_custody() {
         });
             drop(first);
             drop(second);
-            assert!(owner.resources.consumed_capacity_observation(owner.runtime_instance_id).1 > 0,
-                "the restored mark keeps the very same fact ticket after both readers leave");
-            assert!(matches!(owner.currentness(&basis, &identity, &mut owner.edit_admission()).unwrap(),
+
+            assert!(matches!(owner.currentness(&basis, &identity).unwrap(),
                 SourceSettlementCurrentness::Clean));
-            assert_eq!(owner.retire_settlements(std::slice::from_ref(&identity), &mut owner.edit_admission()),
+            assert_eq!(owner.retire_settlements(std::slice::from_ref(&identity)),
                 vec![identity]);
-            assert_eq!(owner.resources.consumed_capacity_observation(owner.runtime_instance_id), (0, 0),
-                "the final mark release refunds original consumed backing even while lineage facts remain");
+
         handle.with_runtime_mut(&execution, |runtime| {
             runtime.snapshots().release_snapshot(&snapshot_handle).unwrap();
         });

@@ -16,10 +16,10 @@ pub(in crate::application_schema::operation_definition::body) fn validate(
             || !members.iter().any(|member|matches!(member,Member::Relation{relation,from,to,integrity,..}
                 if relation==&rule.selection_relation && from==&rule.owner && to==&rule.selected && integrity.cardinality.source_max==Some(1) && integrity.cardinality.target_max==Some(1)))
             || !rule.program_targets().iter().all(|expected|members.iter().any(|member|matches!(member,Member::OperationProgram{operation:declared,target} if declared==operation && target==expected))) {
-            return Err(Denial::MissingOperationProgramDependency);
+            return Err(Denial::program_body_dependency(operation));
         }
         if !rule.decision_reads().iter().all(|expected|members.iter().any(|member|matches!(member,Member::OperationDecisionRead{operation:declared,target} if declared==operation && target==expected))) {
-            return Err(Denial::MissingOperationDecisionReadDependency);
+            return Err(Denial::decision_read_body_dependency(operation));
         }
     }
     Ok(())

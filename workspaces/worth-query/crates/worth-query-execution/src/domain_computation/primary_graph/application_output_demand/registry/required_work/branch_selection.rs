@@ -11,11 +11,7 @@ impl SelectedRequiredWork {
     pub(super) fn for_selected_branch(
         &mut self,
         branch: &BranchId,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work(4)
-            .map_err(|_| work_denial())?;
         let mut state = self
             .membership
             .state
@@ -28,8 +24,6 @@ impl SelectedRequiredWork {
         {
             return Ok(false);
         }
-        let per_hint = branch.0.len().checked_add(4).ok_or_else(work_denial)?;
-        let per_hint = u64::try_from(per_hint).map_err(|_| work_denial())?;
 
         let next_version = state.version.checked_add(1);
         let mut cursor = &mut state.native_hints;
@@ -38,9 +32,7 @@ impl SelectedRequiredWork {
             let Some(hint) = cursor.as_ref() else {
                 break;
             };
-            admission
-                .charge_external_work(per_hint)
-                .map_err(|_| work_denial())?;
+
             if hint.branch.branch_id() == branch {
                 break;
             }
@@ -84,11 +76,4 @@ impl SelectedRequiredWork {
         };
         Ok(true)
     }
-}
-
-fn work_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        "selected native-hint comparison exceeds request work",
-    )
 }

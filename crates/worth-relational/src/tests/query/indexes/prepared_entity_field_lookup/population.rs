@@ -40,9 +40,7 @@ fn pinned_population_keeps_nonempty_predecessor_and_admits_empty_successor() {
         .index_access()
         .prepare_entity_field_lookup(&view, index.index_id, KindId(1), &locator, execution)
         .unwrap();
-    assert!(!prior
-        .population_is_empty_with_admission(execution, || Ok::<_, ()>(()))
-        .unwrap());
+    assert!(!prior.population_is_empty(execution).unwrap());
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
@@ -63,16 +61,8 @@ fn pinned_population_keeps_nonempty_predecessor_and_admits_empty_successor() {
         .index_access()
         .prepare_entity_field_lookup(&view, index.index_id, KindId(1), &locator, execution)
         .unwrap();
-    assert!(current
-        .population_is_empty_with_admission(execution, || Ok::<_, ()>(()))
-        .unwrap());
-    assert!(!prior
-        .population_is_empty_with_admission(execution, || Ok::<_, ()>(()))
-        .unwrap());
-    assert!(matches!(
-        current.population_is_empty_with_admission(execution, || Err("selection exhausted")),
-        Err(Stop::Admission("selection exhausted")),
-    ));
+    assert!(current.population_is_empty(execution).unwrap());
+    assert!(!prior.population_is_empty(execution).unwrap());
     let cancellation = worth_execution::CancellationSource::new();
     let stopped = worth_execution::SerialRequest::from_memory(
         worth_execution::SerialMemoryBudget::new(None),
@@ -81,17 +71,10 @@ fn pinned_population_keeps_nonempty_predecessor_and_admits_empty_successor() {
     );
     cancellation.cancel();
     let stopped = worth_execution::ExecutionRequest::serial(&stopped);
-    let mut admission_called = false;
-    let refusal = current.population_is_empty_with_admission(&stopped, || {
-        admission_called = true;
-        Err::<(), _>("selection exhausted")
-    });
-    assert!(
-        matches!(refusal, Err(Stop::Lookup(cause)) if cause.kind() ==
+    let refusal = current.population_is_empty(&stopped);
+    assert!(matches!(refusal, Err(cause) if cause.kind() ==
         BoundedEntityFieldLookupDenialKind::Execution(
-            crate::execution::RelationalExecutionDenialCause::Cancelled))
-    );
-    assert!(!admission_called);
+            crate::execution::RelationalExecutionDenialCause::Cancelled)));
     release_test_commit_snapshot(&runtime, &deleted);
     release_test_commit_snapshot(&runtime, &created);
 }

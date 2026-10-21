@@ -38,6 +38,12 @@ pub(crate) struct PreparedIndexRefreshBasis {
 }
 
 impl PreparedRelationalPublication {
+    pub(crate) fn descriptive_touches(
+        &self,
+    ) -> &crate::history::data::RelationalDescriptiveTouchGraph {
+        self.publication.envelope.descriptive_touches()
+    }
+
     pub(crate) fn root(&self) -> &Arc<crate::branch::RelationalBranchRoot> {
         &self.publication.root
     }
@@ -229,6 +235,7 @@ fn prepare_versioned_publication(
     envelope: Arc<CanonicalCommitEnvelope>,
     schema_registry: &crate::schema::data::RelationalSchemaRegistry,
     sequence: PublicationSequence,
+    output_positions: Option<crate::history::data::RequiredOutputPublicationPositions>,
 ) -> Result<crate::runtime::PreparedVersionedArtifactPublication, String> {
     let validated = runtime.validate_publication_request(PublicationRequest {
         commit_id,
@@ -243,6 +250,10 @@ fn prepare_versioned_publication(
         &envelope,
         schema_registry,
     )?;
+    let prepared_root = match output_positions {
+        Some(positions) => prepared_root.bind_output_publication_positions(positions),
+        None => prepared_root,
+    };
     let target = crate::branch::RelationalBranchTarget::from_commit_receipt(
         runtime.publication_runtime_instance_id(),
         &commit_reference,
@@ -292,6 +303,7 @@ impl RelationalPreparationPublicationAuthority<'_> {
         published_partition_delta: crate::storage::RelationalPublishedPartitionDelta,
         envelope: Arc<CanonicalCommitEnvelope>,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
+        output_positions: Option<crate::history::data::RequiredOutputPublicationPositions>,
     ) -> Result<PreparedRelationalPublication, String> {
         let publication = prepare_versioned_publication(
             self.runtime,
@@ -303,6 +315,7 @@ impl RelationalPreparationPublicationAuthority<'_> {
             envelope,
             schema_registry,
             PublicationSequence::Truth,
+            output_positions,
         )?;
         Ok(PreparedRelationalPublication { publication })
     }
@@ -356,6 +369,7 @@ impl<'runtime> RelationalPublicationAuthority<'runtime> {
             envelope,
             &schema_registry,
             PublicationSequence::RecoveryTruth,
+            None,
         )?;
         Ok(PreparedRecoveredRelationalPublication {
             publication:

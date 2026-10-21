@@ -241,7 +241,7 @@ fn governance_readback_for(fixture: &CapabilityFixture, estate: EstateCaseId) ->
         .runtime
         .query(queries::estate_governance_context(estate))
         .as_principal(&fixture.authenticate())
-        .controls(BankReadControls::current(request_scope(), 1, 20_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 1).unwrap())
         .execute()
         .expect("governance authority should independently observe current graph truth")
 }

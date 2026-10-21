@@ -6,6 +6,8 @@ use worth_foundational::facade::{
 };
 
 use super::contracts::ProjectionAspectScope;
+mod field_observation;
+pub use field_observation::RelationalProjectedFieldObservation;
 
 pub trait EntityRecordProjection: Sized {
     const KIND: KindId;

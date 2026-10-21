@@ -4,6 +4,7 @@ use worth_runtime_bridge::facade::BridgeManagedExecutionStepContract;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedStepContractDenialKind {
     AtomicExecutionUnsupported,
+    QueueOnlyExecutionUnsupported,
     SafePointFamilyMismatch,
     WorkLimitExceeded,
     QueueDepthExceeded,
@@ -60,13 +61,19 @@ fn validate_step_contract(
     installed: &WorthQueryInstalledBoundedStepContract,
     bridge: &BridgeManagedExecutionStepContract,
 ) -> Result<(), WorthQueryManagedStepContractDenial> {
+    let limits = bridge
+        .step_limits()
+        .ok_or(WorthQueryManagedStepContractDenial {
+            kind: WorthQueryManagedStepContractDenialKind::QueueOnlyExecutionUnsupported,
+            detail: "live queue custody does not grant a managed provider step",
+        })?;
     require(
         installed.safe_point_family().as_str() == bridge.safe_point_family(),
         WorthQueryManagedStepContractDenialKind::SafePointFamilyMismatch,
         "installed provider safe-point family differs from the running Bridge basis",
     )?;
     require(
-        installed.max_work_units_per_step() <= bridge.max_work_units_per_step(),
+        installed.max_work_units_per_step() <= limits.max_work_units_per_step(),
         WorthQueryManagedStepContractDenialKind::WorkLimitExceeded,
         "installed provider work limit exceeds the running Bridge basis",
     )?;
@@ -76,17 +83,17 @@ fn validate_step_contract(
         "installed provider queue depth exceeds the running Bridge basis",
     )?;
     require(
-        installed.chunk_width_ceiling() <= bridge.chunk_width_ceiling(),
+        installed.chunk_width_ceiling() <= limits.chunk_width_ceiling(),
         WorthQueryManagedStepContractDenialKind::ChunkWidthExceeded,
         "installed provider chunk width exceeds the running Bridge basis",
     )?;
     require(
-        installed.scratch_bytes_ceiling() <= bridge.scratch_bytes_ceiling(),
+        installed.scratch_bytes_ceiling() <= limits.scratch_bytes_ceiling(),
         WorthQueryManagedStepContractDenialKind::ScratchBytesExceeded,
         "installed provider scratch ceiling exceeds the running Bridge basis",
     )?;
     require(
-        installed.retained_bytes_ceiling() <= bridge.retained_bytes_ceiling(),
+        installed.retained_bytes_ceiling() <= limits.retained_bytes_ceiling(),
         WorthQueryManagedStepContractDenialKind::RetainedBytesExceeded,
         "installed provider retained-memory ceiling exceeds the running Bridge basis",
     )?;

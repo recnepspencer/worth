@@ -50,7 +50,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn j
             .advance(&world.application, &request)
             .expect("first program advances")
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Pending
+            | WorthQueryDiscoveredProgramOutputProgress::Progressed => None,
             WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });
@@ -100,7 +101,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn j
             .advance(&world.application, &request)
             .expect("later program advances")
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Pending
+            | WorthQueryDiscoveredProgramOutputProgress::Progressed => None,
             WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });

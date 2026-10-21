@@ -150,9 +150,10 @@ where
         .reserve_product_unpublished(owner.owner_identity())
     {
         Ok(slot) => Ok(slot),
-        Err(RecoveryCatalogDenial::CapacityExhausted { .. }) => {
-            Err(NoEffectCause::CapacityExhausted)
-        }
+        Err(
+            RecoveryCatalogDenial::CapacityExhausted { .. }
+            | RecoveryCatalogDenial::ArithmeticOverflow,
+        ) => Err(NoEffectCause::CapacityExhausted),
         Err(RecoveryCatalogDenial::ForeignOwner { .. }) => Err(NoEffectCause::OwnerUnavailable),
     }
 }

@@ -50,17 +50,8 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
     take_decisions("diamond-join");
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    let application = support::install_program_with_seed::<program::ChainProgram>(
-        None,
-        profile,
-        4096,
-        128 * 1024 * 1024,
-        profile
-            .limits()
-            .source_currentness_work()
-            .map(|work| u64::try_from(work).unwrap()),
-        seed,
-    );
+    let application =
+        support::install_program_with_seed::<program::ChainProgram>(None, profile, 4096, seed);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut left = request
@@ -186,7 +177,7 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
         match join.advance(&request) {
             Ok(WorthQueryApplicationOutputDemandProgress::Settled(settled)) => settled,
             Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Superseded)
-            | Ok(WorthQueryApplicationOutputDemandProgress::Pending) => {
+            | Ok(WorthQueryApplicationOutputDemandProgress::Pending | WorthQueryApplicationOutputDemandProgress::Progressed) => {
                 settled_in_one_advance!(join, request, "the held child retry")
             }
             Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))

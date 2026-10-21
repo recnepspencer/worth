@@ -14,10 +14,6 @@ use super::*;
 const ENTRIES: usize = 32;
 const NUMBERS: usize = ENTRIES + 8;
 const REGIONS: u32 = 4;
-pub(in super::super) const OBSERVATION_SETS: usize = LARGEST_SET;
-/// The work of a heavy entry. One fits the declared work beside every other
-/// entry; a second does not, so the run stops at the work ceiling in the
-/// later of their regions.
 /// The sets an ordinate names, the even one first.
 pub(in super::super) const SETS: [&str; 2] = ["even", "odd"];
 
@@ -94,6 +90,7 @@ pub(in super::super) const KINDS: [Kind; 20] = [
 ];
 
 pub(in super::super) struct Lcg(pub(in super::super) u64);
+mod group_move;
 mod values;
 
 #[derive(Clone, Copy)]
@@ -142,24 +139,6 @@ impl Model {
         Self::bounded(rng, ENTRIES, NUMBERS, TOTALS_WORK)
     }
 
-    pub(in super::super) fn eviction(rng: &mut Lcg, work: usize) -> Self {
-        let mut model = Self::bounded(rng, 8, 16, work);
-        for entry in model.entries.iter_mut().flatten() {
-            entry.work = 1;
-            entry.incoming = false;
-        }
-        model.heavy = work as u64 + 1;
-        model
-    }
-
-    pub(in super::super) fn observation(rng: &mut Lcg, work: usize) -> Self {
-        let mut model = Self::bounded(rng, 1, 5, work);
-        model.entries[0].as_mut().unwrap().work = 1;
-        // A ceiling edit costs more than the declared budget on its own.
-        model.heavy = work as u64 + 1;
-        model
-    }
-
     pub(in super::super) fn bounded(
         rng: &mut Lcg,
         count: usize,
@@ -187,47 +166,6 @@ impl Model {
             odd: false,
             ceiling: None,
         }
-    }
-
-    pub(in super::super) fn observation_ceiling(&mut self, exhausted: bool, work: usize) -> Step {
-        let number = self.held(false)[0];
-        let mut changes = Vec::new();
-        if exhausted {
-            for entry in self.held(false).into_iter().filter(|e| *e != number) {
-                changes.push(self.deleted(entry));
-            }
-            self.ceiling = Some(number);
-        }
-        let units = if exhausted { work as u64 + 1 } else { 1 };
-        let mut entry = self.entries[number].unwrap();
-        entry.work = units;
-        self.next_binding += 1;
-        entry.binding = self.next_binding;
-        changes.push(self.deleted(number));
-        self.entries[number] = Some(entry);
-        let mut sets = SETS.iter().map(|s| s.to_string()).collect::<Vec<_>>();
-        if entry.incoming {
-            sets.extend((0..OBSERVATION_SETS).map(|i| format!("incoming-{i}")));
-        }
-        let names = sets.iter().map(String::as_str).collect::<Vec<_>>();
-        changes.push(Change::Entry(EntryEdit::create(
-            &names,
-            number as u64,
-            entry.region,
-            entry.value.to_bits(),
-            units,
-        )));
-        Step {
-            changes,
-            own_write: None,
-        }
-    }
-
-    pub(in super::super) fn heavy_number(&self) -> usize {
-        self.entries
-            .iter()
-            .position(|entry| entry.is_some_and(|entry| entry.incoming))
-            .unwrap()
     }
 
     fn set(&self) -> &'static str {

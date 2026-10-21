@@ -1,3 +1,6 @@
+#[path = "work_ceiling/retained_run.rs"]
+mod retained_run;
+
 use std::{
     num::NonZeroUsize,
     panic::{catch_unwind, AssertUnwindSafe},
@@ -118,11 +121,7 @@ fn a_declared_ceiling_decides_the_canonical_exhaustion_boundary_without_a_lease(
 
 #[test]
 fn the_narrower_of_the_lease_and_the_declared_ceiling_binds() {
-    let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
-        max_workers: NonZeroUsize::new(2).unwrap(),
-        charged_memory_bytes: Some(1 << 20),
-    })
-    .unwrap();
+    let authority = authority();
     let lease = |work| {
         authority
             .request_lease(LeaseRequest {
@@ -207,4 +206,15 @@ fn a_serial_request_past_its_deadline_refuses_before_the_computation() {
         ran.unwrap_err(),
         WorkCeilingDenial::Stopped(MapKernelStop::DeadlineElapsed)
     );
+}
+
+fn authority() -> &'static ExecutionAuthority {
+    static OWNER: std::sync::OnceLock<ExecutionAuthority> = std::sync::OnceLock::new();
+    OWNER.get_or_init(|| {
+        ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
+            max_workers: NonZeroUsize::new(2).unwrap(),
+            charged_memory_bytes: Some(1 << 20),
+        })
+        .unwrap()
+    })
 }

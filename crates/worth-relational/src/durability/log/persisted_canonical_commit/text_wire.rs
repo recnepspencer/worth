@@ -1,10 +1,11 @@
 //! Execution-taking input for the current native canonical entry.
 use serde::Deserialize;
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct CanonicalCommitWire<'a> {
     canonical_protocol_version: u16,
     position: crate::publication::patch::data::PatchStreamPosition,
-    #[serde(borrow, rename = "canonical_v4")]
+    #[serde(borrow, rename = "canonical_v5")]
     canonical: crate::history::data::CanonicalEnvelopeWire<'a>,
 }
 impl CanonicalCommitWire<'_> {
@@ -13,10 +14,10 @@ impl CanonicalCommitWire<'_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<super::PersistedCanonicalCommit, crate::durability::data::RelationalRecoveryStop>
     {
-        if self.canonical_protocol_version != 4 {
+        if self.canonical_protocol_version != super::CANONICAL_PROTOCOL_VERSION {
             return Err(crate::durability::data::DurabilityError::new(
                 crate::durability::data::RecoveryFailureClass::CorruptSegment,
-                "unsupported native canonical protocol; managed text requires v4",
+                "unsupported native canonical protocol; managed text requires v5",
             )
             .into());
         }
@@ -25,7 +26,7 @@ impl CanonicalCommitWire<'_> {
             .readmit(execution)
             .map_err(crate::symbols::data::field_text_recovery_stop)?;
         Ok(super::PersistedCanonicalCommit {
-            canonical_protocol_version: 4,
+            canonical_protocol_version: super::CANONICAL_PROTOCOL_VERSION,
             position: self.position,
             canonical,
         })

@@ -1,8 +1,6 @@
 //! Signing admits and retains exact current membership before authentication, including absence.
 use super::super::signed_creation::WorthQuerySignedCreationPreparationDenial as SigningDenial;
-use super::super::{
-    WorthQueryApplicationAttemptDenial as Attempt, WorthQueryApplicationEffectProgram,
-};
+use super::super::WorthQueryApplicationEffectProgram;
 use super::{observation, Denial, Kind, QueryRequestExecution};
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn capture_signing<
@@ -57,20 +55,9 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn capture
             },
         )));
     }
-    let facts = candidate.read_set.facts;
-    candidate.read_set.facts = super::super::read_set::admit_array(
-        facts.len() + extra.len(),
-        facts.into_iter().chain(extra),
-        request.allocation_policy(),
-        candidate.read_set.admission.operation(),
-        || {
-            candidate
-                .read_set
-                .admission
-                .validate_current_authority()
-                .map_err(Attempt::request_authority_lost)
-        },
-    )
-    .map_err(SigningDenial::Attempt)?;
+    candidate
+        .read_set
+        .append_completed_facts(extra.into_iter(), request.allocation_policy())
+        .map_err(SigningDenial::Attempt)?;
     Ok(candidate)
 }

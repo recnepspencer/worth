@@ -35,7 +35,6 @@ impl Denial {
             Denial::ForeignRelationalRuntime
             | Denial::ForeignProductWorld
             | Denial::OriginalPublicationCommitMismatch
-            | Denial::BranchCoordinationCapacityExhausted
             | Denial::BindingUnavailable
             | Denial::TerminalIndexUnavailable
             | Denial::CorrelationAlreadyOwned

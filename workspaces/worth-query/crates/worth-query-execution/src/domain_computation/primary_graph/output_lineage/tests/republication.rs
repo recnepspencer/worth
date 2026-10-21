@@ -4,40 +4,44 @@ use crate::domain_computation::primary_graph::output_binding_identity::OutputBin
 
 use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, Mutex, OnceLock},
-};
+use std::collections::BTreeMap;
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::OnceLock;
 
-use worth_foundational::facade::{AspectValue, InternedString};
-use worth_relational::facade::{
-    identity::{EntityId, PartitionId},
-    mvcc::CompanionPreflightBudget,
-    runtime::PositionedRelationalSnapshot,
-    transactions::{
-        AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
-        WorkerIntentBatch,
-    },
-};
+use worth_foundational::facade::AspectValue;
+use worth_foundational::facade::InternedString;
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::identity::PartitionId;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::transactions::AspectFieldPatch;
+use worth_relational::facade::transactions::EntityMutationIntent;
+use worth_relational::facade::transactions::MutationIntent;
+use worth_relational::facade::transactions::UpdateEntityFieldsIntent;
+use worth_relational::facade::transactions::WorkerIntentBatch;
 use worth_runtime_world::facade::ProductBranchObservation;
 
-use super::{checkpoint_identity, RestoredOutputBinding};
-use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryCheckpointOutputRole,
-    invariant_projection::ConsumedOutputEvidence,
-    output_lineage::{
-        invalidation::InvalidationEditAdmission, ProductCoordinate, RecordedOutput,
-        RecordedOutputMutable, RecordedSettlementIdentity, SealedNativeOutputWitness,
-        SemanticSource, SourceInvalidationOwner, WorthQueryApplicationOutputCorrespondence,
-        WorthQueryApplicationOutputLineage,
-    },
-    tests::fixture::{
-        installed_authorization_world, live_scope, publish_relational_mutation, AccountLabel,
-        AccountStatus,
-    },
-    WorthQueryApplicationObservedFact as Fact, WorthQueryApplicationOutputPosture,
-    WorthQueryPrincipalResolutionMode,
-};
+use super::checkpoint_identity;
+use super::RestoredOutputBinding;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::output_lineage::RecordedOutput;
+use crate::domain_computation::primary_graph::output_lineage::RecordedOutputMutable;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
+use crate::domain_computation::primary_graph::output_lineage::SemanticSource;
+use crate::domain_computation::primary_graph::output_lineage::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputCorrespondence;
+use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
+use crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world;
+use crate::domain_computation::primary_graph::tests::fixture::live_scope;
+use crate::domain_computation::primary_graph::tests::fixture::publish_relational_mutation;
+use crate::domain_computation::primary_graph::tests::fixture::AccountLabel;
+use crate::domain_computation::primary_graph::tests::fixture::AccountStatus;
+use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 
 mod absence;
 mod records;
@@ -159,17 +163,13 @@ std::iter::empty(),
                     .unwrap(),
             });
         }
-        let seal = || {
-            SealedNativeOutputWitness::from_checkpoint_facts(
-                &correspondence,
-                layout,
-                &native,
-                owner,
-                &mut owner.edit_admission(),
-            )
+let seal = || {
+            SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &native)
             .unwrap()
             .expect("the installed output's native facts seal a witness")
         };
+
+
         let read_basis = truth.positioned_snapshot(&snapshot).unwrap();
         let sealed = (seal(), seal(), read_basis);
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
@@ -226,9 +226,9 @@ impl Stage<'_> {
         let slot = records.len();
         let cell = Arc::new(OnceLock::new());
         let recorded = record(RecordedOutput {
+            required_publication: None,
             native_prior_checkpoint: None,
             performed_origin: None,
-            _retained_capacity: None,
             consumed_outputs: Arc::from([]),
             completed_handler_facts: None,
             completed_decision_reuse: None,
@@ -270,21 +270,8 @@ impl Stage<'_> {
         suspended_generation: u64,
         facts: &Arc<[Fact]>,
         witness: &Witness,
-        admission: &mut InvalidationEditAdmission,
     ) -> Option<Option<Continued>> {
-        let republished = self.lineage.prepare_republication(
-            self.lineage.binding_type(&self.source.output_binding),
-            self.source.runtime_authority,
-            &self.source.schema,
-            self.source.scope,
-            self.observation.lifecycle_incarnation(),
-            suspended_generation,
-            PARTITION,
-            &self.correspondence,
-            &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::clone(facts)),
-            Arc::clone(witness),
-            admission,
-        )?;
+        let republished = self.lineage.prepare_republication(self.lineage.binding_type(&self.source.output_binding), self.source.runtime_authority, &self.source.schema, self.source.scope, self.observation.lifecycle_incarnation(), suspended_generation, PARTITION, &self.correspondence, &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::clone(facts)), Arc::clone(witness), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None))?;
         let record = self.lineage.record_republished_restoration(
             self.lineage.binding_type(&self.source.output_binding),
             self.source.runtime_authority,
@@ -332,11 +319,4 @@ fn source_entity(slot: u64) -> Fact {
 
 fn selects(fact: &Fact, slot: u64) -> bool {
     matches!(fact, Fact::SourceEntity { entity_id } if *entity_id == entity(slot))
-}
-
-fn admission(work: u64) -> InvalidationEditAdmission {
-    InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(work),
-        maximum_preparation_bytes: None,
-    })
 }

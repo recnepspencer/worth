@@ -126,7 +126,7 @@ fn cutoff_journey(
             assert_pending(owner, &live, &consumer, &b);
             if matches!(successor, Successor::Equal) {
                 assert!(matches!(owner.consumed_output_currentness(
-                    &live, &b, &mut owner.edit_admission(),
+                    &live, &b,
                 ).unwrap(),
                     crate::domain_computation::primary_graph::output_lineage::invalidation::ConsumedOutputCurrentness::CanonicallyEqualClean(identity)
                         if identity == b_successor),
@@ -138,7 +138,7 @@ fn cutoff_journey(
                 register(owner, Arc::clone(&consumer), Arc::clone(&prefix), &live, OrdSet::unit(Arc::clone(&a0)));
                 assert_pending(owner, &live, &consumer, &a0);
                 let upstream = owner.consumed_output_currentness(
-                    &live, &a0, &mut owner.edit_admission(),
+                    &live, &a0,
                 ).unwrap();
                 use crate::domain_computation::primary_graph::output_lineage::invalidation::ConsumedOutputCurrentness;
                 match successor {
@@ -152,30 +152,26 @@ fn cutoff_journey(
             }
             let candidate = candidate(record, Arc::clone(&consumer), Arc::clone(&prefix));
             let context = context();
-            let mut admission = owner.edit_admission();
-            let basis = PreparedInputCutoffBasis::prepare(runtime, &live_handle, &mut admission).unwrap();
-            let mut currentness = owner.edit_admission();
-            let available = currentness.charged_work();
-            let result = candidate.clone().verify_for_reuse(
+
+let basis = PreparedInputCutoffBasis::prepare(runtime, &live_handle).unwrap();
+
+let result = candidate.clone().verify_for_reuse(
                 request_execution, candidate.prepared_input_key().unwrap().continued_by_republication(), context, None,
-                runtime, &basis, owner, &mut admission, &mut currentness,
+                runtime, &basis, owner,
             );
             if matches!(successor, Successor::Equal) {
                 assert!(matches!(result, Ok(InputCutoffDecision::Reuse(_))),
                     "the resolved pending edge must reach full verification");
-                let mut expected = owner.edit_admission();
-                let start = expected.charged_work();
-                assert!(ConsumedOutputEvidence::own_evidence_is_current(
-request_execution,                    &prefix, &[], candidate.native_output_witness().unwrap(), runtime, &live_handle, &mut expected,
+
+assert!(ConsumedOutputEvidence::own_evidence_is_current(
+request_execution,                    &prefix, &[], candidate.native_output_witness().unwrap(), runtime, &live_handle,
                 ).unwrap());
                 // Full-prefix verification adds a visit and a native comparison
                 // for every completed handler fact, after the own-evidence check.
                 for fact in prefix.iter() {
-                    expected.charge_external_work(1).unwrap();
-                    assert_eq!(fact.source_currentness_in(runtime, request_execution, &live_handle, &mut expected).unwrap().unwrap().movement(), Movement::Unmoved);
+
+assert_eq!(fact.source_currentness_in(runtime, request_execution, &live_handle).unwrap().unwrap().movement(), Movement::Unmoved);
                 }
-                assert_eq!(currentness.charged_work() - available, expected.charged_work() - start,
-                    "resolved pending marks must still verify the whole handler prefix");
             } else {
                 assert!(matches!(result, Err(InputCutoffVerificationStop::PendingOutput(ref identity)) if identity == &a0),
                     "NoConsequence with a Dirty upstream must remain the exact typed deferral");
@@ -202,6 +198,7 @@ fn register_dependent_alias(
     let prepared = owner
         .prepare_current_stable_settlement(
             SettlementRegistration {
+                computation: None,
                 work_membership: None,
                 identity: Arc::clone(successor),
                 facts: RetainedSourceFacts::for_test(false, Arc::from([])),
@@ -213,7 +210,6 @@ fn register_dependent_alias(
             },
             basis,
             relation,
-            &mut owner.edit_admission(),
         )
         .expect("a clean dependent alias prepares at its actual native basis");
     drop(
@@ -245,9 +241,10 @@ fn candidate(
 ) -> RetainedInputCutoffCandidate {
     let boundary = CompletedHandlerFactBoundary::completed_for_test(prefix.len());
     RetainedInputCutoffCandidate::from_exact_cell(Arc::new(OnceLock::from(RecordedOutput {
+        required_publication: None,
         computation_source: ComputationSourceEvidence::for_test(false),
         native_prior_checkpoint: None,
-        _retained_capacity: None,
+
         performed_origin: None,
         consumed_outputs: Arc::from([]),
         completed_decision_reuse: boundary

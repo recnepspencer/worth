@@ -30,12 +30,11 @@ impl<'runtime, Schema: ApplicationSchema + 'static> RequiredWaveSelection<'runti
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Self, WorthQueryOutputDemandDenial> {
         match self.state {
             SelectionState::Frozen => Ok(self),
             SelectionState::Live(_) => {
-                reselect_required_wave(execution, runtime, LiveSelection(self), admission)
+                reselect_required_wave(execution, runtime, LiveSelection(self))
             }
         }
     }
@@ -45,7 +44,6 @@ impl<'runtime, Schema: ApplicationSchema + 'static> RequiredWaveSelection<'runti
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         _delivery: super::super::super::required_continuations::DeliveredAwaited,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Self, WorthQueryOutputDemandDenial> {
         let head = runtime.output_demands.publication_head_selection(
             self.shared
@@ -53,12 +51,11 @@ impl<'runtime, Schema: ApplicationSchema + 'static> RequiredWaveSelection<'runti
                 .product()
                 .observation()
                 .lifecycle_incarnation(),
-            admission,
         )?;
         match head {
             crate::domain_computation::primary_graph::application_output_demand::PublicationHeadSelection::Frozen => Ok(self),
             crate::domain_computation::primary_graph::application_output_demand::PublicationHeadSelection::Live(_) =>
-                select_required_wave_from_ready(execution, runtime, self.anchor_ready, self.branch, self.target, admission),
+                select_required_wave_from_ready(execution, runtime, self.anchor_ready, self.branch, self.target),
         }
     }
     pub(super) fn from_basis(
@@ -90,14 +87,13 @@ pub(super) fn select_required_wave<'runtime, Schema>(
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     interest: &WorthQueryOutputDemandInterest,
     branch: WorthQueryProductBranch,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<RequiredWaveSelection<'runtime, Schema>>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
 {
     let Some(anchor_ready) = runtime
         .output_demands
-        .interest_ready_readmission(interest, admission)?
+        .interest_ready_readmission(interest)?
     else {
         return Ok(None);
     };
@@ -107,7 +103,6 @@ where
         anchor_ready,
         branch,
         RequiredWaveTarget::Caller,
-        admission,
     )
     .map(Some)
 }
@@ -117,7 +112,6 @@ fn reselect_required_wave<'runtime, Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     previous: LiveSelection<'_, Schema>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<RequiredWaveSelection<'runtime, Schema>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
@@ -131,7 +125,7 @@ where
         state: _,
     } = previous.0;
     drop((shared, positioned));
-    select_required_wave_from_ready(execution, runtime, anchor_ready, branch, target, admission)
+    select_required_wave_from_ready(execution, runtime, anchor_ready, branch, target)
 }
 
 fn select_required_wave_from_ready<'runtime, Schema>(
@@ -140,19 +134,17 @@ fn select_required_wave_from_ready<'runtime, Schema>(
     anchor_ready: SelectedReadyReadmission,
     branch: WorthQueryProductBranch,
     target: RequiredWaveTarget,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<RequiredWaveSelection<'runtime, Schema>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
 {
-    let (shared, positioned) = select_required_basis(execution, runtime, branch, admission)?;
+    let (shared, positioned) = select_required_basis(execution, runtime, branch)?;
     let head = runtime.output_demands.publication_head_selection(
         shared
             .selected()
             .product()
             .observation()
             .lifecycle_incarnation(),
-        admission,
     )?;
     Ok(RequiredWaveSelection::from_basis(
         shared,
@@ -169,7 +161,6 @@ pub(super) fn select_required_basis<'runtime, Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     branch: WorthQueryProductBranch,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<
     (
         SharedSelectedProductOperation<'runtime, Schema>,
@@ -200,12 +191,7 @@ where
         .primary_provider
         .graph
         .with_runtime(execution, |native| {
-            native
-                .read_truth()
-                .positioned_snapshot_admitted(snapshot, |work, bytes| {
-                    admission.charge_external_work(work)?;
-                    admission.admit_read_scratch(bytes)
-                })
+            native.read_truth().positioned_snapshot(snapshot)
         })
         .map_err(position_denial)?;
     runtime.output_demands.observe_selected_discontinuity(
@@ -216,10 +202,9 @@ where
             .graph
             .source_owner
             .invalidation_owner,
-        admission,
     )?;
     let shared = selected
-        .prepare_shared_query_basis(admission)
+        .prepare_shared_query_basis()
         .map_err(|(_, stop)| admission_denial(stop))?;
     Ok((shared, positioned))
 }
@@ -227,11 +212,7 @@ where
 /// A committed Ready moved the wave past its selected position.
 pub(super) fn committed_ready(
     ready: &SelectedReadyReadmission,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, WorthQueryOutputDemandDenial> {
-    admission
-        .charge_external_work(2)
-        .map_err(|_| work_denial())?;
     Ok(matches!(
         &ready.completion().authority,
         crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority::Committed(_)

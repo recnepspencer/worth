@@ -107,22 +107,8 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
             &before,
             OrdSet::unit(Arc::clone(&a)),
         );
-        let a_evidence = ConsumedOutputEvidence::retained_for_test(
-            owner,
-            Arc::clone(&a),
-            a_facts,
-            vec![],
-            None,
-            Arc::new(before.clone()),
-        );
-        let b_evidence = ConsumedOutputEvidence::retained_for_test(
-            owner,
-            Arc::clone(&b),
-            Arc::from([own_fact]),
-            vec![a_evidence],
-            None,
-            Arc::new(before.clone()),
-        );
+        let a_evidence = ConsumedOutputEvidence::retained_for_test(Arc::clone(&a), a_facts, vec![], None, Arc::new(before.clone()));
+        let b_evidence = ConsumedOutputEvidence::retained_for_test(Arc::clone(&b), Arc::from([own_fact]), vec![a_evidence], None, Arc::new(before.clone()));
         // The original native output expectations are sealed from authentic
         // installed aspects, never from the later output head.
         let truth = runtime.read_truth();
@@ -141,37 +127,31 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
                     .unwrap(),
             });
         }
-        let witness = SealedNativeOutputWitness::from_checkpoint_facts(
-            &correspondence,
-            layout,
-            &output_facts,
-            owner,
-            &mut owner.edit_admission(),
-        )
+let witness = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &output_facts)
         .unwrap()
         .unwrap();
+
+
         write_field(&host_custody.borrowed_request_for_test(), runtime, entity, status, "closed");
         let (pending_handle, pending) = snapshot(runtime);
         assert!(matches!(
             owner
-                .currentness(&pending, &b, &mut owner.edit_admission())
+                .currentness(&pending, &b)
                 .unwrap(),
             SourceSettlementCurrentness::PendingUpstream(_)
         ));
-        let mut work = owner.edit_admission();
+
         assert_eq!(
             ConsumedOutputEvidence::verify_many_with_admission(&host_custody.borrowed_request_for_test(),
                 std::slice::from_ref(&b_evidence),
                 owner,
                 runtime,
                 &pending_handle,
-                &pending,
-                &mut work
-            ),
+                &pending),
             Err(ConsumedOutputVerificationStop::PendingUpstream),
             "unchanged own facts cannot certify pending upstream"
         );
-        let mut work = owner.edit_admission();
+
         assert_eq!(
             ConsumedOutputEvidence::verify_at_observation(&host_custody.borrowed_request_for_test(),
                 &b,
@@ -182,24 +162,20 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
                 owner,
                 runtime,
                 &pending_handle,
-                &pending,
-                &mut work
-            ),
+                &pending),
             Ok(ConsumedOutputVerification::ChangedUpstream),
             "the original output witness conclusively rejects the changed output"
         );
         write_field(&host_custody.borrowed_request_for_test(), runtime, entity, label, "changed-own-field");
         let (changed_handle, changed) = snapshot(runtime);
-        let mut work = owner.edit_admission();
+
         assert_eq!(
             ConsumedOutputEvidence::verify_many_with_admission(&host_custody.borrowed_request_for_test(),
                 std::slice::from_ref(&b_evidence),
                 owner,
                 runtime,
                 &changed_handle,
-                &changed,
-                &mut work
-            ),
+                &changed),
             Ok(ConsumedOutputVerification::ChangedDirectFact(0))
         );
         for snapshot in [before_handle, pending_handle, changed_handle] {

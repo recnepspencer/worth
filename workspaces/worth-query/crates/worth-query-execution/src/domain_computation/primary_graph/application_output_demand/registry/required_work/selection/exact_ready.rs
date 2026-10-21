@@ -5,11 +5,7 @@ use super::*;
 impl SelectedReadyReadmission {
     pub(in crate::domain_computation::primary_graph) fn retain(
         &self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Self, WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work((std::mem::size_of::<Self>() + 3) as u64)
-            .map_err(|_| work_denial())?;
         Ok(Self {
             completion: self.completion.clone(),
             readmission: Arc::clone(&self.readmission),
@@ -50,11 +46,7 @@ impl SelectedReadyReadmission {
     pub(in crate::domain_computation::primary_graph) fn same_record(
         &self,
         other: &Self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work(1)
-            .map_err(|_| work_denial())?;
         Ok(Arc::ptr_eq(&self.membership, &other.membership))
     }
 
@@ -63,16 +55,7 @@ impl SelectedReadyReadmission {
     pub(in crate::domain_computation::primary_graph) fn matches_interest(
         &self,
         interest: &super::super::super::WorthQueryOutputDemandInterest,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        let comparison_work = self
-            .membership
-            .key
-            .comparison_work()
-            .ok_or_else(work_denial)?;
-        admission
-            .charge_external_work(u64::try_from(comparison_work).map_err(|_| work_denial())?)
-            .map_err(|_| work_denial())?;
         Ok(self.membership.key.as_ref() == &interest.key)
     }
 
@@ -108,11 +91,7 @@ impl SelectedReadyReadmission {
     pub(in crate::domain_computation::primary_graph) fn same_ready_cell(
         &self,
         other: &Self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work(3)
-            .map_err(|_| work_denial())?;
         Ok(Arc::ptr_eq(&self.membership, &other.membership)
             && Arc::ptr_eq(&self.readmission, &other.readmission)
             && self.completion.same_cell(&other.completion))

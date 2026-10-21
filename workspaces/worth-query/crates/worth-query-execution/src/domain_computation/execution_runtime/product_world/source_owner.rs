@@ -1,10 +1,11 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use worth_relational::facade::runtime::RelationalRuntime;
-use worth_runtime_bridge::facade::{
-    RelationalBridgeBranchHeadLease, RelationalBridgeCanonicalSubscription,
-    RelationalBridgeSourceConfigurationError, RuntimeBridgeRelationalSource,
-};
+use worth_runtime_bridge::facade::RelationalBridgeBranchHeadLease;
+use worth_runtime_bridge::facade::RelationalBridgeCanonicalSubscription;
+use worth_runtime_bridge::facade::RelationalBridgeSourceConfigurationError;
+use worth_runtime_bridge::facade::RuntimeBridgeRelationalSource;
 
 #[derive(Debug)]
 pub enum WorthQueryRelationalSourceInstallationDenial {
@@ -54,17 +55,11 @@ impl WorthQueryRelationalSourceOwner {
                 runtime_instance_id,
             ),
         );
-        invalidation_owner
-            .admit_publication_fallback()
-            .map_err(WorthQueryRelationalSourceInstallationDenial::CompanionPreparation)?;
         let pending = source
             .begin_canonical_envelope_subscription()
             .map_err(WorthQueryRelationalSourceInstallationDenial::CompanionRegistration)?;
         let subscription = pending
-            .activate(
-                invalidation_owner.clone(),
-                invalidation_resources.preflight_budget(),
-            )
+            .activate(invalidation_owner.clone())
             .map_err(WorthQueryRelationalSourceInstallationDenial::CompanionRegistration)?;
         #[cfg(test)]
         let read_acquisitions = Arc::new(std::sync::atomic::AtomicU64::new(0));
@@ -119,7 +114,6 @@ impl WorthQueryRelationalSourceOwner {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch: &worth_relational::facade::history::BranchId,
-        admission: &mut crate::domain_computation::primary_graph::InvalidationEditAdmission,
     ) -> Result<
         (),
         crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop,
@@ -128,7 +122,7 @@ impl WorthQueryRelationalSourceOwner {
             let identity = runtime.branch_identity(branch).map_err(|_|
                 crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop::Native(
                     worth_relational::facade::mvcc::PublicationCompanionRegistrationStop::HeadUnavailable))?;
-            self.invalidation_owner.mint_cell_at_head(&self.canonical_subscription, runtime, &identity, admission)
+            self.invalidation_owner.mint_cell_at_head(&self.canonical_subscription, runtime, &identity)
         })
     }
 

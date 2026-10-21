@@ -8,7 +8,11 @@ use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 
 mod admission_stop;
 mod admitted;
+mod preparation_context;
 pub use admission_stop::WorthQueryCanonicalIdentityStop;
+pub use preparation_context::{
+    WorthQueryCanonicalIdentityPreparationContext, WorthQueryCanonicalIdentityPreparationStage,
+};
 
 pub(crate) struct WorthQueryCanonicalIdentityBasis {
     domain: CanonicalBasisDomain,

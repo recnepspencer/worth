@@ -53,12 +53,11 @@ fn assert_publication_credit(replay: bool, publish: bool) {
                     .execution_request_for(&world.application.product_runtime)
                     .unwrap();
                 let runtime = &world.application;
-                let mut admission = runtime.demand_request_admission();
+
                 let (shared, positioned) = super::super::super::selection::select_required_basis(
                     &execution,
                     runtime,
                     runtime.current_world(),
-                    &mut admission,
                 )
                 .unwrap();
                 let input = SelectedDecisionInput {
@@ -103,13 +102,10 @@ fn assert_publication_credit(replay: bool, publish: bool) {
                         &a,
                         source.clone(),
                         &DecisionInput::Selected(&input),
-                        &mut admission,
                     )
                     .unwrap_or_else(|_| panic!("A's first preparation is admitted"))
                     .unwrap();
-                let permission = record
-                    .attach_successor(permission, &a, &mut admission)
-                    .unwrap();
+                let permission = record.attach_successor(permission, &a).unwrap();
                 if publish {
                     let outcome = if replay {
                         WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt)
@@ -121,13 +117,10 @@ fn assert_publication_credit(replay: bool, publish: bool) {
                     record.publication(permission, publication, |member| member.performed());
                 }
                 assert!(
-                    record
-                        .reinspection(&a, inspected, &mut admission)
-                        .unwrap()
-                        .is_none(),
+                    record.reinspection(&a, inspected).unwrap().is_none(),
                     "a member's own publication pays for no retry"
                 );
-                let credit = record.reinspection(&m, inspected, &mut admission).unwrap();
+                let credit = record.reinspection(&m, inspected).unwrap();
                 assert_eq!(
                     credit.is_some(),
                     publish && !replay,
@@ -139,9 +132,7 @@ fn assert_publication_credit(replay: bool, publish: bool) {
                     publish && !replay
                 );
                 let inspected_again = record.inspection();
-                let credit = record
-                    .reinspection(&m, inspected_again, &mut admission)
-                    .unwrap();
+                let credit = record.reinspection(&m, inspected_again).unwrap();
                 assert!(
                     credit.is_none(),
                     "one publication cannot pay for two inspections"

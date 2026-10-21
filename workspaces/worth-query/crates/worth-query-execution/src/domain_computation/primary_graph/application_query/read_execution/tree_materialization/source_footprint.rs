@@ -4,7 +4,7 @@ use worth_relational::facade::runtime::{
     AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection, VisibilityProjectionView,
 };
 
-use super::{allocate_claimed_result_vector, projection_denial, ResultTreeWork};
+use super::{allocate_result_vector, projection_denial, ResultTreeWork};
 use crate::domain_computation::primary_graph::application_query::{
     disclosure::WorthQueryApplicationQueryGovernance,
     observed_source::{
@@ -13,7 +13,6 @@ use crate::domain_computation::primary_graph::application_query::{
     },
     projection::WorthQueryApplicationProjectionNode,
     read_execution::WorthQueryApplicationReadExecutionDenial,
-    resource_lifecycle::WorthQueryApplicationResultBufferReservation,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
@@ -27,31 +26,15 @@ pub(super) fn collect_source_footprints(
     selected_predicate_source: Option<&WorthQueryObservedFieldRevision>,
     root_path_source: Option<&std::collections::BTreeMap<worth_relational::facade::identity::EntityId, std::sync::Arc<crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection>>>,
     work: &mut ResultTreeWork,
-    result_buffer: &mut WorthQueryApplicationResultBufferReservation,
 ) -> Result<Vec<WorthQueryObservedSourceFootprint>, WorthQueryApplicationReadExecutionDenial> {
-    let mut footprints = allocate_claimed_result_vector(result_buffer, roots.len(), "source")?;
+    let mut footprints = allocate_result_vector(roots.len(), "source")?;
     for root in roots {
-        let counts = footprint_counts(contract, governance, root, work)?;
         let mut footprint = WorthQueryObservedSourceFootprint {
             root: root.entity_id(),
             complete: true,
-            entities: allocate_claimed_result_vector(
-                result_buffer,
-                counts.entities,
-                root.result_path(),
-            )?,
-            aspects: allocate_claimed_result_vector(
-                result_buffer,
-                counts
-                    .fields
-                    .saturating_add(usize::from(selected_predicate_source.is_some())),
-                root.result_path(),
-            )?,
-            adjacencies: allocate_claimed_result_vector(
-                result_buffer,
-                counts.relations,
-                root.result_path(),
-            )?,
+            entities: Vec::new(),
+            aspects: Vec::new(),
+            adjacencies: Vec::new(),
             root_selection: root_path_source
                 .map(|sources| {
                     sources
@@ -69,7 +52,6 @@ pub(super) fn collect_source_footprints(
             governance,
             root,
             work,
-            result_buffer,
             &mut footprint,
         )?;
         if let Some(source) = selected_predicate_source {
@@ -86,25 +68,21 @@ pub(super) fn collect_source_footprints(
                 }
                 Some(_) => {}
                 None => {
-                    result_buffer
-                        .claim(source.owned_capacity_bytes())
-                        .map_err(|()| super::result_buffer_denial(root.result_path()))?;
                     footprint.aspects.push(source.clone());
                     work.charge_source_observation(1, root.result_path())?;
                 }
             }
         }
         work.checkpoint(root.result_path())?;
-        let released_bytes = normalize_source_footprint(&mut footprint);
+        normalize_source_footprint(&mut footprint);
         work.checkpoint(root.result_path())?;
-        result_buffer.release_temporary(released_bytes);
+
         footprints.push(footprint);
     }
     Ok(footprints)
 }
 
-fn normalize_source_footprint(footprint: &mut WorthQueryObservedSourceFootprint) -> usize {
-    let retained_before = footprint.retained_bytes();
+fn normalize_source_footprint(footprint: &mut WorthQueryObservedSourceFootprint) {
     footprint.aspects.sort_by(|left, right| {
         (left.entity, &left.aspect, &left.field).cmp(&(right.entity, &right.aspect, &right.field))
     });
@@ -119,47 +97,6 @@ fn normalize_source_footprint(footprint: &mut WorthQueryObservedSourceFootprint)
         ))
     });
     footprint.adjacencies.dedup();
-    retained_before
-        .checked_sub(footprint.retained_bytes())
-        .expect("normalizing a source footprint cannot increase retained bytes")
-}
-
-#[derive(Clone, Copy, Default)]
-struct FootprintCounts {
-    entities: usize,
-    fields: usize,
-    relations: usize,
-}
-
-fn footprint_counts(
-    contract: &WorthQueryInstalledGraphReadContract,
-    governance: &WorthQueryApplicationQueryGovernance,
-    node: &WorthQueryApplicationProjectionNode,
-    work: &ResultTreeWork,
-) -> Result<FootprintCounts, WorthQueryApplicationReadExecutionDenial> {
-    work.checkpoint(node.result_path())?;
-    node.relations().iter().try_fold(
-        FootprintCounts {
-            entities: 1,
-            fields: unique_source_aspect_count(contract, governance, node.result_path()),
-            relations: node.relations().len(),
-        },
-        |mut counts, relation| {
-            counts.entities = counts
-                .entities
-                .saturating_add(relation.predicate_sources().len());
-            counts.fields = counts
-                .fields
-                .saturating_add(relation.predicate_sources().len());
-            for child in relation.rows() {
-                let child = footprint_counts(contract, governance, child, work)?;
-                counts.entities = counts.entities.saturating_add(child.entities);
-                counts.fields = counts.fields.saturating_add(child.fields);
-                counts.relations = counts.relations.saturating_add(child.relations);
-            }
-            Ok(counts)
-        },
-    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -171,7 +108,7 @@ fn collect_node(
     governance: &WorthQueryApplicationQueryGovernance,
     node: &WorthQueryApplicationProjectionNode,
     work: &mut ResultTreeWork,
-    result_buffer: &mut WorthQueryApplicationResultBufferReservation,
+
     footprint: &mut WorthQueryObservedSourceFootprint,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
     footprint.complete &= node.source_dependencies_complete();
@@ -198,14 +135,7 @@ fn collect_node(
         let entity_name = field.entity().to_owned();
         let aspect = field.aspect_key().clone();
         let field_key = field.field_key().clone();
-        result_buffer
-            .claim(
-                entity_name
-                    .capacity()
-                    .saturating_add(aspect.owned_allocation_capacity_bytes())
-                    .saturating_add(field_key.owned_allocation_capacity_bytes()),
-            )
-            .map_err(|()| super::result_buffer_denial(field.result_path()))?;
+
         footprint.aspects.push(WorthQueryObservedFieldRevision {
             entity: node.entity_id(),
             entity_name,
@@ -249,7 +179,7 @@ fn collect_node(
                 node.entity_id(),
                 layout.kind,
                 direction,
-                work.remaining_work().map_or(1, |remaining| remaining.min(1)),
+                1,
             )
             .map_err(|unavailable| match unavailable {
                 AdjacencyStructuralRevisionDenial::Execution(cause) => super::super::denial::relational_read_denial(cause, relation.result_path()),
@@ -274,14 +204,7 @@ fn collect_node(
                 let entity_name = relation.child_entity().to_owned();
                 let aspect = predicate.aspect_key().clone();
                 let field = predicate.field_key().clone();
-                result_buffer
-                    .claim(
-                        entity_name
-                            .capacity()
-                            .saturating_add(aspect.owned_allocation_capacity_bytes())
-                            .saturating_add(field.owned_allocation_capacity_bytes()),
-                    )
-                    .map_err(|()| super::result_buffer_denial(relation.result_path()))?;
+
                 footprint.entities.push(*entity_id);
                 footprint.aspects.push(WorthQueryObservedFieldRevision {
                     entity: *entity_id,
@@ -305,8 +228,7 @@ fn collect_node(
             }
         }
         let filtered_relation = relation.predicate().is_some();
-        let mut endpoints = allocate_claimed_result_vector(
-            result_buffer,
+        let mut endpoints = allocate_result_vector(
             if filtered_relation {
                 projected.predicate_sources().len()
             } else {
@@ -336,41 +258,11 @@ fn collect_node(
             });
         for child in projected.rows() {
             collect_node(
-                execution,
-                projection,
-                graph,
-                contract,
-                governance,
-                child,
-                work,
-                result_buffer,
-                footprint,
+                execution, projection, graph, contract, governance, child, work, footprint,
             )?;
         }
     }
     Ok(())
-}
-
-fn unique_source_aspect_count(
-    contract: &WorthQueryInstalledGraphReadContract,
-    governance: &WorthQueryApplicationQueryGovernance,
-    result_path: &str,
-) -> usize {
-    contract
-        .projections()
-        .iter()
-        .enumerate()
-        .filter(|(index, field)| {
-            field.parent_path() == result_path
-                && governance.is_disclosed(field.slot_key_identity().as_ref())
-                && !contract.projections()[..*index].iter().any(|earlier| {
-                    earlier.parent_path() == result_path
-                        && governance.is_disclosed(earlier.slot_key_identity().as_ref())
-                        && earlier.aspect_key() == field.aspect_key()
-                        && earlier.field_key() == field.field_key()
-                })
-        })
-        .count()
 }
 
 #[cfg(test)]

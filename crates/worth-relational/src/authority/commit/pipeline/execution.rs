@@ -12,8 +12,9 @@ use crate::transactions::data::{CommitResult, TransactionCommitError};
 pub(crate) fn prepare_consulted_authoritative_commit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    context: AuthoritativeCommitContext,
+    mut context: AuthoritativeCommitContext,
 ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+    let required_output_publication = context.required_output_publication.take();
     let allocation_policy = execution.allocation_policy();
     let scope_control = crate::validation::engine::InvariantPreparationControl::for_transaction(
         &context.validation_input,
@@ -41,6 +42,9 @@ pub(crate) fn prepare_consulted_authoritative_commit(
         return Err(TransactionCommitError::interrupted(interruption));
     }
     require_parent_publication_settled(runtime, &expected_root)?;
+    if let Some(admission) = &required_output_publication {
+        admission.validate_before_preparation(execution, context.validation_input.basis())?;
+    }
     let publication_cell = runtime
         .history
         .branch_cell(&branch_id)
@@ -56,7 +60,12 @@ pub(crate) fn prepare_consulted_authoritative_commit(
     let snapshot_validated =
         validate_snapshot_publication(execution, runtime, history_bound, &scope_control)?;
     let assembled = assemble_commit_artifacts(execution, runtime, snapshot_validated)?;
-    let mut prepared = prepare_commit_publication_execution(execution, runtime, assembled)?;
+    let mut prepared = prepare_commit_publication_execution(
+        execution,
+        runtime,
+        assembled,
+        required_output_publication,
+    )?;
     prepared.append_diagnostics(diagnostic_capture.finish());
     if let Some(interruption) =
         control.observe(crate::mvcc::RelationalInterruptionBoundary::CandidatePreparation)
@@ -65,16 +74,21 @@ pub(crate) fn prepare_consulted_authoritative_commit(
         return Err(TransactionCommitError::interrupted(interruption));
     }
     super::consult_stage(execution, super::CommitStage::CandidateRegistration)?;
-    let published_snapshot_slot =
-        runtime
-            .reserve_published_snapshot_slot()
-            .map_err(|maximum_handles| {
+    let published_snapshot_slot = runtime.reserve_published_snapshot_slot().map_err(|denial| {
+        match denial {
+            crate::runtime::PublishedSnapshotReservationDenial::Capacity { maximum_handles } => {
                 TransactionCommitError::publication_deferred(
-                crate::mvcc::RelationalPublicationDeferred::PublishedSnapshotCapacityExhausted {
-                    maximum_handles,
-                },
-            )
-            })?;
+                    crate::mvcc::RelationalPublicationDeferred::PublishedSnapshotCapacityExhausted { maximum_handles },
+                )
+            }
+            crate::runtime::PublishedSnapshotReservationDenial::CounterOverflow => {
+                TransactionCommitError::publication_failed(crate::mvcc::RelationalPublicationFailure::new(
+                    crate::mvcc::RelationalPublicationFailureKind::SnapshotCountOverflow,
+                    "published snapshot custody counter overflow before effects",
+                ))
+            }
+        }
+    })?;
     let candidate_retention =
         crate::history::retention::RelationalCandidateRetentionObligation::acquire(
             &retention_binding,

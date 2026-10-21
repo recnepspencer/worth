@@ -327,7 +327,7 @@ fn foreign_account_status(fixture: &FreezeFixture) -> AccountStatus {
 }
 
 fn read_controls() -> BankReadControls {
-    BankReadControls::current(request_scope(), 16, 20_000).unwrap()
+    BankReadControls::current(request_scope(), 16).unwrap()
 }
 
 fn idempotency(identity: u8) -> BankIdempotencyKey {

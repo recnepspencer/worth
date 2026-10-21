@@ -4,11 +4,11 @@ use crate::application_query::ApplicationQueryMarkerIdentity;
 use crate::application_query::{
     ApplicationQueryAuthorizationRequirement, ApplicationQueryContinuationTarget,
     ApplicationQueryDefinitionDenial, ApplicationQueryLiveCauseBinding,
-    ApplicationQueryLiveCauseContract, ApplicationQueryLiveResourceContract,
-    ApplicationQueryOrderingDirection, ApplicationQueryOrderingTerm,
-    ApplicationQueryParameterDefinition, ApplicationQueryParameterRef, ApplicationQueryReference,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-    ApplicationQueryResultTraversal, ApplicationQueryRootPath, ManyResults,
+    ApplicationQueryLiveCauseContract, ApplicationQueryOrderingDirection,
+    ApplicationQueryOrderingTerm, ApplicationQueryParameterDefinition,
+    ApplicationQueryParameterRef, ApplicationQueryReference, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultRelationRef, ApplicationQueryResultTraversal, ApplicationQueryRootPath,
+    ManyResults,
 };
 use crate::application_schema::{
     ApplicationFieldRef, ApplicationFieldUnit, DeclaredApplicationFieldValue, EqualityCapable,
@@ -202,7 +202,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
             crate::application_schema::EqualityPredicate,
             TargetUnit,
         >,
-        resources: ApplicationQueryLiveResourceContract,
+
     ) -> Self
     where
         Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
@@ -237,7 +237,6 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         >(
             scope_identity,
             target_identity,
-            resources,
             super::super::ApplicationQueryLiveTargetMode::Collection,
         ));
         self
@@ -266,7 +265,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
             <Binding::TargetIdentityBinding as crate::application_schema::ApplicationScalarValueBinding>::Value,
             crate::application_schema::ReadOnly, crate::application_schema::EqualityPredicate, TargetUnit,
         >,
-        resources: ApplicationQueryLiveResourceContract,
+
     ) -> Self
     where
         Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Scope>,
@@ -301,7 +300,6 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         >(
             scope_identity,
             target_identity,
-            resources,
             super::super::ApplicationQueryLiveTargetMode::Root,
         ));
         self

@@ -6,12 +6,10 @@
 //! role's own aspect comparisons, never a rescan of every fact per role and
 //! per aspect.
 
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use im::OrdSet;
 
 use super::*;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::{
-    insertion_sequence_bytes, ordered_navigation_work,
-};
 
 /// A role's entity beside its position. Roles naming one entity stay distinct.
 type RoleKey = (EntityId, usize);
@@ -25,14 +23,9 @@ impl CheckpointRoleIndex {
     /// complete build is admitted before the first insertion.
     pub(super) fn build(
         entities: impl ExactSizeIterator<Item = EntityId>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Self, CompanionPreflightStop> {
-        admission.admit_read_scratch(
-            insertion_sequence_bytes::<RoleKey, ()>(entities.len()).ok_or_else(overflow)?,
-        )?;
         let mut by_entity = OrdSet::<RoleKey>::new();
         for (position, entity) in entities.enumerate() {
-            admission.charge_external_work(navigation(by_entity.len())?)?;
             by_entity.insert((entity, position));
         }
         Ok(Self { by_entity })
@@ -43,40 +36,11 @@ impl CheckpointRoleIndex {
     fn roles_of<'index>(
         &'index self,
         entity: EntityId,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<impl Iterator<Item = usize> + use<'index>, CompanionPreflightStop> {
-        let descent = navigation(self.by_entity.len())?;
-        admission.charge_external_work(
-            descent
-                .checked_mul(2)
-                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?,
-        )?;
         Ok(self
             .by_entity
             .range((entity, 0)..=(entity, usize::MAX))
             .map(|(_, position)| *position))
-    }
-
-    /// The most roles naming one entity: the per-fact fan-out a ceiling
-    /// prices. Ordered keys keep each entity's roles adjacent.
-    pub(super) fn widest_entity(
-        &self,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<usize, CompanionPreflightStop> {
-        let len = u64::try_from(self.by_entity.len())
-            .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
-        admission.charge_external_work(len)?;
-        let (mut widest, mut run, mut previous) = (0, 0, None);
-        for (entity, _) in self.by_entity.iter() {
-            run = if previous == Some(*entity) {
-                run + 1
-            } else {
-                1
-            };
-            widest = usize::max(widest, run);
-            previous = Some(*entity);
-        }
-        Ok(widest)
     }
 
     /// Fill each aspect probe's original revision and confirm each role's
@@ -85,21 +49,15 @@ impl CheckpointRoleIndex {
     /// entity or aspect has no fact.
     pub(super) fn record_facts(
         &self,
-        facts: &[Fact],
+        facts: &(impl FactSequence + ?Sized),
         roles: &[RoleProbe],
         aspects: &mut [AspectProbe],
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, CompanionPreflightStop> {
-        admission.admit_read_scratch(
-            u64::try_from(roles.len() * size_of::<bool>()).map_err(|_| overflow())?,
-        )?;
         let mut kind_seen = vec![false; roles.len()];
-        for fact in facts {
-            admission.charge_external_work(1)?;
+        for fact in facts.iter() {
             match fact {
                 Fact::Entity { entity_id, kind } => {
-                    for position in self.roles_of(*entity_id, admission)? {
-                        admission.charge_external_work(1 + (size_of::<KindId>() * 2) as u64)?;
+                    for position in self.roles_of(*entity_id)? {
                         if *kind != roles[position].kind {
                             return Ok(false);
                         }
@@ -111,22 +69,13 @@ impl CheckpointRoleIndex {
                     aspect,
                     native_revision,
                 } => {
-                    for position in self.roles_of(*entity_id, admission)? {
-                        admission.charge_external_work(1)?;
+                    for position in self.roles_of(*entity_id)? {
                         let role = &roles[position];
                         for probe in &mut aspects[role.first_aspect..role.end_aspect] {
-                            let comparison = aspect
-                                .as_str()
-                                .len()
-                                .checked_add(probe.aspect.as_str().len())
-                                .and_then(|n| n.checked_add(1))
-                                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-                            admission.charge_external_work(comparison as u64)?;
                             if probe.aspect != *aspect {
                                 continue;
                             }
-                            admission
-                                .charge_external_work((size_of::<Option<u64>>() * 2 + 1) as u64)?;
+
                             if probe
                                 .revision
                                 .is_some_and(|revision| revision != *native_revision)
@@ -140,17 +89,7 @@ impl CheckpointRoleIndex {
                 _ => {}
             }
         }
-        let expectations = roles
-            .len()
-            .checked_add(aspects.len())
-            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        admission.charge_external_work(expectations as u64)?;
         Ok(kind_seen.iter().all(|seen| *seen)
             && aspects.iter().all(|probe| probe.revision.is_some()))
     }
-}
-
-/// One fixed-width key comparison per step of a pinned im descent.
-pub(super) fn navigation(entries: usize) -> Result<u64, CompanionPreflightStop> {
-    ordered_navigation_work(entries).ok_or(CompanionPreflightStop::WorkCounterOverflow)
 }

@@ -13,21 +13,13 @@ pub enum WorthQueryApplicationLiveControlDenial {
     Delivery(WorthQueryLiveDeliveryControlDenial),
     /// The materialized record limit was zero.
     ZeroMaterializedRecordLimit,
-    /// The per-delivery work limit was zero.
-    ZeroWorkLimit,
 }
 
-/// Bounds for a live read: the request scope, how many causes to buffer, and
-/// the record and work limits for each delivery.
-///
-/// Build with `bounded`; zero physical limits or an explicit zero work limit are refused.
-/// `None` imposes no per-delivery work ceiling. Each delivery replaces the
-/// request scope with the fresh request passed to `next`.
+/// Request scope, channel backpressure and materialized result cardinality.
 #[derive(Clone)]
 pub struct WorthQueryApplicationLiveControls {
     delivery: WorthQueryLiveDeliveryControls,
     maximum_materialized_record_count: NonZeroUsize,
-    maximum_work_per_delivery: Option<NonZeroUsize>,
 }
 
 impl WorthQueryApplicationLiveControls {
@@ -35,22 +27,15 @@ impl WorthQueryApplicationLiveControls {
         request: WorthQueryRequestScope,
         buffer_capacity: usize,
         maximum_materialized_record_count: usize,
-        maximum_work_per_delivery: Option<usize>,
     ) -> Result<Self, WorthQueryApplicationLiveControlDenial> {
         let delivery = WorthQueryLiveDeliveryControls::bounded(request, buffer_capacity)
             .map_err(WorthQueryApplicationLiveControlDenial::Delivery)?;
         let maximum_materialized_record_count =
             NonZeroUsize::new(maximum_materialized_record_count)
                 .ok_or(WorthQueryApplicationLiveControlDenial::ZeroMaterializedRecordLimit)?;
-        let maximum_work_per_delivery = maximum_work_per_delivery
-            .map(|work| {
-                NonZeroUsize::new(work).ok_or(WorthQueryApplicationLiveControlDenial::ZeroWorkLimit)
-            })
-            .transpose()?;
         Ok(Self {
             delivery,
             maximum_materialized_record_count,
-            maximum_work_per_delivery,
         })
     }
 
@@ -64,10 +49,6 @@ impl WorthQueryApplicationLiveControls {
 
     pub const fn maximum_materialized_record_count(&self) -> NonZeroUsize {
         self.maximum_materialized_record_count
-    }
-
-    pub const fn maximum_work_per_delivery(&self) -> Option<NonZeroUsize> {
-        self.maximum_work_per_delivery
     }
 
     pub(crate) fn replace_request(&mut self, request: WorthQueryRequestScope) {

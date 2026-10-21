@@ -131,21 +131,3 @@ pub(crate) fn point<T>(
         |value: &Result<T, Cause>| value.as_ref().map_or(0, &owned_bytes),
     )?
 }
-
-pub(super) fn scan<T, Limit>(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    mut read: impl FnMut(
-        &mut MapKernelContext<'_, '_>,
-    ) -> Result<T, super::native_scan_stop::NativeScanStop<Limit>>,
-    owned_bytes: impl Fn(&T) -> u64,
-) -> Result<Result<T, Limit>, Cause> {
-    match metered(
-        execution,
-        |context| read(context),
-        |answer| answer.as_ref().map_or(0, &owned_bytes),
-    )? {
-        Ok(value) => Ok(Ok(value)),
-        Err(super::native_scan_stop::NativeScanStop::Request(cause)) => Err(cause),
-        Err(super::native_scan_stop::NativeScanStop::Limit(limit)) => Ok(Err(limit)),
-    }
-}

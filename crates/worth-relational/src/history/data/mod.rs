@@ -2,12 +2,24 @@ mod aspect_history;
 mod branch_creation;
 mod canonical_commit_allocation;
 mod canonical_commit_envelope;
+mod codec_retirement_closure;
+mod codec_retirement_preservation;
+pub(crate) use codec_retirement_closure::{
+    derive_codec_retirement_closure, readmit_required_output_route,
+    validate_codec_output_correspondence, CodecRetirementClosureStop, OwnedCodecRetirementClosure,
+};
+pub(crate) use codec_retirement_preservation::validate_retired_codec_closure;
 mod canonical_record_allocation;
 mod committed_version;
 mod merge_branch_basis;
 #[cfg(test)]
 mod merge_branch_basis_foundational;
 mod positioned_canonical_commit;
+mod publication_relations;
+mod required_output_positions;
+pub(crate) use required_output_positions::{
+    RequiredOutputPublicationPositions, RequiredOutputRoutePosition,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -21,6 +33,12 @@ pub use aspect_history::{
     LineageAspectHistory, LineageAspectHistoryQueryResult, LineageAspectResolutionDigest,
 };
 pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
+#[cfg(test)]
+pub(crate) use canonical_commit_envelope::CanonicalOutputPublication;
+pub(crate) use canonical_commit_envelope::{
+    CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement,
+    CanonicalRequiredOutputOrigin,
+};
 pub use canonical_commit_envelope::{
     CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, RelationalDescriptiveTouch,
     RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision, RelationalReplayRecord,

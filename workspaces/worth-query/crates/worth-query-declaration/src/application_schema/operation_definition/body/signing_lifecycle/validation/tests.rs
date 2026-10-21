@@ -73,6 +73,7 @@ fn fixture() -> (Body, Vec<Member>) {
             body: body.clone(),
         },
         Member::Field {
+            canonical: None,
             entity: "Supersession".into(),
             aspect: "Facts".into(),
             field: "Record".into(),
@@ -211,13 +212,23 @@ fn self_mutation_and_wrong_consequence_shapes_fail_cold() {
     );
     assert!(!validate(&changing, &members));
     let mut writable_members = members.clone();
-    let Member::Field { writable, .. } = &mut writable_members[1] else {
+    let Member::Field {
+        canonical: None,
+        writable,
+        ..
+    } = &mut writable_members[1]
+    else {
         unreachable!()
     };
     *writable = true;
     assert!(!validate(&body, &writable_members));
     let mut malformed = members;
-    let Member::Field { presence, .. } = &mut malformed[1] else {
+    let Member::Field {
+        canonical: None,
+        presence,
+        ..
+    } = &mut malformed[1]
+    else {
         unreachable!()
     };
     *presence = Presence::Optional;

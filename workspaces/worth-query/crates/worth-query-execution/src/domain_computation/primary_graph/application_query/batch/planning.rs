@@ -1,4 +1,4 @@
-//! Installed resource policy for one finite, caller-described read schedule.
+//! Exact installed query slots for a finite caller-described schedule.
 use std::collections::BTreeMap;
 
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
@@ -8,10 +8,9 @@ use worth_query_installation::facade::{
 };
 
 use super::*;
-use crate::domain_computation::execution_runtime::WorthQueryApplicationQueryResourceProfile;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-/// An owner-produced resource description for an installed binding and actual
+/// An owner-issued schedule for an installed binding and actual
 /// planned read count. It grants no scope, authorization, or currentness.
 ///
 /// Callers cannot change the installed issuer or scheduled count.
@@ -24,39 +23,33 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 pub struct WorthQueryApplicationQueryBatchReadPlan {
     runtime: u64,
     schema: ApplicationSchemaBindingIdentity,
-    profile: WorthQueryApplicationQueryResourceProfile,
+
     query: WorthQueryInstalledApplicationQueryIdentity,
-    binding: &'static str,
     count: usize,
-    work: Option<usize>,
+
     roots: usize,
-    result: usize,
 }
 
 pub(super) struct InstalledBatchPlan {
     runtime: u64,
     schema: ApplicationSchemaBindingIdentity,
-    profile: WorthQueryApplicationQueryResourceProfile,
+
     slots: BTreeMap<WorthQueryInstalledApplicationQueryIdentity, PlannedSlots>,
     pub(super) items: usize,
-    pub(super) work: Option<usize>,
-    pub(super) bytes: usize,
-    pub(super) result: NonZeroUsize,
+
     pub(super) frozen: bool,
     pub(super) started: bool,
-    pub(super) byte_ceiling: Option<usize>,
 }
 
 #[derive(Clone)]
 struct PlannedSlots {
-    binding: &'static str,
     remaining: usize,
-    work: Option<usize>,
+
     roots: usize,
 }
 
 pub(in crate::domain_computation::primary_graph) struct PlannedBatchItem {
-    totals: Arc<Mutex<BatchTotals>>,
+    plan: Arc<Mutex<InstalledBatchPlan>>,
 }
 
 impl PlannedBatchItem {
@@ -64,19 +57,14 @@ impl PlannedBatchItem {
         &self,
         batch: &WorthQueryApplicationQueryBatchAdmission,
     ) -> bool {
-        Arc::ptr_eq(&self.totals, &batch.totals)
+        Arc::ptr_eq(&self.plan, &batch.plan)
     }
 }
 
 impl<Schema: worth_query_declaration::facade::application_schema::ApplicationSchema>
     WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
-    /// Describes configured resources without exposing execution authority.
-    pub fn application_query_resource_profile(&self) -> WorthQueryApplicationQueryResourceProfile {
-        self.runtime.application_query_resource_profile()
-    }
-
-    /// Quotes a finite schedule using the genuine installed binding ceilings.
+    /// Registers a finite schedule using genuine installed bindings.
     /// Zero reads stays zero. The count is scheduling data, not membership proof.
     pub fn plan_application_query_batch_reads<B: ApplicationQueryBinding<Schema>>(
         &self,
@@ -86,30 +74,49 @@ impl<Schema: worth_query_declaration::facade::application_schema::ApplicationSch
         WorthQueryApplicationQueryBatchReadPlan,
         WorthQueryApplicationQueryBatchResourceDenial,
     > {
-        self.installed_schema
-            .validate_installed_query(binding.query())
-            .map_err(|_| WorthQueryApplicationQueryBatchResourceDenial::ForeignPlan)?;
-        let profile = self.application_query_resource_profile();
         let limits = self.resolve_application_query_limits(binding.limits());
-        let result = profile
-            .maximum_result_bytes_per_root()
-            .get()
-            .checked_mul(limits.maximum_results().get())
-            .ok_or(WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow)?;
+        self.plan_installed_query_batch_reads(binding.query(), count, limits.maximum_results())
+    }
+
+    /// Registers native installed reads for callers already owning their query
+    /// handle. This describes slots only: each read still needs fresh admission.
+    pub fn plan_installed_query_batch_reads<Q, P, R, S>(
+        &self,
+        query: &worth_query_installation::facade::WorthQueryInstalledApplicationQuery<
+            Schema,
+            Q,
+            P,
+            R,
+            S,
+        >,
+        count: usize,
+        maximum_results: std::num::NonZeroUsize,
+    ) -> Result<
+        WorthQueryApplicationQueryBatchReadPlan,
+        WorthQueryApplicationQueryBatchResourceDenial,
+    > {
+        self.installed_schema
+            .validate_installed_query(query)
+            .map_err(|_| WorthQueryApplicationQueryBatchResourceDenial::ForeignPlan)?;
+        if let Some(maximum) =
+            std::num::NonZeroUsize::new(query.read_graph().maximum_result_count())
+            && maximum_results > maximum
+        {
+            return Err(WorthQueryApplicationQueryBatchResourceDenial::ItemLimit {
+                required: maximum_results.get(),
+                maximum: maximum.get(),
+            });
+        }
         Ok(WorthQueryApplicationQueryBatchReadPlan {
             runtime: self.runtime.authority_identity().as_u64(),
             schema: self.installed_schema.binding_identity().clone(),
-            profile,
-            query: binding.query().identity().clone(),
-            binding: B::IDENTITY,
+            query: query.identity().clone(),
             count,
-            work: limits.maximum_work().map(std::num::NonZeroUsize::get),
-            roots: limits.maximum_results().get(),
-            result,
+            roots: maximum_results.get(),
         })
     }
 
-    /// Starts one installed-profile loan. A census may run before its sole
+    /// Opens one installed schedule. A census may run before its sole
     /// extension; otherwise call `freeze_planned_reads` before the first read.
     pub fn application_query_batch_from_installed_reads(
         &self,
@@ -118,43 +125,35 @@ impl<Schema: worth_query_declaration::facade::application_schema::ApplicationSch
         WorthQueryApplicationQueryBatchAdmission,
         WorthQueryApplicationQueryBatchResourceDenial,
     > {
-        let profile = self.application_query_resource_profile();
         let mut plan = InstalledBatchPlan {
             runtime: self.runtime.authority_identity().as_u64(),
             schema: self.installed_schema.binding_identity().clone(),
-            profile,
+
             slots: BTreeMap::new(),
             items: 0,
-            work: Some(0),
-            bytes: 0,
-            result: profile.maximum_result_bytes_per_root(),
+
             frozen: false,
             started: false,
-            byte_ceiling: None,
         };
         plan.extend(reads, false)?;
         Ok(WorthQueryApplicationQueryBatchAdmission {
-            policy: BatchPolicy::Installed(Arc::new(Mutex::new(plan))),
-            totals: Arc::new(Mutex::new(BatchTotals::default())),
+            plan: Arc::new(Mutex::new(plan)),
         })
     }
 
     /// Extends once from discovered planning data and freezes atomically.
-    /// Spent census work and every original custody claim remain unchanged.
+    /// Already consumed slots and original native custody remain unchanged.
     pub fn extend_application_query_batch_once(
         &self,
         batch: &WorthQueryApplicationQueryBatchAdmission,
         reads: &[WorthQueryApplicationQueryBatchReadPlan],
     ) -> Result<(), WorthQueryApplicationQueryBatchResourceDenial> {
-        let BatchPolicy::Installed(plan) = &batch.policy else {
-            return Err(WorthQueryApplicationQueryBatchResourceDenial::ForeignPlan);
-        };
+        let plan = &batch.plan;
         let mut plan = plan
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         if plan.runtime != self.runtime.authority_identity().as_u64()
             || plan.schema != self.installed_schema.binding_identity()
-            || plan.profile != self.application_query_resource_profile()
         {
             return Err(WorthQueryApplicationQueryBatchResourceDenial::ForeignPlan);
         }
@@ -174,44 +173,17 @@ impl InstalledBatchPlan {
         if self.frozen {
             return Err(PlanningFrozen);
         }
-        let (mut items, mut work, mut bytes, mut result) =
-            (self.items, self.work, self.bytes, self.result);
+        let mut items = self.items;
         for read in reads {
-            if read.runtime != self.runtime
-                || read.schema != self.schema
-                || read.profile != self.profile
-            {
+            if read.runtime != self.runtime || read.schema != self.schema {
                 return Err(ForeignPlan);
             }
             if let Some(old) = self.slots.get(&read.query)
-                && old.binding != read.binding
+                && old.roots != read.roots
             {
                 return Err(ForeignPlan);
             }
             items = items.checked_add(read.count).ok_or(CounterOverflow)?;
-            if read.count != 0 {
-                work = match (work, read.work) {
-                    (Some(total), Some(item)) => Some(
-                        total
-                            .checked_add(item.checked_mul(read.count).ok_or(CounterOverflow)?)
-                            .ok_or(CounterOverflow)?,
-                    ),
-                    _ => None,
-                };
-            }
-            // Result staging and the live kernel buffer may coexist. Source and
-            // basis metadata are quoted by their real owners before each copy.
-            bytes = bytes
-                .checked_add(
-                    read.result
-                        .checked_mul(read.count)
-                        .and_then(|n| n.checked_mul(2))
-                        .ok_or(CounterOverflow)?,
-                )
-                .ok_or(CounterOverflow)?;
-            if read.count != 0 {
-                result = result.max(NonZeroUsize::new(read.result).ok_or(CounterOverflow)?);
-            }
         }
         let mut slots = self.slots.clone();
         for read in reads {
@@ -219,9 +191,8 @@ impl InstalledBatchPlan {
                 continue;
             }
             let slot = slots.entry(read.query.clone()).or_insert(PlannedSlots {
-                binding: read.binding,
                 remaining: 0,
-                work: read.work,
+
                 roots: read.roots,
             });
             slot.remaining = slot
@@ -230,7 +201,7 @@ impl InstalledBatchPlan {
                 .ok_or(CounterOverflow)?;
         }
         self.slots = slots;
-        (self.items, self.work, self.bytes, self.result) = (items, work, bytes, result);
+        self.items = items;
         self.frozen = freeze;
         Ok(())
     }
@@ -241,7 +212,8 @@ impl WorthQueryApplicationQueryBatchAdmission {
     pub fn freeze_planned_reads(
         &self,
     ) -> Result<(), WorthQueryApplicationQueryBatchResourceDenial> {
-        if let BatchPolicy::Installed(plan) = &self.policy {
+        {
+            let plan = &self.plan;
             let mut plan = plan
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -258,35 +230,9 @@ impl WorthQueryApplicationQueryBatchAdmission {
         runtime: u64,
         schema: &ApplicationSchemaBindingIdentity,
         query: &WorthQueryInstalledApplicationQueryIdentity,
-        maximum_work: Option<usize>,
         maximum_roots: usize,
     ) -> Result<Option<PlannedBatchItem>, WorthQueryApplicationQueryBatchResourceDenial> {
-        let plan = match &self.policy {
-            BatchPolicy::Bounded(limits) => {
-                let mut totals = self
-                    .totals
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
-                let required = totals
-                    .admitted_reads
-                    .checked_add(1)
-                    .ok_or(WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow)?;
-                let maximum = limits.maximum_items();
-                if required > maximum {
-                    return Err(WorthQueryApplicationQueryBatchResourceDenial::ItemLimit {
-                        required,
-                        maximum,
-                    });
-                }
-                totals.admitted_reads = required;
-                // Retained admission carries this private slot into execution.
-                // Failed attempts remain spent, as with an installed schedule.
-                return Ok(Some(PlannedBatchItem {
-                    totals: Arc::clone(&self.totals),
-                }));
-            }
-            BatchPolicy::Installed(plan) => plan,
-        };
+        let plan = &self.plan;
         let mut plan = plan
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -298,17 +244,6 @@ impl WorthQueryApplicationQueryBatchAdmission {
             .slots
             .get_mut(query)
             .ok_or(WorthQueryApplicationQueryBatchResourceDenial::UnplannedRead)?;
-        if let Some(maximum) = slot.work {
-            let required = maximum_work.ok_or(
-                WorthQueryApplicationQueryBatchResourceDenial::WorkLimitWidening { maximum },
-            )?;
-            if required > maximum {
-                return Err(WorthQueryApplicationQueryBatchResourceDenial::WorkLimit {
-                    required,
-                    maximum,
-                });
-            }
-        }
         if maximum_roots > slot.roots {
             return Err(WorthQueryApplicationQueryBatchResourceDenial::ItemLimit {
                 required: maximum_roots,
@@ -320,16 +255,8 @@ impl WorthQueryApplicationQueryBatchAdmission {
             .checked_sub(1)
             .ok_or(WorthQueryApplicationQueryBatchResourceDenial::UnplannedRead)?;
         Ok(Some(PlannedBatchItem {
-            totals: Arc::clone(&self.totals),
+            plan: Arc::clone(&self.plan),
         }))
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_query) fn claim_source_memory(
-        &self,
-        bytes: usize,
-    ) -> Result<WorthQueryApplicationQueryBatchMemory, WorthQueryApplicationQueryBatchResourceDenial>
-    {
-        self.claim_publication_memory(bytes)
     }
 }
 

@@ -1,8 +1,8 @@
 //! Frozen permits own-row truth and delivery granted by successor custody.
-use super::super::super::super::required_continuations::{
-    AwaitedDelivery, PreparedContinuationWave,
-};
-use super::super::performed::certification::{FrozenCaller, FrozenCallerInspection};
+use super::super::super::super::required_continuations::AwaitedDelivery;
+use super::super::super::super::required_continuations::PreparedContinuationWave;
+use super::super::performed::certification::FrozenCaller;
+use super::super::performed::certification::FrozenCallerInspection;
 use super::*;
 
 pub(super) enum FrozenRequiredWave<'a, Schema: ApplicationSchema> {
@@ -34,9 +34,8 @@ pub(super) fn collect<'a, Schema: ApplicationSchema + 'static>(
     caller_contacts: usize,
     authority: &WorthQueryProducerCommitAuthority,
     performed: &std::cell::RefCell<super::super::performed::PerformedMembers>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<FrozenRequiredWave<'a, Schema>, WorthQueryOutputDemandDenial> {
-    if let Some(delivery) = caller_storage.awaited_delivery(&runtime.output_demands, admission)? {
+    if let Some(delivery) = caller_storage.awaited_delivery(&runtime.output_demands)? {
         return Ok(FrozenRequiredWave::Delivery(SuccessorCustody::Caller(
             delivery,
         )));
@@ -46,9 +45,7 @@ pub(super) fn collect<'a, Schema: ApplicationSchema + 'static>(
     {
         let member = &frontier.members[0];
         member.ready.selected().completion().advanced_in(authority);
-        admission
-            .charge_external_work(9)
-            .map_err(|_| work_denial())?;
+
         let mut inspected = super::super::performed::certification::certify_frozen_ready(
             execution,
             runtime,
@@ -61,7 +58,6 @@ pub(super) fn collect<'a, Schema: ApplicationSchema + 'static>(
                 contacts: caller_contacts,
             },
             performed,
-            admission,
         )?;
         loop {
             match inspected {
@@ -84,7 +80,6 @@ pub(super) fn collect<'a, Schema: ApplicationSchema + 'static>(
                     let installed = super::super::installed_for_selected_cue(
                         runtime,
                         ready.producer_identity(),
-                        admission,
                     )?;
                     inspected = super::super::performed::certification::certify_frozen_ready(
                         execution,
@@ -98,7 +93,6 @@ pub(super) fn collect<'a, Schema: ApplicationSchema + 'static>(
                             contacts: 0,
                         },
                         performed,
-                        admission,
                     )?;
                     // An upstream Current is not a proof of the caller's row.
                     if matches!(inspected, FrozenCallerInspection::Current(_)) {

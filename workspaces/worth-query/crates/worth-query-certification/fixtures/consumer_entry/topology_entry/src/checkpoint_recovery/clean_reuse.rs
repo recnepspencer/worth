@@ -40,7 +40,8 @@ fn clean_ready_advancement_skips_source_query_but_changed_input_reenters_it() {
             .expect("the clean interest advances")
         {
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => settled,
-            WorthQueryApplicationOutputDemandProgress::Pending => {
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => {
                 panic!("Clean Ready must settle in this advance")
             }
         };
@@ -135,7 +136,8 @@ fn settle_open<'application>(
             .advance(request)
             .expect("the real interest advances")
         {
-            WorthQueryApplicationOutputDemandProgress::Pending => std::thread::yield_now(),
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => std::thread::yield_now(),
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => return settled,
         }
     }

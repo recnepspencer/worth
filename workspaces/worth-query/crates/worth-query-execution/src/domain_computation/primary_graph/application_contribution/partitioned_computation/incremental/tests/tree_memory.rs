@@ -29,7 +29,7 @@ const DECLARED: u64 = 4096;
 /// unit of work short of the combines the retained tree charges, so the tree
 /// is built again. Placed under `memory`, leased, then serial, each
 /// with the combines it ran.
-fn rebuilt_under(memory: Option<u64>, leased: bool) -> Vec<(Outcome, usize)> {
+fn rebuilt_under(memory: Option<u64>, leased: bool) -> Vec<(Outcome, usize, u64)> {
     let placements: Vec<Box<dyn Fn() -> RuntimeWorldExecutionPlacement<'static>>> = match memory {
         None => vec![Box::new(|| {
             RuntimeWorldExecutionPlacement::Serial(
@@ -63,18 +63,43 @@ fn rebuilt_under(memory: Option<u64>, leased: bool) -> Vec<(Outcome, usize)> {
             // all but one combine, so one combine short of the tree is left.
             let charged = first.outcome.as_ref().unwrap().1;
             let moved = DECLARED + 2 - charged;
+            let retention_hold = incremental_retention_hold(&first, moved);
             *installed.owner.bump.lock().unwrap() = 10;
             *installed.owner.work.lock().unwrap() = [usize::try_from(moved).unwrap(), 1];
             COMBINES.store(0, Ordering::Relaxed);
-            let run = attempt_placed(
+            let mut live_scope_bytes = None;
+            let run = projected_attempt::attempt_placed_observing(
                 &world,
                 &installed,
                 Some(prior_of(first, true)),
                 &live_scope(),
                 placement(),
+                |execution| {
+                    let request = execution.execution_request().unwrap();
+                    let worth_execution::ExecutionAllocationPolicy::Execution(lease) =
+                        request.allocation_policy()
+                    else {
+                        panic!("the actual request holds its native lease");
+                    };
+                    let dispatch = execution.dispatch().unwrap();
+                    let tree_scope =
+                        worth_execution::ExecutionWorkCeiling::scope_memory_bound_for_test(
+                            Some(dispatch.native_lease_for_test()),
+                            None,
+                        )
+                        .unwrap();
+                    // Real projection admission also remains live. Measure that
+                    // custody, then quote the tree scope in its actual lineage.
+                    live_scope_bytes =
+                        Some(lease.charged_memory_bytes() + tree_scope + retention_hold);
+                },
             );
             assert_eq!(run.gathered, [1], "only the moved partition gathers again");
-            (run.outcome, COMBINES.load(Ordering::Relaxed))
+            (
+                run.outcome,
+                COMBINES.load(Ordering::Relaxed),
+                live_scope_bytes.unwrap(),
+            )
         })
         .collect()
 }
@@ -104,7 +129,7 @@ fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let unbounded = rebuilt_under(None, false);
-    let [(outcome, reached)] = unbounded.as_slice() else {
+    let [(outcome, reached, _)] = unbounded.as_slice() else {
         panic!("one unbounded placement");
     };
     let reached = *reached;
@@ -120,72 +145,24 @@ fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
     // Native width two and serial width one hold different worker contexts.
     // Each posture must refuse at its own physical-memory boundary.
     for leased in [false, true] {
-        let policy = test_policy(NonZeroUsize::new(2).unwrap(), None);
-        let token = worth_execution::CancellationToken::new();
-        let policy = if leased {
-            policy
-        } else {
-            worth_foundational::ExecutionRequestPolicy::new(
-                worth_foundational::ExecutionPosture::Serial,
-                policy.determinism(),
-                worth_foundational::ExecutionBudget::new(
-                    NonZeroUsize::MIN,
-                    policy.budget().charged_memory_bytes(),
-                    policy.budget().work_ceiling(),
-                ),
-            )
+        let baseline = rebuilt_under(Some(1 << 30), leased);
+        let [(baseline_outcome, baseline_combines, scope)] = baseline.as_slice() else {
+            panic!("one actual placement");
         };
-        let authority = if leased {
-            query_test_execution_authority_for_test()
-        } else {
-            worth_execution::ExecutionAuthority::serial()
-        };
-        let root = authority
-            .request_lease(worth_execution::LeaseRequest {
-                policy,
-                deadline: None,
-                cancellation: token,
-            })
-            .unwrap();
-        let child = root
-            .child(worth_execution::LeaseRequest {
-                policy,
-                deadline: None,
-                cancellation: worth_execution::CancellationToken::new(),
-            })
-            .unwrap();
-        // Both the owned host scope and its nested tree-stage scope remain live.
-        // Quote the nested scope under that actual parent checkpoint lineage.
-        let host_scope =
-            worth_execution::ExecutionWorkCeiling::scope_memory_bound_for_test(Some(&root), None)
-                .unwrap();
-        let (tree_scope, _) = worth_execution::ExecutionWorkCeiling::new(None)
-            .run(&root, || {
-                worth_execution::ExecutionWorkCeiling::scope_memory_bound_for_test(
-                    Some(&child),
-                    None,
-                )
-                .unwrap()
-            })
-            .unwrap();
-        let scope = host_scope + tree_scope;
+        assert_eq!(baseline_outcome, outcome);
+        assert_eq!(*baseline_combines, reached);
         let build = ReductionTree::<u64, fn(&u64, &u64) -> u64>::checked_serial_build_memory_bound(
             4, DECLARED,
         )
         .unwrap();
-        // The rebuild holds its tree bound, four inline leaf copies, one
-        // replacement result, and both live one-stage framework scopes.
-        // The recomputed kernel records one RLE run (all advances are one
-        // unit). Its reserved vector remains live through the rebuild.
-        let mut steps = super::super::KernelSteps::default();
-        assert!(steps.accepted(1, |_| true));
-        let checkpoint_hold = worth_execution::ChargedBytes::additional_charged_bytes(&steps);
+        // The observed quote includes actual projection/tree scope plus the
+        // new native result/path grants and independently funded metadata.
+        // Five inline leaves cover four copies and the one replacement.
         let admitted = build
             + 5 * u64::try_from(size_of::<(worth_foundational::PartitionIdentity, u64)>()).unwrap()
-            + scope
-            + checkpoint_hold;
+            + *scope;
         let refused = admitted - 1;
-        for (outcome, combines) in rebuilt_under(Some(refused), leased) {
+        for (outcome, combines, _) in rebuilt_under(Some(refused), leased) {
             let requested = refused_by_memory(&outcome)
                 .unwrap_or_else(|| panic!("one byte short is a memory refusal: {outcome:?}"));
             assert!(
@@ -194,8 +171,60 @@ fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
             );
             assert_eq!(combines, 0, "nothing is combined before the bound is held");
         }
-        for (outcome, combines) in rebuilt_under(Some(admitted), leased) {
-            assert_eq!(combines, reached, "with its bound held the rebuild runs: leased={leased} build={build} scope={scope} steps={checkpoint_hold} admitted={admitted} outcome={outcome:?}");
+        for (outcome, combines, _) in rebuilt_under(Some(admitted), leased) {
+            assert_eq!(combines, reached, "with its bound held the rebuild runs: leased={leased} build={build} scope={scope} admitted={admitted} outcome={outcome:?}");
         }
     }
+}
+
+/// Quote the new native grants with the actual prior shape/changed identity;
+/// this executes only a separate native scalar probe before the real Query
+/// witness. It grants no source equality and changes no reader/request bill.
+fn incremental_retention_hold(first: &Attempt, work: u64) -> u64 {
+    let sealed = first.sealed.as_ref().unwrap().as_ref().unwrap();
+    let retained = sealed
+        .state
+        .typed
+        .downcast_ref::<super::super::retained::RetainedPartitions<Parity, Number, u64>>()
+        .unwrap();
+    let identity = *retained
+        .partitions
+        .iter()
+        .find(|(_, part)| part.key.0 == 1)
+        .unwrap()
+        .0;
+    let memory = worth_execution::SerialMemoryBudget::new(Some(1 << 30));
+    let request = worth_execution::SerialRequest::from_memory(
+        memory.clone(),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let advanced = retained
+        .native_run
+        .advance(
+            worth_execution::ExecutionRequest::serial(&request),
+            worth_execution::ExecutionWorkCeiling::new(None),
+            std::collections::BTreeMap::from([(
+                identity,
+                worth_execution::KeylessPartition {
+                    value: (),
+                    kernel_scratch_bytes: 0,
+                    max_result_bytes: 0,
+                },
+            )]),
+            worth_proof::CanonicalUniqueVec::try_from_sorted_unique(Vec::new()).unwrap(),
+            |_, context| {
+                context.checkpoint(work)?;
+                Ok::<_, worth_execution::MapKernelFailure<()>>(0_u64)
+            },
+        )
+        .unwrap();
+    assert!(matches!(
+        &advanced,
+        worth_execution::RetainedRunOutcome::Complete { .. }
+    ));
+    let hold = memory.charged_memory_bytes() + retained.partitions.bytes().unwrap();
+    drop(advanced);
+    assert_eq!(memory.charged_memory_bytes(), 0);
+    hold
 }

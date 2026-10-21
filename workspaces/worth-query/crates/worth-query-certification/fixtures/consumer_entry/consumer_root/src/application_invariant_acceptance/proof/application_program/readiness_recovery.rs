@@ -102,7 +102,10 @@ pub(super) fn denied_program_producer_releases_the_shared_claim(
         .store(1, Ordering::SeqCst);
     let denial = (0..64)
         .find_map(|_| match denied.advance(&world.application, &request) {
-            Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
+            Ok(
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed,
+            ) => None,
             Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
                 panic!("the injected producer denial must prevent the first settlement")
             }
@@ -126,7 +129,8 @@ pub(super) fn denied_program_producer_releases_the_shared_claim(
             .advance(&world.application, &request)
             .expect("the peer resumes")
         {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });
@@ -162,7 +166,10 @@ pub(super) fn readiness_failure_recovers_exact_pending_output(
                 .advance(&world.application, &request)
             {
                 Err(failure) => Some(failure),
-                Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
+                Ok(
+                    WorthQueryApplicationProgramOutputProgress::Pending
+                    | WorthQueryApplicationProgramOutputProgress::Progressed,
+                ) => None,
                 Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
                     panic!("readiness fault must deny before output settlement")
                 }
@@ -196,7 +203,8 @@ pub(super) fn readiness_failure_recovers_exact_pending_output(
         .expect("owner-held readiness custody is recoverable");
     let settled = settle(
         || match recovered.advance(&world.application, &request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         },
     );
@@ -242,7 +250,10 @@ pub(super) fn readiness_snapshot_pressure_keeps_published_output_recoverable(
                 failure = Some(denial);
                 break;
             }
-            Ok(WorthQueryApplicationProgramOutputProgress::Pending) => {}
+            Ok(
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed,
+            ) => {}
             Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
                 panic!("readiness selection must encounter real World capacity")
             }
@@ -285,7 +296,8 @@ pub(super) fn readiness_snapshot_pressure_keeps_published_output_recoverable(
             .advance(&world.application, &request)
             .expect("readiness resumes")
         {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => {}
             WorthQueryApplicationProgramOutputProgress::Settled(value) => {
                 settled = Some(value);
                 break;

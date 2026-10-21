@@ -3,10 +3,10 @@ use std::sync::Arc;
 use crate::branch::{AdmittedRelationalBranchBasis, SelectedRelationalBranchState};
 use crate::performance::PerformanceAccess;
 use crate::runtime::{
-    PublishedSnapshotCapacityOwner, PublishedSnapshotSlotReservation, RecordIdentitySubsystem,
-    RelationalPreparationHistory, RelationalRuntimeConfig, RelationalRuntimeConfigurationBinding,
-    RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding, RuntimeServices,
-    SchemaContractRuntimeSubsystem,
+    PublishedSnapshotCapacityOwner, PublishedSnapshotReservationDenial,
+    PublishedSnapshotSlotReservation, RecordIdentitySubsystem, RelationalPreparationHistory,
+    RelationalRuntimeConfig, RelationalRuntimeConfigurationBinding, RelationalRuntimeOwnerBinding,
+    RelationalRuntimePublicationBinding, RuntimeServices, SchemaContractRuntimeSubsystem,
 };
 
 /// Cloneable owner binding. Configuration truth is captured per operation so
@@ -127,7 +127,7 @@ impl RelationalPreparationRuntime {
 
     pub(crate) fn reserve_published_snapshot_slot(
         &self,
-    ) -> Result<PublishedSnapshotSlotReservation, usize> {
+    ) -> Result<PublishedSnapshotSlotReservation, PublishedSnapshotReservationDenial> {
         self.snapshot_capacity.reserve()
     }
 

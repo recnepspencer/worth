@@ -2,30 +2,23 @@ use crate::domain_computation::primary_graph::output_binding_identity::OutputBin
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 
-use worth_relational::facade::mvcc::{CompanionPreflightBudget, CompanionPreflightStop};
-use worth_runtime_world::facade::{
-    ProductBranchCreationIntent, ProductBranchCreationPlans, RelationalBranchCreationPlan,
-    RuntimeWorldBranchCreationOutcome, RuntimeWorldCancellationSource, SignalBranchCreationPlan,
-};
+use worth_runtime_world::facade::ProductBranchCreationIntent;
+use worth_runtime_world::facade::ProductBranchCreationPlans;
+use worth_runtime_world::facade::RelationalBranchCreationPlan;
+use worth_runtime_world::facade::RuntimeWorldBranchCreationOutcome;
+use worth_runtime_world::facade::RuntimeWorldCancellationSource;
+use worth_runtime_world::facade::SignalBranchCreationPlan;
 
-use super::{checkpoint_identity, RestoredOutputBinding};
-use crate::domain_computation::{
-    authorization::WorthQueryOperationScopeBinding,
-    primary_graph::output_lineage::{
-        invalidation::InvalidationEditAdmission, ProductCoordinate, SemanticSource,
-        WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
-    },
-};
-
-fn admission(work: u64) -> InvalidationEditAdmission {
-    InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(work),
-        maximum_preparation_bytes: None,
-    })
-}
+use super::checkpoint_identity;
+use super::RestoredOutputBinding;
+use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
+use crate::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::output_lineage::SemanticSource;
+use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputCorrespondence;
+use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
 
 #[test]
-fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin() {
+fn cutoff_candidate_pins_the_selected_ancestor_partition() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let world =
@@ -106,6 +99,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin()
         target_partition,
         None,
         [0x41; 32],
+        None,
     );
     lineage.record_recovered_prior_output(
         lineage.binding_type(&source.output_binding),
@@ -119,6 +113,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin()
         sibling_partition,
         None,
         [0x42; 32],
+        None,
     );
     lineage.register_fork(parent, &child);
     let selected_cell = &lineage.by_source[&source][&parent.lifecycle_incarnation()]
@@ -128,16 +123,14 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin()
         super::super::retained_computation::RecordedComputation::Absent(
             crate::domain_computation::primary_graph::application_contribution::PriorAbsence::Restored)));
 
-    let mut funded = admission(100_000);
     let selected = lineage
         .prior_input_cutoff_candidate::<RestoredOutputBinding>(
             &scope,
             &child,
             target_partition,
             execution,
-            &mut funded,
         )
-        .expect("the selected ancestor lookup is funded")
+        .expect("the selected ancestor lookup selects exact custody")
         .expect("the matching parent partition is retained");
     assert!(Arc::ptr_eq(
         selected.settlement_identity(),
@@ -147,22 +140,6 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin()
         selected.prepared_input_key().is_none(),
         "restored rows cannot cut off"
     );
-
-    let required = funded.charged_work();
-    assert!(required > 1);
-    let pins_before_denial = Arc::strong_count(selected_cell);
-    let mut short = admission(required - 1);
-    assert!(matches!(
-        lineage.prior_input_cutoff_candidate::<RestoredOutputBinding>(
-            &scope,
-            &child,
-            target_partition,
-            execution,
-            &mut short,
-        ),
-        Err(CompanionPreflightStop::WorkExhausted { .. })
-    ));
-    assert_eq!(Arc::strong_count(selected_cell), pins_before_denial);
 
     let next_generation = parent.reference_generation().get() + 1;
     let _unpublished = lineage.partition_index.insert_vacancy(
@@ -183,7 +160,6 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin()
                 generation: next_generation,
             },
             target_partition,
-            &mut admission(100_000),
         )
         .expect("the newer empty slot is a bounded lookup");
     assert_eq!(prior, Some((parent.reference_generation().get(), 0)));

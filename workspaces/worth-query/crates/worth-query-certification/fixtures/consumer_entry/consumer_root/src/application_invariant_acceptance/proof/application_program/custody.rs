@@ -60,7 +60,8 @@ pub(super) fn abandoned_and_superseded_preparations_are_bounded(
     );
     let recovered_settlement = crate::application_invariant_acceptance::proof::settle(|| {
         match recovered.advance(&world.application, &request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });

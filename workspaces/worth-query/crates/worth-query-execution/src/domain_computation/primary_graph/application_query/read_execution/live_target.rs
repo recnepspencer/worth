@@ -12,7 +12,6 @@ use super::{
     tree_materialization::ResultTreeCollectionSelection, RawLiveKernelOutcome, RawOneShotRows,
     WorthQueryApplicationReadExecutionDenial, WorthQueryApplicationReadExecutionDenialKind,
 };
-use crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationResultBufferReservation;
 
 pub(in crate::domain_computation::primary_graph::application_query) fn read_live_target<
     Schema,
@@ -37,7 +36,6 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
         Scope,
     >,
     target_identity: AspectValue,
-    mut result_buffer: WorthQueryApplicationResultBufferReservation,
 ) -> Result<RawLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
     let contract = plan.query.read_family_binding().planning_contract();
     let live = plan.query.live().ok_or_else(|| {
@@ -67,12 +65,8 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
         execution,
         graph,
         &super::read_plan::ReadPlan::of(plan),
-        &mut result_buffer,
         false,
         None,
-        plan.controls
-            .maximum_work()
-            .map(std::num::NonZeroUsize::get),
         super::ReadInterruption::Query(plan.controls.request_scope()),
     )?;
     super::validate_cardinality_and_limit(
@@ -121,36 +115,12 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
         &selection.candidates,
         selection.selected_predicate_source.as_ref(),
         selection.root_path_source.as_ref(),
-        plan.controls.maximum_work().map(|maximum| {
-            maximum
-                .get()
-                .saturating_sub(admitted_before_materialization)
-        }),
         collection_selection,
         super::ReadInterruption::Query(plan.controls.request_scope()),
-        &mut result_buffer,
         None,
     )?;
     let actual_work = admitted_before_materialization.saturating_add(tree.work_units);
-    if plan
-        .controls
-        .maximum_work()
-        .is_some_and(|maximum| actual_work > maximum.get())
-    {
-        return Err(read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-            plan.query.name(),
-        ));
-    }
-    super::verify_result_tree_accounting(
-        &result_buffer,
-        tree.rows.raw_rows(),
-        tree.rows.capacity(),
-        &tree.source_footprints,
-        tree.source_footprints.capacity(),
-        selection.result_set_source.as_deref(),
-        plan.query.name(),
-    )?;
+
     Ok(RawLiveKernelOutcome {
         raw: RawOneShotRows {
             rows: tree.rows,
@@ -181,7 +151,6 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
             has_more: false,
             actual_work,
         },
-        result_buffer,
     })
 }
 

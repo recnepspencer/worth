@@ -47,6 +47,8 @@ mod activity;
 mod detached;
 pub(crate) use detached::detach_meter_for_test;
 mod checkpoint;
+mod kernel_receipt;
+pub use kernel_receipt::{ExecutionKernelReceipt, ExecutionKernelReceiptStorage};
 mod framework_bytes;
 mod invoking_scope;
 pub(crate) use invoking_scope::run_invoking_scope;
@@ -176,6 +178,9 @@ impl Drop for WorkerActivityGuard {
 }
 
 impl RunLimits {
+    pub(crate) fn poll_request(&self) -> Result<(), KernelStop> {
+        self.safe_point(&mut NestedStop::Clear)
+    }
     pub(crate) fn work_stop_owner(&self) -> NestedStopOwner {
         self.ceiling_owner
     }
@@ -264,6 +269,7 @@ impl RunLimits {
 }
 
 struct KernelMeter {
+    capture: Option<kernel_receipt::Capture>,
     limits: RunLimits,
     work: u64,
     span: u64,
@@ -292,6 +298,7 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
     pub(crate) fn new(limits: RunLimits) -> Self {
         Self {
             meter: Rc::new(RefCell::new(KernelMeter {
+                capture: None,
                 limits,
                 work: 0,
                 span: 0,

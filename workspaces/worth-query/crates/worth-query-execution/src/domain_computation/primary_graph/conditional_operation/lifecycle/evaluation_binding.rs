@@ -157,33 +157,6 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         Ok(())
     }
 
-    /// Replaces the active binding with one rebuilt from the selected truth
-    /// after its commit cursor fell behind the retained subscription window.
-    /// The fresh managed clock re-derives every active wake from that truth;
-    /// progress resumes after the newest position the truth already contains.
-    /// The next accepted observation's batch carries `RefreshAll`.
-    pub(super) fn rebuild_lagging_evaluation_binding(
-        &mut self,
-execution: &worth_execution::ExecutionRequest<'_, '_>,
-        bridge: &BridgeSealedRuntimeAssembly,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        truth: &super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis,
-        resume_after: Option<worth_relational::facade::publication::PatchStreamPosition>,
-    ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
-        super::super::retained_managed_cleanup::admit_reinstallation(
-            super::super::retained_managed_cleanup::pending_kind(self.retained_wakes.iter()
-                .chain(self.inactive_bindings.values().flat_map(|binding| binding.retained_wakes.iter()))),
-            &self.runtime_binding_identity)?;
-        let mut rebuilt = self.fresh_evaluation_binding(execution, bridge, runtime, truth, None)?;
-        rebuilt.authoritative_commit_cursor = resume_after;
-        // The Query-commit delivery stays deliverable; the gap the rebuild
-        // skipped and everything owed before it are owed as a full refresh.
-        rebuilt.pending_invalidations = std::mem::replace(&mut self.pending_invalidations, super::pending_invalidations::WorthQueryPendingGranularInvalidations::empty());
-        rebuilt.pending_invalidations.refresh_all();
-        self.activate_first_evaluation_binding(rebuilt);
-        Ok(())
-    }
-
     fn fresh_evaluation_binding(
         &mut self,
 execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -224,6 +197,29 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         })?;
         let clock = self.definition.binding.clocked_node();
         let bounds = self.definition.binding.bounds();
+        let reconstruction = super::super::temporal_reconstruction::reconstruct_temporal_intents(execution,
+            runtime,
+            &self.definition.binding,
+            &self.definition.reconstruction,
+            self.definition.execution.identity_field,
+            truth.product(),
+        )?;
+        let mut intents = reconstruction.intents;
+        let maximum_watch_records = bridge
+            .conditional_evaluation_budget()
+            .maximum_retained_slots
+            .map(|slots| slots.checked_mul(bounds.maximum_reconstruction_rows()).ok_or_else(|| {
+                super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
+                    super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::RetentionCapacityExhausted,
+                    "conditional commit watch capacity overflowed")
+            })).transpose()?;
+        let commit_watch = super::commit_watch::WorthQueryConditionalCommitWatchSet::successor(
+            execution,
+            predecessor.map(|state| &state.commit_watch),
+            &intents,
+            lowering,
+            maximum_watch_records,
+        )?;
         let managed_clock = bridge
             .install_managed_clock(worth_runtime_bridge::facade::BridgeManagedClockInstallationParts {
                 lowering,
@@ -239,41 +235,11 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                     denial.detail(),
                 )
             })?;
-        let reconstruction = super::super::temporal_reconstruction::reconstruct_temporal_intents(execution,
-            runtime,
-            &self.definition.binding,
-            &self.definition.reconstruction,
-            self.definition.execution.identity_field,
-            truth.product(),
-        )?;
-        let mut intents = reconstruction.intents;
         super::super::temporal_reconstruction::reconcile_temporal_intents(
             bridge,
             &managed_clock,
             &mut intents,
         )?;
-        let maximum_watch_records = bridge
-            .conditional_evaluation_budget()
-            .maximum_retained_slots
-            .checked_mul(bounds.maximum_reconstruction_rows())
-            .ok_or_else(|| {
-                super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
-                    super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::RetentionCapacityExhausted,
-                    "conditional commit watch capacity overflowed",
-                )
-            })?;
-        let commit_watch = super::commit_watch::WorthQueryConditionalCommitWatchSet::successor(
-            predecessor.map(|state| &state.commit_watch),
-            &intents,
-            lowering,
-            maximum_watch_records,
-        )
-        .map_err(|detail| {
-            super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
-                super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::RetentionCapacityExhausted,
-                detail,
-            )
-        })?;
         Ok(WorthQueryInactiveTemporalEvaluationBinding {
             affinity: super::evaluation_affinity::WorthQueryConditionalEvaluationAffinity::new(
                 truth.product(),

@@ -326,7 +326,7 @@ fn fixed_missing_carrier_direct_query_promotion_retains_real_refusal() {
                 .unwrap_or_else(|(_, cause)| panic!("valid output owner: {cause:?}"));
             super::super::settle(|| {
                 match outputs.advance(&world.application, &request).unwrap() {
-                worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputProgress::Pending => None,
+                worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputProgress::Pending | worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputProgress::Progressed => None,
                 worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
             }
             });

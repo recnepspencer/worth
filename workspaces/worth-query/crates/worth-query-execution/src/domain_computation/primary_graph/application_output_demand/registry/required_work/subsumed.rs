@@ -15,13 +15,11 @@ impl SelectedRequiredWork {
     /// stamped, even if it installs later.
     pub(in crate::domain_computation::primary_graph) fn stamp_settled_hints(
         &self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let SelectedRequiredWorkKind::Native { branch, .. } = &self.kind else {
             return Ok(());
         };
         let branch = branch.branch_id();
-        let per_hint = hint_work(branch);
         let mut state = self
             .membership
             .state
@@ -32,9 +30,6 @@ impl SelectedRequiredWork {
         }
         let mut cursor = state.native_hints.as_deref_mut();
         while let Some(hint) = cursor {
-            admission
-                .charge_external_work(per_hint)
-                .map_err(|_| required_ack_work_denial())?;
             if hint.branch.branch_id() == branch
                 && hint.observer.state() != CompanionPublicationCompletion::Prepared
             {
@@ -50,7 +45,6 @@ impl SelectedRequiredWork {
     pub(in crate::domain_computation::primary_graph) fn acknowledge_current_admitted<T>(
         self,
         proof: CurrentProof<T>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ReplacedRequiredWorkHint>, WorthQueryOutputDemandDenial> {
         if !proof.certifies_record(&self.certification_membership) {
             return Err(WorthQueryOutputDemandDenial::new(
@@ -58,10 +52,7 @@ impl SelectedRequiredWork {
                 "Current proof does not certify this retained record and basis",
             ));
         }
-        charge_acknowledgement(admission)?;
-        admission
-            .charge_external_work(4)
-            .map_err(|_| required_ack_work_denial())?;
+
         let extra = {
             let mut state = self
                 .membership
@@ -85,22 +76,21 @@ impl SelectedRequiredWork {
                 None
             }
         };
-        let result = self.acknowledge_subsumed(admission);
+        let result = self.acknowledge_subsumed();
         drop(extra);
         result
     }
 
     fn acknowledge_subsumed(
         mut self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ReplacedRequiredWorkHint>, WorthQueryOutputDemandDenial> {
         let SelectedRequiredWorkKind::Native { branch, .. } = &self.kind else {
             return Ok(self.consume_selected_cause());
         };
         let branch = Arc::clone(branch);
-        let cleared =
-            self.membership
-                .acknowledge_branch(self.version, branch.branch_id(), admission);
+        let cleared = self
+            .membership
+            .acknowledge_branch(self.version, branch.branch_id());
         self.armed = cleared.as_ref().is_none_or(|(_, more)| *more);
         Ok(cleared.map(|(removed, _)| removed))
     }
@@ -111,9 +101,7 @@ impl RequiredWorkMembership {
         &self,
         version: u64,
         branch: &BranchId,
-        admission: &mut InvalidationEditAdmission,
     ) -> Option<(ReplacedRequiredWorkHint, bool)> {
-        let per_hint = hint_work(branch);
         let mut state = self
             .state
             .lock()
@@ -130,9 +118,6 @@ impl RequiredWorkMembership {
         loop {
             let covered = match cursor.as_ref() {
                 None => break,
-                // Coalescing is an optimization of later passes: an exhausted
-                // request keeps the remaining hints for its next advance.
-                Some(_) if admission.charge_external_work(per_hint).is_err() => break,
                 Some(hint) => {
                     hint.branch.branch_id() == branch && hint.seen_settled_at == Some(version)
                 }
@@ -155,8 +140,4 @@ impl RequiredWorkMembership {
             more,
         ))
     }
-}
-
-fn hint_work(branch: &BranchId) -> u64 {
-    u64::try_from(branch.0.len().saturating_add(4)).unwrap_or(u64::MAX)
 }

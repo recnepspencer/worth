@@ -24,12 +24,11 @@ pub(crate) enum RelationalSettlementReservationDenial {
 /// Admission, lookup, transition, and removal are O(1) by owner-issued commit
 /// identity.
 ///
-/// The registry is bounded by construction rather than by a second capacity
-/// check. Only a prepared candidate can reach admission, every prepared
-/// candidate already holds one of the `max_published_snapshot_handles` slots,
-/// and that slot stays held until the settled commit's published snapshot is
-/// released. So the record count can never exceed the configured maximum, and
-/// preparation is the one boundary that reports exhaustion.
+/// Only a prepared candidate can reach admission. Every prepared candidate
+/// already owns a published-snapshot reservation, which remains accounted
+/// until its settled snapshot is released. When a finite policy is installed,
+/// preparation enforces it; absence never discards this custody or installs a
+/// second population allowance here.
 ///
 /// The index lock below is taken only for those constant-bounded operations; it
 /// never spans branch waiting, durability I/O, derived work, or a test pause.

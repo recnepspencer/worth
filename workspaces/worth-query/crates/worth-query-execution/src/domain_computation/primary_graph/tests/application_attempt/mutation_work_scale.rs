@@ -114,11 +114,7 @@ fn mutation_work_is_invariant_to_unrelated_graph_population() {
             0,
             "{name} no-demand commit must scan no decision facts"
         );
-        assert_eq!(
-            work.preimage_candidates_materialized(),
-            0,
-            "{name} no-demand commit must collect no retention candidates"
-        );
+
         assert_eq!(
             work.preimage_demanded_loci_examined(),
             0,

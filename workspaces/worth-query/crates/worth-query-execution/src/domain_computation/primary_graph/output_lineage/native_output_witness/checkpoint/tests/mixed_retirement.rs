@@ -42,267 +42,222 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
         .application
         .with_host_advancement(|phase| foreign.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
-    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(request_execution, |runtime| {
-        let before = snapshot(runtime);
-        let prepare = || {
-            PreparedNativeOutputWitness::prepare_republication(
-                &correspondence,
-                layout,
-                owner,
-                &mut owner.edit_admission(),
-            )
-            .unwrap()
-            .unwrap()
-        };
-        assert!(
-            prepare()
-                .finish( &correspondence, runtime, &before)
-                .is_none(),
-            "live is not retired"
-        );
-        let mut measured = owner.edit_admission();
-        drop(
-            PreparedNativeOutputWitness::prepare_republication(
-                &correspondence,
-                layout,
-                owner,
-                &mut measured,
-            )
-            .unwrap()
-            .unwrap(),
-        );
-        let exact_work = usize::try_from(measured.charged_work()).unwrap();
-        assert!(
-            matches!(
-                PreparedNativeOutputWitness::prepare_republication(
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            handle.with_runtime_mut(request_execution, |runtime| {
+                let before = snapshot(runtime);
+                let prepare = || {
+                    PreparedNativeOutputWitness::prepare_republication(&correspondence, layout)
+                        .unwrap()
+                        .unwrap()
+                };
+
+                assert!(
+                    prepare()
+                        .finish(&correspondence, runtime, &before)
+                        .is_none(),
+                    "live is not retired"
+                );
+
+                drop(
+                    PreparedNativeOutputWitness::prepare_republication(&correspondence, layout)
+                        .unwrap()
+                        .unwrap(),
+                );
+
+                assert!(
+                    matches!(
+                        PreparedNativeOutputWitness::prepare_republication(&correspondence, layout),
+                        Err(CompanionPreflightStop::WorkExhausted { .. })
+                    ),
+                    "one unit below complete preparation cannot allocate a publishable witness"
+                );
+                let prepared = prepare();
+                publish(
+                    request_execution,
+                    runtime,
+                    WorkerIntentBatch::new("mixed-native-retirement").push(MutationIntent::Entity(
+                        EntityMutationIntent::Delete(DeleteEntityIntent { entity_id: retired }),
+                    )),
+                );
+                let committed = snapshot(runtime);
+                let witness = prepared
+                    .finish(&correspondence, runtime, &committed)
+                    .expect("actual commit seals every role");
+                let witness = witness.get().unwrap();
+                let equivalent = prepare()
+                    .finish(&correspondence, runtime, &committed)
+                    .unwrap();
+                assert!(witness.same_output_as(equivalent.get().unwrap()).unwrap());
+                let mut changed = prepare()
+                    .finish(&correspondence, runtime, &committed)
+                    .unwrap();
+                let changed = Arc::get_mut(&mut changed).unwrap().get_mut().unwrap();
+                changed.roles[1].posture = WorthQueryApplicationOutputPosture::Preserve;
+                assert!(
+                    !witness.same_output_as(changed).unwrap(),
+                    "matching entity and revisions cannot erase a retirement posture"
+                );
+                changed.roles[1].posture = WorthQueryApplicationOutputPosture::Retire;
+                let metadata = retirement::native_metadata(runtime, &committed, retired).unwrap();
+                assert_ne!(metadata.created_at, metadata.deleted_at);
+                changed.roles[1].retirement.as_mut().unwrap().created_at = metadata.deleted_at;
+                assert!(
+                    !witness.same_output_as(changed).unwrap(),
+                    "the original creation version belongs to exact retirement equality"
+                );
+                assert_eq!(metadata.deleted_at, committed.version_id());
+                assert!(runtime
+                    .read_truth()
+                    .exact_snapshot_live_entity_kind(&committed, retired)
+                    .is_none());
+                assert_eq!(
+                    runtime
+                        .read_truth()
+                        .exact_snapshot_live_entity_kind(&committed, live),
+                    Some(metadata.kind)
+                );
+                assert!(witness.unchanged_in(runtime, &committed).unwrap());
+                assert!(!witness.unchanged_in(runtime, &before).unwrap());
+                assert!(!witness
+                    .unchanged_in(
+                        runtime,
+                        foreign_selected.application_basis().snapshot_handle()
+                    )
+                    .unwrap());
+
+                assert!(
+                    witness.prepare_fact_projection().unwrap().is_none(),
+                    "mixed retired output stays checkpoint-ineligible"
+                );
+                let facts = [Fact::RetiredOutputEntity {
+                    entity_id: retired,
+                    kind: metadata.kind,
+                    created_at: metadata.created_at,
+                    deleted_at: metadata.deleted_at,
+                    read_locator: "original-decision-read".into(),
+                }];
+                assert!(facts[0]
+                    .remains_equal_in(
+                        runtime,
+                        &host_custody.borrowed_request_for_test(),
+                        &committed
+                    )
+                    .unwrap());
+                assert!(SealedNativeOutputWitness::from_checkpoint_facts(
                     &correspondence,
                     layout,
-                    owner,
-                    &mut owner.edit_admission_with_work_limit(Some(exact_work - 1))
-                ),
-                Err(CompanionPreflightStop::WorkExhausted { .. })
-            ),
-            "one unit below complete preparation cannot allocate a publishable witness"
-        );
-        let prepared = prepare();
-        publish(
-            request_execution, runtime,
-            WorkerIntentBatch::new("mixed-native-retirement").push(MutationIntent::Entity(
-                EntityMutationIntent::Delete(DeleteEntityIntent { entity_id: retired }),
-            )),
-        );
-        let committed = snapshot(runtime);
-        let witness = prepared
-            .finish( &correspondence, runtime, &committed)
-            .expect("actual commit seals every role");
-        let witness = witness.get().unwrap();
-        let equivalent = prepare()
-            .finish( &correspondence, runtime, &committed)
-            .unwrap();
-        assert!(
-            witness
-                .same_output_as(equivalent.get().unwrap(), &mut owner.edit_admission())
-                .unwrap()
-        );
-        let mut changed = prepare()
-            .finish( &correspondence, runtime, &committed)
-            .unwrap();
-        let changed = Arc::get_mut(&mut changed).unwrap().get_mut().unwrap();
-        changed.roles[1].posture = WorthQueryApplicationOutputPosture::Preserve;
-        assert!(
-            !witness
-                .same_output_as(changed, &mut owner.edit_admission())
-                .unwrap(),
-            "matching entity and revisions cannot erase a retirement posture"
-        );
-        changed.roles[1].posture = WorthQueryApplicationOutputPosture::Retire;
-        let metadata = retirement::native_metadata( runtime, &committed, retired).unwrap();
-        assert_ne!(metadata.created_at, metadata.deleted_at);
-        changed.roles[1].retirement.as_mut().unwrap().created_at = metadata.deleted_at;
-        assert!(
-            !witness
-                .same_output_as(changed, &mut owner.edit_admission())
-                .unwrap(),
-            "the original creation version belongs to exact retirement equality"
-        );
-        assert_eq!(metadata.deleted_at, committed.version_id());
-        assert!(
-            runtime
-                .read_truth()
-                .exact_snapshot_live_entity_kind(&committed, retired)
-                .is_none()
-        );
-        assert_eq!(
-            runtime
-                .read_truth()
-                .exact_snapshot_live_entity_kind(&committed, live),
-            Some(metadata.kind)
-        );
-        assert!(
-            witness
-                .unchanged_in( runtime, &committed, &mut owner.edit_admission())
-                .unwrap()
-        );
-        assert!(
-            !witness
-                .unchanged_in( runtime, &before, &mut owner.edit_admission())
-                .unwrap()
-        );
-        assert!(
-            !witness
-                .unchanged_in(
-                    runtime,
-                    foreign_selected.application_basis().snapshot_handle(),
-                    &mut owner.edit_admission()
+                    &facts
                 )
                 .unwrap()
-        );
-
-        assert!(
-            witness
-                .prepare_fact_projection(&mut owner.edit_admission())
-                .unwrap()
-                .is_none(),
-            "mixed retired output stays checkpoint-ineligible"
-        );
-        let facts = [Fact::RetiredOutputEntity {
-            entity_id: retired,
-            kind: metadata.kind,
-            created_at: metadata.created_at,
-            deleted_at: metadata.deleted_at,
-            read_locator: "original-decision-read".into(),
-        }];
-        assert!(facts[0].remains_equal_in(runtime,&host_custody.borrowed_request_for_test(),  &committed).unwrap());
-        assert!(
-            SealedNativeOutputWitness::from_checkpoint_facts(
-                &correspondence,
-                layout,
-                &facts,
-                owner,
-                &mut owner.edit_admission()
-            )
-            .unwrap()
-            .is_none()
-        );
-        let external_dead = Fact::SourceEntity { entity_id: retired };
-        assert!(
-            !witness
-                .covers_content_fact(&external_dead, &mut owner.edit_admission())
-                .unwrap()
-        );
-        assert!(!external_dead.remains_equal_in(runtime,&host_custody.borrowed_request_for_test(),  &committed).unwrap());
-        assert!(
-            !witness
-                .checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),
+                .is_none());
+                let external_dead = Fact::SourceEntity { entity_id: retired };
+                assert!(!witness.covers_content_fact(&external_dead).unwrap());
+                assert!(!external_dead
+                    .remains_equal_in(
+                        runtime,
+                        &host_custody.borrowed_request_for_test(),
+                        &committed
+                    )
+                    .unwrap());
+                assert!(
+                    !witness
+                        .checkpoint_facts_current_in(
+                            &host_custody.borrowed_request_for_test(),
+                            runtime,
+                            &committed,
+                            &facts
+                        )
+                        .unwrap(),
+                    "even genuine retired facts do not grant checkpoint eligibility"
+                );
+                assert!(matches!(
+                    PreparedNativeOutputWitness::prepare_republication(&correspondence, layout),
+                    Err(CompanionPreflightStop::WorkExhausted { .. })
+                ));
+                assert!(matches!(
+                    witness.unchanged_in(runtime, &committed),
+                    Err(CompanionPreflightStop::WorkExhausted { .. })
+                ));
+                let wrong_generation = mixed_correspondence(
+                    &host_custody.borrowed_request_for_test(),
+                    live,
+                    EntityId::new(
+                        retired.partition_id,
+                        retired.local_slot_value(),
+                        retired.generation_value() + 1,
+                    ),
+                );
+                assert!(prepare()
+                    .finish(&wrong_generation, runtime, &committed)
+                    .is_none());
+                let missing = WorthQueryApplicationOutputCorrespondence::default();
+                assert!(prepare().finish(&missing, runtime, &committed).is_none());
+                let mut wrong_kind = prepare();
+                wrong_kind.roles[1].kind = KindId::new(metadata.kind.as_u32() + 1);
+                assert!(wrong_kind
+                    .finish(&correspondence, runtime, &committed)
+                    .is_none());
+                let mut wrong_posture = prepare();
+                wrong_posture.roles[1].posture = WorthQueryApplicationOutputPosture::Preserve;
+                assert!(wrong_posture
+                    .finish(&correspondence, runtime, &committed)
+                    .is_none());
+                let label_ref = AccountLabel::reference();
+                let label = layout
+                    .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
+                    .unwrap()
+                    .clone();
+                change_label(request_execution, runtime, live, label.clone());
+                let later = snapshot(runtime);
+                assert_eq!(
+                    retirement::native_metadata(runtime, &later, retired),
+                    Some(metadata),
+                    "original tuple persists at later observations"
+                );
+                assert!(
+                    prepare().finish(&correspondence, runtime, &later).is_none(),
+                    "later version cannot issue an old retirement anew"
+                );
+                assert!(
+                    !witness.unchanged_in(runtime, &later).unwrap(),
+                    "live aspects still invalidate the mixed proof"
+                );
+                publish(
+                    request_execution,
                     runtime,
-                    &committed,
-                    &facts,
-                    &mut owner.edit_admission()
-                )
-                .unwrap(),
-            "even genuine retired facts do not grant checkpoint eligibility"
-        );
-        assert!(matches!(
-            PreparedNativeOutputWitness::prepare_republication(
-                &correspondence,
-                layout,
-                owner,
-                &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget { maximum_work_visits: Some(0), maximum_preparation_bytes: None})
-            ),
-            Err(CompanionPreflightStop::WorkExhausted { .. })
-        ));
-        assert!(matches!(
-            witness.unchanged_in( runtime, &committed, &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget { maximum_work_visits: Some(0), maximum_preparation_bytes: None})),
-            Err(CompanionPreflightStop::WorkExhausted { .. })
-        ));
-        let wrong_generation = mixed_correspondence(
-            &host_custody.borrowed_request_for_test(),
-            live,
-            EntityId::new(
-                retired.partition_id,
-                retired.local_slot_value(),
-                retired.generation_value() + 1,
-            ),
-        );
-        assert!(
-            prepare()
-                .finish( &wrong_generation, runtime, &committed)
-                .is_none()
-        );
-        let missing = WorthQueryApplicationOutputCorrespondence::default();
-        assert!(prepare().finish( &missing, runtime, &committed).is_none());
-        let mut wrong_kind = prepare();
-        wrong_kind.roles[1].kind = KindId::new(metadata.kind.as_u32() + 1);
-        assert!(
-            wrong_kind
-                .finish( &correspondence, runtime, &committed)
-                .is_none()
-        );
-        let mut wrong_posture = prepare();
-        wrong_posture.roles[1].posture = WorthQueryApplicationOutputPosture::Preserve;
-        assert!(
-            wrong_posture
-                .finish( &correspondence, runtime, &committed)
-                .is_none()
-        );
-        let label_ref = AccountLabel::reference();
-        let label = layout
-            .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
-            .unwrap()
-            .clone();
-        change_label(request_execution, runtime, live, label.clone());
-        let later = snapshot(runtime);
-        assert_eq!(
-            retirement::native_metadata( runtime, &later, retired),
-            Some(metadata),
-            "original tuple persists at later observations"
-        );
-        assert!(
-            prepare().finish( &correspondence, runtime, &later).is_none(),
-            "later version cannot issue an old retirement anew"
-        );
-        assert!(
-            !witness
-                .unchanged_in( runtime, &later, &mut owner.edit_admission())
-                .unwrap(),
-            "live aspects still invalidate the mixed proof"
-        );
-        publish(
-            request_execution, runtime,
-            WorkerIntentBatch::new("mixed-output-aba").push(MutationIntent::Entity(
-                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
-                    entity_id: live,
-                    fields: AspectFieldPatch::from(BTreeMap::from([(
-                        label,
-                        AspectValue::String("primary".into()),
-                    )])),
-                }),
-            )),
-        );
-        let aba = snapshot(runtime);
-        assert!(
-            !witness
-                .unchanged_in( runtime, &aba, &mut owner.edit_admission())
-                .unwrap(),
-            "same-value ABA keeps its changed revision"
-        );
-        assert!(
-            witness
-                .unchanged_in( runtime, &committed, &mut owner.edit_admission())
-                .unwrap(),
-            "the original held native observation remains exact after ABA"
-        );
-        runtime.snapshots().release_snapshot(&aba).unwrap();
-        assert!(
-            !witness
-                .unchanged_in( runtime, &aba, &mut owner.edit_admission())
-                .unwrap(),
-            "released basis cannot authorize a witness"
-        );
-        for snapshot in [&before, &committed, &later] {
-            runtime.snapshots().release_snapshot(snapshot).unwrap();
-        }
-    }) }).expect("the fixture read owns its installed host call");
+                    WorkerIntentBatch::new("mixed-output-aba").push(MutationIntent::Entity(
+                        EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                            entity_id: live,
+                            fields: AspectFieldPatch::from(BTreeMap::from([(
+                                label,
+                                AspectValue::String("primary".into()),
+                            )])),
+                        }),
+                    )),
+                );
+                let aba = snapshot(runtime);
+                assert!(
+                    !witness.unchanged_in(runtime, &aba).unwrap(),
+                    "same-value ABA keeps its changed revision"
+                );
+                assert!(
+                    witness.unchanged_in(runtime, &committed).unwrap(),
+                    "the original held native observation remains exact after ABA"
+                );
+                runtime.snapshots().release_snapshot(&aba).unwrap();
+                assert!(
+                    !witness.unchanged_in(runtime, &aba).unwrap(),
+                    "released basis cannot authorize a witness"
+                );
+                for snapshot in [&before, &committed, &later] {
+                    runtime.snapshots().release_snapshot(snapshot).unwrap();
+                }
+            })
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 fn mixed_correspondence(

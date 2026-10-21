@@ -1,21 +1,20 @@
 //! One current-security / exact-retained-data native governed read, with no lasting permit.
-use super::{admission::WorthQueryWorkflowReadDenial as Denial, audit, original_intent, view::*};
-use crate::domain_computation::primary_graph::application_attempt::{
-    workflow_instance_observation::governed_record, WorthQueryWorkflowInstanceDiscoveryIntent,
-};
+use super::admission::WorthQueryWorkflowReadDenial as Denial;
+use super::audit;
+use super::original_intent;
+use super::view::*;
+use crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::governed_record;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowInstanceDiscoveryIntent;
 use crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementPhase, WorthQuerySelectedProductOperation,
-};
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
-use worth_query_declaration::facade::application_program::{
-    ApplicationWorkflowReadBinding, ApplicationWorkflowReadRoute, ApplicationWorkflowSpec,
-};
+
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowReadBinding;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowReadRoute;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 use worth_query_installation::facade::ApplicationSchema;
-use worth_relational::facade::mvcc::CompanionPreflightBudget;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// Authenticates fresh current read authority before inspecting the original target.
@@ -63,24 +62,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         } else {
             None
         };
-        let profile = self
-            .application()
-            .runtime
-            .application_query_resource_profile();
-        let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: profile.maximum_work().map(|work| work.get() as u64),
-            maximum_preparation_bytes: Some(profile.maximum_inline_index_bytes().get() as u64),
-        });
+
         let Some((target, access)) = original_intent::lookup(
-            self,
-            data,
-            phase,
-            &subject,
-            principal,
-            input,
-            request,
-            original,
-            &mut admission,
+            self, data, phase, &subject, principal, input, request, original,
         )?
         else {
             return Ok(WorthQueryWorkflowInstanceRead::Missing {
@@ -128,7 +112,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             principal,
             audit_input,
             request,
-            &mut admission,
             &record.history,
         )?;
         Ok(project_record(record, data, audit))

@@ -27,7 +27,7 @@ pub use proposal_footprint::{
 };
 pub use proposal_identity::RelationalMutationProposalIdentity;
 pub use proposal_touches::{
-    ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
+    ValidatedEntityStructTouch, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
     ValidatedMutationTouchProjectionWork, ValidatedMutationTouches,
 };
 pub(crate) use validated_proposal::StrategyProposalDecoration;
@@ -42,6 +42,8 @@ pub(crate) struct RelationalTransactionValidationInput {
     basis: AdmittedRelationalBranchBasis,
     intent: crate::mvcc::RelationalTransactionIntent,
     merge_parent_bases: Vec<AdmittedRelationalBranchBasis>,
+    recovered_codec_publication_custody:
+        Option<std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>>,
     schema_authority_input: Option<crate::schema::SchemaContinuityAuthorityInput>,
     schema_authority: std::sync::Arc<RelationalBranchRootSchemaAuthority>,
     footprint: crate::mvcc::RelationalTransactionFootprint,
@@ -56,6 +58,7 @@ impl PartialEq for RelationalTransactionValidationInput {
             && self.intent == other.intent
             && self.merge_parent_bases == other.merge_parent_bases
             && self.schema_authority_input == other.schema_authority_input
+            && self.recovered_codec_publication_custody == other.recovered_codec_publication_custody
             && self.schema_authority.allocation_id() == other.schema_authority.allocation_id()
             && self.footprint == other.footprint
     }
@@ -72,6 +75,9 @@ impl RelationalTransactionValidationInput {
             intent: transaction.intent.clone(),
             merge_parent_bases: transaction.merge_parent_bases.clone(),
             schema_authority_input: transaction.schema_authority_input.clone(),
+            recovered_codec_publication_custody: transaction
+                .recovered_codec_publication_custody
+                .clone(),
             schema_authority: std::sync::Arc::clone(&transaction.schema_authority),
             footprint: transaction.footprint.clone(),
             retention: Some(std::sync::Arc::clone(&transaction.retention)),
@@ -85,6 +91,7 @@ impl RelationalTransactionValidationInput {
             intent: crate::mvcc::RelationalTransactionIntent::ordinary(),
             merge_parent_bases: Vec::new(),
             schema_authority_input: None,
+            recovered_codec_publication_custody: None,
             schema_authority: basis.inner.root.retained_schema_authority(),
             footprint: crate::mvcc::RelationalTransactionFootprint::for_basis(basis),
             retention: None,
@@ -139,6 +146,12 @@ impl RelationalTransactionValidationInput {
         self.intent.schema_reconciliation_policy()
     }
 
+    pub(crate) fn recovered_codec_publication_custody(
+        &self,
+    ) -> Option<&std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>> {
+        self.recovered_codec_publication_custody.as_ref()
+    }
+
     pub(crate) fn schema_authority_input(
         &self,
     ) -> Option<&crate::schema::SchemaContinuityAuthorityInput> {
@@ -180,6 +193,7 @@ impl RelationalTransactionValidationInput {
         debug_assert_eq!(transaction.intent, self.intent);
         transaction.merge_parent_bases = self.merge_parent_bases;
         transaction.schema_authority_input = self.schema_authority_input;
+        transaction.recovered_codec_publication_custody = self.recovered_codec_publication_custody;
         if let Some(retention) = self.retention {
             transaction.retention = retention;
         }

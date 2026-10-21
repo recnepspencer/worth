@@ -103,15 +103,13 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
         witness.with_native_owner_lock_for_test(&request, || assert!(owner_probe.is_locked_for_test()));
         let mut pins = Default::default();
         let reads_before = crate::facade::primary_graph::installed_source_reads_on_this_thread_for_test();
-        let partitions = plans.iter_mut().zip(&roots).enumerate().map(|(index, (pair, root))| {
-            let capacity = pair.result_capacity().unwrap();
-            (PartitionIdentity::new(index as u64 + 1), KeylessPartition {
-                value: pair.worker_with_pins(&request, &world.application, root.entity_id(), &mut pins).unwrap(),
-                kernel_scratch_bytes: 0, max_result_bytes: capacity,
-            })
+
+let partitions = plans.iter_mut().zip(&roots).enumerate().map(|(index, (pair, root))| {
+
+            (PartitionIdentity::new(index as u64 + 1), pair.worker_with_pins(&request,  root.entity_id(), &mut pins).unwrap())
         }).collect();
         assert_eq!(crate::facade::primary_graph::installed_source_reads_on_this_thread_for_test() - reads_before, 2, "one owner pin per query side, shared across both roots");
-        let map = ExecutionMap::<_, ()>::from_keyless_partitions(partitions).unwrap();
+        let map = ExecutionMap::<_, ()>::from_keyless_values(partitions).unwrap();
         let (outcome, _) = ExecutionWorkCeiling::new(lease.policy().budget().work_ceiling()).run(&lease, || {
             map.run_owned(Some(&lease), |pair, context| pair.run(&host_custody.borrowed_request_for_test(), context))
         }).unwrap();

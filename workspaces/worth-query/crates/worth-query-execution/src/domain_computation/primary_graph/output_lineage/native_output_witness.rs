@@ -1,31 +1,27 @@
 //! A performed output's native content authority, prepared before publication.
 
-use std::mem::size_of;
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
+use std::sync::OnceLock;
 
 use worth_foundational::facade::AspectKey;
-use worth_relational::facade::{
-    identity::{EntityId, KindId, VersionId},
-    mvcc::CompanionPreflightStop,
-    runtime::RelationalRuntime,
-    snapshots::SnapshotHandle,
-};
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::identity::KindId;
+use worth_relational::facade::identity::VersionId;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
 
-use crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity;
-use crate::domain_computation::primary_graph::{
-    application_attempt::{
-        WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputPosture,
-    },
-    provider::WorthQueryPrimaryGraphApplicationAttempt,
-    schema_layout::WorthQueryPrimaryGraphLayout,
-};
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputCorrespondence;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture;
+use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphApplicationAttempt;
+use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
 
-use super::invalidation::{InvalidationEditAdmission, SourceInvalidationOwner};
 use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
 
 mod checkpoint;
 mod equality;
 mod fact_coverage;
+mod fact_projection;
 mod preparation;
 mod retirement;
 use retirement::RetirementMetadata;
@@ -49,14 +45,13 @@ struct AspectProbe {
     revision: Option<Option<u64>>,
 }
 
-/// Its two Vec backings and the final Arc cell are admitted before the native
-/// commit. Neither this ticket nor its sealed successor authorizes a write.
+/// Prepared role and aspect probes are constructed before the native commit.
+/// Their storage never authorizes a write.
 #[must_use = "the prepared output witness must be sealed or dropped"]
 pub(in crate::domain_computation::primary_graph) struct PreparedNativeOutputWitness {
     cell: Arc<OnceLock<SealedNativeOutputWitness>>,
     roles: Vec<RoleProbe>,
     aspects: Vec<AspectProbe>,
-    retained: Arc<RetainedInvalidationCapacity>,
 }
 
 /// Equality of all installed aspect revisions plus native liveness/generation
@@ -66,7 +61,6 @@ pub(in crate::domain_computation::primary_graph) struct PreparedNativeOutputWitn
 pub(in crate::domain_computation::primary_graph) struct SealedNativeOutputWitness {
     roles: Vec<RoleProbe>,
     aspects: Vec<AspectProbe>,
-    _retained: Arc<RetainedInvalidationCapacity>,
 }
 
 /// A checked projection of the sealed performed roles into ordinary observed
@@ -81,10 +75,6 @@ pub(in crate::domain_computation::primary_graph) struct PreparedNativeOutputFact
 impl PreparedNativeOutputFacts<'_> {
     pub(in crate::domain_computation::primary_graph) fn count(&self) -> usize {
         self.count
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn retained_payload_bytes(&self) -> u64 {
-        self.retained_payload_bytes
     }
 
     /// The caller has already reserved the complete flat Vec and Arc. No
@@ -152,7 +142,6 @@ impl PreparedNativeOutputWitness {
         let sealed = SealedNativeOutputWitness {
             roles: self.roles,
             aspects: self.aspects,
-            _retained: self.retained,
         };
         self.cell.set(sealed).ok()?;
         Some(self.cell)
@@ -165,12 +154,10 @@ impl SealedNativeOutputWitness {
     /// witness cannot be promoted into reusable output authority.
     pub(in crate::domain_computation::primary_graph) fn prepare_fact_projection(
         &self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<PreparedNativeOutputFacts<'_>>, CompanionPreflightStop> {
         let mut count = 0usize;
         let mut payload = 0u64;
         for role in &self.roles {
-            admission.charge_external_work(1)?;
             if role.entity.is_none() {
                 return Ok(None);
             }
@@ -183,13 +170,10 @@ impl SealedNativeOutputWitness {
                 return Ok(None);
             }
             for aspect in &self.aspects[role.first_aspect..role.end_aspect] {
-                admission.charge_external_work(1)?;
                 if aspect.revision.is_none() {
                     return Ok(None);
                 }
-                let initialized = u64::try_from(aspect.aspect.as_str().len())
-                    .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
-                admission.charge_external_work(initialized)?;
+
                 payload = payload
                     .checked_add(
                         u64::try_from(aspect.aspect.owned_allocation_capacity_bytes()).map_err(
@@ -209,32 +193,37 @@ impl SealedNativeOutputWitness {
         }))
     }
 
+    /// A pending source may have changed authored fields on the same entity.
+    /// Native target identity/lifecycle still has to exist; this certifies no
+    /// output content and is never sufficient for Current.
+    pub(in crate::domain_computation::primary_graph) fn roles_remain_present_in(
+        &self,
+        runtime: &RelationalRuntime,
+        selected: &SnapshotHandle,
+    ) -> Result<bool, CompanionPreflightStop> {
+        for role in &self.roles {
+            if !role.remains_present(runtime, selected)? {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn unchanged_in(
         &self,
         runtime: &RelationalRuntime,
         selected: &SnapshotHandle,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, CompanionPreflightStop> {
         let read = runtime.read_truth();
         for role in &self.roles {
-            admission.charge_external_work(1)?;
-            let Some(entity) = role.entity else {
+            if !role.remains_present(runtime, selected)? {
                 return Ok(false);
-            };
+            }
             if role.posture == WorthQueryApplicationOutputPosture::Retire {
-                admission.charge_external_work(3)?;
-                if role.retirement.is_none()
-                    || retirement::native_metadata(runtime, selected, entity) != role.retirement
-                {
-                    return Ok(false);
-                }
                 continue;
             }
-            if read.exact_snapshot_live_entity_kind(selected, entity) != Some(role.kind) {
-                return Ok(false);
-            }
+            let entity = role.entity.expect("present role has an entity");
             for aspect in &self.aspects[role.first_aspect..role.end_aspect] {
-                admission.charge_external_work(aspect.aspect.as_str().len() as u64 + 1)?;
                 if read.exact_snapshot_entity_aspect_version(selected, entity, &aspect.aspect)
                     != aspect.revision
                 {
@@ -243,5 +232,25 @@ impl SealedNativeOutputWitness {
             }
         }
         Ok(true)
+    }
+}
+
+impl RoleProbe {
+    fn remains_present(
+        &self,
+        runtime: &RelationalRuntime,
+        selected: &SnapshotHandle,
+    ) -> Result<bool, CompanionPreflightStop> {
+        let Some(entity) = self.entity else {
+            return Ok(false);
+        };
+        if self.posture == WorthQueryApplicationOutputPosture::Retire {
+            return Ok(self.retirement.is_some()
+                && retirement::native_metadata(runtime, selected, entity) == self.retirement);
+        }
+        Ok(runtime
+            .read_truth()
+            .exact_snapshot_live_entity_kind(selected, entity)
+            == Some(self.kind))
     }
 }

@@ -21,6 +21,20 @@ struct MatchedConsumedRoot {
 }
 
 impl<'a> MatchedRequiredPredecessors<'a> {
+    /// Preserve the exact posted consumer before a source-only refresh retires
+    /// it. No upstream has been matched: all original roots still require the
+    /// ordinary native verification at this pinned selected snapshot.
+    pub(in crate::domain_computation::primary_graph) fn retain_consumer(
+        registry: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry,
+        consumer: &Arc<RecordedSettlementIdentity>,
+        selected: &'a PositionedRelationalSnapshot,
+    ) -> Result<Self, WorthQueryOutputDemandDenial> {
+        Ok(Self {
+            _custody: registry.retain_consumer_handoff(consumer)?,
+            roots: Vec::new(),
+            selected,
+        })
+    }
     /// Adds one matched edge to `matched`, starting the set on its first.
     pub(in crate::domain_computation::primary_graph) fn join(
         matched: &mut Option<Self>,
@@ -29,30 +43,14 @@ impl<'a> MatchedRequiredPredecessors<'a> {
         old_identity: Arc<RecordedSettlementIdentity>,
         successor: ReboundConsumedOutput,
         selected: &'a PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let item = std::mem::size_of::<MatchedConsumedRoot>();
-        admission
-            .charge_external_work(
-                u64::try_from(item + std::mem::size_of::<Arc<RecordedSettlementIdentity>>() + 2)
-                    .map_err(|_| work_denial())?,
-            )
-            .map_err(|_| work_denial())?;
         if matched.is_none() {
-            *matched = Some(Self {
-                _custody: registry.retain_consumer_handoff(consumer, admission)?,
-                roots: Vec::new(),
-                selected,
-            });
+            *matched = Some(Self::retain_consumer(registry, consumer, selected)?);
         }
         let matched = matched.as_mut().expect("consumer wave custody established");
         if matched.roots.len() == matched.roots.capacity() {
             let next = matched.roots.capacity().saturating_mul(2).max(1);
-            admission
-                .admit_read_scratch(
-                    u64::try_from(next.saturating_mul(item)).map_err(|_| capacity_denial())?,
-                )
-                .map_err(admission_denial)?;
+
             matched
                 .roots
                 .try_reserve_exact(next - matched.roots.len())
@@ -69,17 +67,10 @@ impl<'a> MatchedRequiredPredecessors<'a> {
     pub(in crate::domain_computation::primary_graph) fn matches_consumer(
         &self,
         identity: &Arc<RecordedSettlementIdentity>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, CompanionPreflightStop> {
-        admission.charge_external_work(
-            (2 * std::mem::size_of::<RecordedSettlementIdentity>() + 1) as u64,
-        )?;
         Ok(self._custody.matches(identity))
     }
 
-    pub(in crate::domain_computation::primary_graph) fn root_count(&self) -> usize {
-        self.roots.len()
-    }
     pub(in crate::domain_computation::primary_graph) fn old_identities(
         &self,
     ) -> impl Iterator<Item = &Arc<RecordedSettlementIdentity>> {
@@ -104,21 +95,7 @@ impl<'a> MatchedRequiredPredecessors<'a> {
     pub(in crate::domain_computation::primary_graph) fn matches_cutoff_root(
         &self,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, worth_relational::facade::mvcc::CompanionPreflightStop> {
-        admission.charge_external_work(4)?;
-        let branch_work = self
-            .selected
-            .branch_id()
-            .0
-            .len()
-            .checked_add(selected.branch_id().0.len())
-            .and_then(|work| {
-                work.checked_add(2 * std::mem::size_of::<PositionedRelationalSnapshot>())
-            })
-            .and_then(|work| u64::try_from(work).ok())
-            .ok_or(worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow)?;
-        admission.charge_external_work(branch_work)?;
         Ok(
             self.selected.runtime_instance_id() == selected.runtime_instance_id()
                 && self.selected.branch_id() == selected.branch_id()

@@ -21,8 +21,8 @@ fn test_ledger() -> std::sync::Arc<crate::data::retained_storage::SignalConditio
 {
     crate::data::retained_storage::SignalConditionalRetentionLedger::new(
         crate::runtime_policy::SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 8,
-            maximum_retained_bytes: 512 * 1024 * 1024,
+            maximum_retained_slots: Some(8),
+            maximum_retained_bytes: Some(512 * 1024 * 1024),
             maximum_attempt_visits: Some(PREPARATION_WORK),
         },
         crate::runtime_policy::SignalRuntimePolicy::development().conditional_temporal_budget,
@@ -96,7 +96,7 @@ fn cumulative_same_page_edits_admit_and_install_all_selected_nodes_together() {
         .unwrap();
     let mut work = Work::new(Some(100_000));
     assert!(
-        matches!(arena.prepare_retained_node_edits(&test_ledger(), &[0, 1], short, &mut work,
+        matches!(arena.prepare_retained_node_edits(&test_ledger(), &[0, 1], Some(short), &mut work,
         edit_selected_payloads).unwrap(), RetainedNodeEditPreparation::Rejected {
             output: 17, denial: RetainedNodeEditDenial::CapacityExhausted { required, .. }
         } if required == maximum)
@@ -106,7 +106,7 @@ fn cumulative_same_page_edits_admit_and_install_all_selected_nodes_together() {
             .prepare_retained_node_edits(
                 &test_ledger(),
                 &[0, 1],
-                maximum,
+                Some(maximum),
                 &mut Work::new(Some(work.visits() - 1)),
                 edit_selected_payloads
             )
@@ -125,7 +125,7 @@ fn cumulative_same_page_edits_admit_and_install_all_selected_nodes_together() {
         .prepare_retained_node_edits(
             &test_ledger(),
             &[0, 1],
-            maximum,
+            Some(maximum),
             &mut Work::new(Some(work.visits())),
             edit_selected_payloads,
         )
@@ -174,7 +174,7 @@ fn delayed_retained_node_install_rejects_intervening_page_and_extent_changes() {
             .prepare_retained_node_edits(
                 &test_ledger(),
                 &[0],
-                maximum,
+                Some(maximum),
                 &mut Work::new(Some(PREPARATION_WORK)),
                 edit_selected_payloads,
             )
@@ -241,7 +241,7 @@ fn retained_node_capacity_rejects_all_lanes_together_and_installs_at_exact_bound
         .prepare_retained_node_edits(
             &test_ledger(),
             &[0],
-            short,
+            Some(short),
             &mut Work::new(Some(PREPARATION_WORK)),
             edit_selected_payloads,
         )
@@ -263,7 +263,7 @@ fn retained_node_capacity_rejects_all_lanes_together_and_installs_at_exact_bound
         .prepare_retained_node_edits(
             &test_ledger(),
             &[0],
-            charge,
+            Some(charge),
             &mut Work::new(Some(PREPARATION_WORK)),
             edit_selected_payloads,
         )
@@ -302,7 +302,7 @@ fn retained_node_denial_and_unwind_preserve_every_original_lane() {
     let early = arena.prepare_retained_node_edits(
         &test_ledger(),
         &[0],
-        maximum,
+        Some(maximum),
         &mut Work::new(Some(0)),
         |_| panic!("zero-budget edit ran"),
     );
@@ -319,7 +319,7 @@ fn retained_node_denial_and_unwind_preserve_every_original_lane() {
             .prepare_retained_node_edits(
                 &test_ledger(),
                 &[0],
-                maximum,
+                Some(maximum),
                 &mut work,
                 edit_selected_payloads
             )
@@ -330,7 +330,7 @@ fn retained_node_denial_and_unwind_preserve_every_original_lane() {
         .prepare_retained_node_edits(
             &test_ledger(),
             &[0],
-            maximum,
+            Some(maximum),
             &mut Work::new(Some(work.visits() - 1)),
             edit_selected_payloads,
         )
@@ -348,7 +348,7 @@ fn retained_node_denial_and_unwind_preserve_every_original_lane() {
         let _ = arena.prepare_retained_node_edits(
             &test_ledger(),
             &[0],
-            maximum,
+            Some(maximum),
             &mut Work::new(Some(10_000)),
             |payloads| {
                 edit_selected_payloads(payloads);
@@ -377,7 +377,7 @@ fn retained_node_denial_and_unwind_preserve_every_original_lane() {
         arena.prepare_retained_node_edits(
             &test_ledger(),
             &[0],
-            maximum,
+            Some(maximum),
             &mut Work::new(Some(10_000)),
             |_| panic!("unprepared edit ran")
         ),

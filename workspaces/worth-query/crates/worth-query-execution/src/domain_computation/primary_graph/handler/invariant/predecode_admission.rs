@@ -91,14 +91,8 @@ where
     {
         self.checkpoint().map_err(HandlerExecutionDenial::new)?;
         let execution = self.execution;
-        let checkpoint = || {
-            execution
-                .interruption()
-                .map_or(Ok(()), |cause| Err(match cause {
-                    crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption::Cancelled => HandlerInterruption::Cancelled,
-                    crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption::DeadlineExceeded => HandlerInterruption::DeadlineExceeded,
-                }))
-        };
+        let interruption = self.interruption;
+        let checkpoint = || super::interruption::checkpoint(execution, interruption);
         let result = self.reader.decision_field_with_predecode_admission(
             identity,
             field,

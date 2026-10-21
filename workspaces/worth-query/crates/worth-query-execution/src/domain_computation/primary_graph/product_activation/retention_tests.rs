@@ -19,7 +19,7 @@ fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
     let registry = WorthQueryProductActivationRegistry::new(limit).unwrap();
     registry.reserve().unwrap().commit(product.observation());
     let held_gate = registry.gate(product.branch_identity()).unwrap();
-    let mut pending = (1..limit.get())
+    let mut pending = (1..limit.get().expect("explicit finite branch policy"))
         .map(|_| registry.reserve().unwrap())
         .collect::<Vec<_>>();
     assert!(matches!(
@@ -57,7 +57,7 @@ fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
         Err(WorthQueryProductActivationDenial::CapacityExhausted)
     ));
     drop((first, second, pending));
-    for _ in 0..(limit.get() * 2) {
+    for _ in 0..(limit.get().expect("explicit finite branch policy") * 2) {
         drop(registry.reserve().unwrap());
     }
 }

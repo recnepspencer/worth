@@ -2,13 +2,15 @@ use std::{cmp::Ordering, sync::Arc};
 
 use worth_foundational::PartitionIdentity;
 
-use crate::{oracle::CanonicalBits, report::ChargedBytes};
+use crate::report::ChargedBytes;
 
 use super::{
     super::plan::{priority, ReductionDenial},
-    recombine::Engine,
+    recombine::NodeEngine,
     Link, ReductionRunStop,
 };
+
+pub(super) mod structure;
 
 pub(super) struct Updated<T> {
     pub(super) link: Link<T>,
@@ -72,84 +74,33 @@ fn merge_depth<T>(left: &Link<T>, right: &Link<T>) -> usize {
     }
 }
 
-pub(super) fn insert<T, F, H, E>(
+pub(super) fn insert<T: Clone + ChargedBytes, E>(
     root: &Link<T>,
     partition: PartitionIdentity,
     value: T,
-    engine: &mut Engine<'_, T, F, H>,
-) -> Result<Link<T>, ReductionRunStop<E>>
-where
-    T: Clone + ChargedBytes + CanonicalBits,
-    F: Fn(&T, &T) -> T,
-    H: FnMut() -> Result<(), E>,
-{
-    let Some(node) = root else {
-        return engine.build(partition, value, None, None).map(Some);
-    };
-    if partition < node.identity {
-        let child = insert(&node.left, partition, value, engine)?;
-        if priority(partition) < priority(node.identity)
-            && child
-                .as_ref()
-                .is_some_and(|left| left.identity == partition)
-        {
-            let top = child.expect("checked child identity");
-            let lower = engine.build(
-                node.identity,
-                node.value.clone(),
-                top.right.clone(),
-                node.right.clone(),
-            )?;
-            let rotated = engine.build(
-                top.identity,
-                top.value.clone(),
-                top.left.clone(),
-                Some(lower),
-            )?;
-            return Ok(Some(rotated));
-        }
-        engine
-            .build(node.identity, node.value.clone(), child, node.right.clone())
-            .map(Some)
-    } else {
-        let child = insert(&node.right, partition, value, engine)?;
-        if priority(partition) < priority(node.identity)
-            && child
-                .as_ref()
-                .is_some_and(|right| right.identity == partition)
-        {
-            let top = child.expect("checked child identity");
-            let lower = engine.build(
-                node.identity,
-                node.value.clone(),
-                node.left.clone(),
-                top.left.clone(),
-            )?;
-            let rotated = engine.build(
-                top.identity,
-                top.value.clone(),
-                Some(lower),
-                top.right.clone(),
-            )?;
-            return Ok(Some(rotated));
-        }
-        engine
-            .build(node.identity, node.value.clone(), node.left.clone(), child)
-            .map(Some)
-    }
+    engine: &mut impl NodeEngine<T, E>,
+) -> Result<Link<T>, ReductionRunStop<E>> {
+    structure::insert(
+        root,
+        partition,
+        &mut structure::Native {
+            engine,
+            value: Some(value),
+            error: std::marker::PhantomData,
+        },
+    )
 }
 
-pub(super) fn update<T, F, H, E>(
+pub(super) fn update<T, E>(
     root: &Link<T>,
     partition: PartitionIdentity,
     value: T,
-    engine: &mut Engine<'_, T, F, H>,
+    engine: &mut impl NodeEngine<T, E>,
 ) -> Result<Updated<T>, ReductionRunStop<E>>
 where
-    T: Clone + ChargedBytes + CanonicalBits,
-    F: Fn(&T, &T) -> T,
-    H: FnMut() -> Result<(), E>,
+    T: Clone + ChargedBytes,
 {
+    engine.inspect();
     let node = root
         .as_ref()
         .ok_or(ReductionRunStop::Denial(ReductionDenial::UnknownIdentity(
@@ -217,66 +168,37 @@ where
     })
 }
 
-pub(super) fn delete<T, F, H, E>(
+pub(super) fn delete<T: Clone + ChargedBytes, E>(
     root: &Link<T>,
     partition: PartitionIdentity,
-    engine: &mut Engine<'_, T, F, H>,
-) -> Result<Link<T>, ReductionRunStop<E>>
-where
-    T: Clone + ChargedBytes + CanonicalBits,
-    F: Fn(&T, &T) -> T,
-    H: FnMut() -> Result<(), E>,
-{
-    let node = root
-        .as_ref()
-        .ok_or(ReductionRunStop::Denial(ReductionDenial::UnknownIdentity(
-            partition,
-        )))?;
-    match partition.cmp(&node.identity) {
-        Ordering::Less => {
-            let left = delete(&node.left, partition, engine)?;
-            engine
-                .build(node.identity, node.value.clone(), left, node.right.clone())
-                .map(Some)
-        }
-        Ordering::Greater => {
-            let right = delete(&node.right, partition, engine)?;
-            engine
-                .build(node.identity, node.value.clone(), node.left.clone(), right)
-                .map(Some)
-        }
-        Ordering::Equal => merge(&node.left, &node.right, engine),
-    }
+    engine: &mut impl NodeEngine<T, E>,
+) -> Result<Link<T>, ReductionRunStop<E>> {
+    structure::delete(
+        root,
+        partition,
+        &mut structure::Native {
+            engine,
+            value: None,
+            error: std::marker::PhantomData,
+        },
+    )
 }
 
-fn merge<T, F, H, E>(
-    left: &Link<T>,
-    right: &Link<T>,
-    engine: &mut Engine<'_, T, F, H>,
-) -> Result<Link<T>, ReductionRunStop<E>>
-where
-    T: Clone + ChargedBytes + CanonicalBits,
-    F: Fn(&T, &T) -> T,
-    H: FnMut() -> Result<(), E>,
-{
-    match (left, right) {
-        (None, other) | (other, None) => Ok(other.clone()),
-        (Some(left), Some(right)) if priority(left.identity) < priority(right.identity) => {
-            let merged = merge(&left.right, &Some(Arc::clone(right)), engine)?;
-            engine
-                .build(left.identity, left.value.clone(), left.left.clone(), merged)
-                .map(Some)
-        }
-        (Some(left), Some(right)) => {
-            let merged = merge(&Some(Arc::clone(left)), &right.left, engine)?;
-            engine
-                .build(
-                    right.identity,
-                    right.value.clone(),
-                    merged,
-                    right.right.clone(),
-                )
-                .map(Some)
-        }
+/// Persistent canonical prefix, using the same funded node policy as edits.
+pub(super) fn prefix<T: Clone, E>(
+    root: &Link<T>,
+    before: PartitionIdentity,
+    engine: &mut impl NodeEngine<T, E>,
+) -> Result<Link<T>, ReductionRunStop<E>> {
+    let Some(node) = root else {
+        return Ok(None);
+    };
+    engine.inspect();
+    if node.identity >= before {
+        return prefix(&node.left, before, engine);
     }
+    let right = prefix(&node.right, before, engine)?;
+    engine
+        .build(node.identity, node.value.clone(), node.left.clone(), right)
+        .map(Some)
 }

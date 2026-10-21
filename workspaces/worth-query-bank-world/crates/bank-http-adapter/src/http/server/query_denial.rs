@@ -172,6 +172,7 @@ fn parameter(kind: BankApplicationQueryParameterDenialKind) -> BankHttpDenial {
 fn projection(kind: BankApplicationProjectionDenialKind) -> BankHttpDenial {
     use BankApplicationProjectionDenialKind as Projection;
     match kind {
+        Projection::ValueDecode(cause) => value_decode(cause),
         Projection::DomainProjectionRejected => permission_denied(),
         Projection::FieldNotProjected
         | Projection::FieldContractMismatch
@@ -181,6 +182,28 @@ fn projection(kind: BankApplicationProjectionDenialKind) -> BankHttpDenial {
         | Projection::RelationContractMismatch
         | Projection::RelationCardinalityMismatch
         | Projection::RelationOmitted => internal_denied(),
+    }
+}
+
+fn value_decode(
+    cause: worth_query_host::facade::primary_graph::WorthQueryValueDecodeDenial,
+) -> BankHttpDenial {
+    use worth_query_host::facade::{
+        primary_graph::WorthQueryValueDecodeDenial as Decode,
+        runtime::{LeaseDenial, WorkCeilingDenial as Request},
+    };
+    match cause {
+        Decode::Checkpoint(stop) => super::advancement_denial::request(Request::Stopped(stop)),
+        Decode::Memory(limit) => super::advancement_denial::request(Request::Admission(
+            LeaseDenial::MemoryExhausted(limit),
+        )),
+        Decode::Scope(request) => super::advancement_denial::request(request),
+        Decode::Reservation(denial) => {
+            super::advancement_denial::request(Request::Admission(denial))
+        }
+        Decode::AccountingOverflow | Decode::BindingContractMismatch | Decode::CodecRejected => {
+            internal_denied()
+        }
     }
 }
 

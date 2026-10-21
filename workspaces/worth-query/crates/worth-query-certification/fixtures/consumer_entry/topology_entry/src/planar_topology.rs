@@ -1,6 +1,6 @@
 use std::num::NonZeroU64;
 
-use worth_query_consumer_values::PositiveLength;
+use super::fixture_values::PositiveLength;
 use worth_query_decl::facade::application_schema::{
     ApplicationInvariantCostPosture, ApplicationInvariantDefinition,
     ApplicationInvariantEnforcement, ApplicationInvariantExecutionPoint, ApplicationInvariantGroup,
@@ -123,7 +123,7 @@ pub(crate) const PLANAR_CHECKED_WORK: u64 = PLANAR_CHECKED_HEADROOM
     * (PLANAR_SCOPE_BODIES * 3 * PLANAR_SCOPE_BODIES
         + PLANAR_SCOPE_BODIES * 6 * (18 + 18)
         + PLANAR_SCOPE_SUCCESSORS * 8)
-    * crate::planar_invariant::PLANAR_CANDIDATE_WORK;
+    * super::planar_invariant::PLANAR_CANDIDATE_WORK;
 
 pub fn planar_turn_invariant<Schema>() -> ApplicationInvariantDefinition<Schema, PositivePlanarTurn>
 where

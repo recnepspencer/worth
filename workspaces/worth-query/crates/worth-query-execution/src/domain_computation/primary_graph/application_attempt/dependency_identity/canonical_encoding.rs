@@ -13,23 +13,42 @@ mod aspect_presence;
 mod canonical_digest;
 mod indexed_selection;
 mod observation_identity;
-mod workflow_fact;
-use canonical_digest::derive_identity;
+mod source_publication;
 pub(in crate::domain_computation::primary_graph::application_attempt) use observation_identity::authentication_observation_identity;
+mod workflow_fact;
+pub(super) use canonical_digest::derive_identity;
 
 const DOMAIN: CanonicalBasisDomain =
-    CanonicalBasisDomain::Future("worth-query.application-producer-dependencies");
+    CanonicalBasisDomain::Future("worth-query.application-producer-content-tree");
 const RULE_VERSION: &str = "worth-query-application-producer-dependencies-v1";
 const INDEX_GUARD_RULE_VERSION: &str =
     "worth-query-application-producer-dependencies-v2-index-definition";
-const LINEAGE_RULE_VERSION: &str = "worth-query-application-producer-lineage-v1";
+const LINEAGE_RULE_VERSION: &str = "worth-query-application-producer-lineage-v2-content-tree";
 
-pub(super) fn dependency_identity(
-    declared_key: [u8; 32],
-    facts: &[WorthQueryApplicationObservedFact],
-) -> Result<([u8; 32], WorthQueryCanonicalWorkEvidence), ()> {
-    let (rule, entries) = observation_identity::basis(declared_key, facts, || Ok::<_, ()>(()))?;
-    derive_identity(rule, entries)
+/// One logical ordinal, independently of payload chunking or edit history.
+pub(super) fn fact_entries(
+    index: usize,
+    fact: &WorthQueryApplicationObservedFact,
+) -> Result<Vec<CanonicalBasisEntry>, ()> {
+    if let WorthQueryApplicationObservedFact::IndexedEntitySelection { definition, .. } = fact {
+        // This fact is native entity-field selection, not another index family.
+        if !matches!(
+            definition.kind,
+            worth_relational::facade::indexes::DerivedIndexKind::EntityField { .. }
+        ) {
+            return Err(());
+        }
+    }
+    let mut entries = Vec::new();
+    let prefix = format!("fact.{index}");
+    push(
+        &mut entries,
+        format!("{prefix}.locator"),
+        CanonicalBasisEntryKind::Locator,
+        text(fact.locator_identity()),
+    );
+    append_fact(&mut entries, &prefix, fact);
+    Ok(entries)
 }
 
 pub(super) fn lineage_identity(
@@ -60,6 +79,9 @@ fn append_fact(
     fact: &WorthQueryApplicationObservedFact,
 ) {
     match fact {
+        WorthQueryApplicationObservedFact::SourcePublication { observation } => {
+            source_publication::append(entries, prefix, observation)
+        }
         WorthQueryApplicationObservedFact::RetiredOutputEntity {
             entity_id,
             kind: entity_kind,
@@ -163,6 +185,17 @@ fn append_fact(
             kind: field_kind, ..
         } => {
             kind(entries, prefix, "absent-field");
+            number_u64(
+                entries,
+                prefix,
+                "entity-kind",
+                u64::from(field_kind.as_u32()),
+            );
+        }
+        WorthQueryApplicationObservedFact::OptionalAspectAbsent {
+            kind: field_kind, ..
+        } => {
+            kind(entries, prefix, "optional-aspect-absent");
             number_u64(
                 entries,
                 prefix,
@@ -333,7 +366,7 @@ fn number_u64(entries: &mut Vec<CanonicalBasisEntry>, prefix: &str, field: &str,
     );
 }
 
-fn unsigned(value: u64) -> CanonicalBasisValue {
+pub(super) fn unsigned(value: u64) -> CanonicalBasisValue {
     CanonicalBasisValue::UnsignedInteger {
         width: CanonicalIntegerWidth::Bits64,
         value: u128::from(value),
@@ -344,7 +377,7 @@ fn text(value: impl Into<String>) -> CanonicalBasisValue {
     CanonicalBasisValue::ExactText(value.into().into())
 }
 
-fn push(
+pub(super) fn push(
     entries: &mut Vec<CanonicalBasisEntry>,
     locus: String,
     kind: CanonicalBasisEntryKind,

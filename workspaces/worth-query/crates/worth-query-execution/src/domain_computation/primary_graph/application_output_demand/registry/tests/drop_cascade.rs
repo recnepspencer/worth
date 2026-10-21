@@ -48,9 +48,7 @@ fn registry_drop_cascade_transfers_before_newest_owner_can_close() {
     assert_eq!(state.records[&dependent].prerequisites[0].as_ref(), &old);
     assert!(state.records[&dependent].closed_cleanup.queued());
     drop(state);
-    registry
-        .drain_closed_cleanup_admitted(&mut record_admission())
-        .unwrap();
+    registry.drain_closed_cleanup_admitted().unwrap();
     let state = registry.state.lock().unwrap();
     assert!(!state.records.contains_key(&old));
     assert_eq!(state.records[&newest].framework_required_count, 1);
@@ -93,9 +91,7 @@ fn registry_drop_cascade_names_its_released_row_bound() {
         let before = super::super::record_map::occurrence_rows_visited();
         drop(interest(&registry, root, wake));
         contacts.push(super::super::record_map::occurrence_rows_visited() - before);
-        registry
-            .drain_closed_cleanup_admitted(&mut record_admission())
-            .unwrap();
+        registry.drain_closed_cleanup_admitted().unwrap();
         assert_eq!(
             registry.state.lock().unwrap().records.len(),
             receipts.len() * 3

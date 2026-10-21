@@ -88,8 +88,6 @@ fn preserve_readiness_definition() -> domain::WorthQueryDomainOperationDefinitio
         super::super::readiness::canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("planar-final-preserve-readiness").unwrap(),
-        128,
-        128,
         "planar-final-preserve-readiness-v1",
     )
     .semantic_reads([super::super::readiness::output_change_projection()])

@@ -15,9 +15,6 @@ use super::{
     WorthQueryManagedGraphWorkSession, WorthQueryManagedGraphWorkSessionStartDenial,
 };
 
-mod admitted;
-pub(in crate::domain_computation) use admitted::WorthQueryAdmittedQuerySessionStartStop;
-
 /// One reserved identity for a freshly admitted Query permission. The same
 /// identity starts graph work only after that permission admits its Product.
 pub(in crate::domain_computation) struct WorthQueryPreparedQuerySessionIdentity {

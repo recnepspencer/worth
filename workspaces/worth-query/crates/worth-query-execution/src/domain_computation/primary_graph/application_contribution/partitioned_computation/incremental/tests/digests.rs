@@ -116,6 +116,7 @@ fn unretained_runs_serialize_neither_input_nor_items_for_digests() {
             DigestOwner,
             retention,
         );
+
         let request = live_scope();
         world
             .application

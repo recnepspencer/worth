@@ -7,44 +7,11 @@ use super::{
     CompanionRootImage, DerivedCellEdit,
 };
 
-/// Owner-supplied custody for exactly one newly allocated derived image.
-/// The owner must admit this ticket separately from an older payload's ticket.
-pub struct CompanionDerivedImageRetention {
-    _owner: Arc<dyn Any + Send + Sync>,
-}
-
-impl CompanionDerivedImageRetention {
-    pub fn from_prepared_owner<T: Any + Send + Sync>(owner: Arc<T>) -> Self {
-        Self { _owner: owner }
-    }
-}
-
-/// Native cost of one image, independent of the caller's payload heap.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct CompanionDerivedRootCost {
-    pub work: u64,
-    pub allocation_bytes: u64,
-    pub retained_image_bytes: u64,
-}
-
-pub trait CompanionDerivedRootAdmission {
-    type Stop;
-
-    fn admit_derived_root(&mut self, cost: CompanionDerivedRootCost) -> Result<(), Self::Stop>;
-}
-
-pub enum CompanionDerivedRootPreparationStop<E, T: Send + Sync + 'static> {
-    Admission {
-        reason: E,
-        expected: CompanionBranchImage<T>,
-        payload: Arc<T>,
-        retention: CompanionDerivedImageRetention,
-    },
+pub enum CompanionDerivedRootPreparationStop<T: Send + Sync + 'static> {
     Cell {
         reason: CompanionCellEditStop,
         expected: CompanionBranchImage<T>,
         payload: Arc<T>,
-        retention: CompanionDerivedImageRetention,
     },
 }
 
@@ -90,31 +57,11 @@ impl<T: Send + Sync + 'static> CompanionDerivedRootInstalled<T> {
 }
 
 impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
-    pub fn derived_root_cost() -> CompanionDerivedRootCost {
-        let bytes = super::super::preflight::arc_allocation_bound::<CompanionRootImage>();
-        CompanionDerivedRootCost {
-            work: 1,
-            allocation_bytes: bytes,
-            retained_image_bytes: bytes,
-        }
-    }
-
-    pub fn prepare_derived_root_at_same_position<A: CompanionDerivedRootAdmission>(
+    pub fn prepare_derived_root_at_same_position(
         &self,
         expected: CompanionBranchImage<T>,
         payload: Arc<T>,
-        retention: CompanionDerivedImageRetention,
-        admission: &mut A,
-    ) -> Result<PreparedCompanionDerivedRoot<T>, CompanionDerivedRootPreparationStop<A::Stop, T>>
-    {
-        if let Err(reason) = admission.admit_derived_root(Self::derived_root_cost()) {
-            return Err(CompanionDerivedRootPreparationStop::Admission {
-                reason,
-                expected,
-                payload,
-                retention,
-            });
-        }
+    ) -> Result<PreparedCompanionDerivedRoot<T>, CompanionDerivedRootPreparationStop<T>> {
         let current = match self.core.current.try_lock() {
             Ok(current) => current,
             Err(TryLockError::Poisoned(poisoned)) => poisoned.into_inner(),
@@ -123,7 +70,6 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
                     reason: CompanionCellEditStop::PreflightPending,
                     expected,
                     payload,
-                    retention,
                 });
             }
         };
@@ -139,10 +85,9 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
                 reason: CompanionCellEditStop::TopologyGenerationChanged,
                 expected,
                 payload,
-                retention,
             });
         }
-        Ok(prepare_admitted(self, expected, payload, Some(retention)))
+        Ok(prepare_admitted(self, expected, payload))
     }
 }
 
@@ -150,14 +95,12 @@ pub(super) fn prepare_admitted<T: Send + Sync + 'static>(
     cell: &CompanionBranchCell<T>,
     expected: CompanionBranchImage<T>,
     payload: Arc<T>,
-    retention: Option<CompanionDerivedImageRetention>,
 ) -> PreparedCompanionDerivedRoot<T> {
     let next = Arc::new(CompanionRootImage {
         root_id: expected.root_id,
         commit_id: expected.commit_id,
         position: AtomicU64::new(expected.position.map_or(0, |position| position.0)),
         payload: Arc::clone(&payload) as Arc<dyn Any + Send + Sync>,
-        _derived_retention: retention,
     });
     PreparedCompanionDerivedRoot {
         core: Arc::clone(&cell.core),

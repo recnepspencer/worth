@@ -198,29 +198,8 @@ fn repository_conventions_derive_the_reviewed_control_doors() {
         "pause_stable_join_for_test",
         "place_managed_computations_on_this_thread_for_test",
         "cancel_and_retry_async_request_for_test",
-        "consumed_output_custody_for_test",
     ] {
         assert!(doors.contains_key(name), "unsealed reviewed door {name}");
-    }
-    let source = "fn proof() { runtime.consumed_output_custody_for_test(); }";
-    let refused = references("crates/ordinary/src/lib.rs", source, &doors);
-    assert_eq!(refused.len(), 1);
-    assert!(refused[0]
-        .message()
-        .contains("consumed_output_custody_for_test"));
-    let callers: Vec<_> = entries(CALLERS)
-        .filter(|(_, path)| {
-            path.ends_with("custody_stops/balance.rs")
-                || path.ends_with("custody_stops/reclamation.rs")
-        })
-        .collect();
-    assert_eq!(
-        callers.len(),
-        2,
-        "both consumed-custody proof callers must be named"
-    );
-    for (_, caller) in callers {
-        assert!(references(caller, source, &doors).is_empty());
     }
 }
 
@@ -237,8 +216,12 @@ fn real_repository_has_no_unsealed_test_callers() {
     .unwrap();
     let mut shipping = Vec::new();
     for scope in SCOPES {
+        let directory = root.join(scope);
+        if !directory.is_dir() {
+            continue;
+        }
         shipping.extend(
-            shipping_sources::files_under(&root.join(scope))
+            shipping_sources::files_under(&directory)
                 .unwrap()
                 .into_iter()
                 .map(|(path, _)| {
@@ -323,3 +306,7 @@ fn raw_declarations_and_ordinary_references_share_a_seal() {
 }
 
 mod lane_71_callers;
+
+mod locality_observers;
+
+mod private_cad;

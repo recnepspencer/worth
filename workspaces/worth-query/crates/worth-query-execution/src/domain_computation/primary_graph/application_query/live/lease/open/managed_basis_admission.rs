@@ -6,8 +6,8 @@ use super::super::super::outcome::{
 use super::super::validation::open_denial;
 use crate::domain_computation::{
     managed_run::{
-        admit_managed_lower_execution_basis, WorthQueryManagedLowerBinding,
-        WorthQueryManagedLowerExecutionBasis, WorthQueryManagedTruthReadRequest,
+        admit_live_lower_execution_basis, WorthQueryManagedLowerExecutionBasis,
+        WorthQueryManagedTruthReadRequest,
     },
     primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
 };
@@ -16,7 +16,7 @@ static NEXT_APPLICATION_QUERY_LIVE_LEASE: AtomicU64 = AtomicU64::new(1);
 
 pub(super) fn admit_live_managed_basis<Schema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    live: &worth_query_installation::facade::WorthQueryInstalledApplicationLiveContract,
+    buffer_capacity: usize,
     graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     subject: &str,
     execution: worth_execution::ExecutionRequest<'_, '_>,
@@ -32,17 +32,17 @@ pub(super) fn admit_live_managed_basis<Schema>(
         })?;
     let attempt = NEXT_APPLICATION_QUERY_LIVE_LEASE.fetch_add(1, Ordering::Relaxed);
     let attempt_identity = format!("application-query-live:{attempt}");
-    let binding =
-        WorthQueryManagedLowerBinding::new(subject, &attempt_identity, live.resource_envelope());
     let request = WorthQueryManagedTruthReadRequest::from_relational_basis(
         descriptor,
         worth_runtime_bridge::facade::SnapshotReadPacket::new(Vec::new()),
     );
     let request_bridge = application.bridge.ordinary().fork_managed_request_lane();
-    admit_managed_lower_execution_basis(
+    admit_live_lower_execution_basis(
         &request_bridge,
         &application.product_runtime.source,
-        binding,
+        subject,
+        &attempt_identity,
+        buffer_capacity,
         request,
         execution,
     )

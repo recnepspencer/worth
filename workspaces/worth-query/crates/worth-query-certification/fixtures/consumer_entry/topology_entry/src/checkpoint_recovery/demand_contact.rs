@@ -46,8 +46,7 @@ fn restored_output_reuses_under_receiving_host_policy_without_provider_contact()
 
     let restored = support::install_with_demand_profile(
         Some(checkpoint),
-        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::bounded(
-            NonZeroUsize::new(4_096).unwrap(),
+        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::new(
             NonZeroUsize::new(32).unwrap(),
         ),
     );
@@ -89,7 +88,8 @@ fn restored_final_output_keeps_original_create_producer_and_zero_contact() {
     let mut settled = None;
     for _ in 0..512 {
         match demand.advance(&request).expect("the final demand advances") {
-            WorthQueryApplicationOutputDemandProgress::Pending => std::thread::yield_now(),
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => std::thread::yield_now(),
             WorthQueryApplicationOutputDemandProgress::Settled(output) => {
                 settled = Some(output);
                 break;
@@ -140,7 +140,8 @@ fn direct_demand<'application, 'principal, 'scope>(
         .expect("the direct output demand starts");
     for _ in 0..512 {
         match demand.advance(request).expect("the direct demand advances") {
-            WorthQueryApplicationOutputDemandProgress::Pending => std::thread::yield_now(),
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => std::thread::yield_now(),
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => return settled,
         }
     }

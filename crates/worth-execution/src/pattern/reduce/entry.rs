@@ -110,6 +110,7 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
                 reducer_storage_bytes,
                 inputs,
                 tree,
+                None,
             );
         };
         let backend = if lease.resolved_posture() == ExecutionPosture::Automatic {
@@ -129,6 +130,7 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
             None,
             inputs,
             tree,
+            None,
         )
     }
 }

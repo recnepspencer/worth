@@ -55,21 +55,21 @@ pub(super) fn validate(
                 && Some(*presence) == step.source_presence() && target_metadata.map(|(target_unit, _)| target_unit) == Some(unit)))
         || !step.source_read().is_some_and(|read| has_read(members, operation, &read))
     {
-        return Err(Denial::MissingOperationDecisionReadDependency);
+        return Err(Denial::decision_read_body_dependency(operation));
     }
     if matches!(
         step,
         Step::PresentScopeField { .. } | Step::CapturedScopeField { .. }
     ) && target_metadata.is_none_or(|(_, presence)| *presence != Presence::Required)
     {
-        return Err(Denial::MissingOperationDecisionReadDependency);
+        return Err(Denial::decision_read_body_dependency(operation));
     }
     if let Step::CapturedPathField {
         target_presence, ..
     } = step
         && !target_metadata.is_some_and(|(_, presence)| presence == target_presence)
     {
-        return Err(Denial::MissingOperationDecisionReadDependency);
+        return Err(Denial::decision_read_body_dependency(operation));
     }
     Ok(())
 }

@@ -14,9 +14,8 @@ mod batch;
 pub(in crate::domain_computation::primary_graph) use basis::PreparedSelectedReadIndexes;
 pub(in crate::domain_computation::primary_graph) use basis::WorthQueryApplicationQueryBasisCustody;
 pub use batch::{
-    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchLimits,
-    WorthQueryApplicationQueryBatchMemory, WorthQueryApplicationQueryBatchReadPlan,
-    WorthQueryApplicationQueryBatchResourceDenial, WorthQueryApplicationQueryBatchWork,
+    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchReadPlan,
+    WorthQueryApplicationQueryBatchResourceDenial,
 };
 mod continuation;
 mod control_validation;
@@ -31,10 +30,17 @@ mod governance_affinity_tests;
 mod graph_read_plan_binding;
 mod installed_schema_currentness;
 mod live;
+mod native_access;
+pub(in crate::domain_computation::primary_graph) use native_access::ApplicationQueryNativeAccess;
 pub(in crate::domain_computation::primary_graph) mod observed_source;
 pub(in crate::domain_computation) use observed_source::ObservedQueryExpressionContext;
 mod one_shot;
+mod output_source_observation;
 pub(in crate::domain_computation::primary_graph) use one_shot::WorthQueryAdmittedOneShotStop;
+pub(in crate::domain_computation::primary_graph) use output_source_observation::{
+    ObservedQuerySource, SourceQueryObservationStop, SourceQueryReadClosure,
+    SourceQueryReaderAccess,
+};
 mod projection;
 mod read_execution;
 pub use read_execution::{
@@ -45,11 +51,6 @@ mod readiness;
 pub(crate) mod resource_lifecycle;
 mod retained_read;
 mod runtime_support;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use runtime_support::primary_graph_support_inventory;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use runtime_support::primary_graph_support_inventory_admitted;
-
 pub use access_context::WorthQueryApplicationQueryAccessContext;
 pub use access_receipt::{
     WorthQueryApplicationQueryAccessReceipt, WorthQueryApplicationQueryOmissionPosture,
@@ -98,8 +99,7 @@ pub use live::{
 };
 pub(in crate::domain_computation::primary_graph) use observed_source::{
     BoundStableObservedSourceFacts, PreparedObservedSourceExpectation,
-    WorthQueryCheckpointSourceIdentity, WorthQueryObservedEpochStop,
-    WorthQueryObservedScopeSelector, WorthQueryObservedSourceCloneStop,
+    WorthQueryCheckpointSourceIdentity, WorthQueryObservedScopeSelector,
     WorthQueryObservedSourceEpoch, WorthQueryObservedSourceSelection,
     WorthQueryRuntimeSourceIdentity,
 };
@@ -123,10 +123,10 @@ pub use resource_lifecycle::{
     WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisObservation,
     WorthQueryApplicationBasisObserver, WorthQueryApplicationBasisReleaseOutcome,
     WorthQueryApplicationBasisReleaseReceipt, WorthQueryApplicationBasisSelectionIdentity,
-    WorthQueryApplicationResultBufferEvidence, WorthQueryApplicationResultBufferObservation,
-    WorthQueryApplicationResultBufferObserver,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use runtime_support::primary_graph_support_inventory;
 
 pub use one_shot::{WorthQueryDependentPairReadContext, WorthQueryDerivedPairReadPlans};
 

@@ -149,8 +149,6 @@ fn final_readiness_definition() -> domain::WorthQueryDomainOperationDefinition<
         super::super::readiness::canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("planar-final-readiness").unwrap(),
-        128,
-        128,
         "planar-final-readiness-v1",
     )
     .semantic_reads([super::super::readiness::output_change_projection()])

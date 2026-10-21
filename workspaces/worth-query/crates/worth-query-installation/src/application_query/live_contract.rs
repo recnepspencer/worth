@@ -4,15 +4,8 @@ use worth_query_declaration::facade::{
         ErasedApplicationQueryDefinition,
     },
     application_schema::{ApplicationSchemaMember, ErasedApplicationSchemaDeclaration},
-    domain_computation::{
-        WorthQueryCancellationSafePointFamily, WorthQueryExecutionMode,
-        WorthQueryResourceDimension, WorthQueryResourceLimitRequest,
-        WorthQueryRetainedProgressPosture, WorthQuerySemanticScaleRequest,
-    },
     portable_identity::WorthQueryPortableTypeIdentity,
 };
-
-use crate::domain_computation::WorthQueryExecutionResourceEnvelope;
 
 use super::{
     WorthQueryApplicationQueryInstallationDenial, WorthQueryApplicationQueryInstallationDenialKind,
@@ -28,7 +21,6 @@ pub struct WorthQueryInstalledApplicationLiveContract {
     target_identity: WorthQueryInstalledGraphProjection,
     target_mode: ApplicationQueryLiveTargetMode,
     collection_path: Option<String>,
-    resource_envelope: WorthQueryExecutionResourceEnvelope,
 }
 
 impl WorthQueryInstalledApplicationLiveContract {
@@ -88,7 +80,6 @@ impl WorthQueryInstalledApplicationLiveContract {
             target_identity,
             target_mode: live.target_mode(),
             collection_path,
-            resource_envelope: compile_resource_envelope(live),
         }))
     }
 
@@ -118,10 +109,6 @@ impl WorthQueryInstalledApplicationLiveContract {
 
     pub fn collection_path(&self) -> Option<&str> {
         self.collection_path.as_deref()
-    }
-
-    pub const fn resource_envelope(&self) -> &WorthQueryExecutionResourceEnvelope {
-        &self.resource_envelope
     }
 }
 
@@ -171,31 +158,6 @@ fn require_installed_projection(
 ) -> Result<WorthQueryInstalledGraphProjection, WorthQueryApplicationQueryInstallationDenial> {
     installed_projection(graph, slot_type.clone(), field)
         .ok_or_else(|| installation_denial(denial_kind, slot_type.as_str()))
-}
-
-fn compile_resource_envelope(
-    live: &ApplicationQueryLiveCauseContract,
-) -> WorthQueryExecutionResourceEnvelope {
-    let resources = live.resources();
-    let limits = WorthQueryResourceLimitRequest::bounded(resources.maximum_work_per_delivery())
-        .with(
-            WorthQueryResourceDimension::QueueDepth,
-            resources.maximum_buffered_causes(),
-        )
-        .with(WorthQueryResourceDimension::ChunkWidth, 1)
-        .with(
-            WorthQueryResourceDimension::RetainedBytes,
-            resources.maximum_retained_payload_bytes(),
-        );
-    WorthQueryExecutionResourceEnvelope::new(
-        WorthQuerySemanticScaleRequest::bounded(resources.maximum_work_per_delivery()),
-        limits,
-        WorthQueryExecutionMode::Asynchronous,
-        None,
-        WorthQueryCancellationSafePointFamily::new("application-query-live-delivery")
-            .expect("the installed live safe-point family is canonical"),
-    )
-    .with_retained_progress_posture(WorthQueryRetainedProgressPosture::RetainAttemptCapacity)
 }
 
 fn installation_denial(

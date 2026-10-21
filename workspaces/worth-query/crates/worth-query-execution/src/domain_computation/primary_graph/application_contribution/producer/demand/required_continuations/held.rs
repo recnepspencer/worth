@@ -1,12 +1,14 @@
 //! Resume an unfinished successor, and hand a queue frame's unfinished
 //! successors to registry custody on their own rows.
 
+mod local_resume;
 use super::super::progression::PerformedMembers;
 use super::*;
-use crate::domain_computation::primary_graph::application_output_demand::{
-    HeldRequiredSuccessor, OutputRowStage, WorthQueryOutputDemandKey,
-};
+use crate::domain_computation::primary_graph::application_output_demand::HeldRequiredSuccessor;
+use crate::domain_computation::primary_graph::application_output_demand::OutputRowStage;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+pub(super) use local_resume::resume as resume_local;
 
 /// The registry's copy of one frame successor and the custody it is funded by.
 pub(super) struct HeldFrameSuccessor<Schema>
@@ -15,7 +17,6 @@ where
 {
     pub(super) progress: RequiredFreshProgress<Schema>,
     // Declared after `progress`: the ticket refunds after its storage frees.
-    _capacity: RequiredOutputCustodyCapacity,
 }
 
 pub(super) fn held_key<Schema>(held: &HeldRequiredSuccessor) -> &WorthQueryOutputDemandKey
@@ -37,11 +38,7 @@ where
     fn position_of(
         &self,
         key: &WorthQueryOutputDemandKey,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<usize>, WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work(u64::try_from(self.entries.len()).map_err(|_| work_denial())?)
-            .map_err(|_| work_denial())?;
         Ok(self
             .entries
             .iter()
@@ -57,16 +54,7 @@ where
         registry: &WorthQueryOutputDemandRegistry,
     ) {
         for progress in std::mem::take(&mut self.entries) {
-            let bytes = std::mem::size_of::<HeldFrameSuccessor<Schema>>();
-            let Ok(capacity) = registry.reserve_held_successor_capacity(bytes) else {
-                // Typed successor Drop preserves another delivery entry, or
-                // closes its otherwise orphaned Published checkpoint.
-                continue;
-            };
-            let held: HeldRequiredSuccessor = Box::new(HeldFrameSuccessor {
-                progress,
-                _capacity: capacity,
-            });
+            let held: HeldRequiredSuccessor = Box::new(HeldFrameSuccessor { progress });
             drop(registry.hold_required_successor(held, held_key::<Schema>));
         }
     }
@@ -107,7 +95,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     branch: crate::basis::WorthQueryProductBranch,
     custody: ContinuationCustody<'_, Schema>,
     key: &WorthQueryOutputDemandKey,
-    admission: &mut InvalidationEditAdmission,
+
     performed: &std::cell::RefCell<PerformedMembers>,
 ) -> Result<HeldUpstream, WorthQueryOutputDemandDenial>
 where
@@ -117,47 +105,25 @@ where
         ContinuationCustody::Caller(custody, contacts) => (custody, Some(contacts)),
         ContinuationCustody::Queue(custody) => (custody, None),
     };
-    if let Some(index) = custody.position_of(key, admission)? {
-        let result = custody.entries[index].resume(
-            phase, runtime, principal, request, branch, admission, performed,
+    if let Some(index) = custody.position_of(key)? {
+        return local_resume::resume(
+            phase,
+            runtime,
+            principal,
+            request,
+            branch,
+            custody,
+            caller_contacts,
+            index,
+            performed,
         );
-        custody.entries[index].report_caller_contacts(caller_contacts);
-        let finished = matches!(result, Ok(Some(_)));
-        if finished || result.is_err() {
-            let moved = (custody.entries.len() - index)
-                .checked_mul(std::mem::size_of::<RequiredFreshProgress<Schema>>())
-                .and_then(|work| u64::try_from(work).ok())
-                .ok_or_else(work_denial)?;
-            admission
-                .charge_external_work(moved)
-                .map_err(|_| work_denial())?;
-        }
-        if finished {
-            custody.entries[index..].rotate_left(1);
-        }
-        return match result {
-            Ok(Some(ready)) => Ok(HeldUpstream::Ready(ready)),
-            Ok(None) => Ok(HeldUpstream::Unfinished),
-            Err(stop)
-                if superseded(&stop)
-                    && runtime
-                        .output_demands
-                        .give_back_replaced_ready(key, admission)? =>
-            {
-                drop(custody.entries.remove(index));
-                Ok(HeldUpstream::GaveBack)
-            }
-            Err(stop) => Err(stop),
-        };
     }
-    let Some(held) = runtime
-        .output_demands
-        .take_published_held_successor(key, admission)?
-    else {
+
+    let Some(held) = runtime.output_demands.take_published_held_successor(key)? else {
         return Ok(HeldUpstream::Unfinished);
     };
     resume_registry_successor(
-        phase, runtime, principal, request, branch, custody, held, admission, performed,
+        phase, runtime, principal, request, branch, custody, held, performed,
     )
 }
 
@@ -170,25 +136,22 @@ pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
     branch: crate::basis::WorthQueryProductBranch,
     custody: &mut RequiredContinuations<Schema>,
     held: HeldRequiredSuccessor,
-    admission: &mut InvalidationEditAdmission,
+
     performed: &std::cell::RefCell<PerformedMembers>,
 ) -> Result<HeldUpstream, WorthQueryOutputDemandDenial> {
     let mut held = held
         .downcast::<HeldFrameSuccessor<Schema>>()
         .unwrap_or_else(|_| unreachable!("the registry holds only this runtime's successors"));
 
-    let result = held.progress.resume(
-        phase, runtime, principal, request, branch, admission, performed,
-    );
+    let result = held
+        .progress
+        .resume(phase, runtime, principal, request, branch, performed);
     held.progress.report_caller_contacts(None);
     let key = held.progress.interest().key();
     let ready = match result {
         Ok(Some(ready)) => ready,
         Err(stop)
-            if superseded(&stop)
-                && runtime
-                    .output_demands
-                    .give_back_replaced_ready(key, admission)? =>
+            if superseded(&stop) && runtime.output_demands.give_back_replaced_ready(key)? =>
         {
             drop(stop);
             drop(held);
@@ -212,10 +175,8 @@ pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
         }
     };
     let HeldFrameSuccessor { progress, .. } = *held;
-    let slot = custody.prepare_slot(&runtime.output_demands, admission)?;
-    admission
-        .charge_external_work(slot.installation_work())
-        .map_err(|_| work_denial())?;
+    let slot = custody.prepare_slot(&runtime.output_demands)?;
+
     slot.push(progress);
     Ok(HeldUpstream::Ready(ready))
 }
@@ -241,12 +202,12 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
-        admission: &mut InvalidationEditAdmission,
+
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<Option<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {
         let registry = &runtime.output_demands;
         if registry
-            .interest_ready_readmission(self.interest(), admission)?
+            .interest_ready_readmission(self.interest())?
             .is_some()
         {
             return Ok(None);
@@ -256,18 +217,14 @@ where
         // but it cannot erase the checkpoint or its exact scheduling identity.
         // The required wave still proves Current after this Ready delivery.
         if !matches!(
-            registry.row_stage_admitted(self.interest(), admission)?,
+            registry.row_stage_admitted(self.interest())?,
             OutputRowStage::Published
         ) {
-            self.successor.resume(
-                phase, runtime, principal, request, branch, admission, performed,
-            )?;
+            self.successor
+                .resume(phase, runtime, principal, request, branch, performed)?;
         }
         loop {
-            let stage = match self
-                .checkpoint(admission, super::super::progression::admission_denial)
-                .inspect(registry)?
-            {
+            let stage = match self.checkpoint().inspect(registry)? {
                 WaveCheckpointTurn::Current(ready) => return Ok(Some(ready.into_readmission())),
                 WaveCheckpointTurn::Awaiting(stage) => stage,
             };
@@ -297,19 +254,14 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
-        admission: &mut InvalidationEditAdmission,
+
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         let demand = self
             .demand
             .as_mut()
             .expect("installed successor retains its typed demand");
-        admission
-            .charge_external_work(
-                u64::try_from(std::mem::size_of::<WorthQueryProducerCommitAuthority>())
-                    .map_err(|_| work_denial())?,
-            )
-            .map_err(|_| work_denial())?;
+
         let authority = demand
             .progression_provenance
             .required()
@@ -317,7 +269,7 @@ where
             .commit_authority()
             .clone();
         runtime.advance_retained_with_commit_authority(
-            execution, phase, demand, principal, request, branch, authority, admission, performed,
+            execution, phase, demand, principal, request, branch, authority, performed,
         )
     }
 }

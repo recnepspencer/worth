@@ -3,7 +3,7 @@ use worth_query_installation::facade::ApplicationSchema;
 mod dependent;
 mod restoration;
 mod retained_observation;
-mod selected_custody;
+
 mod selection_mode;
 mod source_admission;
 mod source_custody;
@@ -225,24 +225,18 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        let mut admission = self.demand_request_admission();
-        let result = self
-            .admit_output_demand_with_source_admitted::<Family>(
-                execution,
-                observed_source,
-                selection_source,
-                profile_kind,
-                limits,
-                performed_source,
-                admission_kind,
-                expected_source_commit,
-                successor_of,
-                retained_program_basis,
-                SourceAdmissionSelection::Ordinary,
-                &mut admission,
-            )
-            .map_err(|stop| self.starting_custody_stop(stop, &mut admission));
-        super::caller_pass_observation::observe_admission_work(&admission);
-        result
+        self.admit_output_demand_with_source_admitted::<Family>(
+            execution,
+            observed_source,
+            selection_source,
+            profile_kind,
+            limits,
+            performed_source,
+            admission_kind,
+            expected_source_commit,
+            successor_of,
+            retained_program_basis,
+            SourceAdmissionSelection::Ordinary,
+        )
     }
 }

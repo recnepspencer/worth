@@ -7,8 +7,6 @@ use std::fmt;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::Arc;
 
-use super::arc_allocation_bound;
-
 const PREPARED: u8 = 0;
 const INSTALLED: u8 = 1;
 const ABORTED: u8 = 2;
@@ -22,7 +20,6 @@ pub enum CompanionPublicationCompletion {
 
 struct CompletionCore {
     state: AtomicU8,
-    _retained: Arc<dyn Send + Sync>,
 }
 
 /// Read-only, exact-attempt outcome. Holding the observer also holds the
@@ -41,10 +38,6 @@ impl fmt::Debug for CompanionPublicationCompletionObserver {
 }
 
 impl CompanionPublicationCompletionObserver {
-    pub const fn retained_bytes() -> u64 {
-        arc_allocation_bound::<CompletionCore>()
-    }
-
     pub fn state(&self) -> CompanionPublicationCompletion {
         match self.core.state.load(Ordering::Acquire) {
             PREPARED => CompanionPublicationCompletion::Prepared,
@@ -54,11 +47,10 @@ impl CompanionPublicationCompletionObserver {
         }
     }
 
-    pub(super) fn new(retained: Arc<dyn Send + Sync>) -> Self {
+    pub(super) fn new() -> Self {
         Self {
             core: Arc::new(CompletionCore {
                 state: AtomicU8::new(PREPARED),
-                _retained: retained,
             }),
         }
     }

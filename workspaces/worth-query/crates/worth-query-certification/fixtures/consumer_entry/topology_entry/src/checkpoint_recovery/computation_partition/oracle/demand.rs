@@ -53,7 +53,8 @@ pub(super) fn demand_reconciled<
         )
     }) {
         WorthQueryApplicationOutputDemandProgress::Settled(settled) => settled,
-        WorthQueryApplicationOutputDemandProgress::Pending => {
+        WorthQueryApplicationOutputDemandProgress::Pending
+        | WorthQueryApplicationOutputDemandProgress::Progressed => {
             panic!("one advance must settle; decisions: {:?}", *room())
         }
     };

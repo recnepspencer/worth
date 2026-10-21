@@ -161,9 +161,7 @@ fn external_pair_and_adjacency_remain_current_after_owned_endpoint_retirement() 
 
 #[test]
 fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
-    use crate::domain_computation::primary_graph::application_attempt::{
-        Movement, WorthQuerySourceCurrentnessFailure,
-    };
+    use crate::domain_computation::primary_graph::application_attempt::Movement;
     let world = installed_authorization_world(true);
     world
         .application
@@ -189,7 +187,7 @@ fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
                 })
                 .collect::<Vec<_>>();
             assert_eq!(revisions.len(), 3);
-            let probe = |fact: &Fact, maximum_work| {
+            let probe = |fact: &Fact| {
                 let selected = world.selected_product(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
                 );
@@ -197,18 +195,17 @@ fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
                 graph.integration_handle().with_runtime(
                     &phase.borrowed_request_for_test(),
                     |runtime| {
-                        fact.source_currentness_within(
+                        fact.source_currentness_in(
                             runtime,
                             execution,
                             selected.application_basis().snapshot_handle(),
-                            maximum_work,
                         )
                     },
                 )
             };
             for fact in &revisions {
                 assert_eq!(
-                    probe(fact, 64).unwrap().0.movement(),
+                    probe(fact).unwrap().unwrap().movement(),
                     Movement::Unmoved,
                     "{fact:?}"
                 );
@@ -217,16 +214,11 @@ fn a_retired_entity_changes_each_revision_fact_read_without_its_entity_fact() {
             // Source facts are kept in canonical key order, so a revision fact can be
             // read before the lifecycle fact of the same entity. Each answers alone.
             for fact in &revisions {
-                let (movement, work) = probe(fact, 64).unwrap();
+                let movement = probe(fact).unwrap().unwrap();
                 assert_eq!(
                     movement.movement(),
                     Movement::Moved,
                     "a retired entity changed this fact: {fact:?}"
-                );
-                assert_eq!(
-                    probe(fact, work - 1),
-                    Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded),
-                    "the liveness probe is admitted work: {fact:?}"
                 );
             }
         })

@@ -64,7 +64,7 @@ worth_query_query_binding!(
         worth_query_decl::facade::application_schema::NoApplicationUnit,
     field AccountIdentity::reference(),
     value AccountSummaryRequest::account,
-    limits results 1_024, work 100_000
+    limits results 1_024
 
 );
 

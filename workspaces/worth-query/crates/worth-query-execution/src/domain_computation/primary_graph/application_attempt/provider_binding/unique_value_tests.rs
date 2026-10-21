@@ -213,16 +213,11 @@ fn lower(
     let fixture = WorthQueryUniqueFieldFixture::new(KIND, field("key"), index);
     prepare_provider_attempt(
         fixture.fields(),
+        &|_, _| None,
         PartitionId::main(),
         effects.len(),
-        super::super::read_set::admit_array(
-            0,
-            [],
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            "read scopes",
-            || Ok(()),
-        )
-        .unwrap(),
+        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture, crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
+            crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(
         super::super::read_set::admit_array(
             facts.len(),
             facts,
@@ -230,7 +225,9 @@ fn lower(
             "unique fixture",
             || Ok(()),
         )
-        .unwrap(),
+        .unwrap()
+        ), crate::domain_computation::primary_graph::StorageControl::new(
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
         effects,
         None,

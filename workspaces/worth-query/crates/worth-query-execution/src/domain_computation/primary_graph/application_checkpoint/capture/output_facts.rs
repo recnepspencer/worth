@@ -1,37 +1,24 @@
 //! Append the original performed-output footprint using the existing fact wire.
+use super::super::facts::FactSequence;
 
 use super::super::facts;
-use crate::domain_computation::primary_graph::{
-    output_lineage::{invalidation::InvalidationEditAdmission, SealedNativeOutputWitness},
-    WorthQueryApplicationObservedFact as Fact,
-};
+use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
+use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
 
 pub(super) fn encode(
-    producer: &[Fact],
+    producer: &(impl facts::FactSequence + ?Sized),
     witness: &SealedNativeOutputWitness,
-    admission: &mut InvalidationEditAdmission,
 ) -> Option<Vec<u8>> {
     // Producer serialization retains checkpoint capture's existing bounded cold
     // encoding lane. This admission funds the new native projection and merge.
     // Unsupported producer facts retain the established nonreusable posture.
     let mut encoded = facts::encode(producer)?;
     // This Query-local best-effort meter cannot reach a request stop.
-    let projection = witness.prepare_fact_projection(admission).ok()??;
+    let projection = witness.prepare_fact_projection().ok()??;
     let count = producer.len().checked_add(projection.count())?;
-    let fact_bytes = projection
-        .count()
-        .checked_mul(std::mem::size_of::<Fact>())?;
-    let scratch = u64::try_from(fact_bytes)
-        .ok()?
-        .checked_add(projection.retained_payload_bytes())?;
-    admission.admit_read_scratch(scratch).ok()?;
-    admission
-        .charge_external_work(u64::try_from(projection.count()).ok()?)
-        .ok()?;
     let mut output = Vec::with_capacity(projection.count());
     projection.append_into(&mut output);
     let output_bytes = output.iter().try_fold(4usize, |bytes, fact| {
-        admission.charge_external_work(1).ok()?;
         let width = match fact {
             Fact::Entity { .. } => 21,
             Fact::SourceAspectRevision {
@@ -49,18 +36,6 @@ pub(super) fn encode(
     if total > facts::MAXIMUM_FACT_BYTES {
         return None;
     }
-    // The bounded encoder and subsequent append both copy initialized wire
-    // bytes; account for the output Vec and possible producer-Vec reallocation.
-    let peak = encoded
-        .capacity()
-        .checked_add(total)?
-        .checked_add(output_bytes)?;
-    admission
-        .admit_read_scratch(u64::try_from(peak).ok()?)
-        .ok()?;
-    admission
-        .charge_external_work(u64::try_from(output_bytes.checked_add(total)?.checked_add(4)?).ok()?)
-        .ok()?;
     let output_wire = facts::encode_with_capacity(&output, output_bytes)?;
     debug_assert_eq!(output_wire.len(), output_bytes);
     encoded

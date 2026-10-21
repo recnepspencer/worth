@@ -15,41 +15,13 @@ impl WorthQueryApplicationOutputLineage {
     /// every visited locator is one unit of work; a partition with no locator
     /// at or below the coordinate still costs its lookup.
     #[allow(clippy::type_complexity)]
-    pub(in crate::domain_computation::primary_graph::output_lineage) fn family_partition_heads_budgeted(
+    pub(in crate::domain_computation::primary_graph::output_lineage) fn family_partition_heads(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &SemanticSource,
         coordinate: ProductCoordinate,
-        maximum_work: Option<usize>,
-    ) -> Result<(Vec<(Option<[u8; 32]>, FamilyPublicationHead<'_>)>, usize), CompanionPreflightStop>
-    {
-        if maximum_work == Some(0) {
-            return Err(CompanionPreflightStop::WorkExhausted {
-                required: 1,
-                maximum: 0,
-            });
-        }
+    ) -> Result<Vec<(Option<[u8; 32]>, FamilyPublicationHead<'_>)>, CompanionPreflightStop> {
         let mut heads = Vec::new();
-        let mut work = 0usize;
-        let charge = |work: &mut usize| {
-            execution
-                .consult()
-                .map_err(|stop| CompanionPreflightStop::Execution(stop.into()))?;
-            *work = work
-                .checked_add(1)
-                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-            if let Some(maximum_work) = maximum_work
-                && *work > maximum_work
-            {
-                return Err(CompanionPreflightStop::WorkExhausted {
-                    required: u64::try_from(*work)
-                        .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
-                    maximum: u64::try_from(maximum_work)
-                        .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
-                });
-            }
-            Ok(())
-        };
         if let Some(partitions) = self
             .partition_index
             .slots
@@ -57,10 +29,10 @@ impl WorthQueryApplicationOutputLineage {
             .and_then(|occurrences| occurrences.get(&coordinate.occurrence))
         {
             for (partition, generations) in partitions {
-                let mut visited = false;
                 for (generation, slot) in generations.range(..=coordinate.generation).rev() {
-                    visited = true;
-                    charge(&mut work)?;
+                    execution
+                        .consult()
+                        .map_err(|stop| CompanionPreflightStop::Execution(stop.into()))?;
                     let Some(slot) = slot.get() else { continue };
                     heads.push((
                         *partition,
@@ -81,11 +53,8 @@ impl WorthQueryApplicationOutputLineage {
                     ));
                     break;
                 }
-                if !visited {
-                    charge(&mut work)?;
-                }
             }
         }
-        Ok((heads, work.max(1)))
+        Ok(heads)
     }
 }

@@ -5,8 +5,10 @@ use worth_foundational::facade::{
     InternedString, ProjectionMask,
 };
 
-pub(in crate::conditional_execution) fn visit(work: &mut usize) -> Result<(), D> {
-    *work = work.checked_sub(1).ok_or(D::PreparationExhausted)?;
+pub(in crate::conditional_execution) fn visit(work: &mut Option<usize>) -> Result<(), D> {
+    if let Some(remaining) = work {
+        *remaining = remaining.checked_sub(1).ok_or(D::PreparationExhausted)?;
+    }
     Ok(())
 }
 
@@ -19,7 +21,7 @@ pub(in crate::conditional_execution) fn bytes(value: usize) -> Result<u64, D> {
 
 pub(in crate::conditional_execution) fn contract(
     contract: &AspectContract,
-    work: &mut usize,
+    work: &mut Option<usize>,
 ) -> Result<u64, D> {
     visit(work)?;
     let mut size = bytes(contract.key().as_str().len())?;
@@ -38,7 +40,7 @@ pub(in crate::conditional_execution) fn contract(
 
 pub(in crate::conditional_execution) fn path(
     path: &CanonicalFieldPath,
-    work: &mut usize,
+    work: &mut Option<usize>,
 ) -> Result<u64, D> {
     let mut size = array_charge::<FieldKey>(path.fields().len())?;
     for field in path.fields() {
@@ -50,7 +52,7 @@ pub(in crate::conditional_execution) fn path(
 
 pub(in crate::conditional_execution) fn mask(
     mask: &AspectMask<ProjectionMask>,
-    work: &mut usize,
+    work: &mut Option<usize>,
 ) -> Result<u64, D> {
     let mut size = array_charge::<CanonicalFieldPath>(mask.paths().len())?;
     for item in mask.paths() {
@@ -62,7 +64,7 @@ pub(in crate::conditional_execution) fn mask(
 
 pub(in crate::conditional_execution) fn artifact(
     artifact: &ContractValidatedAspectArtifact,
-    work: &mut usize,
+    work: &mut Option<usize>,
 ) -> Result<u64, D> {
     visit(work)?;
     let payload = artifact.payload();

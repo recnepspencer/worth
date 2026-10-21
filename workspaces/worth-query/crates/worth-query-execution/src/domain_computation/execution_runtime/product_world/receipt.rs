@@ -49,15 +49,6 @@ pub(crate) struct WorthQueryCommitHistoryHold {
 }
 
 impl WorthQueryReservedProductPublicationReceipt {
-    /// The replacement is prepared before World can perform a recovery
-    /// successor. The old unfilled custody remains valid on a denied attempt.
-    pub(crate) fn replacement_request_bytes() -> Option<u64> {
-        let bytes = std::mem::size_of::<WorthQueryProductPublicationCustody>()
-            .checked_add(std::mem::size_of::<usize>().checked_mul(2)?)?
-            .checked_add(std::mem::align_of::<WorthQueryProductPublicationCustody>())?;
-        u64::try_from(bytes).ok()
-    }
-
     pub(crate) fn matches_recovery_handle(
         &self,
         handle: &ProductUnpublishedRecoveryHandle,

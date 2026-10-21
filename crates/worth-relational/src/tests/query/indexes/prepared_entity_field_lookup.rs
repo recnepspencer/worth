@@ -1,5 +1,4 @@
 use super::*;
-mod admitted_request_precedence;
 mod certification_memory;
 mod population;
 use crate::facade::indexes::{
@@ -215,13 +214,6 @@ fn request_cancellation_precedes_the_callers_exhausted_admission() {
             baseline.candidate_entity_ids(),
             &[first_entity, changed_entities(&created)[0]]
         );
-        admitted_request_precedence::assert_admitted_request_precedence(
-            &runtime,
-            &view,
-            &prepared,
-            parity,
-            baseline.candidate_entity_ids(),
-        );
         let cancellation = worth_execution::CancellationSource::new();
         let host = worth_execution::SerialRequest::from_memory(
             worth_execution::SerialMemoryBudget::new(None),
@@ -272,7 +264,7 @@ fn request_cancellation_precedes_the_callers_exhausted_admission() {
                 )
                 .unwrap();
                 let mut stopped = None;
-                execution
+                let (scan_outcome, _) = execution
                     .run(worth_execution::ExecutionWorkCeiling::new(Some(2 * crate::visibility::materialization::read_records::read_prices::KEYED_RECORD)), |lease| {
                         scan.run::<(), (), (), _>(lease, (), 0, 0, 0, 0, |_, _, work| {
                             stopped =
@@ -285,7 +277,7 @@ fn request_cancellation_precedes_the_callers_exhausted_admission() {
                                     || {
                                         admission_calls += 1;
                                         if admission_calls > after {
-                                            return Err("work exhausted");
+                                            return Err("reader callback interrupted");
                                         }
                                         if admission_calls == after {
                                             if exhaust_work {
@@ -307,17 +299,41 @@ fn request_cancellation_precedes_the_callers_exhausted_admission() {
                     })
                     .unwrap();
                 let stopped = stopped.expect("the metered kernel ran the lookup");
-                let expected = BoundedEntityFieldLookupDenialKind::Execution(if exhaust_work {
-                    crate::execution::RelationalExecutionDenialCause::WorkExhausted
+                if exhaust_work {
+                    // This checkpoint belongs to the outer computation. During
+                    // Certification, the reader is inside another native scope;
+                    // its interruption result is not the outer stop's authority.
+                    assert!(admission_calls >= after, "the work refusal was injected");
+                    assert!(
+                        stopped.is_err(),
+                        "an interrupted read cannot escape a value"
+                    );
+                    assert!(
+                        matches!(
+                            scan_outcome,
+                            worth_execution::ScanOutcome::Stopped {
+                                completed_prefix,
+                                boundary: Some(boundary),
+                                reason: worth_execution::MapStop::WorkExhausted {
+                                    identity: stopped_identity,
+                                },
+                                ..
+                            } if completed_prefix.is_empty()
+                                && boundary == identity && stopped_identity == identity
+                        ),
+                        "{parity:?}, after={after}: the owning scan must retain its work stop"
+                    );
                 } else {
-                    crate::execution::RelationalExecutionDenialCause::Cancelled
-                });
-                let actual = match stopped {
-                    Err(Stop::Lookup(denial)) => Some(denial.kind()),
-                    _ => None,
-                };
-                if actual != Some(expected) || admission_calls != after {
-                    failures.push(format!("{parity:?}, after={after}, exhaust={exhaust_work}: cause={actual:?}, admissions={admission_calls}, expected={expected:?}"));
+                    let expected = BoundedEntityFieldLookupDenialKind::Execution(
+                        crate::execution::RelationalExecutionDenialCause::Cancelled,
+                    );
+                    let actual = match stopped {
+                        Err(Stop::Lookup(denial)) => Some(denial.kind()),
+                        _ => None,
+                    };
+                    if actual != Some(expected) || admission_calls != after {
+                        failures.push(format!("{parity:?}, after={after}: cause={actual:?}, admissions={admission_calls}, expected={expected:?}"));
+                    }
                 }
             }
         }

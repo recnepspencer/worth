@@ -11,7 +11,7 @@ fn a_held_chain_outlives_a_newer_demand_that_closes_unsettled() {
     let _equivalence =
         primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
+    let application = install(None, ring_world::seed::<1>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3f80);
@@ -48,7 +48,7 @@ fn a_refreshed_chain_outlives_a_newer_demand_that_closes_unsettled() {
     let _equivalence =
         primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
+    let application = install(None, ring_world::seed::<1>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3fa0);
@@ -106,7 +106,7 @@ fn a_held_chain_outlives_a_newer_demand_the_next_commit_supersedes() {
     let _equivalence =
         primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
+    let application = install(None, ring_world::seed::<1>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3fc0);
@@ -147,8 +147,8 @@ fn a_held_chain_outlives_a_newer_demand_the_next_commit_supersedes() {
     );
 }
 
-/// A held chain is not advanced while its root input is edited and more
-/// commits follow than the window retains, so no mark of that edit is left.
+/// A held chain is not advanced while its root input is edited and unrelated
+/// native commits follow. Its original dirty coverage must survive that history.
 /// Each held demand still follows its output in one advance, whichever is
 /// advanced first. B decides over the new root; its equal output cuts off C.
 ///
@@ -159,7 +159,7 @@ fn a_held_chain_outlives_a_newer_demand_the_next_commit_supersedes() {
 /// work. The marked C source is disclosed once; B's unchanged output and C's
 /// unchanged handler facts permit its stable cutoff without another decision.
 #[test]
-fn a_held_chain_follows_an_edit_the_window_no_longer_retains() {
+fn a_held_chain_follows_its_edit_after_unrelated_publications() {
     let _equivalence =
         primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
@@ -168,14 +168,7 @@ fn a_held_chain_follows_an_edit_the_window_no_longer_retains() {
         (['c', 'b', 'a'], [(0, 3, 1), (0, 0, 0), (0, 0, 0)]),
         (['b', 'a', 'c'], [(1, 2, 1), (0, 1, 0), (0, 0, 0)]),
     ] {
-        let application = install(
-            None,
-            ring_world::seed::<3>,
-            Retained {
-                commit_positions: 4,
-                ..Retained::AMPLE
-            },
-        );
+        let application = install(None, ring_world::seed::<3>);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let court = Court::new(&application, &request, 0x9176_3ec0);
@@ -190,7 +183,7 @@ fn a_held_chain_follows_an_edit_the_window_no_longer_retains() {
         settled!(court, c, at);
         judge_decisions(&mut rings, &at);
 
-        let at = format!("held order {order:?}, after the window moved past the edit");
+        let at = format!("held order {order:?}, after unrelated publications");
         rings[2].a_y = 5;
         court.write_y(&rings[2].key("a"), 5, &at);
         for y in [2, 3, 4, 5, 6, 2, 3, 4] {
@@ -227,7 +220,7 @@ fn a_held_chain_follows_an_edit_the_window_no_longer_retains() {
 }
 
 /// A demand joins a settled root and never advances. The root input is edited
-/// and the window moves past the edit, so the joined demand stops superseded:
+/// and unrelated publications follow, so the joined demand stops superseded:
 /// it named a source the commit replaced. That stop ends nothing its settled
 /// holders keep. The held root and its consumer follow the output whichever
 /// demand advances first, and the joined demand then follows the refreshed root.
@@ -237,14 +230,7 @@ fn a_never_settled_stop_leaves_the_output_to_its_settled_holders() {
         primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
     for unsettled_first in [true, false] {
-        let application = install(
-            None,
-            ring_world::seed::<3>,
-            Retained {
-                commit_positions: 4,
-                ..Retained::AMPLE
-            },
-        );
+        let application = install(None, ring_world::seed::<3>);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let court = Court::new(&application, &request, 0x9176_3e80);
@@ -258,7 +244,7 @@ fn a_never_settled_stop_leaves_the_output_to_its_settled_holders() {
         judge_decisions(&mut rings, &at);
         let mut joined = root!(court, rings[2].key("a"), at);
 
-        let at = format!("unsettled first {unsettled_first}, after the window moved past the edit");
+        let at = format!("unsettled first {unsettled_first}, after unrelated publications");
         rings[2].a_y = 5;
         court.write_y(&rings[2].key("a"), 5, &at);
         for y in [2, 3, 4, 5, 6, 2, 3, 4] {

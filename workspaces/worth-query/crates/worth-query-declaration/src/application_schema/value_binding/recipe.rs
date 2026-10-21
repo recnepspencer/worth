@@ -8,7 +8,7 @@ use super::{
     ApplicationUnitIdentity, ApplicationValueDecodePosture, ApplicationValueEncodeDenial,
     ApplicationValueIdentityPosture, ApplicationValueSignedAggregatePosture,
     ApplicationValueValidationDenial, ErasedApplicationSignedAggregateDecode,
-    ErasedApplicationValueDecode,
+    ErasedApplicationValueAdmittedDecode, ErasedApplicationValueDecode,
 };
 use crate::application_schema::ApplicationSchemaMember;
 
@@ -59,8 +59,11 @@ pub struct ApplicationFieldBindingRecipe {
     validate: ErasedApplicationValueValidation,
     encode: ErasedApplicationValueEncode,
     decode: Option<ErasedApplicationValueDecode>,
+    admitted_decode: Option<ErasedApplicationValueAdmittedDecode>,
+    supports_admitted_decode: bool,
     identity_capable: bool,
     signed_aggregate_decode: Option<ErasedApplicationSignedAggregateDecode>,
+    canonical: Option<super::ApplicationCanonicalValueContract>,
     native_input_admission: Option<ApplicationNativeInputDecodeProfile>,
 }
 
@@ -68,6 +71,7 @@ impl ApplicationFieldBindingRecipe {
     pub(crate) fn of<Binding: ApplicationScalarValueBinding>(
         locus: ApplicationFieldBindingLocus,
     ) -> Self {
+        let canonical = Binding::canonical_contract();
         Self {
             locus,
             binding_identity: Binding::IDENTITY,
@@ -79,8 +83,14 @@ impl ApplicationFieldBindingRecipe {
             validate: erased_validate::<Binding>,
             encode: erased_encode::<Binding>,
             decode: Binding::Decode::erased_decode(),
+            admitted_decode: Binding::Decode::erased_admitted_decode(),
+            supports_admitted_decode: Binding::SUPPORTS_ADMITTED_DECODE
+                && canonical
+                    .as_ref()
+                    .is_none_or(|contract| contract.supports_admission()),
             identity_capable: Binding::Identity::CAPABLE,
             signed_aggregate_decode: Binding::SignedAggregate::erased_decode(),
+            canonical,
             native_input_admission: Binding::NATIVE_INPUT_ADMISSION,
         }
     }
@@ -91,6 +101,10 @@ impl ApplicationFieldBindingRecipe {
 
     pub fn binding_identity(&self) -> &WorthQueryPortableTypeIdentity {
         &self.binding_identity
+    }
+
+    pub const fn canonical_contract(&self) -> Option<&super::ApplicationCanonicalValueContract> {
+        self.canonical.as_ref()
     }
 
     pub const fn scalar_family(&self) -> ScalarAspectType {
@@ -125,6 +139,14 @@ impl ApplicationFieldBindingRecipe {
         self.decode
     }
 
+    pub const fn admitted_decode(&self) -> Option<ErasedApplicationValueAdmittedDecode> {
+        self.admitted_decode
+    }
+
+    pub const fn supports_admitted_decode(&self) -> bool {
+        self.supports_admitted_decode && self.admitted_decode.is_some()
+    }
+
     pub const fn identity_capable(&self) -> bool {
         self.identity_capable
     }
@@ -138,12 +160,15 @@ impl ApplicationFieldBindingRecipe {
 
     pub(crate) fn has_same_contract(&self, other: &Self) -> bool {
         self.binding_identity == other.binding_identity
+            && self.canonical == other.canonical
             && self.scalar_family == other.scalar_family
             && self.unit == other.unit
             && self.frame == other.frame
             && self.binding_type == other.binding_type
             && self.value_type == other.value_type
             && self.decode.is_some() == other.decode.is_some()
+            && self.supports_admitted_decode == other.supports_admitted_decode
+            && self.admitted_decode.is_some() == other.admitted_decode.is_some()
             && self.identity_capable == other.identity_capable
             && self.signed_aggregate_decode.is_some() == other.signed_aggregate_decode.is_some()
             && self.native_input_admission == other.native_input_admission
@@ -158,6 +183,7 @@ impl ApplicationFieldBindingRecipe {
             value_type,
             unit,
             frame,
+            canonical,
             ..
         } = member
         else {
@@ -170,6 +196,7 @@ impl ApplicationFieldBindingRecipe {
             && self.binding_identity.as_str() == value_type
             && self.unit.map(ApplicationUnitIdentity::as_str) == unit.as_deref()
             && self.frame.map(ApplicationFrameIdentity::as_str) == frame.as_deref()
+            && self.canonical.as_ref() == canonical.as_ref()
     }
 }
 

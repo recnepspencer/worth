@@ -127,6 +127,7 @@ pub(super) fn project_relation(
                     target,
                 )?;
             }
+            RelationMutationIntent::Revalidate(_) => {}
             RelationMutationIntent::Delete(_) => effective = None,
         }
     }

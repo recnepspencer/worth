@@ -21,7 +21,7 @@ const EDITED: usize = 7;
 const JOINED: u32 = 1_000_003;
 
 #[test]
-fn retained_fact_walks_are_visible_as_one_native_population_grows() {
+fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
     let _guard = checkpoint_recovery_test_guard();
     let application = install(|graph| facts::seed_set(graph, "even", -0.0));
     let (scope, principal) = authenticate(&application);
@@ -68,11 +68,92 @@ fn retained_fact_walks_are_visible_as_one_native_population_grows() {
                 Ok((size as f64 - 1.0 + value).to_bits()),
                 "{size}: independently authored values survive reuse"
             );
-            assert!(examined.retained_bound_visits > 0
-                && examined.retained_computation_visits > 0
-                && examined.retained_native_visits > 0
-                && examined.carried_seal_visits > 0,
-                "{size}: actual prior walks, probes and pre-filter sealing remain visible: {examined:?}");
+            assert_eq!(
+                examined.retained_bound_visits, 0,
+                "{size}: the retained bound is cached"
+            );
+            assert!(
+                examined.retained_computation_visits > 0 && examined.retained_native_visits > 0,
+                "{size}: actual dirty facts are examined: {examined:?}"
+            );
+            assert_eq!(
+                examined.carried_seal_visits, 0,
+                "{size}: same pinned carriage is consumed at seal"
+            );
+            assert!(
+                examined.native_payload_fact_moves > 0,
+                "{size}: real changed-leaf postcommit facts reach the native carrier: {examined:?}"
+            );
+            assert!(
+                examined.native_payload_chunks > 0,
+                "{size}: the published path seals native storage: {examined:?}"
+            );
+            if size == 100 {
+                assert!(
+                    examined.native_payload_joins > 0,
+                    "native publication consumes joined storage, not just a flat counterpart"
+                );
+            }
+            assert_eq!(
+                examined.sealed_computation_index_visits, 0,
+                "{size}: native completion consumes checked original metadata: {examined:?}"
+            );
+            assert_eq!(
+                examined.carried_key_expansion_visits, 0,
+                "{size}: carried calls do not expand every prior key at completion: {examined:?}"
+            );
+            assert_eq!(examined.fallback_carried_metadata_visits, 0,
+                "{size}: fixed native completion does not hide a fallback metadata walk: {examined:?}");
+            assert!(
+                examined.content_field_index_visits > 0,
+                "{size}: changed-address validation remains measured: {examined:?}"
+            );
+            assert!(
+                examined.content_leaf_derivations > 0 && examined.content_pair_derivations > 0,
+                "{size}: real native publication consumes the new content rule: {examined:?}"
+            );
+            assert!(
+                examined.native_patch_path_visits > 0 && examined.native_patch_fact_clones > 0,
+                "{size}: actual ordinary publication consumes a funded native patch: {examined:?}"
+            );
+            let refreshed_keys =
+                examined.handler_read_key_records + examined.fresh_read_key_records;
+            assert!(
+                examined.native_patch_fact_clones <= 32 * refreshed_keys,
+                "{size}: copies follow changed leaf granules and actual fresh reads: {examined:?}"
+            );
+            assert!(
+                examined.completion_call_roster_visits == 0,
+                "{size}: closed native call ranges consume the checked roster: {examined:?}"
+            );
+            assert_eq!(examined.computation_dispatch_plan_visits, 1,
+                "{size}: only the actually changed partition constructs a native input: {examined:?}");
+            assert_eq!(
+                examined.computation_result_receiver_visits, 1,
+                "{size}: only that changed native result is looked up: {examined:?}"
+            );
+            assert_eq!(examined.computation_tree_plan_visits, 0,
+                "{size}: an ordinary fixed-membership edit constructs no full tree plan: {examined:?}");
+            assert_eq!(examined.computation_native_carried_slot_visits, 0,
+                "{size}: fitting unchanged native ranges dispatch no individual slots: {examined:?}");
+            assert!(
+                examined.computation_prepared_partition_visits == 1,
+                "{size}: only the changed gather enters actual preparation: {examined:?}"
+            );
+            assert!(
+                examined.computation_retained_size_visits == 0,
+                "{size}: immutable item and call bounds are carried: {examined:?}"
+            );
+            assert_eq!(
+                examined.computation_call_build_visits, 0,
+                "{size}: ordinary preparation builds no hidden full call index: {examined:?}"
+            );
+            assert!(examined.computation_call_node_copies > 0 && examined.computation_call_range_carries > 0,
+                "{size}: actual changed-path call work and range charges remain visible: {examined:?}");
+            assert!(
+                examined.source_admission_visits > 0,
+                "ordinary read admission remains real"
+            );
             equivalent.push(examined);
         }
         // Compare equivalent actual runs; no fixture-fitted expected work count.
@@ -100,7 +181,71 @@ fn retained_fact_walks_are_visible_as_one_native_population_grows() {
         );
         demand(&request, &application);
     }
-    eprintln!("actual native retained-fact walks at growing 1/10/100 partitions: {growth:?}");
+    let first = growth[0].1[0];
+    for (size, runs) in &growth {
+        assert_eq!(
+            runs[0].content_leaf_derivations, first.content_leaf_derivations,
+            "{size}: logical leaves derive only at refreshed ordinals and the fresh source suffix"
+        );
+        assert_eq!(
+            runs[0].retained_computation_visits, first.retained_computation_visits,
+            "{size}: comparison depends on the edited facts, not retained population"
+        );
+        assert_eq!(runs[0].retained_native_visits, first.retained_native_visits);
+        assert!(runs[0].rebase_preparation_visits <= first.rebase_preparation_visits * 4,
+            "{size}: pre-effect rebase preparation follows refreshed facts/native matches, not every retained fact: {:?}", runs[0]);
+        assert!(
+            runs[0].rebase_resolution_visits <= first.rebase_resolution_visits * 4,
+            "{size}: native rebase resolves only the complete selected frontier: {:?}",
+            runs[0]
+        );
+        assert!(
+            runs[0].native_payload_size_visits
+                <= 32
+                    * (runs[0].fresh_read_key_records
+                        + runs[0].handler_read_key_records
+                        + 2 * runs[0].rebase_resolution_visits)
+                    + runs[0].completed_fact_moves,
+            "{size}: postcommit sizing follows bounded changed leaf granules: {:?}",
+            runs[0]
+        );
+        assert_eq!(
+            runs[0].provider_application_fact_visits, first.provider_application_fact_visits,
+            "{size}: fresh application binding follows changed observations and fresh source roles"
+        );
+        assert_eq!(
+            runs[0].effect_index_fact_visits, first.effect_index_fact_visits,
+            "{size}: effect routing validates changed addresses and borrows checked metadata"
+        );
+        assert_eq!(
+            runs[0].content_field_index_visits, first.content_field_index_visits,
+            "{size}: address validation does not expand to the retained population"
+        );
+        assert_eq!(
+            runs[0].value_comparison_visits, first.value_comparison_visits,
+            "{size}: genuine same-source closure leaves only fresh individual comparisons"
+        );
+        assert!(
+            runs[0].posting_fact_visits > 0 && runs[0].posting_registration_visits > 0,
+            "{size}: checked projection and exact binding work stays visible: {:?}",
+            runs[0]
+        );
+        assert_eq!(
+            runs[0].posting_fact_visits, first.posting_fact_visits,
+            "{size}: posting projection follows changed native ordinals and output roles"
+        );
+        assert_eq!(runs[0].posting_registration_visits, first.posting_registration_visits,
+            "{size}: exact successor installation and predecessor retirement do not visit unchanged postings");
+        assert_eq!(runs[0].completed_fact_moves, first.completed_fact_moves,
+            "{size}: current source suffix is moved once; carried decision facts stay in their backing");
+        assert_eq!(
+            runs[0].completion_fresh_key_visits, first.completion_fresh_key_visits,
+            "{size}: current key-set validation follows newly executed reads"
+        );
+    }
+    eprintln!(
+        "native dirty comparison, result staging and remaining current-read/meta work at 1/10/100: {growth:?}"
+    );
 }
 
 #[test]
@@ -251,3 +396,5 @@ fn reused(
     assert_eq!(next.runs, [Run::Incremental], "size {size}: {what}");
     next
 }
+
+mod shared_fact;

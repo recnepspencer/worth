@@ -103,10 +103,12 @@ fn fresh_native_retirement_descriptions_do_not_issue_original_output_authority()
             }];
             assert!(facts[0].remains_equal_in(runtime,execution,  snapshot).unwrap(), "both actual tombstones match native truth");
             let correspondence = correspondence(entity, execution);
-            let candidate = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence,
-                graph.layout(), &facts, owner, &mut owner.edit_admission()).unwrap();
+let candidate = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, graph.layout(), &facts).unwrap();
+
+
+
             let current = candidate.as_ref().is_some_and(|candidate| candidate.get().unwrap()
-                .checkpoint_facts_current_in(execution, runtime, snapshot, &facts, &mut owner.edit_admission()).unwrap());
+                .checkpoint_facts_current_in(execution, runtime, snapshot, &facts).unwrap());
             eprintln!("fresh installed retirement candidate entity={entity:?}, original={}, current={current}", entity == original);
             assert!(candidate.is_none() && !current, "native tombstone descriptions do not bind the original producer retirement");
         }

@@ -1,17 +1,17 @@
-use worth_query_admission::facade::application_query::{
-    WorthQueryAdmittedApplicationQueryParameters, WorthQueryApplicationQueryLane,
-};
+use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
+use worth_query_admission::facade::application_query::WorthQueryApplicationQueryLane;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
-use super::super::super::{
-    basis::{admit_application_query_permission_basis, ensure_selected_read_indexes_admitted},
-    graph_read_plan_binding::WorthQueryQueryIndexPosture,
-    WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-    WorthQueryApplicationQueryControls,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use super::super::super::basis::admit_application_query_permission_basis;
+use super::super::super::basis::ensure_selected_read_indexes_admitted;
+use super::super::super::graph_read_plan_binding::WorthQueryQueryIndexPosture;
+use super::super::super::WorthQueryAdmittedApplicationQueryPlan;
+use super::super::super::WorthQueryApplicationQueryAccessContext;
+use super::super::super::WorthQueryApplicationQueryAdmissionDenial;
+use super::super::super::WorthQueryApplicationQueryAdmissionDenialKind;
+use super::super::super::WorthQueryApplicationQueryControls;
+
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -44,7 +44,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         >,
         parameters: WorthQueryAdmittedApplicationQueryParameters,
         controls: WorthQueryApplicationQueryControls<'a, Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         WorthQueryAdmittedApplicationQueryPlan<
             'a,
@@ -84,7 +83,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     graph,
                     query,
                     selected.selected_product().relational_basis(),
-                    admission,
                 )?;
                 Ok((
                     selected,

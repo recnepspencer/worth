@@ -52,7 +52,6 @@ fn selected_delivery_keeps_both_producer_and_applicability_identity() {
                 super::super::DemandAdmissionKind::Ordinary,
                 None,
                 None,
-                &mut record_admission(),
             )
             .map(|(interest, _pause)| interest)
             .unwrap();

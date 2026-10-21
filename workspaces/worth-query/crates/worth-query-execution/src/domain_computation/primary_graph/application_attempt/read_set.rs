@@ -1,12 +1,11 @@
-use std::collections::{BTreeMap, BTreeSet};
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use worth_execution::ExecutionArray;
 
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationScalarValueBinding, ApplicationSchema,
-    DeclaredApplicationFieldValue, EqualityPredicate, OperationReads,
-    WorthQueryOperationGraphReadScope, WritePosture,
+    DeclaredApplicationFieldValue, EqualityPredicate, OperationReads, WritePosture,
 };
 
 use super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
@@ -23,19 +22,34 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 
+mod fact_routes;
+pub(in crate::domain_computation::primary_graph) use fact_routes::FactRoutes;
+mod application_projection;
+pub(in crate::domain_computation) use application_projection::CompletedFactProjection;
+mod original_read;
+pub(in crate::domain_computation) use original_read::CompletedOriginalRead;
 mod admitted_arrays;
+mod completed_facts;
+pub(in crate::domain_computation::primary_graph::application_attempt) use completed_facts::admit_completed_facts;
 mod authority_facts;
 mod binding_proof;
 mod completion;
 mod computation_routing;
+mod native_completion;
+mod value_decode;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use computation_routing::ComputationFactReaders;
 pub(in crate::domain_computation::primary_graph) use computation_routing::{
-    ComputationFactAttribution, ComputationRead, SealedComputationFacts,
+    CheckedCallShape, ComputationFactAttribution, ComputationFactIndex, ComputationRead,
+    NativeCallCarriage, SealedComputationFacts,
 };
 pub(in crate::domain_computation::primary_graph) mod request_liveness;
 mod retained_facts;
+mod scope_bindings;
 pub(in crate::domain_computation::primary_graph::application_attempt) use admitted_arrays::admit_array;
+pub(in crate::domain_computation::primary_graph) use scope_bindings::{
+    CompletedReadScopes, InstalledScopePosition,
+};
 mod decision_reuse;
 mod fact_observation;
 pub(in crate::domain_computation::primary_graph) use decision_reuse::{
@@ -64,19 +78,25 @@ use source_facts::{merge_source_facts, validate_source_facts, SourceFacts};
 /// declares it reads, then call `complete` to seal them into a
 /// [`WorthQueryCompleteApplicationReadSet`]. Every read is checked against the
 /// operation's installed reads and its admitted scope.
+/// The attempt borrows its original execution request and retains cumulative
+/// decode grants. An ignored canonical decode refusal still prevents completion.
 pub struct WorthQueryApplicationReadAttempt<
+    'request,
+    'authority,
     Schema,
     Operation,
     Input,
     Scope,
     Phase = WorthQueryOrdinaryApplicationRead,
 > {
+    execution: worth_execution::ExecutionRequest<'request, 'authority>,
+    value_decode: super::super::value_decode::ValueDecodeState,
     admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     lease: WorthQueryApplicationSnapshotLease,
     layout: Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
     entity_resolution: WorthQueryInstalledEntityResolutionContext,
     read_scope: WorthQueryApplicationReadScope,
-    expected_facts: Option<BTreeSet<WorthQueryApplicationFactKey>>,
+    expected_facts: Option<crate::domain_computation::primary_graph::invariant_projection::ExpectedFactKeys>,
     /// What a partitioned computation read of the expected facts, and where
     /// it left its completed run when a producer ran it.
     computation_reads: (
@@ -84,10 +104,11 @@ pub struct WorthQueryApplicationReadAttempt<
         crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention,
     ),
     installed_read_scopes:
-        BTreeMap<WorthQueryApplicationFactKey, WorthQueryOperationGraphReadScope>,
+        BTreeMap<WorthQueryApplicationFactKey, InstalledScopePosition>,
     facts: BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
     source_facts: SourceFacts,
     consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
+    native_completion: Option<computation_routing::NativeReadRefresh>,
     _phase: PhantomData<fn() -> Phase>,
 }
 
@@ -107,15 +128,22 @@ pub struct WorthQueryCompleteApplicationReadSet<
 > {
     pub(super) admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     pub(super) lease: WorthQueryApplicationSnapshotLease,
-    pub(super) installed_read_scopes: ExecutionArray<WorthQueryOperationGraphReadScope>,
-    pub(super) facts: ExecutionArray<WorthQueryApplicationObservedFact>,
+    pub(super) application_projection: Option<Arc<CompletedFactProjection>>,
+    pub(super) original_read: Option<Arc<CompletedOriginalRead>>,
+    pub(super) installed_read_scopes: CompletedReadScopes,
+    pub(super) facts: FactPayload,
+    pub(super) content: Option<super::FactContent>,
+    pub(super) effect_routes: super::CompletedFactRoutes,
+    pub(super) postcondition_carry: Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry,
+    >,
     pub(super) consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
     /// The facts the owner calls read, when the handler ran one partitioned
     /// computation.
     #[cfg(test)]
     pub(super) computation_facts: Option<SealedComputationFacts>,
     /// The ordinals in `facts`, ascending, of the facts an owner call read.
-    pub(super) computation_fact_ordinals: Box<[usize]>,
+    pub(super) computation_fact_ordinals: Arc<[usize]>,
     pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
     pub(super) workflow_birth_binding:
         Option<super::workflow_instance_program::WorkflowBirthBindingProof>,
@@ -141,12 +169,12 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn begin_application_read_attempt<Operation, Input, Scope>(
+    pub fn begin_application_read_attempt<'request, 'authority, Operation, Input, Scope>(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'request, 'authority>,
         mut admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<
-        WorthQueryApplicationReadAttempt<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationReadAttempt<'request, 'authority, Schema, Operation, Input, Scope>,
         WorthQueryApplicationAttemptDenial,
     > {
         if !admission.belongs_to(
@@ -180,6 +208,8 @@ where
         let source_facts =
             SourceFacts::Admitted(validate_source_facts(execution, &mut admission, &lease)?);
         Ok(WorthQueryApplicationReadAttempt {
+            execution: *execution,
+            value_decode: super::super::value_decode::ValueDecodeState::new(self.installed_schema.value_bindings().clone()),
             admission,
             lease,
             layout: Arc::clone(&graph.layout),
@@ -192,6 +222,7 @@ where
             facts: BTreeMap::new(),
             source_facts,
             consumed_outputs: Vec::new(),
+            native_completion: None,
             _phase: PhantomData,
         })
     }
@@ -224,14 +255,16 @@ where
     ///     let _ = runtime.begin_projected_application_read_attempt(admission, projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation);
     /// }
     /// ```
-    pub fn begin_projected_application_read_attempt<Operation, Input, Scope>(
+    pub fn begin_projected_application_read_attempt<'scope, Operation, Input, Scope>(
         &self,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationReadAttempt<
+            'scope,
+            'scope,
             Schema,
             Operation,
             Input,
@@ -254,17 +287,21 @@ where
     }
 
     pub(in crate::domain_computation) fn begin_projected_application_read_attempt_with_request<
+        'request,
+        'authority,
         Operation,
         Input,
         Scope,
     >(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'request, 'authority>,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         WorthQueryApplicationReadAttempt<
+            'request,
+            'authority,
             Schema,
             Operation,
             Input,
@@ -326,6 +363,10 @@ where
         )?;
         let layout = Arc::clone(&lease.layout);
         Ok(WorthQueryApplicationReadAttempt {
+            execution: *execution,
+            value_decode: super::super::value_decode::ValueDecodeState::new(
+                self.installed_schema.value_bindings().clone(),
+            ),
             admission,
             lease,
             layout,
@@ -337,28 +378,18 @@ where
             facts: BTreeMap::new(),
             source_facts,
             consumed_outputs,
+            native_completion: None,
             _phase: PhantomData,
         })
     }
 }
 
 mod entity_resolution;
+mod workflow_actor;
 
 fn denial(
     kind: WorthQueryApplicationAttemptDenialKind,
     subject: impl Into<String>,
 ) -> WorthQueryApplicationAttemptDenial {
     WorthQueryApplicationAttemptDenial::new(kind, subject)
-}
-
-impl<Schema, Operation, Input, Scope, Phase>
-    WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>
-{
-    pub(in crate::domain_computation::primary_graph) fn admitted_workflow_actor(
-        &self,
-    ) -> super::super::workflow::actor::record::WorkflowAdmittedActor {
-        super::super::workflow::actor::record::WorkflowAdmittedActor::from_admission(
-            &self.admission,
-        )
-    }
 }

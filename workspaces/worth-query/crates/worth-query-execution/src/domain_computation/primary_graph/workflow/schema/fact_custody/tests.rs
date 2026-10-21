@@ -16,7 +16,16 @@ fn only_a_new_approval_or_successor_may_link_to_an_existing_fact() {
                 "started-program-revision",
             )
             .unwrap(),
-        entity_kinds: [KindId(1), KindId(2), KindId(3), KindId(21), KindId(22)],
+        entity_kinds: [
+            KindId(1),
+            KindId(2),
+            KindId(3),
+            KindId(21),
+            KindId(22),
+            KindId(23),
+            KindId(24),
+            KindId(25),
+        ],
         relation_kinds: [
             KindId(4),
             KindId(5),
@@ -31,6 +40,10 @@ fn only_a_new_approval_or_successor_may_link_to_an_existing_fact() {
             KindId(14),
             KindId(15),
             KindId(16),
+            KindId(17),
+            KindId(18),
+            KindId(19),
+            KindId(20),
         ],
         existing_target_links: [
             (KindId(22), KindId(16)),
@@ -39,6 +52,7 @@ fn only_a_new_approval_or_successor_may_link_to_an_existing_fact() {
             (KindId(20), KindId(12)),
             (KindId(20), KindId(13)),
             (KindId(20), KindId(14)),
+            (KindId(24), KindId(17)),
         ],
     };
     assert_eq!(
@@ -74,4 +88,6 @@ fn only_a_new_approval_or_successor_may_link_to_an_existing_fact() {
     assert!(!rule.allows_relation_create(KindId(13), &created(KindId(3)), &existing));
     assert!(!rule.allows_relation_create(KindId(10), &created(KindId(20)), &existing));
     assert!(!rule.allows_relation_create(KindId(13), &existing, &existing));
+    assert!(rule.allows_relation_create(KindId(17), &created(KindId(24)), &existing));
+    assert!(!rule.allows_relation_create(KindId(18), &created(KindId(24)), &existing));
 }

@@ -1,6 +1,4 @@
 use super::*;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use worth_relational::facade::mvcc::CompanionPreflightBudget;
 
 #[test]
 fn repeated_restored_admission_joins_one_semantic_source_record() {
@@ -20,10 +18,6 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
     );
     let registry = WorthQueryOutputDemandRegistry::default();
     let restored = restored_output(observation, scope);
-    let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(1_000_000),
-        maximum_preparation_bytes: None,
-    });
 
     let (_lineage, settlement) =
         crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
@@ -35,7 +29,6 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
             super::super::super::DemandAdmissionKind::Ordinary,
             restored.clone(),
             &settlement,
-            &mut admission,
         )
         .expect("the recovered output admits its first demand");
     let (second, reinserted) = registry
@@ -46,7 +39,6 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
             super::super::super::DemandAdmissionKind::Ordinary,
             restored,
             &settlement,
-            &mut admission,
         )
         .expect("a later observation joins the recovered semantic source");
 
@@ -56,9 +48,7 @@ fn repeated_restored_admission_joins_one_semantic_source_record() {
     assert_eq!(registry.state.lock().unwrap().records.len(), 1);
     assert_eq!(registry.accepted_checkpoint_identities().len(), 1);
     assert!(
-        registry
-            .posts_settlement(&settlement, &mut admission)
-            .unwrap(),
+        registry.posts_settlement(&settlement).unwrap(),
         "a dependent claims the restored output through its posted settlement"
     );
 }

@@ -42,13 +42,13 @@ fn reject_required_assignment() {
         }
     }
     parts.members.sort();
-    assert_eq!(
+    assert!(matches!(
         validate_portable_application_schema_freshly(
             WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
         )
         .unwrap_err(),
-        ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency
-    );
+        ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency { .. }
+    ));
 }
 
 fn reject_required_initializer() {
@@ -95,11 +95,11 @@ fn reject_required_initializer() {
         }
     }
     parts.members.sort();
-    assert_eq!(
+    assert!(matches!(
         validate_portable_application_schema_freshly(
             WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
         )
         .unwrap_err(),
-        ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency
-    );
+        ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency { .. }
+    ));
 }

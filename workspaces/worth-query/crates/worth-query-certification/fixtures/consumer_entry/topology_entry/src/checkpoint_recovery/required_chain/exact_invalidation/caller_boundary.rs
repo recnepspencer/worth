@@ -5,14 +5,7 @@ use worth_query_host::facade::primary_graph::caller_pass_reports_on_this_thread_
 #[test]
 fn a_queued_consumer_holds_at_its_accepted_caller_without_holding_an_independent_root() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(
-        None,
-        ring_world::seed::<3>,
-        Retained {
-            commit_positions: 4,
-            ..Retained::AMPLE
-        },
-    );
+    let application = install(None, ring_world::seed::<3>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_7c00);
@@ -71,14 +64,7 @@ fn a_queued_consumer_holds_at_its_accepted_caller_without_holding_an_independent
 #[test]
 fn a_decided_caller_does_not_hold_a_queued_members_certified_predecessor() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(
-        None,
-        ring_world::seed::<3>,
-        Retained {
-            commit_positions: 4,
-            ..Retained::AMPLE
-        },
-    );
+    let application = install(None, ring_world::seed::<3>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_7c40);

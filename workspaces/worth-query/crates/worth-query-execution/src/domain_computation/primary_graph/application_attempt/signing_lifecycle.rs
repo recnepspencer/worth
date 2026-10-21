@@ -20,8 +20,10 @@ mod signing;
 pub(super) use guard::validate_incoming;
 pub(super) use signing::capture_signing;
 
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+
 pub(super) struct PreparedLifecycle {
-    pub(super) facts: worth_execution::ExecutionArray<Fact>,
+    pub(super) facts: FactPayload,
 }
 
 pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
@@ -33,7 +35,7 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
     >,
     lease: &Lease,
     effects: &mut Vec<Effect>,
-    facts: worth_execution::ExecutionArray<Fact>,
+    facts: FactPayload,
     execution: &QueryRequestExecution<'_>,
     logical_request: [u8; 32],
 ) -> Result<PreparedLifecycle, Outcome> {
@@ -72,14 +74,11 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
             Ok::<_, Outcome>(batch)
         })
         .map_err(|cause| cause.into_commit_outcome())??;
-    let total = facts
-        .len()
-        .checked_add(batch.facts.len())
-        .ok_or_else(capacity)?;
-    let facts = super::read_set::admit_array(
-        total,
-        facts.into_iter().chain(batch.facts),
+    let extra = super::read_set::admit_completed_facts(
+        batch.facts.len(),
+        batch.facts.into_iter(),
         request.allocation_policy(),
+        admission.publication_request(),
         admission.operation(),
         || {
             admission
@@ -88,6 +87,15 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
         },
     )
     .map_err(attempt)?;
+    let facts = facts
+        .append_completed(
+            extra,
+            super::retained_decision_facts::StorageControl::new(
+                request.allocation_policy(),
+                Some(admission.publication_request()),
+            ),
+        )
+        .map_err(|cause| attempt(cause.into_attempt_denial(admission.operation())))?;
     admission
         .validate_current_authority()
         .map_err(super::WorthQueryApplicationAttemptDenial::request_authority_lost)

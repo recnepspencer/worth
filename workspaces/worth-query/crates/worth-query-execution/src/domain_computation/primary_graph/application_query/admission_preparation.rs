@@ -1,27 +1,21 @@
-use std::num::NonZeroUsize;
-
-use worth_query_admission::facade::{
-    application_query::{
-        admit_application_query_parameters, readmit_application_query_parameters,
-        WorthQueryAdmittedApplicationQueryParameters,
-    },
-    authenticated_principal::{WorthQueryRequestInterruption, WorthQueryRequestScope},
-};
-use worth_query_declaration::facade::{
-    application_query::ApplicationQueryParameterSet, application_schema::ApplicationSchema,
-};
+use worth_query_admission::facade::application_query::admit_application_query_parameters;
+use worth_query_admission::facade::application_query::readmit_application_query_parameters;
+use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
+use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
-use super::{
-    control_validation::validate_controls, WorthQueryApplicationQueryAccessContext,
-    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
-    WorthQueryApplicationQueryControls,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-use worth_relational::facade::mvcc::CompanionPreflightStop;
+use super::control_validation::validate_controls;
+use super::WorthQueryApplicationQueryAccessContext;
+use super::WorthQueryApplicationQueryAdmissionDenial;
+use super::WorthQueryApplicationQueryAdmissionDenialKind;
+use super::WorthQueryApplicationQueryControls;
 
-mod validation_preflight;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+
+mod fresh_source;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -97,7 +91,6 @@ where
         >,
         retained: &WorthQueryAdmittedApplicationQueryParameters,
         controls: WorthQueryApplicationQueryControls<'a, Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         (
             WorthQueryAdmittedApplicationQueryParameters,
@@ -105,47 +98,8 @@ where
         ),
         WorthQueryApplicationQueryAdmissionDenial,
     > {
-        validation_preflight::admit_source_readmission_validation(
-            query, access, &controls, admission,
-        )?;
         self.validate_application_query_admission(query, access, &controls)?;
-        let (bytes, work) = retained
-            .readmission_preparation_requirements()
-            .ok_or_else(|| {
-                WorthQueryApplicationQueryAdmissionDenial::new(
-                    WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
-                    query.name(),
-                )
-            })?;
-        admission.admit_read_scratch(bytes).map_err(|stop| {
-            WorthQueryApplicationQueryAdmissionDenial::new(
-                match stop {
-                    CompanionPreflightStop::PreparationMemoryExhausted { .. }
-                    | CompanionPreflightStop::PreparationMemoryCounterOverflow => {
-                        WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted
-                    }
-                    _ => WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
-                },
-                query.name(),
-            )
-        })?;
-        admission.charge_external_work(work).map_err(|_| {
-            WorthQueryApplicationQueryAdmissionDenial::new(
-                WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
-                query.name(),
-            )
-        })?;
-        let controls = if let Some(remaining) = admission.remaining_work() {
-            let remaining = NonZeroUsize::new(remaining).ok_or_else(|| {
-                WorthQueryApplicationQueryAdmissionDenial::new(
-                    WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
-                    query.name(),
-                )
-            })?;
-            controls.limit_maximum_work(remaining)
-        } else {
-            controls
-        };
+
         let parameters =
             readmit_application_query_parameters(query, retained).map_err(|denial| {
                 WorthQueryApplicationQueryAdmissionDenial::new(
@@ -176,21 +130,7 @@ where
         controls: &WorthQueryApplicationQueryControls<'_, Schema>,
     ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
         validate_admission_request(controls.request_scope(), query.name())?;
-        if self
-            .runtime
-            .application_query_resource_profile()
-            .maximum_work()
-            .is_some_and(|host| {
-                controls
-                    .maximum_work()
-                    .is_none_or(|requested| requested > host)
-            })
-        {
-            return Err(denial(
-                WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
-                query.name(),
-            ));
-        }
+
         self.validate_installed_query(query)?;
         self.validate_access_authority(query, access)?;
         validate_controls(query, controls)

@@ -102,3 +102,35 @@ impl WorthQueryManagedGraphWorkSession {
         ))
     }
 }
+
+impl WorthQueryManagedGraphWorkSession {
+    /// The same query session and exact basis acceptance under an existing
+    /// native owner borrow. Completion consumes its ordinary sealed read proof.
+    pub(in crate::domain_computation) fn execute_query_read_borrowed<T>(
+        &self,
+        basis: &WorthQueryApplicationBasisIdentity,
+        runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
+        read: impl FnOnce(
+            &mut worth_relational::facade::runtime::RelationalRuntime,
+            &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+        ) -> T,
+    ) -> Result<(T, WorthQuerySessionGraphReadProof), WorthQueryManagedGraphReadDenial> {
+        let WorthQueryGraphWorkBasis::Query { identity, port, .. } = &self.basis else {
+            return Err(WorthQueryManagedGraphReadDenial::MutationSession);
+        };
+        if identity != basis || !self.branch.admits_query_basis(basis) {
+            return Err(WorthQueryManagedGraphReadDenial::ForeignBasis);
+        }
+        let output = port
+            .execute_borrowed(&self.binding, runtime, read)
+            .map_err(|_| WorthQueryManagedGraphReadDenial::ForeignGraph)?;
+        Ok((
+            output,
+            WorthQuerySessionGraphReadProof::new(
+                self.identity,
+                self.plan.identity(),
+                basis.clone(),
+            ),
+        ))
+    }
+}

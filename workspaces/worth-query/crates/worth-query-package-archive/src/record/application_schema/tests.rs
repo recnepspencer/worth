@@ -1,3 +1,4 @@
+mod canonical_contract;
 mod fixture;
 mod invariant;
 mod mutation_description;

@@ -94,7 +94,6 @@ fn hidden_ordering_material_is_consumed_before_domain_projection() {
                     ApplicationQueryParameterSet::<GovernedHiddenOrderingQuery>::new(),
                     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                         NonZeroUsize::new(1).unwrap(),
-                        Some(NonZeroUsize::new(512).unwrap()),
                         &request,
                     ),
                 )

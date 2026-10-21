@@ -19,6 +19,8 @@ pub struct WorthQueryUnpublishedBranchAdoption {
     product: crate::domain_computation::WorthQueryProductUnpublishedApplication,
     support_custody:
         crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportCustody,
+    // Last to drop: physical backing releases before its retained grant.
+
 }
 
 impl WorthQueryUnpublishedBranchAdoption {
@@ -28,6 +30,7 @@ impl WorthQueryUnpublishedBranchAdoption {
         selected_entity_count: usize,
         migration: Option<super::super::preparation::WorthQueryProgramMigrationDescription>,
         custody: super::super::preparation::WorthQueryProgramCustodyDispositionInventory,
+
         owner_effects: ProductUnpublishedOwnerEffects,
         recovery: RuntimeWorldRecoveryPort,
         disposition: crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
@@ -39,6 +42,7 @@ impl WorthQueryUnpublishedBranchAdoption {
             selected_entity_count,
             migration,
             custody,
+
             product: crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
                 owner_effects,
                 recovery,

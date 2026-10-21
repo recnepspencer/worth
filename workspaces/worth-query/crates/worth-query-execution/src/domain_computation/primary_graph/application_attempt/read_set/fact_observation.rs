@@ -21,6 +21,7 @@ use crate::domain_computation::primary_graph::{
 /// neighborhood, which no key declares a bound for.
 pub(super) fn observation_work_bound(key: &WorthQueryApplicationFactKey) -> Option<u64> {
     match key {
+        WorthQueryApplicationFactKey::SourcePublication(_) => None,
         WorthQueryApplicationFactKey::Entity { .. }
         | WorthQueryApplicationFactKey::Field { .. }
         | WorthQueryApplicationFactKey::AspectPresence { .. } => Some(1),
@@ -65,6 +66,10 @@ fn observe_fact_inner(
     admitted: bool,
 ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
     match key {
+        WorthQueryApplicationFactKey::SourcePublication(_) => Err(denial(
+            WorthQueryApplicationAttemptDenialKind::UndeclaredDecisionRead,
+            "fresh source-query read required",
+        )),
         WorthQueryApplicationFactKey::Entity { entity, entity_id } => {
             let kind = layout.entity_kind(entity).ok_or_else(|| {
                 denial(
@@ -161,17 +166,15 @@ fn observe_fact_inner(
                 )
             })?;
             let observation = if admitted {
-                super::super::observation::observe_field_value_borrowed_admitted(
+                super::super::observation::observe_field_observation_borrowed_admitted(
                     runtime,
                     execution,
                     snapshot,
                     *entity_id,
                     kind,
                     locator,
-                    |value| {
-                        value.cloned().map_or(
-                        super::super::observation::WorthQueryApplicationFieldObservation::Absent,
-                        super::super::observation::WorthQueryApplicationFieldObservation::Present)
+                    |raw| {
+                        super::super::observation::WorthQueryApplicationFieldObservation::from(raw)
                     },
                 )
             } else {
@@ -203,7 +206,15 @@ fn observe_fact_inner(
                         locator: locator.clone(),
                     }
                 }
-                super::super::observation::WorthQueryApplicationFieldObservation::Absent => {
+                super::super::observation::WorthQueryApplicationFieldObservation::AspectAbsent
+                    if layout.aspect_is_optional(entity, locator) => {
+                        WorthQueryApplicationObservedFact::OptionalAspectAbsent {
+                            entity_id: *entity_id, kind, locator: locator.clone(),
+                        }
+                    }
+                super::super::observation::WorthQueryApplicationFieldObservation::AspectAbsent
+                | super::super::observation::WorthQueryApplicationFieldObservation::UnsupportedAspectShape
+                | super::super::observation::WorthQueryApplicationFieldObservation::Absent => {
                     return Err(denial(
                         WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
                         entity,

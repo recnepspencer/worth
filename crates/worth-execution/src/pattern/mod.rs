@@ -13,10 +13,15 @@ pub use decompose::{
 };
 pub use fork_join::{ExecutionForkJoin, ForkChild, ForkJoinDenial, ForkJoinOutcome};
 pub use map::{
-    ExecutionMap, KeylessPartition, MapDenial, MapKernelContext, MapKernelFailure, MapKernelStop,
-    MapMemoryOverflow, MapOutcome, MapPartition, MapStop, OracleMismatch, PreparedExecutionMap,
+    ExecutionMap, ExecutionRetainedPrefix, ExecutionRetainedRun, KeylessPartition, MapDenial,
+    MapKernelContext, MapKernelFailure, MapKernelStop, MapMemoryOverflow, MapOutcome, MapPartition,
+    MapStop, OracleMismatch, PreparedExecutionMap, RetainedMapDenial, RetainedMapInput,
+    RetainedRunDenial, RetainedRunMetrics, RetainedRunOutcome,
 };
-pub use reduce::{ExecutionReduce, ReduceCertificationFailure, ReduceInputDenial};
+pub use reduce::{
+    ExecutionReduce, ReduceCertificationFailure, ReduceInputDenial, RetainedReduceDenial,
+    RetainedReduceOutcome, RetainedReduction,
+};
 pub use rounds::{ExecutionRounds, RoundsDenial, RoundsOutcome};
 pub use scan::{ExecutionScan, ScanDenial, ScanOutcome};
 pub use work_ceiling::{ExecutionWorkCeiling, WorkCeilingDenial};

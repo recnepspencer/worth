@@ -220,11 +220,7 @@ fn missing_door_index(live: bool, predicate_missing: bool) {
                 assert!(plan.continuation_index_id.is_some());
                 plan.continuation_index_id = Some(DerivedIndexId(u64::MAX));
             }
-            let buffer = world.application.result_buffers.reserve(
-                plan.graph_read_plan()
-                    .budget_check()
-                    .max_inline_result_bytes(),
-            );
+
             let actual = graph.source_owner.with_runtime(&request, |runtime| {
                 let outcome = if live {
                     read_live_target(
@@ -233,12 +229,10 @@ fn missing_door_index(live: bool, predicate_missing: bool) {
                         &layout,
                         &plan,
                         root.identity_value().clone(),
-                        buffer,
                     )
                     .map(|_| ())
                 } else {
-                    read_continuation_page(runtime, &request, &layout, &plan, None, buffer)
-                        .map(|_| ())
+                    read_continuation_page(runtime, &request, &layout, &plan, None).map(|_| ())
                 };
                 match outcome {
                     Err(denial) => denial.kind(),

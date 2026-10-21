@@ -128,5 +128,5 @@ fn lower_product_queries_reject_an_administration_grant() {
 }
 
 fn controls() -> BankReadControls {
-    BankReadControls::current(request_scope(), 1, 20_000).unwrap()
+    BankReadControls::current(request_scope(), 1).unwrap()
 }

@@ -16,13 +16,13 @@ fn draft_admission_denies_before_activation_and_retains_rejected_inline_custody(
     let bytes = 64 * 1024 * 1024;
     let ledger = Ledger::new(
         SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 1,
-            maximum_retained_bytes: bytes,
+            maximum_retained_slots: Some(1),
+            maximum_retained_bytes: Some(bytes),
             maximum_attempt_visits: Some(1_000_000),
         },
         crate::runtime_policy::SignalConditionalTemporalBudget {
-            maximum_live_partitions: 1,
-            maximum_reserved_active_wakes: 1,
+            maximum_live_partitions: Some(1),
+            maximum_reserved_active_wakes: Some(1),
         },
     );
     let basis =

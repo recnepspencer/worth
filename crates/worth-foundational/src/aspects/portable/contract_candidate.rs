@@ -128,6 +128,8 @@ struct PortableFieldDeclaration {
     requirement: PortableFieldRequirement,
     absence: AbsenceLaw,
     evolution: PortableAspectEvolution,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    codec: Option<[u8; 32]>,
 }
 
 impl PortableFieldDeclaration {
@@ -138,6 +140,7 @@ impl PortableFieldDeclaration {
             requirement: field.requirement().into(),
             absence: field.absence(),
             evolution: field.evolution().into(),
+            codec: field.codec().map(|codec| *codec.bytes()),
         }
     }
 }
@@ -155,6 +158,10 @@ fn readmit_struct_shape(
                 field.absence,
                 field.evolution.into(),
             )
+            .map(|declaration| match field.codec {
+                Some(codec) => declaration.with_codec(crate::CanonicalDigestId::new(codec)),
+                None => declaration,
+            })
             .ok_or(PortableAspectContractDenial::InvalidFieldDeclaration)
         })
         .collect::<Result<Vec<_>, _>>()?;

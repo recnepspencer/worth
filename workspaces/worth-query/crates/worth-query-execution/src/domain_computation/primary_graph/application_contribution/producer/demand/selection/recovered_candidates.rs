@@ -54,6 +54,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 checkpoint.source_partition,
                 checkpoint.producer_dependency,
                 checkpoint.idempotency_key,
+                Some(checkpoint.clone()),
             );
         }
     }

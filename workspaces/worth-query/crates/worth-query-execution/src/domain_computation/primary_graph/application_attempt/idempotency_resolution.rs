@@ -144,8 +144,7 @@ where
             .publication_binding();
         let commit_lane = self
             .primary_provider
-            .application_branch_commit_lane(product.observation())
-            .map_err(|_| WorthQueryApplicationIdempotencyResolutionDenial::branch_coordination_capacity_exhausted())?;
+            .application_branch_commit_lane(product.observation());
         let coordination = commit_lane.enter();
         let proof = self
             .authorize_idempotency_inspection(execution, admission, &coordination)
@@ -309,8 +308,7 @@ where
             .publication_binding();
         let commit_lane = self
             .primary_provider
-            .application_branch_commit_lane(product.observation())
-            .map_err(|_| WorthQueryApplicationIdempotencyResolutionDenial::branch_coordination_capacity_exhausted())?;
+            .application_branch_commit_lane(product.observation());
         let coordination = commit_lane.enter();
         let proof = self
             .authorize_idempotency_inspection(execution, admission, &coordination)

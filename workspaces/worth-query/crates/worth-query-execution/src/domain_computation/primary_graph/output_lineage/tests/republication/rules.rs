@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use super::{
-    admission, checkpoint_identity,
+    checkpoint_identity,
     records::{assert_continues_the_performed_read, continues_input, input_key, performed, INPUT},
     selects, source_entity, staged, IDEMPOTENCY_KEY, PARTITION,
 };
@@ -12,7 +12,6 @@ use crate::domain_computation::primary_graph::{
     invariant_projection::ConsumedOutputEvidence,
     output_lineage::{
         invalidation::{register_republished, FullVerificationReason},
-        retained_capacity::LineageRetentionLedger,
         RecordedOutput,
     },
     WorthQueryApplicationObservedFact as Fact,
@@ -42,21 +41,11 @@ fn a_republication_continues_the_suspended_performed_record() {
         // qualified, however equal its content.
         let equal: Arc<[Fact]> = Arc::from([source_entity(1), source_entity(2)]);
         assert!(stage
-            .republish(
-                suspended_generation,
-                &equal,
-                &restored_witness,
-                &mut admission(4_096)
-            )
+            .republish(suspended_generation, &equal, &restored_witness)
             .is_none());
 
         let continued = stage
-            .republish(
-                suspended_generation,
-                &facts,
-                &restored_witness,
-                &mut admission(4_096),
-            )
+            .republish(suspended_generation, &facts, &restored_witness)
             .expect("a performed record's proof continues")
             .expect("the restoration's address takes the republication");
         let suspended = suspended.get().unwrap();
@@ -91,19 +80,14 @@ fn a_republication_continues_the_suspended_performed_record() {
             restored.native_output_witness_cell().unwrap(),
             &restored_witness
         ));
-        assert!(restored._retained_capacity.is_none());
+
         assert_continues_the_performed_read(restored);
         assert!(continues_input(restored, &selection, INPUT));
         assert!(!continues_input(restored, &selection, [0x62; 32]));
 
         // The same restoration recorded again keeps its first republication.
         assert!(stage
-            .republish(
-                suspended_generation,
-                &facts,
-                &performed_witness,
-                &mut admission(4_096)
-            )
+            .republish(suspended_generation, &facts, &performed_witness)
             .expect("the suspended record still continues")
             .is_none());
         let restored = stage.restored();
@@ -131,12 +115,7 @@ fn a_restored_row_without_performed_proof_stays_fresh_until_verified() {
             .require_verification(FullVerificationReason::CheckpointRestore);
 
         assert!(stage
-            .republish(
-                suspended_generation,
-                &facts,
-                &restored_witness,
-                &mut admission(4_096)
-            )
+            .republish(suspended_generation, &facts, &restored_witness)
             .is_none());
         stage.lineage.record_restoration(
             stage.lineage.binding_type(&stage.source.output_binding),
@@ -151,7 +130,7 @@ fn a_restored_row_without_performed_proof_stays_fresh_until_verified() {
             IDEMPOTENCY_KEY,
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::clone(&facts)),
             None,
-        );
+            None);
         let restored = stage.restored();
         assert_eq!(
             restored.verification_requirement(),
@@ -189,7 +168,7 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
         let projection = performed_witness
             .get()
             .unwrap()
-            .prepare_fact_projection(&mut admission(4_096))
+            .prepare_fact_projection()
             .unwrap()
             .unwrap();
         let mut combined = Vec::with_capacity(projection.count() + 2);
@@ -200,44 +179,29 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
         let alias_facts: Arc<[Fact]> = Arc::from(combined);
         stage.retain(
             suspended_generation,
-            |row| RecordedOutput {
-                native_prior_checkpoint: None,
-                computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
-                performed_origin: Some(Arc::clone(&origin)),
-                consumed_outputs: Arc::clone(&consumed),
-                prepared_input_reuse_key: Some(input_key(&selection, ALIAS_INPUT)),
-                ..row
+            |row| {
+                let mut row = RecordedOutput {
+                    required_publication: None,
+                    native_prior_checkpoint: None,
+                    computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
+                    performed_origin: Some(Arc::clone(&origin)),
+                    consumed_outputs: Arc::clone(&consumed),
+                    prepared_input_reuse_key: Some(input_key(&selection, ALIAS_INPUT)),
+                    ..row
+                };
+                let spans = crate::domain_computation::primary_graph::output_lineage::input_cutoff::stable_publication::StableFactSpans::new(
+                    alias_facts.clone().into(), 1, alias_facts.len() - 2).unwrap();
+                let mutable = row.mutable.get_mut().unwrap();
+                // Local representation proof: real witness projection above,
+                // no source/currentness authority is manufactured by spans.
+                mutable.set_stable_fact_spans(spans);
+                row
             },
             &alias_facts,
         );
 
-        // The recomposed sequence is admitted and reserved before it exists.
-        stage.lineage.retention = LineageRetentionLedger::new(0);
-        assert!(stage
-            .republish(
-                suspended_generation,
-                &alias_facts,
-                &restored_witness,
-                &mut admission(4_096)
-            )
-            .is_none());
-        stage.lineage.retention = LineageRetentionLedger::default();
-        assert!(stage
-            .republish(
-                suspended_generation,
-                &alias_facts,
-                &restored_witness,
-                &mut admission(0)
-            )
-            .is_none());
-
         let continued = stage
-            .republish(
-                suspended_generation,
-                &alias_facts,
-                &restored_witness,
-                &mut admission(4_096),
-            )
+            .republish(suspended_generation, &alias_facts, &restored_witness)
             .expect("an alias continues its origin's proof")
             .expect("the restoration's address takes the republication");
         assert_eq!(continued.facts.len(), 2);
@@ -257,7 +221,7 @@ fn a_republished_stable_alias_holds_the_performed_sequence() {
             restored.native_output_witness_cell().unwrap(),
             &restored_witness
         ));
-        assert!(restored._retained_capacity.is_some());
+
         assert_continues_the_performed_read(restored);
         // The alias's own prepared input continues, not its origin's.
         assert!(continues_input(restored, &selection, ALIAS_INPUT));
@@ -286,6 +250,7 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
         stage.retain(
             alias_generation,
             |row| RecordedOutput {
+                required_publication: None,
                 native_prior_checkpoint: None,
                 computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
                 performed_origin: Some(Arc::clone(&origin)),
@@ -296,9 +261,9 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
             &alias_facts,
         );
 
-        let (candidates, _) = stage
+        let candidates = stage
             .lineage
-            .retained_output_candidates(
+            .retained_output_candidates_metered(
                 stage.source.runtime_authority,
                 &stage.source.schema,
                 stage.source.scope,
@@ -306,7 +271,7 @@ fn a_stable_alias_is_compared_by_the_witness_of_its_origin() {
                 alias_generation,
                 &[stage.lineage.binding_type(&stage.source.output_binding)],
                 PARTITION,
-                4_096,
+                request_execution,
             )
             .expect("the candidate lookup is admitted");
         let [candidate] = candidates.as_slice() else {
@@ -345,17 +310,13 @@ fn a_republication_whose_predecessor_holds_no_mark_row_is_verified_in_full() {
             &facts,
         );
         let continued = stage
-            .republish(
-                suspended_generation,
-                &facts,
-                &restored_witness,
-                &mut admission(4_096),
-            )
+            .republish(suspended_generation, &facts, &restored_witness)
             .unwrap()
             .unwrap();
 
         // This suspended record never registered with the mark owner, so the
         // republication has no currentness to continue there.
+
         let refused = register_republished(
             stage.owner,
             &continued.predecessor,
@@ -364,7 +325,6 @@ fn a_republication_whose_predecessor_holds_no_mark_row_is_verified_in_full() {
             &continued.consumed_outputs,
             continued.witness.get().unwrap(),
             stage.read_basis.take().unwrap(),
-            &mut stage.owner.edit_admission(),
         );
         let reason = refused.expect_err("an unregistered predecessor refuses the registration");
         assert_eq!(reason, FullVerificationReason::MissingSettlement);

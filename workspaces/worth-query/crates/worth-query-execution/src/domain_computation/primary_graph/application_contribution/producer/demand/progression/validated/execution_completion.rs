@@ -91,6 +91,8 @@ pub(super) fn finish(
     let _ = (recorded, runtime_identity, root);
     let mut receipt = (receipt.into_receipt(), ready_backing);
     drop(record);
+    #[cfg(test)]
+    own_effect_observation::record(Stage::Published);
     let publication = OwnPublication(receipt.0.committed_product_publication().clone());
     let delivery = receipt.0
             .take_performed_relational_product_change()

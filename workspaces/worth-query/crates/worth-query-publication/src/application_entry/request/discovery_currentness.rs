@@ -47,7 +47,6 @@ impl<'a, 'p, 's, Schema: ApplicationSchema>
         phase: &WorthQueryAdvancementPhase<'_>,
         settlements: impl IntoIterator<Item=&'d worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement>,
         dependencies: &WorthQueryRetainedQueryDependencies,
-        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         let selected = self
             .application
@@ -63,7 +62,6 @@ impl<'a, 'p, 's, Schema: ApplicationSchema>
                 self.scope,
                 settlements,
                 dependencies,
-                maximum_work,
             )
             .map_err(|cause| match cause {
                 WorthQueryRequiredSetCurrentnessDenial::Source(cause) => {
@@ -81,15 +79,10 @@ impl<'a, 'p, 's, Schema: ApplicationSchema>
     pub fn require_current_discovered_program_outputs<Q, D>(
         &self,
         settlement: &WorthQueryDiscoveredProgramOutputSettlement<Q, D>,
-        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         self.application
             .with_application_advancement(self.scope, |phase| {
-                self.require_current_discovered_program_outputs_in_advancement(
-                    &phase,
-                    settlement,
-                    maximum_work,
-                )
+                self.require_current_discovered_program_outputs_in_advancement(&phase, settlement)
             })
             .map_err(WorthQueryOutputCurrentnessDenial::ExecutionRequest)?
     }
@@ -100,32 +93,27 @@ impl<'a, 'p, 's, Schema: ApplicationSchema>
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         settlement: &WorthQueryDiscoveredProgramOutputSettlement<Q, D>,
-        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         self.require_current_required_set_in_advancement(
             phase,
             settlement.retained_settlements(),
             settlement.dependencies(),
-            maximum_work,
         )
     }
     pub(in crate::application_entry) fn require_current_program_output_in_advancement<Q>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         settlement: &WorthQueryApplicationProgramOutputSettlement<Q>,
-        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         match settlement.dependencies.as_ref() {
             Some(dependencies) => self.require_current_required_set_in_advancement(
                 phase,
                 settlement.retained_settlements(),
                 dependencies,
-                maximum_work,
             ),
             None => self.require_current_output_settlements_in_advancement(
                 phase,
                 settlement.retained_settlements(),
-                maximum_work,
             ),
         }
     }

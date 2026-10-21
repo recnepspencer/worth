@@ -1,5 +1,8 @@
 //! What a full run under a producer records for the next run to carry.
 
+use crate::domain_computation::primary_graph::{
+    application_attempt::ComputationRead, invariant_projection::ComputationCallSequence,
+};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -13,7 +16,7 @@ use super::super::items::{ItemDigests, Items};
 use super::super::routing::ComputationPartitionRouting;
 use super::observed::observe;
 use super::retained::{
-    CompletedComputationRun, RetainedCall, RetainedPartition, RetainedPartitions,
+    CompletedComputationRun, RetainedCall, RetainedPartitions,
     WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationRunForTest,
 };
 use super::{CompletedComputationRetention, PriorAbsence, RetainedBasisToken};
@@ -31,9 +34,6 @@ pub(in super::super) struct FullRecording<Key, Item> {
 }
 
 impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
-    pub(in super::super) fn can_retain(&self) -> bool {
-        self.measured
-    }
     /// Records a full run that retains under `basis`, when a producer runs it.
     pub(in super::super) fn new(basis: RetainedBasisToken) -> Self {
         Self {
@@ -114,20 +114,21 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
         }
     }
 
-    /// The completed run keeps replayable kernel steps and its reduced tree.
-    /// A nested cost with no owner-step representation leaves no retention.
+    /// The completed run keeps native kernel cost receipts and its reduced tree.
+    /// A context-dependent or nested kernel leaves no reusable receipt.
     /// `tree_memory` holds the tree until it is charged.
-    pub(in super::super) fn complete<Reduced>(
+    pub(in super::super) fn complete<Reduced, Stopped>(
         self,
-        (mut steps, steps_memory): (
-            BTreeMap<PartitionIdentity, Option<super::KernelSteps>>,
-            Option<QueryMemoryReservation>,
-        ),
+        results: Option<worth_execution::ExecutionRetainedRun<Reduced>>,
         tree: ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
         tree_memory: QueryMemoryReservation,
+        execution: &super::super::super::request_execution::QueryRequestExecution<'_>,
         cause: WorthQueryPartitionedComputationFullCause,
         report: ExecutionReport,
-    ) -> CompletedComputationRetention
+    ) -> Result<
+        CompletedComputationRetention,
+        super::super::WorthQueryPartitionedComputationDenial<Stopped>,
+    >
     where
         Item: Send + Sync + ChargedBytes + 'static,
         Reduced: Send + Sync + ChargedBytes + 'static,
@@ -136,21 +137,62 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
             WorthQueryPartitionedComputationRunForTest::Full(cause),
             Some(report),
         );
-        let partitions = self
-            .partitions
-            .into_iter()
-            .map(|(identity, (key, key_bytes, gather))| {
-                steps.remove(&identity).flatten().map(|kernel_steps| {
-                    let partition = RetainedPartition {
-                        key,
-                        key_bytes,
-                        gather,
-                        kernel_steps,
-                    };
-                    (identity, Arc::new(partition))
-                })
+        let Some(native_run) = results.filter(|run| {
+            run.partition_count() == self.partitions.len() && run.requires_execution().is_none()
+        }) else {
+            return Ok(CompletedComputationRetention::Absent(
+                PriorAbsence::Unmeasured,
+            ));
+        };
+        if !self.partitions.keys().all(|identity| {
+            native_run.result(*identity).is_some_and(|result| {
+                result.identity() == *identity && result.native_reuse_available()
             })
-            .collect::<Option<BTreeMap<_, _>>>();
+        }) {
+            return Ok(CompletedComputationRetention::Absent(
+                PriorAbsence::Unmeasured,
+            ));
+        }
+        if !self.measured || self.membership.is_none() || self.routing.is_none() {
+            return Ok(CompletedComputationRetention::Absent(
+                PriorAbsence::Unmeasured,
+            ));
+        }
+        let membership = self.membership.as_ref().expect("measured membership");
+        let call_sequence = ComputationCallSequence::build(
+            || {
+                std::iter::once((
+                    ComputationRead::Membership,
+                    &membership.0.charge,
+                    membership.0.declared_units,
+                ))
+                .chain(self.item_keys.iter().map(|(item, call)| {
+                    (
+                        ComputationRead::ItemKey(*item),
+                        &call.charge,
+                        call.declared_units,
+                    )
+                }))
+                .chain(
+                    self.partitions
+                        .iter()
+                        .map(|(id, (_, _, charge))| (ComputationRead::Partition(*id), charge, 0)),
+                )
+            },
+            execution,
+        )
+        .map_err(super::super::WorthQueryPartitionedComputationDenial::from_call_sequence)?;
+        let item_bytes = super::item_bounds::items(&membership.1);
+        let policy = execution
+            .allocation_policy()
+            .map_err(super::super::WorthQueryPartitionedComputationDenial::Resource)?;
+        let item_keys = super::item_bounds::retain_calls(&self.item_keys, policy)
+            .map_err(super::super::WorthQueryPartitionedComputationDenial::from_ordered)?;
+        let item_call_bytes = Some(item_keys.retained_bytes());
+        let partitions = Some(
+            super::partition_metadata::PartitionMetadata::from_recorded(self.partitions, policy)
+                .map_err(super::super::WorthQueryPartitionedComputationDenial::from_ordered)?,
+        );
         let (routing, routing_memory) = self.routing.unzip();
         let typed = match (self.membership, routing, partitions) {
             (Some((membership, items, digests)), Some(routing), Some(partitions))
@@ -160,24 +202,34 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
                     items,
                     digests,
                     membership,
-                    item_keys: Arc::new(self.item_keys),
+                    item_keys,
+                    item_bytes,
+                    item_call_bytes,
+                    call_sequence: Arc::clone(&call_sequence),
                     routing: Arc::new(routing),
                     partitions,
+                    native_run,
                     tree,
                 }
             }
-            _ => return CompletedComputationRetention::Absent(PriorAbsence::Unmeasured),
+            _ => {
+                return Ok(CompletedComputationRetention::Absent(
+                    PriorAbsence::Unmeasured,
+                ))
+            }
         };
         let typed_bytes = typed.charged_bytes();
-        CompletedComputationRetention::Produced(CompletedComputationRun {
-            basis: self.basis.0,
-            typed: Arc::new(typed),
-            typed_bytes,
-            carried: None,
-            tree_memory,
-            routing_memory,
-            steps_memory,
-        })
+        Ok(CompletedComputationRetention::Produced(
+            CompletedComputationRun {
+                basis: self.basis.0,
+                typed: Arc::new(typed),
+                typed_bytes,
+                call_sequence,
+                carried: None,
+                tree_memory,
+                routing_memory,
+            },
+        ))
     }
 }
 

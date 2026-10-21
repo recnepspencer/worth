@@ -13,14 +13,4 @@ impl WorthQueryPrimaryGraphLayout {
             .into_iter()
             .flat_map(|contracts| contracts.keys())
     }
-
-    /// Both the native kind and its aspect inventory use entity-name B-trees.
-    /// The kind table contains every entity in the aspect table, so its bounded
-    /// descent also covers the aspect table without reading unrelated aspects.
-    pub(in crate::domain_computation::primary_graph) fn native_output_lookup_work(
-        &self,
-        entity: &str,
-    ) -> Option<u64> {
-        self.entity_kind_lookup_work(entity)?.checked_mul(2)
-    }
 }

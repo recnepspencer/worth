@@ -33,6 +33,9 @@ struct IdentifierEntity;
 #[path = "application_schema_marker_identity_tests.rs"]
 mod application_schema_marker_identity_tests;
 
+#[path = "application_schema_tests/operation_dependencies.rs"]
+mod operation_dependencies;
+
 crate::worth_query_structured_value_binding!(
     SchemaInputBinding for SchemaInput {
         identity: "worth.query.test.schema-input"
@@ -307,10 +310,10 @@ fn operation_program_with_missing_target_member_is_denied() {
         .operation_create(program_operation(), program_entity())
         .build()
         .unwrap_err();
-    assert_eq!(
+    assert!(matches!(
         denial,
-        ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency
-    );
+        ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency { .. }
+    ));
 }
 
 #[test]
@@ -329,10 +332,10 @@ fn mutation_precondition_without_the_exact_decision_read_is_denied() {
         .operation_expected_fact(schema_operation(), field())
         .build()
         .unwrap_err();
-    assert_eq!(
+    assert!(matches!(
         denial,
-        ApplicationSchemaDeclarationDenial::MissingOperationMutationPreconditionDependency
-    );
+        ApplicationSchemaDeclarationDenial::MissingOperationMutationPreconditionDependency { .. }
+    ));
 }
 
 fn declaration(

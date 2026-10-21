@@ -12,6 +12,8 @@
 /// and approvals.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationAttemptDenialKind {
+    /// The original request refused an admitted field decode; completion is vetoed.
+    ValueDecode(super::super::value_decode::WorthQueryValueDecodeDenial),
     ForeignPhase,
     ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     Cancelled,
@@ -177,6 +179,7 @@ pub struct WorthQueryApplicationAttemptDenial {
 /// Inspection preserves the original owner cause.
 #[derive(Debug)]
 enum AttemptDenialCause {
+    OutputObservation(Box<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop>),
     None,
     RelationalExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     NativeQueryRead(Box<worth_relational::facade::runtime::QueryReadExecutionStop>),
@@ -206,39 +209,6 @@ impl WorthQueryApplicationAttemptDenial {
             kind,
             subject: subject.into(),
             cause: AttemptDenialCause::None,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn condition_expression(
-        subject: impl Into<String>,
-        denial: worth_foundational::expression_api::ExpressionDenial,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationAttemptDenialKind::WorkflowConditionExpressionDenied,
-            subject: subject.into(),
-            cause: AttemptDenialCause::Expression(Box::new(denial)),
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn body_requirement_expression(
-        subject: impl Into<String>,
-        denial: worth_foundational::expression_api::ExpressionDenial,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationAttemptDenialKind::OperationBodyRequirementExpressionDenied,
-            subject: subject.into(),
-            cause: AttemptDenialCause::Expression(Box::new(denial)),
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn body_value_expression(
-        subject: impl Into<String>,
-        denial: worth_foundational::expression_api::ExpressionDenial,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationAttemptDenialKind::OperationBodyValueExpressionDenied,
-            subject: subject.into(),
-            cause: AttemptDenialCause::Expression(Box::new(denial)),
         }
     }
 
@@ -374,9 +344,12 @@ impl std::fmt::Display for WorthQueryApplicationAttemptDenial {
     }
 }
 
+mod output_observation;
+
 impl std::error::Error for WorthQueryApplicationAttemptDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &self.cause {
+            AttemptDenialCause::OutputObservation(stop) => Some(stop.as_ref()),
             AttemptDenialCause::NativeQueryRead(stop) => Some(stop.as_ref()),
             AttemptDenialCause::RetainedSource(denial) => Some(denial.as_ref()),
             AttemptDenialCause::Allocation(denial) => Some(denial.as_ref()),
@@ -393,6 +366,7 @@ mod allocation_error_source_tests;
 #[cfg(test)]
 mod native_query_cause;
 
+mod expression;
 mod request_read;
 
 mod capacity;

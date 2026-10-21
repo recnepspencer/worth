@@ -45,6 +45,9 @@ action(Binding, Delivery) {
 native_action(Binding) {
     // The same optional metadata clauses; no delivery or output-source override.
 };
+conditional_native_action(Binding) {
+    // The same metadata; this concrete binding is owned by its installed conditional.
+};
 ```
 
 Each optional clause is consuming and once-only. All subsets are legal under
@@ -93,6 +96,24 @@ explicit branch/host control. Ordinary product mutations and retries require
 real delivery, including when a deliberate native caller also consumes the
 same occurrence. Native required-output membership is derived from actual
 program roots; there is no output-source toggle or second mutation spelling.
+
+Use `.conditional_native_action::<Binding>()` followed by `.finish_action()`
+when an installed conditional issues this concrete mutation binding. Its compact
+form is `conditional_native_action(Binding) {};`. The sealed constructor derives
+operation/input equality, binding identity and workflow requirements from
+`ApplicationMutationBinding`, declares conditional-only ownership, and supplies
+no ordinary delivery argument. Metadata attachments keep the same consuming
+contracts and composition occurrence.
+
+This answers required program binding membership while preserving conditional
+ownership. `conditional_operation(Op)` supplies operation meaning alone; a
+separate `native_action(Binding)` introduces a nonconditional action and conflicts
+with that installed conditional. Declaration installs neither readiness nor a
+producer: the real conditional, handler, producer association and exact declared
+versus installed operation set remain contribution/installation requirements.
+The [joint consumer assembly court](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/conditional_native_action.rs)
+uses an isolated schema requiring its real planar producer binding; its no-output
+program cannot acquire membership indirectly from output roots.
 
 The five-part `ApplicationActionReference<Schema, Instance, Feature, Binding,
 Delivery>` is a sealed selector. `ApplicationAction::selector()` does not expose

@@ -56,7 +56,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn commit_prepared_ap
     crate::domain_computation::WorthQueryProviderTerminalDescription,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
-    let prepared = take_prepared_session(provider, session)
+    let prepared = take_prepared_session(provider, session, allocation_policy)
         .map_err(crate::domain_computation::WorthQueryProviderSessionCommitStop::from)?;
     if provider.take_rejected_commit_before_transaction() {
         return Err(
@@ -82,6 +82,7 @@ pub(in crate::domain_computation::primary_graph::provider) fn commit_prepared_ap
 fn take_prepared_session(
     provider: &WorthQueryPrimaryGraphProvider,
     session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<WorthQueryPreparedApplicationCommit, WorthQueryProviderSessionFailure> {
     let attempts = std::sync::Arc::clone(&provider.attempts);
     let prepared = {
@@ -96,7 +97,8 @@ fn take_prepared_session(
     let (mut attempt, candidate, work, completion) = prepared.into_parts();
     let source_fact_rebase = attempt.take_source_fact_rebase();
     let (retained_preimage, preimage_retention_work) =
-        preimage_retention::retain_attempt_preimage(&attempt, &candidate)?.into_parts();
+        preimage_retention::retain_attempt_preimage(&attempt, &candidate, allocation_policy)?
+            .into_parts();
     Ok(WorthQueryPreparedApplicationCommit {
         attempt,
         candidate,

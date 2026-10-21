@@ -41,13 +41,7 @@ fn subscribe(
         .unwrap()
         .begin_canonical_envelope_subscription()
         .unwrap()
-        .activate(
-            Arc::new(consumer),
-            CompanionPreflightBudget {
-                maximum_work_visits: Some(32),
-                maximum_preparation_bytes: None,
-            },
-        )
+        .activate(Arc::new(consumer))
         .unwrap()
 }
 

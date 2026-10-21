@@ -4,10 +4,9 @@ use crate::application_program::ConsumerFixedAction;
 use crate::{ConsumerProgram, ConsumerProgramRoot};
 use worth_query_host::facade::application_entry::{
     WorthQueryClosedFixedDelivery, WorthQueryOperationAdvance as FixedAdvance,
-    WorthQueryOperationDeliveryDenial, WorthQueryOperationDeliveryPolicy,
-    WorthQueryOutputCurrentnessDenial, WorthQueryOutputSettlementPosture,
-    WorthQueryProgramOutputOperationAdvance as TreeAdvance, WorthQuerySettledFixedOperation,
-    WorthQuerySettledProgramOutputOperation,
+    WorthQueryOperationDeliveryDenial, WorthQueryOutputCurrentnessDenial,
+    WorthQueryOutputSettlementPosture, WorthQueryProgramOutputOperationAdvance as TreeAdvance,
+    WorthQuerySettledFixedOperation, WorthQuerySettledProgramOutputOperation,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryOutputDemandDenialKind,
@@ -156,8 +155,7 @@ fn fixed_and_no_source_close_before_fresh_complete_current_read() {
         let contacts = world
             .application
             .producer_contacts_on_this_thread_for_test();
-        let policy = WorthQueryOperationDeliveryPolicy::default();
-        let observation = closed_tree.deliver_current(&request, policy).unwrap();
+        let observation = closed_tree.deliver_current(&request).unwrap();
         let read = closed_tree
             .read_current(
                 &request,

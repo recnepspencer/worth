@@ -15,11 +15,12 @@ use crate::domain_computation::primary_graph::application_query::{
     },
     execution_validation::validate_request,
     read_execution::{
-        project_non_live_kernel, NonLiveKernelReceiptEvidence, RawNonLiveKernelOutcome,
+        project_non_live_kernel_with_decode, NonLiveKernelReceiptEvidence, RawNonLiveKernelOutcome,
     },
     WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationAuthorizationWorkEvidence,
     WorthQueryApplicationProjection, WorthQueryApplicationQueryAccessReceipt,
 };
+use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 struct WorthQueryContinuationIdentity {
@@ -38,6 +39,7 @@ struct WorthQueryContinuationIdentity {
 }
 
 struct WorthQueryContinuationFinalization {
+    decode: ValueDecodeState,
     subject: String,
     request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     authentication_valid_until: std::time::Instant,
@@ -59,6 +61,7 @@ pub(super) fn finalize_continuation_page<
     PrincipalIdentity,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     plan: WorthQueryAdmittedApplicationQueryPlan<
         '_,
@@ -81,9 +84,14 @@ where
     Schema: ApplicationSchema,
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
 {
-    let mut finalization = release_continuation_page_basis(plan)?;
+    let mut finalization = release_continuation_page_basis(
+        plan,
+        ValueDecodeState::new(application.installed_schema().value_bindings().clone()),
+    )?;
     validate_continuation_projection(application, &finalization)?;
-    let projected = project_non_live_kernel::<Schema, Query, QueryResult, _>(
+    let projected = project_non_live_kernel_with_decode::<Schema, Query, QueryResult, _>(
+        execution,
+        &finalization.decode,
         kernel,
         &finalization.governance,
         || {
@@ -97,8 +105,17 @@ where
                 projection.subject(),
             )
         },
-    )?;
-    let (rows, kernel_receipt) = projected.into_parts();
+    );
+    finalization.decode.check(execution).map_err(|cause| {
+        denial(
+            WorthQueryApplicationContinuationDenialKind::Projection(
+                super::super::WorthQueryApplicationProjectionDenialKind::ValueDecode(cause),
+            ),
+            "value-decode",
+        )
+    })?;
+    validate_continuation_projection(application, &finalization)?;
+    let (rows, kernel_receipt) = projected?.into_parts();
     let continuation = mint_continuation::<Schema, Query, Parameters, QueryResult, Scope>(
         &mut finalization,
         &kernel_receipt,
@@ -132,6 +149,7 @@ fn release_continuation_page_basis<
         PrincipalIdentity,
         Scope,
     >,
+    decode: ValueDecodeState,
 ) -> Result<WorthQueryContinuationFinalization, WorthQueryApplicationContinuationDenial> {
     let subject = plan.query.name().to_string();
     let basis_identity = plan.basis.identity().clone();
@@ -185,6 +203,7 @@ fn release_continuation_page_basis<
         ));
     }
     Ok(WorthQueryContinuationFinalization {
+        decode,
         subject,
         request,
         authentication_valid_until,

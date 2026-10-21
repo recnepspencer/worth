@@ -1,5 +1,5 @@
 use super::super::provider_execution::{
-    WorthQueryProviderAttemptRegistrationContext, WorthQueryProviderProgressionOutcome,
+    progression_denied, WorthQueryProviderAttemptRegistrationContext, WorthQueryProviderProgressionOutcome,
     WorthQueryRegisteredProviderAttempt,
 };
 use super::super::WorthQueryApplicationCommitDenialStage as DenialStage;
@@ -26,7 +26,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     >,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    indexed_rebase_work_budget: Option<usize>,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:
@@ -76,6 +75,8 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         required_output_demand,
         installed_read_scopes,
         facts,
+        application_projection,
+        original_read,
         effects,
         preimage_demand,
         conditional_definition,
@@ -94,7 +95,29 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             )
         }
     };
-    let decision_facts = match authorization.bind_application_facts(installed_read_scopes, facts) {
+    if original_read
+        .as_ref()
+        .is_some_and(|read| !affinity.owns_original_read(read))
+    {
+        return abort_registration(staged, DenialStage::DecisionReadSet);
+    }
+    let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(context.admission(&inspection).publication_request(), allocation_policy);
+    let control = crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(context.admission(&inspection).publication_request()));
+    let application = crate::domain_computation::primary_graph::CompletedApplicationFacts::new(
+        installed_read_scopes,
+        facts,
+    )
+    .with_completed_projection(application_projection, original_read);
+    let application = match application.admit_binding(control, authorization.fact_count()) {
+        Ok(application) => application,
+        Err(failure) => {
+            let _ = staged.abort();
+            return Err(WorthQueryProviderProgressionOutcome::Denied(
+                super::super::WorthQueryApplicationCommitDenial::decision_read_set_denied(failure),
+            ));
+        }
+    };
+    let decision_facts = match authorization.bind_application_facts(application) {
         Ok(bound) => bound,
         Err(detail) => {
             let _ = staged.abort();
@@ -108,25 +131,15 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             );
         }
     };
-    let (source_facts, moved_by_own_effect) = match &output_currentness_facts {
-        Some(facts) => (facts.facts().to_vec(), facts.moved_by_own_effect()),
-        None => (
-            decision_facts
-                .facts()
-                .values()
-                .filter_map(|fact| fact.observed_source_fact().cloned())
-                .collect(),
-            std::sync::Arc::from([]),
+    let source_fact_rebase = match match &output_currentness_facts {
+        Some(facts) => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit_output(
+            facts.facts().clone(), facts.moved_by_own_effect(), facts.rebase_carry(), control,
         ),
-    };
-    // Preserve producer source order or authorization-merged decision fact order.
-    // Temporary Vec/other nested heaps remain separately uncharged.
-    let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(context.admission(&inspection).publication_request(), allocation_policy);
-    let source_fact_rebase = match crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit(
-        source_facts,
-        moved_by_own_effect,
-        crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(context.admission(&inspection).publication_request())),
-    ) {
+        None => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit(
+            decision_facts.facts().explicit_values().filter_map(|fact| fact.observed_source_fact().cloned()).collect(),
+            std::sync::Arc::from([]), control,
+        ),
+    } {
         Ok(prepared) => prepared,
         Err(denial) => {
             let _ = staged.abort();
@@ -168,10 +181,6 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             preimage_demand: preimage_demand.as_ref(),
             aftermath_causality: context.aftermath_causality(&inspection).cloned(),
             conditional_definition,
-            indexed_rebase_work_budget: context
-                .admission(&inspection)
-                .allowed_graph_contract()
-                .projection_work_budget(),
             retain_output_demand_observation,
             retain_client_observation,
             producer_required_invariants,
@@ -185,30 +194,6 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             staged,
             expected_steps,
         )),
-        Err(RegistrationStop::Execution(cause)) => {
-            let _ = staged.abort();
-            use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
-            let cause = crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None);
-            Err(match cause {
-                Err(Control::Cancelled) => WorthQueryProviderProgressionOutcome::Cancelled,
-                Err(Control::TimedOut) => WorthQueryProviderProgressionOutcome::TimedOut,
-                Ok(kind) => WorthQueryProviderProgressionOutcome::Denied(
-                    super::super::WorthQueryApplicationCommitDenial::provider_execution_denied(
-                        DenialStage::ProviderPlan,
-                        Ok(kind),
-                        "consumed output backing request stopped",
-                    ),
-                ),
-            })
-        }
-        Err(RegistrationStop::Interrupted(interruption)) => {
-            use worth_relational::facade::mvcc::RelationalOperationInterruption as Interruption;
-            let _ = staged.abort();
-            Err(match interruption {
-                Interruption::Cancelled => WorthQueryProviderProgressionOutcome::Cancelled,
-                Interruption::TimedOut => WorthQueryProviderProgressionOutcome::TimedOut,
-            })
-        }
         Err(RegistrationStop::Rejected(cause)) => abort_registration_with_detail(
             staged,
             format!("application attempt registration: {cause:?}"),
@@ -227,4 +212,12 @@ fn abort_registration_with_detail<T>(
             detail,
         ),
     ))
+}
+
+fn abort_registration<T>(
+    staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'_>,
+    stage: DenialStage,
+) -> Result<T, WorthQueryProviderProgressionOutcome> {
+    let _ = staged.abort();
+    Err(progression_denied(stage))
 }

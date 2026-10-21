@@ -78,25 +78,10 @@ pub(super) fn capture<Schema, Operation, Input, Scope>(
                 })
         })
         .map_err(Denial::Execution)??;
-    let facts = candidate.read_set.facts;
-    let total = facts
-        .len()
-        .checked_add(revisions.len())
-        .ok_or(Denial::RepresentationCapacity)?;
-    candidate.read_set.facts = super::super::read_set::admit_array(
-        total,
-        facts.into_iter().chain(revisions),
-        request.allocation_policy(),
-        candidate.read_set.admission.operation(),
-        || {
-            candidate
-                .read_set
-                .admission
-                .validate_current_authority()
-                .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
-        },
-    )
-    .map_err(Denial::Attempt)?;
+    candidate
+        .read_set
+        .append_completed_facts(revisions.into_iter(), request.allocation_policy())
+        .map_err(Denial::Attempt)?;
     Ok((candidate, memory))
 }
 

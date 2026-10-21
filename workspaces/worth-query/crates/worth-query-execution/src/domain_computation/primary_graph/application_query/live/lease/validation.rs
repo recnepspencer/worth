@@ -2,9 +2,8 @@ use worth_query_declaration::facade::application_query::ApplicationQueryLiveCaus
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 
-use super::super::{
-    controls::WorthQueryApplicationLiveControls,
-    outcome::{WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind},
+use super::super::outcome::{
+    WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,
 };
 use crate::domain_computation::primary_graph::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryAdmissionDenial;
@@ -45,46 +44,6 @@ where
             query.name(),
         ))
     }
-}
-
-pub(super) fn validate_live_resource_controls(
-    live: &worth_query_installation::facade::WorthQueryInstalledApplicationLiveContract,
-    controls: &WorthQueryApplicationLiveControls,
-    subject: &str,
-) -> Result<(), WorthQueryApplicationLiveOpenDenial> {
-    validate_live_envelope_controls(live.resource_envelope(), controls, subject)
-}
-
-fn validate_live_envelope_controls(
-    envelope: &worth_query_installation::facade::WorthQueryExecutionResourceEnvelope,
-    controls: &WorthQueryApplicationLiveControls,
-    subject: &str,
-) -> Result<(), WorthQueryApplicationLiveOpenDenial> {
-    let installed_work = envelope
-        .bounded_step_contract()
-        .map_err(|detail| {
-            open_denial(
-                WorthQueryApplicationLiveOpenDenialKind::BridgeBasisRejected,
-                detail,
-            )
-        })?
-        .max_work_units_per_step();
-    if controls.buffer_capacity() as u64 > envelope.queue_depth_ceiling() {
-        return Err(open_denial(
-            WorthQueryApplicationLiveOpenDenialKind::BufferCapacityExceedsInstalled,
-            subject,
-        ));
-    }
-    if controls
-        .maximum_work_per_delivery()
-        .is_some_and(|work| work.get() as u64 > installed_work)
-    {
-        return Err(open_denial(
-            WorthQueryApplicationLiveOpenDenialKind::WorkLimitExceedsInstalled,
-            subject,
-        ));
-    }
-    Ok(())
 }
 
 pub(super) fn open_admission_denial(
@@ -151,9 +110,6 @@ pub(super) fn open_denial(
     WorthQueryApplicationLiveOpenDenial::new(kind, subject)
 }
 
-#[cfg(test)]
-mod atomic_tests;
-
 pub(super) fn subscription_capacity_denial(subject: &str) -> WorthQueryApplicationLiveOpenDenial {
     use super::super::super::WorthQueryApplicationQueryAdmissionDenialKind as Admission;
     open_denial(
@@ -161,6 +117,3 @@ pub(super) fn subscription_capacity_denial(subject: &str) -> WorthQueryApplicati
         subject,
     )
 }
-
-#[cfg(test)]
-mod capacity_tests;

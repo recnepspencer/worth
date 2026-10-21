@@ -72,29 +72,23 @@ where
             .installed_schema()
             .installed_query_binding::<Intent::Binding>()
             .map_err(WorthQueryApplicationLiveOpenRequestDenial::BindingInstallation)?;
-        let controls = WorthQueryApplicationLiveControls::bounded(
-            self.scope.clone(),
-            live_limits.buffer_capacity,
-            live_limits.maximum_results,
-            live_limits.maximum_work,
-        )
+        let controls = WorthQueryApplicationLiveControls::bounded(self.scope.clone(), live_limits.buffer_capacity, live_limits.maximum_results)
         .map_err(WorthQueryApplicationLiveOpenRequestDenial::Controls)?;
         let maximum_results = NonZeroUsize::new(live_limits.maximum_results)
             .expect("validated live controls reject zero result limits");
-        let maximum_work = live_limits.maximum_work.map(|work| NonZeroUsize::new(work)
-            .expect("validated live controls reject zero work limits"));
+
         let binding_limits = match self.limits {
-            Some((results, work)) => self
+            Some(results) => self
                 .application
                 .resolve_application_query_limits(binding.limits())
-                .narrow(results, Some(work))
+                .narrow(results)
                 .map_err(WorthQueryApplicationLiveOpenRequestDenial::Limit)?,
             None => self
                 .application
                 .resolve_application_query_limits(binding.limits()),
         };
         binding_limits
-            .narrow(maximum_results, maximum_work)
+            .narrow(maximum_results)
             .map_err(WorthQueryApplicationLiveOpenRequestDenial::Limit)?;
         let selected = self
             .application

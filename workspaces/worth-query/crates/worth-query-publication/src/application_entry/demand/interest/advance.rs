@@ -27,18 +27,27 @@ where
     > {
         application
             .with_application_advancement(fresh_request.scope, |phase| {
-                for _ in 0..self
+                let mut remaining = self
                     .controls
                     .resolve(application.output_demand_resource_profile())
-                    .settlement_attempts()
-                {
+                    .settlement_attempts();
+                loop {
+                    if remaining == Some(0) {
+                        break;
+                    }
+                    remaining = remaining.map(|steps| steps - 1);
                     let progress =
                         self.advance_in_advancement(&phase, application, fresh_request)?;
-                    if matches!(
-                        progress,
+                    match progress {
                         WorthQueryApplicationOutputDemandProgress::Settled(_)
-                    ) {
-                        return Ok(progress);
+                        | WorthQueryApplicationOutputDemandProgress::Pending => {
+                            return Ok(progress)
+                        }
+                        WorthQueryApplicationOutputDemandProgress::Progressed => {
+                            if remaining == Some(0) {
+                                return Ok(progress);
+                            }
+                        }
                     }
                 }
                 Ok(WorthQueryApplicationOutputDemandProgress::Pending)
@@ -137,6 +146,9 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::CorrespondenceDelivery(_) => WorthQueryApplicationOutputDemandDenial::Demand(denial),
         })?;
         match progress {
+            WorthQueryOutputDemandAdvance::Progressed => {
+                Ok(WorthQueryApplicationOutputDemandProgress::Progressed)
+            }
             WorthQueryOutputDemandAdvance::Pending => {
                 Ok(WorthQueryApplicationOutputDemandProgress::Pending)
             }
@@ -145,10 +157,6 @@ where
                     WorthQueryApplicationOutputDemandSettlement::new(
                         receipt,
                         self.admitted.observed_source().clone(),
-                        self.admitted.checkpoint_readmission_work_units(),
-                        self.admitted.checkpoint_readmission_work_bound(),
-                        self.admitted
-                            .checkpoint_readmission_charged_preparation_bytes(),
                     ),
                 ))
             }

@@ -5,7 +5,7 @@ use crate::runtime::{
     RelationalRuntime, RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding,
 };
 
-use super::{CompanionPreflightBudget, RelationalPublicationCompanion};
+use super::RelationalPublicationCompanion;
 
 #[cfg(test)]
 mod guard_fault;
@@ -23,7 +23,7 @@ pub(crate) enum CompanionRegistrationState {
     RequiredActive {
         generation: u64,
         participant: Arc<dyn RelationalPublicationCompanion>,
-        budget: CompanionPreflightBudget,
+
         client: Weak<()>,
     },
 }
@@ -89,11 +89,7 @@ impl CompanionRegistrationEpoch<'_> {
     pub(crate) fn active(
         &self,
     ) -> Result<
-        Option<(
-            u64,
-            &dyn RelationalPublicationCompanion,
-            CompanionPreflightBudget,
-        )>,
+        Option<(u64, &dyn RelationalPublicationCompanion)>,
         PublicationCompanionRegistrationStop,
     > {
         match &*self.state {
@@ -104,9 +100,8 @@ impl CompanionRegistrationEpoch<'_> {
             CompanionRegistrationState::RequiredActive {
                 generation,
                 participant,
-                budget,
                 ..
-            } if self._client.is_some() => Ok(Some((*generation, participant.as_ref(), *budget))),
+            } if self._client.is_some() => Ok(Some((*generation, participant.as_ref()))),
             CompanionRegistrationState::RequiredActive { .. } => {
                 Err(PublicationCompanionRegistrationStop::RebindRequired)
             }
@@ -243,7 +238,6 @@ impl PendingCompanionRegistration {
     pub fn activate(
         self,
         participant: Arc<dyn RelationalPublicationCompanion>,
-        budget: CompanionPreflightBudget,
     ) -> Result<PublicationCompanionRegistration, PublicationCompanionRegistrationStop> {
         let _operation = self
             .port
@@ -264,7 +258,6 @@ impl PendingCompanionRegistration {
                 *state = CompanionRegistrationState::RequiredActive {
                     generation: self.generation,
                     participant,
-                    budget,
                     client: Arc::downgrade(&client),
                 };
                 Ok(PublicationCompanionRegistration {

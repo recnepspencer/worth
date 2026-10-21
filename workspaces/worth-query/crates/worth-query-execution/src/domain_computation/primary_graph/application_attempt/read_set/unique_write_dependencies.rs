@@ -2,6 +2,7 @@
 //! normalized values at the retained basis before signing/sealing, not through
 //! supplier decision permission. Lowering still decides collisions.
 
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::collections::BTreeSet;
 
 use worth_foundational::facade::{
@@ -71,35 +72,13 @@ impl<Schema, Operation, Input, Scope>
                 })
             },
         )?;
-        if appended.is_empty() {
-            return Ok(());
-        }
-        let operation = self.admission.operation();
-        let count = self
-            .facts
-            .len()
-            .checked_add(appended.len())
-            .ok_or_else(|| {
-                super::super::retained_decision_facts::StoreDenial::Representability
-                    .into_attempt_denial(operation)
-            })?;
-        self.facts = super::super::read_set::admit_array(
-            count,
-            self.facts.iter().cloned().chain(appended),
-            allocation_policy,
-            operation,
-            || {
-                self.admission
-                    .validate_current_authority()
-                    .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
-            },
-        )?;
+        self.append_completed_facts(appended, allocation_policy)?;
         Ok(())
     }
 }
 
 fn observe_unique_values(
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &(impl FactSequence + ?Sized),
     unique: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<'_>,
     effects: &[WorthQueryApplicationRealizedEffect],
     kind_of: impl Fn(&str) -> Option<KindId>,

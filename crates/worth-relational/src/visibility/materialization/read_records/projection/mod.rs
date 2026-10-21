@@ -27,7 +27,6 @@ mod view;
 pub use adjacency_revision::{
     AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection,
 };
-pub use admitted_snapshot::RelationalSnapshotProjectionAdmissionStop;
 pub use borrowed_adjacency::RelationalAdjacencyVisit;
 pub use borrowed_records::{
     RelationalBorrowedRecordReadDenial, RelationalEntityMetadata, RelationalRelationMetadata,
@@ -39,7 +38,7 @@ pub use contracts::{
 pub use entity_retirement::RelationalEntityRetirement;
 pub use projection_records::{
     EntityProjectionRecord, EntityRecordProjection, RelationProjectionRecord,
-    RelationRecordProjection,
+    RelationRecordProjection, RelationalProjectedFieldObservation,
 };
 pub(crate) use query_locus_projection::{
     authoritative_state_query_locus_comparison_key, authoritative_state_query_locus_value,

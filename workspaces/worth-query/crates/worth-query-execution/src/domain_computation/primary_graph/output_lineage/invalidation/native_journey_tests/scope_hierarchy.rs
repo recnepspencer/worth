@@ -96,31 +96,37 @@ fn run(siblings: usize) -> super::super::logical_marking::WorthQueryNativeMarkin
             // child's output. Sibling paths have no consumed edge in common.
             let leaf = n % DEPTH == 0;
             owner.register_settlement(SettlementRegistration {
+                computation: None,
                 work_membership: Some(Arc::clone(&members[n].1)),
                 identity: Arc::clone(&outputs[n]),
                 facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false,
                     if leaf { Arc::from([field_fact(execution, runtime, &before_handle, entities[n], label.clone())]) } else { Arc::from([]) }),
                 output_facts: None, read_basis: before.clone(), stale_at_read_basis: OrdSet::new(), requirement: None,
                 upstream: if leaf { OrdSet::new() } else { OrdSet::unit(Arc::clone(&outputs[n - 1])) },
-            }, &mut owner.edit_admission()).unwrap();
+            }).unwrap();
             // Admission queues initial disclosure; registration queues one
             // local settlement cue. Both precede the measured Native edit.
             for _ in 0..2 {
-                let initial = registries[n].next_required_work(owner, &mut owner.edit_admission()).unwrap().unwrap();
-                assert!(matches!(initial.kind(), SelectedRequiredWorkKind::Local { .. } | SelectedRequiredWorkKind::UnresolvedInitial));
+
+
+let initial = registries[n].next_required_work(owner).unwrap().unwrap();
+assert!(matches!(initial.kind(), SelectedRequiredWorkKind::Local { .. } | SelectedRequiredWorkKind::UnresolvedInitial));
                 initial.acknowledge_fixture();
             }
-            assert!(registries[n].next_required_work(owner, &mut owner.edit_admission()).unwrap().is_none());
+            assert!(registries[n].next_required_work(owner).unwrap().is_none());
         }
         write_field(execution, runtime, entities[0], label, "after");
         let (after_handle, after) = snapshot(runtime);
-        let report = owner.native_marking_report(&after, &mut owner.edit_admission()).unwrap().unwrap();
+let report = owner.native_marking_report(&after).unwrap().unwrap();
+
+
         let WorthQueryNativeMarkingPrecision::Exact(counts) = report.precision else { panic!("the declared Native leaf touch is exact") };
         assert_eq!(counts.marked_fact_ordinals, 1);
         assert_eq!(counts.visited_vertices, DEPTH as u64);
         assert_eq!(counts.downstream_edges, DEPTH as u64 - 1);
         for (n, registry) in registries.iter().enumerate() {
-            let candidate = registry.next_required_work(owner, &mut owner.edit_admission()).unwrap();
+
+            let candidate = registry.next_required_work(owner).unwrap();
             if n < DEPTH {
                 let candidate = candidate.expect("each ancestor has one Native pending cue");
                 assert!(matches!(candidate.kind(), SelectedRequiredWorkKind::Native { .. }));
@@ -129,7 +135,7 @@ fn run(siblings: usize) -> super::super::logical_marking::WorthQueryNativeMarkin
                 assert!(candidate.is_none(), "sibling scope {n} contributes zero candidates, hence zero Ready selections");
                 assert!(matches!(currentness(owner, &after, &outputs[n]), SourceSettlementCurrentness::Clean));
             }
-            assert!(registry.next_required_work(owner, &mut owner.edit_admission()).unwrap().is_none(), "one cue per dirty scope");
+            assert!(registry.next_required_work(owner).unwrap().is_none(), "one cue per dirty scope");
         }
         for snapshot in [before_handle, after_handle] { runtime.snapshots().release_snapshot(&snapshot).unwrap(); }
         counts

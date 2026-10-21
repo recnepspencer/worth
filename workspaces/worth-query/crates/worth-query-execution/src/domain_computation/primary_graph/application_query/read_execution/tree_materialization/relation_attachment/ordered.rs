@@ -13,9 +13,8 @@ use super::super::{
     OrderedCollectionProgress, ResultTreeWork, WorthQueryApplicationProjectionNode,
     WorthQueryApplicationReadExecutionDenial,
 };
-use crate::domain_computation::primary_graph::application_query::{
-    read_execution::{read_execution_denial, WorthQueryApplicationReadExecutionDenialKind},
-    resource_lifecycle::WorthQueryApplicationResultBufferReservation,
+use crate::domain_computation::primary_graph::application_query::read_execution::{
+    read_execution_denial, WorthQueryApplicationReadExecutionDenialKind,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -31,7 +30,6 @@ pub(super) fn attach_ordered_relation(
     parents: &mut [WorthQueryApplicationProjectionNode],
     work: &mut ResultTreeWork,
     window: &mut ActiveOrderedCollectionWindow,
-    result_buffer: &mut WorthQueryApplicationResultBufferReservation,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
     if relation.predicate().is_some() {
         return Err(traversal_denial(relation.result_path()));
@@ -83,7 +81,6 @@ pub(super) fn attach_ordered_relation(
         &child_ids,
         work,
         &mut nested_selection,
-        result_buffer,
     )?;
     let has_more = page.has_more();
     let generation_id = page.generation_id();
@@ -102,7 +99,6 @@ pub(super) fn attach_ordered_relation(
         governance,
         work,
         true,
-        result_buffer,
         vec![0],
         Vec::new(),
     )

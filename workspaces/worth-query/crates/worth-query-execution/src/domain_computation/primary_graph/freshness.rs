@@ -1,3 +1,4 @@
+mod source_query_currentness;
 use super::authenticated_principal::WorthQueryAuthenticatedPrincipal;
 use super::observations::{
     observe_exact_principal_target, observe_mapping, WorthQueryPrincipalMappingObservation,
@@ -162,30 +163,6 @@ pub(in crate::domain_computation) struct WorthQueryPrincipalReuseWitness {
 }
 
 impl WorthQueryPrincipalFreshnessEvidence {
-    /// Request-scoped backing and initialized payload copied by a fresh
-    /// authorization dependency. Scalar wrappers contribute one visit each;
-    /// variable bytes are counted only when their owned payload is cloned.
-    pub(in crate::domain_computation) fn clone_requirements(&self) -> Option<(u64, u64)> {
-        let values = [&self.mapping.identity, &self.target.principal_identity];
-        let work = values.iter().copied().try_fold(0usize, |sum, value| {
-            sum.checked_add(1)?.checked_add(match value {
-                AspectValue::Decimal(value) => value.as_str().len(),
-                AspectValue::BigInt(value) => value.as_str().len(),
-                AspectValue::Rational(value) => value
-                    .numerator
-                    .as_str()
-                    .len()
-                    .checked_add(value.denominator.as_str().len())?,
-                AspectValue::String(InternedString::Raw(value)) => value.len(),
-                _ => 0,
-            })
-        })?;
-        let bytes = values.iter().copied().try_fold(0usize, |sum, value| {
-            sum.checked_add(value.owned_allocation_capacity_bytes())
-        })?;
-        Some((u64::try_from(work).ok()?, u64::try_from(bytes).ok()?))
-    }
-
     pub(in crate::domain_computation) fn reuse_witness(&self) -> WorthQueryPrincipalReuseWitness {
         WorthQueryPrincipalReuseWitness {
             mapping: self.mapping.entity_id,

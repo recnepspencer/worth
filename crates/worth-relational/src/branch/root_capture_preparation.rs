@@ -71,6 +71,17 @@ pub(super) fn prepare(
         entity_slot_count: prepared_regions.entity_slot_count,
         relation_slot_count: prepared_regions.relation_slot_count,
         content_accumulator: prepared_regions.content_accumulator,
+        output_publication_positions: if envelope.is_unmerged_output_publication_step() {
+            previous
+                .map(|root| root.output_publication_positions.clone())
+                .unwrap_or_default()
+        } else {
+            // The recovery class refuses merged physical output ownership.
+            // Carry no old selector across an unsupported canonical step.
+            crate::history::data::RequiredOutputPublicationPositions::unresolved_at(
+                envelope.commit.commit_id,
+            )
+        },
         schema_authority: prepared_schema.authority,
         committed: Some(RelationalCommittedBranchRoot {
             descriptor: super::RelationalBranchRootDescriptor::new(

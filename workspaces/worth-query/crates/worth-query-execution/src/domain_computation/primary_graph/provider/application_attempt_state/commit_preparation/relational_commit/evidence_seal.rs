@@ -71,7 +71,8 @@ pub(super) fn seal(
         .idempotency()
         .producer_dependency_identity()
         .is_some();
-    let (committed_result, indexed_rebase_width, admission) = committed.rebase_parts();
+    let request = committed.attempt().affinity().publication_request().clone();
+    let committed_result = committed.committed();
     let observed_source_facts = provider.graph.with_runtime(execution, |runtime| {
         postcommit_currentness::rebase_output(
             execution,
@@ -81,8 +82,7 @@ pub(super) fn seal(
             &output_correspondence,
             &committed_result.changed_records,
             producer_output,
-            indexed_rebase_width,
-            admission,
+            crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(execution.allocation_policy(), Some(&request)),
         )
     });
     WorthQueryPrimaryGraphCommitEvidence {
@@ -198,6 +198,18 @@ impl WorthQueryPrimaryGraphCommitEvidence {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn posting_continuation(
+        &self,
+    ) -> Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::PostingContinuation,
+    > {
+        self.observed_source_facts.posting_continuation()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn source_payload_bytes(&self) -> Option<u64> {
+        self.observed_source_facts.payload_bytes()
+    }
+
     /// The facts this commit retains, each one a verifier can compare, or
     /// the rebase that failed and left it none.
     pub(in crate::domain_computation::primary_graph) fn rebased_source_facts(
@@ -212,7 +224,7 @@ impl WorthQueryPrimaryGraphCommitEvidence {
     /// Ordinals of the retained source facts the committed effect itself moved.
     pub(in crate::domain_computation::primary_graph) fn source_facts_superseded_by_own_effect(
         &self,
-    ) -> &[usize] {
+    ) -> impl Iterator<Item = usize> + '_ {
         self.observed_source_facts.superseded_by_own_effect()
     }
 }

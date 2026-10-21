@@ -20,7 +20,6 @@ where
     pub fn deliver_current(
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
-        policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<WorthQueryApplicationReadObservation, WorthQueryOperationDeliveryDenial> {
         if !self.matches(request) {
             return Err(WorthQueryOperationDeliveryDenial::FreshRequestMismatch);
@@ -28,14 +27,13 @@ where
         request
             .application
             .with_application_advancement(request.scope, |phase| {
-                self.current_observation(request, &phase, policy)
+                self.current_observation(request, &phase)
             })
             .map_err(WorthQueryOperationDeliveryDenial::Execution)?
     }
     pub fn deliver_current_at(
         &self,
         retained: &WorthQueryApplicationRetainedRequest<'_, '_, '_, Schema>,
-        policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<(), WorthQueryOperationDeliveryDenial> {
         let request = retained.base_request();
         if !self.matches(&request) {
@@ -44,7 +42,7 @@ where
         request
             .application
             .with_application_advancement(request.scope, |phase| {
-                self.require_current_at(retained, &phase, policy)
+                self.require_current_at(retained, &phase)
             })
             .map_err(WorthQueryOperationDeliveryDenial::Execution)?
     }

@@ -1,8 +1,8 @@
 //! Supersession releases each retired row's own prepaid claims.
-use super::super::{
-    PreparedReadyBacking, WorthQueryOutputCheckpoint, WorthQueryOutputProgress,
-    WorthQueryPendingOutputDelivery,
-};
+use super::super::PreparedReadyBacking;
+use super::super::WorthQueryOutputCheckpoint;
+use super::super::WorthQueryOutputProgress;
+use super::super::WorthQueryPendingOutputDelivery;
 use super::*;
 
 #[test]
@@ -11,8 +11,7 @@ fn an_incomparable_abandoned_publication_refunds_its_prerequisites() {
     let occurrence = occurrence();
     crate::domain_computation::primary_graph::with_test_advancement(|_| {
         let mut state = DemandRegistryState::default();
-        let (_unrelated, baseline) =
-            super::reservation_baseline::install(&mut state, receipt.clone());
+        let unrelated = super::reservation_baseline::install(&mut state, receipt.clone());
         let upstream = key("abandoned-upstream", 1, 2);
         state.records.insert(
             upstream.clone(),
@@ -26,7 +25,7 @@ fn an_incomparable_abandoned_publication_refunds_its_prerequisites() {
             None,
             "different Preserve bindings do not establish a succession"
         );
-        let backing = PreparedReadyBacking::prepare(&state, &mut record_admission(), 0).unwrap();
+        let backing = PreparedReadyBacking::new();
         let output = WorthQueryOutputProgress::new(WorthQueryOutputCheckpoint::Published {
             receipt,
             delivery: WorthQueryPendingOutputDelivery::NoChange,
@@ -34,8 +33,7 @@ fn an_incomparable_abandoned_publication_refunds_its_prerequisites() {
         });
         let mut abandoned_record = record(occurrence, DemandState::Output(output), 0);
         abandoned_record.prerequisites = vec![Arc::new(upstream.clone())];
-        state.required_reserved_bytes += abandoned_record.prerequisites.capacity()
-            * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
+
         state
             .records
             .get_mut(&upstream)
@@ -44,16 +42,12 @@ fn an_incomparable_abandoned_publication_refunds_its_prerequisites() {
         state.records.insert(abandoned.clone(), abandoned_record);
         let member = state.prepare_required_member(&abandoned).unwrap();
         state.install_required_member(member);
-        supersede_predecessors(&mut state, &incoming, &mut record_admission()).unwrap();
+        supersede_predecessors(&mut state, &incoming).unwrap();
+        assert!(state.records.contains_key(&unrelated));
         assert!(!state.records.contains_key(&abandoned));
         assert_eq!(
             state.records[&upstream].framework_required_count, 0,
             "retiring the incomparable row releases its exact consumed edge"
-        );
-        assert_eq!(
-            super::reservation_baseline::balances(&state),
-            baseline,
-            "the unrelated row keeps all three reservations after the exact refund"
         );
     });
 }

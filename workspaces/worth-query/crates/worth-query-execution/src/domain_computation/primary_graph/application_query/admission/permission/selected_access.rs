@@ -1,4 +1,3 @@
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 /// Both typed identities came from their owners on one selected immutable
@@ -47,28 +46,7 @@ impl<Schema, Principal, PrincipalIdentity, Scope>
         security: &worth_relational::facade::snapshots::SnapshotHandle,
         basis: &worth_relational::facade::snapshots::SnapshotHandle,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, CompanionPreflightStop> {
-        admission.charge_external_work(5)?;
-        let product_work = u64::try_from(
-            worth_runtime_world::facade::CurrentProductHead::comparison_work_bound(self.product),
-        )
-        .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
-        let snapshot_text = self
-            .snapshot
-            .branch_id()
-            .0
-            .len()
-            .checked_mul(2)
-            .and_then(|bytes| bytes.checked_add(security.branch_id().0.len()))
-            .and_then(|bytes| bytes.checked_add(basis.branch_id().0.len()))
-            .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        let comparison_work = product_work
-            .checked_add(snapshot_text)
-            .and_then(|work| work.checked_add(8))
-            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        admission.charge_external_work(comparison_work)?;
         Ok(std::ptr::eq(self.principal, principal)
             && std::ptr::eq(self.scope, scope)
             && self.request.same_request(request)

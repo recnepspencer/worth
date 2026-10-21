@@ -50,13 +50,13 @@ fn a_take_checks_the_live_stage_under_its_own_lock() {
                 .publication_count_for_test();
             assert!(
                 registry
-                    .take_published_held_successor(&row, &mut record_admission())
+                    .take_published_held_successor(&row)
                     .unwrap()
                     .is_none(),
                 "stopped={stopped}: the stale observation cannot move a successor"
             );
             assert!(registry
-                .take_published_held_successor(&row, &mut record_admission())
+                .take_published_held_successor(&row)
                 .unwrap()
                 .is_none());
             let state = registry.state.lock().unwrap();
@@ -71,11 +71,11 @@ fn a_take_checks_the_live_stage_under_its_own_lock() {
                     .finish_checkpoint(&first, claim, checkpoint, None)
                     .unwrap();
                 assert!(registry
-                    .take_published_held_successor(&row, &mut record_admission())
+                    .take_published_held_successor(&row)
                     .unwrap()
                     .is_some());
                 assert!(registry
-                    .take_published_held_successor(&row, &mut record_admission())
+                    .take_published_held_successor(&row)
                     .unwrap()
                     .is_none());
                 assert_eq!(

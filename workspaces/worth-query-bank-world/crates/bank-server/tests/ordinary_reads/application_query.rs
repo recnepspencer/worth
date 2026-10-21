@@ -96,5 +96,5 @@ fn installed_account_activity_denies_a_mapped_stranger_before_plan_authority() {
 }
 
 fn current_controls() -> BankReadControls {
-    BankReadControls::current(request_scope(), 64, 100_000).unwrap()
+    BankReadControls::current(request_scope(), 64).unwrap()
 }

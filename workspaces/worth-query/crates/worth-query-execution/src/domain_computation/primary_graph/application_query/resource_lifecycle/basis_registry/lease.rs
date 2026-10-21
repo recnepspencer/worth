@@ -1,27 +1,21 @@
 use super::super::lifecycle_count::release;
-use super::{
-    WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisRegistryState,
-    WorthQueryApplicationBasisReleaseOutcome, WorthQueryApplicationBasisReleaseReceipt,
-    WorthQueryApplicationBasisSelectionIdentity,
-};
-use crate::domain_computation::primary_graph::{
-    output_lineage::invalidation::InvalidationEditAdmission,
-    program_occurrence::WorthQueryProgramSupportInterpretation,
-    WorthQueryPrimaryGraphIntegrationHandle,
-};
+use super::WorthQueryApplicationBasisIdentity;
+use super::WorthQueryApplicationBasisRegistryState;
+use super::WorthQueryApplicationBasisReleaseOutcome;
+use super::WorthQueryApplicationBasisReleaseReceipt;
+use super::WorthQueryApplicationBasisSelectionIdentity;
+use crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 use std::sync::Arc;
 mod batch;
-use super::super::super::batch::WorthQueryApplicationQueryBatchMemory;
-use worth_relational::facade::{
-    branch::{AdmittedRelationalBranchBasis, RelationalBranchRetentionLease},
-    mvcc::CompanionPreflightStop,
-    snapshots::SnapshotHandle,
-};
+use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
+use worth_relational::facade::branch::RelationalBranchRetentionLease;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::snapshots::SnapshotHandle;
 
 pub(crate) struct WorthQueryApplicationBasisLease {
     identity: WorthQueryApplicationBasisIdentity,
     custody: BasisCustody,
-    _batch_identity: Option<WorthQueryApplicationQueryBatchMemory>,
 }
 
 enum BasisCustody {
@@ -38,7 +32,6 @@ struct BasisLeaseCore {
     state: Arc<WorthQueryApplicationBasisRegistryState>,
     program_interpretation: Option<WorthQueryProgramSupportInterpretation>,
     selected_program_inspected: bool,
-    _batch_shared: Option<WorthQueryApplicationQueryBatchMemory>,
 }
 
 impl WorthQueryApplicationBasisLease {
@@ -60,9 +53,7 @@ impl WorthQueryApplicationBasisLease {
                 state,
                 program_interpretation: None,
                 selected_program_inspected: false,
-                _batch_shared: None,
             }),
-            _batch_identity: None,
         }
     }
 
@@ -90,18 +81,11 @@ impl WorthQueryApplicationBasisLease {
 
     pub(in crate::domain_computation::primary_graph) fn prepare_shared(
         &mut self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), CompanionPreflightStop> {
         if matches!(self.custody, BasisCustody::Shared(_)) {
             return Ok(());
         }
-        admission.charge_external_work(1)?;
-        let bytes =
-            crate::domain_computation::primary_graph::output_lineage::invalidation::arc_bytes::<
-                BasisLeaseCore,
-            >()
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        admission.admit_read_scratch(bytes)?;
+
         let BasisCustody::Exclusive(core) =
             std::mem::replace(&mut self.custody, BasisCustody::Transitioning)
         else {
@@ -113,41 +97,14 @@ impl WorthQueryApplicationBasisLease {
 
     pub(in crate::domain_computation::primary_graph) fn retain_shared(
         &self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Self, CompanionPreflightStop> {
         let BasisCustody::Shared(core) = &self.custody else {
             return Err(CompanionPreflightStop::SelectedSourceMismatch);
         };
-        let descriptor = &self.identity.descriptor;
-        let parents = descriptor
-            .reference()
-            .target()
-            .as_basis()
-            .map_or(0, |target| target.parent_commit_ids().len());
-        let strings = self
-            .identity
-            .branch_id
-            .0
-            .len()
-            .checked_add(descriptor.branch_id().0.len())
-            .and_then(|bytes| bytes.checked_add(descriptor.reference().branch_id().as_str().len()))
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        let bytes = parents
-            .checked_mul(std::mem::size_of::<u64>())
-            .and_then(|bytes| bytes.checked_add(strings))
-            .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        let work = u64::try_from(strings)
-            .ok()
-            .and_then(|work| work.checked_add(parents as u64))
-            .and_then(|work| work.checked_add(7))
-            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        admission.charge_external_work(work)?;
-        admission.admit_read_scratch(bytes)?;
+
         Ok(Self {
             identity: self.identity.clone(),
             custody: BasisCustody::Shared(Arc::clone(core)),
-            _batch_identity: None,
         })
     }
 }
@@ -234,20 +191,26 @@ impl WorthQueryApplicationBasisLease {
     }
 
     pub fn is_live(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) -> bool {
-        self.core().basis.is_some()
-            && self.core().snapshot.as_ref().is_some_and(|snapshot| {
-                self.core().graph.with_runtime(execution, |runtime| {
-                    runtime.read_truth().project_snapshot(snapshot).is_some()
-                })
-            })
+        self.core()
+            .graph
+            .with_runtime(execution, |runtime| self.is_live_at(runtime))
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn is_live_at(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> bool {
+        self.identity.runtime_instance_id() == runtime.main_branch_identity().runtime_instance_id()
+            && self.core().basis.is_some()
+            && self
+                .core()
+                .snapshot
+                .as_ref()
+                .is_some_and(|snapshot| runtime.read_truth().project_snapshot(snapshot).is_some())
     }
 
     pub fn release(self) -> WorthQueryApplicationBasisReleaseReceipt {
-        let Self {
-            identity,
-            custody,
-            _batch_identity,
-        } = self;
+        let Self { identity, custody } = self;
         let outcome = match custody {
             BasisCustody::Exclusive(core) => core.release(&identity),
             BasisCustody::Shared(core) => match Arc::try_unwrap(core) {

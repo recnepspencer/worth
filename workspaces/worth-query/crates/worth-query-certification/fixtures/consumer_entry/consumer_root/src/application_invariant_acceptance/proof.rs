@@ -29,7 +29,6 @@ mod generated_materialization;
 mod output_correspondence;
 mod prior_output_family;
 mod publication;
-mod resource_profile;
 
 type Request<'a> = WorthQueryApplicationRequest<'a, 'a, 'a, ConsumerSchema>;
 
@@ -48,7 +47,8 @@ fn settled<RootQuery>(
     progress: WorthQueryApplicationProgramOutputProgress<RootQuery>,
 ) -> Option<WorthQueryApplicationProgramOutputSettlement<RootQuery>> {
     match progress {
-        WorthQueryApplicationProgramOutputProgress::Pending => None,
+        WorthQueryApplicationProgramOutputProgress::Pending
+        | WorthQueryApplicationProgramOutputProgress::Progressed => None,
         WorthQueryApplicationProgramOutputProgress::Settled(settlement) => Some(settlement),
     }
 }
@@ -73,7 +73,6 @@ pub(crate) fn run(foreign: &WorthQueryInstalledApplicationSchema<ConsumerSchema>
     );
     application_program::ordinary_source_publication_cannot_bypass_program(foreign);
     application_program::lifecycle_proofs(foreign);
-    resource_profile::source_footprint_bytes_beyond_host_limit_are_denied(foreign);
     let world = installation::install(foreign);
     super::discovery::verify(&world.application);
     let scope = authentication::request_scope();

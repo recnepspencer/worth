@@ -1,5 +1,8 @@
 //! Native program transition before any World or ordinary writer exists.
 mod authoring;
+pub(super) mod codec;
+mod output_disposition;
+mod preserved_outputs;
 mod publication;
 mod repair;
 mod selection;
@@ -7,7 +10,9 @@ use super::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
 pub use authoring::WorthQueryCheckpointMigrationWriter;
-pub(in crate::domain_computation::primary_graph) use publication::transition_checkpoint;
+pub(in crate::domain_computation::primary_graph) use publication::{
+    transition_checkpoint, InstalledCheckpointTarget,
+};
 pub use repair::WorthQueryCheckpointTransitionRecovery;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 

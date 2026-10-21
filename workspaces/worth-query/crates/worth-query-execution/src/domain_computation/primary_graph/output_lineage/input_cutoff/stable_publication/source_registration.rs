@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use super::PreparedStableLineagePublication;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::{
-    collect_consumed_output_upstream, InvalidationEditAdmission,
-    PreparedCurrentSettlementRegistration, SettlementRegistration, SettlementRegistrationStop,
-    SourceInvalidationOwner,
-};
+use crate::domain_computation::primary_graph::output_lineage::invalidation::collect_consumed_output_upstream;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::PreparedCurrentSettlementRegistration;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistration;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 
 impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
@@ -16,26 +16,20 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
         &self,
         owner: &SourceInvalidationOwner,
         work_membership: Option<Arc<crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership>>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedCurrentSettlementRegistration<'selected>, SettlementRegistrationStop> {
         let selected = self.address.verified.selected;
-        let branch_bytes = u64::try_from(selected.branch_id().0.len()).map_err(|_| {
-            worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow
-        })?;
-        admission.charge_external_work(branch_bytes.checked_add(3).ok_or(
-            worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
-        )?)?;
-        admission.admit_read_scratch(branch_bytes)?;
-        let upstream = collect_consumed_output_upstream(self.consumed_outputs(), admission)?;
+
+        let upstream = collect_consumed_output_upstream(self.consumed_outputs())?;
         // The selected candidate may itself be an alias. This sealed relation
         // names that exact predecessor, never just the performed origin.
         let equality = StableEqualityConsequence {
+            partition: Some(self.address.partition),
             predecessor: Arc::clone(self.address.verified.candidate.settlement_identity()),
             successor: Arc::clone(&self.address.identity),
             selected,
         };
-        owner.prepare_current_stable_settlement(
-            SettlementRegistration {
+        owner.prepare_current_stable_settlement(SettlementRegistration {
+                computation: None,
                 work_membership,
                 identity: Arc::clone(&self.address.identity),
                 facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::retain(self.address.verified.candidate.recorded().computation_source, self.facts.clone()),
@@ -44,16 +38,13 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
                 stale_at_read_basis: im::OrdSet::new(),
                 requirement: None,
                 upstream,
-            },
-            selected,
-            equality,
-            admission,
-        )
+            }, selected, equality)
     }
 }
 
 /// Minted only by a verified stable publication at its exact selected source.
 pub(in crate::domain_computation::primary_graph) struct StableEqualityConsequence<'selected> {
+    partition: Option<[u8; 32]>,
     predecessor: Arc<RecordedSettlementIdentity>,
     successor: Arc<RecordedSettlementIdentity>,
     selected: &'selected worth_relational::facade::runtime::PositionedRelationalSnapshot,
@@ -67,6 +58,7 @@ impl<'selected> StableEqualityConsequence<'selected> {
         selected: &'selected worth_relational::facade::runtime::PositionedRelationalSnapshot,
     ) -> Self {
         Self {
+            partition: None,
             predecessor,
             successor,
             selected,
@@ -77,6 +69,12 @@ impl<'selected> StableEqualityConsequence<'selected> {
         &self,
     ) -> &Arc<RecordedSettlementIdentity> {
         &self.predecessor
+    }
+
+    pub(in crate::domain_computation::primary_graph::output_lineage) fn partition(
+        &self,
+    ) -> Option<[u8; 32]> {
+        self.partition
     }
 
     pub(in crate::domain_computation::primary_graph::output_lineage) fn successor(

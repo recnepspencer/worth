@@ -62,7 +62,6 @@ fn retained_continuation_releases_the_query_registry_basis() {
                     live_account_parameters("account-1"),
                     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                         NonZeroUsize::new(1).unwrap(),
-                        Some(NonZeroUsize::new(10_000).unwrap()),
                         &request,
                     ),
                 )

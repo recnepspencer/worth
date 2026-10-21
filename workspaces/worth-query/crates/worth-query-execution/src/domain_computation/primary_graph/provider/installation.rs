@@ -3,13 +3,7 @@ use std::sync::Arc;
 use super::{WorthQueryPrimaryGraphProvider, WorthQueryPrimaryLogicalGraph};
 
 impl WorthQueryPrimaryGraphProvider {
-    pub(in crate::domain_computation::primary_graph) fn install(
-        graph: super::WorthQueryPrimaryGraphIntegrationHandle,
-        fault_port: Arc<dyn super::fault_port::WorthQueryPrimaryGraphFaultPort>,
-        maximum_concurrent_graph_work: std::num::NonZeroUsize,
-        resource_support: super::WorthQueryPrimaryGraphResourceSupport,
-        branch_coordination_resources: crate::domain_computation::execution_runtime::WorthQueryBranchCoordinationResourceProfile,
-    ) -> (
+    pub(in crate::domain_computation::primary_graph) fn install(graph: super::WorthQueryPrimaryGraphIntegrationHandle, fault_port: Arc<dyn super::fault_port::WorthQueryPrimaryGraphFaultPort>, maximum_concurrent_graph_work: std::num::NonZeroUsize, resource_support: super::WorthQueryPrimaryGraphResourceSupport) -> (
         Arc<crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor>,
         Arc<Self>,
     ){
@@ -19,9 +13,7 @@ impl WorthQueryPrimaryGraphProvider {
             graph,
             resource_support,
             branch_commit_coordination:
-                super::branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator::new(
-                    branch_coordination_resources.retained_bytes(),
-                ),
+                super::branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator::new(),
             live_delivery: crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveDeliverySource::default(),
             attempts: std::sync::Arc::new(std::sync::Mutex::new(
                 super::application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore::default(),
@@ -33,7 +25,7 @@ impl WorthQueryPrimaryGraphProvider {
             ),
             unpublished_idempotency: std::sync::Arc::new(std::sync::Mutex::new(
                 super::unpublished_idempotency::WorthQueryUnpublishedIdempotencyStore::new(
-                    super::resource_support::UNPUBLISHED_IDEMPOTENCY_CAPACITY,
+                    None,
                 ),
             )),
             receipt_basis_retention: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),

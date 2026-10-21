@@ -8,7 +8,10 @@ use super::authorization_policy::{
     ApplicationAuthorizationPath, ApplicationAuthorizationPathEffect,
     ApplicationAuthorizationTraversalDirection,
 };
-use super::{ApplicationSchemaDeclarationDenial, ApplicationSchemaMember};
+use super::{
+    ApplicationOperationDependencyLocus as Locus, ApplicationSchemaDeclarationDenial,
+    ApplicationSchemaMember,
+};
 
 mod decision_read_budgets;
 mod member_collections;
@@ -161,26 +164,34 @@ impl<'a> ClosureIndex<'a> {
                 if !self.operations.contains(operation.as_str())
                     || !self.program_target_exists(target) =>
             {
-                Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency)
+                Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
+                    operation: operation.clone(), dependency: Locus::ProgramTarget(target.clone()),
+                })
             }
             ApplicationSchemaMember::OperationDecisionRead { operation, target }
                 if !self.operations.contains(operation.as_str())
                     || !self.decision_read_target_exists(target) =>
             {
-                Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency)
+                Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency {
+                    operation: operation.clone(), dependency: Locus::DecisionReadTarget(target.clone()),
+                })
             }
             ApplicationSchemaMember::OperationMutationPrecondition { operation, target }
                 if !self.operations.contains(operation.as_str())
                     || !self.precondition_target_is_decision_read(operation, target) =>
             {
                 Err(
-                    ApplicationSchemaDeclarationDenial::MissingOperationMutationPreconditionDependency,
+                    ApplicationSchemaDeclarationDenial::MissingOperationMutationPreconditionDependency {
+                        operation: operation.clone(), dependency: Locus::MutationPrecondition(target.clone()),
+                    },
                 )
             }
             ApplicationSchemaMember::OperationProjectionWorkBudget { operation, .. }
                 if !self.operations.contains(operation.as_str()) =>
             {
-                Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency)
+                Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency {
+                    operation: operation.clone(), dependency: Locus::ProjectionWorkBudget,
+                })
             }
             ApplicationSchemaMember::OperationExternalEffect {
                 operation,
@@ -191,7 +202,11 @@ impl<'a> ClosureIndex<'a> {
             } if *maximum_payload_bytes == 0
                 || !self.external_effect_dependencies_exist(operation, effect, rust_payload_type) =>
             {
-                Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency)
+                Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
+                    operation: operation.clone(), dependency: Locus::ExternalEffect {
+                        effect: effect.clone(), payload_type: rust_payload_type.clone(),
+                    },
+                })
             }
             ApplicationSchemaMember::OperationInboundOccurrence {
                 operation,
@@ -208,12 +223,16 @@ impl<'a> ClosureIndex<'a> {
                     } if outbound_operation == operation && outbound_effect == effect
                 )) =>
             {
-                Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency)
+                Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
+                    operation: operation.clone(), dependency: Locus::InboundOccurrence { effect: effect.clone() },
+                })
             }
             ApplicationSchemaMember::OperationAftermath { operation, .. }
                 if !self.operations.contains(operation.as_str()) =>
             {
-                Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency)
+                Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency {
+                    operation: operation.clone(), dependency: Locus::Aftermath,
+                })
             }
             ApplicationSchemaMember::Ability { scope_entity, .. }
                 if !self.entities.contains(scope_entity.as_str()) =>

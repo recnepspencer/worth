@@ -16,6 +16,21 @@ impl WorthQueryGraphReadBudget {
         max_inline_intermediate_set_size: usize,
         admit: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<Self, WorthQueryCanonicalIdentityStop<Stop>> {
+        Self::policy_admitted(
+            Some(max_inline_index_bytes),
+            Some(max_inline_result_bytes),
+            Some(max_inline_intermediate_set_size),
+            admit,
+        )
+    }
+
+    /// Derive optional policy identity under the same original admission.
+    pub fn policy_admitted<Stop>(
+        max_inline_index_bytes: Option<usize>,
+        max_inline_result_bytes: Option<usize>,
+        max_inline_intermediate_set_size: Option<usize>,
+        admit: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<Self, WorthQueryCanonicalIdentityStop<Stop>> {
         use WorthQueryCanonicalIdentityStop::{AccountingOverflow, Admission};
         let slot_work = u64::try_from(3 * size_of::<String>()).map_err(|_| AccountingOverflow)?;
         admit(slot_work + 3, 0).map_err(Admission)?;
@@ -24,7 +39,7 @@ impl WorthQueryGraphReadBudget {
             max_inline_result_bytes,
             max_inline_intermediate_set_size,
         );
-        let render = |(label, value): (&str, usize), admit: &mut _| {
+        let render = |(label, value): (&str, Option<usize>), admit: &mut _| {
             // Decimal digits are bounded by the integer's bit width. This
             // funds the count pass before discovering its exact output size.
             let work = u64::try_from(label.len())

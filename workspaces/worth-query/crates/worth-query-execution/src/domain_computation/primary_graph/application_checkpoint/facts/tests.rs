@@ -28,6 +28,7 @@ fn complete_comparable_fact_kinds_round_trip_without_losing_absence_or_sets() {
             value: worth_foundational::facade::AspectValue::UInt64(31),
         },
         Fact::AbsentField { entity_id: entity, kind: KindId(14), locator: locator.clone() },
+        Fact::OptionalAspectAbsent { entity_id: entity, kind: KindId(14), locator: locator.clone() },
         Fact::SourceFieldRevision {
             entity_id: entity,
             locator,
@@ -64,7 +65,9 @@ fn complete_comparable_fact_kinds_round_trip_without_losing_absence_or_sets() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation
         )
         .unwrap()
-        .as_ref(),
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>(),
         facts.as_slice()
     );
     assert!(
@@ -148,7 +151,9 @@ fn complete_large_decisions_round_trip_above_the_former_total_fact_ceiling() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation
         )
         .unwrap()
-        .as_ref(),
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>(),
         facts.as_slice()
     );
     let mut forged = encoded;
@@ -199,10 +204,12 @@ fn optional_absence_is_exact_and_an_older_wire_version_is_never_read() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation
         )
         .unwrap()
-        .as_ref(),
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>(),
         &[fact]
     );
-    for older in [5, 6, 7, 8, 9] {
+    for older in [5, 6, 7, 8, 9, 10, 11] {
         assert!(decode_for_wire_version(
             &bytes,
             older,
@@ -252,7 +259,9 @@ fn indexed_selection_wire_preserves_semantic_definition_and_signed_zero() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation
         )
         .unwrap()
-        .as_ref(),
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>(),
         &[fact]
     );
 }

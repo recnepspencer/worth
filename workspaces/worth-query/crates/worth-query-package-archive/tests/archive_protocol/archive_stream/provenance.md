@@ -49,3 +49,10 @@ their payloads are unchanged. Current v8 vectors were constructed from the
 retained v7 vectors by changing the original two-byte record version; the
 release envelope additionally updates only the nested archive checksum. The
 v7 vectors remain historical bytes, alongside the original v6 vectors.
+
+The combined record-frame9 grammar preserves explicit whole-aspect laws and
+removes the application-query dependency-ceiling payload. Current v9 vectors
+above contain no query, so their payloads preserve the whole-aspect v8 bytes;
+only frame versions and the enclosing archive checksum change. Record8 remains
+unsupported and is tested without payload reinterpretation. Outer archive2,
+manifest1 and release-envelope1 remain unchanged.

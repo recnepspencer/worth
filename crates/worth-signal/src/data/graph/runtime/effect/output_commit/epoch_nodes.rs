@@ -163,13 +163,16 @@ impl SignalGraph {
                     )
                 })
                 .collect::<Vec<_>>();
-            let maximum = usize::try_from(
-                self.installed_runtime_policy()
-                    .conditional_evaluation_budget()
-                    .maximum_retained_bytes,
-            )
-            .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?;
-            let maximum = Charge::capacity::<u8>(maximum)
+            let maximum = (self
+                .installed_runtime_policy()
+                .conditional_evaluation_budget()
+                .maximum_retained_bytes)
+                .map(usize::try_from)
+                .transpose()
+                .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?;
+            let maximum = maximum
+                .map(Charge::capacity::<u8>)
+                .transpose()
                 .map_err(|_| SignalError::EvaluationStorageCapacityExhausted)?;
             let staged = self
                 .arena

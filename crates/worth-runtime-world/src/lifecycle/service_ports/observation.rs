@@ -1,4 +1,3 @@
-use super::super::ports::RuntimeWorldCurrentnessAdmissionStop;
 use super::super::ports::RuntimeWorldObservationService;
 use super::super::RuntimeWorldOwnerUnavailable;
 use std::sync::{Arc, Weak};
@@ -19,19 +18,6 @@ impl RuntimeWorldObservationPort {
         argument: Argument,
         install: impl for<'guard> FnOnce(Argument, crate::branch::CurrentProductHead<'guard>) -> Output,
     ) -> Result<Output, crate::branch::ProductBranchCurrentnessFailure<Argument>> {
-        self.while_product_branch_current_admitted(expected, argument, &mut |_| true, install)
-    }
-
-    /// Admit physical registry lookup Work before resolving the issued head.
-    /// `prepare` must retain its original stop; `PreparationDenied` returns the
-    /// caller's argument without entering the guarded callback.
-    pub fn while_product_branch_current_admitted<Argument, Output>(
-        &self,
-        expected: &crate::branch::ProductBranchObservation,
-        argument: Argument,
-        prepare: &mut dyn FnMut(u64) -> bool,
-        install: impl for<'guard> FnOnce(Argument, crate::branch::CurrentProductHead<'guard>) -> Output,
-    ) -> Result<Output, crate::branch::ProductBranchCurrentnessFailure<Argument>> {
         let service = match self.service() {
             Ok(service) => service,
             Err(denial) => {
@@ -43,19 +29,14 @@ impl RuntimeWorldObservationPort {
                 )
             }
         };
-        let scope = match service.admit_product_branch_currentness_with_work(expected, prepare) {
+        let scope = match service.admit_product_branch_currentness(expected) {
             Ok(scope) => scope,
-            Err(RuntimeWorldCurrentnessAdmissionStop::Native(denial)) => {
+            Err(denial) => {
                 return Err(
                     crate::branch::ProductBranchCurrentnessFailure::AdmissionDenied {
                         denial: super::super::RuntimeWorldServiceDenial::Denied(denial),
                         argument,
                     },
-                )
-            }
-            Err(RuntimeWorldCurrentnessAdmissionStop::Preparation) => {
-                return Err(
-                    crate::branch::ProductBranchCurrentnessFailure::PreparationDenied(argument),
                 )
             }
         };

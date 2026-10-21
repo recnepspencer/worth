@@ -13,18 +13,25 @@ use std::any::Any;
 
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::{
-    super::WorthQueryProducerCommitAuthority,
-    required_provenance::{DemandProgressionProvenance, RequiredSuccessorProvenance},
-    FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
-    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryProducerOutputFamily,
-};
+use super::required_provenance::DemandProgressionProvenance;
+use super::required_provenance::RequiredSuccessorProvenance;
+use super::FamilySourceQuery;
+use super::FamilySourceValue;
+use super::WorthQueryAdmittedOutputDemand;
+use super::WorthQueryOutputDemandAdvance;
+use super::WorthQueryOutputDemandDenial;
+use super::WorthQueryProducerOutputFamily;
 mod awaited_delivery;
 mod contacts;
 mod held;
+mod owned_refresh;
+pub(super) use owned_refresh::resume_owned_refresh;
+pub(super) use owned_refresh::OwnedRefreshStop;
 mod registry_delivery;
-pub(super) use awaited_delivery::{AwaitedDelivery, DeliveredAwaited};
-pub(super) use registry_delivery::{RegistryDelivery, RequiredDelivery};
+pub(super) use awaited_delivery::AwaitedDelivery;
+pub(super) use awaited_delivery::DeliveredAwaited;
+pub(super) use registry_delivery::RegistryDelivery;
+pub(super) use registry_delivery::RequiredDelivery;
 mod prepared;
 mod progress;
 mod promotion;
@@ -34,26 +41,25 @@ mod successor_release;
 mod unavailable;
 mod wave_checkpoint;
 mod wave_preparation;
-use crate::domain_computation::primary_graph::{
-    application_contribution::producer::registry::InstalledProducerProvider,
-    application_output_demand::{
-        RequestedOutputReadClaims, RequiredOutputCustodyCapacity, SelectedReadyReadmission,
-        SelectedRequiredRefreshClaim, WorthQueryOutputDemandInterest,
-        WorthQueryOutputDemandRegistry,
-    },
-    output_lineage::invalidation::InvalidationEditAdmission,
-    WorthQueryApplicationProjection, WorthQueryPrimaryGraphApplicationRuntime,
-};
-use wave_checkpoint::PaidCheckpointAdvance;
-pub(super) use wave_checkpoint::{PaidCheckpointReady, WaveCheckpointTurn};
-pub(super) use wave_preparation::PreparedContinuationWave;
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
+use crate::domain_computation::primary_graph::application_contribution::producer::registry::InstalledProducerProvider;
+use crate::domain_computation::primary_graph::application_output_demand::RequestedOutputReadClaims;
 
-pub(in crate::domain_computation::primary_graph::application_contribution::producer) use held::{
-    resume_held_upstream, ContinuationCustody, HeldUpstream,
-};
+use crate::domain_computation::primary_graph::application_output_demand::SelectedReadyReadmission;
+use crate::domain_computation::primary_graph::application_output_demand::SelectedRequiredRefreshClaim;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandInterest;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandRegistry;
+use crate::domain_computation::primary_graph::WorthQueryApplicationProjection;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+
+pub(super) use wave_checkpoint::CheckpointReady;
+pub(super) use wave_checkpoint::WaveCheckpointTurn;
+pub(super) use wave_preparation::PreparedContinuationWave;
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use held::resume_held_upstream;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use held::ContinuationCustody;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer) use held::HeldUpstream;
 
 pub(in crate::domain_computation::primary_graph) enum RequiredFreshOutcome {
     Advanced,
@@ -75,10 +81,7 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
     fn family_type(&self) -> TypeId;
     fn concrete_type(&self) -> TypeId;
     fn progression(&self) -> &RequiredSuccessorProvenance;
-    fn validate_for_current_handoff(
-        &self,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial>;
+    fn validate_for_current_handoff(&self) -> Result<(), WorthQueryOutputDemandDenial>;
     fn predecessor(&self) -> &SelectedReadyReadmission;
     fn producer_contacts(&self) -> usize;
     fn continuations_empty(&self) -> bool;
@@ -87,7 +90,6 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
     fn follow_refresh(
         &mut self,
         registry: &WorthQueryOutputDemandRegistry,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial>;
     fn advance_checkpoint(
         &mut self,
@@ -95,7 +97,6 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
 
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         request: &WorthQueryRequestScope,
-        paid: PaidCheckpointAdvance<'_>,
     ) -> Result<bool, WorthQueryOutputDemandDenial>;
     /// Run the successor's own row again under the authority that issued it.
     fn resume(
@@ -106,7 +107,7 @@ trait ErasedRequiredSuccessor<Schema: ApplicationSchema>: Send + Sync {
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
-        admission: &mut InvalidationEditAdmission,
+
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>;
     fn into_any(self: Box<Self>) -> Box<dyn Any>;
@@ -183,10 +184,7 @@ where
             .expect("installed required successor retains its exact predecessor Ready")
     }
 
-    fn validate_for_current_handoff(
-        &self,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
+    fn validate_for_current_handoff(&self) -> Result<(), WorthQueryOutputDemandDenial> {
         let demand = self
             .demand
             .as_ref()
@@ -194,7 +192,6 @@ where
         self.progression().validate_for_execution(
             self.progression().commit_authority(),
             &demand.installed_entry.edition,
-            admission,
         )
     }
 
@@ -208,7 +205,6 @@ where
     fn continuations_empty(&self) -> bool {
         self.demand.as_ref().is_some_and(|demand| {
             demand.required_continuations.entries.is_empty()
-                && demand.required_continuations.capacity.is_none()
                 && demand.required_continuations.requested.is_empty()
         })
     }
@@ -225,12 +221,11 @@ where
     fn follow_refresh(
         &mut self,
         registry: &WorthQueryOutputDemandRegistry,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         self.demand
             .as_mut()
             .expect("installed required successor retains its typed demand")
-            .rejoin_refreshed_output(registry, admission)
+            .rejoin_refreshed_output(registry)
     }
 
     fn advance_checkpoint(
@@ -240,9 +235,7 @@ where
 
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         request: &WorthQueryRequestScope,
-        paid: PaidCheckpointAdvance<'_>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        let admission = paid.into_admission();
         let execution = phase
             .execution_request_for(&runtime.product_runtime)
             .map_err(|cause| {
@@ -264,7 +257,7 @@ where
             .expect("installed successor retains its real Interest");
         let prepared = runtime
             .output_demands
-            .prepare_selected_checkpoint_finish(interest, admission)?;
+            .prepare_selected_checkpoint_finish(interest)?;
         let Some((finish, claim, checkpoint)) = prepared.claim()? else {
             return Ok(false);
         };
@@ -277,7 +270,6 @@ where
             request,
             &mut demand.unpublished_selected_checkpoint,
             finish,
-            admission,
         )
     }
 
@@ -289,7 +281,7 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         branch: crate::basis::WorthQueryProductBranch,
-        admission: &mut InvalidationEditAdmission,
+
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         let execution = phase
@@ -301,7 +293,7 @@ where
                 )
             })?;
         self.run_again(
-            &execution, phase, runtime, principal, request, branch, admission, performed,
+            &execution, phase, runtime, principal, request, branch, performed,
         )
     }
 
@@ -319,7 +311,6 @@ where
 {
     successor: Box<TypedRequiredSuccessor<Schema, Family>>,
     // Declared after the Box: the final ticket refunds after Box storage frees.
-    capacity: RequiredOutputCustodyCapacity,
 }
 
 /// Move-only post-admission result. The caller installs this into its funded
@@ -332,7 +323,6 @@ where
     outcome: Option<RequiredFreshOutcome>,
     successor: Box<dyn ErasedRequiredSuccessor<Schema>>,
     // This field must drop after `successor`; the Box owns physical backing.
-    capacity: RequiredOutputCustodyCapacity,
 }
 
 /// One caller's actual unresolved dependent work. The Vec backing has its
@@ -343,7 +333,6 @@ where
 {
     entries: Vec<RequiredFreshProgress<Schema>>,
     pub(super) requested: RequestedOutputReadClaims,
-    capacity: Option<RequiredOutputCustodyCapacity>,
 }
 
 impl<Schema> Default for RequiredContinuations<Schema>
@@ -354,7 +343,6 @@ where
         Self {
             entries: Vec::new(),
             requested: Default::default(),
-            capacity: None,
         }
     }
 }
@@ -367,8 +355,6 @@ where
 {
     caller: &'caller mut RequiredContinuations<Schema>,
     replacement: Option<Vec<RequiredFreshProgress<Schema>>>,
-    capacity: Option<RequiredOutputCustodyCapacity>,
-    installation_work: u64,
 }
 
 impl<Schema> RequiredContinuations<Schema>
@@ -378,13 +364,6 @@ where
     pub(super) fn take_all(&mut self) -> Self {
         std::mem::take(self)
     }
-}
-
-fn work_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        super::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        "required continuation exceeds carried request work",
-    )
 }
 
 fn capacity_denial() -> WorthQueryOutputDemandDenial {

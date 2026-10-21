@@ -195,15 +195,13 @@ where
     let bounds = binding.bounds();
     let maximum_results = NonZeroUsize::new(bounds.maximum_reconstruction_rows())
         .expect("installed temporal bounds are non-zero");
-    let maximum_work = NonZeroUsize::new(bounds.maximum_query_work())
-        .expect("installed temporal bounds are non-zero");
+
     let source_product = selected.product().retained_clone();
     let (_, product, application_basis) = selected.into_parts();
     let controls = WorthQueryApplicationQueryControls::product_one_shot(
         product,
         application_basis,
         maximum_results,
-        Some(maximum_work),
         &request,
     );
     let plan = access

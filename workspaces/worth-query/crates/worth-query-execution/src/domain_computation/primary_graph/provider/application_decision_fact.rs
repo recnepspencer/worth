@@ -1,4 +1,10 @@
+mod application_facts;
+mod application_table;
 use super::super::WorthQueryApplicationAttemptDenial as SelfDenial;
+pub(in crate::domain_computation) use application_facts::{
+    CompletedApplicationFacts, SharedObservedFact, SharedReadScope,
+};
+pub(in crate::domain_computation) use application_table::ApplicationFactTable;
 use std::sync::Arc;
 
 use crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDependency;
@@ -6,15 +12,15 @@ use crate::domain_computation::authorization::WorthQueryPrincipalCurrentnessDepe
 #[derive(Clone)]
 pub(in crate::domain_computation) enum WorthQueryPrimaryGraphApplicationDecisionFact {
     Application {
-        read_scope: worth_query_installation::facade::WorthQueryOperationGraphReadScope,
-        fact: super::super::application_attempt::WorthQueryApplicationObservedFact,
+        read_scope: SharedReadScope,
+        fact: SharedObservedFact,
     },
     ObservedSource {
-        fact: super::super::application_attempt::WorthQueryApplicationObservedFact,
+        fact: SharedObservedFact,
     },
     ApplicationObservedSource {
-        read_scope: worth_query_installation::facade::WorthQueryOperationGraphReadScope,
-        fact: super::super::application_attempt::WorthQueryApplicationObservedFact,
+        read_scope: SharedReadScope,
+        fact: SharedObservedFact,
     },
     Principal(WorthQueryPrincipalCurrentnessDependency),
     Authorization {
@@ -26,8 +32,8 @@ pub(in crate::domain_computation) enum WorthQueryPrimaryGraphApplicationDecision
 
 impl WorthQueryPrimaryGraphApplicationDecisionFact {
     pub(in crate::domain_computation) const fn application(
-        read_scope: worth_query_installation::facade::WorthQueryOperationGraphReadScope,
-        fact: super::super::application_attempt::WorthQueryApplicationObservedFact,
+        read_scope: SharedReadScope,
+        fact: SharedObservedFact,
     ) -> Self {
         Self::Application { read_scope, fact }
     }
@@ -38,42 +44,29 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         Self::Principal(dependency)
     }
 
-    pub(in crate::domain_computation) const fn observed_source(
-        fact: super::super::application_attempt::WorthQueryApplicationObservedFact,
-    ) -> Self {
+    pub(in crate::domain_computation) const fn observed_source(fact: SharedObservedFact) -> Self {
         Self::ObservedSource { fact }
     }
 
     pub(in crate::domain_computation) fn retain_observed_source_role(
         self,
-        source: super::super::application_attempt::WorthQueryApplicationObservedFact,
+        source: SharedObservedFact,
     ) -> Result<Self, &'static str> {
         match self {
-            Self::Application {
+            Self::Application { read_scope, fact } => Ok(Self::ApplicationObservedSource {
                 read_scope,
-                mut fact,
-            } => {
-                if !fact.merge_equal_observation(&source) {
-                    return Err("decision facts disagree at one structural locator");
-                }
-                Ok(Self::ApplicationObservedSource { read_scope, fact })
+                fact: retained_observation(fact, source)?,
+            }),
+            Self::ObservedSource { fact } => Ok(Self::ObservedSource {
+                fact: retained_observation(fact, source)?,
+            }),
+            Self::ApplicationObservedSource { read_scope, fact } => {
+                Ok(Self::ApplicationObservedSource {
+                    read_scope,
+                    fact: retained_observation(fact, source)?,
+                })
             }
-            Self::ObservedSource { mut fact } => {
-                if !fact.merge_equal_observation(&source) {
-                    return Err("decision facts disagree at one structural locator");
-                }
-                Ok(Self::ObservedSource { fact })
-            }
-            Self::ApplicationObservedSource {
-                read_scope,
-                mut fact,
-            } => {
-                if !fact.merge_equal_observation(&source) {
-                    return Err("decision facts disagree at one structural locator");
-                }
-                Ok(Self::ApplicationObservedSource { read_scope, fact })
-            }
-            _ => Err("decision facts disagree at one structural locator"),
+            _ => Err(DISAGREEMENT),
         }
     }
 
@@ -129,7 +122,7 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
     ) -> Option<&super::super::application_attempt::WorthQueryApplicationObservedFact> {
         match self {
             Self::ObservedSource { fact } | Self::ApplicationObservedSource { fact, .. } => {
-                Some(fact)
+                Some(fact.as_ref())
             }
             _ => None,
         }
@@ -184,4 +177,22 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         };
         Ok(equal)
     }
+}
+
+const DISAGREEMENT: &str = "decision facts disagree at one structural locator";
+
+/// Equal structural observations may carry different read bounds. Retain the
+/// one whose bound covers both; any other difference is a disagreement.
+fn retained_observation(
+    fact: SharedObservedFact,
+    source: SharedObservedFact,
+) -> Result<SharedObservedFact, &'static str> {
+    if fact.as_ref() == source.as_ref() {
+        return Ok(fact);
+    }
+    let mut merged = fact.as_ref().clone();
+    if !merged.merge_equal_observation(source.as_ref()) {
+        return Err(DISAGREEMENT);
+    }
+    Ok(if &merged == source.as_ref() { source } else { fact })
 }

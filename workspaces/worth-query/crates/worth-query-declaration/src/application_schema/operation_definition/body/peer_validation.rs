@@ -42,7 +42,7 @@ impl Body {
 }
 pub(super) fn validate(operation: &str, body: &Body, members: &[Member]) -> Result<(), Denial> {
     if !body.has_supported_peer_creations() {
-        return Err(Denial::MissingOperationProgramDependency);
+        return Err(Denial::program_body_dependency(operation));
     }
     for site in body
         .creation()
@@ -59,14 +59,14 @@ pub(super) fn validate(operation: &str, body: &Body, members: &[Member]) -> Resu
             return Err(Denial::DuplicateMember);
         }
         super::classified_capture::validate_creation(site)
-            .map_err(|_| Denial::MissingOperationProgramDependency)?;
+            .map_err(|_| Denial::program_body_dependency(operation))?;
         for path in site.path_links() {
             if !path.path.steps().iter().all(|step| members.iter().any(|m|matches!(m,Member::Relation{relation,from,to,..}
                 if relation==step.relation() && from==step.from() && to==step.to())))
                 || !path.decision_reads().iter().all(|read|members.iter().any(|m|matches!(m,Member::OperationDecisionRead{operation:op,target} if op==operation && target==read)))
                 || !members.iter().any(|m|matches!(m,Member::Relation{relation,from,to,..} if relation==&path.link.relation && from==&path.link.from && to==&path.link.to))
                 || !members.iter().any(|m|matches!(m,Member::OperationProgram{operation:op,target} if op==operation && target==&path.link.program_target()))
-            { return Err(Denial::MissingOperationProgramDependency); }
+            { return Err(Denial::program_body_dependency(operation)); }
         }
     }
     Ok(())

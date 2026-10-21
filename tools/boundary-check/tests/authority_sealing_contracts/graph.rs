@@ -154,3 +154,88 @@ fn nested_cfg_attr_path_is_denied() {
     repo.cleanup();
     assert_denial("hostile-nested-cfg-attr-path", ok, &output);
 }
+
+#[test]
+fn sibling_path_concrete_ceremony_passes() {
+    let repo = AuthoritySealingTestRepository::create("legal-sibling-path");
+    repo.assemble_with_lib_source("#[path = \"../../../shared-source/gate.rs\"] pub mod gate;\n");
+    repo.write_file(
+        "cad/workspaces/worth-entry/shared-source/gate.rs",
+        legal_ordinary_api_lib(),
+    );
+    let (ok, output) = repo.run_boundary_check();
+    repo.cleanup();
+    assert_pass("legal-sibling-path", ok, &output);
+}
+
+#[test]
+fn sibling_path_hostile_ceremony_keeps_consuming_namespace_and_locator() {
+    let repo = AuthoritySealingTestRepository::create("hostile-sibling-path");
+    repo.assemble_with_lib_source("#[path = \"../../../shared-source/gate.rs\"] pub mod gate;\n");
+    repo.write_file(
+        "cad/workspaces/worth-entry/shared-source/gate.rs",
+        hostile_gate_path_body(),
+    );
+    let (ok, output) = repo.run_boundary_check();
+    repo.cleanup();
+    assert_denial("hostile-sibling-path", ok, &output);
+    assert!(
+        output.contains(
+            "worth-entry-adoption::../../shared-source/gate.rs::test_surface::gate::admit"
+        ),
+        "expected consuming namespace and sibling locator:\n{output}"
+    );
+    assert!(output.contains("Offending trait bound: `AuthorityMarker`"));
+    assert!(!output.contains("could not parse governed crate"));
+}
+
+#[test]
+fn canonical_and_noncanonical_incrate_and_sibling_paths_share_identity() {
+    let repo = AuthoritySealingTestRepository::create("source-path-identity");
+    repo.assemble_with_lib_source(
+        r#"
+#[path = "local_gate.rs"]
+#[cfg_attr(any(), path = "../src/./local_gate.rs")]
+pub mod local;
+#[path = "../../../shared-source/gate.rs"]
+#[cfg_attr(any(), path = "../../../shared-source/../shared-source/./gate.rs")]
+pub mod sibling;
+"#,
+    );
+    repo.write_file(
+        "cad/workspaces/worth-entry/crates/worth-entry-adoption/src/local_gate.rs",
+        hostile_gate_path_body(),
+    );
+    repo.write_file(
+        "cad/workspaces/worth-entry/shared-source/gate.rs",
+        hostile_gate_path_body(),
+    );
+    let (ok, output) = repo.run_boundary_check();
+    repo.cleanup();
+    assert_denial("source-path-identity", ok, &output);
+    for subject in [
+        "worth-entry-adoption::src/local_gate.rs::test_surface::local::admit",
+        "worth-entry-adoption::../../shared-source/gate.rs::test_surface::sibling::admit",
+    ] {
+        assert_eq!(output.matches(subject).count(), 1, "{output}");
+    }
+    assert!(!output.contains("local_gate.rs;"), "{output}");
+    assert!(!output.contains("gate.rs;"), "{output}");
+    assert!(!output.contains("could not parse governed crate"));
+}
+
+#[test]
+fn missing_sibling_path_fails_closed() {
+    let repo = AuthoritySealingTestRepository::create("missing-sibling-path");
+    repo.assemble_with_lib_source(
+        "#[path = \"../../../shared-source/missing.rs\"] pub mod gate;\n",
+    );
+    let (ok, output) = repo.run_boundary_check();
+    repo.cleanup();
+    assert!(!ok, "missing external selector must fail:\n{output}");
+    assert!(output.contains("BC7001_AUTHORITY_SEALING"), "{output}");
+    assert!(
+        output.contains("unresolved #[path = \"../../../shared-source/missing.rs\"]"),
+        "expected missing selector refusal:\n{output}"
+    );
+}

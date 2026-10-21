@@ -19,7 +19,6 @@ where
             FamilySourceQuery<Schema, Family>,
         >,
         predecessor: Option<&crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority>,
-        request_admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -47,18 +46,8 @@ where
             predecessor,
             demand.retained_program_basis.clone(),
             super::admission::SourceAdmissionSelection::Ordinary,
-            request_admission,
         )?;
         refreshed.producer_contacts_in_this_demand = demand.producer_contacts_in_this_demand;
-        refreshed.checkpoint_readmission_work_units = refreshed
-            .checkpoint_readmission_work_units
-            .saturating_add(demand.checkpoint_readmission_work_units);
-        refreshed.checkpoint_readmission_work_bound = refreshed
-            .checkpoint_readmission_work_bound
-            .saturating_add(demand.checkpoint_readmission_work_bound);
-        refreshed.checkpoint_readmission_charged_preparation_bytes = refreshed
-            .checkpoint_readmission_charged_preparation_bytes
-            .max(demand.checkpoint_readmission_charged_preparation_bytes);
         refreshed.settled = demand.settled;
         if let Some(interest) = demand.interest.as_ref() {
             self.output_demands.finish_replaced_interest(
@@ -68,9 +57,10 @@ where
                     .as_ref()
                     .expect("a refreshed demand retains its new interest"),
                 Family::IDENTITY,
-                request_admission,
             )?;
         }
+        // The caller retains its authenticated disclosure, not an executable
+        // edition seal. Final input preparation uses this admitted entry.
         *demand = refreshed;
         Ok(())
     }

@@ -22,7 +22,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
         match recovered.advance(request).unwrap_or_else(|denial| {
             panic!("the recovered {body_key} required output advances: {denial:?}")
         }) {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         }
     })

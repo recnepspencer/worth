@@ -51,7 +51,7 @@ macro_rules! settle {
 }
 
 #[test]
-fn fixed_delivery_finite_retry_unrelated_progress_and_consumed_fact_history() {
+fn fixed_delivery_result_contract_retry_unrelated_progress_and_consumed_fact_history() {
     let world = installation::install(&crate::installed_schema());
     let adapter = authentication::admit(world.application.installed_schema());
     let scope = authentication::request_scope();
@@ -81,19 +81,8 @@ fn fixed_delivery_finite_retry_unrelated_progress_and_consumed_fact_history() {
         .clone();
     let one = NonZeroUsize::new(1).unwrap();
     let policy = WorthQueryOperationDeliveryPolicy::default();
-    assert!(matches!(
-        settled.read_current_with_policy(
-            &request,
-            WorthQueryOperationDeliveryPolicy::currentness(one)
-        ),
-        Err(WorthQueryOperationDeliveryDenial::Currentness(_))
-    ));
-    assert!(matches!(
-        settled.read_current_with_policy(&request, policy.query(one, one)),
-        Err(WorthQueryOperationDeliveryDenial::Query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::Admission(denial)))
-        if matches!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded)
-    ));
-    assert!(matches!(settled.read_current_with_policy(&request, policy.query(one, NonZeroUsize::new(129).unwrap())), Err(WorthQueryOperationDeliveryDenial::Query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::Limit(_)))));
+
+    assert!(matches!(settled.read_current_with_policy(&request, policy.query(NonZeroUsize::new(2).unwrap())), Err(WorthQueryOperationDeliveryDenial::Query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::Limit(_)))));
     let fresh_scope = authentication::request_scope();
     let fresh_principal = authentication::block_on(adapter.authenticate(
         authentication::LocalCredential::issued_for_model_owner(),
@@ -173,7 +162,6 @@ fn fixed_delivery_no_projection_settles_real_required_outputs() {
     ];
     let world = installation::install_selected_program(
         &crate::installed_schema(),
-        4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),
         &grants,
@@ -209,9 +197,7 @@ fn fixed_delivery_no_projection_settles_real_required_outputs() {
     let before =
         worth_query_host::facade::primary_graph::query_read_kernel_entries_on_this_thread_for_test(
         );
-    let observation = settled
-        .deliver_current(&request, WorthQueryOperationDeliveryPolicy::default())
-        .unwrap();
+    let observation = settled.deliver_current(&request).unwrap();
     assert_eq!(
         worth_query_host::facade::primary_graph::query_read_kernel_entries_on_this_thread_for_test(
         ),
@@ -235,4 +221,140 @@ fn fixed_delivery_no_projection_settles_real_required_outputs() {
         .close(&request)
         .unwrap_or_else(|(_, denial)| panic!("no-projection close: {denial:?}"));
     assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
+}
+
+#[test]
+fn fixed_prepared_source_receipts_distinguish_shared_scope_publications() {
+    use crate::application_program::fixed_source_receipts as source;
+    use worth_query_decl::facade::application_operation::ApplicationMutationBinding;
+    use worth_query_host::facade::primary_graph::{self, WorthQueryApplicationCommitReceipt};
+    use worth_query_topology_entry::{PlanarEditBinding, PlanarMutationBinding};
+    let _observation = primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    source::assert_single_adjustment_shape();
+    let program = ApplicationProgramAuthoring::<ConsumerSchema, source::Program>::begin()
+        .validated_program()
+        .unwrap();
+    let mut world = installation::install_selected_program(
+        &crate::installed_schema(),
+        worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
+        ),
+        &source::deployment_grants(),
+        program,
+    )
+    .unwrap();
+    let adapter = authentication::admit(world.application.installed_schema());
+    let scope = authentication::request_scope();
+    let principal = authentication::block_on(adapter.authenticate(
+        authentication::LocalCredential::issued_for_model_owner(),
+        &scope,
+    ))
+    .unwrap();
+    let request = world.application.request(&principal, &scope);
+    let describe = |receipt: &WorthQueryApplicationCommitReceipt, binding: &str| {
+        let admitted = receipt.principal_scope();
+        let publication = receipt.committed_product_publication();
+        (
+            admitted.runtime_authority(),
+            admitted.scope(),
+            binding.to_owned(),
+            publication.product_incarnation(),
+            publication.product_generation().get(),
+        )
+    };
+    source::assert_y(&request, "sibling-a", length(21));
+    source::assert_y(&request, "remote-a", length(41));
+    let mut windows = vec![(
+        "installation".to_owned(),
+        primary_graph::native_marking_on_this_thread_for_test(),
+    )];
+    let mut sources = Vec::new();
+    let mut producers = Vec::new();
+    for (target, y, key) in [("sibling-a", 22, 11_201), ("remote-a", 42, 11_202)] {
+        let operation = source::prepare(
+            &world.application,
+            &request,
+            source::input(target, length(y)),
+            key,
+        );
+        windows.push((
+            format!("{target}:source preparation"),
+            primary_graph::native_marking_on_this_thread_for_test(),
+        ));
+        sources.push(describe(
+            operation
+                .prepared_source_receipt()
+                .expect("borrow original source before output start"),
+            PlanarEditBinding::<ConsumerSchema>::IDENTITY,
+        ));
+        let settled = source::finish(operation, &request);
+        producers.push(describe(
+            settled
+                .settlement()
+                .root_receipt()
+                .expect("actual root producer receipt"),
+            PlanarMutationBinding::<ConsumerSchema>::IDENTITY,
+        ));
+        settled
+            .close(&request)
+            .unwrap_or_else(|(_, cause)| panic!("same original owner close: {cause:?}"));
+        windows.push((
+            format!("{target}:output completion and close"),
+            primary_graph::native_marking_on_this_thread_for_test(),
+        ));
+        source::assert_y(&request, target, length(y));
+    }
+    source::assert_receipt_descriptions(&sources, &producers);
+    let edit = source::edit_target(&world.application, &request);
+    let measured = windows.len();
+    windows.push((
+        "follow-up:source preparation".to_owned(),
+        primary_graph::native_marking_on_this_thread_for_test(),
+    ));
+    source::finish(edit, &request)
+        .close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("follow-up owner close: {cause:?}"));
+    windows.push((
+        "follow-up:output completion and close".to_owned(),
+        primary_graph::native_marking_on_this_thread_for_test(),
+    ));
+    let mut measured_membership = None;
+    for (window, (label, reports)) in windows.iter().enumerate() {
+        let mut actual = Vec::new();
+        for (index, report) in reports.iter().enumerate() {
+            assert!(reports[..index]
+                .iter()
+                .all(|prior| prior.commit != report.commit));
+            assert!(matches!(
+                report.precision,
+                primary_graph::WorthQueryNativeMarkingPrecision::Exact(_)
+            ));
+            for marked in report
+                .affected
+                .as_ref()
+                .expect("exact semantic affected membership")
+            {
+                actual.push((
+                    marked.runtime_authority,
+                    marked.root,
+                    marked.output_binding.to_string(),
+                    marked.product_incarnation,
+                    marked.generation,
+                ));
+            }
+        }
+        source::assert_known_window(&mut actual, &sources, &producers);
+        println!(
+            "{label}: {} reports; semantic membership {actual:?}",
+            reports.len()
+        );
+        if window == measured {
+            assert!(!reports.is_empty());
+            measured_membership = Some(actual);
+        }
+    }
+    let actual = measured_membership.expect("one separately retained source-edit window");
+    source::assert_source_edit_membership(&actual, &sources, &producers);
+    source::assert_y(&request, "sibling-a", length(23));
+    source::assert_y(&request, "remote-a", length(42));
+    world.application.close_conditional_runtime().unwrap();
 }

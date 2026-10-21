@@ -14,7 +14,7 @@ use super::WorthQueryExecutionResourceSupportSnapshot;
 
 mod prepared;
 use prepared::PreparedExecutionResourceBasis;
-pub(crate) use prepared::{PreparedExecutionResourcePlan, PreparedResourcePlanAdmissionStop};
+pub(crate) use prepared::PreparedExecutionResourcePlan;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryExecutionResourceAdmissionCounters {

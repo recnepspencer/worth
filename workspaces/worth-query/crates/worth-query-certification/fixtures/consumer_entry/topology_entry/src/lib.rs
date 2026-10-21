@@ -1,14 +1,14 @@
 #![forbid(unsafe_code)]
 
-use worth_query_consumer_values::PositiveLength;
-use worth_query_decl::facade::{
-    application_schema::ApplicationSchema, worth_query_application_contribution,
-    worth_query_aspect, worth_query_entity, worth_query_field, worth_query_unit,
-    worth_query_value_binding,
-};
-use worth_query_host::facade::application_contribution::{
-    WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract,
-};
+use fixture_values::PositiveLength;
+use worth_query_consumer_values as fixture_values;
+#[cfg(test)]
+use worth_query_decl::facade::application_schema::ApplicationSchema;
+use worth_query_decl::facade::worth_query_application_contribution;
+use worth_query_host::facade as runtime_api;
+use worth_query_host::facade::domain as runtime_domain;
+#[cfg(test)]
+use worth_query_host::facade::worth_query_conditional_node as conditional_node;
 
 mod alternate_output;
 mod application_program;
@@ -16,6 +16,7 @@ mod contribution;
 mod final_output;
 mod handler;
 mod initial_adjustment;
+pub mod optional_aspects;
 pub use alternate_output::*;
 pub use application_program::*;
 pub use contribution::TopologyConfiguration;
@@ -63,45 +64,8 @@ pub use producer::*;
 pub use readiness::InitialPlanarReadiness;
 pub use source_adjustment::*;
 
-pub trait TopologySchemaBinding: ApplicationSchema {
-    const PLANAR_EDIT_PROJECTION_WORK: Option<usize> = Some(8_192);
-    fn planar_invariant_work() -> u64 {
-        planar_topology::PLANAR_CHECKED_WORK
-    }
-    const ROOT_INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
-        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
-            WorthQueryDecisionContextDependencies::NONE,
-        ));
-    /// The final producer's decision-reuse declaration is part of each installed
-    /// fixture schema, so opt-out journeys use the ordinary production installer.
-    const FINAL_INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
-        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
-            WorthQueryDecisionContextDependencies::NONE,
-        ));
-}
-
-worth_query_value_binding! {
-    pub TopologyLengthBinding for PositiveLength {
-        identity: "worth.query.certification.positive-length.v1",
-        scalar: UInt64,
-        unit: "Metre",
-        frame: "worth.frames.model-local.v1",
-        encode: PositiveLength::get,
-        decode: PositiveLength::new,
-    }
-}
-
-worth_query_entity!(pub Body for Schema: TopologySchemaBinding);
-worth_query_unit!(pub Metre(()) for Schema: TopologySchemaBinding);
-worth_query_aspect!(
-    pub Geometry for Schema: TopologySchemaBinding, Body;
-    identity = AspectIdentity(0x9174_1001),
-    revision = AspectContractRevision(1),
-);
-worth_query_field!(
-    pub Length for Schema: TopologySchemaBinding, Body, Geometry:
-    PositiveLength => TopologyLengthBinding, unit Metre, read_write, equality
-);
+mod base_model;
+pub use base_model::*;
 
 worth_query_application_contribution! {
     pub contribution TopologyContribution for Schema: TopologySchemaBinding {
@@ -118,45 +82,10 @@ worth_query_application_contribution! {
             let schema = initial_adjustment::declare_initial_adjustment(schema);
             let schema = final_output::declare_final_output(schema);
             let schema = match Schema::PLANAR_EDIT_PROJECTION_WORK {
-                Some(maximum_work) => schema.operation_projection_work_budget(
-                    EditPlanar::reference::<Schema>(), maximum_work,
-                ),
+                Some(work) => schema.operation_projection_work_budget(EditPlanar::reference::<Schema>(), work),
                 None => schema,
             };
-            schema
-                .entity(Body::reference::<Schema>())
-                .unit(Metre::reference::<Schema>())
-                .aspect(Body::reference::<Schema>(), Geometry::reference::<Schema>())
-                .field(Body::reference::<Schema>(), Length::reference::<Schema>())
-                .aspect(Body::reference::<Schema>(), PlanarPosition::reference::<Schema>())
-                .field(Body::reference::<Schema>(), BodyKey::reference::<Schema>())
-                .field(Body::reference::<Schema>(), PositionX::reference::<Schema>())
-                .field(Body::reference::<Schema>(), PositionY::reference::<Schema>())
-                .relation(
-                    PlanarSuccessor::reference::<Schema>(),
-                    Body::reference::<Schema>(),
-                    Body::reference::<Schema>(),
-                )
-                .relation(
-                    PlanarDiscoverySource::reference::<Schema>(),
-                    Body::reference::<Schema>(),
-                    Body::reference::<Schema>(),
-                )
-                .relation(
-                    UndeclaredPlanarRelation::reference::<Schema>(),
-                    Body::reference::<Schema>(),
-                    Body::reference::<Schema>(),
-                )
-                .invariant(planar_turn_invariant::<Schema>())
-                .entity(ExternalPrincipalMapping::reference::<Schema>())
-                .entity(Principal::reference::<Schema>())
-                .aspect(ExternalPrincipalMapping::reference::<Schema>(), ExternalIdentity::reference::<Schema>())
-                .aspect(Principal::reference::<Schema>(), PrincipalFacts::reference::<Schema>())
-                .field(ExternalPrincipalMapping::reference::<Schema>(), ExternalIdentityField::reference::<Schema>())
-                .field(ExternalPrincipalMapping::reference::<Schema>(), MappingStatusField::reference::<Schema>())
-                .field(Principal::reference::<Schema>(), PrincipalIdentity::reference::<Schema>())
-                .relation(MappingTarget::reference::<Schema>(), ExternalPrincipalMapping::reference::<Schema>(), Principal::reference::<Schema>())
-                .principal_binding(ConsumerPrincipalBinding::reference::<Schema>())
+            base_model::declare(schema)
                 .operation(MutatePlanar::reference::<Schema>().definition().no_external_effect().no_aftermath().finish())
 
                 .operation_projection_work_budget(MutatePlanar::reference::<Schema>(), 256)

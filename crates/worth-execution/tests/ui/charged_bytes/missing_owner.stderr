@@ -1,0 +1,39 @@
+error[E0277]: the trait bound `Arc<Vec<String>>: ChargedBytes` is not satisfied
+ --> tests/ui/charged_bytes/missing_owner.rs:6:5
+  |
+4 | #[derive(ChargedBytes)]
+  |          ------------ required by a bound introduced by this call
+5 | struct Unsupported {
+6 |     shared: Arc<Vec<String>>,
+  |     ^^^^^^^^^^^ the trait `ChargedBytes` is not implemented for `Arc<Vec<String>>`
+  |
+  = help: the following other types implement trait `ChargedBytes`:
+            &'static str
+            ()
+            BackInput<I, B>
+            Box<T>
+            DecomposeFailure<E>
+            ExecutionKernelReceipt
+            ExecutionMap<T, K>
+            InterfaceSolution<S, B>
+          and $N others
+
+error[E0277]: the trait bound `HashMap<String, String>: ChargedBytes` is not satisfied
+ --> tests/ui/charged_bytes/missing_owner.rs:7:5
+  |
+4 | #[derive(ChargedBytes)]
+  |          ------------ required by a bound introduced by this call
+...
+7 |     mapping: HashMap<String, String>,
+  |     ^^^^^^^^^^^^^^^^ the trait `ChargedBytes` is not implemented for `HashMap<String, String>`
+  |
+  = help: the following other types implement trait `ChargedBytes`:
+            &'static str
+            ()
+            BackInput<I, B>
+            Box<T>
+            DecomposeFailure<E>
+            ExecutionKernelReceipt
+            ExecutionMap<T, K>
+            InterfaceSolution<S, B>
+          and $N others

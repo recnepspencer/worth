@@ -49,7 +49,8 @@ fn exercise(
     .expect("ordinary source demand starts without a resource estimate");
     let settled = (0..64)
         .find_map(|_| match ordinary.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(s) => Some(s),
         })
         .expect("producer settles from its original source");
@@ -98,7 +99,8 @@ fn exercise(
     .unwrap();
     let settled = (0..64)
         .find_map(|_| match selected.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(s) => Some(s),
         })
         .expect("producer regenerates after the semantic source edit");

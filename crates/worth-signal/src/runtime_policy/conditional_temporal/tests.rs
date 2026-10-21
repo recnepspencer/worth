@@ -4,8 +4,8 @@ use crate::runtime_policy::{compile_signal_runtime_policy, SignalRuntimePolicyRe
 #[test]
 fn conditional_temporal_budget_is_required_positive_and_exactly_installed() {
     let budget = SignalConditionalTemporalBudget {
-        maximum_live_partitions: 3,
-        maximum_reserved_active_wakes: 17,
+        maximum_live_partitions: Some(3),
+        maximum_reserved_active_wakes: Some(17),
     };
     let request = SignalRuntimePolicy::development().with_conditional_temporal_budget(budget);
     let installed =
@@ -37,11 +37,11 @@ fn conditional_temporal_budget_is_required_positive_and_exactly_installed() {
     }
     for invalid in [
         SignalConditionalTemporalBudget {
-            maximum_live_partitions: 0,
+            maximum_live_partitions: Some(0),
             ..budget
         },
         SignalConditionalTemporalBudget {
-            maximum_reserved_active_wakes: 0,
+            maximum_reserved_active_wakes: Some(0),
             ..budget
         },
     ] {

@@ -5,6 +5,9 @@ impl KernelContext<'_, '_> {
     /// This does not authorize new work or clear the original stop; it keeps
     /// cancellation/deadline reports faithful to work already performed.
     pub fn account_completed_work(&mut self, units: u64) -> Result<(), KernelStop> {
+        if let Some(capture) = &mut self.meter.borrow_mut().capture {
+            capture.invalidate();
+        }
         if units > 0 {
             crate::authority::consult_observation::charged_prefix(|| {
                 super::ACTIVE_METER.with(|active| {
@@ -50,7 +53,10 @@ impl KernelContext<'_, '_> {
     }
 
     pub fn remaining_work(&self) -> Option<u64> {
-        let meter = self.meter.borrow();
+        let mut meter = self.meter.borrow_mut();
+        if let Some(capture) = &mut meter.capture {
+            capture.invalidate();
+        }
         meter
             .limits
             .ceiling
@@ -61,13 +67,26 @@ impl KernelContext<'_, '_> {
     /// done, while canonical settlement determines the accepted prefix.
     pub fn checkpoint(&mut self, units: u64) -> Result<(), KernelStop> {
         super::super::checkpoint_observation::record(units);
-        self.checkpoint_inner(units, false)
+        let result = self.checkpoint_inner(units, false);
+        if result.is_ok() {
+            // Admission may report a native refusal, so release the meter's
+            // borrow before the storage owner asks its reservation for growth.
+            let mut capture = self.meter.borrow_mut().capture.take();
+            if let Some(capture) = &mut capture {
+                capture.accepted(units);
+            }
+            self.meter.borrow_mut().capture = capture;
+        }
+        result
     }
 
     /// Select the canonical frontier prefix after all speculative tasks joined.
     /// Ownership is already latched; cancellation, ceilings and counters still
     /// govern this selection. Ordinary kernels cannot enter this lane.
     pub(crate) fn checkpoint_frontier(&mut self, units: u64) -> Result<(), KernelStop> {
+        if let Some(capture) = &mut self.meter.borrow_mut().capture {
+            capture.invalidate();
+        }
         self.checkpoint_inner(units, true)
     }
 

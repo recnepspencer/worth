@@ -216,3 +216,6 @@ fn standalone_and_nested_routes_share_owner_slot_reuse_state() {
         SignalConditionalDecisionClass::DependencyUnchanged
     );
 }
+
+#[path = "conditional_nested_reuse/no_policy.rs"]
+mod no_policy;

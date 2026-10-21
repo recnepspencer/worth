@@ -87,7 +87,7 @@ worth_query_decl::facade::worth_query_query_binding!(
         worth_query_decl::facade::application_schema::NoApplicationUnit,
     field crate::schema::EstateCaseIdentityField::reference(),
     value EstateEmergencyAccountDetailsRequest::estate,
-    limits results 1_024, work 100_000
+    limits results 1_024
 );
 
 pub fn estate_emergency_account_details_definition() -> ApplicationQueryDefinition<

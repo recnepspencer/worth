@@ -17,36 +17,33 @@ impl ConsumedOutputEvidence {
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
         compared: &mut Vec<EqualityRecoveryRow>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         let image = owner
-            .equality_recovery_image(selected, admission)
+            .equality_recovery_image(selected)
             .map_err(map_verification_stop)?;
         let mut pending = Vec::new();
         let mut visited = OrdSet::new();
-        reserve_pending(&mut pending, 1, admission)?;
+        reserve_pending(&mut pending, 1)?;
         pending.push(RecoveryStep::Visit(Arc::clone(evidence.identity), true));
         while let Some(step) = pending.pop() {
             let (identity, root) = match step {
                 RecoveryStep::Visit(identity, root) => (identity, root),
                 RecoveryStep::Compared(row) => {
-                    reserve_pending(compared, 1, admission)?;
+                    reserve_pending(compared, 1)?;
                     compared.push(row);
                     continue;
                 }
             };
             let row = image
-                .terminal_row(&identity, admission)
+                .terminal_row(&identity)
                 .map_err(map_verification_stop)?;
-            admission
-                .admit_visited_settlement(visited.len())
-                .map_err(map_admission_stop)?;
+
             if visited.contains(&row.identity) {
                 continue;
             }
             visited.insert(Arc::clone(&row.identity));
             if !at_observation::reads_at_or_after(selected, &row.read_basis) {
-                return Ok(ConsumedOutputVerification::ChangedUpstream);
+                return Ok(ConsumedOutputVerification::Unaligned);
             }
             let Some(facts) = row.facts.for_comparison() else {
                 return Ok(ConsumedOutputVerification::ChangedUpstream);
@@ -66,18 +63,13 @@ impl ConsumedOutputEvidence {
                 false,
                 runtime,
                 snapshot,
-                admission,
             )?;
             if let Some(changed) = changed {
-                image.fence(admission).map_err(map_verification_stop)?;
+                image.fence().map_err(map_verification_stop)?;
                 return Ok(changed);
             }
-            charge_external(admission, row.upstream.len())?;
-            reserve_pending(
-                &mut pending,
-                row.upstream.len().saturating_add(1),
-                admission,
-            )?;
+
+            reserve_pending(&mut pending, row.upstream.len().saturating_add(1))?;
             let upstream = row.upstream.clone();
             pending.push(RecoveryStep::Compared(row));
             pending.extend(
@@ -86,7 +78,7 @@ impl ConsumedOutputEvidence {
                     .map(|upstream| RecoveryStep::Visit(Arc::clone(upstream), false)),
             );
         }
-        image.fence(admission).map_err(map_verification_stop)?;
+        image.fence().map_err(map_verification_stop)?;
         Ok(ConsumedOutputVerification::Current)
     }
 }

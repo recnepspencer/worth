@@ -184,6 +184,17 @@ current authorization observation: it is neither execution admission nor a
 promise that a later advance will succeed. Authentication or matching a cached
 command-owner identity cannot substitute for this check.
 
+At the Fixed source-preparation boundary, `prepared_source_receipt()` borrows the
+actual original action receipt. Capture any needed descriptive runtime/scope,
+installed binding, product incarnation and publication generation before the next
+`advance` starts outputs; the borrow must end before moving that same owner.
+`None` means the receipt is unavailable in the current phase, not that no
+publication occurred. Descriptions grant no currentness, selection, retry or
+publication authority. A settled output's `root_receipt()` belongs to its producer
+and cannot identify the original source action. Observe semantic membership as a
+multiset, preserving multiplicity and rejecting ambiguous projected identities;
+no raw settlement slot is needed. Continue and close the original native owners.
+
 A fixed settled owner borrows its complete settlement for `read_current` or a
 finite `read_current_with_policy`; the currentness check and declared query share
 one observation and one native phase. Read refusal retains the owner. Stale
@@ -555,7 +566,7 @@ ambiguous bindings before it publishes the application.
 
 `request.demand(demand).controls(controls).start()` selects the exact source and
 one applicable installed producer under finite work and retained-byte limits.
-`advance(&fresh_request)` returns `Pending` or `Settled`. A settlement carries the
+`advance(&fresh_request)` returns `Progressed`, `Pending` or `Settled`. `Progressed` permits the same original owner to continue; `Pending` yields rather than spinning. Convenience `settle` follows progress under the same request until settlement, waiting, interruption or an explicit finite step boundary. A settlement carries the
 committed receipt, observed source, exact retained observation, and actual
 readiness delivery. The handle exposes owner notifications and `close()` releases
 the interest. Source drift returns `Superseded`; output readiness follows the

@@ -54,7 +54,7 @@ pub(super) fn validate(
                     && presence == &guard.source.presence)
             })
         {
-            return Err(Denial::MissingOperationDecisionReadDependency);
+            return Err(Denial::decision_read_body_dependency(operation));
         }
     }
     Ok(())

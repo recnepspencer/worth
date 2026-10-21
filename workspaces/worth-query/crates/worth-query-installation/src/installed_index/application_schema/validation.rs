@@ -5,6 +5,4 @@ mod retained_mutation;
 pub use principal_binding::{
     WorthQueryPrincipalBindingValidationAdmissionStop, WorthQueryValidatedPrincipalBinding,
 };
-pub use retained_mutation::{
-    WorthQueryCurrentRetainedMutationBinding, WorthQueryRetainedMutationBindingAdmissionStop,
-};
+pub use retained_mutation::WorthQueryCurrentRetainedMutationBinding;

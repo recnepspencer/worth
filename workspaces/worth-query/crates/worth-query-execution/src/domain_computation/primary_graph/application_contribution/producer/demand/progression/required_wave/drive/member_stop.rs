@@ -40,6 +40,11 @@ impl MemberStop {
 
 pub(super) struct StopRecording(Recording);
 impl StopRecording {
+    /// The continuation owner already recorded this on its genuine successor.
+    pub(super) fn successor() -> Self {
+        Self(Recording::Successor)
+    }
+
     pub(super) fn member() -> Self {
         Self(Recording::Member)
     }

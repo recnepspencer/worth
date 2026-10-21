@@ -1,6 +1,8 @@
 /// Why an invariant projection could not take its snapshot or finish.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantProjectionDenialKind {
+    /// An admitted field decode refused; no callback output is accepted.
+    ValueDecode(super::WorthQueryValueDecodeDenial),
     /// A required native read stopped; its exact request cause is retained.
     ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     /// The main branch basis could not be observed.
@@ -43,6 +45,16 @@ const _: () = assert!(
 );
 
 impl WorthQueryInvariantProjectionDenial {
+    pub(super) fn value_decode_stopped(
+        cause: super::WorthQueryValueDecodeDenial,
+        work: Option<super::WorthQueryInvariantProjectionWork>,
+    ) -> Self {
+        Self {
+            kind: Box::new(WorthQueryInvariantProjectionDenialKind::ValueDecode(cause)),
+            projection_work: work,
+            retention_denial: None,
+        }
+    }
     pub(super) fn execution_request_stopped(
         cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
         work: Option<super::WorthQueryInvariantProjectionWork>,

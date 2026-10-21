@@ -5,13 +5,12 @@
 
 use worth_query_installation::facade::ApplicationSchema;
 
-use crate::domain_computation::primary_graph::{
-    application_output_demand::SelectedRequiredRefreshClaim,
-    output_lineage::invalidation::InvalidationEditAdmission,
-    product_operation::SharedSelectedProductOperation,
-};
+use crate::domain_computation::primary_graph::application_output_demand::SelectedRequiredRefreshClaim;
+use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 
-use super::super::{denial, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
+use super::super::denial;
+use super::super::WorthQueryOutputDemandDenial;
+use super::super::WorthQueryOutputDemandDenialKind;
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)
 enum SourceAdmissionSelection<'selected, 'runtime, Schema>
@@ -42,55 +41,21 @@ where
     pub(super) fn admit_selected_producer<Family>(
         &self,
         selected: &super::super::super::WorthQuerySelectedApplicationProducer,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial>
     where
         Family: super::super::WorthQueryProducerOutputFamily<Schema>,
     {
         const SUBJECT: &str = "required successor selected another producer";
-        let empty_work = || denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "");
-        let empty_capacity = || {
-            denial(
-                WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                "",
-            )
-        };
-        admission
-            .charge_external_work(1)
-            .map_err(|_| empty_work())?;
+
         let Self::RequiredFresh { claim, .. } = self else {
             return Ok(());
         };
         // Prepay both text widths and the possible terminal subject before
         // borrowing the predecessor's producer identity for equality.
-        admission
-            .charge_external_work(2)
-            .map_err(|_| empty_work())?;
+
         let expected = claim.selected().producer_identity();
         let producer = &selected.identity;
-        let comparison_work = producer
-            .len()
-            .checked_add(expected.len())
-            .and_then(|bytes| bytes.checked_add(SUBJECT.len()))
-            .ok_or_else(empty_work)?;
-        admission
-            .charge_external_work(u64::try_from(comparison_work).map_err(|_| empty_work())?)
-            .map_err(|_| empty_work())?;
-        let denial_backing = SUBJECT
-            .len()
-            .checked_add(std::mem::size_of::<String>())
-            .ok_or_else(empty_capacity)?;
-        admission
-            .admit_read_scratch(u64::try_from(denial_backing).map_err(|_| empty_capacity())?)
-            .map_err(|stop| match stop {
-                worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
-                    ..
-                } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-                | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
-                    empty_work()
-                }
-                _ => empty_capacity(),
-            })?;
+
         let same_family = claim.selected().key().family_identity() == Family::IDENTITY;
         let preserve = selected.applicability.lifecycle()
             == crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerLifecyclePosture::Preserve;

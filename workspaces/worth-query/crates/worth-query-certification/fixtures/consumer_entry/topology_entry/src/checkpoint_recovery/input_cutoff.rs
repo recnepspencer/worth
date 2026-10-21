@@ -6,11 +6,15 @@ use worth_query_host::facade::application_entry::{
     WorthQueryOutputSettlementPosture,
 };
 
+mod alias_spans;
+mod checkpoint_polling;
 mod unrebased_settlement;
 
 #[test]
 fn fresh_source_suffix_with_equal_declared_input_reuses_without_a_handler_or_world_commit() {
-    exercise("anchor-a", "anchor-b", 2, true, controls());
+    checkpoint_polling::equal_input_receipt(|| {
+        exercise("anchor-a", "anchor-b", 2, true, controls());
+    });
 }
 
 #[test]
@@ -21,21 +25,6 @@ fn raw_native_reader_prevents_input_cutoff_even_when_the_declared_input_is_equal
 #[test]
 fn undeclared_key_consumption_prevents_input_cutoff_even_when_the_declared_input_is_equal() {
     exercise("anchor-island", "anchor-atoll", 61, false, controls());
-}
-
-#[test]
-fn one_unit_of_currentness_work_still_reuses_when_exact_marks_miss_the_handler_prefix() {
-    // One unit is smaller than re-verifying any marked fact (one visit plus its
-    // probe). Framework preparation spends the installed request meter, and the
-    // successor edit marks only the source suffix, so neither demand verifies
-    // currentness and the edited demand still reuses at this bound.
-    exercise(
-        "anchor-a",
-        "anchor-b",
-        2,
-        true,
-        controls().source_currentness_work(NonZeroUsize::MIN),
-    );
 }
 
 fn exercise(
@@ -49,9 +38,12 @@ fn exercise(
     let application = install(None);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
+    let polling = crate::handler::checkpoint_polling::PollObservation::arm(|| {}, || {});
     let first =
         direct_demand_with_controls(&request, &application, root, demand_controls, "initial");
     assert_eq!(first.producer_contacts_in_this_demand(), 1);
+    assert_eq!(polling.polls(), [Ok(()), Ok(())]);
+    assert_eq!(polling.candidates(), 1);
     let original_receipt = first.application_commit_receipt().unwrap().clone();
     let original_entity = first
         .outputs_of::<PlanarOutputs>()
@@ -117,6 +109,8 @@ fn exercise(
         "edited source",
     );
     let after = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
+    assert_eq!(polling.candidates(), if expect_reuse { 1 } else { 2 });
+    assert!(polling.polls().iter().all(Result::is_ok));
     if expect_reuse {
         assert_eq!(
             settled.posture(),
@@ -250,7 +244,8 @@ fn direct_demand_with_controls<'application, 'principal, 'scope>(
             .advance(request)
             .unwrap_or_else(|denial| panic!("{stage} demand failed to advance: {denial:?}"))
         {
-            WorthQueryApplicationOutputDemandProgress::Pending => std::thread::yield_now(),
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => std::thread::yield_now(),
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => return settled,
         }
     }

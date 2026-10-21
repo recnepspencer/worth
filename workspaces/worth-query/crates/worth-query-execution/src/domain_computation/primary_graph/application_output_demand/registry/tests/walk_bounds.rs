@@ -1,15 +1,11 @@
 //! Canonical occurrence searches keep their producer/source boundary.
-use super::super::refreshed_rejoin::{
-    awaited_by_stale_owner, newest_of_occurrence, occurrence_rows, OccurrenceSearchCharge,
-};
+use super::super::refreshed_rejoin::awaited_by_stale_owner;
+use super::super::refreshed_rejoin::newest_of_occurrence;
+use super::super::refreshed_rejoin::occurrence_rows;
 use super::*;
 use crate::domain_computation::primary_graph::tests::recoverable_commit_support;
-use core::convert::Infallible;
 
-pub(in super::super) fn check<C>(search: usize, mut payer: impl FnMut() -> C)
-where
-    C: OccurrenceSearchCharge<Refusal = Infallible>,
-{
+pub(in super::super) fn check(search: usize) {
     let mut contacts = Vec::new();
     let receipts = receipt_batch();
     for (neighbors, entries) in [(1, 1), (64, 4)] {
@@ -29,28 +25,13 @@ where
         }
         add_custody(&mut state, &receipts[..entries], neighbors);
         let before = super::super::record_map::occurrence_rows_visited();
-        let mut charge = payer();
         match search {
-            0 => assert_eq!(
-                super::super::refreshed_rejoin::infallible(occurrence_rows(
-                    &state.records,
-                    &selected,
-                    &mut charge
-                ))
-                .count(),
-                3
-            ),
+            0 => assert_eq!(occurrence_rows(&state.records, &selected).count(), 3),
             1 => assert_eq!(
-                super::super::refreshed_rejoin::infallible(newest_of_occurrence(
-                    &state.records,
-                    &selected,
-                    &mut charge
-                )),
+                newest_of_occurrence(&state.records, &selected),
                 Some(key("own", 3, 1))
             ),
-            2 => assert!(!super::super::refreshed_rejoin::infallible(
-                awaited_by_stale_owner(&state.records, &selected, &mut charge)
-            )),
+            2 => assert!(!awaited_by_stale_owner(&state.records, &selected)),
             _ => panic!("unknown occurrence search"),
         }
         contacts.push(super::super::record_map::occurrence_rows_visited() - before);
@@ -60,15 +41,15 @@ where
 
 #[test]
 fn registry_occurrence_rows_body_keeps_its_bound() {
-    check(0, OracleWalk::after_effect);
+    check(0);
 }
 #[test]
 fn registry_newest_fold_body_keeps_its_bound() {
-    check(1, OracleWalk::after_effect);
+    check(1);
 }
 #[test]
 fn registry_stale_owner_body_keeps_its_bound() {
-    check(2, OracleWalk::after_effect);
+    check(2);
 }
 
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;

@@ -2,11 +2,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan;
-pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)
-enum ExecutionPreparation<'owner, Query, Value> {
-    Reached(OwnStages<Query, Value>),
-    Planned(OwnerPlan<'owner, CheckpointProgress, CompletionRefusal>),
-}
 
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn prepare_validated_output_demand_with_schedule<
@@ -26,7 +21,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         entry: &InstalledProducerProvider<Schema>,
         commit_authority: WorthQueryProducerCommitAuthority,
         schedule_progression: ScheduleProgression<'owner, '_, '_, Schema>,
-        request_admission: &mut InvalidationEditAdmission,
+
         performed: &'owner std::cell::RefCell<PerformedMembers>,
     ) -> Result<
         ExecutionPreparation<
@@ -57,7 +52,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             &commit_authority,
             entry,
             &schedule_progression,
-            request_admission,
         )? {
             // Decided before the row is begun, so nothing is claimed.
             return self
@@ -66,9 +60,22 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     demand,
                     disclosure,
                     schedule_progression.is_selected(),
-                    request_admission,
                 )
                 .map(ExecutionPreparation::Reached);
+        }
+        if !schedule_progression.is_selected()
+            && self.released_predecessor_needs_source(demand, disclosed_source)?
+        {
+            self.refresh_output_demand(
+                &execution,
+                demand,
+                disclosure.value(),
+                disclosed_source.clone(),
+                None,
+            )?;
+            return Ok(ExecutionPreparation::Reached(OwnStages::Refreshed(
+                disclosure,
+            )));
         }
         let interest = demand
             .interest
@@ -76,39 +83,25 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .expect("progression entry checked live Interest");
         // The receipt carrier is admitted before Running can commit. Nothing
         // chargeable may strand a performed publication without its checkpoint.
-        request_admission
-            .charge_external_work(std::mem::size_of::<OwnPublication>() as u64 + 1)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
+
         // One selected finish is prepaid before either initial begin or the
         // subsequent Scheduled begin can enter Running. The actual outcome
         // consumes it; dropping an unused token never releases a peer's row.
         let selected_execution_finish = self
             .output_demands
-            .prepare_selected_execution_finish(interest, request_admission)?;
+            .prepare_selected_execution_finish(interest)?;
         let mut selected_published_mode = if schedule_progression.is_selected() {
             // Execute moves the invocation-local matched identity out of its
             // selected schedule slot after Running. Admit both the vacant
             // slot and returned carrier before the first begin.
-            let work = std::mem::size_of::<WorthQueryProducerCommitAuthority>()
-                .checked_add(3)
-                .and_then(|work| {
-                    std::mem::size_of::<Option<MatchedRequiredPredecessors<'_>>>()
-                        .checked_mul(2)
-                        .and_then(|move_work| work.checked_add(move_work))
-                })
-                .and_then(|work| u64::try_from(work).ok())
-                .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
-            request_admission
-                .charge_external_work(work)
-                .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
+
             Some(commit_authority.clone())
         } else {
             None
         };
         use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
         let (mut admission_phase, mut selected_finish) = if schedule_progression.is_selected() {
-            self.output_demands
-                .begin_admitted(interest, request_admission)?
+            self.output_demands.begin_admitted(interest)?
         } else {
             (self.output_demands.begin(interest), None)
         };
@@ -132,7 +125,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                                 &demand.observed_source,
                                 performed_source.as_ref(),
                                 shared,
-                                request_admission,
                             ),
                     };
                     match selected_finish.take() {
@@ -152,7 +144,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::Scheduled) => {
                         admission_phase = if schedule_progression.is_selected() {
                             self.output_demands
-                                .begin_scheduled_admitted(interest, request_admission)?
+                                .begin_scheduled_admitted(interest)?
                         } else {
                             self.output_demands.begin(interest)
                         };
@@ -195,7 +187,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                             } else {
                                 ReadyCertification::OnBranch(delivery_branch)
                             },
-                            request_admission,
                         )
                         .map(ExecutionPreparation::Reached);
                 }
@@ -222,7 +213,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                         source,
                         self,
                         delivery_branch,
-                        request_admission,
                     )
                 });
             match readiness {
@@ -238,8 +228,8 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             }
         };
         let mut required_output = match interest.required_context(
+            Family::IDENTITY,
             &self.primary_provider.graph.source_owner.invalidation_owner,
-            request_admission,
         ) {
             Ok(context) => context,
             Err(denial) => {
@@ -250,14 +240,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         let published_mode = if let Some(mode) = selected_published_mode.take() {
             mode
         } else {
-            entry::clone_published_mode(
-                &self.output_demands,
-                interest,
-                &commit_authority,
-                false,
-                Family::IDENTITY,
-                request_admission,
-            )?
+            commit_authority.clone()
         };
         if demand.selected.reuses_live_output_only {
             required_output.reuse_live_output_only();
@@ -275,23 +258,28 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 root,
             )
         };
-        let result = disclosure.with_erased(|input| match schedule_progression {
+        let prepared_input = demand
+            .prepare_disclosed_input(disclosure)
+            .map_err(execution::ProducerExecutionStop::ExecutionStopped);
+        let result = match schedule_progression {
             ScheduleProgression::Ordinary => {
-                let result = entry.executor.execute(
-                    phase,
-                    self,
-                    principal,
-                    request_scope,
-                    delivery_branch,
-                    required_execution,
-                    input,
-                    successor_of,
-                    commit_authority,
-                    entry.edition,
-                    demand.limits,
-                    request_admission,
-                    &mut demand.producer_contacts_in_this_demand,
-                );
+                let result = prepared_input.and_then(|proof| {
+                    proof.with_erased(|input| {
+                        entry.executor.execute(
+                            phase,
+                            self,
+                            principal,
+                            request_scope,
+                            delivery_branch,
+                            required_execution,
+                            input,
+                            successor_of,
+                            commit_authority,
+                            entry.edition,
+                            &mut demand.producer_contacts_in_this_demand,
+                        )
+                    })
+                });
                 match finish(
                     result,
                     ordinary_readiness.expect("ordinary effect has publication readiness"),
@@ -312,22 +300,24 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 matched_predecessors,
                 readiness,
             } => {
-                let prepared = entry.executor.execute_on_selected(
-                    phase,
-                    self,
-                    principal,
-                    request_scope,
-                    shared,
-                    matched_predecessors,
-                    required_execution,
-                    input,
-                    successor_of,
-                    commit_authority,
-                    entry.edition,
-                    demand.limits,
-                    request_admission,
-                    &mut demand.producer_contacts_in_this_demand,
-                );
+                let prepared = prepared_input.and_then(|proof| {
+                    proof.with_erased(|input| {
+                        entry.executor.execute_on_selected(
+                            phase,
+                            self,
+                            principal,
+                            request_scope,
+                            shared,
+                            matched_predecessors,
+                            required_execution,
+                            input,
+                            successor_of,
+                            commit_authority,
+                            entry.edition,
+                            &mut demand.producer_contacts_in_this_demand,
+                        )
+                    })
+                });
                 // A preparation refusal still owns this Running invocation.
                 // Canonical completion applies its normal failure protocol;
                 // abandonment alone cannot substitute for that typed outcome.
@@ -335,11 +325,11 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     Ok(plan) => plan,
                     Err(stop) => OwnerPlan::immediate(Err(stop)),
                 };
-                Ok(ExecutionPreparation::Planned(plan.map_result(
-                    move |result, _admission| finish(result, readiness),
-                )))
+                Ok(ExecutionPreparation::Planned(
+                    plan.map_result(move |result| finish(result, readiness)),
+                ))
             }
-        });
+        };
         result.map_err(execution::ProducerExecutionStop::into_output_denial)
     }
 }

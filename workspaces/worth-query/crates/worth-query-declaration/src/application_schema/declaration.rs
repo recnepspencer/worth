@@ -1,6 +1,5 @@
 use std::marker::PhantomData;
 
-use super::aspect_contract_identity::ApplicationAspectMarkerIdentity;
 use super::contribution::{
     ApplicationSchemaContributionIdentity, ApplicationSchemaContributionProvenance,
     AuthoredApplicationSchemaContribution,
@@ -9,12 +8,13 @@ use super::declaration_denial::ApplicationSchemaDeclarationDenial;
 use super::member_provenance::ApplicationSchemaMemberProvenance;
 use super::principal_binding_reference::ApplicationPrincipalBindingRef;
 use super::references::{
-    ApplicationAspectRef, ApplicationEffectRef, ApplicationEntityRef, ApplicationOperationRef,
-    ApplicationRelationRef, ApplicationUnitRef,
+    ApplicationEffectRef, ApplicationEntityRef, ApplicationOperationRef, ApplicationRelationRef,
+    ApplicationUnitRef,
 };
 use super::schema_identity::ApplicationSchemaIdentity;
 use super::schema_member::ApplicationSchemaMember;
 
+mod aspects;
 mod authorization;
 mod fields;
 mod finalization;
@@ -248,23 +248,6 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             .register_entity::<Entity>(reference.name());
         self.members.push(ApplicationSchemaMember::Entity {
             entity: reference.name().to_string(),
-        });
-        self
-    }
-
-    pub fn aspect<Entity, Aspect>(
-        mut self,
-        entity: ApplicationEntityRef<Schema, Entity>,
-        aspect: ApplicationAspectRef<Schema, Entity, Aspect>,
-    ) -> Self
-    where
-        Aspect: ApplicationAspectMarkerIdentity<Schema, Entity>,
-    {
-        self.members.push(ApplicationSchemaMember::Aspect {
-            entity: entity.name().to_string(),
-            aspect: aspect.name().to_string(),
-            identity: Aspect::ASPECT_IDENTITY,
-            revision: Aspect::CONTRACT_REVISION,
         });
         self
     }

@@ -95,8 +95,7 @@ fn delivered_and_ready_roots_keep_their_consumption_on_removal() {
         let stage = if ready {
             closed_retirement::ready()
         } else {
-            let backing =
-                PreparedReadyBacking::prepare(&state, &mut record_admission(), 0).unwrap();
+            let backing = PreparedReadyBacking::new();
             DemandState::Output(WorthQueryOutputProgress::new(
                 WorthQueryOutputCheckpoint::Delivered {
                     receipt: source.receipt.clone(),
@@ -147,7 +146,6 @@ fn an_abandoned_join_returns_the_requested_source_it_consumed() {
             super::super::DemandAdmissionKind::Required,
             None,
             None,
-            &mut record_admission(),
         )
         .unwrap();
     assert_eq!(
@@ -159,7 +157,7 @@ fn an_abandoned_join_returns_the_requested_source_it_consumed() {
         state.source_custody[&commit].consumed_sources.as_slice(),
         std::slice::from_ref(&requested.source)
     );
-    let backing = PreparedReadyBacking::prepare(&state, &mut record_admission(), 0).unwrap();
+    let backing = PreparedReadyBacking::new();
     let mut row = state.records.get_mut(&older).unwrap();
     row.state = DemandState::Output(WorthQueryOutputProgress::new(
         WorthQueryOutputCheckpoint::Published {

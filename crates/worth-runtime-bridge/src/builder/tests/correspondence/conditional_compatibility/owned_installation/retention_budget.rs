@@ -145,8 +145,8 @@ fn source_free_owner_with_relative_byte_budget(
 ) {
     for _ in 0..16 {
         let (owner, lowering) = source_free_successor_owner(BridgeConditionalRetentionBudget {
-            maximum_retained_definition_candidates: 1,
-            maximum_retained_bytes: expected_bytes - discount,
+            maximum_retained_definition_candidates: Some(1),
+            maximum_retained_bytes: Some(expected_bytes - discount),
             ..BridgeConditionalRetentionBudget::development()
         });
         let actual_bytes = source_free_successor_bytes(&owner);

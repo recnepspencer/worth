@@ -34,6 +34,7 @@ pub(in crate::application_entry) enum WorthQueryApplicationProgramDemandProgress
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     Pending,
+    Progressed,
     Settled {
         settlement: WorthQueryApplicationOutputDemandSettlement<SourceQuery<Schema, Demand>>,
         authority: WorthQuerySettledProgramOutput<Schema, Program, Demand>,
@@ -185,6 +186,9 @@ where
             )
             .map_err(map_progress_denial)?
         {
+            WorthQueryProgramOutputAdvance::Progressed => {
+                Ok(WorthQueryApplicationProgramDemandProgress::Progressed)
+            }
             WorthQueryProgramOutputAdvance::Pending => {
                 Ok(WorthQueryApplicationProgramDemandProgress::Pending)
             }
@@ -192,10 +196,6 @@ where
                 let settlement = WorthQueryApplicationOutputDemandSettlement::new(
                     authority.retained(),
                     self.admitted.observed_source().clone(),
-                    self.admitted.checkpoint_readmission_work_units(),
-                    self.admitted.checkpoint_readmission_work_bound(),
-                    self.admitted
-                        .checkpoint_readmission_charged_preparation_bytes(),
                 );
                 Ok(WorthQueryApplicationProgramDemandProgress::Settled {
                     settlement,

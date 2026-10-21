@@ -364,7 +364,7 @@ fn capability(result: &GovernanceResult, grant: CapabilityGrantId) -> &EstateCap
 }
 
 fn controls() -> BankReadControls {
-    BankReadControls::current(request_scope(), 1, 20_000).unwrap()
+    BankReadControls::current(request_scope(), 1).unwrap()
 }
 
 fn assert_resources_released(fixture: &CapabilityFixture) {

@@ -95,7 +95,7 @@ impl PreparedDirectCauseStores {
         self,
         graph: &mut SignalGraph,
         ledger: &Arc<SignalConditionalRetentionLedger>,
-        maximum: RetainedStorageCharge,
+        maximum: Option<RetainedStorageCharge>,
         work: &mut RetainedStoragePreparation,
     ) -> Result<PreparedRetainedDirectCauseStores, SignalError> {
         let Self {

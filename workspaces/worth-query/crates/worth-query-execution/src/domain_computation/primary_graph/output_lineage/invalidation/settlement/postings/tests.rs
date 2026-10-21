@@ -1,19 +1,17 @@
 //! Exact local posting grouping and reverse-index witnesses.
 
-mod bounded_ordering;
-
 use std::sync::Arc;
 
-use worth_relational::facade::{
-    identity::{EntityId, KindId, PartitionId},
-    mvcc::CompanionPreflightBudget,
-};
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::identity::KindId;
+use worth_relational::facade::identity::PartitionId;
 
-use super::{
-    super::super::{fact_key::FactPostingKey, mark_state::MarkState},
-    group_projected, InvalidationEditAdmission, PreparedPostingOrdinals, ProjectedKey,
-    WorthQueryApplicationObservedFact as Fact,
-};
+use super::super::super::fact_key::FactPostingKey;
+use super::super::super::mark_state::MarkState;
+use super::group_projected;
+use super::PreparedPostingOrdinals;
+use super::ProjectedKey;
+use super::WorthQueryApplicationObservedFact as Fact;
 
 #[test]
 fn equal_fingerprints_keep_distinct_exact_keys_and_merge_only_equal_keys() {
@@ -44,11 +42,8 @@ fn equal_fingerprints_keep_distinct_exact_keys_and_merge_only_equal_keys() {
             ordinal: 2,
         },
     ];
-    let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(10_000),
-        maximum_preparation_bytes: None,
-    });
-    let groups = group_projected(projected, 3, &mut admission).unwrap();
+
+    let groups = group_projected(projected).unwrap();
     assert_eq!(groups.len(), 2);
     assert_eq!(groups[0].key.as_ref(), first.as_ref());
     assert_eq!(
@@ -71,37 +66,26 @@ fn source_and_output_facts_share_one_key_but_keep_both_composite_ordinals() {
         entity_id: entity,
         kind: KindId::new(9),
     }];
-    let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(10_000),
-        maximum_preparation_bytes: None,
-    });
-    let prepared =
-        PreparedPostingOrdinals::prepare(&source, Some(&output), &mut None, &mut admission)
-            .unwrap();
+
+    let prepared = PreparedPostingOrdinals::prepare(&source, Some(&output), &mut None).unwrap();
     let mut state = MarkState::initial();
-    let (ordinals, _) = prepared
-        .install(&mut state, &identity, &mut admission)
-        .unwrap();
+    let resources = resources();
+    let projection = prepared.into_projection(0, source.len(), output.len(), None);
+    super::super::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
+    let ordinals = &projection.ordinals;
     let key = FactPostingKey::EntityLifecycle(entity);
     let own = ordinals.get(&key).unwrap();
     assert_eq!(own.iter().copied().collect::<Vec<_>>(), vec![0, 1]);
     let global = state.postings.get(&key).unwrap();
-    assert_eq!(global.len(), 2);
-    assert_eq!(
-        global
-            .iter()
-            .map(|posting| posting.ordinal)
-            .collect::<Vec<_>>(),
-        vec![0, 1]
-    );
-    assert!(global
-        .iter()
-        .all(|posting| Arc::ptr_eq(&posting.settlement, &identity)));
+    assert_eq!(global.iter().copied().collect::<Vec<_>>(), vec![0]);
+    let binding = state.posting_bindings.get(&0).unwrap();
+    let binding = binding.settlements().unwrap();
+    assert_eq!(binding.settlements.len(), 1);
+    assert!(binding.settlements.contains(&identity));
 }
 
 #[test]
 fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch() {
-    use super::super::super::index_capacity;
     for (keys, copies) in [(1usize, 1usize), (1, 128), (128, 1)] {
         let facts: Vec<_> = (0..keys)
             .flat_map(|key| {
@@ -113,70 +97,37 @@ fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch()
                 )
             })
             .collect();
-        let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: Some(1_000_000),
-            maximum_preparation_bytes: None,
-        });
-        let prepared =
-            PreparedPostingOrdinals::prepare(&facts, None, &mut None, &mut admission).unwrap();
+
+        let prepared = PreparedPostingOrdinals::prepare(&facts, None, &mut None).unwrap();
         assert_eq!(prepared.ordinals.len(), keys);
         assert!(prepared
             .ordinals
             .values()
             .all(|ordinals| ordinals.len() == copies));
-        let expected =
-            index_capacity::retained_map_bytes::<Arc<FactPostingKey>, im::OrdSet<usize>>(keys)
-                .unwrap()
-                + index_capacity::retained_forest_bytes::<usize, ()>(keys * copies, keys).unwrap()
-                + (keys as u64) * index_capacity::arc_bytes::<FactPostingKey>().unwrap();
-        assert_eq!(admission.charged_index_bytes(), expected);
-        assert!(admission.charged_bytes() > expected);
+
         let (_, identity) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
+        let resources = resources();
         let mut state = MarkState::initial();
         let prior = state.postings.clone();
-        let before_index = admission.charged_index_bytes();
-        let before_preparation = admission.charged_bytes();
-        prepared
-            .install(&mut state, &identity, &mut admission)
-            .unwrap();
+        let projection = prepared.into_projection(0, facts.len(), 0, None);
+
+        super::super::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
         assert!(prior.is_empty());
-        assert_eq!(state.posting_count, keys * copies);
+        assert_eq!(state.posting_count, keys);
         assert_eq!(state.postings.len(), keys);
-        assert!(state.postings.values().all(|postings| {
-            postings.len() == copies
-                && postings
-                    .iter()
-                    .all(|posting| Arc::ptr_eq(&posting.settlement, &identity))
-        }));
-        // The new global tree and every independently rooted posting bucket
-        // fit their final stable trees, even after many paths were prepared.
-        let whole = index_capacity::retained_map_bytes::<
-            Arc<FactPostingKey>,
-            im::OrdSet<super::super::super::mark_state::FactPosting>,
-        >(keys)
-        .unwrap()
-            + keys as u64
-                * index_capacity::retained_map_bytes::<
-                    super::super::super::mark_state::FactPosting,
-                    (),
-                >(copies)
-                .unwrap();
-        let installed = admission.charged_index_bytes() - before_index;
-        assert!(installed > 0 && installed <= whole);
-        // Preparation covers what survives, and stays within what each
-        // tree's insertions can allocate together, however many paths ran.
-        let prepared = admission.charged_bytes() - before_preparation;
-        let sequences = index_capacity::insertion_sequence_bytes::<
-            Arc<FactPostingKey>,
-            im::OrdSet<super::super::super::mark_state::FactPosting>,
-        >(keys)
-        .unwrap()
-            + keys as u64
-                * index_capacity::insertion_sequence_bytes::<
-                    super::super::super::mark_state::FactPosting,
-                    (),
-                >(copies)
-                .unwrap();
-        assert!(prepared >= installed && prepared <= sequences);
+        assert!(state
+            .postings
+            .values()
+            .all(|groups| groups.iter().copied().collect::<Vec<_>>() == vec![0]));
+        drop(state);
+
+        drop(projection);
     }
 }
+
+fn resources() -> crate::domain_computation::execution_runtime::source_invalidation::WorthQueryInvalidationResources{
+    use crate::domain_computation::execution_runtime::source_invalidation::WorthQueryInvalidationResources;
+    WorthQueryInvalidationResources::new()
+}
+
+mod bindings;

@@ -36,13 +36,13 @@ fn fixture() -> (
     }
     let ledger = Ledger::new(
         SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 2,
-            maximum_retained_bytes: BYTES,
+            maximum_retained_slots: Some(2),
+            maximum_retained_bytes: Some(BYTES),
             maximum_attempt_visits: Some(8_000_000),
         },
         crate::runtime_policy::SignalConditionalTemporalBudget {
-            maximum_live_partitions: 1,
-            maximum_reserved_active_wakes: 1,
+            maximum_live_partitions: Some(1),
+            maximum_reserved_active_wakes: Some(1),
         },
     );
     let basis = crate::branch::owner_services::conditional_execution::SignalRetainedExecutionBasis::capture(&mut graph, &ledger, &mut Work::new(Some(100_000))).unwrap();

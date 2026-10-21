@@ -6,13 +6,9 @@ use worth_query_host::facade::application_entry::{
     WorthQueryOperationDeliveryDenial as DeliveryDenial,
     WorthQueryOperationDeliveryPolicy as Policy,
 };
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationQueryBatchLimits as Limits,
-    WorthQueryApplicationQueryBatchResourceDenial as ResourceDenial,
-};
 use worth_query_topology_entry::PlanarOutputRead;
 #[test]
-fn discovered_ordinary_batch_is_complete_and_same_basis_after_aggregate_work_refusal() {
+fn discovered_ordinary_batch_is_complete_and_same_basis_without_work_estimates() {
     declared_world!(world, request, BatchDelivery<2>);
     let input = PlanarSourceAdjustment {
         scope_key: "anchor-a".to_owned(),
@@ -58,7 +54,6 @@ fn discovered_ordinary_batch_is_complete_and_same_basis_after_aggregate_work_ref
         .selected_commit()
         .clone();
     let retained_commit = settled.settlement().observation().selected_commit().clone();
-    let mut works = Vec::new();
     let mut historical_basis = None;
     for key in ["remote-b", "sibling-b"] {
         let read = request
@@ -69,17 +64,7 @@ fn discovered_ordinary_batch_is_complete_and_same_basis_after_aggregate_work_ref
             .execute()
             .unwrap();
         historical_basis.get_or_insert_with(|| read.receipt().inspect().basis().clone());
-        works.push(read.receipt().inspect().read_work().total_work_units());
     }
-    let cap = *works.iter().max().unwrap();
-    assert!(cap < works.iter().sum::<usize>());
-    let policy = Policy::default().batch(Limits::new(
-        NonZeroUsize::new(2).unwrap(),
-        Some(NonZeroUsize::new(cap).unwrap()),
-        NonZeroUsize::MAX,
-        NonZeroUsize::MAX,
-    ));
-    assert!(matches!(settled.read_batch_current_with_policy::<2>(&request,policy),Err(DeliveryDenial::Batch(worth_query_host::facade::application_entry::WorthQueryApplicationQueryBatchDenial::Resource{item:Some(1),denial:ResourceDenial::WorkLimit{..}}))));
     let batch = settled.read_batch_current::<2>(&request).unwrap();
     assert_eq!(batch.items().len(), 2);
     assert_eq!(batch.items()[0].rows()[0].value, length(42));
@@ -214,9 +199,7 @@ fn discovered_ordinary_no_projection_closes_actual_nonempty_fanout_without_query
         })
         .unwrap();
     assert_eq!(settled.settlement().output_count(), 6);
-    let current = settled
-        .deliver_current(&request, Policy::default())
-        .unwrap();
+    let current = settled.deliver_current(&request).unwrap();
     assert_eq!(
         current.selected_commit(),
         settled.settlement().observation().selected_commit()

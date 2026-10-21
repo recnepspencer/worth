@@ -1,6 +1,6 @@
 //! Owner-held application plans for a closed, pinned pair read.
 
-use super::super::read_execution::prepared_pair::batch::PreparedBatchRead;
+use super::super::batch::PlannedBatchItem;
 use super::super::{
     WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryBatchAdmission,
 };
@@ -17,9 +17,9 @@ pub struct WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C
     pub(in crate::domain_computation::primary_graph::application_query) batch:
         Option<WorthQueryApplicationQueryBatchAdmission>,
     pub(in crate::domain_computation::primary_graph::application_query) first_batch:
-        Option<PreparedBatchRead>,
+        Option<PlannedBatchItem>,
     pub(in crate::domain_computation::primary_graph::application_query) second_batch:
-        Option<PreparedBatchRead>,
+        Option<PlannedBatchItem>,
 }
 
 impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
@@ -50,7 +50,7 @@ impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
         Self {
             first,
             second,
-            batch: Some(batch.retained_meter()),
+            batch: Some(batch.clone()),
             first_batch: None,
             second_batch: None,
         }

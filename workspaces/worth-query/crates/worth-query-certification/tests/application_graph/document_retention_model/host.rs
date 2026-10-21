@@ -149,8 +149,10 @@ pub fn publish_on_first_program_for_workflow_scale() -> DocumentRetentionRuntime
     publish_on_first_program_with_limits(
         WorthQueryInMemoryApplicationLimits::new(
             world_resources::workflow_scale_resources(),
-            runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, 200_000, 128)
-                .expect("finite workflow-scale query resources"),
+            runtime::WorthQueryApplicationQueryResourceProfile::new(
+                std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
+            )
+            .expect("finite workflow-scale query resources"),
             primary_graph::SignalConditionalEvaluationBudget::development(),
         )
         .with_profile(WorthQueryInMemoryApplicationProfile::WorkflowScale),

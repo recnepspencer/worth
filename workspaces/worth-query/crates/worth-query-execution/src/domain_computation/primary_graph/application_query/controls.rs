@@ -36,8 +36,7 @@ pub struct WorthQueryApplicationQueryControls<'a, Schema> {
     publication_product: Option<crate::basis::WorthQueryProductBranchLease>,
     lane: WorthQueryApplicationQueryLane,
     maximum_result_count: NonZeroUsize,
-    maximum_work: Option<NonZeroUsize>,
-    maximum_inline_result_bytes: Option<NonZeroUsize>,
+
     request_scope: &'a WorthQueryRequestScope,
     _schema: PhantomData<fn() -> Schema>,
 }
@@ -46,7 +45,7 @@ pub struct WorthQueryApplicationQueryControls<'a, Schema> {
 /// limit, and the request scope to re-resolve.
 pub struct WorthQueryApplicationQueryResumeControls<'a> {
     maximum_page_width: NonZeroUsize,
-    maximum_work: Option<NonZeroUsize>,
+
     request_scope: &'a WorthQueryRequestScope,
 }
 
@@ -61,7 +60,7 @@ pub struct WorthQueryAdmittedApplicationQueryControls<'a> {
     lane: WorthQueryApplicationQueryLane,
     basis_deadline: Option<Instant>,
     maximum_result_count: NonZeroUsize,
-    maximum_work: Option<NonZeroUsize>,
+
     request_scope: &'a WorthQueryRequestScope,
 }
 
@@ -85,7 +84,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
         product: crate::basis::WorthQueryProductBranchLease,
         application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
         maximum_result_count: NonZeroUsize,
-        maximum_work: Option<NonZeroUsize>,
+
         request_scope: &'a WorthQueryRequestScope,
     ) -> Self {
         let read = product.read_lease();
@@ -99,8 +98,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             publication_product: Some(product),
             lane: WorthQueryApplicationQueryLane::OneShot,
             maximum_result_count,
-            maximum_work,
-            maximum_inline_result_bytes: None,
+
             request_scope,
             _schema: PhantomData,
         }
@@ -111,7 +109,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
         product: crate::basis::WorthQueryProductBranchLease,
         application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
         maximum_result_count: NonZeroUsize,
-        maximum_work: Option<NonZeroUsize>,
+
         request_scope: &'a WorthQueryRequestScope,
     ) -> Self {
         Self {
@@ -123,8 +121,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             publication_product: None,
             lane: WorthQueryApplicationQueryLane::OneShot,
             maximum_result_count,
-            maximum_work,
-            maximum_inline_result_bytes: None,
+
             request_scope,
             _schema: PhantomData,
         }
@@ -134,7 +131,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
         product: crate::basis::WorthQueryProductObservationLease,
         application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
         maximum_page_width: NonZeroUsize,
-        maximum_work: Option<NonZeroUsize>,
+
         request_scope: &'a WorthQueryRequestScope,
     ) -> Self {
         let security_product = product.retained_clone();
@@ -147,8 +144,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             publication_product: None,
             lane: WorthQueryApplicationQueryLane::Continuation,
             maximum_result_count: maximum_page_width,
-            maximum_work,
-            maximum_inline_result_bytes: None,
+
             request_scope,
             _schema: PhantomData,
         }
@@ -158,7 +154,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
         product: crate::basis::WorthQueryProductObservationLease,
         application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
         maximum_materialized_record_count: NonZeroUsize,
-        maximum_work: Option<NonZeroUsize>,
+
         request_scope: &'a WorthQueryRequestScope,
     ) -> Self {
         let security_product = product.retained_clone();
@@ -171,8 +167,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             publication_product: None,
             lane: WorthQueryApplicationQueryLane::Live,
             maximum_result_count: maximum_materialized_record_count,
-            maximum_work,
-            maximum_inline_result_bytes: None,
+
             request_scope,
             _schema: PhantomData,
         }
@@ -196,38 +191,6 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 
     pub const fn maximum_result_count(&self) -> NonZeroUsize {
         self.maximum_result_count
-    }
-
-    pub const fn maximum_work(&self) -> Option<NonZeroUsize> {
-        self.maximum_work
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn limit_inline_result_bytes(
-        mut self,
-        maximum: NonZeroUsize,
-    ) -> Self {
-        self.maximum_inline_result_bytes = Some(
-            self.maximum_inline_result_bytes
-                .map_or(maximum, |prior| prior.min(maximum)),
-        );
-        self
-    }
-
-    pub(in crate::domain_computation::primary_graph::application_query) const fn maximum_inline_result_bytes(
-        &self,
-    ) -> Option<NonZeroUsize> {
-        self.maximum_inline_result_bytes
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn limit_maximum_work(
-        mut self,
-        remaining: NonZeroUsize,
-    ) -> Self {
-        self.maximum_work = Some(
-            self.maximum_work
-                .map_or(remaining, |current| current.min(remaining)),
-        );
-        self
     }
 
     pub const fn request_scope(&self) -> &'a WorthQueryRequestScope {
@@ -264,7 +227,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             lane: self.lane(),
             basis_deadline,
             maximum_result_count: self.maximum_result_count,
-            maximum_work: self.maximum_work,
+
             request_scope: self.request_scope,
         };
         (self.basis, self.security_product, admitted)
@@ -281,8 +244,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
             publication_product: None,
             lane: WorthQueryApplicationQueryLane::Continuation,
             maximum_result_count: controls.maximum_page_width,
-            maximum_work: controls.maximum_work,
-            maximum_inline_result_bytes: None,
+
             request_scope: controls.request_scope,
             _schema: PhantomData,
         }
@@ -292,22 +254,18 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
 impl<'a> WorthQueryApplicationQueryResumeControls<'a> {
     pub fn new(
         maximum_page_width: NonZeroUsize,
-        maximum_work: Option<NonZeroUsize>,
+
         request_scope: &'a WorthQueryRequestScope,
     ) -> Self {
         Self {
             maximum_page_width,
-            maximum_work,
+
             request_scope,
         }
     }
 
     pub const fn maximum_page_width(&self) -> NonZeroUsize {
         self.maximum_page_width
-    }
-
-    pub const fn maximum_work(&self) -> Option<NonZeroUsize> {
-        self.maximum_work
     }
 
     pub const fn request_scope(&self) -> &'a WorthQueryRequestScope {
@@ -343,10 +301,6 @@ impl WorthQueryAdmittedApplicationQueryControls<'_> {
 
     pub const fn maximum_result_count(&self) -> NonZeroUsize {
         self.maximum_result_count
-    }
-
-    pub const fn maximum_work(&self) -> Option<NonZeroUsize> {
-        self.maximum_work
     }
 
     pub const fn request_scope(&self) -> &WorthQueryRequestScope {

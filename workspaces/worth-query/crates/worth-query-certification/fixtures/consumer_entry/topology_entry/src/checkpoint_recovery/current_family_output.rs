@@ -20,7 +20,8 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
         .unwrap();
     let initial = (0..64)
         .find_map(|_| match demand.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
         })
         .expect("the actual Initial producer creates the output");
@@ -79,7 +80,8 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
         .unwrap();
     let preserved = (0..64)
         .find_map(|_| match demand.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
         })
         .expect("a distinct Preserve producer publishes the successor");

@@ -1,81 +1,32 @@
-//! Reserved shared-loan work and row custody carried by one closed read.
+//! A prepared read consumes its original exact schedule slot before execution.
 use super::super::super::{
-    batch::BatchReadReservation, WorthQueryAdmittedApplicationQueryPlan,
-    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchMemory,
+    batch::PlannedBatchItem, WorthQueryAdmittedApplicationQueryPlan,
+    WorthQueryApplicationQueryBatchAdmission,
     WorthQueryApplicationQueryBatchResourceDenial as Resource,
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
-
-pub(in crate::domain_computation::primary_graph::application_query) struct PreparedBatchRead {
-    reservation: BatchReadReservation,
-    rows: WorthQueryApplicationQueryBatchMemory,
-    meter: WorthQueryApplicationQueryBatchAdmission,
-}
-impl PreparedBatchRead {
-    pub(in crate::domain_computation::primary_graph::application_query) fn admit<
-        S: ApplicationSchema,
-        Q,
-        P,
-        R,
-        A,
-        I,
-        C,
-    >(
-        plan: &mut WorthQueryAdmittedApplicationQueryPlan<'_, S, Q, P, R, A, I, C>,
-        batch: &WorthQueryApplicationQueryBatchAdmission,
-    ) -> Result<Self, Resource> {
-        match plan.planned_batch_item.take() {
-            Some(item) if !item.belongs_to(batch) => return Err(Resource::ForeignPlan),
-            Some(_) => {}
-            None => {
-                batch.take_planned_read(
-                    plan.runtime_authority.as_u64(),
-                    plan.query.binding_identity(),
-                    plan.query.identity(),
-                    plan.controls
-                        .maximum_work()
-                        .map(std::num::NonZeroUsize::get),
-                    plan.controls.maximum_result_count().get(),
-                )?;
-            }
-        }
-        let rows = batch.claim_memory(
-            batch.inline_result_bytes(
-                plan.graph_read_plan()
-                    .budget_check()
-                    .max_inline_result_bytes(),
-            ),
-        )?;
-        let reservation = batch.reserve_read(
-            plan.controls
-                .maximum_work()
-                .map(std::num::NonZeroUsize::get),
-        )?;
-        Ok(Self {
-            reservation,
-            rows,
-            meter: batch.retained_meter(),
-        })
-    }
-    pub(super) fn maximum(&self) -> Option<usize> {
-        self.reservation.maximum()
-    }
-
-    /// No observation keeps the admitted maximum spent; observed success and
-    /// failure both settle the native root/tree work. The row claim accompanies
-    /// a successful raw result until the owner's projection completes.
-    pub(super) fn settle(
-        self,
-        actual: Option<usize>,
-    ) -> Result<Option<WorthQueryApplicationQueryBatchMemory>, Resource> {
-        if let Some(actual) = actual {
-            self.reservation.settle(actual)?;
-            if let Some(denial) = self.meter.memory_denial() {
-                return Err(denial);
-            }
-            Ok(Some(self.rows))
-        } else {
-            Ok(None)
-        }
+pub(in crate::domain_computation::primary_graph::application_query) fn admit_batch_read<
+    S: ApplicationSchema,
+    Q,
+    P,
+    R,
+    A,
+    I,
+    C,
+>(
+    plan: &mut WorthQueryAdmittedApplicationQueryPlan<'_, S, Q, P, R, A, I, C>,
+    batch: &WorthQueryApplicationQueryBatchAdmission,
+) -> Result<PlannedBatchItem, Resource> {
+    match plan.planned_batch_item.take() {
+        Some(item) if !item.belongs_to(batch) => Err(Resource::ForeignPlan),
+        Some(item) => Ok(item),
+        None => batch
+            .take_planned_read(
+                plan.runtime_authority.as_u64(),
+                plan.query.binding_identity(),
+                plan.query.identity(),
+                plan.controls.maximum_result_count().get(),
+            )?
+            .ok_or(Resource::UnplannedRead),
     }
 }

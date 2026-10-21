@@ -45,7 +45,7 @@ impl Body {
 
 pub(super) fn validate(operation: &str, body: &Body, members: &[Member]) -> Result<(), Denial> {
     if !body.has_supported_creation_reuse() {
-        return Err(Denial::MissingOperationProgramDependency);
+        return Err(Denial::program_body_dependency(operation));
     }
     let Some(creation) = body.creation().filter(|c| c.reuses_current_if_unchanged()) else {
         return Ok(());
@@ -57,7 +57,7 @@ pub(super) fn validate(operation: &str, body: &Body, members: &[Member]) -> Resu
             Member::OperationDecisionRead { operation: declared, target: read }
                 if declared == operation && read == &target)
         }) {
-            return Err(Denial::MissingOperationDecisionReadDependency);
+            return Err(Denial::decision_read_body_dependency(operation));
         }
     }
     // Include optional fields: silently ignoring an extra declared value would lie
@@ -65,7 +65,7 @@ pub(super) fn validate(operation: &str, body: &Body, members: &[Member]) -> Resu
     if members.iter().any(|member| matches!(member,
         Member::Field { entity, aspect, field, .. } if entity == creation.entity()
             && !creation.fields().iter().any(|step| step.field().aspect() == aspect && step.field().field() == field))) {
-        return Err(Denial::MissingOperationProgramDependency);
+        return Err(Denial::program_body_dependency(operation));
     }
     Ok(())
 }

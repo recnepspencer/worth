@@ -1,28 +1,41 @@
 use std::sync::Arc;
 
 use im::OrdSet;
-use worth_relational::facade::{
-    mvcc::{CompanionBranchImage, CompanionPreflightStop},
-    runtime::PositionedRelationalSnapshot,
-};
+use worth_relational::facade::mvcc::CompanionBranchImage;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkMembership;
 
 use super::super::RecordedSettlementIdentity;
-use super::admission::{IndexAdmission, RetainedIndexAdmission};
+
 use super::delivery;
 use super::fact_key::FactPostingKey;
-use super::index_capacity;
-use super::logical_marking::WorthQueryNativeMarkingWork;
-use super::mark_state::{
-    FactPosting, FullVerificationReason, MarkState, OutputFactCoverage, SettlementMarks,
-};
-use super::output_facts::RegisteredOutputFacts;
-use super::source_alignment::{BranchMarkRoot, EqualOutputCurrentness, SnapshotAlignedMarkState};
-use super::InvalidationEditAdmission;
 
+use super::logical_marking::WorthQueryNativeMarkingWork;
+use super::mark_state::FullVerificationReason;
+use super::mark_state::MarkState;
+use super::mark_state::OutputFactCoverage;
+use super::mark_state::SettlementMarks;
+use super::output_facts::RegisteredOutputFacts;
+use super::source_alignment::BranchMarkRoot;
+use super::source_alignment::EqualOutputCurrentness;
+use super::source_alignment::SnapshotAlignedMarkState;
+
+mod posting_bindings;
+mod posting_continuation;
+mod posting_projection;
 mod posting_removal;
 mod postings;
+pub(super) use posting_bindings::install_physical;
+pub(super) use posting_bindings::PostingBindings;
+pub(in crate::domain_computation::primary_graph) use posting_continuation::PostingContinuation;
+pub(in crate::domain_computation::primary_graph) use posting_continuation::PostingRebaseBasis;
+pub(super) use posting_projection::PostingComputationStorage;
+pub(super) use posting_projection::PostingProjection;
+pub(super) use posting_removal::remove_physical;
+pub(super) use posting_removal::remove_physical_key;
+pub(super) use postings::PreparedPostingOrdinals;
 
 pub(super) enum SettlementReadAlignment {
     Current,
@@ -30,6 +43,8 @@ pub(super) enum SettlementReadAlignment {
 }
 
 pub(in crate::domain_computation::primary_graph) struct SettlementRegistration {
+    pub(in crate::domain_computation::primary_graph) computation:
+        Option<super::ComputationRegistration>,
     pub(in crate::domain_computation::primary_graph) work_membership:
         Option<Arc<RequiredWorkMembership>>,
     pub(in crate::domain_computation::primary_graph) identity: Arc<RecordedSettlementIdentity>,
@@ -44,80 +59,70 @@ pub(in crate::domain_computation::primary_graph) struct SettlementRegistration {
         OrdSet<Arc<RecordedSettlementIdentity>>,
 }
 
-pub(super) struct AdmittedSettlementRegistration {
-    pub(super) input: SettlementRegistration,
-    pub(super) fact_capacity: super::fact_retention::RetainedFactCapacity,
-}
-
 /// Install exact consumed facts into the selected live reverse index. The
 /// original facts remain in one Arc; posting buckets retain ordinal references.
 pub(super) fn insert(
     state: &mut MarkState,
-    registration: AdmittedSettlementRegistration,
+    registration: SettlementRegistration,
     image: &CompanionBranchImage<BranchMarkRoot>,
     alignment: SettlementReadAlignment,
     output_coverage: OutputFactCoverage,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<(), CompanionPreflightStop> {
-    let AdmittedSettlementRegistration {
-        input,
-        fact_capacity,
-    } = registration;
     let SettlementRegistration {
+        computation,
         work_membership,
         identity,
-        facts,
+        mut facts,
         output_facts,
         read_basis,
         stale_at_read_basis,
         requirement,
         upstream,
-    } = input;
+    } = registration;
     let identity = &identity;
-    let basis_bytes = index_capacity::arc_bytes::<PositionedRelationalSnapshot>()
-        .and_then(|bytes| bytes.checked_add(read_basis.branch_id().0.capacity() as u64))
-        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-    state.maximum_basis_allocation_bytes = state.maximum_basis_allocation_bytes.max(basis_bytes);
-    remove(state, identity, admission)?;
     let mut verification_requirement = requirement;
-    let prepared = postings::PreparedPostingOrdinals::prepare(
-        facts.postconditions(),
-        output_facts.as_ref().map(|set| set.facts.as_ref()),
-        &mut verification_requirement,
-        admission,
-    )?;
-    let (ordinals, posting_payload_bytes) = prepared.install(state, identity, admission)?;
+    let posting_continuation = facts.take_posting_continuation();
+    let projection = posting_continuation
+        .as_ref()
+        .map(|continuation| {
+            continuation.checked_projection(state, &facts, output_facts.as_ref(), &read_basis)
+        })
+        .transpose()?
+        .flatten();
+    // The continuation is checked before removal. Both edits remain in this
+    // unpublished candidate image; an admission stop publishes neither.
+    let projection = match projection {
+        Some(projection) => projection,
+        None => {
+            let prepared = postings::PreparedPostingOrdinals::prepare(
+                facts.postconditions(),
+                output_facts.as_ref().map(|set| set.facts.as_ref()),
+                &mut verification_requirement,
+            )?;
+            let id = state.next_posting_projection;
+            state.next_posting_projection = id
+                .checked_add(1)
+                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+            prepared.into_projection(
+                id,
+                facts.len(),
+                output_facts.as_ref().map_or(0, |set| set.facts.len()),
+                verification_requirement,
+            )
+        }
+    };
+    remove(state, identity)?;
+    posting_bindings::bind(state, &projection, identity)?;
     // These source sets were already prepared before this edit's marker. They
     // now survive in the row; original facts/basis retain their separate ticket.
-    let source_sets =
-        index_capacity::retained_map_bytes::<Arc<RecordedSettlementIdentity>, ()>(upstream.len())
-            .and_then(|bytes| {
-                bytes.checked_add(index_capacity::retained_map_bytes::<usize, ()>(
-                    stale_at_read_basis.len(),
-                )?)
-            })
-            .and_then(|bytes| {
-                bytes.checked_add(index_capacity::retained_map_bytes::<
-                    Arc<RecordedSettlementIdentity>,
-                    (),
-                >(0)?)
-            })
-            // History can outlive the lineage record that originally ticketed
-            // these identities. The index must retain their backing independently.
-            .and_then(|bytes| {
-                let identities = u64::try_from(upstream.len().checked_add(1)?).ok()?;
-                bytes.checked_add(
-                    index_capacity::arc_bytes::<RecordedSettlementIdentity>()?
-                        .checked_mul(identities)?,
-                )
-            })
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-    admission.record_index_bytes(source_sets)?;
+
+    let computation_frontier = computation.map(|_| stale_at_read_basis.clone());
+
     let mut row = SettlementMarks {
+        computation_frontier,
         work_membership,
-        _fact_capacity: fact_capacity,
-        posting_payload_bytes,
-        posting_ordinals: ordinals,
+
+        posting_projection: projection,
         consumed_upstream: upstream,
         facts,
         output_facts,
@@ -130,28 +135,21 @@ pub(super) fn insert(
         superseded: false,
     };
     let replayed_stale = matches!(alignment, SettlementReadAlignment::Retained)
-        && replay(&mut row, image.payload(), admission)?;
-    state.settlement_key_payload_bytes = state
-        .settlement_key_payload_bytes
-        .checked_add(posting_payload_bytes)
-        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+        && replay(&mut row, image.payload())?;
     let aligned = SnapshotAlignedMarkState::observe_registration_image(image, &row.read_basis);
     for upstream in &row.consumed_upstream {
-        admission.work(1)?;
-        admission.ordered_read(state.downstream.len())?;
         let mut targets = state.downstream.get(upstream).cloned().unwrap_or_default();
-        admission.ordered_read(targets.len())?;
+
         if !targets.contains(identity) {
-            admission.index_edit::<Arc<RecordedSettlementIdentity>, ()>(targets.len())?;
             targets.insert(Arc::clone(identity));
-            admission.index_edit::<Arc<RecordedSettlementIdentity>, OrdSet<Arc<RecordedSettlementIdentity>>>(state.downstream.len())?;
+
             state.downstream.insert(Arc::clone(upstream), targets);
             state.downstream_edge_count = state
                 .downstream_edge_count
                 .checked_add(1)
                 .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
         }
-        admission.ordered_read(state.settlements.len())?;
+
         let unresolved = state.settlements.get(upstream).is_none_or(|upstream| {
             upstream.delivery_epoch != state.delivery_epoch
                 || upstream.verification_requirement.is_some()
@@ -163,15 +161,17 @@ pub(super) fn insert(
         // the dirty old row pending again; no output comparison occurs here.
         let resolved_by_successor = unresolved
             && matches!(
-                aligned.equal_output_currentness(upstream, admission)?,
+                aligned.equal_output_currentness(upstream)?,
                 EqualOutputCurrentness::CanonicallyEqualClean(_)
             );
         if unresolved && !resolved_by_successor {
-            admission
-                .index_edit::<Arc<RecordedSettlementIdentity>, ()>(row.pending_upstream.len())?;
             row.pending_upstream.insert(Arc::clone(upstream));
         }
     }
+    state.computation_dirty_ordinal_count = state
+        .computation_dirty_ordinal_count
+        .checked_add(row.computation_frontier.as_ref().map_or(0, OrdSet::len))
+        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
     state.dirty_ordinal_count = state
         .dirty_ordinal_count
         .checked_add(row.dirty_ordinals.len())
@@ -180,13 +180,7 @@ pub(super) fn insert(
         .pending_edge_count
         .checked_add(row.pending_upstream.len())
         .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-    admission.index_bytes(
-        index_capacity::arc_bytes::<SettlementMarks>()
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-    )?;
-    admission.index_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
-        state.settlements.len(),
-    )?;
+
     // Dirty, pending, epoch-stale or verification-required rows are not clean.
     let not_clean = replayed_stale
         || row.delivery_epoch != state.delivery_epoch
@@ -202,7 +196,6 @@ pub(super) fn insert(
         delivery::propagate(
             state,
             OrdSet::unit(Arc::clone(identity)),
-            admission,
             &mut WorthQueryNativeMarkingWork::default(),
         )?;
     }
@@ -214,9 +207,7 @@ pub(super) fn insert(
 fn replay(
     row: &mut SettlementMarks,
     root: &BranchMarkRoot,
-    admission: &mut impl RetainedIndexAdmission,
 ) -> Result<bool, CompanionPreflightStop> {
-    admission.ordered_read(root.past.len())?;
     let Some(basis) = root.past.get(&row.read_basis.position()).filter(|basis| {
         basis.root_id == row.read_basis.root_id() && basis.commit_id == row.read_basis.commit_id()
     }) else {
@@ -226,22 +217,20 @@ fn replay(
     };
     row.delivery_epoch = basis.state.delivery_epoch;
     for (_, historical) in root.past.range(row.read_basis.position()..) {
-        admission.work(1)?;
         let delivery = &historical.next_delivery;
         let Some(keys) = &delivery.keys else {
             row.verification_requirement = Some(FullVerificationReason::DeclaredChangeUnavailable);
             continue;
         };
         for key in keys.iter() {
-            admission.work(1)?;
-            admission.key_read(key, row.posting_ordinals.len())?;
-            let Some(ordinals) = row.posting_ordinals.get(key) else {
+            let Some(ordinals) = row.posting_projection.ordinals.get(key) else {
                 continue;
             };
             for ordinal in ordinals {
-                admission.work(1)?;
-                admission.index_edit::<usize, ()>(row.dirty_ordinals.len())?;
                 row.dirty_ordinals.insert(*ordinal);
+                if let Some(frontier) = &mut row.computation_frontier {
+                    frontier.insert(*ordinal);
+                }
             }
         }
     }
@@ -251,40 +240,32 @@ fn replay(
 pub(super) fn remove(
     state: &mut MarkState,
     identity: &Arc<RecordedSettlementIdentity>,
-    admission: &mut impl RetainedIndexAdmission,
 ) -> Result<(), CompanionPreflightStop> {
-    admission.ordered_read(state.settlements.len())?;
     let Some(row) = state.settlements.get(identity).cloned() else {
         return Ok(());
     };
-    posting_removal::remove(state, identity, &row, admission)?;
+    posting_removal::remove(state, identity, &row.posting_projection)?;
     for upstream in &row.consumed_upstream {
-        admission.work(1)?;
-        admission.ordered_read(state.downstream.len())?;
         let Some(mut targets) = state.downstream.get(upstream).cloned() else {
             continue;
         };
-        admission.index_remove::<Arc<RecordedSettlementIdentity>, ()>(targets.len())?;
+
         if targets.remove(identity).is_some() {
             debit(&mut state.downstream_edge_count, 1)?;
         }
         if targets.is_empty() {
-            admission.index_remove::<Arc<RecordedSettlementIdentity>, OrdSet<Arc<RecordedSettlementIdentity>>>(state.downstream.len())?;
             state.downstream.remove(upstream);
         } else {
-            admission.index_edit::<Arc<RecordedSettlementIdentity>, OrdSet<Arc<RecordedSettlementIdentity>>>(state.downstream.len())?;
             state.downstream.insert(Arc::clone(upstream), targets);
         }
     }
+    debit(
+        &mut state.computation_dirty_ordinal_count,
+        row.computation_frontier.as_ref().map_or(0, OrdSet::len),
+    )?;
     debit(&mut state.dirty_ordinal_count, row.dirty_ordinals.len())?;
     debit(&mut state.pending_edge_count, row.pending_upstream.len())?;
-    debit(
-        &mut state.settlement_key_payload_bytes,
-        row.posting_payload_bytes,
-    )?;
-    admission.index_remove::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
-        state.settlements.len(),
-    )?;
+
     state.settlements.remove(identity);
     Ok(())
 }

@@ -18,6 +18,8 @@
 //! the test observer is shown.
 
 mod compute;
+pub(super) use incremental::observe_retained_full_tree;
+#[cfg(test)]
 pub(super) use incremental::{observe_full_tree, FullTreeMapWork};
 mod certification_reuse;
 mod denial;
@@ -49,7 +51,7 @@ pub use incremental::{
     WorthQueryPublishedComputationStateForTest,
 };
 pub(in crate::domain_computation::primary_graph) use incremental::{
-    Comparator, CompletedComputationRetention, ComputationDeposit,
+    Comparator, CompletedComputationRetention, ComputationDeposit, NativeComputationReads,
 };
 pub(in crate::domain_computation) use incremental::{
     ComputationPrior, PriorAbsence, RetainedComputation, SealedComputationRetention,

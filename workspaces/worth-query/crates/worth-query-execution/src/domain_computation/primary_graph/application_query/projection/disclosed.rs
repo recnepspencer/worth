@@ -102,12 +102,20 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
                 projected.result_path(),
             ));
         }
-        let value = Field::Binding::decode(projected.value()).map_err(|_| {
-            projection_denial(
-                WorthQueryApplicationProjectionDenialKind::FieldTypeMismatch,
-                projected.result_path(),
+        let value = self
+            .decode
+            .decode::<Field::Binding>(
+                selector.entity(),
+                selector.aspect(),
+                selector.field(),
+                projected.value(),
             )
-        })?;
+            .ok_or_else(|| {
+                projection_denial(
+                    WorthQueryApplicationProjectionDenialKind::FieldTypeMismatch,
+                    projected.result_path(),
+                )
+            })?;
         Ok(WorthQueryApplicationDisclosed::Disclosed(value))
     }
 
@@ -153,12 +161,20 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
                 projected.result_path(),
             ));
         }
-        let value = Field::Binding::decode(projected.value()).map_err(|_| {
-            projection_denial(
-                WorthQueryApplicationProjectionDenialKind::FieldTypeMismatch,
-                projected.result_path(),
+        let value = self
+            .decode
+            .decode::<Field::Binding>(
+                selector.entity(),
+                selector.aspect(),
+                selector.field(),
+                projected.value(),
             )
-        })?;
+            .ok_or_else(|| {
+                projection_denial(
+                    WorthQueryApplicationProjectionDenialKind::FieldTypeMismatch,
+                    projected.result_path(),
+                )
+            })?;
         Ok(WorthQueryApplicationDisclosed::Disclosed(Some(value)))
     }
 
@@ -191,6 +207,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
                 [row] => Ok(Some(WorthQueryApplicationProjectionRow::new(
                     self.node.child(row),
                     self.governance,
+                    self.decode,
                 ))),
                 _ => Err(relation_cardinality_denial(relation)),
             })
@@ -223,6 +240,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
                 [row] => Ok(WorthQueryApplicationProjectionRow::new(
                     self.node.child(row),
                     self.governance,
+                    self.decode,
                 )),
                 _ => Err(relation_cardinality_denial(relation)),
             })
@@ -256,6 +274,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
                     rows: relation.rows(),
                     disclosure_parent: self.node,
                     governance: self.governance,
+                    decode: self.decode,
                     _marker: std::marker::PhantomData,
                 })
             })

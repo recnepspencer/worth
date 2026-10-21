@@ -1,11 +1,8 @@
-use super::super::{
-    read_execution_denial, OneShotReadWorkObservation, WorthQueryApplicationReadExecutionDenial,
-    WorthQueryApplicationReadExecutionDenialKind,
-};
+use super::super::{OneShotReadWorkObservation, WorthQueryApplicationReadExecutionDenial};
 
 pub(super) struct RootSelectionWork<'a> {
     pub(super) interruption: super::super::ReadInterruption<'a>,
-    pub(super) maximum_work: Option<usize>,
+
     pub(super) work_units: usize,
     pub(super) adjacency_lists_read: usize,
     pub(super) relation_records_examined: usize,
@@ -16,13 +13,12 @@ pub(super) struct RootSelectionWork<'a> {
 
 impl<'a> RootSelectionWork<'a> {
     pub(super) fn new(
-        maximum_work: Option<usize>,
         interruption: super::super::ReadInterruption<'a>,
         spent: Option<&'a OneShotReadWorkObservation<'a>>,
     ) -> Self {
         Self {
             interruption,
-            maximum_work,
+
             work_units: 0,
             adjacency_lists_read: 0,
             relation_records_examined: 0,
@@ -30,11 +26,6 @@ impl<'a> RootSelectionWork<'a> {
             predicate_work_units: 0,
             spent,
         }
-    }
-
-    pub(super) fn remaining(&self) -> Option<usize> {
-        self.maximum_work
-            .map(|maximum| maximum.saturating_sub(self.work_units))
     }
 
     pub(super) fn checkpoint(
@@ -55,15 +46,7 @@ impl<'a> RootSelectionWork<'a> {
             .saturating_add(relation_records_examined)
             .saturating_add(endpoint_records_reserved);
         self.checkpoint(subject)?;
-        if self
-            .maximum_work
-            .is_some_and(|maximum| self.work_units.saturating_add(charged) > maximum)
-        {
-            return Err(read_execution_denial(
-                WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-                subject,
-            ));
-        }
+
         if let Some(spent) = self.spent {
             spent.charge(charged, subject)?;
         }
@@ -85,15 +68,7 @@ impl<'a> RootSelectionWork<'a> {
     ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
         let charged = records_examined.saturating_add(matches_reserved);
         self.checkpoint(subject)?;
-        if self
-            .maximum_work
-            .is_some_and(|maximum| self.work_units.saturating_add(charged) > maximum)
-        {
-            return Err(read_execution_denial(
-                WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-                subject,
-            ));
-        }
+
         if let Some(spent) = self.spent {
             spent.charge(charged, subject)?;
         }
@@ -110,15 +85,7 @@ impl<'a> RootSelectionWork<'a> {
         subject: &str,
     ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
         self.checkpoint(subject)?;
-        if self
-            .maximum_work
-            .is_some_and(|maximum| self.work_units >= maximum)
-        {
-            return Err(read_execution_denial(
-                WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-                subject,
-            ));
-        }
+
         if let Some(spent) = self.spent {
             spent.charge(1, subject)?;
         }
@@ -132,15 +99,7 @@ impl<'a> RootSelectionWork<'a> {
         subject: &str,
     ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
         self.checkpoint(subject)?;
-        if self
-            .maximum_work
-            .is_some_and(|maximum| self.work_units.saturating_add(units) > maximum)
-        {
-            return Err(read_execution_denial(
-                WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-                subject,
-            ));
-        }
+
         if let Some(spent) = self.spent {
             spent.charge(units, subject)?;
         }

@@ -33,191 +33,167 @@ impl<Query> WorthQueryObservedSource<Query> {
 }
 
 impl WorthQueryObservedSourceSelection {
-    /// Compare selected membership and contract meaning under the caller's
-    /// cumulative Work admission. Native revisions are deliberately excluded.
-    pub(in crate::domain_computation::primary_graph) fn same_selected_membership_as<E>(
+    /// Compare selected membership and contract meaning exactly. Native revisions are deliberately excluded.
+    pub(in crate::domain_computation::primary_graph) fn same_selected_membership_as(
         &self,
         other: &Self,
-        mut admit: impl FnMut(usize) -> Result<(), E>,
-    ) -> Result<bool, E> {
-        admit(1)?;
+    ) -> bool {
         if self.runtime_authority != other.runtime_authority {
-            return Ok(false);
+            return false;
         }
         let left_binding = &self.schema_binding;
         let right_binding = &other.schema_binding;
-        admit(1)?;
+
         if left_binding.runtime_ordinal() != right_binding.runtime_ordinal() {
-            return Ok(false);
+            return false;
         }
-        admit(1)?;
+
         if left_binding.generation() != right_binding.generation() {
-            return Ok(false);
+            return false;
         }
-        admit(1)?;
+
         if left_binding.package_identity() != right_binding.package_identity() {
-            return Ok(false);
+            return false;
         }
-        admit(1)?;
+
         if left_binding.schema_identity() != right_binding.schema_identity() {
-            return Ok(false);
+            return false;
         }
         let left = &self.meaning.coordinate;
         let right = &other.meaning.coordinate;
-        admit(1)?;
+
         if left.query != right.query {
-            return Ok(false);
+            return false;
         }
-        admit(1)?;
+
         if left.parameters != right.parameters {
-            return Ok(false);
+            return false;
         }
-        admit(1)?;
+
         if left.occurrence != right.occurrence {
-            return Ok(false);
+            return false;
         }
-        admit(1)?;
+
         if left.root != right.root {
-            return Ok(false);
+            return false;
         }
-        same_footprint_membership(
-            self.meaning.footprint(),
-            other.meaning.footprint(),
-            &mut admit,
-        )
+        same_footprint_membership(self.meaning.footprint(), other.meaning.footprint())
     }
 }
 
-fn same_footprint_membership<E>(
+fn same_footprint_membership(
     left: &WorthQueryObservedSourceFootprint,
     right: &WorthQueryObservedSourceFootprint,
-    admit: &mut impl FnMut(usize) -> Result<(), E>,
-) -> Result<bool, E> {
-    admit(1)?;
+) -> bool {
     if !left.complete {
-        return Ok(false);
+        return false;
     }
-    admit(1)?;
+
     if !right.complete {
-        return Ok(false);
+        return false;
     }
-    admit(1)?;
+
     if left.root != right.root {
-        return Ok(false);
+        return false;
     }
-    admit(1)?;
+
     let (Some(left_root), Some(right_root)) = (&left.root_selection, &right.root_selection) else {
-        return Ok(false);
+        return false;
     };
-    if !same_entities(&left.entities, &right.entities, admit)?
-        || !same_fields(&left.aspects, &right.aspects, admit)?
-        || !same_adjacencies(&left.adjacencies, &right.adjacencies, admit)?
+    if !same_entities(&left.entities, &right.entities)
+        || !same_fields(&left.aspects, &right.aspects)
+        || !same_adjacencies(&left.adjacencies, &right.adjacencies)
     {
-        return Ok(false);
+        return false;
     }
-    same_root_selection(left_root, right_root, admit)
+    same_root_selection(left_root, right_root)
 }
 
-fn same_root_selection<E>(
+fn same_root_selection(
     left: &WorthQueryObservedRootSelection,
     right: &WorthQueryObservedRootSelection,
-    admit: &mut impl FnMut(usize) -> Result<(), E>,
-) -> Result<bool, E> {
-    Ok(same_entities(&left.entities, &right.entities, admit)?
-        && same_fields(&left.aspects, &right.aspects, admit)?
-        && same_adjacencies(&left.adjacencies, &right.adjacencies, admit)?)
+) -> bool {
+    same_entities(&left.entities, &right.entities)
+        && same_fields(&left.aspects, &right.aspects)
+        && same_adjacencies(&left.adjacencies, &right.adjacencies)
 }
 
-fn same_entities<E>(
+fn same_entities(
     left: &[worth_relational::facade::identity::EntityId],
     right: &[worth_relational::facade::identity::EntityId],
-    admit: &mut impl FnMut(usize) -> Result<(), E>,
-) -> Result<bool, E> {
-    admit(1)?;
+) -> bool {
     if left.len() != right.len() {
-        return Ok(false);
+        return false;
     }
     for (a, b) in left.iter().zip(right) {
-        admit(1)?;
         if a != b {
-            return Ok(false);
+            return false;
         }
     }
-    Ok(true)
+    true
 }
 
-fn same_fields<E>(
+fn same_fields(
     left: &[WorthQueryObservedFieldRevision],
     right: &[WorthQueryObservedFieldRevision],
-    admit: &mut impl FnMut(usize) -> Result<(), E>,
-) -> Result<bool, E> {
-    admit(1)?;
+) -> bool {
     if left.len() != right.len() {
-        return Ok(false);
+        return false;
     }
     for (a, b) in left.iter().zip(right) {
-        admit(1)?;
         if a.entity != b.entity {
-            return Ok(false);
+            return false;
         }
-        if !same_text(&a.entity_name, &b.entity_name, admit)?
-            || !same_text(a.aspect.as_str(), b.aspect.as_str(), admit)?
-            || !same_text(a.field.as_str(), b.field.as_str(), admit)?
+        if !same_text(&a.entity_name, &b.entity_name)
+            || !same_text(a.aspect.as_str(), b.aspect.as_str())
+            || !same_text(a.field.as_str(), b.field.as_str())
         {
-            return Ok(false);
+            return false;
         }
-        admit(1)?;
+
         if a.contract_revision != b.contract_revision {
-            return Ok(false);
+            return false;
         }
     }
-    Ok(true)
+    true
 }
 
-fn same_adjacencies<E>(
+fn same_adjacencies(
     left: &[WorthQueryObservedAdjacencyRevision],
     right: &[WorthQueryObservedAdjacencyRevision],
-    admit: &mut impl FnMut(usize) -> Result<(), E>,
-) -> Result<bool, E> {
-    admit(1)?;
+) -> bool {
     if left.len() != right.len() {
-        return Ok(false);
+        return false;
     }
     for (a, b) in left.iter().zip(right) {
-        admit(1)?;
         if a.anchor != b.anchor {
-            return Ok(false);
+            return false;
         }
-        admit(1)?;
+
         if a.relation_kind != b.relation_kind {
-            return Ok(false);
+            return false;
         }
-        admit(1)?;
+
         if a.direction != b.direction {
-            return Ok(false);
+            return false;
         }
-        admit(1)?;
+
         if a.comparison_work_limit != b.comparison_work_limit {
-            return Ok(false);
+            return false;
         }
-        if !same_entities(&a.endpoints, &b.endpoints, admit)? {
-            return Ok(false);
+        if !same_entities(&a.endpoints, &b.endpoints) {
+            return false;
         }
     }
-    Ok(true)
+    true
 }
 
-fn same_text<E>(
-    left: &str,
-    right: &str,
-    admit: &mut impl FnMut(usize) -> Result<(), E>,
-) -> Result<bool, E> {
-    admit(1)?;
+fn same_text(left: &str, right: &str) -> bool {
     if left.len() != right.len() {
-        return Ok(false);
+        return false;
     }
-    admit(left.len())?;
-    Ok(left == right)
+
+    left == right
 }
 
 #[cfg(test)]
@@ -289,13 +265,8 @@ mod tests {
         let before = footprint(vec![entity(2)], 4);
         let same_selection = footprint(vec![entity(2)], 9);
         let changed_selection = footprint(vec![entity(3)], 9);
-        assert!(
-            same_footprint_membership(&before, &same_selection, &mut |_| Ok::<_, ()>(())).unwrap()
-        );
-        assert!(
-            !same_footprint_membership(&before, &changed_selection, &mut |_| Ok::<_, ()>(()),)
-                .unwrap()
-        );
+        assert!(same_footprint_membership(&before, &same_selection));
+        assert!(!same_footprint_membership(&before, &changed_selection,));
     }
 
     #[test]
@@ -327,30 +298,17 @@ mod tests {
         let before = carrier(meaning(vec![entity(2)], 4));
         let revision_only = carrier(meaning(vec![entity(2)], 9));
         let different = carrier(meaning(vec![entity(3)], 9));
-        assert!(before
-            .same_selected_membership_as(&revision_only, |_| Ok::<_, ()>(()))
-            .unwrap());
-        assert!(!before
-            .same_selected_membership_as(&different, |_| Ok::<_, ()>(()))
-            .unwrap());
+        assert!(before.same_selected_membership_as(&revision_only));
+        assert!(!before.same_selected_membership_as(&different));
     }
 
     #[test]
-    fn selection_comparison_stops_at_the_caller_work_boundary() {
+    fn selection_comparison_requires_complete_membership() {
         let selected = footprint(vec![entity(2), entity(3)], 4);
-        let mut remaining = 2usize;
-        assert!(
-            same_footprint_membership(&selected, &selected, &mut |units| {
-                remaining = remaining.checked_sub(units).ok_or("work exhausted")?;
-                Ok::<_, &'static str>(())
-            })
-            .is_err()
-        );
+        assert!(same_footprint_membership(&selected, &selected));
         let mut incomplete = selected.clone();
         incomplete.root_selection = None;
-        assert!(
-            !same_footprint_membership(&selected, &incomplete, &mut |_| Ok::<_, ()>(())).unwrap()
-        );
+        assert!(!same_footprint_membership(&selected, &incomplete));
     }
 
     #[test]
@@ -358,18 +316,10 @@ mod tests {
         let mut spare = String::with_capacity(4096);
         spare.push_str("open");
         let mut work = 0;
-        assert!(same_text(&spare, "open", &mut |units| {
-            work += units;
-            Ok::<_, ()>(())
-        })
-        .unwrap());
+        assert!(same_text(&spare, "open"));
         assert_eq!(work, 1 + "open".len());
         let mut work = 0;
-        assert!(!same_text(&spare, "closed", &mut |units| {
-            work += units;
-            Ok::<_, ()>(())
-        })
-        .unwrap());
+        assert!(!same_text(&spare, "closed"));
         assert_eq!(work, 1, "different lengths compare without reading payload");
     }
 }

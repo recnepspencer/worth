@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -17,8 +18,14 @@ use crate::domain_computation::{
     WorthQueryProvisionalEffectAction, WorthQueryProvisionalEffectStep,
 };
 
+mod entity_field_patch;
 mod observed_fact_index;
 mod optional_field_patch;
+pub(super) type AspectContracts<'a> = dyn Fn(
+        &str,
+        &worth_foundational::facade::AspectKey,
+    ) -> Option<&'a worth_foundational::facade::AspectContract>
+    + 'a;
 mod unique_values;
 pub(super) use observed_fact_index::ObservedFactIndex;
 pub(super) use unique_values::UniqueValueWrites;
@@ -28,6 +35,9 @@ pub(super) enum WorthQueryLoweredProviderEffect {
     Mutation {
         steps: Vec<WorthQueryProvisionalEffectStep>,
         intent: MutationIntent,
+    },
+    ObservedNoop {
+        steps: Vec<WorthQueryProvisionalEffectStep>,
     },
     Emission(WorthQueryApplicationEmission),
 }
@@ -94,8 +104,9 @@ impl CreatedEffectReferences {
 }
 
 pub(super) fn lower_provider_effect(
-    facts: &ObservedFactIndex<'_>,
+    facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
     unique: &mut UniqueValueWrites<'_>,
+    contracts: &AspectContracts<'_>,
     created: &CreatedEffectReferences,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     effect: WorthQueryApplicationRealizedEffect,
@@ -113,13 +124,33 @@ pub(super) fn lower_provider_effect(
             lower_create_entity(partition.resolve(mutation_partition), kind, key, fields)
         }
         WorthQueryApplicationRealizedEffect::UpdateEntity {
-            entity_id, fields, ..
-        } => lower_update_entity(facts, unique, entity_id, fields),
-        WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
+            entity,
             entity_id,
             fields,
-            ..
-        } => optional_field_patch::lower(facts, unique, entity_id, fields),
+        } => {
+            let absent = fields.keys().try_fold(false, |absent, field| {
+                facts.aspect_absent(entity_id, field).map(|v| absent || v)
+            })?;
+            if absent {
+                entity_field_patch::ordinary(facts, unique, contracts, &entity, entity_id, fields)
+            } else {
+                lower_update_entity(facts, unique, entity_id, fields)
+            }
+        }
+        WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
+            entity,
+            entity_id,
+            fields,
+        } => {
+            let absent = fields.keys().try_fold(false, |absent, field| {
+                facts.aspect_absent(entity_id, field).map(|v| absent || v)
+            })?;
+            if absent {
+                entity_field_patch::optional(facts, unique, contracts, &entity, entity_id, fields)
+            } else {
+                optional_field_patch::lower(facts, unique, entity_id, fields)
+            }
+        }
         WorthQueryApplicationRealizedEffect::DeleteEntity { entity_id } => {
             lower_delete_entity(facts, entity_id)
         }
@@ -167,7 +198,7 @@ fn lower_create_entity(
 }
 
 fn lower_update_entity(
-    facts: &ObservedFactIndex<'_>,
+    facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
     unique: &mut UniqueValueWrites<'_>,
     entity_id: EntityId,
     fields: BTreeMap<AspectFieldLocator, AspectValue>,
@@ -195,7 +226,7 @@ fn lower_update_entity(
 }
 
 fn lower_delete_entity(
-    facts: &ObservedFactIndex<'_>,
+    facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
     entity_id: EntityId,
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
     mutation(
@@ -249,7 +280,7 @@ fn lower_create_relation(
 }
 
 fn lower_delete_relation(
-    facts: &ObservedFactIndex<'_>,
+    facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
     relation_id: RelationId,
 ) -> Result<WorthQueryLoweredProviderEffect, WorthQueryApplicationAttemptDenial> {
     mutation(
@@ -280,90 +311,4 @@ fn effect_step(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCreationPartition;
-    use worth_relational::facade::identity::{KindId, PartitionId};
-
-    #[test]
-    fn appended_workflow_facts_keep_their_context_after_an_issued_application_create() {
-        let application_partition = PartitionId::new(3);
-        let workflow_partition = PartitionId::new(7);
-        let created = |partition_id, kind_id, key: &str| {
-            EntityReference::Created(CreatedEntityRef {
-                partition_id,
-                kind_id: KindId::new(kind_id),
-                client_key: worth_relational::facade::symbols::ClientKey::raw(key),
-            })
-        };
-        let effects = vec![
-            WorthQueryApplicationRealizedEffect::CreateEntity {
-                kind: KindId::new(10),
-                key: "cad-feature".to_owned(),
-                fields: BTreeMap::new(),
-                partition: WorthQueryApplicationCreationPartition::Issued,
-            },
-            WorthQueryApplicationRealizedEffect::CreateEntity {
-                kind: KindId::new(11),
-                key: "transition".to_owned(),
-                fields: BTreeMap::new(),
-                partition: WorthQueryApplicationCreationPartition::Context(workflow_partition),
-            },
-            WorthQueryApplicationRealizedEffect::CreateRelation {
-                kind: KindId::new(12),
-                key: "instance-transition".to_owned(),
-                from: EntityReference::Existing(EntityId::new(workflow_partition, 1, 1)),
-                to: created(workflow_partition, 11, "transition"),
-            },
-            WorthQueryApplicationRealizedEffect::CreateRelation {
-                kind: KindId::new(13),
-                key: "cad-membership".to_owned(),
-                from: EntityReference::Existing(EntityId::new(application_partition, 2, 1)),
-                to: created(PartitionId::main(), 10, "cad-feature"),
-            },
-        ];
-        let references = CreatedEffectReferences::new(&effects, application_partition);
-        let facts = ObservedFactIndex::new(&[]);
-        let mut unique = UniqueValueWrites::new(
-            crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
-        );
-        let mut lowered = effects.into_iter().map(|effect| {
-            lower_provider_effect(
-                &facts,
-                &mut unique,
-                &references,
-                application_partition,
-                effect,
-            )
-            .unwrap()
-        });
-        let entity_partition = |lowered| match lowered {
-            WorthQueryLoweredProviderEffect::Mutation {
-                intent: MutationIntent::Create(CreateIntent::Entity(entity)),
-                ..
-            } => entity.partition_id,
-            _ => panic!("expected an entity create"),
-        };
-        assert_eq!(
-            entity_partition(lowered.next().unwrap()),
-            application_partition
-        );
-        assert_eq!(
-            entity_partition(lowered.next().unwrap()),
-            workflow_partition
-        );
-        let relation = |lowered| match lowered {
-            WorthQueryLoweredProviderEffect::Mutation {
-                intent: MutationIntent::Create(CreateIntent::Relation(relation)),
-                ..
-            } => relation,
-            _ => panic!("expected a relation create"),
-        };
-        let workflow_relation = relation(lowered.next().unwrap());
-        assert_eq!(workflow_relation.partition_id, workflow_partition);
-        assert_eq!(workflow_relation.target.partition_id(), workflow_partition);
-        let cad_relation = relation(lowered.next().unwrap());
-        assert_eq!(cad_relation.partition_id, application_partition);
-        assert_eq!(cad_relation.target.partition_id(), application_partition);
-    }
-}
+mod tests;

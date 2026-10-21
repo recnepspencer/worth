@@ -94,6 +94,7 @@ pub(super) fn execution_is_row(kind: WorthQueryApplicationOneShotDenialKind) -> 
 fn projection_is_row(kind: WorthQueryApplicationProjectionDenialKind) -> bool {
     use WorthQueryApplicationProjectionDenialKind as Kind;
     match kind {
+        Kind::ValueDecode(cause) => cause.request_cause().is_none(),
         Kind::FieldOmitted | Kind::RelationOmitted => false,
         Kind::FieldNotProjected
         | Kind::FieldContractMismatch
@@ -106,8 +107,22 @@ fn projection_is_row(kind: WorthQueryApplicationProjectionDenialKind) -> bool {
 }
 
 #[cfg(test)]
-mod context_tests {
+mod tests {
     use super::*;
+    use crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial as Decode;
+
+    #[test]
+    fn decode_request_exhaustion_does_not_poison_the_shared_source_row() {
+        assert!(!projection_is_row(
+            WorthQueryApplicationProjectionDenialKind::ValueDecode(Decode::Checkpoint(
+                worth_execution::MapKernelStop::WorkCeiling,
+            )),
+        ));
+        assert!(projection_is_row(
+            WorthQueryApplicationProjectionDenialKind::ValueDecode(Decode::CodecRejected),
+        ));
+    }
+
     #[test]
     fn context_disclosure_incompleteness_is_not_cached_on_the_shared_row() {
         assert!(!execution_is_row(

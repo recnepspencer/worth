@@ -6,7 +6,9 @@ use worth_query_installation::facade::{
 };
 
 use super::WorthQueryApplicationQueryLane;
-use crate::canonical_identity_derivation::WorthQueryCanonicalIdentityStop;
+use crate::canonical_identity_derivation::{
+    WorthQueryCanonicalIdentityPreparationStage as Stage, WorthQueryCanonicalIdentityStop,
+};
 use crate::graph_read_access::{
     derive_canonical_graph_read_access_requirements_admitted,
     WorthQueryCanonicalGraphReadPlanningInput, WorthQueryGraphReadAccessRequirementSet,
@@ -37,7 +39,8 @@ pub fn derive_graph_read_access_requirements_for_contract_admitted<Stop>(
         maximum_result_count,
         budget,
         admit,
-    )?;
+    )
+    .map_err(|stop| stop.with_preparation_stage(Stage::AccessShape))?;
     let (selectivity_shape_digest, selectivity_work) =
         super::identity::selectivity_shape_digest_admitted(
             planning_graph_identity,
@@ -45,7 +48,8 @@ pub fn derive_graph_read_access_requirements_for_contract_admitted<Stop>(
             *selectivity_binding_digest,
             budget,
             admit,
-        )?;
+        )
+        .map_err(|stop| stop.with_preparation_stage(Stage::SelectivityShape))?;
     let identity = WorthQueryGraphReadPlanningIdentity::from_admitted_evidence(
         planning_graph_identity,
         access_shape_digest,
@@ -63,6 +67,7 @@ pub fn derive_graph_read_access_requirements_for_contract_admitted<Stop>(
         access_work.combine(selectivity_work),
         admit,
     )
+    .map_err(|stop| stop.with_preparation_stage(Stage::FinalRequirements))
 }
 
 fn inventory_stop<Stop>(

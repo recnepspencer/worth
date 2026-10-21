@@ -7,11 +7,10 @@
 
 use std::collections::BTreeSet;
 
-use worth_relational::facade::{
-    history::{BranchId, CommitId},
-    identity::EntityId,
-    publication::PatchStreamPosition,
-};
+use worth_relational::facade::history::BranchId;
+use worth_relational::facade::history::CommitId;
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::publication::PatchStreamPosition;
 
 use super::fact_key::FactPostingKey;
 use super::owner::SourceInvalidationOwner;
@@ -72,17 +71,6 @@ pub(in crate::domain_computation::primary_graph) struct TouchedCommits {
     pub(in crate::domain_computation::primary_graph) caught_up_to_latest: bool,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation::primary_graph) enum CommitTouchesStop {
-    /// Commits after the cursor are no longer retained. The reader must
-    /// reconstruct from truth at the selected ceiling instead of skipping
-    /// them, then resume after `resume_after`, the newest retained position
-    /// that the ceiling already contains.
-    RequiresReconstruction {
-        resume_after: Option<PatchStreamPosition>,
-    },
-}
-
 impl SourceInvalidationOwner {
     /// Latest delivered position across branches. Positions are globally
     /// ordered, so a cursor taken here precedes every later commit anywhere.
@@ -113,7 +101,7 @@ impl SourceInvalidationOwner {
         ceiling: Option<CommitId>,
         limit: usize,
         interest: CommitTouchInterest<'_>,
-    ) -> Result<TouchedCommits, CommitTouchesStop> {
+    ) -> TouchedCommits {
         let cell = self
             .branches
             .lock()
@@ -128,30 +116,12 @@ impl SourceInvalidationOwner {
             caught_up_to_latest: true,
         };
         let Some(cell) = cell else {
-            return Ok(batch);
+            return batch;
         };
         let image = cell.read_image();
         let past = &image.payload().past;
         let within_ceiling =
             |commit: Option<CommitId>| commit.zip(ceiling).is_some_and(|(c, max)| c <= max);
-        // A full window may have dropped the step that produced its oldest
-        // retained position. That step is lost exactly when it lies after the
-        // cursor and within the selected ceiling.
-        if let Some((oldest, row)) = past.get_min()
-            && past.len() >= self.resources.installation().maximum_retained_positions
-            && *oldest > cursor
-            && within_ceiling(row.commit_id)
-        {
-            // Each key is the position its own row's commit produced.
-            let resume_after = past
-                .iter()
-                .map(|(position, row)| (*position, row.commit_id))
-                .chain(std::iter::once((image.position(), image.commit_id())))
-                .take_while(|(_, commit)| within_ceiling(*commit))
-                .last()
-                .and_then(|(position, _)| position);
-            return Err(CommitTouchesStop::RequiresReconstruction { resume_after });
-        }
         // past[p] holds the delivery that moved the branch from p to the next
         // retained position, or to the image's own position for the last row.
         let produced = past
@@ -190,7 +160,7 @@ impl SourceInvalidationOwner {
             batch.next_cursor = Some(position);
         }
         batch.caught_up_to_latest = batch.next_cursor >= image.position();
-        Ok(batch)
+        batch
     }
 }
 
@@ -245,7 +215,8 @@ impl SourceInvalidationOwner {
 #[cfg(test)]
 mod relation_interest_tests {
     use super::*;
-    use worth_relational::facade::identity::{KindId, PartitionId};
+    use worth_relational::facade::identity::KindId;
+    use worth_relational::facade::identity::PartitionId;
     #[test]
     fn relation_only_interest_matches_full_native_anchors_and_endpoints() {
         use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection;

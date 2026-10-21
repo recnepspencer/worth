@@ -29,7 +29,7 @@ struct RegisteredCandidate {
 }
 
 pub(crate) enum RelationalCandidateRegistrationDenial {
-    CapacityExhausted,
+    CapacityExhausted { maximum_candidates: usize },
     IdentityExhausted,
 }
 
@@ -57,6 +57,23 @@ impl RelationalRuntimePublicationOwner {
 
     pub(super) fn binding(&self) -> RelationalRuntimePublicationBinding {
         self.binding.clone()
+    }
+
+    pub(super) fn held_only_by_owner_and_close(
+        &self,
+        close: &RelationalRuntimePublicationBinding,
+    ) -> bool {
+        // State and its close authority are the two native owner handles.
+        // Prepared candidates and independently bound services retain another.
+        Arc::ptr_eq(&self.binding.lifecycle, &close.lifecycle)
+            && Arc::strong_count(&self.binding.lifecycle) == 2
+            && Arc::weak_count(&self.binding.lifecycle) == 0
+            && self
+                .binding
+                .lifecycle
+                .companion
+                .enter()
+                .is_ok_and(|epoch| matches!(epoch.active(), Ok(None)))
     }
 }
 
@@ -92,7 +109,7 @@ impl RelationalRuntimePublicationBinding {
     pub(crate) fn register_candidate(
         &self,
         expires_at: std::time::Instant,
-        maximum_candidates: usize,
+        maximum_candidates: Option<usize>,
         payload: &Arc<Mutex<Option<crate::mvcc::publication::CandidatePayload>>>,
     ) -> Result<u64, RelationalCandidateRegistrationDenial> {
         let mut candidates = self
@@ -100,8 +117,12 @@ impl RelationalRuntimePublicationBinding {
             .candidates
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if candidates.len() >= maximum_candidates {
-            return Err(RelationalCandidateRegistrationDenial::CapacityExhausted);
+        if let Some(maximum_candidates) =
+            maximum_candidates.filter(|maximum| candidates.len() >= *maximum)
+        {
+            return Err(RelationalCandidateRegistrationDenial::CapacityExhausted {
+                maximum_candidates,
+            });
         }
         let id = self
             .lifecycle

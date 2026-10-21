@@ -7,7 +7,6 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOneShotResult, WorthQueryApplicationQueryBatchAdmission as Batch,
-    WorthQueryApplicationQueryBatchLimits as Limits,
     WorthQueryManagedDerivedCollectionBatchRefreshDenial as BatchDenial,
     WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewKey,
 };
@@ -29,14 +28,24 @@ impl WorthQueryManagedDerivedValue for Owner {
 
 mod optional_owner_removal_and_insertion_refresh_at_the_real_current;
 
-fn batch() -> Batch {
-    let nz = |value| NonZeroUsize::new(value).unwrap();
-    Batch::new(Limits::new(
-        nz(2),
-        Some(nz(100_000)),
-        nz(262_144),
-        nz(4_096),
-    ))
+fn batch(world: &AuthorizationWorld) -> Batch {
+    let query = world
+        .application
+        .installed_schema()
+        .certification_query(OptionalAccountOwnerQuery::reference())
+        .unwrap();
+    world
+        .application
+        .application_query_batch_from_installed_reads(&[world
+            .application
+            .plan_installed_query_batch_reads(
+                &query,
+                2,
+                NonZeroUsize::new(query.read_graph().maximum_result_count())
+                    .expect("the fixture uses a nonzero installed query result contract"),
+            )
+            .unwrap()])
+        .unwrap()
 }
 
 enum Read {
@@ -113,10 +122,7 @@ fn read(
             &query,
             &access,
             ApplicationQueryParameterSet::new(),
-            crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls::product_one_shot(
-                product.retained_clone(), basis,
-                NonZeroUsize::new(10).unwrap(), Some(NonZeroUsize::new(10_000).unwrap()), &request,
-            ),
+            crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls::product_one_shot(product.retained_clone(), basis, NonZeroUsize::new(query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
         )
         .unwrap();
     match batch {
@@ -175,10 +181,7 @@ fn refresh(
             &query,
             &access,
             ApplicationQueryParameterSet::new(),
-            crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls::product_one_shot(
-                product.retained_clone(), basis,
-                NonZeroUsize::new(10).unwrap(), Some(NonZeroUsize::new(10_000).unwrap()), &request,
-            ),
+            crate::domain_computation::primary_graph::WorthQueryApplicationQueryControls::product_one_shot(product.retained_clone(), basis, NonZeroUsize::new(query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
         )
         .unwrap();
     world
@@ -189,7 +192,7 @@ fn refresh(
             &product,
             key,
             plan,
-            &batch(),
+            &batch(world),
             |_, batch| {
                 Ok::<_, BatchDenial>(read(phase_custody, execution, world, Some(batch)).batched())
             },

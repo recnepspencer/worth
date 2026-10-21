@@ -165,6 +165,7 @@ fn dependencies() -> Vec<ApplicationSchemaMember> {
             entity: "Account".to_string(),
         },
         ApplicationSchemaMember::Aspect {
+            absence: worth_foundational::facade::AbsenceLaw::Required,
             entity: "Account".to_string(),
             aspect: "AccountFacts".to_string(),
             identity: worth_foundational::facade::AspectIdentity(0x91613005),
@@ -176,6 +177,7 @@ fn dependencies() -> Vec<ApplicationSchemaMember> {
             field: "AccountId".to_string(),
             presence: crate::application_schema::ApplicationFieldPresence::Required,
             scalar_family: ScalarAspectType::UInt64,
+            canonical: None,
             value_type:
                 <u64 as crate::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY
                     .as_str()
@@ -196,6 +198,7 @@ fn relation_predicate_dependencies(equality_queryable: bool) -> Vec<ApplicationS
             entity: "Activity".to_owned(),
         },
         ApplicationSchemaMember::Aspect {
+            absence: worth_foundational::facade::AbsenceLaw::Required,
             entity: "Activity".to_owned(),
             aspect: "ActivityFacts".to_owned(),
             identity: worth_foundational::facade::AspectIdentity(0x91613006),
@@ -207,6 +210,7 @@ fn relation_predicate_dependencies(equality_queryable: bool) -> Vec<ApplicationS
             field: "ActivityId".to_owned(),
             presence: crate::application_schema::ApplicationFieldPresence::Required,
             scalar_family: ScalarAspectType::UInt64,
+            canonical: None,
             value_type:
                 <u64 as crate::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY
                     .as_str()

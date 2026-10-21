@@ -12,10 +12,13 @@ pub(super) fn prepare_application_provider_attempt(
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, WorthQueryApplicationAttemptDenial> {
     prepare_provider_attempt(
         lease.layout.unique_fields(),
+        &|entity, aspect| lease.layout.aspect_contract(entity, aspect),
         mutation_partition,
         preparation.application_effect_count,
         preparation.installed_read_scopes,
-        preparation.facts,
+        preparation.effect_routes,
+        preparation.application_projection,
+        preparation.original_read,
         preparation.consumed_outputs,
         preparation.effects,
         preparation.preimage_demand,

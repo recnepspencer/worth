@@ -36,6 +36,8 @@ pub struct WorthQueryBranchAdoptionRecovery {
     product: WorthQueryProductUnpublishedRecovery,
     support_custody:
         crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportCustody,
+    // Last to drop: physical backing releases before its retained grant.
+
 }
 
 impl WorthQueryBranchAdoptionRecovery {
@@ -45,6 +47,7 @@ impl WorthQueryBranchAdoptionRecovery {
         selected_entity_count: usize,
         migration: Option<super::super::preparation::WorthQueryProgramMigrationDescription>,
         custody: super::super::preparation::WorthQueryProgramCustodyDispositionInventory,
+
         product: WorthQueryProductUnpublishedRecovery,
         support_custody: crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportCustody,
     ) -> Self {
@@ -54,6 +57,7 @@ impl WorthQueryBranchAdoptionRecovery {
             selected_entity_count,
             migration,
             custody,
+
             product,
             support_custody,
         }

@@ -285,5 +285,5 @@ fn disbursement_action() -> EstateAction {
 }
 
 fn controls() -> BankReadControls {
-    BankReadControls::current(request_scope(), 1, 20_000).unwrap()
+    BankReadControls::current(request_scope(), 1).unwrap()
 }

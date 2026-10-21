@@ -36,11 +36,10 @@ fn checkpoint_finishes_keep_caller_stops_off_the_shared_row() {
                     }),
                 );
             }
-            let before = fixture.custody();
             let prepared = selected.then(|| {
                 fixture
                     .registry
-                    .prepare_selected_checkpoint_finish(&fixture.interest, &mut record_admission())
+                    .prepare_selected_checkpoint_finish(&fixture.interest)
                     .unwrap()
             });
             let (prepared, claim, checkpoint) = if let Some(prepared) = prepared {
@@ -57,7 +56,11 @@ fn checkpoint_finishes_keep_caller_stops_off_the_shared_row() {
                 };
                 (None, claim, checkpoint)
             };
-            let denial = WorthQueryOutputDemandDenial::new(kind.clone(), "caller stopped delivery");
+            let mut denial = WorthQueryOutputDemandDenial::new(
+                kind.clone(),
+                "caller stopped delivery".to_owned(),
+            );
+            denial.readmission_failure = Some("original delivery refusal");
             if let Some(prepared) = prepared {
                 assert!(prepared.finish(claim, checkpoint, Some(&denial)).is_ok());
             } else {
@@ -74,6 +77,13 @@ fn checkpoint_finishes_keep_caller_stops_off_the_shared_row() {
                 };
                 assert!(output.checkpoint.is_some());
                 if fails_row {
+                    assert_eq!(
+                        super::super::super::required_stop::head_stop(
+                            &state.records,
+                            &fixture.interest.key,
+                        ),
+                        Some(denial.clone())
+                    );
                     assert!(
                         matches!(&output.advancement(), WorthQueryOutputAdvancement::Stopped { denial, .. }
                         if denial.kind() == kind)
@@ -86,7 +96,29 @@ fn checkpoint_finishes_keep_caller_stops_off_the_shared_row() {
                 }
             }
             if !fails_row {
-                assert_eq!(fixture.custody(), before);
+                {
+                    let state = fixture.registry.state.lock().unwrap();
+                    let row = &state.records[&fixture.interest.key];
+                    assert_eq!(row.prerequisites.len(), 1);
+                    assert_eq!(row.prerequisites[0].as_ref(), &fixture.upstream.key);
+                    assert_eq!(row.framework_required_count, 1);
+                    assert_eq!(
+                        state.records[&fixture.upstream.key].framework_required_count,
+                        1
+                    );
+                    assert_eq!(row.performed_obligations.len(), 1);
+                    assert_eq!(row.performed_obligations[0].source_commit, fixture.commit);
+                    assert_eq!(
+                        row.performed_obligations[0].source,
+                        fixture.interest.key.source
+                    );
+                    let source = row
+                        .performed_source
+                        .as_ref()
+                        .expect("original source retained");
+                    assert_eq!(Arc::as_ptr(&source.change).cast::<()>(), fixture.change);
+                    assert!(!row.pending_cleanup_queued);
+                }
                 assert!(matches!(
                     fixture.registry.begin(&fixture.interest),
                     WorthQueryOutputDemandAdvanceAdmission::AdvanceCheckpoint { .. }

@@ -12,7 +12,6 @@ struct QueueState {
 pub(in crate::domain_computation::primary_graph::application_output_demand::registry) struct RequiredWorkQueue
 {
     state: Mutex<QueueState>,
-    pub(super) capacity: Arc<RecordCapacity>,
 }
 
 pub(in crate::domain_computation::primary_graph::application_output_demand::registry) enum RequiredWorkPop
@@ -24,11 +23,9 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 
 impl RequiredWorkQueue {
     pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn new(
-        capacity: Arc<RecordCapacity>,
     ) -> Self {
         Self {
             state: Mutex::new(QueueState::default()),
-            capacity,
         }
     }
 

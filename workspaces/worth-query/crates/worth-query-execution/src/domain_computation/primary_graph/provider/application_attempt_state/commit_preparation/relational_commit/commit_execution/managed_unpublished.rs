@@ -1,7 +1,7 @@
-use super::{
-    managed_views, WorthQueryPreImageRetentionWork, WorthQueryPrimaryGraphApplicationAttempt,
-    WorthQueryPrimaryMutationWorkCounters,
-};
+use super::managed_views;
+use super::WorthQueryPreImageRetentionWork;
+use super::WorthQueryPrimaryGraphApplicationAttempt;
+use super::WorthQueryPrimaryMutationWorkCounters;
 
 /// All Query evidence whose owner effects crossed World's partial boundary.
 /// The provider's exact unpublished entry owns this until a fresh World
@@ -26,8 +26,7 @@ pub(in crate::domain_computation::primary_graph::provider) struct ManagedUnpubli
     pub(super) prepared_touched_records: super::PreparedTouchedRecords,
     pub(super) lineage_metadata:
         Option<crate::domain_computation::primary_graph::output_lineage::PreparedLineageRecoveryMetadata>,
-    pub(super) publication_admission:
-        crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
+
     pub(super) reserved_terminal:
         crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt,
 }
@@ -44,12 +43,6 @@ impl ManagedUnpublishedAttempt {
     ) -> bool {
         self.publication_mode == ManagedUnpublishedPublicationMode::Ordinary
     }
-    pub(in crate::domain_computation::primary_graph::provider) fn publication_admission_mut(
-        &mut self,
-    ) -> &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission{
-        &mut self.publication_admission
-    }
-
     pub(in crate::domain_computation::primary_graph::provider) fn matches_fresh_binding(
         &self,
         idempotency: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
@@ -68,9 +61,6 @@ impl ManagedUnpublishedAttempt {
         if self.reserved_terminal.matches_recovery_handle(&successor) {
             return Ok(());
         }
-        let bytes = crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt::replacement_request_bytes()
-            .ok_or(worth_relational::facade::mvcc::CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        self.publication_admission.admit_read_scratch(bytes)?;
         self.reserved_terminal.rebind_unfilled(successor);
         Ok(())
     }
@@ -87,13 +77,7 @@ impl ManagedUnpublishedAttempt {
         let scope = self.attempt.affinity().operation_scope();
         let partition = self.attempt.idempotency().source_partition_identity();
         if let Some(existing) = self.prepared_lineage_slot.as_ref()
-            && existing.matches_planned_successor(
-                scope,
-                binding,
-                partition,
-                planned,
-                &mut self.publication_admission,
-            )?
+            && existing.matches_planned_successor(scope, binding, partition, planned)?
         {
             assert!(self.lineage_metadata.is_none());
             assert!(self.required_prerequisites.as_ref().is_none_or(|required| {
@@ -108,15 +92,11 @@ impl ManagedUnpublishedAttempt {
                 binding,
                 partition,
                 planned,
-                &mut self.publication_admission,
             )?;
         if let Some(required) = self.required_prerequisites.as_mut() {
             let (producer, source) = required.native_prior_checkpoint_input();
-            slot.retain_native_prior_checkpoint(producer, source, &mut self.publication_admission)?;
-            required.replace_reserved_identity_for_recovery(
-                slot.identity(),
-                &mut self.publication_admission,
-            )?;
+            slot.retain_native_prior_checkpoint(producer, source)?;
+            required.replace_reserved_identity_for_recovery(slot.identity())?;
         }
         if let Some(prior) = self.prepared_lineage_slot.take() {
             assert!(self.lineage_metadata.is_none());
@@ -162,7 +142,7 @@ impl ManagedUnpublishedAttempt {
             product_publication,
             managed_views: self.managed_views,
             source_fact_rebase: self.source_fact_rebase,
-            publication_admission: self.publication_admission,
+
             required_prerequisites: self.required_prerequisites,
             prepared_lineage_slot: self.prepared_lineage_slot,
             prepared_output_witness: self.prepared_output_witness,

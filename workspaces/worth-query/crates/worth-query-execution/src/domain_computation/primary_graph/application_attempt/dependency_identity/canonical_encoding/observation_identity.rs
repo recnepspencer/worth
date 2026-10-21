@@ -7,10 +7,11 @@ use super::{
 use crate::domain_computation::primary_graph::application_attempt::signed_creation::{
     canonical, identity, WorthQuerySignedCreationPreparationDenial as Denial,
 };
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn authentication_observation_identity(
     operation: [u8; 32],
-    facts: &[Fact],
+    facts: &(impl FactSequence + ?Sized),
     request: &worth_execution::ExecutionRequest<'_, '_>,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<([u8; 32], WorthQueryCanonicalWorkEvidence), Denial> {
@@ -23,7 +24,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn authent
 
 pub(super) fn basis<E>(
     operation: [u8; 32],
-    facts: &[Fact],
+    facts: &(impl FactSequence + ?Sized),
     mut before_fact: impl FnMut() -> Result<(), E>,
 ) -> Result<(&'static str, Vec<CanonicalBasisEntry>), E> {
     let mut entries = Vec::new();

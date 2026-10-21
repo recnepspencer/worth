@@ -8,8 +8,8 @@ fn unexecuted_admissions_are_capacity_bounded_and_drop_to_a_stable_baseline() {
     runtime.set_runtime_policy(
         SignalRuntimePolicy::development().with_conditional_evaluation_budget(
             SignalConditionalEvaluationBudget {
-                maximum_retained_slots: 1,
-                maximum_retained_bytes: 512 * 1024 * 1024,
+                maximum_retained_slots: Some(1),
+                maximum_retained_bytes: Some(512 * 1024 * 1024),
                 maximum_attempt_visits: Some(100_000),
             },
         ),

@@ -255,8 +255,9 @@ pub use crate::canonicalization::{
     BoundaryBridgedCanonicalExportArtifact, CanonicalAspectValueIdentityBasis,
     CanonicalBasisBundle, CanonicalBasisConstructionDenial, CanonicalBasisDomain,
     CanonicalBasisEntry, CanonicalBasisEntryId, CanonicalBasisEntryKind, CanonicalBasisFrontDoor,
-    CanonicalBasisLocus, CanonicalBasisPreparationStop, CanonicalBasisReadinessProofs,
-    CanonicalBasisReady, CanonicalBasisReadyArtifact, CanonicalBasisSequence, CanonicalBasisValue,
+    CanonicalBasisLocus, CanonicalBasisPreparationPhase, CanonicalBasisPreparationQuote,
+    CanonicalBasisPreparationStop, CanonicalBasisReadinessProofs, CanonicalBasisReady,
+    CanonicalBasisReadyArtifact, CanonicalBasisSequence, CanonicalBasisValue,
     CanonicalBasisVersionStep, CanonicalBundleReadinessProofs, CanonicalBundleReady,
     CanonicalBundleReadyArtifact, CanonicalCertifiedSurface, CanonicalCertifiedSurfaceEvidence,
     CanonicalComparisonBasisStep, CanonicalComparisonFrontDoor, CanonicalComparisonInput,
@@ -686,4 +687,15 @@ pub use crate::values::{
 };
 
 pub use crate::budget_limits::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};
+pub use crate::resident_value::ChargedBytes;
 pub use crate::responsibilities::{foundational_responsibilities, ResponsibilityArea};
+pub use crate::value_shape::{
+    decode_canonical_value, decode_canonical_value_with_admission, encode_canonical_value,
+    BoxDelegate, CanonicalValue, CanonicalValueSeed, DelegatedValueSeed, OptionalDelegate,
+    PairDelegate, SequenceDelegate, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds,
+    ValueDelegate, ValueFieldDefinition, ValueFieldShape, ValuePrimitive, ValueSeedDelegate,
+    ValueShape, ValueShapeBody, ValueShapeDefinition, ValueShapeDepth, ValueShapeEdge,
+    ValueTaggedVariantDefinition, ValueTaggedVariantShape, ValueVariantDefinition,
+    ValueVariantShape,
+};
+pub use worth_value_shape_derive::{ChargedBytes, WorthValue};

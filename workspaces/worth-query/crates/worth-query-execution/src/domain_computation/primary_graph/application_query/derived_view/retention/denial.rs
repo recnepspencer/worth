@@ -9,6 +9,8 @@
 /// reconcile its membership, refresh an entry, or open a new view.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedDerivedViewDenial {
+    /// A bounded native parallel kernel needs a concrete admitted result bound.
+    MissingPreparedResultCapacity,
     /// The view definition has an empty name or a zero entry or byte limit.
     InvalidLimits,
     /// The runtime cannot register another managed derived view.

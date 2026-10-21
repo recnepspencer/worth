@@ -130,10 +130,10 @@ fn distinct_abilities_sharing_one_policy_retain_exact_provider_cardinality() {
                 .into_parts()
         })
         .expect("the fixture read owns its installed host call");
-    let mut reads = world
+    let completed = world
         .application
         .with_host_advancement(|phase| {
-            world
+            let mut reads = world
                 .application
                 .begin_projected_application_read_attempt(
                     &phase,
@@ -141,12 +141,7 @@ fn distinct_abilities_sharing_one_policy_retain_exact_provider_cardinality() {
                     projection,
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
-                .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
-    world
-        .application
-        .with_host_advancement(|phase| {
+                .unwrap();
             let host_custody = phase.test_host_request();
             reads
                 .observe_field(
@@ -154,13 +149,13 @@ fn distinct_abilities_sharing_one_policy_retain_exact_provider_cardinality() {
                     &account,
                     AccountStatus::reference(),
                 )
+                .unwrap();
+            reads
+                .complete(crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let mut effects = reads
-        .complete(crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap()
-        .begin_effect_program();
+    let mut effects = completed.begin_effect_program();
     let target = effects.existing_entity(&account).unwrap();
     effects
         .write_field(

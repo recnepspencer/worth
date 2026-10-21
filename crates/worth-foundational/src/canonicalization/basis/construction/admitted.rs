@@ -9,7 +9,10 @@ use crate::canonicalization::basis::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CanonicalBasisPreparationStop<Stop> {
     Construction(CanonicalBasisConstructionDenial),
-    Resource(Stop),
+    Resource {
+        cause: Stop,
+        quote: super::CanonicalBasisPreparationQuote,
+    },
     AccountingOverflow,
     /// The active compiler's stable-sort implementation has no reviewed bound.
     UnsupportedSortImplementation,

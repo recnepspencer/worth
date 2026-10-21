@@ -5,10 +5,10 @@ use crate::query_context::{
     execute_query_basis_context, QueryContextFamily, ScopedQueryBasisContext,
 };
 use crate::runtime::{
-    WorthQueryCountResult, WorthQueryEphemeralGraphIndexReceipt,
-    WorthQueryGraphReadAccessExecutionCounters, WorthQueryReadBuiltInOperator,
-    WorthQueryReadDenial, WorthQueryReadDenialKind, WorthQueryReadExecutionProduct,
-    WorthQueryReadGraph, WorthQueryReadResult, WorthQueryReadScopeClass, WorthQueryRuntime,
+    WorthQueryCountResult, WorthQueryGraphReadAccessExecutionCounters,
+    WorthQueryReadBuiltInOperator, WorthQueryReadDenial, WorthQueryReadDenialKind,
+    WorthQueryReadExecutionProduct, WorthQueryReadGraph, WorthQueryReadResult,
+    WorthQueryReadScopeClass, WorthQueryRuntime,
 };
 use worth_foundational::facade::{AspectKey, FieldKey};
 
@@ -38,17 +38,6 @@ where
         &self,
     ) -> &WorthQueryGraphReadAccessExecutionCounters {
         &self.graph_read_access_execution_counters
-    }
-
-    pub(in crate::runtime) fn record_ephemeral_index_receipt(
-        &mut self,
-        receipt: Option<&WorthQueryEphemeralGraphIndexReceipt>,
-    ) {
-        let Some(receipt) = receipt else {
-            return;
-        };
-        self.graph_read_access_execution_counters
-            .record_ephemeral_index_allocations(receipt.counters().successful_allocation_count());
     }
 
     pub(in crate::runtime) fn into_product(self) -> Product {

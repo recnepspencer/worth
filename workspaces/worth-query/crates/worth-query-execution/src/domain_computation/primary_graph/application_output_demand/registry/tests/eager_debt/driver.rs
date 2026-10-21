@@ -61,7 +61,7 @@ pub(super) fn run(context: &world::Context, seed: u64, divergences: &mut Vec<Str
             return;
         }
         apply(&mut world, "A affording admit", &mut |w| {
-            w.admission(1_000_000).unwrap();
+            w.admission().unwrap();
         });
         apply(&mut world, "A newest owner Drop after admit", &mut |w| {
             w.drop_owner(1)
@@ -84,19 +84,14 @@ pub(super) fn run(context: &world::Context, seed: u64, divergences: &mut Vec<Str
                 &mut |w| w.drop_owner(2),
             );
             apply(&mut world, "C admit before supersession", &mut |w| {
-                w.admission(1_000_000).unwrap();
+                w.admission().unwrap();
             });
         }
         apply(
             &mut world,
             "C supersede published claimed predecessor",
             &mut |w| {
-                supersede_predecessors(
-                    &mut w.registry.state.lock().unwrap(),
-                    &w.keys[1],
-                    &mut record_admission(),
-                )
-                .unwrap();
+                supersede_predecessors(&mut w.registry.state.lock().unwrap(), &w.keys[1]).unwrap();
                 w.model.supersede(1);
             },
         );
@@ -137,36 +132,15 @@ pub(super) fn run(context: &world::Context, seed: u64, divergences: &mut Vec<Str
             w.model.settle();
         });
     }
-    let own_work = World::own_work(context, world.generation);
-    apply(
-        &mut world,
-        "admit exactly its own work",
-        &mut |w| match w.admission(own_work) {
-            Err(denial) => {
-                w.failure = Some(format!(
-                    "foreign debt refused own work: {:?}",
-                    denial.kind()
-                ))
-            }
-            Ok(charged) if charged != own_work => {
-                w.failure = Some(format!("foreign quote charged {charged}, own {own_work}"))
-            }
-            Ok(_) => {}
-        },
-    );
-    apply(&mut world, "one-short admit", &mut |w| {
-        let denial = w.admission(own_work - 1).unwrap_err();
-        assert_eq!(
-            denial.kind(),
-            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-        );
+    apply(&mut world, "ordinary admission", &mut |w| {
+        w.admission().unwrap();
     });
     for visit in 0..4 {
         apply(
             &mut world,
             &format!("quiescent admission {visit}"),
             &mut |w| {
-                w.admission(1_000_000).unwrap();
+                w.admission().unwrap();
             },
         );
     }

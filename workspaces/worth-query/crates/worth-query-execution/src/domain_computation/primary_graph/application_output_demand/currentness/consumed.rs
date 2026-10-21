@@ -1,11 +1,9 @@
 //! Project the existing native consumed-edge verifier into retained-read denials.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    invariant_projection::{
-        ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
-    },
-    output_reuse,
-};
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::output_reuse;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub(super) fn require_current_consumed(
@@ -13,7 +11,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &worth_relational::facade::runtime::RelationalRuntime,
         read: &RetainedOutputCurrentnessRead,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         if read.consumed_outputs.is_empty() {
             return Ok(());
@@ -36,14 +33,20 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             relational,
             snapshot,
             &selected,
-            admission,
         ) {
             Ok(ConsumedOutputVerification::Current) => Ok(()),
             // These ordinals belong to the consumed output, not the consumer.
             Ok(
-                ConsumedOutputVerification::ChangedDirectFact(_)
+                ConsumedOutputVerification::ChangedOutput
+                | ConsumedOutputVerification::ChangedDirectFact(_)
                 | ConsumedOutputVerification::ChangedUpstream,
             ) => Err(denial(WorthQueryOutputDemandDenialKind::Superseded)),
+            Ok(ConsumedOutputVerification::PendingUpstream) => {
+                Err(denial(WorthQueryOutputDemandDenialKind::SchedulingDeferred))
+            }
+            Ok(ConsumedOutputVerification::Unaligned) => Err(denial(
+                WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+            )),
             Err(stop) => Err(verification_denial(stop)),
         }
     }
@@ -52,6 +55,12 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
 fn verification_denial(stop: ConsumedOutputVerificationStop) -> WorthQueryOutputDemandDenial {
     use WorthQueryOutputDemandDenialKind as Kind;
     match stop {
+        ConsumedOutputVerificationStop::SourceQueryAuthorization(cause) => {
+            output_reuse::verification_denial(
+                ConsumedOutputVerificationStop::SourceQueryAuthorization(cause),
+                "settled consumed source authorization",
+            )
+        }
         ConsumedOutputVerificationStop::Execution(cause) => output_reuse::read_denial(cause),
         ConsumedOutputVerificationStop::Interrupted(event) => {
             output_reuse::interruption_denial(event)
@@ -71,12 +80,10 @@ fn verification_denial(stop: ConsumedOutputVerificationStop) -> WorthQueryOutput
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::{
-        Retryable, Terminal,
-    };
-    use worth_relational::facade::{
-        mvcc::CompanionCellEditStop, transactions::RelationalExecutionDenialCause,
-    };
+    use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable;
+    use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal;
+    use worth_relational::facade::mvcc::CompanionCellEditStop;
+    use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 
     #[test]
     fn consumed_stops_preserve_read_posture_without_producer_origin() {

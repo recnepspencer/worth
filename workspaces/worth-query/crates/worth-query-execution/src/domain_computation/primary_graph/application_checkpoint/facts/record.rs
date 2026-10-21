@@ -5,7 +5,7 @@ pub(super) fn decode(
     control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
 ) -> Result<Fact, FactDecodeDenial> {
     Ok(match cursor.next_byte()? {
-        10 => aspect_presence::decode(cursor)?,
+        11 => aspect_presence::decode(cursor)?,
         6 => Fact::RetiredOutputEntity {
             entity_id: cursor.next_entity()?,
             kind: KindId(cursor.next_u32()?),
@@ -89,11 +89,17 @@ pub(super) fn decode(
             kind: KindId(cursor.next_u32()?),
         },
         7 => indexed_selection::decode(cursor)?,
-        tag @ (8 | 9) => {
+        tag @ 8..=10 => {
             let entity_id = cursor.next_entity()?;
             let kind = KindId(cursor.next_u32()?);
             let locator = next_locator(cursor)?;
-            if tag == 9 {
+            if tag == 10 {
+                Fact::OptionalAspectAbsent {
+                    entity_id,
+                    kind,
+                    locator,
+                }
+            } else if tag == 9 {
                 Fact::AbsentField {
                     entity_id,
                     kind,

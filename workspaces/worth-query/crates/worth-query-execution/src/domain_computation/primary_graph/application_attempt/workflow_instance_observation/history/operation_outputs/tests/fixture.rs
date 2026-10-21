@@ -165,7 +165,7 @@ fn text_value(value: &str) -> AspectValue {
 
 fn payer() -> worth_execution::SerialRequest {
     worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(64 << 20),
+        worth_execution::SerialMemoryBudget::new(Some(64 << 20)),
         worth_execution::CancellationToken::new(),
         None,
     )

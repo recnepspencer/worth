@@ -1,6 +1,6 @@
 use worth_query_declaration::facade::{
     canonicalization::CanonicalQueryBundle,
-    domain_computation::{WorthQueryCancellationSafePointFamily, WorthQueryExecutionMode},
+    domain_computation::WorthQueryCancellationSafePointFamily,
 };
 use worth_query_installation::facade as domain;
 
@@ -15,8 +15,7 @@ pub struct WorthQueryOutputReadinessContractBuilder {
     readiness_dependencies: Vec<domain::WorthQuerySemanticTruthDependency>,
     projection_role: domain::WorthQueryOperationProjectionRole,
     strategy: domain::WorthQueryExecutionStrategyName,
-    work_limit: u64,
-    retained_byte_limit: u64,
+
     lowering_family: String,
 }
 
@@ -48,8 +47,7 @@ impl WorthQueryOutputReadinessContractBuilder {
         canonical_query: CanonicalQueryBundle,
         projection_role: domain::WorthQueryOperationProjectionRole,
         strategy: domain::WorthQueryExecutionStrategyName,
-        work_limit: u64,
-        retained_byte_limit: u64,
+
         lowering_family: impl Into<String>,
     ) -> Self {
         Self {
@@ -62,8 +60,7 @@ impl WorthQueryOutputReadinessContractBuilder {
             readiness_dependencies: Vec::new(),
             projection_role,
             strategy,
-            work_limit,
-            retained_byte_limit,
+
             lowering_family: lowering_family.into(),
         }
     }
@@ -109,8 +106,7 @@ impl WorthQueryOutputReadinessContractBuilder {
             self.readiness_dependencies,
             self.projection_role.clone(),
         )?;
-        let resources =
-            resource_contract(self.strategy, self.work_limit, self.retained_byte_limit)?;
+        let resources = resource_contract(self.strategy)?;
         Ok(domain::WorthQueryDomainOperationDefinition::new(
             self.identity,
             domain::WorthQueryDomainOperationSemanticClosure {
@@ -203,13 +199,10 @@ fn readiness_node(
 
 fn resource_contract(
     strategy: domain::WorthQueryExecutionStrategyName,
-    work_limit: u64,
-    retained_byte_limit: u64,
 ) -> Result<domain::WorthQueryExecutionResourceContract, WorthQueryOutputReadinessContractDenial> {
-    let envelope = domain::WorthQueryExecutionResourceEnvelope::bounded(
-        work_limit,
-        retained_byte_limit,
-        WorthQueryExecutionMode::Synchronous,
+    let envelope = domain::WorthQueryExecutionResourceEnvelope::atomic(
+        worth_query_declaration::facade::domain_computation::WorthQuerySemanticScaleRequest::selective(),
+        worth_query_declaration::facade::domain_computation::WorthQueryResourceLimitRequest::selective(),
         WorthQueryCancellationSafePointFamily::new(domain::APPLICATION_EXECUTION_SAFE_POINT_FAMILY)
             .map_err(|error| denial(error.to_string()))?,
     );

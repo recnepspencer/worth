@@ -119,7 +119,7 @@ checksum = "e7a5d71263a5a7d47b41f6b3f06ba276f10cc18b0931f1799f710578e2309348"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn",
+ "syn 3.0.9",
 ]
 
 [[package]]
@@ -144,6 +144,17 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest",
+]
+
+[[package]]
+name = "syn"
+version = "2.0.119"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "872831b642d1a07999a962a351ed35b955ea2cfc8f3862091e2a240a84f17297"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-ident",
 ]
 
 [[package]]
@@ -183,6 +194,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "worth-proof",
+ "worth-value-shape-derive",
 ]
 
 [[package]]
@@ -202,6 +214,15 @@ name = "worth-ui-host-contract-only-adapter"
 version = "0.0.0"
 dependencies = [
  "worth-ui-host-contract",
+]
+
+[[package]]
+name = "worth-value-shape-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
 ]
 
 [[package]]

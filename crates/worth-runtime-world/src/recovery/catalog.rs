@@ -27,8 +27,9 @@ pub(crate) enum RecoveryCatalogDenial {
         expected: RuntimeWorldOwnerIdentity,
         actual: RuntimeWorldOwnerIdentity,
     },
+    ArithmeticOverflow,
     CapacityExhausted {
-        maximum: usize,
+        maximum: Option<usize>,
     },
 }
 
@@ -43,8 +44,8 @@ pub(crate) enum RecoveryRecordRemovalDenial {
 struct RecoveryCatalogState {
     costs: crate::inspection::RuntimeWorldRecoveryCosts,
     owner: RuntimeWorldOwnerIdentity,
-    maximum_slots: usize,
-    maximum_metadata_bytes: usize,
+    maximum_slots: Option<usize>,
+    maximum_metadata_bytes: Option<usize>,
     reserved_slots: usize,
     abandoned_slots: usize,
     slots: RecoveryRecordSlots,
@@ -129,13 +130,16 @@ impl ProductUnpublishedRecoveryCatalog {
                 actual: owner,
             });
         }
-        if state
+        let occupied = state
             .slots
             .retained_len()
-            .saturating_add(state.reserved_slots)
-            .saturating_add(state.updating_slots)
-            .saturating_add(state.abandoned_slots)
-            >= state.maximum_slots
+            .checked_add(state.reserved_slots)
+            .and_then(|count| count.checked_add(state.updating_slots))
+            .and_then(|count| count.checked_add(state.abandoned_slots))
+            .ok_or(RecoveryCatalogDenial::ArithmeticOverflow)?;
+        if state
+            .maximum_slots
+            .is_some_and(|maximum| occupied >= maximum)
         {
             return Err(RecoveryCatalogDenial::CapacityExhausted {
                 maximum: state.maximum_slots,
@@ -147,16 +151,20 @@ impl ProductUnpublishedRecoveryCatalog {
             .checked_add(state.reserved_metadata_bytes)
             .and_then(|bytes| bytes.checked_add(metadata_charge))
         else {
-            return Err(RecoveryCatalogDenial::CapacityExhausted {
-                maximum: state.maximum_slots,
-            });
+            return Err(RecoveryCatalogDenial::ArithmeticOverflow);
         };
-        if metadata_after > state.maximum_metadata_bytes {
+        if state
+            .maximum_metadata_bytes
+            .is_some_and(|maximum| metadata_after > maximum)
+        {
             return Err(RecoveryCatalogDenial::CapacityExhausted {
                 maximum: state.maximum_slots,
             });
         }
-        state.reserved_slots += 1;
+        state.reserved_slots = state
+            .reserved_slots
+            .checked_add(1)
+            .ok_or(RecoveryCatalogDenial::ArithmeticOverflow)?;
         state.reserved_metadata_bytes += metadata_charge;
         Ok(ReservedProductUnpublishedSlot {
             catalog: self.clone(),
@@ -303,7 +311,7 @@ impl ProductUnpublishedRecoveryCatalog {
     }
 
     #[cfg(test)]
-    pub(crate) fn maximum_slots(&self) -> usize {
+    pub(crate) fn maximum_slots(&self) -> Option<usize> {
         self.locked_state().maximum_slots
     }
 
@@ -314,7 +322,7 @@ impl ProductUnpublishedRecoveryCatalog {
             state.metadata_bytes <= maximum_metadata_bytes,
             "test metadata ceiling cannot invalidate installed custody"
         );
-        state.maximum_metadata_bytes = maximum_metadata_bytes;
+        state.maximum_metadata_bytes = Some(maximum_metadata_bytes);
     }
 }
 

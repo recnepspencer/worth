@@ -1,3 +1,5 @@
+#[cfg(test)]
+use super::own_effect_observation::{self, Stage};
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -42,6 +44,8 @@ where
             } => {
                 // A delivery that is still waiting leaves the checkpoint
                 // Published: nothing moved, so the caller does not spin on it.
+                #[cfg(test)]
+                own_effect_observation::record(Stage::DeliveryStarted);
                 let mut delivered = false;
                 self.deliver_output_checkpoint_with_finish(
                     phase,
@@ -56,6 +60,12 @@ where
                         self.finish_output_checkpoint(interest, claim, checkpoint, denial)
                     },
                 )?;
+                #[cfg(test)]
+                own_effect_observation::record(if delivered {
+                    Stage::Delivered
+                } else {
+                    Stage::DeliveryWait
+                });
                 Ok(delivered)
             }
             Checkpoint::Delivered {
@@ -86,6 +96,8 @@ where
                             .map(|_| false)
                     }
                 };
+                #[cfg(test)]
+                own_effect_observation::record(Stage::Ready);
                 let completion = ready_backing.complete(WorthQueryCompletedOutputDemand {
                     authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
                     readiness,

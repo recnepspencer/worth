@@ -1,8 +1,8 @@
 //! One released edge inspects each released row's awaiting owners once.
-use super::super::{
-    PreparedReadyBacking, WorthQueryOutputCheckpoint, WorthQueryOutputProgress,
-    WorthQueryPendingOutputDelivery,
-};
+use super::super::PreparedReadyBacking;
+use super::super::WorthQueryOutputCheckpoint;
+use super::super::WorthQueryOutputProgress;
+use super::super::WorthQueryPendingOutputDelivery;
 use super::*;
 
 #[test]
@@ -24,7 +24,7 @@ fn a_released_claim_walks_each_released_key_once() {
         );
         stale_row.framework_required_count = 1;
         state.records.insert(stale.clone(), stale_row);
-        let backing = PreparedReadyBacking::prepare(&state, &mut record_admission(), 0).unwrap();
+        let backing = PreparedReadyBacking::new();
         state.records.insert(
             newest.clone(),
             record(
@@ -52,18 +52,10 @@ fn a_released_claim_walks_each_released_key_once() {
             0,
         );
         row.prerequisites = vec![Arc::new(stale.clone())];
-        state.required_reserved_bytes +=
-            row.prerequisites.capacity() * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
+
         state.records.insert(dependent.clone(), row);
         let before = state.records.occurrence_visits_for_test();
-        drop(
-            state
-                .release_record_prerequisites(
-                    &dependent,
-                    &mut super::super::lifecycle::release::CleanupWalk::new(),
-                )
-                .unwrap(),
-        );
+        drop(state.release_record_prerequisites(&dependent));
         let visited = state.records.occurrence_visits_for_test() - before;
         // Two rows: one successor search and one awaited-owner walk for each
         // of the stale and newest keys. No defer or membership rewalk is owed.

@@ -28,6 +28,7 @@ fn every_application_schema_member_family_changes_identity() {
             entity: "Entity".to_string(),
         },
         ApplicationSchemaMember::Aspect {
+            absence: worth_foundational::facade::AbsenceLaw::Required,
             entity: "Entity".to_string(),
             aspect: "Aspect".to_string(),
             identity: worth_foundational::facade::AspectIdentity(0x91613001),
@@ -321,6 +322,7 @@ fn field(
         field: "Field".to_string(),
         presence: crate::application_schema::ApplicationFieldPresence::Required,
         scalar_family,
+        canonical: None,
         value_type: value_type.to_string(),
         unit: unit.map(str::to_string),
         frame: None,

@@ -29,10 +29,11 @@ impl ComputationSourceEvidence {
     /// performed record; every derived record must carry the source evidence.
     pub(super) fn from_completed(application: &WorthQueryPrimaryGraphCommittedApplication) -> Self {
         Self(Origin::Performed {
-            superseded_by_own_effect: !application
+            superseded_by_own_effect: application
                 .commit_evidence()
                 .source_facts_superseded_by_own_effect()
-                .is_empty(),
+                .next()
+                .is_some(),
         })
     }
 

@@ -23,11 +23,11 @@
 
 use std::sync::Arc;
 
-use super::{DemandRegistryState, WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry};
-use crate::domain_computation::primary_graph::output_lineage::{
-    invalidation::{InvalidationEditAdmission, SourceInvalidationOwner},
-    RecordedSettlementIdentity,
-};
+use super::DemandRegistryState;
+use super::WorthQueryOutputDemandKey;
+use super::WorthQueryOutputDemandRegistry;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 
 type Identity = Arc<RecordedSettlementIdentity>;
 use super::post_commit::discovery;
@@ -57,12 +57,12 @@ impl SupersededSettlements {
     ) {
         let named = self
             .registry
-            .retire_superseded_settlements(&self.key, owner, &self);
+            .retire_superseded_settlements(&self.key, owner);
         // A named settlement is retried by the next supersession. One no row
         // of this occurrence posts retires as a released settlement does.
         if let Some(displaced) = displaced.filter(|displaced| !named.contains(displaced)) {
             self.registry
-                .retire_released_settlements(vec![(displaced, 0)], owner);
+                .retire_released_settlements(vec![displaced], owner);
         }
     }
 }
@@ -72,7 +72,6 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn posts_settlement(
         &self,
         identity: &RecordedSettlementIdentity,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial> {
         let state = self
             .state
@@ -80,7 +79,7 @@ impl WorthQueryOutputDemandRegistry {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         Ok(state
             .settlement_keys
-            .get_exact_admitted(identity, admission)?
+            .get_exact_admitted(identity)?
             .is_some())
     }
 
@@ -93,18 +92,16 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         key: &WorthQueryOutputDemandKey,
         owner: &SourceInvalidationOwner,
-        published: &SupersededSettlements,
     ) -> Vec<Identity> {
-        let mut admission = owner.edit_admission();
         let candidates = {
             let state = self
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            discovery::after_publication(&state, key, published)
+            discovery::after_publication(&state, key)
         };
         if !candidates.is_empty() {
-            drop(self.retire_settlements(&candidates, owner, &mut admission));
+            drop(self.retire_settlements(&candidates, owner));
         }
         candidates
     }
@@ -115,16 +112,15 @@ impl WorthQueryOutputDemandRegistry {
     /// release.
     pub(super) fn retire_released_settlements(
         &self,
-        released: Vec<(Identity, usize)>,
+        released: Vec<Identity>,
         owner: &SourceInvalidationOwner,
     ) {
         if released.is_empty() {
             return;
         }
-        let mut admission = owner.edit_admission();
-        let released = released.into_iter().map(|(identity, _)| identity);
-        let retired = owner.retire_released(released, &mut admission);
-        self.forget_retired(&retired, &mut admission);
+
+        let retired = owner.retire_released(released);
+        self.forget_retired(&retired);
     }
 
     /// The candidates the invalidation owner retired.
@@ -132,15 +128,14 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         candidates: &[Identity],
         owner: &SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
     ) -> Vec<Identity> {
-        let retired = owner.retire_settlements(candidates, admission);
-        self.forget_retired(&retired, admission);
+        let retired = owner.retire_settlements(candidates);
+        self.forget_retired(&retired);
         retired
     }
 
     /// Rows the owner retired leave this index with them.
-    fn forget_retired(&self, retired: &[Identity], admission: &mut InvalidationEditAdmission) {
+    fn forget_retired(&self, retired: &[Identity]) {
         if retired.is_empty() {
             return;
         }
@@ -148,58 +143,28 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.forget_retired_settlements(retired, admission);
+        state.forget_retired_settlements(retired);
     }
 }
 
 impl DemandRegistryState {
-    fn forget_retired_settlements(
-        &mut self,
-        retired: &[Identity],
-        admission: &mut InvalidationEditAdmission,
-    ) {
+    fn forget_retired_settlements(&mut self, retired: &[Identity]) {
         for identity in retired {
-            let Ok(Some(key)) = self.settlement_keys.get_exact_admitted(identity, admission) else {
+            let Ok(Some(key)) = self.settlement_keys.get_exact_admitted(identity) else {
                 continue;
             };
-            if self
-                .settlement_keys
-                .admit_selected_removal_work(std::iter::once(identity), admission)
-                .is_err()
-                || self.charge_record_lookup(&key, admission).is_err()
+            self.settlement_keys.remove(identity);
+            if let Some(mut record) = self.records.get_mut(key.as_ref())
+                && let Some(at) = record
+                    .settlements
+                    .iter()
+                    .position(|settled| settled == identity)
             {
-                return;
+                record.settlements.remove(at);
+                if record.prepared_prerequisite_claims == 0 {
+                    record.settlements.shrink_to_fit();
+                }
             }
-            let settled = self
-                .records
-                .get(key.as_ref())
-                .map_or(0, |record| record.settlements.len());
-            if admission.charge_external_work(settled as u64).is_err() {
-                return;
-            }
-            let index_bytes = self.settlement_keys.remove(identity);
-            let posting_bytes = self
-                .records
-                .get_mut(key.as_ref())
-                .and_then(|mut record| {
-                    let at = record
-                        .settlements
-                        .iter()
-                        .position(|(settled, _)| settled == identity)?;
-                    let key_bytes = record.settlements.remove(at).1;
-                    // The slot leaves with its posting, unless a prepared
-                    // posting of this row is about to fill it.
-                    let slots = record.settlements.capacity();
-                    if record.prepared_prerequisite_claims == 0 {
-                        record.settlements.shrink_to_fit();
-                    }
-                    let freed = slots - record.settlements.capacity();
-                    Some(key_bytes + freed * std::mem::size_of::<(Identity, usize)>())
-                })
-                .unwrap_or(0);
-            self.required_reserved_bytes = self
-                .required_reserved_bytes
-                .saturating_sub(index_bytes.saturating_add(posting_bytes));
         }
     }
 }

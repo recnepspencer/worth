@@ -1,3 +1,4 @@
+mod error_chain;
 mod storage;
 // Why a partitioned computation has no result.
 
@@ -9,6 +10,7 @@ use super::super::{
     WorthQueryManagedComputationInterruption, WorthQueryManagedComputationResourceDenial,
 };
 use super::reader::{WorthQueryComputationInputDenial, WorthQueryComputationReadDenial};
+#[cfg(test)]
 use super::routing::ComputationPartitionRoutingDenial;
 
 /// Why one partition stopped.
@@ -76,6 +78,8 @@ pub enum WorthQueryPartitionedComputationDenial<Stopped> {
     ReducerPanicked,
     /// A reduced value's canonical bits disagree with the length it declares.
     ReducedEncodingInvalid,
+    /// A retained native result did not qualify for its declared partition.
+    RetainedResultUnqualified { partition: PartitionIdentity },
     /// The reduction refused the identities or values the map gave it.
     /// Execution builds both from one canonical list, so no run has met it.
     ReductionInputInvalid(WorthQueryReductionInputDenial),
@@ -85,6 +89,12 @@ pub enum WorthQueryPartitionedComputationDenial<Stopped> {
 /// cause, as execution names it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryReductionInputDenial {
+    /// An access-key map cannot be advanced as keyless retained work.
+    RetainedRunRequiresKeyless,
+    /// The requested removal names no successful native slot.
+    RetainedRunUnknownRemoval { partition: PartitionIdentity },
+    /// A slot cannot be both replaced and removed in one native advance.
+    RetainedRunChangedAndRemoved { partition: PartitionIdentity },
     /// The identities were not sorted and unique.
     IdentitiesNotCanonical,
     /// The map gave a different number of values than identities.
@@ -97,6 +107,7 @@ pub enum WorthQueryReductionInputDenial {
     PartitionAlreadyPresent { partition: PartitionIdentity },
 }
 
+#[cfg(test)]
 impl<Stopped> From<ComputationPartitionRoutingDenial>
     for WorthQueryPartitionedComputationDenial<Stopped>
 {

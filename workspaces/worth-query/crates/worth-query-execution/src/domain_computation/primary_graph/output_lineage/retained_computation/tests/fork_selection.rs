@@ -2,10 +2,12 @@
 use super::*;
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use worth_runtime_world::facade::{
-    ProductBranchCreationIntent, ProductBranchCreationPlans, RelationalBranchCreationPlan,
-    RuntimeWorldBranchCreationOutcome, RuntimeWorldCancellationSource, SignalBranchCreationPlan,
-};
+use worth_runtime_world::facade::ProductBranchCreationIntent;
+use worth_runtime_world::facade::ProductBranchCreationPlans;
+use worth_runtime_world::facade::RelationalBranchCreationPlan;
+use worth_runtime_world::facade::RuntimeWorldBranchCreationOutcome;
+use worth_runtime_world::facade::RuntimeWorldCancellationSource;
+use worth_runtime_world::facade::SignalBranchCreationPlan;
 
 #[test]
 fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
@@ -78,20 +80,13 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
             lineage.record_restoration(lineage.binding_type(&source.output_binding), source.runtime_authority, source.schema.clone(), source.scope, observation,
             Arc::new(super::super::super::WorthQueryApplicationOutputCorrespondence::default()),
             super::super::super::RecordedSourceIdentity::Checkpoint(crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new([0x72; 32])),
-            partition, None, [0x73; 32], super::super::super::ComputationSourceEvidence::for_test(false).retain_facts(Arc::<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>::from([])), None);
+            partition, None, [0x73; 32], super::super::super::ComputationSourceEvidence::for_test(false).retain_facts(Arc::<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>::from([])), None, None);
         };
     restored(&mut lineage, product.observation());
     let captured =
         Arc::clone(&lineage.by_source[&source][&parent.occurrence][&parent.generation][0]);
-    captured.get().unwrap().mutable.lock().unwrap().computation = lineage.retain_computation(
-        sealed_run_for_lineage_test(),
-        None,
-        None,
-        lineage.prepay_computation_fork_scan_for_test(),
-    );
-    let bytes = lineage.retention.retained_bytes();
-    assert!(bytes > 0);
-    let before_forks = lineage.prepay_computation_fork_scan_for_test();
+    captured.get().unwrap().mutable.lock().unwrap().computation =
+        lineage.retain_computation(sealed_run_for_lineage_test());
     lineage.register_fork(product.observation(), &child);
     lineage.register_fork(admitted_child.observation(), &nested);
     let select =
@@ -106,12 +101,6 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
                     },
                     partition,
                     execution,
-                    &mut InvalidationEditAdmission::new(
-                        worth_relational::facade::mvcc::CompanionPreflightBudget {
-                            maximum_work_visits: Some(4096),
-                            maximum_preparation_bytes: None,
-                        },
-                    ),
                 )
                 .unwrap()
                 .unwrap()
@@ -119,68 +108,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
     assert!(Arc::ptr_eq(&select(&lineage, &child), &captured));
     assert!(Arc::ptr_eq(&select(&lineage, &nested), &captured));
     assert!(lineage.fork_pins_computation(captured.get().unwrap()));
-    assert_eq!(
-        lineage.retention.retained_bytes(),
-        bytes,
-        "forks share one retained charge"
-    );
-    let prior = PriorComputationRecord {
-        cell: Arc::clone(&captured),
-    };
-    let next_bytes = bytes;
-    let parent_next = || {
-        let mut sealed = sealed_run_for_lineage_test();
-        let row = captured.get().unwrap().mutable.lock().unwrap();
-        let RecordedComputation::Retained(state) = &row.computation else {
-            panic!("captured state retained");
-        };
-        sealed.cloned_from = Some(Arc::clone(state));
-        sealed
-    };
-    let successor = lineage.retain_computation(
-        parent_next(),
-        Some(&prior),
-        Some(&captured.get().unwrap().settlement_identity),
-        lineage.prepay_computation_fork_scan_for_test(),
-    );
-    assert_eq!(
-        lineage.retention.retained_bytes(),
-        bytes + next_bytes,
-        "a pinned parent's successor reserves a distinct full state"
-    );
-    assert!(matches!(
-        captured.get().unwrap().mutable.lock().unwrap().computation,
-        RecordedComputation::Retained(_)
-    ));
-    drop(successor);
-    assert_eq!(lineage.retention.retained_bytes(), bytes);
-    let successor = lineage.retain_computation(
-        parent_next(),
-        Some(&prior),
-        Some(&captured.get().unwrap().settlement_identity),
-        before_forks,
-    );
-    assert_eq!(
-        lineage.retention.retained_bytes(),
-        bytes + next_bytes,
-        "forks created after prepayment preserve custody without an unbudgeted scan"
-    );
-    assert!(matches!(
-        captured.get().unwrap().mutable.lock().unwrap().computation,
-        RecordedComputation::Retained(_)
-    ));
-    drop(successor);
-    assert_eq!(lineage.retention.retained_bytes(), bytes);
-    let mut denied =
-        InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget {
-            maximum_work_visits: Some(0),
-            maximum_preparation_bytes: None,
-        });
-    assert!(
-        lineage.prepay_computation_fork_scan(&mut denied).is_err(),
-        "pin-scan work is admitted before publication"
-    );
-    drop(prior);
+
     lineage.release_occurrence(parent.occurrence);
     assert!(!lineage.by_source[&source].contains_key(&child.lifecycle_incarnation()));
     assert!(!lineage.by_source[&source].contains_key(&nested.lifecycle_incarnation()));
@@ -192,7 +120,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
         Arc::ptr_eq(&select(&lineage, &nested), &captured),
         "nested no-local inheritance still selects the same deleted ancestor cell"
     );
-    assert_eq!(lineage.retention.retained_bytes(), bytes);
+
     restored(&mut lineage, &child);
     let local = select(&lineage, &child);
     assert!(!Arc::ptr_eq(&local, &captured));
@@ -211,16 +139,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
     lineage.release_occurrence(child.lifecycle_incarnation());
     lineage.release_occurrence(nested.lifecycle_incarnation());
     assert!(lineage.by_source.is_empty());
-    assert_eq!(
-        lineage.retention.retained_bytes(),
-        bytes,
-        "an independently selected prior retains its state after lineage deletion"
-    );
+
     drop(local);
     drop(captured);
-    assert_eq!(
-        lineage.retention.retained_bytes(),
-        0,
-        "final holder releases the captured state's one ticket"
-    );
 }

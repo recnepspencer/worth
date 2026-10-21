@@ -2,14 +2,12 @@
 
 pub use crate::mvcc::{
     BranchBoundRelationalTransaction, CompanionBranchCell, CompanionBranchCellSlot,
-    CompanionBranchImage, CompanionCellEditStop, CompanionDerivedImageRetention,
-    CompanionDerivedRootAdmission, CompanionDerivedRootCleanup, CompanionDerivedRootCost,
+    CompanionBranchImage, CompanionCellEditStop, CompanionDerivedRootCleanup,
     CompanionDerivedRootInstalled, CompanionDerivedRootPreparationStop,
-    CompanionDerivedRootStopped, CompanionPreflightBudget, CompanionPreflightStop,
-    CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
-    CustomInvariantExecutionReceipt, DiscardedRelationalCommitCandidate,
-    PendingCompanionRegistration, PerformedRelationalCommit, PreparedCompanionBranchCell,
-    PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
+    CompanionDerivedRootStopped, CompanionPreflightStop, CompanionPublicationCompletion,
+    CompanionPublicationCompletionObserver, CustomInvariantExecutionReceipt,
+    DiscardedRelationalCommitCandidate, PendingCompanionRegistration, PerformedRelationalCommit,
+    PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
     PreparedRelationalAspectScope, PreparedRelationalChangeSummary,
     PreparedRelationalChangeSummaryBudget, PreparedRelationalChangeSummaryDenial,
     PreparedRelationalCommitCandidate, PreparedRelationalRecordChange,
@@ -17,9 +15,9 @@ pub use crate::mvcc::{
     PublicationCompanionRegistration, PublicationCompanionRegistrationPort,
     PublicationCompanionRegistrationStop, PublishRelationalCommit, RelationalBranchObservation,
     RelationalBranchTransactionAdmissionDenial, RelationalCancellationSource,
-    RelationalCancellationToken, RelationalInterruptionBoundary,
-    RelationalInterruptionCostCounters, RelationalInterruptionEvent,
-    RelationalMutationInvariantEvidence, RelationalOperationControl,
+    RelationalCancellationToken, RelationalInstalledApplicationPublicationAuthority,
+    RelationalInterruptionBoundary, RelationalInterruptionCostCounters,
+    RelationalInterruptionEvent, RelationalMutationInvariantEvidence, RelationalOperationControl,
     RelationalOperationInterruption, RelationalPreparationPort, RelationalPublicationCompanion,
     RelationalPublicationDeferred, RelationalPublicationDenial,
     RelationalPublicationDurabilityPosture, RelationalPublicationFailure,
@@ -28,10 +26,16 @@ pub use crate::mvcc::{
     RelationalTransactionFootprint, RelationalTransactionIntent, RelationalTransactionReadLocus,
     RelationalTransactionRelationRead, RelationalTransactionRelationValue,
     RelationalTransactionStagingDenial, RelationalTransactionWriteLocus,
-    ReservedCompanionBranchCell, StaleRelationalBranchObservation, ValidatedMutationFootprint,
-    ValidatedMutationFootprintNotRequested, ValidatedMutationFootprintProjection,
-    ValidatedMutationFootprintWork, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
-    ValidatedMutationTouchProjectionWork, ValidatedMutationTouches, ValidatedRelationalProposal,
+    ReservedCompanionBranchCell, StaleRelationalBranchObservation, ValidatedEntityStructTouch,
+    ValidatedMutationFootprint, ValidatedMutationFootprintNotRequested,
+    ValidatedMutationFootprintProjection, ValidatedMutationFootprintWork, ValidatedMutationTouch,
+    ValidatedMutationTouchProjectionError, ValidatedMutationTouchProjectionWork,
+    ValidatedMutationTouches, ValidatedRelationalProposal,
+};
+pub use crate::mvcc::{
+    RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
+    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
+    RequiredOutputRoleTarget,
 };
 pub use crate::publication::RelationalSettlementPort;
 pub use crate::transactions::data::{

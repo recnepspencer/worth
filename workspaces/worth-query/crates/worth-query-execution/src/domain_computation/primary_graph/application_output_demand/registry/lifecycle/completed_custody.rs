@@ -1,7 +1,6 @@
-//! Drain one custody note at a time, after its complete price was admitted.
-use super::super::refreshed_rejoin::{infallible, OccurrenceSearchCharge};
+//! Drain actual queued custody while preserving held source ownership.
+
 use super::*;
-use core::convert::Infallible;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 #[cfg(test)]
@@ -13,46 +12,36 @@ pub(in super::super) fn contacts() -> u64 {
 
 impl DemandRegistryState {
     #[cfg(test)]
-    pub(in super::super) fn prune_completed_custody<
-        C: OccurrenceSearchCharge<Refusal = Infallible>,
-    >(
+    pub(in super::super) fn prune_completed_custody(
         &mut self,
-        charge: &mut C,
-    ) -> Result<(), Infallible> {
+    ) -> Result<(), core::convert::Infallible> {
         let visits = self.custody_cleanup.len;
         for _ in 0..visits {
             let Some(commit) = self.custody_cleanup.head.clone() else {
                 break;
             };
-            self.prune_custody_entry(&commit, charge)?;
+            self.prune_custody_entry(&commit);
         }
         Ok(())
     }
 
-    pub(in super::super) fn prune_custody_entry<C: OccurrenceSearchCharge<Refusal = Infallible>>(
-        &mut self,
-        commit: &CompositeCommitIdentity,
-        charge: &mut C,
-    ) -> Result<(), Infallible> {
+    pub(in super::super) fn prune_custody_entry(&mut self, commit: &CompositeCommitIdentity) {
         #[cfg(test)]
         CONTACTS.with(|count| count.set(count.get() + 1));
         let note = self.take_custody_note(commit);
         let state = note.state();
-        if !infallible(state.custody_prunable(commit, charge)) {
+        if !state.custody_prunable(commit) {
             note.requeue();
-            return Ok(());
+            return;
         }
         let custody = note.prune();
         for source in custody.bound_sources.iter().flatten() {
-            infallible(charge.occurrence_path(self.records.len()));
             self.records
                 .visit_source_rows_mut(&source.identity, |record| {
-                    infallible(charge.inspect_row());
                     record
                         .source_commits
                         .retain(|known| self.source_custody.contains_key(known));
                 });
         }
-        Ok(())
     }
 }

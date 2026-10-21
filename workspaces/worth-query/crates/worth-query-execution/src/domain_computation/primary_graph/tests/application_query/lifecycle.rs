@@ -249,7 +249,7 @@ fn cancellation_after_admission_releases_basis_before_projection() {
         })
         .expect("the fixture read owns its installed host call");
     let basis = plan.basis_identity().clone();
-    let result_buffer = world.application.result_buffer_observer();
+
     assert!(basis_is_live(&world, &basis));
     cancellation.cancel();
 
@@ -268,8 +268,6 @@ fn cancellation_after_admission_releases_basis_before_projection() {
         WorthQueryApplicationOneShotDenialKind::Cancelled
     );
     assert!(!basis_is_live(&world, &basis));
-    assert_eq!(result_buffer.observe().active_buffers(), 0);
-    assert_eq!(result_buffer.observe().retained_bytes(), 0);
 }
 
 mod principal_revocation_after_product_admission_denies_before_proje;

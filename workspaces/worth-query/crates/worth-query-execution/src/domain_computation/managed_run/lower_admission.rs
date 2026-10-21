@@ -111,6 +111,63 @@ fn admit_lower_execution_basis(
             ),
         });
     }
+    let step = match boundary {
+        WorthQueryExecutionBoundary::Atomic => None,
+        WorthQueryExecutionBoundary::BoundedStep => {
+            Some(lower_installed_step_contract(binding.resource_envelope)?)
+        }
+    };
+    admit_native_execution_basis(
+        bridge,
+        relational,
+        binding.operation_identity,
+        binding.resource_attempt_identity,
+        step,
+        request,
+        execution,
+    )
+}
+
+pub(in crate::domain_computation) fn admit_live_lower_execution_basis(
+    bridge: &RuntimeBridge,
+    relational: &RuntimeBridgeRelationalSource,
+    operation: &str,
+    attempt: &str,
+    buffer_capacity: usize,
+    request: WorthQueryManagedTruthReadRequest,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<WorthQueryManagedLowerExecutionBasis, WorthQueryManagedLowerAdmissionFailure> {
+    let capacity =
+        u64::try_from(buffer_capacity).map_err(|_| WorthQueryManagedLowerAdmissionFailure {
+            kind: WorthQueryManagedLowerAdmissionFailureKind::InstalledStepContract,
+            detail: Arc::from("live buffer capacity is not representable"),
+        })?;
+    let step =
+        BridgeManagedExecutionStepContract::queue("application-query-live-delivery", capacity)
+            .map_err(|detail| WorthQueryManagedLowerAdmissionFailure {
+                kind: WorthQueryManagedLowerAdmissionFailureKind::InstalledStepContract,
+                detail: Arc::from(detail),
+            })?;
+    admit_native_execution_basis(
+        bridge,
+        relational,
+        operation,
+        attempt,
+        Some(step),
+        request,
+        execution,
+    )
+}
+
+fn admit_native_execution_basis(
+    bridge: &RuntimeBridge,
+    relational: &RuntimeBridgeRelationalSource,
+    operation: &str,
+    attempt: &str,
+    step: Option<BridgeManagedExecutionStepContract>,
+    request: WorthQueryManagedTruthReadRequest,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<WorthQueryManagedLowerExecutionBasis, WorthQueryManagedLowerAdmissionFailure> {
     let expected_source = relational.authoritative_source_profile();
     if bridge.authoritative_source_profile() != Some(&expected_source) {
         return Err(WorthQueryManagedLowerAdmissionFailure {
@@ -153,24 +210,12 @@ fn admit_lower_execution_basis(
             kind: WorthQueryManagedLowerAdmissionFailureKind::BridgePlanning,
             detail: Arc::from(format!("{failure:?}")),
         })?;
-    let intent = BridgeManagedExecutionIntent::new(
-        binding.operation_identity,
-        binding.resource_attempt_identity,
-    );
+    let intent = BridgeManagedExecutionIntent::new(operation, attempt);
     let truth_basis = BridgeAsyncRequestTruthViewBasis::branch_head(branch, snapshot);
-    let bridge_basis = match boundary {
-        WorthQueryExecutionBoundary::Atomic => {
-            bridge.admit_atomic_execution_basis(intent, truth_basis, planned, execution)
-        }
-        WorthQueryExecutionBoundary::BoundedStep => {
-            let bridge_step = lower_installed_step_contract(binding.resource_envelope)?;
-            bridge.admit_managed_execution_basis(
-                intent,
-                bridge_step,
-                truth_basis,
-                planned,
-                execution,
-            )
+    let bridge_basis = match step {
+        None => bridge.admit_atomic_execution_basis(intent, truth_basis, planned, execution),
+        Some(step) => {
+            bridge.admit_managed_execution_basis(intent, step, truth_basis, planned, execution)
         }
     }
     .map_err(|denial| WorthQueryManagedLowerAdmissionFailure {

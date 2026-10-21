@@ -47,8 +47,7 @@ impl RelationalPinnedRead {
         if request.ordered.after().is_some() {
             return Err(Denial::ForeignBoundary);
         }
-        charge_navigation(meter, self.selected_index_count(), false)?;
-        charge_navigation(meter, self.selected_index_count(), false)?;
+
         let prepared = prepare_related_lookup(self, &request.ordered).map_err(Denial::Lookup)?;
         let _projection_memory = reserve_basis_copy(self, allocation, meter)?;
         let projection = self
@@ -63,7 +62,7 @@ impl RelationalPinnedRead {
         let DerivedIndexEntries::RelatedEntityOrdering(all) = &prepared.generation.entries else {
             unreachable!("prepared ordering kind")
         };
-        charge_navigation(meter, all.len(), true)?;
+
         let rows = all.get(&request.ordered.parent_entity_id());
         let (start, end, comparisons) = range::select(self, request, &prepared, rows, meter)?;
         let count = (end - start).min(request.ordered.page_width());
@@ -115,23 +114,6 @@ fn charge(meter: &mut MapKernelContext<'_, '_>, work: u64) -> Result<(), Denial>
         .checkpoint(work)
         .map_err(|stop| Denial::Work(worth_execution::WorkCeilingDenial::Stopped(stop)))
 }
-fn charge_navigation(
-    meter: &mut MapKernelContext<'_, '_>,
-    count: usize,
-    persistent: bool,
-) -> Result<(), Denial> {
-    use super::admitted_entity_field_lookup::navigation::{
-        btree_navigation_work, ordered_navigation_work,
-    };
-    let work = if persistent {
-        ordered_navigation_work::<()>(count)
-    } else {
-        btree_navigation_work::<()>(count, 0)
-    }
-    .map_err(|_| Denial::AccountingOverflow)?;
-    charge(meter, work)
-}
-
 fn reserve_basis_copy(
     read: &RelationalPinnedRead,
     allocation: ExecutionAllocationPolicy<'_, '_>,

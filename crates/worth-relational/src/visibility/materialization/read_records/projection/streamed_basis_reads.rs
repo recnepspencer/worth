@@ -21,44 +21,6 @@ pub(crate) trait ProjectionRecordSource {
     ) -> Option<&crate::branch::RelationalBranchRootSchemaAuthority> {
         self.selected_root().map(|root| root.schema_authority())
     }
-    fn authoritative_entity_record(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        id: EntityId,
-    ) -> Result<Option<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        super::super::read_work::point_with_quote(
-            execution,
-            || self.candidate_entity_heap_for_id(id),
-            || {
-                let root = self.selected_root()?;
-                super::super::reader::record_identity_materialization::authoritative_entity_record_for_id_from_exact_state(root.as_ref(), root.schema_authority().registry(), id)
-            },
-            |record| {
-                record
-                    .as_ref()
-                    .map_or(0, super::super::read_footprint::entity)
-            },
-        )
-    }
-    fn authoritative_relation_record(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        id: RelationId,
-    ) -> Result<Option<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        super::super::read_work::point_with_quote(
-            execution,
-            || self.candidate_relation_heap_for_id(id),
-            || {
-                let root = self.selected_root()?;
-                super::super::reader::record_identity_materialization::authoritative_relation_record_for_id_from_exact_state(root.as_ref(), root.schema_authority().registry(), id)
-            },
-            |record| {
-                record
-                    .as_ref()
-                    .map_or(0, super::super::read_footprint::relation)
-            },
-        )
-    }
 
     fn with_entity_record<E, T>(
         &self,

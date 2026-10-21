@@ -7,9 +7,9 @@ use worth_relational::facade::mvcc::CompanionPublicationCompletion;
 
 use super::super::WorthQueryOutputDemandAdvance;
 use super::*;
-use crate::domain_computation::primary_graph::application_output_demand::{
-    RequiredWorkClaim, SelectedRequiredWork, SelectedRequiredWorkKind,
-};
+use crate::domain_computation::primary_graph::application_output_demand::RequiredWorkClaim;
+use crate::domain_computation::primary_graph::application_output_demand::SelectedRequiredWork;
+use crate::domain_computation::primary_graph::application_output_demand::SelectedRequiredWorkKind;
 
 /// Popped work for one advance. Each token backs its selected required root.
 /// Held items requeue when this advance ends: only a cause
@@ -109,7 +109,6 @@ impl QueuedRequiredRoots {
         &mut self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         wave: &RequiredWaveSelection<'_, Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<(usize, RequiredWorkClaim)>, WorthQueryOutputDemandDenial> {
         if self.drained {
             runtime.output_demands.maintain_selected_required_cleanup(
@@ -120,7 +119,6 @@ impl QueuedRequiredRoots {
                     .graph
                     .source_owner
                     .invalidation_owner,
-                admission,
             )?;
             return Ok(None);
         }
@@ -132,15 +130,12 @@ impl QueuedRequiredRoots {
                 .graph
                 .source_owner
                 .invalidation_owner,
-            admission,
         )?
         else {
             self.drained = true;
             return Ok(None);
         };
-        admission
-            .charge_external_work(std::mem::size_of::<Option<SelectedRequiredWork>>() as u64)
-            .map_err(|_| work_denial())?;
+
         if self.roots.len() == self.roots.capacity() {
             let next = self
                 .roots
@@ -148,19 +143,7 @@ impl QueuedRequiredRoots {
                 .checked_mul(2)
                 .ok_or_else(capacity_denial)?
                 .max(1);
-            let item = std::mem::size_of::<Option<SelectedRequiredWork>>();
-            admission
-                .admit_read_scratch(
-                    u64::try_from(next.checked_mul(item).ok_or_else(capacity_denial)?)
-                        .map_err(|_| capacity_denial())?,
-                )
-                .map_err(admission_denial)?;
-            admission
-                .charge_external_work(
-                    u64::try_from(self.roots.len().checked_mul(item).ok_or_else(work_denial)?)
-                        .map_err(|_| work_denial())?,
-                )
-                .map_err(|_| work_denial())?;
+
             let mut replacement = Vec::new();
             replacement
                 .try_reserve_exact(next)
@@ -182,31 +165,25 @@ impl QueuedRequiredRoots {
         claim: &mut RequiredWorkClaim,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         wave: &RequiredWaveSelection<'_, Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {
-        let Some(work) = self.prepare_selection(claim, runtime, wave, admission)? else {
+        let Some(work) = self.prepare_selection(claim, runtime, wave)? else {
             return Ok(None);
         };
-        let Some(ready) = runtime
-            .output_demands
-            .selected_ready_completion(&work, admission)?
-        else {
-            self.hold(work, admission)?;
+        let Some(ready) = runtime.output_demands.selected_ready_completion(&work)? else {
+            self.hold(work)?;
             return Ok(None);
         };
         // The caller already certified its own occurrence. A moved basis
         // cannot use that old certification to discharge a newer cause.
-        if ready.same_record(&wave.anchor_ready, admission)? {
+        if ready.same_record(&wave.anchor_ready)? {
             match self.caller.take() {
                 Some(CallerOutcome::Current(proof)) => {
                     self.caller = Some(CallerOutcome::Decided(Arc::clone(proof.value())));
-                    drop(acknowledgement::acknowledge_caller_claim(
-                        work, proof, admission,
-                    )?);
+                    drop(acknowledgement::acknowledge_caller_claim(work, proof)?);
                 }
                 other => {
                     self.caller = other;
-                    self.hold(work, admission)?;
+                    self.hold(work)?;
                 }
             }
             return Ok(None);
@@ -223,9 +200,8 @@ impl QueuedRequiredRoots {
         claim: &mut RequiredWorkClaim,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         wave: &RequiredWaveSelection<'_, Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let work = self.prepare_selection(claim, runtime, wave, admission)?;
+        let work = self.prepare_selection(claim, runtime, wave)?;
         self.roots[index] = work;
         Ok(())
     }
@@ -234,12 +210,10 @@ impl QueuedRequiredRoots {
         claim: &mut RequiredWorkClaim,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         wave: &RequiredWaveSelection<'_, Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<SelectedRequiredWork>, WorthQueryOutputDemandDenial> {
-        let Some(work) =
-            runtime
-                .output_demands
-                .select_required_claim(claim, &wave.positioned, admission)?
+        let Some(work) = runtime
+            .output_demands
+            .select_required_claim(claim, &wave.positioned)?
         else {
             return Ok(None);
         };
@@ -247,25 +221,25 @@ impl QueuedRequiredRoots {
             match observer.state() {
                 // The publication never changed the image: its cause is void.
                 CompanionPublicationCompletion::Aborted => {
-                    drop(work.discard_aborted_native(admission)?);
+                    drop(work.discard_aborted_native()?);
                     return Ok(None);
                 }
                 CompanionPublicationCompletion::Prepared => {
-                    self.hold(work, admission)?;
+                    self.hold(work)?;
                     return Ok(None);
                 }
                 // Installed moved the image first. Stamp the settled hints
                 // before the head check below, so only publications at or
                 // before this wave's position are covered.
                 CompanionPublicationCompletion::Installed => {
-                    work.stamp_settled_hints(admission)?;
+                    work.stamp_settled_hints()?;
                 }
             }
         }
         // Every cause was raised before this inspection. While the head is still
         // this wave's position, the wave's Current proof covers it.
-        if !head_is_selected(runtime, wave, admission)? {
-            self.hold(work, admission)?;
+        if !head_is_selected(runtime, wave)? {
+            self.hold(work)?;
             return Ok(None);
         }
         Ok(Some(work))
@@ -282,7 +256,6 @@ impl QueuedRequiredRoots {
         &mut self,
         index: usize,
         stop: Option<WorthQueryOutputDemandDenial>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let stop = match stop {
             Some(mut stop) => {
@@ -299,17 +272,10 @@ impl QueuedRequiredRoots {
         let Some(work) = self.roots[index].take() else {
             return Ok(());
         };
-        self.hold(work, admission)
+        self.hold(work)
     }
 
-    fn hold(
-        &mut self,
-        work: SelectedRequiredWork,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work(2)
-            .map_err(|_| work_denial())?;
+    fn hold(&mut self, work: SelectedRequiredWork) -> Result<(), WorthQueryOutputDemandDenial> {
         self.held.try_reserve(1).map_err(|_| capacity_denial())?;
         self.held.push(work);
         Ok(())
@@ -327,14 +293,13 @@ fn is_budget(denial: &WorthQueryOutputDemandDenial) -> bool {
 fn head_is_selected<Schema>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     wave: &RequiredWaveSelection<'_, Schema>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, WorthQueryOutputDemandDenial> {
     match runtime
         .primary_provider
         .graph
         .source_owner
         .invalidation_owner
-        .selected_installed_discontinuity(&wave.positioned, admission)
+        .selected_installed_discontinuity(&wave.positioned)
     {
         Ok(_) => Ok(true),
         Err(CompanionPreflightStop::SelectedSourceMismatch) => Ok(false),
@@ -372,6 +337,3 @@ mod tests {
         ));
     }
 }
-
-#[cfg(test)]
-mod cleanup_tests;

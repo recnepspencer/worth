@@ -8,6 +8,9 @@ mod producer;
 pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;
 pub(in crate::domain_computation::primary_graph) use producer::{CurrentBasis, CurrentProof};
 mod request_execution;
+pub(in crate::domain_computation::primary_graph) use request_execution::{
+    QueryMemoryReservation, QueryRequestExecution,
+};
 mod setup;
 
 pub use composition::{
@@ -44,6 +47,7 @@ pub use partitioned_computation::{
 };
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::{
     Comparator, CompletedComputationRetention, ComputationDeposit, ComputationRetention,
+    NativeComputationReads,
 };
 pub(in crate::domain_computation) use partitioned_computation::{
     ComputationPrior, PriorAbsence, RetainedComputation, SealedComputationRetention,
@@ -60,7 +64,8 @@ pub use partitioned_computation::{
 };
 pub(in crate::domain_computation::primary_graph) use producer::{
     install_output_readiness_routes, InstalledProducerEdition, MatchedRequiredPredecessors,
-    PendingOutputReadiness, TypedPendingOutputReadiness, WorthQueryInstalledOutputProducerRoutes,
+    OutputSourceAddress, PendingOutputReadiness, QualifiedOutputSource,
+    TypedPendingOutputReadiness, WorthQueryInstalledOutputProducerRoutes,
     WorthQueryInstalledOutputReadinessRoutes, WorthQueryProducerCommitAuthority,
 };
 pub use producer::{
@@ -76,8 +81,6 @@ pub use producer::{
     WorthQueryWorkflowAssessmentPosture,
 };
 pub use request_execution::query_test_execution_authority_for_test;
-pub(in crate::domain_computation::primary_graph) use request_execution::QueryMemoryReservation;
-pub(in crate::domain_computation::primary_graph) use request_execution::QueryRequestExecution;
 pub use request_execution::{
     bound_advancement_requests_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
@@ -108,7 +111,7 @@ pub(crate) use request_execution::{
     drain_test_advancement_observations, with_test_advancement, TestHostRequest,
 };
 
-pub use request_execution::with_bootstrap_advancement;
+pub use request_execution::{with_bootstrap_advancement, with_bootstrap_advancement_from_request};
 
 pub use request_execution::WorthQueryBootstrapAdvancementPhase;
 

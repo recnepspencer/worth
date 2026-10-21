@@ -1,10 +1,10 @@
 //! The caller's issued interest joins its exact Ready and readmission row.
 
-use super::super::{
-    DemandState, WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint,
-    WorthQueryOutputDemandInterest,
-};
-use super::selection::{charge_required_key_lookup, SelectedReadyReadmission};
+use super::super::DemandState;
+use super::super::WorthQueryOutputAdvancement;
+use super::super::WorthQueryOutputCheckpoint;
+use super::super::WorthQueryOutputDemandInterest;
+use super::selection::SelectedReadyReadmission;
 use super::*;
 
 impl WorthQueryOutputDemandRegistry {
@@ -14,13 +14,10 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn interest_ready_readmission(
         &self,
         interest: &WorthQueryOutputDemandInterest,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {
         // Owner identity, the interest counters, Ready state and three Arc
         // retains precede the lookups. Denial subjects are borrowed statics.
-        admission
-            .charge_external_work(17)
-            .map_err(|_| empty_work_denial())?;
+
         if !Arc::ptr_eq(&self.state, &interest.owner.state) {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignDemand,
@@ -31,8 +28,7 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.charge_record_lookup(&interest.key, admission)?;
-        charge_required_key_lookup(&state, &interest.key, admission)?;
+
         if !state.required_keys.contains(&interest.key) {
             return Ok(None);
         }
@@ -69,8 +65,4 @@ impl WorthQueryOutputDemandRegistry {
             membership: Arc::clone(membership),
         }))
     }
-}
-
-fn empty_work_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "")
 }

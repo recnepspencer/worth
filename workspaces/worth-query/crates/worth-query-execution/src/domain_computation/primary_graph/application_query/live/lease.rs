@@ -16,6 +16,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 use worth_runtime_bridge::facade::BridgeExecutionBasisTerminalDisposition;
 
+mod delivery;
 mod delivery_admission;
 mod denial;
 mod lifecycle;
@@ -234,114 +235,6 @@ where
             WorthQueryRequestInterruption::Cancelled => self.cancelled_outcome(),
             WorthQueryRequestInterruption::DeadlineExceeded => self.deadline_exceeded_outcome(),
         })
-    }
-
-    fn project_front(
-        &mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
-        publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
-        product: crate::basis::WorthQueryProductObservationLease,
-        target_identity: AspectValue,
-    ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
-        let access = WorthQueryApplicationQueryAccessContext::new(principal, &self.scope);
-        let application_basis = match self
-            .runtime
-            .retain_product_application_basis(execution, product.observation())
-        {
-            Ok(basis) => basis,
-            Err(cause) => {
-                return match basis_interruption::outcome(cause) {
-                    Some(outcome) => {
-                        self.terminate_stopped_read();
-                        outcome
-                    }
-                    None => WorthQueryApplicationLiveOutcome::Unavailable,
-                }
-            }
-        };
-        let controls = WorthQueryApplicationQueryControls::product_live(
-            product,
-            application_basis,
-            self.controls.maximum_materialized_record_count(),
-            self.controls.maximum_work_per_delivery(),
-            self.controls.request(),
-        );
-        let governance = std::mem::replace(
-            &mut self.governance,
-            super::super::disclosure::WorthQueryApplicationQueryGovernance::Public,
-        );
-        let mut plan = match self.runtime.readmit_application_query_live(
-            execution,
-            &self.query,
-            &access,
-            governance,
-            self.parameters.clone(),
-            controls,
-        ) {
-            Ok(plan) => plan,
-            Err(denial) => return self.handle_admission_denial(denial),
-        };
-        if let Err(denial) = refresh_governed_authorization(execution, self.runtime, &mut plan) {
-            let _ = plan.basis.release();
-            return self.handle_read_denial(denial);
-        }
-        let Some(_) = self.runtime.runtime.primary_graph() else {
-            let _ = plan.basis.release();
-            return WorthQueryApplicationLiveOutcome::Unavailable;
-        };
-        let result_buffer = self.runtime.result_buffers.reserve(
-            plan.graph_read_plan()
-                .budget_check()
-                .max_inline_result_bytes(),
-        );
-        let (raw, authorization_work, read_proof) =
-            match execute_authorized_read(execution, self.runtime, &plan, |runtime, graph, plan| {
-                read_live_target(
-                    runtime,
-                    execution,
-                    graph,
-                    plan,
-                    target_identity,
-                    result_buffer,
-                )
-            }) {
-                Ok(raw) => raw,
-                Err(denial) => {
-                    let released = plan.basis.release().released();
-                    if !released {
-                        return WorthQueryApplicationLiveOutcome::Unavailable;
-                    }
-                    return self.handle_read_denial(denial);
-                }
-            };
-        match finalize_live_projection(plan, raw, authorization_work, read_proof) {
-            Ok((result, receipt, governance)) => {
-                self.governance = governance;
-                if !self.acknowledge_front() {
-                    return WorthQueryApplicationLiveOutcome::Unavailable;
-                }
-                WorthQueryApplicationLiveOutcome::Delivered(WorthQueryApplicationLiveUpdate::new(
-                    publication,
-                    result,
-                    receipt,
-                ))
-            }
-            Err(WorthQueryLiveProjectionFinalizationDenial::BasisRelease) => {
-                WorthQueryApplicationLiveOutcome::Unavailable
-            }
-            Err(WorthQueryLiveProjectionFinalizationDenial::ResultShape) => self
-                .acknowledge_cause_denial(
-                    WorthQueryApplicationLiveCauseDenialKind::ResultShapeUnavailable,
-                ),
-            Err(WorthQueryLiveProjectionFinalizationDenial::Projection(kind)) => {
-                if self.acknowledge_front() {
-                    WorthQueryApplicationLiveOutcome::ProjectionDenied(kind)
-                } else {
-                    WorthQueryApplicationLiveOutcome::Unavailable
-                }
-            }
-        }
     }
 
     fn acknowledge_cause_denial(

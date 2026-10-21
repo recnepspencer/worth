@@ -1,28 +1,21 @@
 //! Fresh disclosure and selected native ordered pages at the retained data basis.
-use super::{admission::WorthQueryWorkflowReadDenial as Denial, *};
-use crate::domain_computation::primary_graph::{
-    application_attempt::workflow_instance_observation::{
-        history_projection, read_fields::ReadFields,
-    },
-    application_installation::WorthQueryWorkflowVocabulary,
-    output_lineage::invalidation::InvalidationEditAdmission,
-    WorthQueryAdvancementPhase, WorthQuerySelectedProductOperation,
-};
+use super::admission::WorthQueryWorkflowReadDenial as Denial;
+use super::*;
+use crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::history_projection;
+use crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::read_fields::ReadFields;
+use crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use worth_execution::ExecutionArrayBuilder;
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
-use worth_query_declaration::facade::application_program::{
-    ApplicationWorkflowReadBinding, ApplicationWorkflowReadRoute, ApplicationWorkflowSpec,
-};
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowReadBinding;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowReadRoute;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 use worth_query_installation::facade::ApplicationSchema;
-use worth_relational::facade::{
-    indexes::{
-        BoundedRelatedEntityOrderedLookupRequest, BoundedRelatedEntityPrefixLookupRequest,
-        MAX_BOUNDED_RELATED_ENTITY_PAGE_WIDTH,
-    },
-    mvcc::CompanionPreflightBudget,
-};
+use worth_relational::facade::indexes::BoundedRelatedEntityOrderedLookupRequest;
+use worth_relational::facade::indexes::BoundedRelatedEntityPrefixLookupRequest;
+use worth_relational::facade::indexes::MAX_BOUNDED_RELATED_ENTITY_PAGE_WIDTH;
 impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
     /// Reads only the native ordered page; never reconstructs and slices whole history.
     pub fn read_workflow_history<W, Subject, Audit>(
@@ -54,24 +47,9 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
                 ApplicationWorkflowReadRoute::Subject,
             )
             .map_err(Denial::Installation)?;
-        let profile = self
-            .application()
-            .runtime
-            .application_query_resource_profile();
-        let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: profile.maximum_work().map(|work| work.get() as u64),
-            maximum_preparation_bytes: Some(profile.maximum_inline_index_bytes().get() as u64),
-        });
-        let (candidate, access) = target.admit(
-            self,
-            data,
-            phase,
-            &subject,
-            principal,
-            input,
-            request,
-            &mut admission,
-        )?;
+
+        let (candidate, access) =
+            target.admit(self, data, phase, &subject, principal, input, request)?;
         let audited = if workflow
             .observation_policy()
             .rule(ApplicationWorkflowReadRoute::Audit)
@@ -93,7 +71,6 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
                 principal,
                 audit_input,
                 request,
-                &mut admission,
             )?
             .is_some()
         } else {
@@ -148,7 +125,6 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
                     data.product().relational_basis(),
                     index,
                     indexes,
-                    &mut admission,
                 )?;
                 let pinned = runtime
                     .read_truth()

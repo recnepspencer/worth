@@ -82,10 +82,7 @@ fn discovered_currentness_dependent_membership_empty_and_deep() {
         }
         request
             .at(aggregate.observation())
-            .require_current_discovered_program_outputs(
-                &aggregate,
-                comparison_work(&world.application),
-            )
+            .require_current_discovered_program_outputs(&aggregate)
             .unwrap();
         let original_members = request
             .query(PlanarDiscoveryRead {
@@ -122,23 +119,17 @@ fn discovered_currentness_dependent_membership_empty_and_deep() {
         for (_, root) in aggregate.root_outputs() {
             request
                 .at(&current)
-                .require_current_output_demand(root, comparison_work(&world.application))
+                .require_current_output_demand(root)
                 .unwrap();
         }
         stale(
             request
                 .at(&current)
-                .require_current_discovered_program_outputs(
-                    &aggregate,
-                    comparison_work(&world.application),
-                ),
+                .require_current_discovered_program_outputs(&aggregate),
         );
         request
             .at(aggregate.observation())
-            .require_current_discovered_program_outputs(
-                &aggregate,
-                comparison_work(&world.application),
-            )
+            .require_current_discovered_program_outputs(&aggregate)
             .unwrap();
         assert_eq!(
             world.application.retained_source_custody_count_for_test(),

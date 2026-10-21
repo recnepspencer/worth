@@ -58,7 +58,16 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                 execution,
                 lease,
                 admission.allowed_graph_contract().projection_work_budget(),
-                |reader| super::admitted::project(self, reader, admission, product, projection),
+                |reader| {
+                    super::admitted::project(
+                        self,
+                        reader,
+                        admission,
+                        product,
+                        projection,
+                        super::admitted::SourceAccess::none(),
+                    )
+                },
                 StorageControl::new(allocation, Some(admission.publication_request())),
             )
             .map_err(|denial| {

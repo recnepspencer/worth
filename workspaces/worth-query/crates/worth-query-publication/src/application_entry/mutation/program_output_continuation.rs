@@ -73,6 +73,8 @@ pub type ProgramOutputUnavailableCompletion<Schema, Program, Root> = fn(
 #[doc(hidden)]
 pub enum ProgramOutputContinuationProgress {
     Pending,
+    /// The same owner made native progress and remains runnable.
+    Progressed,
     Settled {
         outputs: Vec<ProgramOutputRecord>,
         work: ProgramOutputTraversalWork,

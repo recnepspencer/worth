@@ -213,7 +213,7 @@ impl MutationFreeWorld {
             .runtime
             .query(queries::estate_case(self.estate))
             .as_principal(&self.authenticate_specialist())
-            .controls(BankReadControls::current(request_scope(), 16, 20_000).unwrap())
+            .controls(BankReadControls::current(request_scope(), 16).unwrap())
             .execute()
             .expect("assigned specialist should observe the death notice")
             .rows()[0]

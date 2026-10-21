@@ -38,7 +38,7 @@ fn colliding(
     let mut foreign = digest_of(key);
     foreign[31] ^= 1;
     let mut routing = ComputationPartitionRouting::default();
-    for (identity, partition) in &typed.partitions {
+    for (identity, partition) in typed.partitions.iter() {
         for item in typed.routing.members(*identity) {
             let digest = if item == kept {
                 foreign
@@ -115,8 +115,20 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     a_digest[31] ^= 1;
     assert_eq!(&a_digest[..8], &b_digest[..8]);
     assert_ne!(a_digest, b_digest);
-    let partition = Arc::get_mut(typed.partitions.get_mut(&identity).unwrap()).unwrap();
-    partition.key = Arc::new(Parity(42));
+    let partition = typed.partitions.get(&identity).unwrap();
+    let replacement = super::super::retained::RetainedPartition {
+        key: Arc::new(Parity(42)),
+        key_bytes: partition.key_bytes,
+        gather: partition.gather.clone(),
+    };
+    typed
+        .partitions
+        .put(
+            identity,
+            replacement,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
     typed
         .tree
         .update_checked(identity, 62, u64::MAX, || Ok::<(), ()>(()))
@@ -147,7 +159,7 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
         &key,
         WorthQueryApplicationObservedFact::SourceEntity { entity_id },
     );
-    let prior = ComputationPrior::new(edition(), Ok(custodied_state_for_test(sealed.state)), None);
+    let prior = ComputationPrior::new(edition(), Ok(std::sync::Arc::new(sealed.state)), None);
     let next = attempt(&world, &installed, Some(prior));
     let full = attempt(&world, &installed, fresh());
     assert_eq!(next.outcome, full.outcome, "B must not carry A's result");

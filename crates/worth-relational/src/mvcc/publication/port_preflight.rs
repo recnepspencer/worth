@@ -9,12 +9,14 @@ use super::{
 
 impl PreparedCanonicalBranchMovement {
     pub(super) fn preflight(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         parts: PreparedRelationalPublicationParts,
         retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
         companion_epoch: &super::super::CompanionRegistrationEpoch<'_>,
     ) -> Result<PreparedBranchPublicationPreflight, RelationalPublicationOutcome> {
         let PreparedRelationalPublicationParts {
+            companion_read,
             runtime_instance_id,
             candidate_id,
             publication_binding,
@@ -78,6 +80,13 @@ impl PreparedCanonicalBranchMovement {
                 }
             };
         let (companion, companion_binding) = match companion_epoch.active() {
+            Ok(None) if companion_read.is_some() => {
+                return Err(companion_stop_outcome(
+                    super::super::CompanionPreflightStop::RegistrationChanged,
+                    &publication_cell,
+                    &expected,
+                ))
+            }
             Ok(None) => (None, None),
             Err(super::super::PublicationCompanionRegistrationStop::RebindRequired) => {
                 return Err(RelationalPublicationOutcome::deferred(
@@ -89,7 +98,7 @@ impl PreparedCanonicalBranchMovement {
                     RelationalPublicationDeferred::CompanionRegistrationPending,
                 ))
             }
-            Ok(Some((generation, participant, budget))) => {
+            Ok(Some((generation, participant))) => {
                 let envelope = movement.root.canonical_envelope().ok_or_else(|| {
                     RelationalPublicationOutcome::failed(RelationalPublicationFailure::new(
                         RelationalPublicationFailureKind::PreparedRootMismatch,
@@ -126,14 +135,25 @@ impl PreparedCanonicalBranchMovement {
                     binding.clone(),
                     envelope,
                     &control,
-                    budget,
                 );
-                let effect = participant
-                    .prepare(&mut context)
+                let prepared = participant.prepare(&mut context);
+                // A companion cannot hide an original request stop behind
+                // either a successful preparation or its own refusal.
+                crate::authority::commit::pipeline::consult_stage_control(
+                    execution,
+                    crate::authority::commit::pipeline::CommitStage::Publication,
+                )
+                .map_err(RelationalPublicationOutcome::RequestStopped)?;
+                let effect = prepared
                     .map_err(|stop| companion_stop_outcome(stop, &publication_cell, &expected))?;
                 effect
                     .matches(&binding)
                     .map_err(|stop| companion_stop_outcome(stop, &publication_cell, &expected))?;
+                if let Some(condition) = &companion_read {
+                    effect.matches_read_condition(condition).map_err(|stop| {
+                        companion_stop_outcome(stop, &publication_cell, &expected)
+                    })?;
+                }
                 (Some(effect), Some(binding))
             }
         };

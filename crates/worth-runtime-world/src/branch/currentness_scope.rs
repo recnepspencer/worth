@@ -40,8 +40,6 @@ pub enum ProductBranchCurrentnessFailure<Argument> {
         argument: Argument,
     },
     ExpectedHeadUnavailable(Argument),
-    /// The caller's admitted Work refused before a World registry read.
-    PreparationDenied(Argument),
 }
 
 impl<'selected> ProductBranchCurrentnessScope<'selected> {

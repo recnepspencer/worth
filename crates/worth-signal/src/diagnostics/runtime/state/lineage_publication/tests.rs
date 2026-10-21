@@ -7,8 +7,8 @@ use crate::state::SignalBranchId;
 fn ledger(bytes: u64) -> Arc<SignalConditionalRetentionLedger> {
     SignalConditionalRetentionLedger::new(
         SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 2,
-            maximum_retained_bytes: bytes,
+            maximum_retained_slots: Some(2),
+            maximum_retained_bytes: Some(bytes),
             maximum_attempt_visits: Some(100_000),
         },
         crate::runtime_policy::SignalRuntimePolicy::development().conditional_temporal_budget,

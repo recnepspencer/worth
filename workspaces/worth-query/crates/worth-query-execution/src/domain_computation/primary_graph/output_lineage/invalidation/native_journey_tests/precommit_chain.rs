@@ -8,35 +8,38 @@ use std::time::Duration;
 
 use im::OrdSet;
 
+use super::field_fact;
+use super::register;
+use super::snapshot;
+use super::AccountLabel;
+use super::AccountStatus;
 use super::SemanticSource;
-use super::{field_fact, register, snapshot, AccountLabel, AccountStatus};
-use crate::domain_computation::primary_graph::{
-    invariant_projection::{
-        ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
-    },
-    output_lineage::{
-        invalidation::{
-            FullVerificationReason, InvalidationEditAdmission, SettlementRegistration,
-            SourceSettlementCurrentness,
-        },
-        ProductCoordinate, RecordedSettlementIdentity,
-    },
-    tests::fixture::{
-        installed_authorization_world, live_scope, publish_relational_mutation, AuthorizationWorld,
-        TouchAccountOperation,
-    },
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryPrincipalResolutionMode,
-};
-use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistration;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
+use crate::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world;
+use crate::domain_computation::primary_graph::tests::fixture::live_scope;
+use crate::domain_computation::primary_graph::tests::fixture::publish_relational_mutation;
+use crate::domain_computation::primary_graph::tests::fixture::AuthorizationWorld;
+use crate::domain_computation::primary_graph::tests::fixture::TouchAccountOperation;
+use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
+use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
+use worth_foundational::facade::AspectFieldLocator;
+use worth_foundational::facade::AspectValue;
+use worth_foundational::facade::InternedString;
 use worth_relational::facade::identity::EntityId;
 
-#[path = "precommit_chain/request_custody.rs"]
-mod request_custody;
-use worth_relational::facade::transactions::{
-    AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
-    WorkerIntentBatch,
-};
+use worth_relational::facade::transactions::AspectFieldPatch;
+use worth_relational::facade::transactions::EntityMutationIntent;
+use worth_relational::facade::transactions::MutationIntent;
+use worth_relational::facade::transactions::UpdateEntityFieldsIntent;
+use worth_relational::facade::transactions::WorkerIntentBatch;
 
 #[path = "precommit_chain/provider_precommit_refuses_earlier_three_hop_evidence_at_current.rs"]
 mod provider_precommit_refuses_earlier_three_hop_evidence_at_current;

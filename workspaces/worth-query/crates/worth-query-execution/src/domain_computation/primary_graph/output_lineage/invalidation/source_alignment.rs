@@ -1,14 +1,16 @@
 use std::sync::Arc;
 
 use im::OrdMap;
-use worth_relational::facade::{
-    history::CommitId, mvcc::CompanionBranchImage, publication::PatchStreamPosition,
-    runtime::PositionedRelationalSnapshot,
-};
+use worth_relational::facade::history::CommitId;
+use worth_relational::facade::mvcc::CompanionBranchImage;
+use worth_relational::facade::publication::PatchStreamPosition;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use super::super::RecordedSettlementIdentity;
-use super::admission::IndexAdmission;
-use super::mark_state::{FullVerificationReason, MarkState, SettlementCurrentness};
+
+use super::mark_state::FullVerificationReason;
+use super::mark_state::MarkState;
+use super::mark_state::SettlementCurrentness;
 
 pub(super) enum EqualOutputCurrentness {
     NoConsequence,
@@ -21,11 +23,9 @@ pub(super) enum EqualOutputCurrentness {
 /// retains the earlier state without building recursive history ownership.
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct BranchMarkRoot {
-    pub(super) retained_capacity: Option<Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>>,
     /// Shared only by replacements that retain this exact history map.
-    pub(super) history_capacity: Option<Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>>,
+
     /// What the oldest retained version shares with versions that have left.
-    pub(super) inherited_capacity: Option<Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>>,
     pub(super) current: Arc<MarkState>,
     pub(super) last_native_marking: Option<super::logical_marking::NativeMarkingReport>,
     pub(super) past: OrdMap<Option<PatchStreamPosition>, HistoricalMarkState>,
@@ -42,7 +42,6 @@ pub(super) struct HistoricalMarkState {
 #[derive(Debug)]
 pub(super) struct RetainedTouchDelivery {
     pub(super) keys: Option<Arc<[super::fact_key::FactPostingKey]>>,
-    pub(super) _capacity: Arc<crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity>,
 }
 
 /// Whether a row's read basis must still be in the retained history.
@@ -69,9 +68,6 @@ pub(super) struct SnapshotAlignedMarkState<'selected> {
 impl BranchMarkRoot {
     pub(super) fn initial() -> Self {
         Self {
-            retained_capacity: None,
-            history_capacity: None,
-            inherited_capacity: None,
             current: Arc::new(MarkState::initial()),
             last_native_marking: None,
             past: OrdMap::new(),
@@ -87,9 +83,6 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         self.state
     }
 
-    pub(super) fn settlement_count(&self) -> usize {
-        self.state.settlements.len()
-    }
     /// The caller resolves its source snapshot before reading the companion.
     /// Sparse positions from other branches are irrelevant: selection is exact,
     /// never a floor lookup or an assumption of consecutive global positions.
@@ -232,24 +225,61 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         SettlementCurrentness::Clean
     }
 
+    pub(super) fn computation_payload_bytes(
+        &self,
+        identity: &RecordedSettlementIdentity,
+    ) -> Option<u64> {
+        let row = self.state.settlements.get(identity)?;
+        row.facts
+            .postconditions()
+            .retained_resident_bytes()?
+            .checked_sub(row.facts.postconditions().retained_storage_bytes()?)
+    }
+    pub(super) fn computation_projection(
+        &self,
+        identity: &RecordedSettlementIdentity,
+        facts: &super::super::RetainedSourceFacts,
+    ) -> Option<super::settlement::PostingComputationStorage> {
+        let row = self.state.settlements.get(identity)?;
+        row.facts
+            .same_binding(facts)
+            .then(|| super::settlement::PostingComputationStorage {
+                projection: Arc::clone(&row.posting_projection),
+            })
+    }
+    pub(super) fn computation_frontier(
+        &self,
+        identity: &RecordedSettlementIdentity,
+        facts: &super::super::RetainedSourceFacts,
+    ) -> Option<im::OrdSet<usize>> {
+        if !matches!(
+            self.currentness(identity),
+            SettlementCurrentness::Clean | SettlementCurrentness::Dirty(_)
+        ) {
+            return None;
+        }
+        let row = self.state.settlements.get(identity)?;
+        if !row.facts.same_binding(facts) {
+            return None;
+        }
+        row.computation_frontier.clone()
+    }
+
     /// Resolve an exact consumed identity through the actor's versioned
     /// stable-equality chain. The old row stays dirty; only output evidence
     /// may consume a clean certified successor consequence.
     pub(super) fn equal_output_currentness(
         &self,
         identity: &RecordedSettlementIdentity,
-        admission: &mut impl IndexAdmission,
     ) -> Result<EqualOutputCurrentness, worth_relational::facade::mvcc::CompanionPreflightStop>
     {
-        admission.ordered_read(self.state.equal_links.len())?;
         let Some(first) = self.state.equal_links.get(identity) else {
             return Ok(EqualOutputCurrentness::NoConsequence);
         };
         if first.next.is_none() {
             return Ok(EqualOutputCurrentness::NoConsequence);
         }
-        admission.ordered_read(self.state.settlements.len())?;
-        admission.ordered_read(self.retained.past.len())?;
+
         if let SettlementCurrentness::FullVerificationRequired(_) | SettlementCurrentness::Foreign =
             self.row_currentness(identity, ReadBasis::Superseded)
         {
@@ -259,20 +289,17 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         let mut latest = None;
         let mut hops = 0usize;
         loop {
-            admission.work(1)?;
             hops = hops.checked_add(1).ok_or(
                 worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
             )?;
             if hops > self.state.equal_links.len() {
                 return Ok(EqualOutputCurrentness::FullVerificationRequired);
             }
-            admission.ordered_read(self.state.equal_links.len())?;
+
             let Some(link) = self.state.equal_links.get(current) else {
                 return Ok(EqualOutputCurrentness::FullVerificationRequired);
             };
             let Some(next) = &link.next else {
-                admission.ordered_read(self.state.settlements.len())?;
-                admission.ordered_read(self.retained.past.len())?;
                 return Ok(match self.currentness(current) {
                     SettlementCurrentness::Clean => EqualOutputCurrentness::CanonicallyEqualClean(
                         latest.expect("a certified equality has a successor"),
@@ -286,7 +313,7 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
                     }
                 });
             };
-            admission.ordered_read(self.state.equal_links.len())?;
+
             if self
                 .state
                 .equal_links

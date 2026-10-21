@@ -1,16 +1,13 @@
 //! A dependent claim is an owner of the occurrence it consumed.
-use super::published_retirement::{admit, balances, publish};
+use super::published_retirement::admit;
+
+use super::published_retirement::publish;
 use super::*;
 
 fn source_owner(
 ) -> crate::domain_computation::primary_graph::output_lineage::SourceInvalidationOwner {
-    use crate::domain_computation::execution_runtime::source_invalidation::{
-        WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
-    };
-    let resources = WorthQueryInvalidationResources::install(
-        WorthQueryInvalidationResourceInstallation::bounded(1_000_000, 1 << 20, 1 << 20, 1),
-    )
-    .unwrap();
+    use crate::domain_computation::execution_runtime::source_invalidation::WorthQueryInvalidationResources;
+    let resources = WorthQueryInvalidationResources::new();
     crate::domain_computation::primary_graph::output_lineage::SourceInvalidationOwner::new(
         resources, 1,
     )
@@ -21,7 +18,7 @@ fn last_claim_closes(held_successor: bool) {
     let _occurrence = occurrence();
     crate::domain_computation::primary_graph::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
-        let (unrelated, baseline) = super::reservation_baseline::install(
+        let unrelated = super::reservation_baseline::install(
             &mut registry.state.lock().unwrap(),
             receipt.clone(),
         );
@@ -37,8 +34,7 @@ fn last_claim_closes(held_successor: bool) {
         {
             let mut state = registry.state.lock().unwrap();
             let claims = vec![Arc::new(stale_key.clone())];
-            state.required_reserved_bytes +=
-                claims.capacity() * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
+
             state.records.get_mut(&dependent_key).unwrap().prerequisites = claims;
             state
                 .records
@@ -61,20 +57,15 @@ fn last_claim_closes(held_successor: bool) {
         }
         assert!(super::super::refreshed_rejoin::awaited_by_stale_owner(
             &registry.state.lock().unwrap().records,
-            &newest_key,
-            &mut super::super::lifecycle::release::CleanupWalk::new()
-        )
-        .unwrap());
+            &newest_key
+        ));
         drop(dependent);
         // Release leaves costly cleanup for the next paying admission.
         // The lifetime proof funds the whole finite cleanup, once. Partial
         // admission and exact charges belong to the every-unit drain table.
-        let mut complete = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: None,
-            maximum_preparation_bytes: None,
-        });
+
         registry
-            .drain_terminal_cleanup_admitted(&source_owner(), &mut complete)
+            .drain_terminal_cleanup_admitted(&source_owner())
             .unwrap();
 
         {
@@ -91,11 +82,7 @@ fn last_claim_closes(held_successor: bool) {
                 !matches!(&record.state, DemandState::Output(output) if matches!(output.checkpoint,
                     Some(super::super::WorthQueryOutputCheckpoint::Published { .. })))));
         }
-        assert_eq!(
-            balances(&registry),
-            baseline,
-            "all three reservations return by value"
-        );
+
         assert!(registry
             .state
             .lock()

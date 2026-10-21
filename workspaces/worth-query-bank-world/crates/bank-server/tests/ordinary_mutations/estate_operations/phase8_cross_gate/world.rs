@@ -164,7 +164,7 @@ impl CrossGateWorld {
             .runtime
             .query(queries::account_summary(self.fixture.estate_account))
             .as_principal(&self.fixture.authenticate_deceased())
-            .controls(BankReadControls::current(request_scope(), 1, 1_024).unwrap())
+            .controls(BankReadControls::current(request_scope(), 1).unwrap())
             .execute()
             .expect("estate account owner reads authoritative revision")
             .rows()[0]
@@ -178,7 +178,7 @@ impl CrossGateWorld {
             .runtime
             .query(queries::estate_case(self.fixture.estate))
             .as_principal(&self.fixture.authenticate_specialist())
-            .controls(BankReadControls::current(request_scope(), 16, 20_000).unwrap())
+            .controls(BankReadControls::current(request_scope(), 16).unwrap())
             .execute()
             .expect("assigned specialist observes the authoritative death notice")
             .rows()[0]

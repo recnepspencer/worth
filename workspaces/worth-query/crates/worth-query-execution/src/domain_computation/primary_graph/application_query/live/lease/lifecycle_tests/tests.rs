@@ -159,12 +159,7 @@ impl LiveContext {
                 &self.principal,
                 account,
                 live_account_parameters("account-1"),
-                WorthQueryApplicationLiveControls::bounded(
-                    self.request.clone(),
-                    4,
-                    16,
-                    Some(2_048),
-                )
+                WorthQueryApplicationLiveControls::bounded(self.request.clone(), 4, 16)
                 .unwrap(),
             )
             .unwrap()

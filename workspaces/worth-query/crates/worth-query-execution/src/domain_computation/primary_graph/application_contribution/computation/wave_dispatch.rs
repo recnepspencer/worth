@@ -16,14 +16,9 @@ impl ChargedBytes for NoMemberFailure {
     }
 }
 
+#[derive(ChargedBytes)]
 pub(in crate::domain_computation::primary_graph) struct PreparedMember {
     pub requests: Vec<PreparedCompute>,
-}
-impl ChargedBytes for PreparedMember {
-    fn additional_charged_bytes(&self) -> u64 {
-        let Self { requests } = self;
-        requests.additional_charged_bytes()
-    }
 }
 pub(in crate::domain_computation::primary_graph) struct ComputedMember {
     slots: Vec<ComputedSlot>,

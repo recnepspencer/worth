@@ -1,10 +1,13 @@
-use crate::runtime::{
-    RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetInstallation,
-    RuntimeWorldCustodyBudgetInstallation, RuntimeWorldHistoryBudgetInstallation,
-    RuntimeWorldObservationBudgetInstallation, RuntimeWorldPublicationBudgetInstallation,
-    RuntimeWorldRecoveryBudgetInstallation, RuntimeWorldRetentionBudgetInstallation,
-    WorthQueryProductWorldClock, WorthQueryProductWorldResources,
-};
+use crate::runtime::RuntimeWorldBranchBudgetInstallation;
+use crate::runtime::RuntimeWorldBudgetInstallation;
+use crate::runtime::RuntimeWorldCustodyBudgetInstallation;
+use crate::runtime::RuntimeWorldHistoryBudgetInstallation;
+use crate::runtime::RuntimeWorldObservationBudgetInstallation;
+use crate::runtime::RuntimeWorldPublicationBudgetInstallation;
+use crate::runtime::RuntimeWorldRecoveryBudgetInstallation;
+use crate::runtime::RuntimeWorldRetentionBudgetInstallation;
+use crate::runtime::WorthQueryProductWorldClock;
+use crate::runtime::WorthQueryProductWorldResources;
 
 pub fn in_memory_test_product_world_resources() -> WorthQueryProductWorldResources {
     // Bounds this fixture World's serial request memory and deterministic work.
@@ -45,12 +48,7 @@ pub fn in_memory_test_product_world_resources() -> WorthQueryProductWorldResourc
             },
         },
         WorthQueryProductWorldClock::start(),
-        worth_query_execution::facade::runtime::WorthQueryInvalidationResources::install(
-            worth_query_execution::facade::runtime::WorthQueryInvalidationResourceInstallation::new(
-                None, None, 128,
-            ),
-        )
-        .expect("the Query invalidation installation is valid"),
+        worth_query_execution::facade::runtime::WorthQueryInvalidationResources::new(),
         execution_policy,
     )
     .expect("the in-memory test Product World resources are valid")

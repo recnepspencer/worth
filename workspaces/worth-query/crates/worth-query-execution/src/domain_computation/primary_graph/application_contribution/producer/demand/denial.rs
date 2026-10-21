@@ -1,6 +1,8 @@
 pub(super) mod cleanup_custody;
 mod kind;
+mod publication_stale;
 pub use kind::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture};
+pub(in crate::domain_computation::primary_graph) use publication_stale::ProducerPublicationStale;
 
 /// A refusal to select, admit, or advance an output demand, with the subject it
 /// names (usually the output family or producer).
@@ -23,6 +25,7 @@ pub struct WorthQueryOutputDemandDenial {
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct DemandDenialEvidence {
+    publication_stale: Option<ProducerPublicationStale>,
     publication_companion_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
     producer_admission_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
     commit_denial_kind:
@@ -372,3 +375,26 @@ impl PartialEq for WorthQueryOutputDemandDenial {
     }
 }
 impl Eq for WorthQueryOutputDemandDenial {}
+
+impl worth_execution::ChargedBytes for WorthQueryOutputDemandDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        use WorthQueryOutputDemandDenialKind as Kind;
+        if self.evidence.is_some()
+            || self.cleanup.is_some()
+            || matches!(
+                self.kind.as_ref(),
+                Kind::ManagedCleanupRequired(_)
+                    | Kind::ProductDelivery(_)
+                    | Kind::CorrespondenceDelivery(_)
+                    | Kind::BridgeConditional(_)
+            )
+        {
+            return u64::MAX;
+        }
+        let text = match &self.subject {
+            std::borrow::Cow::Borrowed(_) => 0,
+            std::borrow::Cow::Owned(text) => text.capacity() as u64,
+        };
+        (std::mem::size_of_val(self.kind.as_ref()) as u64).saturating_add(text)
+    }
+}

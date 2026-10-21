@@ -26,11 +26,7 @@ impl WorthQueryPrimaryGraphProvider {
         worth_relational::facade::history::RelationalCommitReceipt,
         WorthQueryApplicationSettlementRecoveryError,
     > {
-        let commit_lane = self
-            .application_branch_commit_lane_for_occurrence(product.incarnation())
-            .map_err(|_| {
-                WorthQueryApplicationSettlementRecoveryError::RetentionCapacityExhausted
-            })?;
+        let commit_lane = self.application_branch_commit_lane_for_occurrence(product.incarnation());
         let _coordination = commit_lane.enter();
         let repaired = self
             .graph

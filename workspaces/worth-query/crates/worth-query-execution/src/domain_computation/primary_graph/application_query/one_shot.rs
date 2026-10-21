@@ -1,7 +1,6 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryRequestInterruption, WorthQueryRequestScope,
-};
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
@@ -9,40 +8,40 @@ mod admitted;
 mod dependent_pair;
 pub use dependent_pair::WorthQueryDependentPairReadContext;
 mod batch;
-pub use batch::{WorthQueryApplicationBatchReadDenial, WorthQueryApplicationBatchResult};
-pub(super) mod custody_work;
+pub use batch::WorthQueryApplicationBatchReadDenial;
+pub use batch::WorthQueryApplicationBatchResult;
+
 mod denial;
 pub(super) mod outcome;
 pub(super) mod plan_admission;
-use plan_admission::{
-    admit_request, reserve_one_shot_result_buffer, reserve_one_shot_result_buffer_in_batch,
-    validate_authentication_lifetime, validate_basis_lifetime, validate_one_shot_plan,
-};
+use plan_admission::admit_request;
+use plan_admission::validate_authentication_lifetime;
+use plan_admission::validate_basis_lifetime;
+use plan_admission::validate_one_shot_plan;
 pub(super) mod pair_plans;
 mod result;
 pub use pair_plans::WorthQueryDerivedPairReadPlans;
 
+use denial::authorization_denial;
+use denial::denial;
 pub(in crate::domain_computation::primary_graph) use denial::retain_reconstruction_result;
-use denial::{authorization_denial, denial};
-pub use denial::{WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind};
+pub use denial::WorthQueryApplicationOneShotDenial;
+pub use denial::WorthQueryApplicationOneShotDenialKind;
 
-use super::authorized_read::{
-    execute_authorized_read, execute_selected_authorized_read, refresh_governed_authorization,
-    SelectedAuthorizationCurrentnessStop, SelectedAuthorizedReadStop,
-    WorthQueryAuthorizedApplicationReadDenial,
-};
-use super::read_execution::{
-    read_bounded_root_rows, OneShotReadWorkObservation,
-    WorthQueryApplicationReadExecutionDenialKind,
-};
-use super::{
-    WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
-    WorthQueryApplicationProjection, WorthQueryApplicationQueryAccessReceipt,
-};
-use crate::domain_computation::primary_graph::{
-    output_lineage::invalidation::{InvalidationEditAdmission, ReservedExternalWork},
-    WorthQueryAuthenticatedPrincipal, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use super::authorized_read::execute_authorized_read;
+use super::authorized_read::refresh_governed_authorization;
+use super::authorized_read::SelectedAuthorizationCurrentnessStop;
+use super::authorized_read::SelectedAuthorizedReadStop;
+use super::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
+use super::read_execution::read_bounded_root_rows;
+use super::read_execution::OneShotReadWorkObservation;
+use super::read_execution::WorthQueryApplicationReadExecutionDenialKind;
+use super::WorthQueryAdmittedApplicationQueryControls;
+use super::WorthQueryAdmittedApplicationQueryPlan;
+use super::WorthQueryApplicationProjection;
+use super::WorthQueryApplicationQueryAccessReceipt;
+use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use outcome::finalize_one_shot;
 
 /// The complete result of a one-shot query read: projected rows, the observed
@@ -59,9 +58,10 @@ pub struct WorthQueryApplicationOneShotResult<Query, QueryResult> {
 
 /// The admitted read keeps its original semantic denial and accounts for
 /// newly performed Query execution work on either outcome.
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryAdmittedOneShotStop {
     Admission(CompanionPreflightStop),
-    WorkUnavailable,
+
     WorkCounterOverflow,
     WorkAccountingMismatch,
     Execution(WorthQueryApplicationOneShotDenial),
@@ -133,7 +133,7 @@ where
     where
         QueryResult: WorthQueryApplicationProjection<Schema, Query>,
     {
-        self.execute_application_query_one_shot_core(execution, plan, None, None, None)
+        self.execute_application_query_one_shot_core(execution, plan, None)
     }
 
     fn execute_application_query_one_shot_core<
@@ -157,8 +157,6 @@ where
             Scope,
         >,
         spent: Option<&OneShotReadWorkObservation<'_>>,
-        batch: Option<&super::WorthQueryApplicationQueryBatchAdmission>,
-        maximum_work: Option<usize>,
     ) -> Result<
         WorthQueryApplicationOneShotResult<Query, QueryResult>,
         WorthQueryApplicationOneShotDenial,
@@ -169,28 +167,13 @@ where
         validate_one_shot_plan(execution, self, &plan)?;
         refresh_governed_authorization(execution, self, &mut plan)
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
-        let result_buffer = reserve_one_shot_result_buffer_in_batch(self, &plan, batch)?;
+
         let (raw, authorization_work, read_proof) =
             execute_authorized_read(execution, self, &plan, |runtime, graph, plan| {
-                read_bounded_root_rows(
-                    runtime,
-                    execution,
-                    graph,
-                    plan,
-                    result_buffer,
-                    spent,
-                    maximum_work
-                        .into_iter()
-                        .chain(
-                            plan.controls
-                                .maximum_work()
-                                .map(std::num::NonZeroUsize::get),
-                        )
-                        .min(),
-                )
+                read_bounded_root_rows(runtime, execution, graph, plan, spent)
             })
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
-        finalize_one_shot(self, plan, raw, authorization_work, read_proof, spent)
+        finalize_one_shot(execution, self, plan, raw, authorization_work, read_proof)
     }
 }
 

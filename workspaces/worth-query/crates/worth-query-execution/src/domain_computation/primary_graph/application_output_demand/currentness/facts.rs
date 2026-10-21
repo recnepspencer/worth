@@ -10,13 +10,12 @@ pub(super) fn require_witnessed_output(
             >,
         >,
     >,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
     use worth_relational::facade::mvcc::CompanionPreflightStop;
     let witness = witness
         .and_then(|witness| witness.get())
         .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable))?;
-    match witness.unchanged_in( relational, snapshot, admission) {
+    match witness.unchanged_in(relational, snapshot) {
         Err(CompanionPreflightStop::Execution(cause)) => Err(output_reuse::read_denial(cause)),
         Ok(true) => Ok(()),
         Ok(false) => Err(denial(WorthQueryOutputDemandDenialKind::Superseded)),
@@ -40,10 +39,13 @@ pub(super) fn require_current_facts(
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
-    match first_moved_fact(execution, relational, snapshot, facts.iter(), admission) {
+    match first_moved_fact(execution, relational, snapshot, facts.iter()) {
         Ok(None) => Ok(()),
+        Err(RetainedFactStop::OutputObservation(stop)) => Err(output_reuse::verification_denial(
+            stop,
+            "settled source observation",
+        )),
         Ok(Some(moved)) => Err(denial_subject(
             WorthQueryOutputDemandDenialKind::Superseded,
             moved.locator_identity(),

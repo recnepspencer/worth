@@ -49,10 +49,7 @@ fn install_no_reuse(
         producer_domain_denial: Arc::new(AtomicBool::new(false)),
     },);
     // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.
-    let limits = support::limits(
-        32,
-        support::invalidation(128 * 1024 * 1024, Some(1_000_000), 32),
-    );
+    let limits = support::limits(32, support::invalidation());
     if let Some(checkpoint) = checkpoint {
         return application_installation::in_memory_program_from_checkpoint(
             program,
@@ -106,7 +103,6 @@ fn check_live_output(
                     phase,
                     &source.observed_sources()[0],
                     "planar-final",
-                    None,
                 )
                 .map_err(Box::new)
         })
@@ -123,7 +119,8 @@ fn check_live_output(
         .unwrap();
     let first = (0..64)
         .find_map(|_| match initial.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the Initial producer creates the final ring");
@@ -147,7 +144,6 @@ fn check_live_output(
                 phase,
                 &source.observed_sources()[0],
                 "planar-final",
-                std::num::NonZeroUsize::new(4096),
             )
             .map_err(Box::new)
     })
@@ -164,7 +160,8 @@ fn check_live_output(
         .unwrap();
     let second = (0..64)
         .find_map(|_| match preserving.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the Preserve producer advances without Initial executing over live output");

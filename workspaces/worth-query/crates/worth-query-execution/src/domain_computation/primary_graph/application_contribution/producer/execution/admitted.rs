@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 pub(super) fn execute_fresh<Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
-
+    installed: &TypedInstalledProducer<Schema, Binding>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request_scope: &WorthQueryRequestScope,
@@ -15,8 +15,6 @@ pub(super) fn execute_fresh<Schema, Binding>(
     successor_of: Option<[u8; 32]>,
     commit_authority: WorthQueryProducerCommitAuthority,
     edition: super::super::InstalledProducerEdition,
-    limits: WorthQueryOutputDemandLimits,
-    request_admission: &mut InvalidationEditAdmission,
     producer_contacts: &mut usize,
 ) -> Result<ProducerExecutionOutcome, ProducerExecutionStop>
 where
@@ -52,10 +50,11 @@ where
     }
     let (source, observed_source) = disclosure.into_parts();
     let input = provider.operation_input(&source);
-    let binding = runtime
-        .installed_schema()
-        .installed_mutation_binding::<Operation<Schema, Binding>>()
-        .map_err(|error| failed(Binding::IDENTITY, error))?;
+    // The producer installed this exact binding once. Ordinary authorization
+    // below still checks its current runtime/schema/operation authority; fresh
+    // principal and graph-work sessions are issued for this request. Rebuilding
+    // a second installed object here split cold and selected descriptor custody.
+    let binding = &installed.mutation;
     let principal = selected
         .resolve_authenticated_principal_with_request(
             execution,
@@ -65,9 +64,11 @@ where
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .map_err(|error| principal_rejected(Binding::IDENTITY, error))?;
-    let (scope_field, scope_value) = input
-        .scope_binding()
-        .into_field_parts(principal.principal_identity());
+    let (scope_field, scope_value) = <_ as ApplicationMutationInputScope<
+        Schema,
+        Operation<Schema, Binding>,
+    >>::scope_for_binding(&input)
+    .into_field_parts(principal.principal_identity());
     let scope = selected
         .resolve_entity_with_request(
             execution,
@@ -87,10 +88,15 @@ where
             request_scope,
         )
         .map_err(|error| request_authority_denied(Binding::IDENTITY, error))?;
+    let shared = selected
+        .prepare_shared_query_basis()
+        .map_err(|(_, stop)| source_readmission::ready_resource_denial(Binding::IDENTITY, stop))?;
     post_authorization::execute_authorized::<Schema, Binding>(
         phase,
         runtime,
-        &selected,
+        &shared,
+        external_principal,
+        request_scope,
         &principal,
         admission,
         required_output,
@@ -102,8 +108,6 @@ where
         successor_of,
         commit_authority,
         edition,
-        limits,
-        request_admission,
         producer_contacts,
     )
 }

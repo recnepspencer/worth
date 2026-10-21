@@ -37,6 +37,8 @@ pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
     },
     /// No capacity remains to retain a basis.
     RetentionCapacityExhausted,
+    /// Original request or physical backing refusal before retaining conditional watches.
+    RetentionAllocation(worth_execution::ExecutionAllocationDenial),
     /// The runtime ran out of basis-retention identities.
     RetentionIdentityExhausted,
     /// The runtime ran out of snapshot identities.

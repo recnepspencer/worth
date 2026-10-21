@@ -89,7 +89,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         [0x73; 32],
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::clone(&retained_fact)),
         None,
-        );
+        None);
     let identity = Arc::clone(
         &lineage
             .resolve_current_family(
@@ -100,7 +100,6 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
                 "local-requirement",
                 observation.lifecycle_incarnation(),
                 observation.reference_generation().get(),
-                Some(32),
             )
             .unwrap()
             .candidates
@@ -127,7 +126,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
     });
     let (after_handle, after) = handle.with_runtime(request_execution, snapshot);
     assert!(matches!(
-        owner.currentness(&after, &identity, &mut owner.edit_admission()),
+        owner.currentness(&after, &identity),
         Ok(SourceSettlementCurrentness::Clean)
     ));
 
@@ -140,7 +139,6 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
             "local-requirement",
             observation.lifecycle_incarnation(),
             observation.reference_generation().get(),
-            Some(32),
         )
         .unwrap()
         .candidates
@@ -150,7 +148,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         candidate.verification_requirement,
         Some(FullVerificationReason::NativeRevisionUnavailable)
     );
-    let mut admission = owner.edit_admission();
+
     let result = world
         .application
         .with_host_advancement(|phase| {
@@ -167,7 +165,6 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
                     runtime,
                     &after_handle,
                     &after,
-                    &mut admission,
                 )
             })
         })

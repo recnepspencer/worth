@@ -24,6 +24,7 @@ fn members(unique: bool, equality_queryable: bool) -> Vec<ApplicationSchemaMembe
             entity: "Record".to_owned(),
         },
         ApplicationSchemaMember::Aspect {
+            absence: worth_foundational::facade::AbsenceLaw::Required,
             entity: "Record".to_owned(),
             aspect: "Facts".to_owned(),
             identity: AspectIdentity(0x9161_3101),
@@ -35,6 +36,7 @@ fn members(unique: bool, equality_queryable: bool) -> Vec<ApplicationSchemaMembe
             field: "Key".to_owned(),
             presence: ApplicationFieldPresence::Required,
             scalar_family: ScalarAspectType::UInt64,
+            canonical: None,
             value_type: std::any::type_name::<u64>().to_owned(),
             unit: None,
             frame: None,

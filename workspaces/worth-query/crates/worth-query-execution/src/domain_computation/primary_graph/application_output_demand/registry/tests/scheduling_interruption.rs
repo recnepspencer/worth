@@ -12,7 +12,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandRecoveryPosture as Posture,
     WorthQueryOutputReadinessDeliveryEvidence,
 };
-use std::sync::atomic::Ordering;
 
 mod checkpoint;
 mod fixture;
@@ -30,10 +29,9 @@ impl Finish {
         fixture: &Fixture,
         kind: WorthQueryOutputDemandDenialKind,
     ) -> WorthQueryOutputDemandDenial {
-        let mut result = Err(WorthQueryOutputDemandDenial::new(
-            kind,
-            "scheduling stopped",
-        ));
+        let mut denial = WorthQueryOutputDemandDenial::new(kind, "scheduling stopped".to_owned());
+        denial.readmission_failure = Some("original scheduling refusal");
+        let mut result = Err(denial);
         match self {
             Self::Ordinary => {
                 let WorthQueryOutputDemandAdvanceAdmission::Schedule(source) =
@@ -46,10 +44,8 @@ impl Finish {
                     .finish_scheduling(&fixture.interest, source, &mut result);
             }
             Self::Selected => {
-                let (admission, finish) = fixture
-                    .registry
-                    .begin_admitted(&fixture.interest, &mut record_admission())
-                    .unwrap();
+                let (admission, finish) =
+                    fixture.registry.begin_admitted(&fixture.interest).unwrap();
                 let WorthQueryOutputDemandAdvanceAdmission::Schedule(source) = admission else {
                     panic!("the selected caller must claim scheduling");
                 };
@@ -88,8 +84,6 @@ fn both_scheduling_finishes_preserve_claims_and_custody_on_interruption() {
         ] {
             for reopened in [false, true] {
                 let fixture = Fixture::new(reopened);
-                let before = fixture.custody();
-                assert!(before.0 > 0 && before.1 > 0 && before.2 > 0 && before.3 > 0);
                 let denial = finish.stop(&fixture, kind.clone());
                 assert_eq!(denial.kind(), kind);
                 assert_eq!(
@@ -97,7 +91,6 @@ fn both_scheduling_finishes_preserve_claims_and_custody_on_interruption() {
                     Posture::Retryable,
                     "{finish:?}: interruption leaves the row for a later claim"
                 );
-                assert_eq!(fixture.custody(), before, "no custody credit is released");
                 {
                     let state = fixture.registry.state.lock().unwrap();
                     let row = &state.records[&fixture.interest.key];
@@ -177,10 +170,13 @@ fn other_scheduling_stops_still_fail_the_row_and_release_obligations() {
         let state = fixture.registry.state.lock().unwrap();
         let row = &state.records[&fixture.interest.key];
         assert!(matches!(&row.state, DemandState::Failed(stored)
-            if stored.kind() == WorthQueryOutputDemandDenialKind::ProducerUnavailable));
+            if stored == &denial));
+        assert_eq!(
+            super::super::required_stop::head_stop(&state.records, &fixture.interest.key),
+            Some(denial)
+        );
         assert!(row.performed_source.is_none());
         assert!(row.performed_obligations.is_empty());
-        assert_eq!(state.obligation_reserved_bytes, 0);
     }
 }
 
@@ -219,7 +215,7 @@ fn interrupted_execution_reports_the_same_retryable_posture() {
             let finish = selected.then(|| {
                 fixture
                     .registry
-                    .prepare_selected_execution_finish(&fixture.interest, &mut record_admission())
+                    .prepare_selected_execution_finish(&fixture.interest)
                     .unwrap()
             });
             assert!(matches!(
@@ -256,14 +252,12 @@ fn a_new_key_stays_claimable_after_a_caller_resource_stop() {
             .get_mut(&fixture.interest.key)
             .unwrap()
             .successor_of = None;
-        let before = fixture.custody();
         let kind = WorthQueryOutputDemandDenialKind::ExecutionRequest(Advance::Resource(
             Resource::WorkExhausted,
         ));
         let denial = finish.stop(&fixture, kind.clone());
         assert_eq!(denial.kind(), kind);
         assert_eq!(denial.recovery_posture(), Posture::Retryable);
-        assert_eq!(fixture.custody(), before);
         let peer = fixture.next_interest(false);
         assert!(matches!(
             fixture.registry.begin(&peer),

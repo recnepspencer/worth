@@ -60,7 +60,8 @@ pub(in crate::domain_computation::primary_graph) fn map_bootstrap_commit_denial(
             Failure::RetentionIdentityExhausted => {
                 WorthQueryPrimaryGraphInstallationDenialKind::RetentionIdentityExhausted
             }
-            Failure::PreparedRootMismatch
+            Failure::SnapshotCountOverflow
+            | Failure::PreparedRootMismatch
             | Failure::PreparedBasisDescriptor(_)
             | Failure::NextBasisAdmission(_)
             | Failure::SelectedRootUnavailable

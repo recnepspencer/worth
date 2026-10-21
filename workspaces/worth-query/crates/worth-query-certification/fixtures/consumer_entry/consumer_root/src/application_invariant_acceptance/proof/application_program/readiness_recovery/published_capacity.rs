@@ -40,7 +40,8 @@ pub(crate) fn published_outputs_hold_no_hidden_read_lease(
                 .advance(&world.application, &request)
                 .expect("publication progresses")
             {
-                WorthQueryApplicationProgramOutputProgress::Pending => {}
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed => {}
                 WorthQueryApplicationProgramOutputProgress::Settled(_) => {
                     panic!("the checkpoint inspection must happen before readiness settles")
                 }
@@ -73,7 +74,8 @@ pub(crate) fn published_outputs_hold_no_hidden_read_lease(
                 .advance(&world.application, &request)
                 .expect("readiness progresses without a hidden lease")
             {
-                WorthQueryApplicationProgramOutputProgress::Pending => {}
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed => {}
                 WorthQueryApplicationProgramOutputProgress::Settled(_) => {
                     settled = true;
                     break;

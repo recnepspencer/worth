@@ -1,14 +1,13 @@
 //! Dormant executor transport for the actual typed successor's Drop proof.
 //! No method can stand in for production execution: each panics if called.
-use super::super::demand::{
-    MatchedRequiredPredecessors, PerformedMembers, ResolvedRequiredPredecessors,
-};
+use super::super::demand::MatchedRequiredPredecessors;
+use super::super::demand::PerformedMembers;
+use super::super::demand::ResolvedRequiredPredecessors;
 use super::selected::InstalledSelectedProducerExecutor;
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::SelectedReadyReadmission;
+use crate::domain_computation::primary_graph::output_lineage::AcceptedCurrentCandidate;
 use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema as Schema;
-use crate::domain_computation::primary_graph::{
-    application_output_demand::SelectedReadyReadmission, output_lineage::AcceptedCurrentCandidate,
-};
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn executor(
@@ -37,7 +36,6 @@ impl InstalledSelectedProducerExecutor<Schema> for LifetimeOnly {
         _producer_contacts_in_this_demand: usize,
         _refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
         _performed: &'owner std::cell::RefCell<PerformedMembers>,
-        _request_admission: &mut InvalidationEditAdmission,
     ) -> Result<
         super::required_cue::RequiredCueProgress<'basis, 'owner, Schema>,
         ProducerExecutionStop,
@@ -52,7 +50,6 @@ impl InstalledSelectedProducerExecutor<Schema> for LifetimeOnly {
     fn inspect_frozen_ready<'basis>(
         &self,
         _inspection: super::required_cue::FrozenInspection<'basis, '_, Schema>,
-        _admission: &mut InvalidationEditAdmission,
     ) -> Result<super::required_cue::FrozenCurrentInspection<'basis>, ProducerExecutionStop>
     where
         Schema: ApplicationSchema,
@@ -63,7 +60,6 @@ impl InstalledSelectedProducerExecutor<Schema> for LifetimeOnly {
     fn execute_on_selected<'owner>(
         &self,
         _phase: &'owner WorthQueryAdvancementPhase<'owner>,
-
         _runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         _principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         _request_scope: &WorthQueryRequestScope,
@@ -77,18 +73,12 @@ impl InstalledSelectedProducerExecutor<Schema> for LifetimeOnly {
         _successor_of: Option<[u8; 32]>,
         _commit_authority: WorthQueryProducerCommitAuthority,
         _edition: super::super::InstalledProducerEdition,
-        _limits: WorthQueryOutputDemandLimits,
-        _request_admission: &mut InvalidationEditAdmission,
         _producer_contacts: &mut usize,
     ) -> Result<super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop> {
         panic!("lifetime fixture never executes a producer")
     }
 
-    fn preserved_readiness_output_admitted(
-        &self,
-        _receipt: &WorthQueryApplicationCommitReceipt,
-        _admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, WorthQueryOutputDemandDenial> {
+    fn preserved_readiness_output(&self, _receipt: &WorthQueryApplicationCommitReceipt) -> bool {
         panic!("lifetime fixture never executes a producer")
     }
 }
@@ -105,8 +95,6 @@ impl InstalledProducerExecutor<Schema> for LifetimeOnly {
         _successor_of: Option<[u8; 32]>,
         _commit_authority: WorthQueryProducerCommitAuthority,
         _edition: crate::domain_computation::primary_graph::application_contribution::producer::InstalledProducerEdition,
-        _limits: WorthQueryOutputDemandLimits,
-        _request_admission: &mut InvalidationEditAdmission,
         _producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop> {
         panic!("lifetime fixture never executes a producer")
@@ -115,15 +103,10 @@ impl InstalledProducerExecutor<Schema> for LifetimeOnly {
     fn readiness_record(
         &self,
         _receipt: &WorthQueryApplicationCommitReceipt,
-        _admission: Option<&mut InvalidationEditAdmission>,
     ) -> Result<
         worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
         WorthQueryOutputDemandDenial,
     > {
-        panic!("lifetime fixture never executes a producer")
-    }
-
-    fn preserved_readiness_output(&self, _receipt: &WorthQueryApplicationCommitReceipt) -> bool {
         panic!("lifetime fixture never executes a producer")
     }
 }

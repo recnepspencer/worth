@@ -5,16 +5,16 @@
 //! handle that can finish the row. It stays on its own row until the row is
 //! Ready, a newer row of its occurrence supersedes it, or nothing awaits it.
 
-use super::refreshed_rejoin::{infallible, OccurrenceSearchCharge};
 use std::any::Any;
 
-use super::refreshed_rejoin::{awaited_by_stale_owner, superseded};
-use super::{
-    DemandRecord, DemandRegistryState, DemandState, WorthQueryOutputDemandKey,
-    WorthQueryOutputDemandRegistry,
-};
-use crate::domain_computation::primary_graph::application_output_demand::RequiredOutputCustodyCapacity;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use super::refreshed_rejoin::awaited_by_stale_owner;
+use super::refreshed_rejoin::superseded;
+use super::DemandRecord;
+use super::DemandRegistryState;
+use super::DemandState;
+use super::WorthQueryOutputDemandKey;
+use super::WorthQueryOutputDemandRegistry;
+
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 /// The typed successor, erased so the registry stays independent of schema.
@@ -22,15 +22,6 @@ pub(in crate::domain_computation::primary_graph) type HeldRequiredSuccessor =
     Box<dyn Any + Send + Sync>;
 
 impl WorthQueryOutputDemandRegistry {
-    /// Fund the registry's copy of one held successor under the same required
-    /// custody limit as a caller's continuations.
-    pub(in crate::domain_computation::primary_graph) fn reserve_held_successor_capacity(
-        &self,
-        bytes: usize,
-    ) -> Result<RequiredOutputCustodyCapacity, WorthQueryOutputDemandDenial> {
-        self.reserve_required_custody_capacity(bytes)
-    }
-
     /// Keep `successor` on the row `key_of` names. Returns what the caller
     /// drops after this call: a replaced older successor of that row, or
     /// `successor` itself when its row no longer needs it.
@@ -44,11 +35,7 @@ impl WorthQueryOutputDemandRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let key = key_of(&successor);
-        let awaited = infallible(awaited_by_stale_owner(
-            &state.records,
-            key,
-            &mut super::lifecycle::release::CleanupWalk::new(),
-        ));
+        let awaited = awaited_by_stale_owner(&state.records, key);
 
         match state.records.get_mut(key) {
             Some(mut record) if needs_successor(&record) && (record.interests > 1 || awaited) => {
@@ -62,13 +49,12 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn take_published_held_successor(
         &self,
         key: &WorthQueryOutputDemandKey,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<HeldRequiredSuccessor>, WorthQueryOutputDemandDenial> {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.charge_record_lookup(key, admission)?;
+
         Ok(state
             .records
             .get_mut(key)
@@ -85,22 +71,15 @@ impl DemandRegistryState {
     /// The held successor of `key`'s row once the row is finished, or once
     /// nothing but that successor awaits it. The caller drops it after
     /// releasing the lock.
-    pub(super) fn take_finished_successor<
-        C: OccurrenceSearchCharge<Refusal = core::convert::Infallible>,
-    >(
+    pub(super) fn take_finished_successor(
         &mut self,
         key: &WorthQueryOutputDemandKey,
-        charge: &mut C,
     ) -> Option<HeldRequiredSuccessor> {
         let record = self.records.get(key)?;
         record.held_successor.as_ref()?;
         // Only demands own a row: a prerequisite claim of a cached dependent
         // row keeps the row, not the successor.
-        let orphaned = record.successor_is_orphaned(infallible(awaited_by_stale_owner(
-            &self.records,
-            key,
-            charge,
-        )));
+        let orphaned = record.successor_is_orphaned(awaited_by_stale_owner(&self.records, key));
         if needs_successor(record) && !orphaned {
             return None;
         }

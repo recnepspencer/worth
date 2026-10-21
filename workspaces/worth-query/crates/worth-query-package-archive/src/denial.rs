@@ -42,6 +42,8 @@ pub enum WorthQueryPackageArchiveDenialKind {
     InvalidBooleanEncoding,
     NumericWidthExceeded,
     UnsupportedRecordVariant,
+    /// This archive version cannot preserve canonical value shape and bounds.
+    UnsupportedCanonicalValueContract,
     InvalidRecordShape,
     NonCanonicalRecordSequence,
     TrailingBytes,

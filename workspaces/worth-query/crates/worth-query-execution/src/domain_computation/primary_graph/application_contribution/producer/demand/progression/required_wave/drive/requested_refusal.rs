@@ -17,7 +17,6 @@ pub(super) fn resolve<Schema: ApplicationSchema + 'static>(
     custody: &mut RequiredContinuations<Schema>,
     stop: &mut WorthQueryOutputDemandDenial,
     dependency: RequestedDependency<'_, '_, Schema>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<RequestedRefusal, WorthQueryOutputDemandDenial> {
     let RequestedDependency {
         selected,
@@ -27,19 +26,13 @@ pub(super) fn resolve<Schema: ApplicationSchema + 'static>(
     let Some(requested) = stop.take_requested_output() else {
         return Ok(RequestedRefusal::Unavailable);
     };
-    match custody.requested_readmission(
-        &runtime.output_demands,
-        &requested,
-        &wave.positioned,
-        admission,
-    )? {
+    match custody.requested_readmission(&runtime.output_demands, &requested, &wave.positioned)? {
         PendingUpstream::Ready(upstream) => {
             if super::super::cycles::upstream_cycles(
                 &upstream,
                 selected,
                 &wave.anchor_ready,
                 resolved,
-                admission,
             )? {
                 Ok(RequestedRefusal::Cycle)
             } else {

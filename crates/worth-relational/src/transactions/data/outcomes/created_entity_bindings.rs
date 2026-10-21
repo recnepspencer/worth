@@ -50,7 +50,31 @@ impl CommitCreatedEntityBindings {
         }
     }
 
-    pub(super) fn resolve(&self, created: &CreatedEntityRef) -> Option<EntityId> {
+    /// Bound both possible tree searches and the stable fallback's key copy.
+    /// A node compares at most eleven keys; binary height bounds are looser
+    /// than B-tree height. Each comparison reaches two numeric identities,
+    /// the key discriminator and its length/symbol, plus actual raw bytes.
+    pub(crate) fn resolve_work_bound(&self, created: &CreatedEntityRef) -> Option<u64> {
+        let raw_bytes = created.client_key.as_raw_str().map(str::len);
+        let comparison_width = raw_bytes.unwrap_or(0).checked_add(4)?;
+        let tree_work = |entries: usize| {
+            let levels = usize::BITS as usize - entries.max(1).leading_zeros() as usize;
+            entries
+                .min(11)
+                .checked_mul(levels)?
+                .checked_add(1)?
+                .checked_mul(comparison_width)
+        };
+        let mut work = tree_work(self.by_exact_reference.len())?;
+        if let Some(bytes) = raw_bytes {
+            work = work
+                .checked_add(bytes)?
+                .checked_add(tree_work(self.by_stable_reference.len())?)?;
+        }
+        u64::try_from(work).ok()
+    }
+
+    pub(crate) fn resolve(&self, created: &CreatedEntityRef) -> Option<EntityId> {
         if let Some(entity_id) = self.by_exact_reference.get(created) {
             return Some(*entity_id);
         }

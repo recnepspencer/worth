@@ -323,7 +323,7 @@ fn assert_case_posture(
         .runtime
         .query(queries::estate_case(fixture.estate))
         .as_principal(&specialist)
-        .controls(BankReadControls::current(request_scope(), 16, 20_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 16).unwrap())
         .execute()
         .expect("the assigned specialist should observe the estate case");
     let overview = &result.rows()[0];

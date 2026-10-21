@@ -76,10 +76,13 @@ fn refused_measurement_or_sorting_never_emits_ready_and_preserves_refusal() {
                 }
             },
         );
-        assert_eq!(
+        assert!(matches!(
             result.unwrap_err(),
-            CanonicalBasisPreparationStop::Resource("original refusal")
-        );
+            CanonicalBasisPreparationStop::Resource {
+                cause: "original refusal",
+                ..
+            }
+        ));
         assert_eq!(calls, refused_call);
     }
 }

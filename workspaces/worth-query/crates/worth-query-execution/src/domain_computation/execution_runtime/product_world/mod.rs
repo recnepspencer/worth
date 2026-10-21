@@ -49,10 +49,7 @@ pub(crate) use request_control::{
     prepare_conditional_publication, publish_conditional_definition,
     WorthQueryPreparedProductPublication,
 };
-#[cfg(test)]
-pub(in crate::domain_computation) use resources::{
-    test_product_world_resources, test_product_world_resources_with_retained_capacity_for_test,
-};
+
 pub(crate) use resources::test_product_world_resources_with_history_limit_for_test;
 pub use resources::WorthQueryProductWorldResources;
 pub use runtime::WorthQueryProductRuntime;
@@ -77,3 +74,6 @@ pub(crate) mod read_consult;
 mod read_lock_probe;
 #[cfg(test)]
 pub(in crate::domain_computation) use read_lock_probe::ReadLockProbeForTest;
+
+#[cfg(test)]
+pub(in crate::domain_computation) use resources::test_product_world_resources;

@@ -1,10 +1,13 @@
 //! Typed caller disclosure, publication, and requested-output progression.
 use super::*;
+mod own_publication;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 /// What one pass of a caller over its own row answered.
 pub(super) enum CallerPass<Query, Value> {
     Answer(WorthQueryOutputDemandAdvance),
+    /// The same owner successfully moved its checkpoint, without a new decision input.
+    Progressed,
     /// The pass replaced a Ready that no longer proves its output with a row
     /// admitted under the disclosed source. Nothing outside this call has to
     /// happen before that row runs: its stages need the next disclosure.
@@ -14,7 +17,8 @@ pub(super) enum CallerPass<Query, Value> {
     PublishedStale(super::validated::OwnPublication),
 }
 
-/// Each pass owns its source and, for a reobservation, the actual publication.
+/// Each pass owns authenticated source custody and any actual publication.
+/// An executable edition is sealed only after final demand selection.
 enum AdvancePass<Query, Value> {
     Initial,
     Refreshed(super::super::disclosure::ValidatedOutputDisclosure<Query, Value>),
@@ -47,7 +51,7 @@ where
     /// `disclosure` answers `None` once the caller has no further source to
     /// disclose in this call. A caller that reads its retained source again
     /// retries after source replacement or upstream completion; one that handed over its
-    /// only disclosure answers `Pending` and discloses on its next advance.
+    /// only disclosure reports `Progressed` after a native move and discloses on its next advance.
     pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn advance_output_demand_with_prepared_source<
         Family,
     >(
@@ -58,15 +62,15 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
+
         mut disclosure: impl FnMut(
             &Observed<Schema, Family>,
-            &mut InvalidationEditAdmission,
         ) -> Result<
             Option<Disclosed<Schema, Family>>,
             WorthQueryOutputDemandDenial,
         >,
         commit_authority: WorthQueryProducerCommitAuthority,
-        request_admission: &mut InvalidationEditAdmission,
+
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
@@ -83,11 +87,10 @@ where
                 principal,
                 request_scope,
                 delivery_branch,
-                &mut disclosure,
                 pass,
                 performed,
                 commit_authority.clone(),
-                request_admission,
+                &mut disclosure,
             );
             super::super::super::super::request_execution::record_caller_pass_for_test(&result);
             match result {
@@ -114,17 +117,16 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
+
+        pass: AdvancePass<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
+        performed: &std::cell::RefCell<required_wave::performed::PerformedMembers>,
+        commit_authority: WorthQueryProducerCommitAuthority,
         disclosure: &mut impl FnMut(
             &Observed<Schema, Family>,
-            &mut InvalidationEditAdmission,
         ) -> Result<
             Option<Disclosed<Schema, Family>>,
             WorthQueryOutputDemandDenial,
         >,
-        pass: AdvancePass<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
-        performed: &std::cell::RefCell<required_wave::performed::PerformedMembers>,
-        commit_authority: WorthQueryProducerCommitAuthority,
-        request_admission: &mut InvalidationEditAdmission,
     ) -> Result<
         AdvancePassProgress<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
         WorthQueryOutputDemandDenial,
@@ -138,28 +140,10 @@ where
             AdvancePass::OwnPublication(receipt) | AdvancePass::Final(_, receipt) => Some(receipt),
             AdvancePass::Initial | AdvancePass::Refreshed(_) | AdvancePass::RetryDisclosure => None,
         };
-        if let Some(publication) = publication {
-            self.primary_provider
-                .application_attempt_operation_control
-                .caller_pass
-                .run_interleaving();
-            let selected = self
-                .on_branch(delivery_branch)
-                .select_with_request(execution)
-                .map_err(|stop| {
-                    WorthQueryOutputDemandDenial::product_selection(
-                        stop,
-                        "own publication continuation",
-                    )
-                })?;
-            if !publication
-                .0
-                .is_selected_at(selected.product().observation())
-            {
-                return Ok(AdvancePassProgress::Answer(
-                    WorthQueryOutputDemandAdvance::Pending,
-                ));
-            }
+        if !self.own_publication_is_selected(execution, delivery_branch, publication)? {
+            return Ok(AdvancePassProgress::Answer(
+                WorthQueryOutputDemandAdvance::Pending,
+            ));
         }
         if demand.runtime_authority != self.runtime.authority_identity().as_u64()
             || demand.schema_binding != self.installed_schema.binding_identity()
@@ -182,10 +166,8 @@ where
             .interest
             .as_ref()
             .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY))?;
-        demand.rejoin_refreshed_output(&self.output_demands, request_admission)?;
-        request_admission
-            .charge_external_work((std::mem::size_of_val(&demand.installed_entry) + 1) as u64)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
+        demand.rejoin_refreshed_output(&self.output_demands)?;
+
         let installed_entry = std::sync::Arc::clone(&demand.installed_entry);
         let entry = installed_entry.as_ref();
         if !entry
@@ -204,11 +186,9 @@ where
         // A required successor carries the mode and installed edition that
         // issued it. Check those before a Current-only required wave can
         // acknowledge work without entering the validated execution core.
-        demand.progression_provenance.validate_for_execution(
-            &commit_authority,
-            &entry.edition,
-            request_admission,
-        )?;
+        demand
+            .progression_provenance
+            .validate_for_execution(&commit_authority, &entry.edition)?;
         if matches!(
             &pass,
             AdvancePass::Initial | AdvancePass::Refreshed(_) | AdvancePass::RetryDisclosure
@@ -222,7 +202,6 @@ where
             delivery_branch,
             &commit_authority,
             performed,
-            request_admission,
         )? {
             return Ok(AdvancePassProgress::Answer(advance));
         }
@@ -231,8 +210,7 @@ where
         (|| {
             Ok(match pass {
                 AdvancePass::Initial | AdvancePass::RetryDisclosure => {
-                    let Some(disclosed) = disclosure(&demand.observed_source, request_admission)?
-                    else {
+                    let Some(disclosed) = disclosure(&demand.observed_source)? else {
                         return Ok(AdvancePassProgress::Answer(
                             WorthQueryOutputDemandAdvance::Pending,
                         ));
@@ -262,14 +240,16 @@ where
                         entry,
                         commit_authority,
                         performed,
-                        request_admission,
                     )?;
                     match answer {
                         CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
+                        CallerPass::Progressed => {
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
+                        }
                         CallerPass::Refreshed(_) | CallerPass::PublishedStale(_)
                             if final_disclosure =>
                         {
-                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Pending)
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
                         }
                         CallerPass::Refreshed(disclosed) => {
                             AdvancePassProgress::Continue(AdvancePass::Refreshed(disclosed))
@@ -291,23 +271,26 @@ where
                         entry,
                         commit_authority,
                         performed,
-                        request_admission,
                     )?;
                     match answer {
                         CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
+                        CallerPass::Progressed => {
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
+                        }
                         CallerPass::PublishedStale(receipt) => {
                             AdvancePassProgress::Continue(AdvancePass::OwnPublication(receipt))
                         }
                         CallerPass::Refreshed(_) => {
-                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Pending)
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
                         }
                     }
                 }
                 AdvancePass::OwnPublication(receipt) => {
-                    let Some(disclosed) = disclosure(&demand.observed_source, request_admission)?
-                    else {
+                    let Some(disclosed) = disclosure(&demand.observed_source)? else {
+                        #[cfg(test)]
+                        own_effect_observation::record(Stage::DisclosureExhausted);
                         return Ok(AdvancePassProgress::Answer(
-                            WorthQueryOutputDemandAdvance::Pending,
+                            WorthQueryOutputDemandAdvance::Progressed,
                         ));
                     };
                     let disclosed = validate_disclosure(
@@ -335,15 +318,17 @@ where
                         entry,
                         commit_authority,
                         performed,
-                        request_admission,
                     )?;
                     match answer {
                         CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
+                        CallerPass::Progressed => {
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
+                        }
                         CallerPass::Refreshed(disclosed) => {
                             AdvancePassProgress::Continue(AdvancePass::Final(disclosed, receipt))
                         }
                         CallerPass::PublishedStale(_) => {
-                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Pending)
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
                         }
                     }
                 }
@@ -359,12 +344,14 @@ where
                         entry,
                         commit_authority,
                         performed,
-                        request_admission,
                     )?;
                     match answer {
                         CallerPass::Answer(answer) => AdvancePassProgress::Answer(answer),
+                        CallerPass::Progressed => {
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
+                        }
                         CallerPass::Refreshed(_) | CallerPass::PublishedStale(_) => {
-                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Pending)
+                            AdvancePassProgress::Answer(WorthQueryOutputDemandAdvance::Progressed)
                         }
                     }
                 }
@@ -382,13 +369,12 @@ where
                 &requested_authority,
                 &mut stop,
                 performed,
-                request_admission,
             )? {
                 Some(WorthQueryOutputDemandAdvance::Settled(_)) if !final_disclosure => {
                     Ok(AdvancePassProgress::Continue(AdvancePass::RetryDisclosure))
                 }
                 Some(WorthQueryOutputDemandAdvance::Settled(_)) => Ok(AdvancePassProgress::Answer(
-                    WorthQueryOutputDemandAdvance::Pending,
+                    WorthQueryOutputDemandAdvance::Progressed,
                 )),
                 Some(answer) => Ok(AdvancePassProgress::Answer(answer)),
                 None => Err(stop),

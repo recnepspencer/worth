@@ -1,20 +1,21 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
-use worth_query_declaration::facade::application_program::{
-    ApplicationProgramIdentity, ApplicationProgramRevision,
-};
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_declaration::facade::application_program::ApplicationProgramIdentity;
+use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::{
-    denial, FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
-    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-    WorthQueryProducerCommitAuthority, WorthQueryProducerOutputFamily,
-};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOutputDemandSource, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use super::denial;
+use super::FamilySourceQuery;
+use super::FamilySourceValue;
+use super::WorthQueryAdmittedOutputDemand;
+use super::WorthQueryOutputDemandAdvance;
+use super::WorthQueryOutputDemandDenial;
+use super::WorthQueryOutputDemandDenialKind;
+use super::WorthQueryProducerCommitAuthority;
+use super::WorthQueryProducerOutputFamily;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -51,7 +52,7 @@ where
             principal,
             request_scope,
             delivery_branch,
-            |_, _| Ok(disclosure.take()),
+            |_| Ok(disclosure.take()),
             identity,
             revision,
         )
@@ -94,7 +95,7 @@ where
             principal,
             request_scope,
             delivery_branch,
-            |retained, admission| {
+            |retained| {
                 super::retained_read::read_retained_source::<Schema, Family>(
                     execution,
                     self,
@@ -102,7 +103,6 @@ where
                     principal,
                     request_scope,
                     delivery_branch,
-                    admission,
                 )
                 .map(Some)
             },
@@ -121,11 +121,11 @@ where
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
         delivery_branch: crate::basis::WorthQueryProductBranch,
+
         disclosure: impl FnMut(
             &crate::domain_computation::primary_graph::WorthQueryObservedSource<
                 FamilySourceQuery<Schema, Family>,
             >,
-            &mut super::InvalidationEditAdmission,
         ) -> Result<
             Option<
                 WorthQueryApplicationOutputDemandSource<
@@ -174,7 +174,7 @@ where
                 format!("selected-program output {identity:?} revision {revision} is not active"),
             ));
         }
-        self.advance_as_caller(demand, |demand, admission, performed| {
+        self.advance_as_caller(demand, |demand, performed| {
             self.advance_output_demand_with_prepared_source(
                 execution,
                 phase,
@@ -184,7 +184,6 @@ where
                 delivery_branch,
                 disclosure,
                 WorthQueryProducerCommitAuthority::SelectedProgram { identity, revision },
-                admission,
                 performed,
             )
         })

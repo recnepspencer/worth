@@ -17,12 +17,6 @@ pub use cutover::PreparedPublicationCompanionEffect;
 mod observer;
 pub use observer::{CompanionPublicationCompletion, CompanionPublicationCompletionObserver};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct CompanionPreflightBudget {
-    pub maximum_work_visits: Option<u64>,
-    pub maximum_preparation_bytes: Option<u64>,
-}
-
 /// The original reason native companion admission or preparation stopped.
 ///
 /// Resource variants retain their supplied work amounts or byte capacities;
@@ -95,9 +89,6 @@ pub struct PublicationCompanionPreflight<'a> {
     pub(crate) binding: CandidateCompanionBinding,
     pub(crate) envelope: &'a CanonicalCommitEnvelope,
     pub(crate) control: &'a RelationalOperationControl,
-    pub(crate) budget: CompanionPreflightBudget,
-    charged_work: u64,
-    prepared_bytes: u64,
 }
 
 impl<'a> PublicationCompanionPreflight<'a> {
@@ -105,15 +96,11 @@ impl<'a> PublicationCompanionPreflight<'a> {
         binding: CandidateCompanionBinding,
         envelope: &'a CanonicalCommitEnvelope,
         control: &'a RelationalOperationControl,
-        budget: CompanionPreflightBudget,
     ) -> Self {
         Self {
             binding,
             envelope,
             control,
-            budget,
-            charged_work: 0,
-            prepared_bytes: 0,
         }
     }
 
@@ -147,48 +134,14 @@ impl<'a> PublicationCompanionPreflight<'a> {
             })
     }
 
-    pub fn claim_work(&mut self, visits: u64) -> Result<(), CompanionPreflightStop> {
-        self.checkpoint()?;
-        let required = self
-            .charged_work
-            .checked_add(visits)
-            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        if let Some(maximum) = self.budget.maximum_work_visits
-            && required > maximum
-        {
-            return Err(CompanionPreflightStop::WorkExhausted { required, maximum });
-        }
-        self.charged_work = required;
-        Ok(())
-    }
-
-    pub fn claim_bytes(&mut self, bytes: u64) -> Result<(), CompanionPreflightStop> {
-        self.checkpoint()?;
-        let required = self
-            .prepared_bytes
-            .checked_add(bytes)
-            .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-        if let Some(maximum) = self.budget.maximum_preparation_bytes
-            && required > maximum
-        {
-            return Err(CompanionPreflightStop::PreparationMemoryExhausted { required, maximum });
-        }
-        self.prepared_bytes = required;
-        Ok(())
-    }
-
     /// Prepare an unpublished cell from the candidate expectation, verified only at cutover.
     /// The caller supplies only its prepared Query payload, never source identity.
     pub fn mint_selected_branch_cell<T: Send + Sync + 'static>(
         &mut self,
         initial: Arc<T>,
     ) -> Result<PreparedCompanionBranchCell<T>, CompanionPreflightStop> {
-        self.claim_work(1)?;
-        self.claim_bytes(
-            arc_allocation_bound::<CompanionRootImage>()
-                .saturating_add(arc_allocation_bound::<CompanionBranchCellCore>())
-                .saturating_add(arc_allocation_bound::<PublicationCellAdmission>()),
-        )?;
+        self.checkpoint()?;
+        self.checkpoint()?;
         Ok(PreparedCompanionBranchCell::new_selected(
             &self.binding,
             initial,
@@ -222,8 +175,8 @@ impl<'a> PublicationCompanionPreflight<'a> {
         {
             return Err(CompanionPreflightStop::SelectedSourceMismatch);
         }
-        self.claim_work(1)?;
-        self.claim_bytes(arc_allocation_bound::<CompanionRootImage>())?;
+        self.checkpoint()?;
+        self.checkpoint()?;
         if reserved.core.topology_generation.load(Ordering::Acquire)
             != reserved.current().topology_generation()
         {
@@ -239,7 +192,6 @@ impl<'a> PublicationCompanionPreflight<'a> {
             commit_id: Some(self.binding.next_commit_id),
             position: AtomicU64::new(0),
             payload: prepared,
-            _derived_retention: None,
         });
         let pinned_image = Arc::clone(&reserved.current().image);
         let publication_admission = reserved.publication_admission.take();
@@ -256,8 +208,4 @@ impl<'a> PublicationCompanionPreflight<'a> {
             publication_admission,
         })
     }
-}
-
-pub(super) const fn arc_allocation_bound<T>() -> u64 {
-    (std::mem::size_of::<T>() + 2 * std::mem::size_of::<usize>() + std::mem::align_of::<T>()) as u64
 }

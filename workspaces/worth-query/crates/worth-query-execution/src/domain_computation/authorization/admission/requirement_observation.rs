@@ -1,24 +1,19 @@
 //! Installed-requirement observation and exact decision-fact minting.
 
-use super::{
-    validation::{denial, validate_decision},
-    WorthQueryConventionalAuthorizationDecisionPermit,
-    WorthQueryConventionalAuthorizationObservation,
-};
+use super::validation::denial;
+use super::validation::validate_decision;
+use super::WorthQueryConventionalAuthorizationDecisionPermit;
+use super::WorthQueryConventionalAuthorizationObservation;
+use crate::domain_computation::authorization::bridge_observation::lower_bridge_observation;
 use crate::domain_computation::authorization::installed_policy::WorthQueryInstalledAuthorizationPolicy;
+use crate::domain_computation::authorization::WorthQueryAuthorizationDecisionFact;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use crate::domain_computation::authorization::{
-    bridge_observation::lower_bridge_observation, WorthQueryAuthorizationDecisionFact,
-    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationQueryAccessContext, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::authorization::RelationalAuthorizationObservationPlan;
-
-mod admitted;
-pub(in crate::domain_computation) use admitted::AdmittedQueryAuthorizationStop;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -230,13 +225,9 @@ where
         })?;
         self.relational
             .observe_authorization(plan, execution)
-            .map_err(|_| {
-                denial(
-                    WorthQueryOperationAuthorizationDenialKind::Refused(
-                        AuthorizationRefusal::RelationalObservationRejected,
-                    ),
-                    requirement.policy(),
-                )
+            .map_err(|stop| match stop {
+                worth_relational::facade::authorization::RelationalAuthorizationObservationDenial::Execution(cause) => crate::domain_computation::authorization::denial::relational_read_denial(cause, requirement.policy()),
+                _ => denial(WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::RelationalObservationRejected), requirement.policy()),
             })
     }
 }

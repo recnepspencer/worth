@@ -7,6 +7,7 @@
 //! settlement consumed, at its own snapshot.
 
 use super::*;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 
 /// Whether a reader at `selected` reads at or after the position `observed`
 /// was read at, on the same branch of the same runtime.
@@ -29,7 +30,6 @@ impl ConsumedOutputEvidence {
         direct: bool,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ConsumedOutputVerification>, ConsumedOutputVerificationStop> {
         Self::compare_facts(
             execution,
@@ -39,7 +39,6 @@ impl ConsumedOutputEvidence {
             direct,
             runtime,
             snapshot,
-            admission,
         )
     }
 
@@ -51,10 +50,9 @@ impl ConsumedOutputEvidence {
         direct: bool,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ConsumedOutputVerification>, ConsumedOutputVerificationStop> {
         for (ordinal, fact) in source_facts.iter().enumerate() {
-            if !fact_is_current(execution, fact, runtime, snapshot, admission)? {
+            if !fact_is_current(execution, fact, runtime, snapshot)? {
                 return Ok(Some(if direct {
                     ConsumedOutputVerification::ChangedDirectFact(ordinal)
                 } else {
@@ -64,8 +62,8 @@ impl ConsumedOutputEvidence {
         }
         if let Some(output_facts) = output_facts {
             for fact in output_facts {
-                if !fact_is_current(execution, fact, runtime, snapshot, admission)? {
-                    return Ok(Some(ConsumedOutputVerification::ChangedUpstream));
+                if !fact_is_current(execution, fact, runtime, snapshot)? {
+                    return Ok(Some(ConsumedOutputVerification::ChangedOutput));
                 }
             }
         } else if let Some(witness) = witness {
@@ -73,10 +71,10 @@ impl ConsumedOutputEvidence {
                 .get()
                 .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
             if !witness
-                .unchanged_in(runtime, snapshot, admission)
+                .unchanged_in(runtime, snapshot)
                 .map_err(map_admission_stop)?
             {
-                return Ok(Some(ConsumedOutputVerification::ChangedUpstream));
+                return Ok(Some(ConsumedOutputVerification::ChangedOutput));
             }
         }
         Ok(None)
@@ -88,36 +86,34 @@ impl ConsumedOutputEvidence {
     /// This comparison grants no currentness.
     pub(in crate::domain_computation::primary_graph) fn own_evidence_is_current(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        facts: &[WorthQueryApplicationObservedFact],
+        facts: &(impl FactSequence + ?Sized),
         consumed: &[ConsumedOutputEvidence],
         witness: &SealedNativeOutputWitness,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, ConsumedOutputVerificationStop> {
-        for fact in facts {
+        for fact in facts.iter() {
             let mut child_content = false;
             for child in consumed {
-                charge_external(admission, 1)?;
                 let witness = child
                     .native_output_witness
                     .as_ref()
                     .and_then(|cell| cell.get())
                     .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
                 if witness
-                    .covers_content_fact(fact, admission)
+                    .covers_content_fact(fact)
                     .map_err(map_admission_stop)?
                 {
                     child_content = true;
                     break;
                 }
             }
-            if !child_content && !fact_is_current(execution, fact, runtime, snapshot, admission)? {
+            if !child_content && !fact_is_current(execution, fact, runtime, snapshot)? {
                 return Ok(false);
             }
         }
         witness
-            .unchanged_in(runtime, snapshot, admission)
+            .unchanged_in(runtime, snapshot)
             .map_err(map_admission_stop)
     }
 
@@ -137,9 +133,35 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
-        let marked = Self::verify_candidate_at(
+        Self::observe_at_observation(
+            execution,
+            identity,
+            source_facts,
+            upstream,
+            verification_requirement,
+            native_output_witness,
+            owner,
+            runtime,
+            snapshot,
+            selected,
+        )?
+        .driving()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn observe_at_observation(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        identity: &Arc<RecordedSettlementIdentity>,
+        source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
+        upstream: &[ConsumedOutputEvidence],
+        verification_requirement: Option<FullVerificationReason>,
+        native_output_witness: &Arc<OnceLock<SealedNativeOutputWitness>>,
+        owner: &SourceInvalidationOwner,
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+        selected: &PositionedRelationalSnapshot,
+    ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
+        let marked = Self::observe_candidate_at(
             execution,
             identity,
             source_facts,
@@ -151,7 +173,6 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
-            admission,
         );
         if marked != Err(ConsumedOutputVerificationStop::Unavailable) {
             return marked;
@@ -170,7 +191,6 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
-            admission,
         )
     }
 
@@ -180,31 +200,26 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         let mut pending = Vec::new();
         let mut visited = OrdSet::new();
-        charge_external(admission, 1)?;
-        reserve_pending(&mut pending, 1, admission)?;
+
+        reserve_pending(&mut pending, 1)?;
         pending.push((root, true));
         while let Some((evidence, direct)) = pending.pop() {
-            admission
-                .admit_visited_settlement(visited.len())
-                .map_err(map_admission_stop)?;
             if visited.contains(evidence.identity) {
                 continue;
             }
             visited.insert(Arc::clone(evidence.identity));
             if !reads_at_or_after(selected, evidence.selected_native_root) {
-                return Ok(ConsumedOutputVerification::ChangedUpstream);
+                return Ok(ConsumedOutputVerification::Unaligned);
             }
-            let changed =
-                Self::compare_own(execution, evidence, direct, runtime, snapshot, admission)?;
+            let changed = Self::compare_own(execution, evidence, direct, runtime, snapshot)?;
             if let Some(changed) = changed {
                 return Ok(changed);
             }
-            charge_external(admission, evidence.upstream.len())?;
-            reserve_pending(&mut pending, evidence.upstream.len(), admission)?;
+
+            reserve_pending(&mut pending, evidence.upstream.len())?;
             pending.extend(
                 evidence
                     .upstream

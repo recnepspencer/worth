@@ -3,20 +3,21 @@
 use std::sync::{Arc, Mutex, OnceLock};
 
 use super::{
-    invalidation::FullVerificationReason, retained_capacity::RetainedLineageCapacity,
-    RecordedSettlementIdentity, RecordedSourceIdentity, WorthQueryApplicationOutputCorrespondence,
+    invalidation::FullVerificationReason, RecordedSettlementIdentity, RecordedSourceIdentity,
+    WorthQueryApplicationOutputCorrespondence,
 };
 use crate::domain_computation::primary_graph::{
     application_attempt::CompletedHandlerFactBoundary, invariant_projection::ConsumedOutputEvidence,
 };
 
 pub(in crate::domain_computation::primary_graph) struct RecordedOutput {
+    pub(super) required_publication:
+        Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     /// The performed computation read a fact that its own effect replaced.
     /// Postcondition facts cannot discharge this knowledge after index loss.
     pub(super) computation_source: super::ComputationSourceEvidence,
     pub(super) native_prior_checkpoint:
         Option<super::native_prior_checkpoint::NativePriorCheckpointLocator>,
-    pub(super) _retained_capacity: Option<RetainedLineageCapacity>,
     /// Stable settlements pin the original performed record, never another
     /// alias. This preserves completion proof and its original lifetime cost.
     pub(super) performed_origin: Option<Arc<OnceLock<RecordedOutput>>>,
@@ -41,6 +42,7 @@ pub(super) struct RecordedOutputMutable {
     observed_source_facts: Option<
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     >,
+    stable_fact_spans: Option<super::input_cutoff::stable_publication::StableFactSpans>,
     /// What the partitioned computation of the attempt that published this
     /// record retained for the producer's next run.
     pub(super) computation: super::retained_computation::RecordedComputation,
@@ -61,12 +63,30 @@ impl RecordedOutputMutable {
         Self {
             verification_requirement,
             observed_source_facts: facts.map(|facts| facts.postconditions().clone()),
-
+            stable_fact_spans: None,
             computation,
         }
     }
     pub(super) fn replace_retained_facts(&mut self, facts: super::RetainedSourceFacts) {
+        self.stable_fact_spans = None;
         self.observed_source_facts = Some(facts.postconditions().clone());
+    }
+    pub(super) fn with_stable_fact_spans(
+        mut self,
+        spans: super::input_cutoff::stable_publication::StableFactSpans,
+    ) -> Self {
+        self.set_stable_fact_spans(spans);
+        self
+    }
+    pub(super) fn set_stable_fact_spans(
+        &mut self,
+        spans: super::input_cutoff::stable_publication::StableFactSpans,
+    ) {
+        assert!(self
+            .observed_source_facts
+            .as_ref()
+            .is_some_and(|body| spans.matches(body)));
+        self.stable_fact_spans = Some(spans);
     }
     /// Match immutable qualified custody while holding the row's mutable fence.
     pub(super) fn same_qualified_facts(
@@ -122,6 +142,23 @@ impl RecordedOutput {
             .map(|facts| facts.facts().clone())
     }
 
+    pub(super) fn stable_fact_spans(
+        &self,
+        body: &crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    ) -> Option<super::input_cutoff::stable_publication::StableFactSpans> {
+        let row = self
+            .mutable
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        row.observed_source_facts
+            .as_ref()
+            .filter(|observed| observed.same_backing(body))?;
+        row.stable_fact_spans
+            .as_ref()
+            .filter(|spans| spans.matches(body))
+            .cloned()
+    }
+
     pub(super) fn restore(
         &self,
         facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
@@ -136,6 +173,7 @@ impl RecordedOutput {
             .mutable
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        row.stable_fact_spans = None;
         row.observed_source_facts = Some(facts);
         row.verification_requirement = Some(FullVerificationReason::CheckpointRestore);
         // A restored row's computation state is not the one its facts carry.
@@ -157,3 +195,6 @@ impl RecordedOutput {
             .verification_requirement = Some(reason);
     }
 }
+
+#[cfg(test)]
+mod span_tests;

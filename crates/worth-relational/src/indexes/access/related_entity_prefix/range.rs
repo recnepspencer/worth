@@ -7,9 +7,8 @@ type Rows = DerivedIndexRows<RelatedEntityOrderingEntry>;
 pub(super) fn entry<'a>(
     rows: &'a Rows,
     index: usize,
-    meter: &mut MapKernelContext<'_, '_>,
+    _meter: &mut MapKernelContext<'_, '_>,
 ) -> Result<&'a RelatedEntityOrderingEntry, Denial> {
-    charge_navigation(meter, rows.len(), true)?;
     rows.get(index).ok_or(Denial::ForeignBoundary)
 }
 fn compare_prefix(

@@ -42,11 +42,17 @@ impl WorthQueryProductRuntime {
             .map_err(|denial| {
                 installation_denial(format!("Signal definition service: {denial:?}"))
             })?;
-        let cleanup_capacity = budgets
-            .live_product_branches()
-            .get()
-            .checked_add(budgets.retained_product_unpublished_records().get())
-            .ok_or_else(|| installation_denial("Owner cleanup capacity overflow".to_owned()))?;
+        let cleanup_capacity = match (
+            budgets.live_product_branches().get(),
+            budgets.retained_product_unpublished_records().get(),
+        ) {
+            (Some(branches), Some(recovery)) => {
+                Some(branches.checked_add(recovery).ok_or_else(|| {
+                    installation_denial("Owner cleanup capacity overflow".to_owned())
+                })?)
+            }
+            _ => None,
+        };
         let owner_cleanup = WorthQueryProductBranchOwnerCleanupRegistry::new(cleanup_capacity);
         let activations = WorthQueryProductActivationRegistry::new(budgets.live_product_branches())
             .map_err(|denial| {

@@ -1,12 +1,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use worth_foundational::facade::{
-    aspects, AspectBinding, AspectContract, AspectContractRevision, AspectIdentity, AspectKey,
-    FieldKey, ScalarAspectType,
+    aspects, AbsenceLaw, AspectBinding, AspectContract, AspectContractRevision,
+    AspectEquivalenceBasis, AspectEvolutionPolicy, AspectIdentity, AspectKey, AspectMaskContract,
+    CanonicalDigestId, FieldKey, ScalarAspectType, StructAspectShape,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationFieldPresence, ApplicationSchemaBindingIdentity, ApplicationSchemaMember,
-    ErasedApplicationSchemaDeclaration,
+    ApplicationFieldPresence, ApplicationFieldValueMeaning, ApplicationSchemaBindingIdentity,
+    ApplicationSchemaMember, ErasedApplicationSchemaDeclaration,
 };
 
 use crate::canonical_work::WorthQueryCanonicalWorkEvidence;
@@ -26,7 +27,15 @@ use super::{
 struct DeclaredAspectSeed {
     identity: AspectIdentity,
     revision: AspectContractRevision,
-    fields: BTreeMap<FieldKey, (ScalarAspectType, ApplicationFieldPresence)>,
+    absence: AbsenceLaw,
+    fields: BTreeMap<
+        FieldKey,
+        (
+            ScalarAspectType,
+            ApplicationFieldPresence,
+            Option<CanonicalDigestId>,
+        ),
+    >,
 }
 
 pub(crate) fn compile_native_contract_catalog(
@@ -96,6 +105,7 @@ fn collect_declared_aspects(
             aspect,
             identity,
             revision,
+            absence,
         } = member
         else {
             continue;
@@ -113,6 +123,7 @@ fn collect_declared_aspects(
             DeclaredAspectSeed {
                 identity: *identity,
                 revision: *revision,
+                absence: *absence,
                 fields: BTreeMap::new(),
             },
         );
@@ -153,6 +164,7 @@ fn collect_declared_fields(
             field,
             presence,
             scalar_family,
+            canonical,
             ..
         } = member
         else {
@@ -163,9 +175,19 @@ fn collect_declared_fields(
             .ok_or_else(|| denial(DenialKind::FieldWithoutAspect, field))?;
         let field_key = FieldKey::new(field.clone())
             .ok_or_else(|| denial(DenialKind::InvalidFieldKey, field))?;
+        let codec = if canonical.is_some() {
+            Some(
+                ApplicationFieldValueMeaning::from_member(member)
+                    .map_err(|_| denial(DenialKind::CanonicalContractRejected, field))?
+                    .and_then(|meaning| meaning.codec_digest())
+                    .ok_or_else(|| denial(DenialKind::CanonicalContractRejected, field))?,
+            )
+        } else {
+            None
+        };
         if seed
             .fields
-            .insert(field_key, (*scalar_family, *presence))
+            .insert(field_key, (*scalar_family, *presence, codec))
             .is_some()
         {
             return Err(denial(
@@ -235,7 +257,7 @@ fn build_foundational_contract(
     seed: &DeclaredAspectSeed,
 ) -> Result<AspectContract, WorthQueryApplicationSchemaContractCatalogDenial> {
     let mut fields = seed.fields.iter();
-    let (first_key, (first_family, first_presence)) = fields
+    let (first_key, (first_family, first_presence, _)) = fields
         .next()
         .ok_or_else(|| denial(DenialKind::MissingAspectFieldClosure, aspect_name))?;
     let mut shape = match first_presence {
@@ -246,7 +268,7 @@ fn build_foundational_contract(
             .struct_fields()
             .optional(first_key.as_str(), *first_family),
     };
-    for (field, (family, presence)) in fields {
+    for (field, (family, presence, _)) in fields {
         shape = match presence {
             ApplicationFieldPresence::Required => shape.required(field.as_str(), *family),
             ApplicationFieldPresence::Optional => shape.optional(field.as_str(), *family),
@@ -255,12 +277,25 @@ fn build_foundational_contract(
     let shape = shape
         .finish()
         .map_err(|_| denial(DenialKind::InvalidAspectShape, aspect_name))?;
+    let shape = StructAspectShape::new(shape.fields().iter().cloned().map(|field| {
+        match seed.fields[field.key()].2 {
+            Some(codec) => field.with_codec(codec),
+            None => field,
+        }
+    }))
+    .ok_or_else(|| denial(DenialKind::InvalidAspectShape, aspect_name))?;
     Ok(aspects()
         .contract()
         .for_key(aspect_key.clone())
         .identified_by(seed.identity)
         .at_revision(seed.revision)
-        .struct_aspect(shape))
+        .struct_with(
+            shape,
+            AspectMaskContract::struct_fields(),
+            seed.absence,
+            AspectEquivalenceBasis::DeclaredStructFields,
+            AspectEvolutionPolicy::AdditiveFieldsAllowed,
+        ))
 }
 
 fn admit_declared_projection_mask<'a>(

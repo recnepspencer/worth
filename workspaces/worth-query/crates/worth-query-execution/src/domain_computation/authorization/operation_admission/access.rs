@@ -112,6 +112,14 @@ impl<Schema, Operation, Input, Scope>
         &self.contracts
     }
 
+    /// Retain the actual installed immutable descriptor for checked read
+    /// layout reuse. Identity grants no source, session or currentness custody.
+    pub(in crate::domain_computation) fn retain_graph_contract(
+        &self,
+    ) -> Arc<WorthQueryCompiledApplicationOperationContracts> {
+        Arc::clone(&self.contracts)
+    }
+
     pub(in crate::domain_computation) const fn mutation_preconditions(
         &self,
     ) -> &WorthQueryBoundMutationPreconditions {

@@ -10,6 +10,7 @@ use worth_query_installation::facade::{
 };
 
 mod admitted;
+mod admitted_projection;
 mod borrowed;
 mod prepared_inputs;
 pub(in crate::domain_computation::primary_graph) use borrowed::BorrowedOperationProjection;
@@ -19,9 +20,17 @@ mod current_output;
 pub(super) use current_output::CertifiedOutputCorrespondence;
 mod decision_plan;
 mod decision_reads;
+mod output_availability;
+pub use output_availability::{
+    WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
+    WorthQueryOutputAvailabilityState,
+};
 mod prior_output;
 
-pub(in crate::domain_computation::primary_graph) use computation_calls::ComputationCallCharge;
+pub(in crate::domain_computation::primary_graph) use computation_calls::{
+    CallSequenceDenial, CallShape, CallShapeTransition, CallVisit, ComputationCallCharge,
+    ComputationCallSequence,
+};
 pub use current_output::{
     WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
     WorthQueryCurrentOutputSelection,
@@ -31,7 +40,7 @@ pub use decision_plan::{
     WorthQueryPreparedEntitySelection,
 };
 pub(in crate::domain_computation::primary_graph) use decision_reads::{
-    DecisionReads, ObservedComputationInputs,
+    DecisionReads, ExpectedFactKeys, ObservedComputationInputs,
 };
 pub use prior_output::WorthQueryPriorOutputFamilyMember;
 pub(in crate::domain_computation::primary_graph) use prior_output::WorthQueryPriorOutputRead;
@@ -62,6 +71,8 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
     Operation,
 > {
     reader: &'reader mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
+    source_query: Option<&'reader crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<'reader, Schema>>,
+    source_context_use: Option<&'reader std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>>,
     admitted_contracts: Option<&'reader WorthQueryCompiledApplicationOperationContracts>,
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
@@ -153,6 +164,8 @@ where
                 let mut operation_reader =
                     WorthQueryApplicationOperationInvariantProjectionReader {
                         reader,
+                        source_query: None,
+                        source_context_use: None,
                         admitted_contracts: None,
                         runtime_authority: self.runtime_authority,
                         binding_identity: &self.binding_identity,
@@ -202,6 +215,8 @@ where
                 let mut operation_reader =
                     WorthQueryApplicationOperationInvariantProjectionReader {
                         reader,
+                        source_query: None,
+                        source_context_use: None,
                         admitted_contracts: None,
                         runtime_authority: self.runtime_authority,
                         binding_identity: &self.binding_identity,
@@ -283,32 +298,14 @@ where
         WorthQueryCompletedOperationInvariantProjection<Schema, Operation, Output>,
         WorthQueryOperationProjectionDenial,
     > {
-        admission.validate_projection_authority(self.runtime_authority, &self.binding_identity)?;
-        let product = admission
-            .graph_work()
-            .mutation_lease()
-            .expect("admitted operation retains its selected mutation lease")
-            .product()
-            .retained_clone();
-        let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(admission.publication_request(), allocation_policy);
-        let completed = self
-            .project_with_work_limit(
-                execution,
-                admission.allowed_graph_contract().projection_work_budget(),
-                product.relational_basis().clone(),
-                |reader| admitted::project(self, reader, admission, &product, projection),
-                Some(admission.publication_request()),
-                allocation_control.policy(),
-            )
-            .map_err(|denial| {
-                WorthQueryOperationProjectionDenial::from_invariant(denial, admission.operation())
-            })?;
-        Ok(WorthQueryCompletedOperationInvariantProjection {
-            completed,
-            admission_identity: admission.admission_identity(),
-            product,
-            _operation: PhantomData,
-        })
+        self.project_admitted_operation_with_source_access(
+            execution,
+            admission,
+            projection,
+            allocation_policy,
+            None,
+            None,
+        )
     }
 }
 

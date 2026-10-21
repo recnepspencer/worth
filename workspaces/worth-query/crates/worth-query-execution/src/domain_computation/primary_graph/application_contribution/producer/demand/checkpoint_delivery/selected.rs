@@ -1,14 +1,11 @@
 //! Reenter the real Published/Delivered checkpoint under the required meter.
 
 use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::PreparedSelectedCheckpointFinish;
+use crate::domain_computation::primary_graph::application_output_demand::SelectedCheckpointFinishStop;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use crate::domain_computation::primary_graph::{
-    application_output_demand::{PreparedSelectedCheckpointFinish, SelectedCheckpointFinishStop},
-    output_lineage::invalidation::InvalidationEditAdmission,
-};
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryRequestInterruption, WorthQueryRequestScope,
-};
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -28,7 +25,6 @@ where
         request_scope: &WorthQueryRequestScope,
         returned: &mut Option<Checkpoint>,
         finish: PreparedSelectedCheckpointFinish<'_>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         match checkpoint {
             Checkpoint::Published {
@@ -38,72 +34,25 @@ where
             } => {
                 // These are Query owner visits. Bridge/Signal delivery keeps
                 // its installed serial admission class.
-                if let Err(stop) = admission.charge_external_work(2) {
-                    finish_selected(
-                        finish,
-                        claim,
-                        Checkpoint::Published {
-                            receipt,
-                            delivery,
-                            ready_backing,
-                        },
-                        Some(admission_denial(stop)),
-                        returned,
-                    )?;
-                    return Ok(false);
-                }
-                let work = producer_identity
-                    .len()
-                    .checked_add(16)
-                    .and_then(|work| work.checked_add(std::mem::size_of::<Checkpoint>() * 2));
-                let Some(work) = work else {
-                    finish_selected(
-                        finish,
-                        claim,
-                        Checkpoint::Published {
-                            receipt,
-                            delivery,
-                            ready_backing,
-                        },
-                        Some(work_denial()),
-                        returned,
-                    )?;
-                    return Ok(false);
+
+                let prepared = match self.prepare_selected_delivery(producer_identity, &receipt) {
+                    Ok(prepared) => prepared,
+                    Err(cause) => {
+                        finish_selected(
+                            finish,
+                            claim,
+                            Checkpoint::Published {
+                                receipt,
+                                delivery,
+                                ready_backing,
+                            },
+                            Some(cause),
+                            returned,
+                        )?;
+                        return Ok(false);
+                    }
                 };
-                if let Err(cause) = admission.charge_external_work(work as u64) {
-                    let cause = admission_denial(cause);
-                    finish_selected(
-                        finish,
-                        claim,
-                        Checkpoint::Published {
-                            receipt,
-                            delivery,
-                            ready_backing,
-                        },
-                        Some(cause),
-                        returned,
-                    )?;
-                    return Ok(false);
-                }
-                let prepared =
-                    match self.prepare_selected_delivery(producer_identity, &receipt, admission) {
-                        Ok(prepared) => prepared,
-                        Err(cause) => {
-                            finish_selected(
-                                finish,
-                                claim,
-                                Checkpoint::Published {
-                                    receipt,
-                                    delivery,
-                                    ready_backing,
-                                },
-                                Some(cause),
-                                returned,
-                            )?;
-                            return Ok(false);
-                        }
-                    };
-                if let Err(cause) = check_request(request_scope, admission) {
+                if let Err(cause) = check_request(request_scope) {
                     finish_selected(
                         finish,
                         claim,
@@ -129,8 +78,7 @@ where
                     |checkpoint, denial| {
                         progressed =
                             matches!(&checkpoint, Checkpoint::Delivered { .. }) && denial.is_none();
-                        let denial =
-                            denial.or_else(|| check_request(request_scope, admission).err());
+                        let denial = denial.or_else(|| check_request(request_scope).err());
                         finish_selected(finish, claim, checkpoint, denial, returned)
                     },
                 )?;
@@ -148,7 +96,6 @@ where
                     &receipt,
                     delivery.as_ref(),
                     request_scope,
-                    admission,
                 );
                 let readiness = match readiness {
                     Ok(readiness) => readiness,
@@ -167,37 +114,7 @@ where
                         return Ok(false);
                     }
                 };
-                let work = std::mem::size_of::<WorthQueryCompletedOutputDemand>()
-                    .checked_add(std::mem::size_of::<Checkpoint>() * 2)
-                    .and_then(|work| work.checked_add(4));
-                let Some(work) = work else {
-                    finish_selected(
-                        finish,
-                        claim,
-                        Checkpoint::Delivered {
-                            receipt,
-                            delivery,
-                            ready_backing,
-                        },
-                        Some(work_denial()),
-                        returned,
-                    )?;
-                    return Ok(false);
-                };
-                if let Err(stop) = admission.charge_external_work(work as u64) {
-                    finish_selected(
-                        finish,
-                        claim,
-                        Checkpoint::Delivered {
-                            receipt,
-                            delivery,
-                            ready_backing,
-                        },
-                        Some(admission_denial(stop)),
-                        returned,
-                    )?;
-                    return Ok(false);
-                }
+
                 let completion = ready_backing.complete(WorthQueryCompletedOutputDemand {
                     authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
                     readiness,
@@ -213,30 +130,7 @@ where
         &'a self,
         producer_identity: &str,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedSelectedDelivery<'a>, WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work(4)
-            .map_err(admission_denial)?;
-        let width = producer_identity
-            .len()
-            .checked_add(1)
-            .ok_or_else(work_denial)?;
-        for count in [
-            self.output_readiness_routes.len(),
-            self.installed_producers.entries.len(),
-        ] {
-            let levels = usize::BITS as usize - count.max(1).leading_zeros() as usize;
-            let work = count
-                .min(11)
-                .checked_mul(levels)
-                .and_then(|comparisons| comparisons.checked_mul(width))
-                .and_then(|work| work.checked_add(4))
-                .ok_or_else(work_denial)?;
-            admission
-                .charge_external_work(work as u64)
-                .map_err(admission_denial)?;
-        }
         let route = self
             .output_readiness_routes
             .get(producer_identity)
@@ -246,9 +140,7 @@ where
             .entries
             .get(producer_identity)
             .expect("readiness route retains its installed producer");
-        let preserved = installed
-            .executor
-            .preserved_readiness_output_admitted(receipt, admission)?;
+        let preserved = installed.executor.preserved_readiness_output(receipt);
         Ok(PreparedSelectedDelivery {
             lowering: &route.lowering,
             ordinal: route.delivery_dependency_ordinal,
@@ -278,13 +170,7 @@ fn finish_selected(
     }
 }
 
-fn check_request(
-    request: &WorthQueryRequestScope,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<(), WorthQueryOutputDemandDenial> {
-    admission
-        .charge_external_work(1)
-        .map_err(admission_denial)?;
+fn check_request(request: &WorthQueryRequestScope) -> Result<(), WorthQueryOutputDemandDenial> {
     match request.interruption() {
         Some(WorthQueryRequestInterruption::Cancelled) => {
             Err(denial(WorthQueryOutputDemandDenialKind::Cancelled, ""))
@@ -294,21 +180,4 @@ fn check_request(
         }
         None => Ok(()),
     }
-}
-
-fn work_denial() -> WorthQueryOutputDemandDenial {
-    denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "")
-}
-
-fn admission_denial(
-    stop: worth_relational::facade::mvcc::CompanionPreflightStop,
-) -> WorthQueryOutputDemandDenial {
-    use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-    let kind = match stop {
-        Stop::WorkExhausted { .. }
-        | Stop::WorkExhaustedWithoutRequirement { .. }
-        | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        _ => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-    };
-    denial(kind, "")
 }

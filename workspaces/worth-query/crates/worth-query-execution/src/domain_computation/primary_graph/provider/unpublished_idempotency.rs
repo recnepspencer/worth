@@ -40,7 +40,7 @@ struct WorthQueryUnpublishedIdempotencyEntry {
 /// World product occurrence. Capacity and the exact World recovery identity
 /// are bound before owner effects begin.
 pub(super) struct WorthQueryUnpublishedIdempotencyStore {
-    maximum_entries: usize,
+    maximum_entries: Option<usize>,
     by_key: BTreeMap<
         WorthQueryUnpublishedIdempotencyKey,
         Arc<Mutex<WorthQueryUnpublishedIdempotencyEntry>>,
@@ -57,10 +57,10 @@ pub(in crate::domain_computation) struct WorthQueryUnpublishedIdempotencyDisposi
 }
 
 impl WorthQueryUnpublishedIdempotencyStore {
-    pub(super) fn new(maximum_entries: usize) -> Self {
+    pub(super) fn new(maximum_entries: Option<usize>) -> Self {
         assert!(
-            maximum_entries > 0,
-            "unpublished idempotency capacity must be nonzero"
+            maximum_entries != Some(0),
+            "explicit unpublished capacity must be nonzero"
         );
         Self {
             maximum_entries,
@@ -91,7 +91,8 @@ impl WorthQueryUnpublishedIdempotencyStore {
     }
 
     fn maximum_recovery_mappings(&self) -> Option<usize> {
-        self.maximum_entries.checked_mul(2)
+        self.maximum_entries
+            .and_then(|maximum| maximum.checked_mul(2))
     }
 
     fn reserve(
@@ -109,8 +110,13 @@ impl WorthQueryUnpublishedIdempotencyStore {
         let key = (product, *binding.key_identity());
         if self.by_key.contains_key(&key)
             || self.recovery_key(&recovery_handle).is_some()
-            || self.by_key.len() >= self.maximum_entries
-            || self.by_recovery.len() >= self.maximum_recovery_mappings().ok_or(())?
+            || self
+                .maximum_entries
+                .is_some_and(|maximum| self.by_key.len() >= maximum)
+            || match self.maximum_entries {
+                Some(_) => self.by_recovery.len() >= self.maximum_recovery_mappings().ok_or(())?,
+                None => false,
+            }
         {
             return Err(());
         }

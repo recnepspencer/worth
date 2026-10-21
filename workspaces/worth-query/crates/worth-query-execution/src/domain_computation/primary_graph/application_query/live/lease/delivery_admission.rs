@@ -74,7 +74,6 @@ where
             product,
             application_basis,
             self.controls.maximum_materialized_record_count(),
-            self.controls.maximum_work_per_delivery(),
             self.controls.request(),
         );
         let governance = std::mem::replace(

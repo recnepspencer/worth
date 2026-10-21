@@ -32,10 +32,7 @@ fn canceled_foreign_branch_is_refused_and_the_next_good_request_delivers() {
     let mut live = runtime
         .account_activity(OTHER_ACCOUNT)
         .as_principal(&owner)
-        .subscribe(
-            WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8, Some(2_048))
-                .unwrap(),
-        )
+        .subscribe(WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8).unwrap())
         .unwrap();
     let cancellation = WorthQueryCancellationSource::new();
     let canceled_scope = WorthQueryRequestScope::new(

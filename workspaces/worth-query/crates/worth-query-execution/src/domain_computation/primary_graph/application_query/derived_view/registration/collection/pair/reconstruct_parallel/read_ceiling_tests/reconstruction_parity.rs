@@ -56,19 +56,13 @@ fn unavailable_predicate_snapshot_keeps_masters_kind_and_field_subject() {
                 .unwrap();
             let runtime =
                 worth_relational::facade::runtime::RelationalRuntimeApi::builder().build();
-            let buffer = world.application.result_buffers.reserve(
-                plan.graph_read_plan()
-                    .budget_check()
-                    .max_inline_result_bytes(),
-            );
+
             let read = match read_bounded_root_rows(
                 &runtime,
                 &request,
                 &world.application.primary_provider.graph.layout,
                 &plan,
-                buffer,
                 None,
-                Some(10000),
             ) {
                 Err(denial) => denial,
                 Ok(_) => panic!("foreign snapshot unexpectedly read"),
@@ -133,19 +127,13 @@ fn unavailable_root_path_snapshot_keeps_masters_kind_and_query_subject() {
                 .unwrap();
             let runtime =
                 worth_relational::facade::runtime::RelationalRuntimeApi::builder().build();
-            let buffer = world.application.result_buffers.reserve(
-                plan.graph_read_plan()
-                    .budget_check()
-                    .max_inline_result_bytes(),
-            );
+
             let read = match read_bounded_root_rows(
                 &runtime,
                 &request,
                 &world.application.primary_provider.graph.layout,
                 &plan,
-                buffer,
                 None,
-                Some(10000),
             ) {
                 Err(denial) => denial,
                 Ok(_) => panic!("foreign snapshot unexpectedly read"),

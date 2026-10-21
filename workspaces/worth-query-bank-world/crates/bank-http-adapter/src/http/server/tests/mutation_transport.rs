@@ -252,7 +252,7 @@ async fn unauthorized_initial_custody_closes_lawfully_and_returns_capacity() {
             .runtime
             .account_activity(account)
             .as_principal(&reader)
-            .execute(bank_server::BankReadControls::current(scope.clone(), 16, 20_000).unwrap())
+            .execute(bank_server::BankReadControls::current(scope.clone(), 16).unwrap())
             .unwrap()
             .rows()[0]
             .entries()

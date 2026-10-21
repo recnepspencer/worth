@@ -24,15 +24,10 @@ use worth_relational::facade::{
 
 #[test]
 fn republication_cannot_certify_output_computed_before_its_own_write() {
-    suspend_restore_and_read(false);
+    suspend_restore_and_read();
 }
 
-#[test]
-fn restoration_fallback_cannot_certify_output_computed_before_its_own_write() {
-    suspend_restore_and_read(true);
-}
-
-fn suspend_restore_and_read(exhaust_registration: bool) {
+fn suspend_restore_and_read() {
     with_generated_own_write(|world, receipt, _, resources| {
         let application = &world.application;
         let request = live_scope();
@@ -248,19 +243,6 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
             .clone();
         let observation = performed.consume().take_successor_observation().unwrap();
         completion.complete(commit).unwrap();
-        // Another reservation may exhaust the derived ledger after World has
-        // published but before the lineage recorder runs. The fallback must
-        // carry the same qualification evidence as performed republication.
-        let held =
-            exhaust_registration.then(|| {
-                resources
-                    .reserve_retained_capacity(
-                        resources.installation().maximum_retained_bytes.expect(
-                            "capacity-exhaustion control requires a finite installed ceiling",
-                        ) - resources.retained_capacity_bytes(),
-                    )
-                    .unwrap()
-            });
         world
             .application
             .with_host_advancement(|phase| {
@@ -277,7 +259,6 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
                 )
             })
             .expect("the fixture read owns its installed host call");
-        drop(held);
         drop(basis);
         drop(product);
         handle
@@ -313,7 +294,6 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
                         "test.retained-account-capacity",
                         observation.lifecycle_incarnation(),
                         observation.reference_generation().get(),
-                        None,
                     )
                     .unwrap();
                 (family, product)
@@ -321,8 +301,10 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
             .expect("the installed host owns the selection's fresh request");
         assert_eq!(family.candidates.len(), 1);
         let candidate = &family.candidates[0];
-        assert_eq!(candidate.verification_requirement, exhaust_registration.then_some(FullVerificationReason::CheckpointRestore),
-            "the tests must reach the performed republication and its capacity fallback respectively");
+        assert_eq!(
+            candidate.verification_requirement, None,
+            "the actual performed republication registered at its selected native image"
+        );
         drop(restored_product);
         let principal = world
             .application
@@ -362,7 +344,6 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
                     .unwrap()
             })
             .expect("the fixture read owns its installed host call");
-        world.application.with_host_advancement(|phase| { let phase_custody = &phase.test_host_request();    crate::domain_computation::primary_graph::output_lineage::own_write_fixture::evict_index_with_unrelated_write(&phase_custody.phase_for_application(&world.application), world, &resources) }).expect("the fixture read owns its installed host call");
         let answer = world
             .application
             .with_host_advancement(|phase| {

@@ -81,7 +81,8 @@ fn fixed_tree_retains_exact_predecessors_through_cancel_reclaim_and_fresh_resume
             let fresh = application.request(&principal, &fresh_scope);
             let settled = match tree.settle(&application, &fresh).unwrap() {
                 WorthQueryApplicationProgramOutputProgress::Settled(value) => value,
-                WorthQueryApplicationProgramOutputProgress::Pending => {
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed => {
                     panic!("released room permits settlement")
                 }
             };
@@ -105,10 +106,7 @@ fn fixed_tree_retains_exact_predecessors_through_cancel_reclaim_and_fresh_resume
             let current = fresh.retain_current_read().unwrap();
             fresh
                 .at(&current)
-                .require_current_program_output(
-                    &settled,
-                    Some((NonZeroUsize::new(1_000_000).unwrap()).get()),
-                )
+                .require_current_program_output(&settled)
                 .unwrap();
             for (key, expected) in [("anchor-a", 2), ("anchor-b", 2), ("anchor-c", 11)] {
                 let actual = fresh

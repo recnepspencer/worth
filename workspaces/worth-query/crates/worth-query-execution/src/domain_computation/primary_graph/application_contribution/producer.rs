@@ -1,5 +1,5 @@
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
+    ApplicationMutationBinding, ApplicationMutationInputScope, ApplicationMutationScopeResolution,
     ApplicationQueryMutationSource, WorthQueryApplicationOutputRole, WorthQueryExactlyOneOutput,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
@@ -41,9 +41,13 @@ pub(in crate::domain_computation::primary_graph) use readiness::{
     TypedPendingOutputReadiness, WorthQueryInstalledOutputReadinessRoutes,
 };
 mod scheduling;
+mod source_qualification;
 pub(in crate::domain_computation::primary_graph) use scheduling::{
     schedule_output_producer, schedule_output_producer_on_selected,
     WorthQueryInstalledOutputProducerRoutes,
+};
+pub(in crate::domain_computation::primary_graph) use source_qualification::{
+    OutputSourceAddress, QualifiedOutputSource,
 };
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -211,7 +215,7 @@ where
         >,
     >,
     <Self::Operation as ApplicationMutationBinding<Schema>>::Input:
-        ApplicationMutationIntent<Schema, Binding = Self::Operation> + Clone + Send + Sync,
+        ApplicationMutationInputScope<Schema, Self::Operation> + Clone + Send + Sync,
     <Self::Operation as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<
             Schema,

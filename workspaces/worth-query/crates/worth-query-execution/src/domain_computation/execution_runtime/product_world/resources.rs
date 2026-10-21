@@ -78,14 +78,6 @@ impl WorthQueryProductWorldResources {
         self.invalidation.clone()
     }
 
-    /// The invalidation window's retained positions and the World's retained
-    /// commits, when the window holds more than the World keeps.
-    pub(crate) fn invalidation_window_past_history(&self) -> Option<(usize, usize)> {
-        let positions = self.invalidation.installation().maximum_retained_positions;
-        let commits = self.budgets.retained_composite_commits().get();
-        (positions > commits).then_some((positions, commits))
-    }
-
     pub(crate) fn into_parts(
         self,
     ) -> (
@@ -109,31 +101,17 @@ pub(in crate::domain_computation) fn test_product_world_resources(
     test_product_world_resources_with_history_limit_for_test(1_024)
 }
 
-/// Explicit finite installation for courts that fill the retained ledger.
-#[cfg(test)]
-pub(in crate::domain_computation) fn test_product_world_resources_with_retained_capacity_for_test(
-    maximum_retained_bytes: u64,
-) -> WorthQueryProductWorldResources {
-    let mut resources = test_product_world_resources();
-    resources.invalidation = super::super::WorthQueryInvalidationResources::install(
-        super::super::WorthQueryInvalidationResourceInstallation {
-            maximum_retained_bytes: Some(maximum_retained_bytes),
-            ..resources.invalidation.installation()
-        },
-    )
-    .expect("the explicit test ceiling is nonzero");
-    resources
-}
-
 pub(crate) fn test_product_world_resources_with_history_limit_for_test(
     retained_composite_commits: u64,
 ) -> WorthQueryProductWorldResources {
-    use worth_runtime_world::facade::{
-        RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetInstallation,
-        RuntimeWorldCustodyBudgetInstallation, RuntimeWorldHistoryBudgetInstallation,
-        RuntimeWorldObservationBudgetInstallation, RuntimeWorldPublicationBudgetInstallation,
-        RuntimeWorldRecoveryBudgetInstallation, RuntimeWorldRetentionBudgetInstallation,
-    };
+    use worth_runtime_world::facade::RuntimeWorldBranchBudgetInstallation;
+    use worth_runtime_world::facade::RuntimeWorldBudgetInstallation;
+    use worth_runtime_world::facade::RuntimeWorldCustodyBudgetInstallation;
+    use worth_runtime_world::facade::RuntimeWorldHistoryBudgetInstallation;
+    use worth_runtime_world::facade::RuntimeWorldObservationBudgetInstallation;
+    use worth_runtime_world::facade::RuntimeWorldPublicationBudgetInstallation;
+    use worth_runtime_world::facade::RuntimeWorldRecoveryBudgetInstallation;
+    use worth_runtime_world::facade::RuntimeWorldRetentionBudgetInstallation;
 
     WorthQueryProductWorldResources::new(
         RuntimeWorldBudgets::install(RuntimeWorldBudgetInstallation {
@@ -164,15 +142,7 @@ pub(crate) fn test_product_world_resources_with_history_limit_for_test(
         })
         .expect("the test Product World budget is valid"),
         WorthQueryProductWorldClock::start(),
-        super::super::WorthQueryInvalidationResources::install(
-            super::super::WorthQueryInvalidationResourceInstallation {
-                maximum_marking_work: None,
-                maximum_preparation_bytes: None,
-                maximum_retained_bytes: None,
-                maximum_retained_positions: 128,
-            },
-        )
-        .expect("the test invalidation resources are valid"),
+        super::super::WorthQueryInvalidationResources::new(),
         ExecutionRequestPolicy::new(
             worth_foundational::ExecutionPosture::Serial,
             worth_foundational::DeterminismContract::CanonicalBitwise,

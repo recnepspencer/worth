@@ -198,17 +198,24 @@ where
         WorthQueryDiscoveredProgramOutputProgress<Query<Schema, Root>, Demand<Schema, Root>>,
         WorthQueryRequiredOutputPreparationDenial,
     > {
-        for _ in 0..self
+        let mut remaining = self
             .controls
             .resolve(application.runtime().output_demand_resource_profile())
-            .settlement_attempts()
-        {
+            .settlement_attempts();
+        loop {
+            if remaining == Some(0) {
+                break;
+            }
+            remaining = remaining.map(|steps| steps - 1);
             let progress = self.advance_in_advancement(phase, application, request)?;
-            if matches!(
-                progress,
+            match progress {
                 WorthQueryDiscoveredProgramOutputProgress::Settled(_)
-            ) {
-                return Ok(progress);
+                | WorthQueryDiscoveredProgramOutputProgress::Pending => return Ok(progress),
+                WorthQueryDiscoveredProgramOutputProgress::Progressed => {
+                    if remaining == Some(0) {
+                        return Ok(progress);
+                    }
+                }
             }
         }
         Ok(WorthQueryDiscoveredProgramOutputProgress::Pending)
@@ -291,6 +298,9 @@ where
                     Err(denial) => {
                         return Err(WorthQueryRequiredOutputPreparationDenial::Demand(denial));
                     }
+                    Ok(WorthQueryApplicationProgramDemandProgress::Progressed) => {
+                        return Ok(WorthQueryDiscoveredProgramOutputProgress::Progressed);
+                    }
                     Ok(WorthQueryApplicationProgramDemandProgress::Pending) => {
                         return Ok(WorthQueryDiscoveredProgramOutputProgress::Pending);
                     }
@@ -327,6 +337,9 @@ where
                 .as_mut()
                 .expect("a settled root installs its typed continuation");
             match continuation.advance(phase, application, request)? {
+                ProgramOutputContinuationProgress::Progressed => {
+                    return Ok(WorthQueryDiscoveredProgramOutputProgress::Progressed);
+                }
                 ProgramOutputContinuationProgress::Pending => {
                     return Ok(WorthQueryDiscoveredProgramOutputProgress::Pending);
                 }

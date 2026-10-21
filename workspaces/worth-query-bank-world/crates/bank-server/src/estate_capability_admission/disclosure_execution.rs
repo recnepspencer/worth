@@ -29,14 +29,14 @@ fn present_protected_beneficiary_value_cannot_influence_public_omission_material
         .runtime
         .query(queries::estate_customer_identity(ESTATE))
         .as_principal(&first_principal)
-        .controls(BankReadControls::current(request_scope(), 1, 512).unwrap())
+        .controls(BankReadControls::current(request_scope(), 1).unwrap())
         .execute()
         .unwrap();
     let second_result = second
         .runtime
         .query(queries::estate_customer_identity(ESTATE))
         .as_principal(&second_principal)
-        .controls(BankReadControls::current(request_scope(), 1, 512).unwrap())
+        .controls(BankReadControls::current(request_scope(), 1).unwrap())
         .execute()
         .unwrap();
 
@@ -110,7 +110,7 @@ fn authenticated_bank_consumer_receives_only_the_governed_published_shape() {
         EstateWorkflowStage::Administration,
     );
     let principal = fixture.authenticate();
-    let controls = BankReadControls::current(request_scope(), 1, 512).unwrap();
+    let controls = BankReadControls::current(request_scope(), 1).unwrap();
 
     let published = fixture
         .runtime
@@ -145,7 +145,7 @@ fn decision_relevant_protected_beneficiary_changes_the_public_outcome() {
         .runtime
         .query(queries::estate_customer_identity(ESTATE))
         .as_principal(&admitted.authenticate())
-        .controls(BankReadControls::current(request_scope(), 1, 512).unwrap())
+        .controls(BankReadControls::current(request_scope(), 1).unwrap())
         .execute()
         .expect("an unrelated beneficiary permits governed omission");
     let profile = publication_profile();
@@ -159,7 +159,7 @@ fn decision_relevant_protected_beneficiary_changes_the_public_outcome() {
         .runtime
         .query(queries::estate_customer_identity(ESTATE))
         .as_principal(&conflicted.authenticate())
-        .controls(BankReadControls::current(request_scope(), 1, 512).unwrap())
+        .controls(BankReadControls::current(request_scope(), 1).unwrap())
         .execute()
     {
         Err(BankApplicationQueryDenial::CapabilityAdmission(conflict)) => conflict,
@@ -213,7 +213,7 @@ fn bank_consumer_cannot_repurpose_an_administration_grant_for_identity_disclosur
         EstateWorkflowStage::Administration,
     );
     let principal = fixture.authenticate();
-    let controls = BankReadControls::current(request_scope(), 1, 256).unwrap();
+    let controls = BankReadControls::current(request_scope(), 1).unwrap();
 
     let denial = match fixture
         .runtime

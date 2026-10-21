@@ -21,10 +21,12 @@ use super::{ExecutionMap, MapOutcome, MapStop};
 
 mod certify;
 mod entry;
+mod retained;
 mod serial;
 mod stage;
 mod stop_owner;
 pub use certify::ReduceCertificationFailure;
+pub use retained::{RetainedReduceDenial, RetainedReduceOutcome, RetainedReduction};
 
 pub type ExecutionReduce<T, F> = ReductionTree<T, F>;
 
@@ -81,6 +83,7 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
         mut retained_handoff: Option<&mut dyn FnMut(u64) -> Result<(), LeaseDenial>>,
         inputs: Option<ExecutionMemoryReservation>,
         tree: Option<&mut ExecutionMemoryReservation>,
+        mut retention: Option<&mut retained::RetentionCapture<R>>,
     ) -> Result<(ReductionTree<R, Combine>, ExecutionReport, ReductionMetrics), ReduceInputDenial<E>>
     where
         R: Send + Sync + ChargedBytes + Clone + CanonicalBits,
@@ -118,7 +121,12 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
             charge_parent,
             hold,
             |context| {
-                let mapped = self.run_with_backend_taking(Some(lease), backend, inputs, kernel);
+                let mapped = match retention.as_mut() {
+                    None => self.run_with_backend_taking(Some(lease), backend, inputs, kernel),
+                    Some(retention) => {
+                        retention.map(self, Some(lease), backend, inputs, kernel, context)?
+                    }
+                };
                 map_fallback = mapped.report().fallback();
                 let values = match mapped {
                     MapOutcome::Complete { values, .. } => values,

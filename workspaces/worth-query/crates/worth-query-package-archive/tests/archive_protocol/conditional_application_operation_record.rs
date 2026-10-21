@@ -14,8 +14,11 @@ use worth_query_installation::facade::{
 use worth_query_package_archive::facade::*;
 
 const VERSION_SIX_CONDITIONAL_BINDING_HEX: &str = "0006000900000003000000cc00000013617263686976652e636f6e646974696f6e616c00000011436f6e646974696f6e616c536368656d610000001b436f6e646974696f6e616c417263686976654f7065726174696f6e00000025776f7274682e71756572792e617263686976652e636f6e646974696f6e616c2d696e707574000000106c65646765722d62616c616e63653a310000004066356337363266396237616165373466643039373238373536396361363063313062356537316164623732303232373032343933316164363363373338353531";
-// Independent current framing; the retained original payload grammar is unchanged.
-const VERSION_EIGHT_CONDITIONAL_BINDING_HEX: &str = "0008000900000003000000cc00000013617263686976652e636f6e646974696f6e616c00000011436f6e646974696f6e616c536368656d610000001b436f6e646974696f6e616c417263686976654f7065726174696f6e00000025776f7274682e71756572792e617263686976652e636f6e646974696f6e616c2d696e707574000000106c65646765722d62616c616e63653a310000004066356337363266396237616165373466643039373238373536396361363063313062356537316164623732303232373032343933316164363363373338353531";
+// Retained protocol7 framing is unsupported under the current-only reader.
+const VERSION_SEVEN_CONDITIONAL_BINDING_HEX: &str = "0007000900000003000000cc00000013617263686976652e636f6e646974696f6e616c00000011436f6e646974696f6e616c536368656d610000001b436f6e646974696f6e616c417263686976654f7065726174696f6e00000025776f7274682e71756572792e617263686976652e636f6e646974696f6e616c2d696e707574000000106c65646765722d62616c616e63653a310000004066356337363266396237616165373466643039373238373536396361363063313062356537316164623732303232373032343933316164363363373338353531";
+// Displaced protocol9 is refused; protocol10 has no Live resource fields.
+const VERSION_NINE_CONDITIONAL_BINDING_HEX: &str = "0009000900000003000000cc00000013617263686976652e636f6e646974696f6e616c00000011436f6e646974696f6e616c536368656d610000001b436f6e646974696f6e616c417263686976654f7065726174696f6e00000025776f7274682e71756572792e617263686976652e636f6e646974696f6e616c2d696e707574000000106c65646765722d62616c616e63653a310000004066356337363266396237616165373466643039373238373536396361363063313062356537316164623732303232373032343933316164363363373338353531";
+const VERSION_TEN_CONDITIONAL_BINDING_HEX: &str = "000a000900000003000000cc00000013617263686976652e636f6e646974696f6e616c00000011436f6e646974696f6e616c536368656d610000001b436f6e646974696f6e616c417263686976654f7065726174696f6e00000025776f7274682e71756572792e617263686976652e636f6e646974696f6e616c2d696e707574000000106c65646765722d62616c616e63653a310000004066356337363266396237616165373466643039373238373536396361363063313062356537316164623732303232373032343933316164363363373338353531";
 
 struct Schema;
 struct Operation;
@@ -60,17 +63,23 @@ impl ApplicationSchema for Schema {
 
 #[test]
 fn conditional_application_operation_frame_is_deterministic_and_exact() {
-    for original in VERSION_SIX_CONDITIONAL_BINDING_HEX.split('|') {
-        let bytes = decode_hex(original);
-        let denial =
-            WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
-                .decode_frame(&bytes)
-                .unwrap_err();
-        assert_eq!(
-            denial.kind(),
-            WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
-        );
-        assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
+    for (version, originals) in [
+        (9_u16, VERSION_NINE_CONDITIONAL_BINDING_HEX),
+        (6_u16, VERSION_SIX_CONDITIONAL_BINDING_HEX),
+        (7_u16, VERSION_SEVEN_CONDITIONAL_BINDING_HEX),
+    ] {
+        for original in originals.split('|') {
+            let bytes = decode_hex(original);
+            let denial =
+                WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
+                    .decode_frame(&bytes)
+                    .unwrap_err();
+            assert_eq!(
+                denial.kind(),
+                WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+            );
+            assert_eq!(denial.compatibility().unwrap().observed_version(), version);
+        }
     }
     let source = conditional_package();
     let exported = source.export_typed_records().unwrap();
@@ -79,12 +88,12 @@ fn conditional_application_operation_frame_is_deterministic_and_exact() {
 
     let first = encode_record_frame(view, limits).unwrap();
     assert_eq!(encode_record_frame(view, limits).unwrap(), first);
-    assert_eq!(encode_hex(&first), VERSION_EIGHT_CONDITIONAL_BINDING_HEX);
+    assert_eq!(encode_hex(&first), VERSION_TEN_CONDITIONAL_BINDING_HEX);
     assert_eq!(u16::from_be_bytes(first[2..4].try_into().unwrap()), 9);
 
     let mut decoder = WorthQueryPackageArchiveRecordDecoder::new(limits);
     let decoded = decoder
-        .decode_frame(&decode_hex(VERSION_EIGHT_CONDITIONAL_BINDING_HEX))
+        .decode_frame(&decode_hex(VERSION_TEN_CONDITIONAL_BINDING_HEX))
         .unwrap();
     assert_eq!(decoded.canonical_index(), view.canonical_index());
     assert_eq!(decoded.record(), view.record());

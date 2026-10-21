@@ -1,10 +1,8 @@
 //! Exact selected Product checks for a fresh required-output continuation.
 
 use super::*;
-use crate::domain_computation::primary_graph::{
-    output_lineage::invalidation::InvalidationEditAdmission,
-    product_operation::SharedSelectedProductOperation, WorthQueryApplicationReadObservation,
-};
+use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
+use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -22,9 +20,27 @@ where
             <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
         >,
         profile_kind: &'static str,
-        admission: &mut InvalidationEditAdmission,
+
         retained_program_basis: Option<&WorthQueryApplicationReadObservation>,
         shared: &SharedSelectedProductOperation<'_, Schema>,
+    ) -> Result<SelectedWithEntry<'_, Schema>, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        self.select_output_producer_with_remaining_core::<Family>(execution, source, profile_kind, retained_program_basis, Some(shared), &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+    }
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer) fn select_output_producer_for_observation<
+        Family,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: &WorthQueryObservedSource<
+            <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
+        >,
+        profile_kind: &'static str,
+
+        shared: &SharedSelectedProductOperation<'_, Schema>,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
     ) -> Result<SelectedWithEntry<'_, Schema>, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
@@ -33,9 +49,9 @@ where
             execution,
             source,
             profile_kind,
-            admission,
-            retained_program_basis,
+            None,
             Some(shared),
+            native,
         )
     }
 }
@@ -46,24 +62,12 @@ pub(super) fn historical_basis_matches<Schema>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     retained: &WorthQueryApplicationReadObservation,
     shared: &SharedSelectedProductOperation<'_, Schema>,
-    admission: &mut InvalidationEditAdmission,
-    family: &str,
 ) -> Result<bool, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
 {
-    // Admit the owner and observation metadata visit before reading widths.
-    charge(admission, 4, family)?;
     let selected = shared.selected();
     let selected_observation = selected.product().observation();
-    let selected_width = selected_observation.branch_identity().name().as_str().len();
-    let retained_width = retained.branch_identity().name().as_str().len();
-    let comparison = selected_width
-        .checked_add(retained_width)
-        // The schema binding compares its package and schema digests.
-        .and_then(|work| work.checked_add(64 + 7))
-        .ok_or_else(|| selection_budget_denial(family))?;
-    charge(admission, comparison, family)?;
     Ok(std::ptr::eq(runtime, selected.application())
         && retained.belongs_to_selected_occurrence(runtime, selected_observation))
 }
@@ -73,26 +77,14 @@ where
 pub(super) fn require_fresh_source<Schema>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     source: &crate::basis::WorthQueryProductBranchReadIdentity,
-    shared: &SharedSelectedProductOperation<'_, Schema>,
-    admission: &mut InvalidationEditAdmission,
     family: &str,
+    shared: &SharedSelectedProductOperation<'_, Schema>,
 ) -> Result<(), WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
 {
-    // These metadata reads precede the variable-width branch comparison.
-    charge(admission, 4, family)?;
     let selected = shared.selected();
     let selected_observation = selected.product().observation();
-    let source_width = source.branch_identity().name().as_str().len();
-    let selected_width = selected_observation.branch_identity().name().as_str().len();
-    let comparison = source_width
-        .checked_add(selected_width)
-        // Generation, commit, three composite basis identities, and owner
-        // axes use fixed-width comparisons after the two branch texts.
-        .and_then(|work| work.checked_add(160))
-        .ok_or_else(|| selection_budget_denial(family))?;
-    charge(admission, comparison, family)?;
     if std::ptr::eq(runtime, selected.application())
         && source.matches_observation(selected_observation)
     {
@@ -116,17 +108,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     } else {
         source.matches_observation(current)
     }
-}
-
-/// Selection work on the request's meter.
-pub(super) fn charge(
-    admission: &mut InvalidationEditAdmission,
-    work: usize,
-    family: &str,
-) -> Result<(), WorthQueryOutputDemandDenial> {
-    admission
-        .charge_external_work(work as u64)
-        .map_err(|_| selection_budget_denial(family))
 }
 
 /// Candidate lookup uses the caller's selection admission. Its optional work

@@ -63,7 +63,6 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
             let denial = b_product.require_current_output_settlements(
                 &phase,
                 std::iter::empty(),
-                Some(1),
             ).unwrap_err();
             assert_eq!(
                 denial.kind(),
@@ -74,7 +73,6 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
             a_product.require_current_output_settlements(
                 &phase,
                 std::iter::empty(),
-                Some(1),
             ).unwrap();
             assert!(reads() > before, "A's same query door reaches its reader");
             let before = reads();
@@ -107,7 +105,11 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
         }).unwrap();
             let requests = reports();
             assert_eq!(requests.len(), 1, "B never opens or charges a request");
-            let charged = requests[0].as_ref().unwrap().charged_work();
+
+            let charged = requests[0]
+                .as_ref()
+                .expect("the same-installation advancement completed")
+                .charged_work();
             if foreign {
                 assert_eq!(
                     Some(charged),

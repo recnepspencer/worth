@@ -2,10 +2,7 @@
 //! Native reads carry exact immutable custody and cannot name the owner port.
 pub(in crate::domain_computation::primary_graph::application_query) mod batch;
 
-use super::super::{
-    derived_view::WorthQueryManagedDerivedViewDenial as Denial,
-    resource_lifecycle::WorthQueryApplicationResultBufferReservation,
-};
+use super::super::derived_view::WorthQueryManagedDerivedViewDenial as Denial;
 use super::{read_plan::ReadPlan, OneShotReadWorkObservation, RawNonLiveKernelOutcome};
 use crate::domain_computation::provider_session::{
     WorthQueryManagedGraphReadDenial, WorthQueryPreparedReadCompletion,
@@ -20,10 +17,9 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Prepa
     pub(in crate::domain_computation::primary_graph::application_query) plan: ReadPlan<'a>,
     pub(in crate::domain_computation::primary_graph::application_query) session:
         WorthQueryPreparedSessionRead,
-    pub(in crate::domain_computation::primary_graph::application_query) buffer:
-        WorthQueryApplicationResultBufferReservation,
+
     pub(in crate::domain_computation::primary_graph::application_query) batch:
-        Option<batch::PreparedBatchRead>,
+        Option<super::super::batch::PlannedBatchItem>,
 }
 
 /// Construction remains with the owner-side admission stage.
@@ -45,7 +41,7 @@ pub(in crate::domain_computation::primary_graph::application_query) struct ReadO
     pub(in crate::domain_computation::primary_graph::application_query) proof:
         WorthQueryPreparedReadCompletion,
     pub(in crate::domain_computation::primary_graph::application_query) batch_rows:
-        Option<super::super::WorthQueryApplicationQueryBatchMemory>,
+        Option<super::super::batch::PlannedBatchItem>,
 }
 
 pub(in crate::domain_computation::primary_graph::application_query) struct PairOutput {
@@ -58,12 +54,11 @@ impl ChargedBytes for PreparedRead<'_> {
         let Self {
             plan,
             session,
-            buffer,
+
             batch: _,
         } = self;
         plan.additional_charged_bytes()
             .saturating_add(session.additional_charged_bytes())
-            .saturating_add(buffer.additional_charged_bytes())
     }
 }
 impl ChargedBytes for PreparedPair<'_> {
@@ -176,13 +171,10 @@ impl PreparedRead<'_> {
         let Self {
             plan,
             session,
-            buffer,
+
             batch,
         } = self;
         let entered = Cell::new(false);
-        let maximum = batch
-            .as_ref()
-            .map_or(plan.maximum_work, batch::PreparedBatchRead::maximum);
         let stop = Cell::new(None);
         let meter = RefCell::new(context);
         let charge = |units: usize, subject: &str| {
@@ -217,9 +209,7 @@ impl PreparedRead<'_> {
                 execution,
                 graph,
                 &plan,
-                buffer,
                 Some(&spent),
-                maximum,
                 super::ReadInterruption::Execution(&check),
             );
             #[cfg(test)]
@@ -228,22 +218,7 @@ impl PreparedRead<'_> {
             }
             answer
         });
-        let batch_rows = if let Some(batch) = batch {
-            let actual = if entered.get() {
-                Some(
-                    spent
-                        .read()
-                        .ok_or(MapKernelFailure::Domain(Denial::WorkCounterOverflow))?,
-                )
-            } else {
-                None
-            };
-            batch.settle(actual).map_err(|denial| {
-                MapKernelFailure::Domain(Denial::BatchResource { root, denial })
-            })?
-        } else {
-            None
-        };
+        let batch_rows = batch;
         if let Some(stop) = stop.get() {
             return Err(MapKernelFailure::Stop(stop));
         }

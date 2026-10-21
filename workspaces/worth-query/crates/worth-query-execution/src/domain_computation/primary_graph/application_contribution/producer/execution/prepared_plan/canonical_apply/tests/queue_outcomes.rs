@@ -33,14 +33,14 @@ fn a_queued_member_failure_does_not_withhold_its_independent_sibling() {
             let failed = if failure == Failure::Complete {
                 OwnerPlan::new(
                     vec![PreparedCompute::declared_test_request(0, 3, false)],
-                    move |_, _| Err(failure),
+                    move |_| Err(failure),
                 )
             } else {
                 OwnerPlan::immediate(Err(failure))
             };
             let succeeding = OwnerPlan::new(
                 vec![PreparedCompute::declared_test_request(1, 7, false)],
-                |mut slots, _| Ok(slots.pop().unwrap().into_value::<(usize, bool)>().0),
+                |mut slots| Ok(slots.pop().unwrap().into_value::<(usize, bool)>().0),
             );
             let mut held = Vec::new();
             let mut applied = Vec::new();
@@ -53,13 +53,9 @@ fn a_queued_member_failure_does_not_withhold_its_independent_sibling() {
                         vec![failed, succeeding],
                         &execution,
                     );
-                    let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                        maximum_work_visits: Some(0),
-                        maximum_preparation_bytes: None,
-                    });
+
                     cursor.apply(
-                        &mut admission,
-                        |key, result, _| {
+                        |key, result| {
                             match result {
                                 Ok(value) => {
                                     assert_eq!(key, value);
@@ -79,10 +75,6 @@ fn a_queued_member_failure_does_not_withhold_its_independent_sibling() {
                 applied,
                 [1],
                 "the failed queued member does not strand its sibling"
-            );
-            assert_eq!(
-                report.charged_work(),
-                7 + if failure == Failure::Complete { 3 } else { 0 }
             );
         }
     }
@@ -117,7 +109,7 @@ fn a_completion_that_catches_a_compute_denial_applies_the_whole_wave() {
                         work,
                         rank == 0,
                     )],
-                    |mut slots, _| {
+                    |mut slots| {
                         // The handler catches the transported denial and supplies its decision.
                         Ok::<_, ()>(slots.pop().unwrap().into_value::<(usize, bool)>().0)
                     },
@@ -134,13 +126,9 @@ fn a_completion_that_catches_a_compute_denial_applies_the_whole_wave() {
                     plans,
                     &execution,
                 );
-                let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                    maximum_work_visits: Some(0),
-                    maximum_preparation_bytes: None,
-                });
+
                 cursor.apply(
-                    &mut admission,
-                    |key, result, _| {
+                    |key, result| {
                         assert_eq!(key, result?);
                         applied.push(key);
                         Ok(())
@@ -151,6 +139,5 @@ fn a_completion_that_catches_a_compute_denial_applies_the_whole_wave() {
             .unwrap();
         assert_eq!(outcome, Ok(()));
         assert_eq!(applied, [0, 1]);
-        assert_eq!(report.charged_work(), 3 + 7);
     }
 }

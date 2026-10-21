@@ -23,7 +23,7 @@ pub(crate) enum CleanupScope {
 }
 
 struct CleanupRegistryState {
-    maximum: usize,
+    maximum: Option<usize>,
     next_identity: u64,
     reserved: usize,
     entries: BTreeMap<u64, Arc<CleanupEntry>>,
@@ -35,7 +35,7 @@ pub(crate) struct WorthQueryProductBranchOwnerCleanupRegistry {
 }
 
 impl WorthQueryProductBranchOwnerCleanupRegistry {
-    pub(crate) fn new(maximum: usize) -> Self {
+    pub(crate) fn new(maximum: Option<usize>) -> Self {
         Self {
             state: Arc::new(Mutex::new(CleanupRegistryState {
                 maximum,
@@ -58,7 +58,12 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
             scope,
         });
         let mut state = lock(&self.state);
-        if state.entries.len().saturating_add(state.reserved) >= state.maximum {
+        let occupied = state
+            .entries
+            .len()
+            .checked_add(state.reserved)
+            .ok_or(WorthQueryProductBranchOwnerCleanupCapacityExhausted)?;
+        if state.maximum.is_some_and(|maximum| occupied >= maximum) {
             return Err(WorthQueryProductBranchOwnerCleanupCapacityExhausted);
         }
         let identity = state.next_identity;
@@ -66,7 +71,10 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
             .next_identity
             .checked_add(1)
             .ok_or(WorthQueryProductBranchOwnerCleanupCapacityExhausted)?;
-        state.reserved += 1;
+        state.reserved = state
+            .reserved
+            .checked_add(1)
+            .ok_or(WorthQueryProductBranchOwnerCleanupCapacityExhausted)?;
         Ok(WorthQueryProductBranchOwnerCleanupReservation {
             registry: self.clone(),
             identity,
@@ -75,11 +83,11 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         })
     }
 
-    pub(crate) fn available_capacity_for_test(&self) -> usize {
+    pub(crate) fn available_capacity_for_test(&self) -> Option<usize> {
         let state = lock(&self.state);
-        state
-            .maximum
-            .saturating_sub(state.entries.len().saturating_add(state.reserved))
+        state.maximum.map(|maximum| {
+            maximum.saturating_sub(state.entries.len().saturating_add(state.reserved))
+        })
     }
 
     pub(super) fn pending_identities(&self) -> Vec<u64> {

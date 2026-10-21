@@ -63,7 +63,7 @@ impl ApplicationQueryBinding<TemporalHostSchema> for TemporalIntentQueryBinding 
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
 
     const IDENTITY: &'static str = "worth.query.example.temporal-intent-query.v1";
-    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::bounded(1, 64);
+    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
 
     fn scope_field() -> ApplicationFieldRef<
         TemporalHostSchema,

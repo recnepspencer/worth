@@ -1,7 +1,7 @@
+use super::fixture_values;
+use super::fixture_values::{PlanarAdjustmentResult, PlanarMutationDenial, PlanarOperation};
 use super::*;
 use std::marker::PhantomData;
-use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, PlanarOperation};
-
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
     worth_query_operation_creates, worth_query_operation_links, worth_query_operation_reads,
@@ -15,8 +15,6 @@ pub struct PlanarMutation {
     pub operation: PlanarOperation,
 }
 worth_query_structured_value_binding!(pub PlanarMutationInputBinding for PlanarMutation { identity: "worth.query.certification.planar-mutation-input.v2" });
-worth_query_structured_value_binding!(pub PlanarMutationResultBinding for PlanarAdjustmentResult { identity: "worth.query.certification.planar-mutation-result.v1" });
-worth_query_structured_value_binding!(pub PlanarMutationDenialBinding for PlanarMutationDenial { identity: "worth.query.certification.planar-mutation-denial.v1" });
 worth_query_operation!(pub MutatePlanar for Schema: TopologySchemaBinding, input PlanarMutationInputBinding);
 worth_query_operation_reads!(MutatePlanar => [Body, BodyKey, PositionX, PositionY, Length, PlanarSuccessor]);
 worth_query_operation_writes!(MutatePlanar => [BodyKey, PositionX, PositionY, Length]);
@@ -25,15 +23,6 @@ worth_query_operation_links!(MutatePlanar => [PlanarSuccessor]);
 worth_query_operation_unlinks!(MutatePlanar => [PlanarSuccessor]);
 
 pub struct PlanarMutationBinding<Schema>(PhantomData<fn() -> Schema>);
-pub type PlanarMutationScope<Schema> = ApplicationMutationFieldScope<
-    Schema,
-    Body,
-    PlanarPosition,
-    BodyKey,
-    String,
-    ReadOnly,
-    NoApplicationUnit,
->;
 
 impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     for PlanarMutationBinding<Schema>
@@ -43,6 +32,8 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
     {
         worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
     }
+
+    const REQUIRES_APPLICATION_PROGRAM: bool = Schema::PLANAR_REQUIRES_APPLICATION_PROGRAM;
 
     type Input = PlanarMutation;
     type InputBinding = PlanarMutationInputBinding;
@@ -97,44 +88,5 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for Planar
         PlanarMutationScope::new(BodyKey::reference(), self.scope_key.clone())
     }
 }
-
-/// The output contract of every planar mutation.
-///
-#[doc = include_str!("output_role_contract.md")]
-pub struct PlanarOutputs;
-
-/// The body every planar mutation preserves as its anchor, for every binding
-/// whose outputs are [`PlanarOutputs`].
-pub struct PlanarAnchorOutput<Schema>(PhantomData<fn() -> Schema>);
-
-impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRole for PlanarAnchorOutput<Schema> {
-    type Schema = Schema;
-    type Contract = PlanarOutputs;
-    type Entity = Body;
-    type Action = WorthQueryPreserveOutput;
-    type Cardinality = WorthQueryExactlyOneOutput;
-    const NAME: &'static str = "anchor";
-}
-
-/// The bodies a planar mutation creates, one member per created vertex.
-pub struct PlanarCreatedOutputs<Schema>(PhantomData<fn() -> Schema>);
-
-impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRoleFamily
-    for PlanarCreatedOutputs<Schema>
-{
-    type Schema = Schema;
-    type Contract = PlanarOutputs;
-    type Entity = Body;
-    const PREFIX: &'static str = "created.";
-    const POSTURES: ApplicationMutationOutputPostureSet =
-        ApplicationMutationOutputPostureSet::CREATE;
-    const MINIMUM: usize = 0;
-}
-
-impl<Schema: TopologySchemaBinding> ApplicationMutationOutputContract<Schema> for PlanarOutputs {
-    const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
-        &[<PlanarAnchorOutput<Schema> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
-    const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[
-        <PlanarCreatedOutputs<Schema> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
-    ];
-}
+mod output_contract;
+pub use output_contract::*;

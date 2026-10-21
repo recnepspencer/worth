@@ -1,5 +1,7 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
+mod package_composition;
+
 use super::{DeclaredProducerBinding, DenialKind, WorthQueryApplicationContractCatalog};
 use crate::domain_computation::primary_graph::application_contribution::{
     WorthQueryProducerApplicability, WorthQueryProducerLifecyclePosture,

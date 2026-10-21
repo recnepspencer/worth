@@ -42,7 +42,7 @@ fn producer_identity_changes_with_any_completed_dependency() {
     assert_eq!(first.1, retry.1);
     assert_ne!(first.0, changed_fact.0);
     assert_ne!(first.0, changed_declared_key.0);
-    assert_eq!(first.1.digest_derivations(), 1);
+    assert!(first.1.digest_derivations() > 1);
 }
 
 #[test]
@@ -135,7 +135,9 @@ fn indexed_selection_remains_in_the_complete_reusable_fact_set() {
             Vec::new()
         )
         .facts()
-        .as_ref(),
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>(),
         &[comparable.clone(), selection]
     );
     assert_eq!(
@@ -144,7 +146,9 @@ fn indexed_selection_remains_in_the_complete_reusable_fact_set() {
             Vec::new()
         )
         .facts()
-        .as_ref(),
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>(),
         &[comparable],
     );
 }
@@ -158,8 +162,8 @@ fn dependency_identity_accepts_a_large_real_dependency_set_without_a_caller_budg
         .collect::<Vec<_>>();
 
     let (_, work) = dependency_identity([7; 32], &facts)
-        .expect("the full dependency set has a canonical identity");
-    assert_eq!(work.digest_derivations(), 1);
+        .expect("the digest budget is derived from the admitted dependency set");
+    assert!(work.digest_derivations() > 1);
 }
 
 #[test]
@@ -313,6 +317,50 @@ fn indexed_selection_dependency_distinguishes_absence_value_and_candidates() {
 
     assert_ne!(absent, present);
     assert_ne!(absent, other_value);
+}
+
+#[test]
+fn indexed_definition_meaning_is_not_replaced_by_the_observed_locator() {
+    let locator = AspectFieldLocator::new(
+        LocatorAuthority::Planned,
+        AspectKey::new("index-facts").unwrap(),
+        CanonicalFieldPath::single(FieldKey::new("identity").unwrap()),
+    );
+    let original = WorthQueryApplicationObservedFact::IndexedEntitySelection {
+        index_id: DerivedIndexId(9),
+        definition: index_definition(DerivedIndexId(9), locator.clone()),
+        entity_kind: KindId::new(12),
+        locator: locator.clone(),
+        value: AspectValue::UInt64(3),
+        candidate_limit: 2,
+        candidates: vec![],
+    };
+    let expected = identity(original.clone());
+    for change in 0..4 {
+        let mut changed = original.clone();
+        let WorthQueryApplicationObservedFact::IndexedEntitySelection { definition, .. } =
+            &mut changed
+        else {
+            unreachable!()
+        };
+        let definition = std::sync::Arc::make_mut(definition);
+        match change {
+            0 => definition.name.push_str("-changed"),
+            1 => definition.branch_scoped = false,
+            2 => definition.index_id = DerivedIndexId(10),
+            3 => {
+                definition.kind = DerivedIndexKind::EntityField {
+                    field_locator: AspectFieldLocator::new(
+                        LocatorAuthority::Planned,
+                        AspectKey::new("other-facts").unwrap(),
+                        CanonicalFieldPath::single(FieldKey::new("other-field").unwrap()),
+                    ),
+                }
+            }
+            _ => unreachable!(),
+        }
+        assert_ne!(identity(changed), expected);
+    }
 }
 
 fn index_definition(

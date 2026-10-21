@@ -9,6 +9,7 @@ use crate::application_operation::{
 use crate::installed_domain_operation::WorthQueryInstalledDomainOperationAuthority;
 
 use super::WorthQueryInstalledPackageIndex;
+mod targets;
 
 impl WorthQueryInstalledPackageIndex {
     pub fn bind_conditional_application_operation<Schema, ApplicationOperation, Input, D, O, F>(

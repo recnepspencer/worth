@@ -1,12 +1,11 @@
 //! Compare decisive meanings; scheduling and unavailable evidence cannot pass.
 
-use super::verification::{
-    ConsumedOutputVerification, ConsumedOutputVerificationStop, EvidenceView,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::{
-    FullVerificationDecision, FullVerificationImage, FullVerificationStop,
-    InvalidationEditAdmission,
-};
+use super::verification::ConsumedOutputVerification;
+use super::verification::ConsumedOutputVerificationStop;
+use super::verification::EvidenceView;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationDecision;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationImage;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationStop;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum DecisiveMeaning {
@@ -29,15 +28,12 @@ pub(super) fn check<'evidence>(
     roots: impl ExactSizeIterator<Item = EvidenceView<'evidence>>,
     image: Result<FullVerificationImage<'_>, FullVerificationStop>,
     marked: Result<ConsumedOutputVerification, ConsumedOutputVerificationStop>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
     // The independent observer runs even when optimized verification stops.
     // It cannot clear pending obligations or promote incomplete evidence.
     let full = image.and_then(|image| {
         for root in roots {
-            if image.verify_source_view(execution, root, admission)?
-                == FullVerificationDecision::Changed
-            {
+            if image.verify_source_view(execution, root)? == FullVerificationDecision::Changed {
                 return Ok(FullVerificationDecision::Changed);
             }
         }
@@ -45,6 +41,13 @@ pub(super) fn check<'evidence>(
     });
     match compare(marked, full) {
         EquivalenceComparison::Equivalent => marked,
+        // The full oracle cannot discharge a native pending obligation.
+        // Preserve that non-current semantic result without claiming equivalence.
+        EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::PendingUpstream)
+            if marked == Ok(ConsumedOutputVerification::PendingUpstream) =>
+        {
+            marked
+        }
         EquivalenceComparison::Inconclusive(stop) => Err(stop),
         EquivalenceComparison::Mismatch { marked, full } => {
             panic!("invalidation equivalence mismatch: marking={marked:?}, full={full:?}")
@@ -60,8 +63,15 @@ fn compare(
         Ok(ConsumedOutputVerification::Current) => DecisiveMeaning::Current,
         Ok(
             ConsumedOutputVerification::ChangedDirectFact(_)
-            | ConsumedOutputVerification::ChangedUpstream,
+            | ConsumedOutputVerification::ChangedUpstream
+            | ConsumedOutputVerification::ChangedOutput
+            | ConsumedOutputVerification::Unaligned,
         ) => DecisiveMeaning::Changed,
+        Ok(ConsumedOutputVerification::PendingUpstream) => {
+            return EquivalenceComparison::Inconclusive(
+                ConsumedOutputVerificationStop::PendingUpstream,
+            )
+        }
         Err(stop) => return EquivalenceComparison::Inconclusive(stop),
     };
     let full = match full {

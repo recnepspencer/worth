@@ -7,7 +7,6 @@ pub(super) fn finish<Schema, Family>(
     wave: &RequiredWaveSelection<'_, Schema>,
     frontier: &mut RequiredFrontier,
     queue: &mut QueuedRequiredRoots,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
@@ -23,14 +22,14 @@ where
         return Ok(Some(return_requested(settlement)));
     }
     if !queue.draining() {
-        match accept_current_caller(runtime, demand, wave, frontier, admission)? {
+        match accept_current_caller(runtime, demand, wave, frontier)? {
             CallerAcceptance::Accepted(proof) => queue.finish_caller(proof),
             CallerAcceptance::Deferred => queue.defer_caller(),
         }
     }
     for member in &frontier.members {
         if let Some(index) = member.queued {
-            queue.hold_root(index, None, admission)?;
+            queue.hold_root(index, None)?;
         }
     }
     Ok(queue.take_caller())
@@ -43,7 +42,6 @@ pub(super) fn accept_current_caller<Schema, Family>(
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     wave: &RequiredWaveSelection<'_, Schema>,
     frontier: &mut RequiredFrontier,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<CallerAcceptance, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
@@ -65,7 +63,6 @@ where
             current_contacts: demand.producer_contacts_in_this_demand,
         },
         proof,
-        admission,
     )? {
         Some(proof) => {
             frontier.members[0].state = MemberState::AcceptedCaller;

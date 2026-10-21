@@ -1,8 +1,7 @@
 use super::*;
-use crate::domain_computation::primary_graph::application_output_demand::{
-    ReadyCompletion, WorthQueryAcceptedOutputAuthority as Authority,
-    WorthQueryOutputDemandSettlement as Settlement,
-};
+use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority as Authority;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement as Settlement;
 
 /// What a Ready row proves on the branch as it stands.
 #[derive(Clone, Copy)]
@@ -40,7 +39,6 @@ where
         >,
         completion: ReadyCompletion,
         certification: ReadyCertification,
-        request_admission: &mut InvalidationEditAdmission,
     ) -> Result<
         OwnStages<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
         WorthQueryOutputDemandDenial,
@@ -67,17 +65,15 @@ where
                 settlement,
             )));
         }
-        request_admission
-            .charge_external_work(std::mem::size_of_val(disclosure.source()) as u64)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
+
         self.refresh_output_demand(
             execution,
             demand,
             disclosure.value(),
             disclosure.source().clone(),
             Some(&completion.authority),
-            request_admission,
         )?;
+        // Carry source custody unchanged; no executable seal crosses refresh.
         Ok(OwnStages::Refreshed(disclosure))
     }
 
@@ -125,9 +121,7 @@ where
                             CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending)
                         }
                     }
-                    CheckpointProgress::Advanced => {
-                        CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending)
-                    }
+                    CheckpointProgress::Advanced => CallerPass::Progressed,
                 },
                 ReadyVerdict::Unavailable(ReadyUnavailable::WorkExhausted) => {
                     CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending)
@@ -171,11 +165,7 @@ where
         // restored output and its facts are compared here as well, and for a
         // restored output that comparison is what gives it its marks.
         let alias = |settlement: std::sync::Arc<Settlement>| {
-            let proof = current.require_current_output_settlements(
-                phase,
-                [settlement.as_ref()],
-                demand.currentness_work_limit(),
-            );
+            let proof = current.require_current_output_settlements(phase, [settlement.as_ref()]);
             unavailable(proof).map(|unavailable| match unavailable {
                 None => Ok(settlement),
                 Some(kind) => Err(kind),
@@ -183,11 +173,7 @@ where
         };
         let settlement = match &completion.authority {
             Authority::Committed(receipt) => {
-                let proof = current.require_current_output_receipts(
-                    phase,
-                    [receipt],
-                    demand.currentness_work_limit(),
-                );
+                let proof = current.require_current_output_receipts(phase, [receipt]);
                 if let Some(kind) = unavailable(proof)? {
                     return Ok(ReadyVerdict::Unavailable(kind));
                 }
@@ -204,6 +190,8 @@ where
                     Err(denial)
                         if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
                     {
+                        #[cfg(test)]
+                        own_effect_observation::record(Stage::ReadySuperseded);
                         Err(ReadyUnavailable::Superseded)
                     }
                     Err(denial) => return Err(denial),
@@ -230,14 +218,22 @@ where
         };
         self.output_demands
             .finish_settlement(interest, &completion.authority)?;
+        #[cfg(test)]
+        own_effect_observation::record(Stage::ReadySettled);
         Ok(ReadyVerdict::Settled(settlement))
     }
 }
 
 fn ready_unavailable(denial: &WorthQueryOutputDemandDenial) -> Option<ReadyUnavailable> {
     match denial.kind() {
-        WorthQueryOutputDemandDenialKind::Superseded => Some(ReadyUnavailable::Superseded),
+        WorthQueryOutputDemandDenialKind::Superseded => {
+            #[cfg(test)]
+            own_effect_observation::record(Stage::ReadySuperseded);
+            Some(ReadyUnavailable::Superseded)
+        }
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded => {
+            #[cfg(test)]
+            own_effect_observation::record(Stage::ReadyWorkExhausted);
             Some(ReadyUnavailable::WorkExhausted)
         }
         _ => None,

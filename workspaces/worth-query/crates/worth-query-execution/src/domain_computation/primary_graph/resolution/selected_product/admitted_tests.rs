@@ -4,10 +4,9 @@ use super::super::WorthQueryPrincipalResolutionMode;
 use crate::domain_computation::primary_graph::tests::fixture::{
     installed_authorization_world, live_scope,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind;
 
 #[test]
-fn admitted_selected_principal_matches_ordinary_and_certification_and_stops_one_short() {
+fn admitted_selected_principal_matches_ordinary_and_certification() {
     let world = installed_authorization_world(true);
     world
         .application
@@ -40,7 +39,6 @@ fn admitted_selected_principal_matches_ordinary_and_certification_and_stops_one_
                 WorthQueryPrincipalResolutionMode::Ordinary,
                 WorthQueryPrincipalResolutionMode::Certification,
             ] {
-                let mut admission = owner.edit_admission();
                 let fresh = selected
                     .resolve_authenticated_principal_admitted(
                         execution,
@@ -48,7 +46,6 @@ fn admitted_selected_principal_matches_ordinary_and_certification_and_stops_one_
                         &external,
                         &request,
                         mode,
-                        &mut admission,
                     )
                     .expect("admitted principal uses the same selected truth");
                 assert_eq!(fresh.principal_entity_id(), legacy.principal_entity_id());
@@ -58,26 +55,6 @@ fn admitted_selected_principal_matches_ordinary_and_certification_and_stops_one_
                 assert_eq!(
                     fresh.examined_candidate_count(),
                     legacy.examined_candidate_count()
-                );
-                let charged = admission.charged_work();
-                assert!(charged > 1);
-                let mut short = owner.edit_admission_with_work_limit(
-                    Some(usize::try_from(charged - 1).unwrap()),
-                );
-                let denial = match selected.resolve_authenticated_principal_admitted(
-                    execution,
-                    &world.binding,
-                    &external,
-                    &request,
-                    mode,
-                    &mut short,
-                ) {
-                    Ok(_) => panic!("one less than performed Work must refuse"),
-                    Err(denial) => denial,
-                };
-                assert_eq!(
-                    denial.kind(),
-                    WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })),
                 );
             }
         })

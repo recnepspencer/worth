@@ -102,7 +102,6 @@ fn source(
                     <PlanarRead as ApplicationQueryIntent<ConsumerSchema>>::parameters(&intent),
                     WorthQueryProductQueryControls::new(
                         binding.limits().maximum_results(),
-                        binding.limits().maximum_work(),
                         request_scope,
                     ),
                 )

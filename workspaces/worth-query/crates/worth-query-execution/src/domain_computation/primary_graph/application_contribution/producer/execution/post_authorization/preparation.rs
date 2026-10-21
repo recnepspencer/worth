@@ -7,12 +7,13 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     Binding,
 >(
     phase: &'owner WorthQueryAdvancementPhase<'owner>,
-
     runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    selected: &'owner crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+    shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<
         '_,
         Schema,
     >,
+    external_principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    request_scope: &WorthQueryRequestScope,
     principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
         Schema,
         <Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Principal,
@@ -35,8 +36,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     successor_of: Option<[u8; 32]>,
     commit_authority: WorthQueryProducerCommitAuthority,
     edition: super::super::super::InstalledProducerEdition,
-    limits: WorthQueryOutputDemandLimits,
-    request_admission: &mut InvalidationEditAdmission,
     producer_contacts: &mut usize,
 ) -> Result<super::super::prepared_plan::ProducerExecutionPlan<'owner>, ProducerExecutionStop>
 where
@@ -48,7 +47,8 @@ where
             SourceQuery<Schema, Binding>,
         >,
 {
-    require_selected_program(selected, &commit_authority, request_admission)?;
+    let selected = shared.selected();
+    require_selected_program(selected, &commit_authority)?;
 
     let application_identity = crate::domain_computation::execution_observation::is_installed().then(|| {
         crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementIdentityForTest::Producer {
@@ -64,42 +64,14 @@ where
     let owned_identities = super::super::input_identity::encode_owned_input::<
         Schema,
         Operation<Schema, Binding>,
-    >(Binding::IDENTITY, key, input, request_admission)?;
+    >(Binding::IDENTITY, key, input)?;
     let identities = owned_identities.borrow();
-    let prepared_key = prepared_key(
-        &observed_source,
-        *identities.input_identity(),
-        edition,
-        request_admission,
-    )?;
+    let prepared_key = prepared_key(&observed_source, *identities.input_identity(), edition)?;
     let prepared_context = if let Some(contract) = Binding::INPUT_REUSE.filter(|contract| {
         contract.determinism() == worth_foundational::facade::DeterminismContract::CanonicalBitwise
     }) {
         let declared = contract.context();
-        let copy_visits =
-            1 + u64::from(
-                declared.contains(super::super::super::WorthQueryDecisionContextDependencies::KEY),
-            ) + if declared
-                .contains(super::super::super::WorthQueryDecisionContextDependencies::PRINCIPAL)
-            {
-                10
-            } else {
-                0
-            } + if declared
-                .contains(super::super::super::WorthQueryDecisionContextDependencies::SCOPE)
-            {
-                5
-            } else {
-                0
-            };
-        request_admission
-            .charge_external_work(copy_visits)
-            .map_err(|_| {
-                denial(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    Binding::IDENTITY,
-                )
-            })?;
+
         let key = declared
             .contains(super::super::super::WorthQueryDecisionContextDependencies::KEY)
             .then(|| *identities.key_identity());
@@ -128,17 +100,11 @@ where
         .prepare_application_source_expectation::<Operation<Schema, Binding>, _>(
             &admission,
             observed_source,
-            identities.mutation_input().input(),
-            request_admission,
+            identities.mutation_input(),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .map_err(|error| input_cutoff::source_preparation_denial(Binding::IDENTITY, error))?;
-    let mut currentness = runtime
-        .primary_provider
-        .graph
-        .source_owner
-        .invalidation_owner
-        .edit_admission_with_work_limit(limits.source_currentness_work());
+
     let (mut required_output, prepared_source, prepared_key, prepared_context) =
         match input_cutoff::advance_input_cutoff::<Schema, Binding, _, _, _>(
             phase,
@@ -151,15 +117,13 @@ where
             prepared_context,
             matched_predecessors,
             edition,
-            request_admission,
-            &mut currentness,
         )? {
             input_cutoff::ProducerInputProgression::StablePrepared(publish) => {
                 return Ok(super::super::prepared_plan::ProducerExecutionPlan::new(
                     Vec::new(),
-                    move |slots, admission_work| {
+                    move |slots| {
                         assert!(slots.is_empty(), "stable reuse has no compute slots");
-                        let published = publish(&admission, admission_work)?;
+                        let published = publish(&admission)?;
 
                         if let Some(identity) = application_identity {
                             crate::domain_computation::primary_graph::application_contribution::request_execution::record_event(
@@ -189,35 +153,36 @@ where
     let bound_source = prepared_source
         .consume_into(&mut admission)
         .map_err(|error| failed(Binding::IDENTITY, error))?;
-    let prepared = runtime.prepare_mutation_handler_plan::<Operation<Schema, Binding>>(
-        phase,
-        &identities,
-        principal.principal_identity(),
-        admission,
-        || {
-            *producer_contacts += 1;
+    let source_query =
+        crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess {
+            application: runtime,
+            shared,
+            principal: external_principal,
+            request: request_scope,
+        };
+    let prepared = runtime
+        .prepare_mutation_handler_plan_with_source_access::<Operation<Schema, Binding>>(
+            phase,
+            &identities,
+            principal.principal_identity(),
+            Some(&source_query),
+            admission,
+            || {
+                *producer_contacts += 1;
 
-            super::super::contact_observation::record(
-                runtime.runtime.authority_identity().as_u64(),
-                contact_root,
-            );
-        },
-        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    );
+                super::super::contact_observation::record(
+                    runtime.runtime.authority_identity().as_u64(),
+                    contact_root,
+                );
+            },
+            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        );
     let (requests, completion, inputs) = match prepared {
-        Ok(prepared) => prepared.into_parts(
-            &runtime.output_demands,
-            &runtime
-                .primary_provider
-                .graph
-                .source_owner
-                .invalidation_owner,
-            request_admission,
-        )?,
+        Ok(prepared) => prepared.into_parts(&runtime.output_demands)?,
         Err(report) => {
             return Ok(super::super::prepared_plan::ProducerExecutionPlan::new(
                 Vec::new(),
-                move |slots, _| {
+                move |slots| {
                     assert!(
                         slots.is_empty(),
                         "a refused preparation has no compute slots"
@@ -236,7 +201,7 @@ where
     };
     Ok(super::super::prepared_plan::ProducerExecutionPlan::new(
         requests,
-        move |slots, request_admission| {
+        move |slots| {
 
             let _observation = application_identity.map(crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::application::apply_identity);
             let identities = owned_identities.borrow();
@@ -249,33 +214,17 @@ where
                 |denial| provider.domain_denial_reason(denial),
             )?;
             let (mut program, _) = completed.into_parts(); // Retries bind the complete typed dependency set.
+            let identity_execution = phase.execution_request_for(&runtime.product_runtime)
+                .map_err(|cause| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "producer content phase"))?;
             let (key_identity, dependency_identity) = program
         .producer_idempotency_identities::<Operation<Schema, Binding>>(
             runtime,
             &phase.checked_execution_request_for(&runtime.product_runtime).map_err(|stop| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(stop), Binding::IDENTITY))?,
             *identities.key_identity(),
             successor_of,
-            request_admission,
+            identity_execution.allocation_policy(),
         )
-        .map_err(|identity_denial| {
-            if let crate::domain_computation::primary_graph::application_attempt::WorthQueryProducerIdentityDenial::Execution(cause) = identity_denial {
-                return crate::domain_computation::primary_graph::output_reuse::read_denial(cause);
-            }
-            if identity_denial
-                == crate::domain_computation::primary_graph::application_attempt::WorthQueryProducerIdentityDenial::LineageLookupBudgetExceeded
-            {
-                // This admitted demand cannot increase its limit; execution closes terminally.
-                denial(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    Binding::IDENTITY,
-                )
-            } else {
-                denial(
-                    WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-                    format!("{}: {identity_denial:?}", Binding::IDENTITY),
-                )
-            }
-        })?;
+        .map_err(|identity_denial| super::super::denial::identity_failed(Binding::IDENTITY, identity_denial))?;
             let idempotency = bound_source
                 .bind_idempotency(
                     WorthQueryApplicationIdempotencyBinding::new(

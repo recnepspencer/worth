@@ -24,7 +24,7 @@ fn locator() -> AspectFieldLocator {
 }
 
 #[test]
-fn absent_field_and_native_revision_share_exact_addresses_after_admission() {
+fn absent_field_and_native_revision_share_exact_addresses() {
     let entity = EntityId::new(PartitionId::main(), 7, 1);
     let kind = KindId(3);
     let locator = locator();
@@ -33,22 +33,12 @@ fn absent_field_and_native_revision_share_exact_addresses_after_admission() {
         kind,
         locator: locator.clone(),
     };
-    let admitted = Cell::new(0usize);
-    let emitted = Cell::new(0usize);
+
     let mut fact_keys = Vec::new();
-    visit(
-        &fact,
-        |_, _| {
-            admitted.set(admitted.get() + 1);
-            Ok::<_, ()>(())
-        },
-        |key| {
-            assert!(admitted.get() > emitted.get());
-            emitted.set(emitted.get() + 1);
-            fact_keys.push(key);
-            Ok::<_, ()>(())
-        },
-    )
+    visit(&fact, |key| {
+        fact_keys.push(key);
+        Ok::<_, ()>(())
+    })
     .unwrap();
 
     let touch = RelationalDescriptiveTouch::FieldRevision {
@@ -59,14 +49,10 @@ fn absent_field_and_native_revision_share_exact_addresses_after_admission() {
         presence: RelationalFieldPresence::Absent,
     };
     let mut changed_keys = Vec::new();
-    super::super::touch_keys::visit(
-        &touch,
-        |_| Ok::<_, ()>(()),
-        |key| {
-            changed_keys.push(key);
-            Ok::<_, ()>(())
-        },
-    )
+    super::super::touch_keys::visit(&touch, |key| {
+        changed_keys.push(key);
+        Ok::<_, ()>(())
+    })
     .unwrap();
     assert!(changed_keys.iter().any(|key| fact_keys.contains(key)));
     assert!(fact_keys.contains(&Key::EntityLifecycle(entity)));
@@ -93,7 +79,6 @@ fn sibling_field_revision_does_not_match_an_unmodified_field() {
                 kind,
                 locator,
             },
-            |_, _| Ok::<_, ()>(()),
             |key| {
                 keys.push(key);
                 Ok::<_, ()>(())
@@ -112,28 +97,20 @@ fn sibling_field_revision_does_not_match_an_unmodified_field() {
         presence: RelationalFieldPresence::Absent,
     };
     let mut touched = Vec::new();
-    super::super::touch_keys::visit(
-        &touch,
-        |_| Ok::<_, ()>(()),
-        |key| {
-            touched.push(key);
-            Ok::<_, ()>(())
-        },
-    )
+    super::super::touch_keys::visit(&touch, |key| {
+        touched.push(key);
+        Ok::<_, ()>(())
+    })
     .unwrap();
     assert!(touched.iter().any(|key| second_keys.contains(key)));
     let aspect_touch = RelationalDescriptiveTouch::AspectRevision {
         record: RecordRef::Entity(entity),
         aspect: second.aspect().aspect_key().clone(),
     };
-    super::super::touch_keys::visit(
-        &aspect_touch,
-        |_| Ok::<_, ()>(()),
-        |key| {
-            touched.push(key);
-            Ok::<_, ()>(())
-        },
-    )
+    super::super::touch_keys::visit(&aspect_touch, |key| {
+        touched.push(key);
+        Ok::<_, ()>(())
+    })
     .unwrap();
     assert!(touched.iter().all(|key| !first_keys.contains(key)));
 }
@@ -161,14 +138,10 @@ fn indexed_selection_matches_old_key_and_definition_touches() {
         candidates: Vec::new(),
     };
     let mut fact_keys = Vec::new();
-    visit(
-        &fact,
-        |_, _| Ok::<_, ()>(()),
-        |key| {
-            fact_keys.push(key);
-            Ok::<_, ()>(())
-        },
-    )
+    visit(&fact, |key| {
+        fact_keys.push(key);
+        Ok::<_, ()>(())
+    })
     .unwrap();
     let touch = RelationalDescriptiveTouch::IndexMembership {
         index,
@@ -179,32 +152,13 @@ fn indexed_selection_matches_old_key_and_definition_touches() {
         new_key: None,
     };
     let mut touched = Vec::new();
-    super::super::touch_keys::visit(
-        &touch,
-        |_| Ok::<_, ()>(()),
-        |key| {
-            touched.push(key);
-            Ok::<_, ()>(())
-        },
-    )
+    super::super::touch_keys::visit(&touch, |key| {
+        touched.push(key);
+        Ok::<_, ()>(())
+    })
     .unwrap();
     assert!(touched.iter().any(|key| fact_keys.contains(key)));
     assert!(fact_keys.contains(&Key::IndexDefinition(index)));
-    let indexed = fact_keys
-        .iter()
-        .find(|key| matches!(key, Key::IndexMembership { .. }))
-        .unwrap();
-    let expected_payload = locator
-        .aspect()
-        .aspect_key()
-        .owned_allocation_capacity_bytes()
-        + locator.field_path().owned_allocation_capacity_bytes()
-        + AuthoritativeFieldComparisonKey::from_aspect_value(&value)
-            .owned_allocation_capacity_bytes() as usize;
-    assert_eq!(
-        indexed.owned_payload_capacity_bytes(),
-        Some(expected_payload as u64)
-    );
 }
 
 #[test]
@@ -226,25 +180,17 @@ fn entity_local_field_and_anchor_postings_do_not_collide_across_unrelated_entiti
             relations: Vec::new(),
         };
         let mut keys = Vec::new();
-        visit(
-            &field,
-            |_, _| Ok::<_, ()>(()),
-            |key| {
-                keys.push(key);
-                Ok::<_, ()>(())
-            },
-        )
+        visit(&field, |key| {
+            keys.push(key);
+            Ok::<_, ()>(())
+        })
         .unwrap();
         field_keys.push(keys);
         let mut keys = Vec::new();
-        visit(
-            &adjacency,
-            |_, _| Ok::<_, ()>(()),
-            |key| {
-                keys.push(key);
-                Ok::<_, ()>(())
-            },
-        )
+        visit(&adjacency, |key| {
+            keys.push(key);
+            Ok::<_, ()>(())
+        })
         .unwrap();
         adjacency_keys.push(keys);
     }
@@ -286,14 +232,10 @@ fn workflow_definition_and_capacity_facts_require_typed_full_verification() {
     for fact in facts {
         let emitted = Cell::new(0_usize);
         assert!(matches!(
-            visit(
-                &fact,
-                |_, _| Ok::<_, ()>(()),
-                |_| {
-                    emitted.set(emitted.get() + 1);
-                    Ok::<_, ()>(())
-                }
-            ),
+            visit(&fact, |_| {
+                emitted.set(emitted.get() + 1);
+                Ok::<_, ()>(())
+            }),
             Err(FactKeyProjectionStop::FullVerificationRequired(
                 FullVerificationReason::UnsupportedFact
             ))

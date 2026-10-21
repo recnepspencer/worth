@@ -20,17 +20,17 @@ pub(super) fn select_root_path_union(
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
     paths: &[WorthQueryInstalledRootPath],
-    result_buffer: &mut crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationResultBufferReservation,
+
     capture_result_set: bool,
     spent: Option<&OneShotReadWorkObservation<'_>>,
-    maximum_work: Option<usize>,
+
     interruption: super::super::ReadInterruption<'_>,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
         .project_snapshot(plan.snapshot)
         .ok_or_else(|| traversal_denial(plan.name))?;
     let mut roots = BTreeMap::new();
-    let mut work = RootSelectionWork::new(maximum_work, interruption, spent);
+    let mut work = RootSelectionWork::new(interruption, spent);
     let mut set_source = capture_result_set.then(RootPathSourceBuilder::default);
     if let Some(source) = &mut set_source {
         source.observe_entity(plan.root);
@@ -60,14 +60,12 @@ pub(super) fn select_root_path_union(
         }
     }
     let candidates = roots.keys().copied().collect();
-    let result_set_source = set_source
-        .map(|source| source.finish(result_buffer))
-        .transpose()?;
+    let result_set_source = set_source.map(|source| source.finish()).transpose()?;
     let root_path_source = (!roots.is_empty())
         .then(|| {
             roots
                 .into_iter()
-                .map(|(root, source)| source.finish(result_buffer).map(|source| (root, source)))
+                .map(|(root, source)| source.finish().map(|source| (root, source)))
                 .collect::<Result<BTreeMap<_, _>, _>>()
         })
         .transpose()?;
@@ -149,19 +147,9 @@ fn traverse_path(
         work.checkpoint(step.relation())?;
         let read = match step.direction() {
             ApplicationQueryRootPathDirection::Forward => runtime
-                .bounded_outgoing_relations_for_frontier(
-                    execution,
-                    &anchors,
-                    layout.kind,
-                    work.remaining(),
-                ),
+                .bounded_outgoing_relations_for_frontier(execution, &anchors, layout.kind, None),
             ApplicationQueryRootPathDirection::Reverse => runtime
-                .bounded_incoming_relations_for_frontier(
-                    execution,
-                    &anchors,
-                    layout.kind,
-                    work.remaining(),
-                ),
+                .bounded_incoming_relations_for_frontier(execution, &anchors, layout.kind, None),
         }
         .map_err(|stop| frontier_denial(stop, step.relation()))?;
         work.charge(
@@ -274,7 +262,6 @@ fn apply_guards(
             layout.entity_kind,
             &layout.locator,
             guard.expected(),
-            work.remaining(),
         )
         .map_err(|stop| frontier_denial(stop, guard.field().as_str()))?;
         work.charge_predicate(
@@ -297,7 +284,6 @@ fn read_governed_root_guard(
     entity_kind: worth_relational::facade::identity::KindId,
     locator: &worth_foundational::facade::AspectFieldLocator,
     expected: &worth_foundational::facade::AspectValue,
-    maximum_work: Option<usize>,
 ) -> Result<
     worth_relational::facade::runtime::BoundedFrontierFieldEqualityTruthRead,
     worth_relational::facade::runtime::BoundedFrontierReadStop<
@@ -311,7 +297,7 @@ fn read_governed_root_guard(
         entity_kind,
         locator,
         expected,
-        maximum_work,
+        None,
     )
 }
 

@@ -43,6 +43,7 @@ pub(crate) static DECISION_ENTRIES: std::sync::atomic::AtomicUsize =
     std::sync::atomic::AtomicUsize::new(0);
 
 pub struct PlanarHandler;
+pub(crate) mod checkpoint_polling;
 trait PlanarHandlerBinding<Schema: TopologySchemaBinding>:
     worth_query_decl::facade::application_operation::ApplicationMutationBinding<
     Schema,
@@ -75,6 +76,8 @@ where
         input: &PlanarMutation,
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<(), PlanarMutationDenial> {
+        // This consumer deliberately leaves interruption enforcement to the owner.
+        let _ = reader.checkpoint();
         #[cfg(test)]
         HANDLER_CONTACTS.with(|contacts| contacts.set(contacts.get() + 1));
         #[cfg(test)]
@@ -224,6 +227,7 @@ where
                 }
             }
         }
+        checkpoint_polling::poll(reader);
         HandlerResult::Completed(())
     }
 
@@ -233,6 +237,8 @@ where
         _: (),
         writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
+        #[cfg(test)]
+        checkpoint_polling::candidate_started();
         match author(input, writer) {
             Ok(changed_vertices) => {
                 HandlerResult::Completed(PlanarAdjustmentResult { changed_vertices })

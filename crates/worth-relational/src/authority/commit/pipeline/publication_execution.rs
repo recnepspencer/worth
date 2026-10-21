@@ -97,6 +97,7 @@ pub(super) fn prepare_commit_publication_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     assembled: AssembledCommitExecution,
+    required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
 ) -> Result<PreparedCommitPublicationExecution, crate::transactions::data::TransactionCommitError> {
     super::consult_stage(execution, super::CommitStage::PublicationPreparation)?;
     let (
@@ -117,11 +118,19 @@ pub(super) fn prepare_commit_publication_execution(
         aspect_emission_traces,
     ) = assembled.into_parts();
     let publication = {
+        let recovered_codec_publication_custody = admitted
+            .validation_input()
+            .recovered_codec_publication_custody()
+            .cloned();
         let (_, _, _, _, commit_log, _) = admitted.phase_view().into_parts();
         prepare_publication_phase(
             execution,
             runtime,
             PreparePublicationPhaseInput {
+                recovered_codec_publication_custody,
+                required_output_publication,
+                created_entities: &created_entities,
+                created_relations: &created_relations,
                 commit_log,
                 working_state,
                 record_allocations,
@@ -290,14 +299,17 @@ impl PreparedCommitPublicationCompletion {
 }
 
 impl PreparedCommitPublicationExecution {
+    pub(crate) fn descriptive_touches(
+        &self,
+    ) -> &crate::history::data::RelationalDescriptiveTouchGraph {
+        self.publication.descriptive_touches()
+    }
     pub(crate) fn changed_record_count(&self) -> usize {
         self.publication.changed_record_count()
     }
-
     pub(crate) fn changed_records(&self) -> &[crate::transactions::data::RecordRef] {
         &self.publication.changed_records
     }
-
     pub(crate) fn attach_prepared_indexes(
         &mut self,
         prepared: crate::indexes::PreparedCandidateIndexPublication,
@@ -312,6 +324,13 @@ impl PreparedCommitPublicationExecution {
         }
         self.prepared_indexes = Some(prepared);
         Ok(())
+    }
+    pub(crate) fn recovered_codec_publication_custody(
+        &self,
+    ) -> Option<&std::sync::Arc<crate::durability::RecoveredCodecPublicationCustody>> {
+        self.admitted
+            .validation_input()
+            .recovered_codec_publication_custody()
     }
 
     pub(crate) fn has_prepared_indexes(&self) -> bool {

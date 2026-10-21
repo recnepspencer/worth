@@ -40,14 +40,14 @@ pub(in crate::domain_computation::primary_graph::application_attempt) struct Wor
 }
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
-    pub(in crate::domain_computation::primary_graph) fn workflow_outputs(
+    pub(in crate::domain_computation::primary_graph) fn native_publication_roles(
         &self,
     ) -> impl ExactSizeIterator<
         Item = (
             &str,
             WorthQueryApplicationOutputPosture,
             &str,
-            EntityReference,
+            &EntityReference,
         ),
     > + Clone {
         self.roles.iter().map(|(role, binding)| {
@@ -55,10 +55,11 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
                 role.as_str(),
                 binding.posture,
                 binding.entity_name.as_str(),
-                binding.entity.clone(),
+                &binding.entity,
             )
         })
     }
+
     pub(in crate::domain_computation::primary_graph) fn native_witness_roles(
         &self,
     ) -> impl ExactSizeIterator<Item = (&str, WorthQueryApplicationOutputPosture, &str)> + Clone

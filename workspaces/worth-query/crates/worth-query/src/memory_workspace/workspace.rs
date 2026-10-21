@@ -1,22 +1,30 @@
 mod runtime_builder;
 use super::*;
-use crate::runtime::{WorthQueryAspectTouch, WorthQueryAuthoredAspectMutation};
+use crate::runtime::WorthQueryAspectTouch;
+use crate::runtime::WorthQueryAuthoredAspectMutation;
 use runtime_builder::memory_runtime_builder;
 use worth_foundational::facade::AspectValue;
-use worth_relational::facade::config::{RelationalConfigOverride, RelationalRuntimeProfile};
-use worth_relational::facade::runtime::{
-    CustomInvariantRegistration, EntityProjectionRecord, InvariantCatalog, ProjectionAspectScope,
-    RelationalRuntimeApi, RelationalRuntimeConfig,
-};
-use worth_relational::facade::schema::{
-    DeclaredAspectContractBinding, EntityKindRegistration, KindAspectContractDeclarations,
-    RelationalSchemaRegistry, SchemaId, SchemaVersionId,
-};
-use worth_relational::facade::transactions::{
-    DeleteEntityIntent, EntityMutationIntent, MutationIntent, WorkerIntentBatch,
-};
+use worth_relational::facade::config::RelationalConfigOverride;
+use worth_relational::facade::config::RelationalRuntimeProfile;
+use worth_relational::facade::runtime::CustomInvariantRegistration;
+use worth_relational::facade::runtime::EntityProjectionRecord;
+use worth_relational::facade::runtime::InvariantCatalog;
+use worth_relational::facade::runtime::ProjectionAspectScope;
+use worth_relational::facade::runtime::RelationalRuntimeApi;
+use worth_relational::facade::runtime::RelationalRuntimeConfig;
+use worth_relational::facade::schema::DeclaredAspectContractBinding;
+use worth_relational::facade::schema::EntityKindRegistration;
+use worth_relational::facade::schema::KindAspectContractDeclarations;
+use worth_relational::facade::schema::RelationalSchemaRegistry;
+use worth_relational::facade::schema::SchemaId;
+use worth_relational::facade::schema::SchemaVersionId;
+use worth_relational::facade::transactions::DeleteEntityIntent;
+use worth_relational::facade::transactions::EntityMutationIntent;
+use worth_relational::facade::transactions::MutationIntent;
+use worth_relational::facade::transactions::WorkerIntentBatch;
 
-use super::workspace_schema::{inferred_string_declarations, native_contract_declarations};
+use super::workspace_schema::inferred_string_declarations;
+use super::workspace_schema::native_contract_declarations;
 
 impl WorthQueryMemoryWorkspace {
     pub fn collection(
@@ -97,10 +105,8 @@ impl WorthQueryMemoryWorkspace {
         for custom_invariant in custom_invariants {
             runtime_builder = runtime_builder.custom_invariant(custom_invariant);
         }
-        let invalidation_resources = worth_query_execution::facade::runtime::WorthQueryInvalidationResources::install(
-            worth_query_execution::facade::runtime::WorthQueryInvalidationResourceInstallation::new(None, None, 128),
-        )
-        .map_err(|error| WorthQueryWorkspaceError::new(format!("{error:?}")))?;
+        let invalidation_resources =
+            worth_query_execution::facade::runtime::WorthQueryInvalidationResources::new();
         let runtime = WorthQueryRelationalSourceOwner::new(
             runtime_builder.build(),
             "model",

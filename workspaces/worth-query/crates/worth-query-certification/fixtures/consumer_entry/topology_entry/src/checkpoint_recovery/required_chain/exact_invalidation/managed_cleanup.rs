@@ -8,7 +8,7 @@ use worth_query_host::facade::primary_graph::{
 #[test]
 fn noncaller_queued_producer_keeps_unique_cleanup_after_refusal_suppression() {
     let _observation = primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let application = install(None, ring_world::seed::<3>, Retained::AMPLE);
+    let application = install(None, ring_world::seed::<3>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_7d00);

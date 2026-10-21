@@ -10,7 +10,7 @@ pub(super) fn validate_links(
     members: &[ApplicationSchemaMember],
 ) -> Result<(), Denial> {
     if !body.has_supported_retiring_replacement() {
-        return Err(Denial::MissingOperationProgramDependency);
+        return Err(Denial::program_body_dependency(operation));
     }
     for creation in body.creation().into_iter().flat_map(|c| c.creation_roots()) {
         let mut keys = std::collections::BTreeSet::new();
@@ -20,7 +20,7 @@ pub(super) fn validate_links(
                 || link.key.is_empty()
                 || link.key.trim() != link.key
             {
-                return Err(Denial::MissingOperationProgramDependency);
+                return Err(Denial::program_body_dependency(operation));
             }
             if !keys.insert((&link.relation, &link.key)) {
                 return Err(Denial::DuplicateMember);
@@ -28,13 +28,13 @@ pub(super) fn validate_links(
             if link.posture.replaces_selection()
                 && !replacement_is_declared(operation, creation, link, members)
             {
-                return Err(Denial::MissingOperationProgramDependency);
+                return Err(Denial::program_body_dependency(operation));
             }
             if !members.iter().any(|member| matches!(member, ApplicationSchemaMember::Relation { relation, from, to, .. }
             if relation == &link.relation && from == &link.from && to == &link.to))
             || !members.iter().any(|member| matches!(member, ApplicationSchemaMember::OperationProgram { operation: candidate, target }
                 if candidate == operation && target == &link.program_target())) {
-            return Err(Denial::MissingOperationProgramDependency);
+            return Err(Denial::program_body_dependency(operation));
         }
         }
     }

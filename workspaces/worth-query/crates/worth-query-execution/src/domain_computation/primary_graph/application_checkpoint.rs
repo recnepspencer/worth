@@ -33,7 +33,8 @@ pub use section_bytes::{
 pub use worth_execution::ExecutionAllocationPolicy as WorthQueryCheckpointCapturePolicy;
 
 const MAGIC: &[u8; 8] = b"WQAPCP01";
-const FORMAT_VERSION: u16 = 11;
+// Current-only combined grammar: whole-aspect facts remain wire12 (presence tag11); producer quotes are absent.
+const FORMAT_VERSION: u16 = 12;
 const WORKFLOW_FACTS: u16 = 2;
 const WORKFLOW_INSTANCES: u16 = 4;
 const CHECKSUM_BYTES: usize = 32;

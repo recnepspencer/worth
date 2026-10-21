@@ -103,10 +103,10 @@ where
                     .installed_query_binding::<Intent::Binding>()
                     .map_err(WorthQueryApplicationRequestQueryDenial::BindingInstallation)?;
                 let limits = match self.limits {
-                    Some((results, work)) => self
+                    Some(results) => self
                         .application
                         .resolve_application_query_limits(binding.limits())
-                        .narrow(results, Some(work))
+                        .narrow(results)
                         .map_err(WorthQueryApplicationRequestQueryDenial::Limit)?,
                     None => self
                         .application
@@ -166,7 +166,6 @@ where
                         .unwrap_or(NonZeroUsize::MAX);
                 let controls = WorthQueryProductQueryControls::new(
                     limits.maximum_results().min(query_maximum),
-                    limits.maximum_work(),
                     self.scope,
                 );
                 let plan = selected

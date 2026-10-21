@@ -21,6 +21,9 @@ use super::WorthQueryInMemoryApplicationDenial;
 pub(in crate::domain_computation::primary_graph) struct WorthQueryAdmittedProgramSupport<Schema> {
     pub(in crate::domain_computation::primary_graph) roster:
         Arc<WorthQueryProgramSupportRoster<Schema>>,
+    /// Exact initial and rostered program declarations used to check configured owners before bootstrap.
+    pub(in crate::domain_computation::primary_graph) features:
+        Vec<worth_query_declaration::facade::application_program::ApplicationFeatureDeclaration>,
     pub(in crate::domain_computation::primary_graph) initial_revision: ApplicationProgramRevision,
 }
 

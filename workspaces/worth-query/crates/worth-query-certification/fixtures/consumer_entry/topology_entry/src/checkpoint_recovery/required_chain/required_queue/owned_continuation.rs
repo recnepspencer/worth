@@ -7,7 +7,8 @@ macro_rules! finish {
         (0..256)
             .find_map(
                 |_| match $owner.advance($app.runtime(), &$request).unwrap() {
-                    WorthQueryApplicationOutputDemandProgress::Pending => None,
+                    WorthQueryApplicationOutputDemandProgress::Pending
+                    | WorthQueryApplicationOutputDemandProgress::Progressed => None,
                     WorthQueryApplicationOutputDemandProgress::Settled(value) => Some(value),
                 },
             )
@@ -89,10 +90,7 @@ fn owned_root_and_dependent_demands_keep_native_custody_across_fresh_requests() 
     let current = request.retain_current_read().unwrap();
     request
         .at(&current)
-        .require_current_output_demand(
-            &output,
-            Some((std::num::NonZeroUsize::new(1_000_000).unwrap()).get()),
-        )
+        .require_current_output_demand(&output)
         .unwrap();
     let original_commit = output
         .application_commit_receipt()

@@ -1,10 +1,11 @@
 mod catalog;
 mod compilation;
 mod denial;
+mod meaning;
 mod native_contract;
+pub use meaning::WorthQueryInstalledValueMeaningDenial;
 
-pub(crate) use catalog::AdmittedFieldBindingStop;
-pub use catalog::WorthQueryInstalledApplicationValueBindingCatalog;
+pub use catalog::{AdmittedFieldBindingStop, WorthQueryInstalledApplicationValueBindingCatalog};
 pub use native_contract::WorthQueryInstalledApplicationValueBinding;
 
 pub(crate) use compilation::compile_value_binding_catalog;

@@ -1,3 +1,4 @@
+pub(in crate::domain_computation::primary_graph) use fact::SourcePublicationRead;
 mod capability_revocation_program;
 mod commit_authority_binding;
 mod commit_outcome_identity;
@@ -7,7 +8,7 @@ mod delegation_activation_program;
 mod denial;
 mod dependency_identity;
 pub(in crate::domain_computation::primary_graph) use dependency_identity::{
-    OutputCurrentnessFacts, WorthQueryProducerIdentityDenial,
+    FactContent, OutputCurrentnessFacts, WorthQueryProducerIdentityDenial,
 };
 mod effect_program;
 mod effect_validation;
@@ -36,7 +37,7 @@ pub(in crate::domain_computation::primary_graph) use observation::take_native_fi
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use observation::ReadRendezvous;
 pub(in crate::domain_computation::primary_graph) use observation::{
-    observe_field_value_borrowed, observe_field_value_borrowed_admitted,
+    observe_aspect_absence, observe_field_value_borrowed, observe_field_value_borrowed_admitted,
 };
 pub(in crate::domain_computation::primary_graph) mod precondition_binding;
 mod provider_binding;
@@ -48,6 +49,7 @@ mod provider_recomparison;
 mod read_phase;
 mod read_scope;
 mod read_set;
+pub(in crate::domain_computation::primary_graph) use dependency_identity::CompletedFactRoutes;
 pub(in crate::domain_computation::primary_graph) mod signed_creation;
 mod signed_selection;
 mod signing_lifecycle;
@@ -55,10 +57,13 @@ pub(in crate::domain_computation::primary_graph) use read_set::request_liveness:
 pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use read_set::ComputationFactReaders;
+pub(in crate::domain_computation::primary_graph) use read_set::FactRoutes;
 pub(in crate::domain_computation::primary_graph) use read_set::{
-    observe_admitted_fact, CompletedDecisionReuseProof, ComputationFactAttribution,
-    ComputationRead, PreparedDecisionReuseContext, SealedComputationFacts,
+    observe_admitted_fact, CheckedCallShape, CompletedDecisionReuseProof,
+    ComputationFactAttribution, ComputationFactIndex, ComputationRead, NativeCallCarriage,
+    PreparedDecisionReuseContext, SealedComputationFacts,
 };
+pub(in crate::domain_computation) use read_set::{CompletedFactProjection, CompletedOriginalRead};
 pub use signed_creation::{
     WorthQuerySignedCreationAdapter, WorthQuerySignedCreationPreparationDenial,
 };
@@ -219,3 +224,5 @@ pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQ
 pub(in crate::domain_computation) use fact::consult_observation;
 
 pub(in crate::domain_computation::primary_graph) use fact::observe_indexed_entity_selection;
+
+pub(in crate::domain_computation::primary_graph) use read_set::CompletedReadScopes;

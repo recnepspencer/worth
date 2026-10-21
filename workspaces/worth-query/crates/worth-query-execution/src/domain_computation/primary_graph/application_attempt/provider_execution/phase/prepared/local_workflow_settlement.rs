@@ -96,7 +96,9 @@ impl WorthQueryProviderAttemptPreparation {
             )?;
             crate::domain_computation::primary_graph::workflow::operation_output::append_operation_outputs(
                 &binding.workflow_layout, transition, &binding.binding,
-                self.output_correspondence.workflow_outputs(), &mut settlement_effects,
+                self.output_correspondence.native_publication_roles()
+                    .map(|(role, posture, entity, target)| (role, posture, entity, target.clone())),
+                &mut settlement_effects,
             );
         }
         admission

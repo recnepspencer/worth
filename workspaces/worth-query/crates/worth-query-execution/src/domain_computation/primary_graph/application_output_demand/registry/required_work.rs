@@ -1,9 +1,8 @@
 //! Exact required-work hints shared by the demand record and native marks.
 
 mod wave_admission;
-pub(in crate::domain_computation::primary_graph) use wave_admission::{
-    AdmittedRequiredWave, PreparedRequiredInputs,
-};
+pub(in crate::domain_computation::primary_graph) use wave_admission::AdmittedRequiredWave;
+pub(in crate::domain_computation::primary_graph) use wave_admission::PreparedRequiredInputs;
 mod branch_selection;
 mod claim;
 pub(in crate::domain_computation::primary_graph) use claim::RequiredWorkClaim;
@@ -20,37 +19,35 @@ mod subsumed;
 mod successor_join;
 
 pub(in crate::domain_computation::primary_graph) use pending_readmission::PendingUpstream;
+pub(in crate::domain_computation::primary_graph) use refresh_claim::RequiredRefreshRejection;
 pub(in crate::domain_computation::primary_graph) use refresh_claim::SelectedRequiredRefreshClaim;
 pub(in crate::domain_computation::primary_graph) use requested_claim::RequestedOutputReadClaims;
 pub(in crate::domain_computation::primary_graph) use selection::SelectedReadyReadmission;
 
-pub(super) use queue::{RequiredWorkPop, RequiredWorkQueue};
-pub(super) use selection::charge_required_key_lookup;
+pub(super) use queue::RequiredWorkPop;
+pub(super) use queue::RequiredWorkQueue;
 
 pub(super) use discontinuity::DiscontinuityCursors;
-use native_hints::FundedNativeBranch;
+use native_hints::NativeBranch;
 pub(in crate::domain_computation::primary_graph) use native_hints::NativeHint;
 
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::Weak;
 
 use worth_relational::facade::mvcc::CompanionPublicationCompletionObserver;
 
-use super::record_capacity::RecordCapacity;
-use super::{WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::{
-    InvalidationEditAdmission, SourceInvalidationOwner,
-};
+use super::WorthQueryOutputDemandKey;
+use super::WorthQueryOutputDemandRegistry;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
-use crate::domain_computation::primary_graph::{
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-};
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 pub(in crate::domain_computation::primary_graph) struct RequiredWorkMembership {
     key: Arc<WorthQueryOutputDemandKey>,
     queue: Weak<RequiredWorkQueue>,
-    _queue_capacity: Arc<RecordCapacity>,
     state: Mutex<MembershipState>,
-    _capacity: RecordCapacity,
 }
 
 impl std::fmt::Debug for RequiredWorkMembership {
@@ -91,7 +88,7 @@ pub(in crate::domain_computation::primary_graph) struct SelectedRequiredWork {
 pub(in crate::domain_computation::primary_graph) enum SelectedRequiredWorkKind {
     Native {
         observer: CompanionPublicationCompletionObserver,
-        branch: Arc<FundedNativeBranch>,
+        branch: Arc<NativeBranch>,
     },
     Local {
         #[cfg_attr(not(test), allow(dead_code))] // Tests read which cutover a selection carries.
@@ -107,17 +104,11 @@ pub(in crate::domain_computation::primary_graph) struct ReplacedRequiredWorkHint
 }
 
 impl RequiredWorkMembership {
-    pub(super) fn new(
-        key: Arc<WorthQueryOutputDemandKey>,
-        queue: &Arc<RequiredWorkQueue>,
-        capacity: RecordCapacity,
-    ) -> Self {
+    pub(super) fn new(key: Arc<WorthQueryOutputDemandKey>, queue: &Arc<RequiredWorkQueue>) -> Self {
         Self {
             key,
             queue: Arc::downgrade(queue),
-            _queue_capacity: Arc::clone(&queue.capacity),
             state: Mutex::new(MembershipState::default()),
-            _capacity: capacity,
         }
     }
 
@@ -275,7 +266,6 @@ impl SelectedRequiredWork {
     /// discards that void cause; it cannot acknowledge Current from a bool.
     pub(in crate::domain_computation::primary_graph) fn discard_aborted_native(
         self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ReplacedRequiredWorkHint>, WorthQueryOutputDemandDenial> {
         if !matches!(&self.kind, SelectedRequiredWorkKind::Native { observer, .. }
             if observer.state() == worth_relational::facade::mvcc::CompanionPublicationCompletion::Aborted)
@@ -285,26 +275,9 @@ impl SelectedRequiredWork {
                 "only an aborted native publication is void",
             ));
         }
-        charge_acknowledgement(admission)?;
+
         Ok(self.consume_selected_cause())
     }
-}
-
-fn charge_acknowledgement(
-    admission: &mut InvalidationEditAdmission,
-) -> Result<(), WorthQueryOutputDemandDenial> {
-    let work = std::mem::size_of::<MembershipState>()
-        .checked_mul(3)
-        .and_then(|work| {
-            std::mem::size_of::<ReplacedRequiredWorkHint>()
-                .checked_mul(2)
-                .and_then(|carrier| work.checked_add(carrier))
-        })
-        .and_then(|work| work.checked_add(std::mem::size_of::<SelectedRequiredWork>() + 16))
-        .ok_or_else(required_ack_work_denial)?;
-    admission
-        .charge_external_work(u64::try_from(work).map_err(|_| required_ack_work_denial())?)
-        .map_err(|_| required_ack_work_denial())
 }
 
 /// A popped member may be requeued and selected again before this
@@ -317,10 +290,6 @@ fn finish_acknowledgement(state: &mut MembershipState) -> bool {
         || state.discontinuity_pending
         || state.unresolved_initial;
     state.marked
-}
-
-fn required_ack_work_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "")
 }
 
 fn bump_version(state: &mut MembershipState) {
@@ -348,9 +317,8 @@ impl super::DemandRegistryState {
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         branch: &worth_relational::facade::history::BranchId,
         epoch: worth_relational::facade::history::CommitId,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
-        self.page_required_discontinuity(occurrence, branch, epoch, admission)
+        self.page_required_discontinuity(occurrence, branch, epoch)
             .map(|_| ())
     }
 }

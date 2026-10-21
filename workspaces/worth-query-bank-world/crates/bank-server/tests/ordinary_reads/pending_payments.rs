@@ -98,5 +98,5 @@ fn guarded_frontier_stops_when_dynamic_work_is_exhausted() {
 }
 
 fn controls(maximum_results: usize, maximum_work: usize) -> BankReadControls {
-    BankReadControls::current(request_scope(), maximum_results, maximum_work).unwrap()
+    BankReadControls::current(request_scope(), maximum_results).unwrap()
 }

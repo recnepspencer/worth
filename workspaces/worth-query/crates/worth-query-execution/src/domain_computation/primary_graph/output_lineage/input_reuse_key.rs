@@ -1,3 +1,6 @@
+use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::{
+    self as observation, Gate,
+};
 use crate::domain_computation::primary_graph::{
     application_contribution::InstalledProducerEdition,
     application_query::WorthQueryObservedSourceSelection,
@@ -40,18 +43,19 @@ impl PreparedInputReuseKey {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn same_prepared_input_as<E>(
+    pub(in crate::domain_computation::primary_graph) fn same_prepared_input_as(
         &self,
         other: &Self,
-        mut admit: impl FnMut(usize) -> Result<(), E>,
-    ) -> Result<bool, E> {
-        admit(64)?;
-        if self.input_identity != other.input_identity
-            || self.installed_edition != other.installed_edition
-        {
-            return Ok(false);
+    ) -> bool {
+        observation::reach(Gate::InputIdentity);
+        if self.input_identity != other.input_identity {
+            return false;
         }
-        self.selection
-            .same_selected_membership_as(&other.selection, admit)
+        observation::reach(Gate::InstalledEdition);
+        if self.installed_edition != other.installed_edition {
+            return false;
+        }
+        observation::reach(Gate::SelectedMembership);
+        self.selection.same_selected_membership_as(&other.selection)
     }
 }

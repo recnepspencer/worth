@@ -7,8 +7,8 @@ pub(crate) use cache::{VisibilityCache, VisibilityResidency};
 pub(crate) use replay_retention::{ReplayRetentionIndex, ReplayRetentionState};
 pub(crate) use snapshot_handle_binding::SnapshotHandleBinding;
 pub(crate) use snapshot_handles::{
-    PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotSlotReservation,
-    SnapshotHandles,
+    PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,
+    PublishedSnapshotSlotReservation, SnapshotHandles,
 };
 
 use crate::runtime::state::subsystems::RuntimeSubsystem;

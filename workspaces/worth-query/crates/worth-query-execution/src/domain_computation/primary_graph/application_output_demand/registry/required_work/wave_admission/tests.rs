@@ -1,16 +1,8 @@
 //! Only owner admission opens required-wave compute.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_contribution::computation::prepared_request::PreparedCompute,
-    application_contribution::OwnerPlan,
-};
-use worth_relational::facade::mvcc::CompanionPreflightBudget;
-fn admission() -> InvalidationEditAdmission {
-    InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(1_000_000),
-        maximum_preparation_bytes: None,
-    })
-}
+use crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
+use crate::domain_computation::primary_graph::application_contribution::OwnerPlan;
+
 fn selected() -> std::sync::Arc<PositionedRelationalSnapshot> {
     let world =
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
@@ -45,13 +37,10 @@ fn selected() -> std::sync::Arc<PositionedRelationalSnapshot> {
         .expect("the wave-admission proof owns its request")
 }
 fn compute_plan() -> OwnerPlan<'static, (), ()> {
-    OwnerPlan::new(
-        vec![PreparedCompute::new(0, 0, |_| (), |_| 0)],
-        |slots, _| {
-            assert_eq!(slots.len(), 1);
-            Ok(())
-        },
-    )
+    OwnerPlan::new(vec![PreparedCompute::new(0, 0, |_| (), |_| 0)], |slots| {
+        assert_eq!(slots.len(), 1);
+        Ok(())
+    })
 }
 #[test]
 fn computing_members_without_owner_input_admission_are_refused() {
@@ -62,7 +51,6 @@ fn computing_members_without_owner_input_admission_are_refused() {
             &basis,
             worth_proof::CanonicalUniqueVec::try_from_sorted_unique(vec![0]).unwrap(),
             vec![compute_plan()],
-            &mut admission(),
         )
         .err()
         .unwrap();
@@ -97,7 +85,6 @@ fn wave_admission_requires_the_same_owner_and_native_basis() {
             &basis,
             worth_proof::CanonicalUniqueVec::try_from_sorted_unique(vec![0]).unwrap(),
             vec![compute_plan().with_inputs(inputs)],
-            &mut admission(),
         );
         assert_eq!(
             outcome.is_ok(),

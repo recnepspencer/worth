@@ -82,3 +82,41 @@ fn sparse_entity_slots_keep_updates_and_revalidation_demands_on_the_narrow_path(
         "the sparse clone must name both the written slot and the demanded slot"
     );
 }
+
+#[test]
+fn sparse_entity_selection_preserves_both_admission_limits() {
+    for (partitions, slots, admitted) in [
+        (8, 1, true),
+        (9, 1, false),
+        (1, 1024, true),
+        (1, 1025, false),
+    ] {
+        let plan = merged_plan(
+            (1..=partitions)
+                .flat_map(|partition| (0..slots).map(move |slot| update_intent(partition, slot)))
+                .collect(),
+        );
+        assert_eq!(
+            sparse_entity_slots_for_plan(PartitionCloneMode::GraphSparseEntities, &plan, None)
+                .is_some(),
+            admitted
+        );
+    }
+}
+
+#[test]
+fn supported_creation_only_graph_has_an_admitted_empty_entity_selection() {
+    use crate::transactions::data::{CreateIntent, EntitySpec};
+    let plan = merged_plan(vec![MutationIntent::Create(CreateIntent::Entity(
+        EntitySpec {
+            partition_id: PartitionId(1),
+            kind_id: crate::identity::data::KindId(1),
+            client_key: crate::symbols::data::ClientKey::raw("created"),
+            fields: AspectFieldPatch::default(),
+        },
+    ))]);
+    assert_eq!(
+        sparse_entity_slots_for_plan(PartitionCloneMode::GraphSparseEntities, &plan, None),
+        Some(Default::default())
+    );
+}

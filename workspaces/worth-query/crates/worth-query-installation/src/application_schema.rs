@@ -32,7 +32,8 @@ pub use native_contract::{
     WorthQueryInstalledApplicationSchemaContractCatalogCounters,
 };
 pub use value_binding::{
-    WorthQueryInstalledApplicationValueBinding, WorthQueryInstalledApplicationValueBindingCatalog,
+    AdmittedFieldBindingStop, WorthQueryInstalledApplicationValueBinding,
+    WorthQueryInstalledApplicationValueBindingCatalog, WorthQueryInstalledValueMeaningDenial,
 };
 
 pub(crate) use canonical_identity::derive_installed_schema_identity;

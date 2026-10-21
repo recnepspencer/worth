@@ -1,27 +1,22 @@
 use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
+use std::sync::OnceLock;
 
-use super::{checkpoint_identity, source_facts, RestoredOutputBinding};
-use crate::domain_computation::primary_graph::output_lineage::{
-    ProductCoordinate, RecordedOutput, SemanticSource, WorthQueryApplicationOutputCorrespondence,
-    WorthQueryApplicationOutputLineage,
-};
+use super::checkpoint_identity;
+use super::source_facts;
+use super::RestoredOutputBinding;
+use crate::domain_computation::primary_graph::output_lineage::ProductCoordinate;
+use crate::domain_computation::primary_graph::output_lineage::RecordedOutput;
+use crate::domain_computation::primary_graph::output_lineage::SemanticSource;
+use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputCorrespondence;
+use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicationOutputLineage;
 
 fn partition(number: u64) -> [u8; 32] {
     let mut partition = [0; 32];
     partition[..8].copy_from_slice(&number.to_le_bytes());
     partition
-}
-
-fn admission(work: u64) -> super::super::invalidation::InvalidationEditAdmission {
-    super::super::invalidation::InvalidationEditAdmission::new(
-        worth_relational::facade::mvcc::CompanionPreflightBudget {
-            maximum_work_visits: Some(work),
-            maximum_preparation_bytes: None,
-        },
-    )
 }
 
 fn unrelated_partition_selection(population: u64) {
@@ -73,6 +68,7 @@ fn unrelated_partition_selection(population: u64) {
         partition(0),
         None,
         [0x41; 32],
+        None,
     );
     for number in 1..=population {
         lineage.record_recovered_prior_output(
@@ -87,22 +83,18 @@ fn unrelated_partition_selection(population: u64) {
             partition(number),
             None,
             [0x41; 32],
+            None,
         );
     }
     let coordinate = ProductCoordinate {
         occurrence,
         generation: population + 1,
     };
-    assert!(lineage
-        .latest_output_in_partition_budgeted(&source, coordinate, partition(0), Some(0))
-        .is_err());
-    let (selected, work) = lineage
-        .latest_output_in_partition_budgeted(&source, coordinate, partition(0), Some(1))
-        .expect("one indexed coordinate fits the fixed budget");
-    assert_eq!(work, 1);
+
+    let selected = lineage.latest_output_in_partition(&source, coordinate, partition(0));
     assert!(Arc::ptr_eq(&selected.unwrap().correspondence, &target));
-    let (candidates, work) = lineage
-        .retained_output_candidates(
+    let candidates = lineage
+        .retained_output_candidates_metered(
             runtime_authority,
             &schema,
             scope,
@@ -110,17 +102,13 @@ fn unrelated_partition_selection(population: u64) {
             population + 1,
             &[lineage.binding_type(&source.output_binding)],
             partition(0),
-            1,
+            execution,
         )
         .expect("unrelated partitions cannot exhaust one selection lookup");
-    assert_eq!(work, 1);
     assert_eq!(candidates.len(), 1);
     assert!(Arc::ptr_eq(&candidates[0].correspondence, &target));
-    let (missing, work) = lineage
-        .latest_output_in_partition_budgeted(&source, coordinate, [0xff; 32], Some(1))
-        .expect("a missing partition also costs one lookup");
+    let missing = lineage.latest_output_in_partition(&source, coordinate, [0xff; 32]);
     assert!(missing.is_none());
-    assert_eq!(work, 1);
 
     let revised_target = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let revised_generation = population + 2;
@@ -134,10 +122,10 @@ fn unrelated_partition_selection(population: u64) {
         .or_default();
     let slot = records.len();
     let recorded = RecordedOutput {
+            required_publication: None,
             native_prior_checkpoint: None,
         computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
         performed_origin: None,
-        _retained_capacity: None,
         consumed_outputs: Arc::from([]),
         completed_handler_facts: None,
         completed_decision_reuse: None,
@@ -172,36 +160,22 @@ fn unrelated_partition_selection(population: u64) {
         occurrence,
         generation: revised_generation,
     };
-    assert!(lineage
-        .matching_output_in_partition_budgeted(
-            &source,
-            revised_coordinate,
-            partition(0),
-            execution,
-            &mut admission(1),
-            |recorded| Arc::ptr_eq(&recorded.correspondence, &target),
-        )
-        .is_err());
+
     let (prior, work) = lineage
         .matching_output_in_partition_budgeted(
             &source,
             revised_coordinate,
             partition(0),
             execution,
-            &mut admission(2),
             |recorded| Arc::ptr_eq(&recorded.correspondence, &target),
         )
         .expect("same-partition predecessors, not siblings, consume the budget");
-    assert_eq!(work, 2);
     assert!(Arc::ptr_eq(&prior.unwrap().correspondence, &target));
 
     // An unavailable derived locator must never guess from a sibling record.
     lineage.partition_index = Default::default();
-    let (unavailable, work) = lineage
-        .latest_output_in_partition_budgeted(&source, revised_coordinate, partition(0), Some(1))
-        .expect("missing index data is a bounded miss");
+    let unavailable = lineage.latest_output_in_partition(&source, revised_coordinate, partition(0));
     assert!(unavailable.is_none());
-    assert_eq!(work, 1);
 
     lineage
         .by_source
@@ -216,23 +190,11 @@ fn unrelated_partition_selection(population: u64) {
         .and_then(std::sync::OnceLock::get_mut)
         .unwrap()
         .source_partition_identity = None;
-    assert!(lineage
-        .matching_legacy_output_budgeted(
-            &source,
-            revised_coordinate,
-            execution,
-            &mut admission(population + 1),
-            |recorded| Arc::ptr_eq(&recorded.correspondence, &target),
-        )
-        .is_err());
+
     let (legacy, work) = lineage
-        .matching_legacy_output_budgeted(
-            &source,
-            revised_coordinate,
-            execution,
-            &mut admission(population + 2),
-            |recorded| Arc::ptr_eq(&recorded.correspondence, &target),
-        )
+        .matching_legacy_output_budgeted(&source, revised_coordinate, execution, |recorded| {
+            Arc::ptr_eq(&recorded.correspondence, &target)
+        })
         .expect("legacy unpartitioned correspondence remains discoverable within its budget");
     assert_eq!(work, population as usize + 2);
     assert!(Arc::ptr_eq(&legacy.unwrap().correspondence, &target));
@@ -252,12 +214,15 @@ fn retained_output_selection_has_fixed_work_with_100k_unrelated_partitions() {
 
 #[test]
 fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
-    use worth_runtime_world::facade::{
-        ProductBranchCreationIntent, ProductBranchCreationPlans, RelationalBranchCreationPlan,
-        RuntimeWorldBranchCreationOutcome, RuntimeWorldCancellationSource,
-        SignalBranchCreationPlan,
-    };
+    use worth_runtime_world::facade::ProductBranchCreationIntent;
+    use worth_runtime_world::facade::ProductBranchCreationPlans;
+    use worth_runtime_world::facade::RelationalBranchCreationPlan;
+    use worth_runtime_world::facade::RuntimeWorldBranchCreationOutcome;
+    use worth_runtime_world::facade::RuntimeWorldCancellationSource;
+    use worth_runtime_world::facade::SignalBranchCreationPlan;
 
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let world =
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
             true,
@@ -324,10 +289,10 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
         [0x41; 32],
             crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts()),
         None,
-        );
+        None);
     lineage.register_fork(parent, &child);
-    let (candidates, work) = lineage
-        .retained_output_candidates(
+    let candidates = lineage
+        .retained_output_candidates_metered(
             runtime_authority,
             &schema,
             scope,
@@ -335,10 +300,9 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
             child.reference_generation().get(),
             &[lineage.binding_type(&source.output_binding)],
             partition(0),
-            2,
+            execution,
         )
         .expect("a fork traverses its parent coordinate");
-    assert_eq!(work, 2);
     assert!(Arc::ptr_eq(&candidates[0].correspondence, &correspondence));
 
     lineage.release_occurrence(parent.lifecycle_incarnation());
@@ -352,10 +316,7 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
                     generation: parent.reference_generation().get(),
                 },
                 partition(0),
-                None,
             )
-            .expect("bounded partition lookup")
-            .0
             .is_some(),
         "a live child retains its ancestor's output locator"
     );
@@ -370,10 +331,7 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
                     generation: parent.reference_generation().get(),
                 },
                 partition(0),
-                None,
             )
-            .expect("bounded partition lookup")
-            .0
             .is_none(),
         "retired lineage must prune its derived locator"
     );

@@ -38,11 +38,7 @@ where
         Ok(principal) => principal,
         Err(denial) => return denied(Some(request_id), denial),
     };
-    let controls = match BankReadControls::current(
-        scope,
-        request.controls.maximum_results,
-        request.controls.maximum_work,
-    ) {
+    let controls = match BankReadControls::current(scope, request.controls.maximum_results) {
         Ok(controls) => controls,
         Err(denial) => return denied(Some(request_id), control_denial(denial)),
     };
@@ -83,12 +79,10 @@ pub(super) fn denied(
 
 fn control_denial(denial: BankReadControlDenial) -> BankHttpDenial {
     match denial {
-        BankReadControlDenial::ZeroResultLimit | BankReadControlDenial::ZeroWorkLimit => {
-            BankHttpDenial::new(
-                BankHttpDenialKind::MalformedRequest,
-                BankHttpNextAction::CorrectRequest,
-            )
-        }
+        BankReadControlDenial::ZeroResultLimit => BankHttpDenial::new(
+            BankHttpDenialKind::MalformedRequest,
+            BankHttpNextAction::CorrectRequest,
+        ),
         BankReadControlDenial::ResultLimitTooLarge { .. } => BankHttpDenial::new(
             BankHttpDenialKind::ResourceExhausted,
             BankHttpNextAction::NarrowRequest,

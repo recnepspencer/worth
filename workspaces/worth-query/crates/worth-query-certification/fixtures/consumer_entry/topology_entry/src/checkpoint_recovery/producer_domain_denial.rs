@@ -31,7 +31,10 @@ fn producer_domain_denial_preserves_reason_and_releases_claim_for_retry() {
     let denied = (0..512)
         .find_map(|_| match output.advance(&application, &request) {
             Err(denied) => Some(denied),
-            Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
+            Ok(
+                WorthQueryApplicationProgramOutputProgress::Pending
+                | WorthQueryApplicationProgramOutputProgress::Progressed,
+            ) => None,
             Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
                 panic!("the missing current output cannot settle")
             }

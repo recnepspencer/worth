@@ -43,7 +43,11 @@ where
         Write: WritePosture,
         Unit: ApplicationFieldUnit,
     {
-        if !self.identity_is_local(identity, field.entity()) || !self.work_budget.can_afford(1) {
+        if self.native_read_stop.is_some()
+            || self.value_decode.stopped()
+            || !self.identity_is_local(identity, field.entity())
+            || !self.work_budget.can_afford(1)
+        {
             return Ok(Ok(None));
         }
         assert!(self.work_budget.consume(1), "projection work was admitted");
@@ -65,7 +69,14 @@ where
             &locator,
             |raw| {
                 let Some(raw) = raw else { return Ok(Ok(None)) };
-                decoding::decode_admitted::<Field::Binding, Denied>(raw, admit, checkpoint)
+                decoding::decode_admitted(raw, admit, checkpoint, |raw| {
+                    self.value_decode.decode::<Field::Binding>(
+                        field.entity(),
+                        field.aspect(),
+                        field.field(),
+                        raw,
+                    )
+                })
             },
         );
         match observed {

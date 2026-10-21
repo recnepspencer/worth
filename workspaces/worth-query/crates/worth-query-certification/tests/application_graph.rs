@@ -5,8 +5,14 @@
 mod adoption;
 #[path = "application_graph/allocation_custody.rs"]
 mod allocation_custody;
+#[path = "application_graph/canonical_admission.rs"]
+mod canonical_admission;
 #[path = "application_graph/canonical_identity.rs"]
 mod canonical_identity;
+#[path = "application_graph/canonical_transition.rs"]
+mod canonical_transition;
+#[path = "application_graph/canonical_value.rs"]
+mod canonical_value;
 #[path = "application_graph/document_retention_model.rs"]
 mod document_retention_model;
 #[path = "application_graph/expressions/conditions.rs"]

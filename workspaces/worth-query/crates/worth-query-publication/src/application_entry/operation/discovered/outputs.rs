@@ -98,7 +98,10 @@ where
             unreachable!("dispatch owns native output continuation")
         };
         match outputs.advance_in_advancement(phase, &self.runtime, request) {
-            Ok(WorthQueryDiscoveredProgramOutputProgress::Pending) => {
+            Ok(
+                WorthQueryDiscoveredProgramOutputProgress::Pending
+                | WorthQueryDiscoveredProgramOutputProgress::Progressed,
+            ) => {
                 self.state = State::Outputs(outputs);
                 Advance::Progress {
                     operation: self,

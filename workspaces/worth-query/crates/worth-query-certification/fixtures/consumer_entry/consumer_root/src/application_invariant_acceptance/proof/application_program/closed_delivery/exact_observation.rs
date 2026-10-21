@@ -13,7 +13,6 @@ use worth_query_host::facade::{
     },
     application_entry::{
         WorthQueryApplicationReadObservation, WorthQueryClosedProgramOutputDelivery,
-        WorthQueryOperationDeliveryPolicy,
     },
     application_installation::WorthQueryApplicationProgramRoster,
     primary_graph::WorthQueryExecutionObservation,
@@ -130,7 +129,6 @@ fn one_caller_observation(
     request: &Request<'_, '_, '_>,
     foreign: &WorthQueryApplicationReadObservation,
 ) {
-    let policy = WorthQueryOperationDeliveryPolicy::default();
     let common = request.retain_current_read().unwrap();
     let cancellation = WorthQueryCancellationSource::new();
     let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
@@ -156,10 +154,10 @@ fn one_caller_observation(
         )
     };
     assert!(cancelled(
-        closed_fixed.deliver_current_at(&stopped.at(&common), policy)
+        closed_fixed.deliver_current_at(&stopped.at(&common))
     ));
     assert!(cancelled(
-        closed_tree.deliver_current_at(&stopped.at(&common), policy)
+        closed_tree.deliver_current_at(&stopped.at(&common))
     ));
     // An observation retained on another branch is refused before installed meaning.
     let foreign_branch = |denied: Result<(), WorthQueryOperationDeliveryDenial>| {
@@ -171,19 +169,26 @@ fn one_caller_observation(
         )
     };
     assert!(foreign_branch(
-        closed_fixed.deliver_current_at(&request.at(foreign), policy)
+        closed_fixed.deliver_current_at(&request.at(foreign))
     ));
     assert!(foreign_branch(
-        closed_tree.deliver_current_at(&request.at(foreign), policy)
+        closed_tree.deliver_current_at(&request.at(foreign))
     ));
     // Refusal left both carriers intact: they deliver at the common observation.
     let pinned = request.at(&common);
     closed_fixed
-        .deliver_current_at(&pinned, policy)
+        .deliver_current_at(&pinned)
         .expect("original action and full lineage at the common observation");
+    let _ = worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test();
     closed_tree
-        .deliver_current_at(&pinned, policy)
+        .deliver_current_at(&pinned)
         .expect("selected typed root and full tree at the common observation");
+    let gate = worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test();
+    assert_eq!(
+        gate.source_currentness_visits, 0,
+        "closed tree gate before projection: {gate:?}"
+    );
+    println!("closed complete tree gate: {gate:?}");
     assert_eq!(
         pinned
             .query(PlanarOutputRead {
@@ -204,16 +209,15 @@ fn superseded_at_caller_observation(
     closed_tree: &ClosedNoProjectionTree,
     request: &Request<'_, '_, '_>,
 ) {
-    let policy = WorthQueryOperationDeliveryPolicy::default();
     let edited = request.retain_current_read().unwrap();
     let pinned = request.at(&edited);
     assert!(matches!(
-        closed_fixed.deliver_current_at(&pinned, policy),
+        closed_fixed.deliver_current_at(&pinned),
         Err(WorthQueryOperationDeliveryDenial::Stale(cause))
             if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded
     ));
     assert!(matches!(
-        closed_tree.deliver_current_at(&pinned, policy),
+        closed_tree.deliver_current_at(&pinned),
         Err(WorthQueryOperationDeliveryDenial::Currentness(WorthQueryOutputCurrentnessDenial::Output(cause)))
             if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded
     ));
@@ -236,14 +240,8 @@ fn install_no_projection(
     let program = ApplicationProgramAuthoring::<ConsumerSchema, NoProjectionProgram>::begin()
         .validated_program()
         .unwrap();
-    installation::install_selected_program(
-        &crate::installed_schema(),
-        4096,
-        roster,
-        grants,
-        program,
-    )
-    .unwrap()
+    installation::install_selected_program(&crate::installed_schema(), roster, grants, program)
+        .unwrap()
 }
 
 fn settle_fixed(

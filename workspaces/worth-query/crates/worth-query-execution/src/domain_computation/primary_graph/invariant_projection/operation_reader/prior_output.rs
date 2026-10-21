@@ -254,16 +254,7 @@ where
             .output_lineage
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .resolve_binding::<Binding>(
-                &scope,
-                occurrence,
-                generation,
-                partition,
-                self.reader
-                    .work_budget
-                    .remaining()
-                    .map(|remaining| remaining.saturating_sub(1)),
-            )
+            .resolve_binding::<Binding>(&scope, occurrence, generation, partition)
             .map_err(|_| {
                 self.reader.work_budget.mark_exceeded();
                 WorthQueryPriorOutputDenial::new(
@@ -271,11 +262,6 @@ where
                     subject,
                 )
             })?;
-        self.require_role_budget(selection.source_lookups, subject)?;
-        assert!(self.reader.work_budget.consume(selection.source_lookups));
-        self.reader
-            .work
-            .record_output_lineage_selection(selection.source_lookups);
         let Some(correspondence) = selection.correspondence else {
             return Ok(None);
         };

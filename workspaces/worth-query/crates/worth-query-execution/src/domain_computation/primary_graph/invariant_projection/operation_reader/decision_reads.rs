@@ -4,7 +4,10 @@
 use std::collections::BTreeSet;
 mod aspect_presence;
 mod computation_inputs;
+mod expected_keys;
+mod source_publications;
 pub(in crate::domain_computation::primary_graph) use computation_inputs::ObservedComputationInputs;
+pub(in crate::domain_computation::primary_graph) use expected_keys::ExpectedFactKeys;
 
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
 use crate::domain_computation::primary_graph::application_attempt::{
@@ -22,12 +25,13 @@ use crate::domain_computation::primary_graph::application_contribution::{
 #[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct DecisionReads {
     handler: BTreeSet<WorthQueryApplicationFactKey>,
+    source_publications: Option<std::sync::Arc<source_publications::IssuedSourcePublicationValues>>,
     aspect_presence: aspect_presence::PresenceKeys,
     /// The first read that failed. Its outcome depends on what its fact does
     /// not hold, so a handler or owner call that swallowed the failure has an
     /// outcome nothing retained, and the projection seals nothing.
     failed: Option<WorthQueryApplicationFactKey>,
-    computation: ComputationFactAttribution,
+    pub(super) computation: ComputationFactAttribution,
     reading: Option<ComputationRead>,
     runs: ComputationRuns,
     /// What the producer that runs the projection retained, for the first
@@ -81,6 +85,12 @@ enum ComputationRuns {
 }
 
 impl DecisionReads {
+    pub(super) fn begin_fresh_call(&mut self, read: ComputationRead) {
+        self.computation.begin_fresh(read);
+    }
+    pub(super) fn materialize_carried(&mut self) {
+        self.computation.materialize_carried();
+    }
     /// The reads of a projection a producer runs, handed what its selected
     /// record retained.
     pub(in crate::domain_computation::primary_graph) fn with_prior(
@@ -106,6 +116,7 @@ impl DecisionReads {
         match self.reading {
             Some(read) => self.computation.record(key, read),
             None => {
+                crate::domain_computation::primary_graph::fact_verification_observation::handler_read_key_record();
                 self.handler.insert(key);
             }
         }
@@ -125,15 +136,16 @@ impl DecisionReads {
         self,
     ) -> Result<
         (
-            BTreeSet<WorthQueryApplicationFactKey>,
+            ExpectedFactKeys,
             (ObservedComputationInputs, CompletedComputationRetention),
         ),
         WorthQueryApplicationFactKey,
     > {
         let Self {
-            mut handler,
+            handler,
+            source_publications,
             failed,
-            computation,
+            mut computation,
             runs,
             deposit,
             ..
@@ -141,7 +153,14 @@ impl DecisionReads {
         if let Some(failed) = failed {
             return Err(failed);
         }
-        handler.extend(computation.keys().cloned());
+        let handler = std::sync::Arc::new(handler);
+        computation.retain_handler(std::sync::Arc::clone(&handler));
+        let computation = std::sync::Arc::new(computation);
+        let expected = ExpectedFactKeys::new(
+            handler,
+            std::sync::Arc::clone(&computation),
+            source_publications,
+        );
         let result = match runs {
             ComputationRuns::None => (
                 ObservedComputationInputs::None,
@@ -164,13 +183,27 @@ impl DecisionReads {
                 )
             }
         };
-        Ok((handler, result))
+        Ok((expected, result))
     }
 }
 
 impl<Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
+    pub(in crate::domain_computation::primary_graph) fn begin_native_carriage(
+        &mut self,
+        _: &crate::domain_computation::primary_graph::application_contribution::Comparator,
+        native: crate::domain_computation::primary_graph::application_contribution::NativeComputationReads,
+    ) {
+        self.decision_facts.computation.begin_native(native);
+    }
+    pub(in crate::domain_computation::primary_graph) fn enter_native_carried(
+        &mut self,
+        _: &crate::domain_computation::primary_graph::application_contribution::Comparator,
+        read: ComputationRead,
+    ) -> bool {
+        self.decision_facts.computation.carry_native(read)
+    }
     /// A partitioned computation begins reading through this reader.
     pub(in crate::domain_computation::primary_graph) fn begin_computation_reads(&mut self) {
         let deposit = self
@@ -267,6 +300,29 @@ mod tests {
         let mut reads = DecisionReads::default();
         reads.record(adjacency(1), DecisionReadOutcome::Observed);
         let (keys, _) = reads.into_expected().ok().unwrap();
-        assert_eq!(keys.into_iter().collect::<Vec<_>>(), [adjacency(1)]);
+        assert_eq!(keys.iter().cloned().collect::<Vec<_>>(), [adjacency(1)]);
+    }
+
+    #[test]
+    fn shared_handler_and_computation_reads_keep_exact_keys_not_just_cardinality() {
+        let mut reads = DecisionReads::default();
+        reads.record(adjacency(1), DecisionReadOutcome::Observed);
+        reads.record(adjacency(3), DecisionReadOutcome::Observed);
+        reads.reading = Some(ComputationRead::Membership);
+        reads.record(adjacency(1), DecisionReadOutcome::Observed);
+        reads.record(adjacency(2), DecisionReadOutcome::Observed);
+        reads.record(adjacency(2), DecisionReadOutcome::Observed);
+        let (keys, _) = reads.into_expected().ok().unwrap();
+        let actual = [adjacency(1), adjacency(2), adjacency(3)];
+        assert!(
+            actual.iter().eq(keys.iter()),
+            "shared key occurs once in order"
+        );
+        let wrong = [adjacency(1), adjacency(2), adjacency(4)];
+        assert_eq!(wrong.len(), keys.iter().count());
+        assert!(
+            !wrong.iter().eq(keys.iter()),
+            "same count cannot close another key set"
+        );
     }
 }

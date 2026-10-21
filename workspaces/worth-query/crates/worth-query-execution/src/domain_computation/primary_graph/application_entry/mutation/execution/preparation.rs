@@ -31,6 +31,51 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
+        self.prepare_mutation_handler_plan_with_source_access::<Binding>(
+            phase,
+            identities,
+            principal_identity,
+            None,
+            admission,
+            on_contact,
+            allocation_policy,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::domain_computation::primary_graph) fn prepare_mutation_handler_plan_with_source_access<
+        'advance: 'authority,
+        'authority,
+        Binding,
+    >(
+        &self,
+        phase: &'advance WorthQueryAdvancementPhase<'advance>,
+        identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
+        principal_identity: &Binding::PrincipalIdentity,
+        source_query: Option<
+            &crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess<
+                '_,
+                Schema,
+            >,
+        >,
+        admission: WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Binding::Operation,
+            Binding::Input,
+            <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+        >,
+        on_contact: impl FnOnce(),
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, 'authority>,
+    ) -> Result<
+        PreparedMutationHandler<'advance, 'authority, Schema, Binding>,
+        WorthQueryMutationHandlerExecutionReport<
+            WorthQueryCompletedMutationCandidate<Schema, Binding>,
+            Binding::Denial,
+        >,
+    >
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
         let execution = match phase.execution_for(&self.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
@@ -71,6 +116,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let context_use = std::cell::Cell::new(
             crate::domain_computation::primary_graph::handler::DecisionContextUse::default(),
         );
+        let interruption = std::cell::Cell::new(None);
         let mut handler_contacted = false;
         let phase_request = match phase.execution_request_for(&self.product_runtime) {
             Ok(request) => request,
@@ -91,7 +137,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         let projected = {
             self.mutation_projection
-                .project_admitted_operation_with_request(
+                .project_admitted_operation_with_source_access(
                     &phase_request,
                     &admission,
                     |reader, scope| {
@@ -103,12 +149,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             identities,
                             execution,
                             &context_use,
+                            &interruption,
                         );
                         on_contact();
                         handler_contacted = true;
                         handler.prepare_decision(input, &mut decision_reader)
                     },
                     allocation_control.policy(),
+                    source_query,
+                    Some(&context_use),
                 )
         };
         let projected = match projected {
@@ -126,6 +175,19 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         };
         let (plan, projection, work) = projected.into_parts();
+        // A decision can swallow its poll result, but cannot turn an observed
+        // interruption into prepared compute, a candidate, or reusable input.
+        if let Some(interruption) = interruption.get() {
+            return Err(WorthQueryMutationHandlerExecutionReport::new(
+                Ok(match interruption {
+                    super::super::HandlerInterruption::Cancelled => HandlerResult::Cancelled,
+                    super::super::HandlerInterruption::DeadlineExceeded => {
+                        HandlerResult::DeadlineExceeded
+                    }
+                }),
+                WorthQueryMutationHandlerWork::captured(work, handler_contacted),
+            ));
+        }
         let context_use = if plan.has_compute() {
             context_use.get().managed_computation()
         } else {

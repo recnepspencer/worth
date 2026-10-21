@@ -170,7 +170,7 @@ fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
         &key,
         WorthQueryApplicationObservedFact::SourceEntity { entity_id },
     );
-    let prior = ComputationPrior::new(edition(), Ok(custodied_state_for_test(state)), None);
+    let prior = ComputationPrior::new(edition(), Ok(std::sync::Arc::new(state)), None);
 
     let next = attempt(&world, &installed, Some(prior));
     assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));

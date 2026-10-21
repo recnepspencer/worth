@@ -3,9 +3,8 @@ use super::*;
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::facade::indexes::BoundedEntityFieldSelectedLookup;
 use crate::indexes::data::{
-    BoundedEntityFieldLookupAdmissionStop as Stop, BoundedEntityFieldLookupDenial as FieldDenial,
-    BoundedEntityFieldLookupDenialKind as FieldKind, BoundedRelationJoinLookupDenial as JoinDenial,
-    BoundedRelationJoinLookupDenialKind as JoinKind,
+    BoundedEntityFieldLookupDenial as FieldDenial, BoundedEntityFieldLookupDenialKind as FieldKind,
+    BoundedRelationJoinLookupDenial as JoinDenial, BoundedRelationJoinLookupDenialKind as JoinKind,
 };
 use crate::indexes::data::{
     BoundedIndexParityMode, BoundedRelationJoinLookupRequest, DerivedIndexId,
@@ -110,7 +109,6 @@ fn runtime_read_law_selected_view_stops_and_refuses_by_value() {
                     &world.name,
                     &value,
                     2,
-                    |_, _| Ok::<_, ()>(()),
                 ),
                 BoundedIndexParityMode::Production,
                 request,
@@ -118,7 +116,7 @@ fn runtime_read_law_selected_view_stops_and_refuses_by_value() {
     };
     // New pin-stop law: these rows intentionally are not run on bdb91675a9.
     stopped_backings(|request, cause| match lookup(request, world.index) {
-        Err(Stop::Lookup(denial)) => assert_eq!(
+        Err(denial) => assert_eq!(
             denial,
             FieldDenial::new(FieldKind::Execution(cause), world.index)
         ),
@@ -126,7 +124,7 @@ fn runtime_read_law_selected_view_stops_and_refuses_by_value() {
     });
     let missing = DerivedIndexId(u64::MAX);
     match lookup(&setup, missing) {
-        Err(Stop::Lookup(denial)) => assert_eq!(
+        Err(denial) => assert_eq!(
             denial,
             FieldDenial::new(FieldKind::IndexNotInstalled, missing)
         ),

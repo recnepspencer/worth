@@ -34,7 +34,6 @@ mod support_admission;
 mod tests;
 mod unique_fields;
 mod workflow_reads;
-pub(in crate::domain_computation::primary_graph) use support_admission::WorthQuerySupportLookupStop;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use unique_fields::WorthQueryUniqueFieldFixture;
 pub(in crate::domain_computation::primary_graph) use unique_fields::{
@@ -81,7 +80,6 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     fields: BTreeMap<(String, String, String), WorthQueryPrimaryFieldLayout>,
     unique_fields: unique_fields::WorthQueryUniqueFieldNames,
     aspect_contracts: BTreeMap<String, BTreeMap<AspectKey, AspectContract>>,
-    aspect_contract_count: usize,
     equality_field_keys: BTreeMap<AspectKey, BTreeSet<FieldKey>>,
     projection_field_keys: BTreeMap<AspectKey, BTreeSet<FieldKey>>,
     continuation_orderings: Vec<WorthQueryPrimaryContinuationOrderingLayout>,
@@ -216,7 +214,6 @@ impl WorthQueryPrimaryGraphLayout {
                 application_relation_kinds,
                 fields,
                 unique_fields,
-                aspect_contract_count: aspect_contracts.values().map(BTreeMap::len).sum(),
                 aspect_contracts,
                 equality_field_keys,
                 projection_field_keys,
@@ -236,6 +233,12 @@ impl WorthQueryPrimaryGraphLayout {
 
     pub(in crate::domain_computation) fn entity_kind(&self, entity: &str) -> Option<KindId> {
         self.entity_kinds.get(entity).copied()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn application_relation_kinds(
+        &self,
+    ) -> impl Iterator<Item = KindId> + '_ {
+        self.application_relation_kinds.iter().copied()
     }
 
     pub(in crate::domain_computation::primary_graph) fn application_entity_kinds(
@@ -323,10 +326,6 @@ impl WorthQueryPrimaryGraphLayout {
         aspect: &AspectKey,
     ) -> Option<&AspectContract> {
         self.aspect_contracts.get(entity)?.get(aspect)
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn aspect_contract_count(&self) -> usize {
-        self.aspect_contract_count
     }
 
     pub(super) const fn provider_idempotency(&self) -> &WorthQueryProviderIdempotencyLayout {

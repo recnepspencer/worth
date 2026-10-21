@@ -30,7 +30,7 @@ where
         installation::WorthQueryApplicationProgramRoster::new(),
         ConsumerSchema::declaration().unwrap(),
         configuration,
-        resources::application_limits(8192),
+        resources::application_limits(),
         checkpoint,
     )
     .expect("the authentic checkpoint restores under the identical installed program")

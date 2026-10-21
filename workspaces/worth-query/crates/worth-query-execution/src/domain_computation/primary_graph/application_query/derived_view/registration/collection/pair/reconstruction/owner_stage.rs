@@ -32,11 +32,19 @@ pub(in super::super) fn run<T>(
             RoundsOutcome::Converged { .. } | RoundsOutcome::NotConverged { .. } => {
                 value.expect("the owner stage completed")
             }
-            RoundsOutcome::Stopped { reason, .. } => Err(match reason {
-                MapStop::Admission(cause) => reconstruction_denial::lease(cause),
-                MapStop::WorkExhausted { .. } => Denial::WorkExhausted { root: None },
-                MapStop::Failure { cause, .. } => reconstruction_denial::owner(cause),
-            }),
+            RoundsOutcome::Stopped { reason, .. } => match value {
+                // A nested owner has already classified its refusal. The
+                // enclosing stage also sees that stop, but must not replace
+                // the original typed cause with its aggregate NestedStopped.
+                Some(Err(denial)) => Err(denial),
+                // An apparent success cannot bypass cancellation, deadline,
+                // or exhausted work observed by the native stage.
+                Some(Ok(_)) | None => Err(match reason {
+                    MapStop::Admission(cause) => reconstruction_denial::lease(cause),
+                    MapStop::WorkExhausted { .. } => Denial::WorkExhausted { root: None },
+                    MapStop::Failure { cause, .. } => reconstruction_denial::owner(cause),
+                }),
+            },
         }
     })();
     crate::domain_computation::primary_graph::application_query::one_shot::retain_reconstruction_result(lease, result, reconstruction_denial::lease)

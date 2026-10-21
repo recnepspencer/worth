@@ -30,7 +30,8 @@ fn an_initial_consumer_alone_resumes_its_requested_held_middle() {
     ));
     let settled = (0..8).find_map(|_| match c.advance(&request).unwrap() {
         WorthQueryApplicationOutputDemandProgress::Settled(done) => Some(done),
-        WorthQueryApplicationOutputDemandProgress::Pending => None,
+        WorthQueryApplicationOutputDemandProgress::Pending
+        | WorthQueryApplicationOutputDemandProgress::Progressed => None,
     });
     assert!(
         settled.is_some(),

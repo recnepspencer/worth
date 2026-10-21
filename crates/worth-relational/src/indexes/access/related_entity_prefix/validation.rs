@@ -15,8 +15,8 @@ pub(super) fn prefix(
     if request.prefix.len() > ordering.len() {
         return Err(Denial::InvalidPrefix);
     }
-    let catalog = source.aspect_plans().ok_or(Denial::InvalidPrefix)?;
-    charge_navigation(meter, catalog.entity_plans.len(), false)?;
+    let _catalog = source.aspect_plans().ok_or(Denial::InvalidPrefix)?;
+
     let plan = source
         .entity_aspect_plan(request.ordered.child_kind())
         .ok_or(Denial::InvalidPrefix)?;
@@ -97,7 +97,7 @@ pub(super) fn row(
         return Err(corrupt());
     }
     let definition = &prepared.generation;
-    charge_navigation(meter, read.selected_index_count(), false)?;
+
     let selected = read
         .selected_index(definition.index_id)
         .ok_or(Denial::InvalidPrefix)?;
@@ -150,48 +150,15 @@ pub(super) fn row(
         .iter()
         .zip(entry.ordering_values())
     {
-        let mut prepare = |work: SelectedIndexReadWork,
-                           bytes: u64|
-         -> Result<
-            (),
-            super::super::super::data::BoundedEntityFieldLookupAdmissionStop<Denial>,
-        > {
-            if bytes != 0 {
-                return Err(
-                    super::super::super::data::BoundedEntityFieldLookupAdmissionStop::Admission(
-                        Denial::AccountingOverflow,
-                    ),
-                );
-            }
-            charge(
-                meter,
-                match work {
-                    SelectedIndexReadWork::Operation(units)
-                    | SelectedIndexReadWork::OrderedNavigation(units) => units,
-                },
-            )
-            .map_err(super::super::super::data::BoundedEntityFieldLookupAdmissionStop::Admission)
-        };
-        let matched =
-            super::super::admitted_entity_field_lookup::candidate_comparison::borrowed_matches(
-                execution,
-                request.ordered.index_id(),
-                projection,
-                child,
-                field.locator(),
-                value.value(),
-                &mut prepare,
-            )
-            .map_err(|stop| match stop {
-                BoundedEntityFieldLookupAdmissionStop::Admission(cause) => cause,
-                BoundedEntityFieldLookupAdmissionStop::Lookup(cause) => Denial::FieldLookup(cause),
-                BoundedEntityFieldLookupAdmissionStop::AccountingOverflow => {
-                    Denial::AccountingOverflow
-                }
-                BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired => {
-                    Denial::ExactBasisRequired
-                }
-            })?;
+        let matched = super::super::field_candidate_comparison::borrowed_matches(
+            execution,
+            request.ordered.index_id(),
+            projection,
+            child,
+            field.locator(),
+            value.value(),
+        )
+        .map_err(Denial::FieldLookup)?;
         if !matches!(matched,Some((_,kind,true)) if kind==*child_kind) {
             return Err(corrupt());
         }

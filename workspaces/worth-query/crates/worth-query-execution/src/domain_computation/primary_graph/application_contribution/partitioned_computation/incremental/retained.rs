@@ -8,11 +8,10 @@
 //! handle. The comparator alone decides whether its calls can be carried.
 
 use std::any::Any;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use worth_execution::{ChargedBytes, PartitionItemId, ReductionTree};
-use worth_foundational::facade::PartitionIdentity;
 
 use super::super::super::request_execution::QueryMemoryReservation;
 use super::super::items::{ItemDigests, Items};
@@ -23,7 +22,6 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
-use crate::domain_computation::primary_graph::output_lineage::CustodiedComputation;
 
 /// How one run of a partitioned computation ran.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -110,11 +108,13 @@ impl Eq for ComputationInstallation {}
 /// producer edition and the input value's digest. The installation fixes
 /// the feature, computation and owner types, so a state is never another
 /// owner's, nor another installation's of the same owner type.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug)]
 pub(super) struct RetainedBasis {
     installation: ComputationInstallation,
     edition: InstalledProducerEdition,
     input_digest: [u8; 32],
+    value_bindings:
+        worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
 }
 
 impl RetainedBasis {
@@ -122,11 +122,13 @@ impl RetainedBasis {
         installation: ComputationInstallation,
         edition: InstalledProducerEdition,
         input_digest: [u8; 32],
+        value_bindings: worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     ) -> Self {
         Self {
             installation,
             edition,
             input_digest,
+            value_bindings,
         }
     }
 
@@ -139,18 +141,32 @@ impl RetainedBasis {
         }
     }
 
+    #[cfg(test)]
+    pub(super) fn with_value_bindings_for_test(
+        &self,
+        value_bindings: worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
+    ) -> Self {
+        Self {
+            value_bindings,
+            ..self.clone()
+        }
+    }
+
     /// Why `prior` is not this run's basis, or `None` when it is.
     pub(super) fn drift(&self, prior: &Self) -> Option<WorthQueryPartitionedComputationFullCause> {
-        if self == prior {
-            return None;
-        }
-        Some(if self.installation != prior.installation {
-            WorthQueryPartitionedComputationFullCause::OtherInstallation
+        if self.installation != prior.installation
+            || !self
+                .value_bindings
+                .same_installation_as(&prior.value_bindings)
+        {
+            Some(WorthQueryPartitionedComputationFullCause::OtherInstallation)
         } else if self.edition != prior.edition {
-            WorthQueryPartitionedComputationFullCause::OtherEdition
+            Some(WorthQueryPartitionedComputationFullCause::OtherEdition)
+        } else if self.input_digest != prior.input_digest {
+            Some(WorthQueryPartitionedComputationFullCause::InputChanged)
         } else {
-            WorthQueryPartitionedComputationFullCause::InputChanged
-        })
+            None
+        }
     }
 }
 
@@ -162,13 +178,33 @@ pub(super) struct RetainedCall {
     pub(super) declared_units: u64,
 }
 
+impl worth_execution::ChargedBytes for RetainedCall {
+    fn additional_charged_bytes(&self) -> u64 {
+        self.charge.additional_bytes().unwrap_or(u64::MAX)
+    }
+}
+impl<Key> Clone for RetainedPartition<Key> {
+    fn clone(&self) -> Self {
+        Self {
+            key: Arc::clone(&self.key),
+            key_bytes: self.key_bytes,
+            gather: self.gather.clone(),
+        }
+    }
+}
+impl<Key> worth_execution::ChargedBytes for RetainedPartition<Key> {
+    fn additional_charged_bytes(&self) -> u64 {
+        self.key_bytes
+            .saturating_add(self.gather.additional_bytes().unwrap_or(u64::MAX))
+    }
+}
+
 /// One partition of a run.
 pub(super) struct RetainedPartition<Key> {
     pub(super) key: Arc<Key>,
     /// The key's canonical encoding length: what retaining it is charged.
     pub(super) key_bytes: u64,
     pub(super) gather: ComputationCallCharge,
-    pub(super) kernel_steps: super::KernelSteps,
 }
 
 /// The typed state: everything a later run of the same owner needs to skip
@@ -179,11 +215,17 @@ pub(super) struct RetainedPartitions<Key, Item, Reduced> {
     pub(super) digests: ItemDigests,
     /// The membership's call, and the declared work its items' digests spent.
     pub(super) membership: RetainedCall,
-    pub(super) item_keys: Arc<BTreeMap<PartitionItemId, RetainedCall>>,
+    pub(super) item_keys: Arc<worth_execution::ExecutionOrderedMap<PartitionItemId, RetainedCall>>,
+    pub(super) item_bytes: Option<u64>,
+    pub(super) item_call_bytes: Option<u64>,
+    pub(super) call_sequence: Arc<
+        crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence,
+    >,
     /// Every item's partition: the one routing a partition's members are read
     /// from.
     pub(super) routing: Arc<ComputationPartitionRouting>,
-    pub(super) partitions: BTreeMap<PartitionIdentity, Arc<RetainedPartition<Key>>>,
+    pub(super) partitions: super::partition_metadata::PartitionMetadata<Key>,
+    pub(super) native_run: worth_execution::ExecutionRetainedRun<Reduced>,
     pub(super) tree: ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
 }
 
@@ -197,27 +239,11 @@ where
     /// partition's key at its canonical encoding length, and the reduction
     /// tree as execution charges it. `None` when the sum overflows.
     pub(super) fn charged_bytes(&self) -> Option<u64> {
-        let size = |bytes: usize| u64::try_from(bytes).ok();
-        let digest = size(std::mem::size_of::<(PartitionItemId, [u8; 32])>())?;
-        let items = self.items.values().try_fold(0_u64, |sum, item| {
-            sum.checked_add(size(std::mem::size_of::<(PartitionItemId, Item)>())?)?
-                .checked_add(item.additional_charged_bytes())?
-                .checked_add(digest)
-        })?;
-        let item_keys = self.item_keys.values().try_fold(items, |sum, call| {
-            sum.checked_add(size(std::mem::size_of::<(PartitionItemId, RetainedCall)>())?)?
-                .checked_add(call.charge.additional_bytes()?)
-        })?;
-        let partitions = self
-            .partitions
-            .values()
-            .try_fold(item_keys, |sum, partition| {
-                sum.checked_add(size(std::mem::size_of::<RetainedPartition<Key>>())?)?
-                    .checked_add(partition.kernel_steps.additional_charged_bytes())?
-                    .checked_add(partition.key_bytes)?
-                    .checked_add(partition.gather.additional_bytes()?)
-            })?;
-        partitions
+        self.item_bytes?
+            .checked_add(self.item_call_bytes?)?
+            .checked_add(self.call_sequence.bytes())?
+            .checked_add(self.partitions.bytes()?)?
+            .checked_add(self.native_run.additional_charged_bytes())?
             .checked_add(self.membership.charge.additional_bytes()?)?
             .checked_add(self.routing.charged_bytes()?)?
             .checked_add(self.tree.additional_charged_bytes())
@@ -231,17 +257,15 @@ pub(in crate::domain_computation) struct RetainedComputation {
     pub(super) basis: RetainedBasis,
     pub(super) typed: Arc<dyn Any + Send + Sync>,
     pub(super) facts: SealedComputationFacts,
-    /// What the state is charged on the lineage ledger, or `None` when the
-    /// sum has no value.
-    pub(super) bytes: Option<u64>,
+    pub(super) checked_calls:
+        Option<crate::domain_computation::primary_graph::application_attempt::CheckedCallShape>,
 }
 
 impl RetainedComputation {
-    /// The completed state's payload charge. Custody adds its own Arc
-    /// allocation, and every holder shares that full ticket until final release.
-    /// `None` when the payload sum overflows: the incoming state is evicted.
-    pub(in crate::domain_computation::primary_graph) const fn retained_bytes(&self) -> Option<u64> {
-        self.bytes
+    pub(in crate::domain_computation::primary_graph) fn original_facts(
+        &self,
+    ) -> crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload {
+        self.facts.original_payload()
     }
 }
 
@@ -251,7 +275,7 @@ pub(in crate::domain_computation) struct SealedComputationRun {
     /// The custodied prior an incremental run built from. Publication consumes
     /// this holder before testing whether its exact displaced record is sole
     /// and unpinned; shared or pinned prior custody remains intact.
-    pub(in crate::domain_computation::primary_graph) cloned_from: Option<Arc<CustodiedComputation>>,
+    pub(in crate::domain_computation::primary_graph) cloned_from: Option<Arc<RetainedComputation>>,
     /// The request memory the state's tree and routing hold until the
     /// lineage charges the state.
     pub(in crate::domain_computation::primary_graph) tree_memory: RunTreeMemory,
@@ -262,20 +286,49 @@ pub(in crate::domain_computation) struct SealedComputationRun {
 pub(in crate::domain_computation) struct RunTreeMemory {
     pub(super) _held: QueryMemoryReservation,
     pub(super) _routing: Option<QueryMemoryReservation>,
-    pub(super) _steps: Option<QueryMemoryReservation>,
 }
 
 /// The owner calls a run carried from `prior` without making them.
 pub(super) struct CarriedCalls {
-    pub(super) prior: Arc<CustodiedComputation>,
+    pub(super) validated_at: Option<worth_relational::facade::snapshots::SnapshotHandle>,
+    pub(super) prior: Arc<RetainedComputation>,
     pub(super) membership: bool,
-    pub(super) items: BTreeSet<PartitionItemId>,
-    pub(super) partitions: BTreeSet<PartitionIdentity>,
+    pub(super) items: CarriedItems,
+    pub(super) partitions: super::carried_partitions::CarriedPartitions,
+    pub(super) ranges: Option<
+        Arc<crate::domain_computation::primary_graph::application_attempt::NativeCallCarriage>,
+    >,
+}
+
+pub(super) enum CarriedItems {
+    Selected(BTreeSet<PartitionItemId>),
+    All(Arc<worth_execution::ExecutionOrderedMap<PartitionItemId, RetainedCall>>),
+}
+impl CarriedItems {
+    pub(super) fn contains(&self, item: &PartitionItemId) -> bool {
+        match self {
+            Self::Selected(items) => items.contains(item),
+            Self::All(items) => items.contains_key(item),
+        }
+    }
+    pub(super) fn iter(&self) -> impl Iterator<Item = &PartitionItemId> {
+        let (selected, all) = match self {
+            Self::Selected(items) => (Some(items), None),
+            Self::All(items) => (None, Some(items)),
+        };
+        selected
+            .into_iter()
+            .flat_map(|items| items.iter())
+            .chain(all.into_iter().flat_map(|items| items.keys()))
+    }
 }
 
 impl CarriedCalls {
     /// Whether the run carried `read`.
     pub(super) fn carried(&self, read: ComputationRead) -> bool {
+        if let Some(ranges) = &self.ranges {
+            return ranges.carried(read);
+        }
         match read {
             ComputationRead::Membership => self.membership,
             ComputationRead::ItemKey(item) => self.items.contains(&item),
@@ -290,19 +343,13 @@ pub(in crate::domain_computation::primary_graph) struct CompletedComputationRun 
     pub(super) typed: Arc<dyn Any + Send + Sync>,
     /// The typed state's bytes, `None` when the sum overflows.
     pub(super) typed_bytes: Option<u64>,
+    pub(super) call_sequence: Arc<
+        crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence,
+    >,
     pub(super) carried: Option<CarriedCalls>,
     /// The request memory the run's tree holds.
     pub(super) tree_memory: QueryMemoryReservation,
     /// The request memory a routing the run built holds, `None` when it
     /// built none.
     pub(super) routing_memory: Option<QueryMemoryReservation>,
-    /// Accepted-step allocations remain held until lineage custody takes them.
-    pub(super) steps_memory: Option<QueryMemoryReservation>,
-}
-
-#[cfg(test)]
-impl RetainedComputation {
-    pub(in crate::domain_computation::primary_graph) fn overflow_bytes_for_test(&mut self) {
-        self.bytes = None;
-    }
 }

@@ -55,9 +55,10 @@ fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
         let advancing = threads.spawn(|| {
             for _ in 0..256 {
                 match demand.advance(&cancellable_request) {
-                    Ok(WorthQueryApplicationOutputDemandProgress::Pending) => {
-                        std::thread::yield_now()
-                    }
+                    Ok(
+                        WorthQueryApplicationOutputDemandProgress::Pending
+                        | WorthQueryApplicationOutputDemandProgress::Progressed,
+                    ) => std::thread::yield_now(),
                     terminal => return terminal.map_err(Box::new),
                 }
             }

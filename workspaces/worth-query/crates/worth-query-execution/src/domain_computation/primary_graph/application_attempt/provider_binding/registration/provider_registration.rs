@@ -2,15 +2,12 @@
 
 use super::WorthQueryApplicationAttemptRegistration;
 use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord;
-use crate::domain_computation::primary_graph::application_attempt::{
-    WorthQueryApplicationAttemptAffinity, WorthQueryApplicationCommitOutcomeIdentity,
-    WorthQueryApplicationIdempotencyBinding,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::provider::{
-    dispatch_outbox::WorthQueryDispatchOutboxBasis, WorthQueryPrimaryGraphApplicationDecisionFact,
-    WorthQueryPrimaryGraphProvider,
-};
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptAffinity;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
+
+use crate::domain_computation::primary_graph::provider::dispatch_outbox::WorthQueryDispatchOutboxBasis;
+use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 
 #[path = "provider_registration/consumed_capacity.rs"]
 mod consumed_capacity;
@@ -35,7 +32,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
         Option<crate::domain_computation::application_aftermath::WorthQueryPendingDispatchOutbox>,
     conditional_definition:
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
-    indexed_rebase_work_budget: Option<usize>,
     live_delivery_reservation: Option<
         crate::domain_computation::primary_graph::live_delivery::WorthQueryLivePublicationReservation,
     >,
@@ -51,9 +47,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
     source_fact_rebase: Option<crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase>,
     consumed_outputs: std::sync::Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>,
-    /// The request's meter from the consumed edges' backing to the commit
-    /// that takes it.
-    request_admission: Option<InvalidationEditAdmission>,
 }
 
 impl WorthQueryPrimaryGraphApplicationAttempt {
@@ -61,15 +54,6 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         &mut self,
     ) -> Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext> {
         self.required_output_demand.take()
-    }
-
-    /// The request's meter, which the commit spends once.
-    pub(in crate::domain_computation::primary_graph) fn take_request_admission(
-        &mut self,
-    ) -> InvalidationEditAdmission {
-        self.request_admission
-            .take()
-            .expect("the commit takes the request's meter once")
     }
 
     pub(in crate::domain_computation::primary_graph) const fn affinity(
@@ -80,15 +64,13 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
 
     pub(in crate::domain_computation::primary_graph) fn facts(
         &self,
-    ) -> &std::collections::BTreeMap<String, WorthQueryPrimaryGraphApplicationDecisionFact> {
+    ) -> &crate::domain_computation::primary_graph::ApplicationFactTable {
         self.decision_facts.facts()
     }
 
     pub(in crate::domain_computation::primary_graph) fn shared_facts(
         &self,
-    ) -> std::sync::Arc<
-        std::collections::BTreeMap<String, WorthQueryPrimaryGraphApplicationDecisionFact>,
-    > {
+    ) -> std::sync::Arc<crate::domain_computation::primary_graph::ApplicationFactTable> {
         self.decision_facts.shared_facts()
     }
 
@@ -157,12 +139,6 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
 
     pub(in crate::domain_computation::primary_graph) fn decision_fact_count(&self) -> usize {
         self.decision_facts.decision_fact_count()
-    }
-
-    pub(in crate::domain_computation::primary_graph) const fn indexed_rebase_work_budget(
-        &self,
-    ) -> Option<usize> {
-        self.indexed_rebase_work_budget
     }
 
     pub(in crate::domain_computation::primary_graph) const fn producer_required_invariants(
@@ -247,13 +223,12 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
 
 struct WorthQueryPreparedApplicationAttempt {
     attempt: WorthQueryPrimaryGraphApplicationAttempt,
-    requests: Vec<crate::domain_computation::WorthQueryDecisionFactRequest>,
+
     dispatch_outbox: Option<WorthQueryDispatchOutboxRecord>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptRegistrationCompletion
 {
-    requests: Vec<crate::domain_computation::WorthQueryDecisionFactRequest>,
     dispatch_outbox: Option<WorthQueryDispatchOutboxRecord>,
 }
 
@@ -267,7 +242,7 @@ impl WorthQueryApplicationAttemptRegistrationCompletion {
         crate::domain_computation::primary_graph::WorthQueryRegisteredProviderAttempt::from_registration(
             seal,
             staged,
-            self.requests,
+
             steps,
             self.dispatch_outbox,
         )
@@ -287,14 +262,11 @@ impl WorthQueryPrimaryGraphProvider {
         let prepared = self.prepare_application_attempt(registration)?;
         let WorthQueryPreparedApplicationAttempt {
             attempt,
-            requests,
+
             dispatch_outbox,
         } = prepared;
         reservation.complete(attempt)?;
-        Ok(WorthQueryApplicationAttemptRegistrationCompletion {
-            requests,
-            dispatch_outbox,
-        })
+        Ok(WorthQueryApplicationAttemptRegistrationCompletion { dispatch_outbox })
     }
 
     fn prepare_application_attempt<'a>(
@@ -302,10 +274,10 @@ impl WorthQueryPrimaryGraphProvider {
         registration: WorthQueryApplicationAttemptRegistration<'a>,
     ) -> Result<WorthQueryPreparedApplicationAttempt, ApplicationAttemptRegistrationStop> {
         let super::WorthQueryApplicationAttemptRegistration {
-            mut required_output_demand,
+            required_output_demand,
             effect_owner: _effect_owner,
             affinity,
-            mut decision_facts,
+            decision_facts,
             effects,
             idempotency,
             outcome_identity,
@@ -314,11 +286,10 @@ impl WorthQueryPrimaryGraphProvider {
             preimage_demand,
             aftermath_causality,
             conditional_definition,
-            indexed_rebase_work_budget,
             retain_output_demand_observation,
             retain_client_observation,
             producer_required_invariants,
-            mut consumed_outputs,
+            consumed_outputs,
             source_fact_rebase,
         } = registration;
         let emitted_effect_count = u64::try_from(effects.emissions().len())
@@ -342,15 +313,9 @@ impl WorthQueryPrimaryGraphProvider {
             &affinity.graph_work_session(),
             retained_authorization_fact_count,
         )?;
-        let requests = decision_facts.take_read_requests();
         let dispatch_outbox_record = dispatch_outbox
             .as_ref()
             .map(|pending| pending.record().clone());
-        let request_admission = consumed_capacity::request_meter(
-            self,
-            required_output_demand.as_mut(),
-            &mut consumed_outputs,
-        )?;
         Ok(WorthQueryPreparedApplicationAttempt {
             attempt: WorthQueryPrimaryGraphApplicationAttempt {
                 required_output_demand,
@@ -363,7 +328,6 @@ impl WorthQueryPrimaryGraphProvider {
                 aftermath_causality,
                 dispatch_outbox,
                 conditional_definition,
-                indexed_rebase_work_budget,
                 live_delivery_reservation: None,
                 publication_recovery_reservation: None,
                 outstanding_dispatch_reservation: None,
@@ -372,9 +336,8 @@ impl WorthQueryPrimaryGraphProvider {
                 producer_required_invariants,
                 source_fact_rebase: Some(source_fact_rebase),
                 consumed_outputs: std::sync::Arc::from(consumed_outputs),
-                request_admission: Some(request_admission),
             },
-            requests,
+
             dispatch_outbox: dispatch_outbox_record,
         })
     }

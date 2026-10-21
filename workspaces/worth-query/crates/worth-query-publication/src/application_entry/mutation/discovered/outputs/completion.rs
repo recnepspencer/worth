@@ -74,15 +74,11 @@ where
             roots.iter().map(|(_, settled)| (
                 settled.application_commit_receipt(),
                 settled.readiness_delivery(),
-                settled.checkpoint_readmission_work_units(),
-                settled.checkpoint_readmission_work_bound(),
-                settled.checkpoint_readmission_charged_preparation_bytes(),
             ))
                 .chain(outputs.iter().map(|output| (
-                    output.receipt(), output.readiness_delivery(),
-                    output.checkpoint_readmission_work_units(),
-                    output.checkpoint_readmission_work_bound(),
-                    output.checkpoint_readmission_charged_preparation_bytes()))),
+                    output.receipt(),
+                    output.readiness_delivery(),
+                ))),
         );
         Ok(WorthQueryDiscoveredProgramOutputProgress::Settled(
             WorthQueryDiscoveredProgramOutputSettlement::new(

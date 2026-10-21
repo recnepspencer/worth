@@ -13,15 +13,14 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
     let demand_key = key("preserve", 8, 1);
     let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1));
     let wake = Arc::new(DemandWake {
-        _record_capacity: test_record_capacity(),
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
     registry.state.lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
-            _record_capacity: test_record_capacity(),
-            source_commit_capacity: None,
+
+
             source_scope: Some(scope),
             wake: Arc::clone(&wake),
             ..record(
@@ -46,7 +45,6 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
             DemandAdmissionKind::Ordinary,
             None,
             Some(OutputRefreshPredecessor::Committed(&receipt)),
-            &mut record_admission(),
         )
         .expect("the exact stale ready receipt admits its forced successor")
         .0;
@@ -118,8 +116,6 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
     registry.state.lock().unwrap().records.insert(
         demand_key.clone(),
         DemandRecord {
-            _record_capacity: test_record_capacity(),
-            source_commit_capacity: None,
             source_scope: Some(scope),
             ..record(occurrence, DemandState::Output(output), 1)
         },
@@ -133,7 +129,6 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
         DemandAdmissionKind::Ordinary,
         None,
         Some(OutputRefreshPredecessor::Committed(&receipt)),
-        &mut record_admission(),
     ) {
         Ok(_) => panic!("a stopped ready record was revived"),
         Err(denial) => denial,
@@ -161,8 +156,8 @@ fn failed_successor_admission_preserves_ready_custody() {
     registry.state.lock().unwrap().records.insert(
         ready_key.clone(),
         DemandRecord {
-            _record_capacity: test_record_capacity(),
-            source_commit_capacity: None,
+
+
             source_scope: Some(scope),
             ..record(
                 occurrence,
@@ -185,7 +180,6 @@ fn failed_successor_admission_preserves_ready_custody() {
         DemandAdmissionKind::Ordinary,
         None,
         Some(OutputRefreshPredecessor::Committed(&receipt)),
-        &mut record_admission(),
     ) {
         Ok(_) => panic!("an older successor admission was accepted"),
         Err(denial) => denial,

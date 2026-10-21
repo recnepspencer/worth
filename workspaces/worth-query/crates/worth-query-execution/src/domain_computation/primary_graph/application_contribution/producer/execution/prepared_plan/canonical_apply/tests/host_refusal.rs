@@ -1,7 +1,8 @@
 //! Author-held handles return their cause to owner completion.
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::query_test_execution_authority_for_test as test_authority;
-use crate::domain_computation::primary_graph::{tests::fixture, WorthQueryAdvancementDenial};
+use crate::domain_computation::primary_graph::tests::fixture;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenial;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
 #[test]
@@ -31,7 +32,7 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
                             application.with_host_advancement(|_| rank)
                         }
                     } else { Ok(rank) }
-                }, |_| 0)], |mut slots, _| {
+                }, |_| 0)], |mut slots| {
                     assert!(!crate::domain_computation::primary_graph::application_contribution::computation::worker_custody::active(), "completion stays on the owner");
                     slots.pop().unwrap().into_value::<Result<usize, WorthQueryAdvancementDenial>>()
                 })
@@ -46,13 +47,9 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
                         plans,
                         &execution,
                     );
-                    let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                        maximum_work_visits: Some(0),
-                        maximum_preparation_bytes: None,
-                    });
+
                     cursor.apply(
-                        &mut admission,
-                        |key, value, _| {
+                        |key, value| {
                             let value = value?;
                             assert_eq!(key, value);
                             applied.push(key);

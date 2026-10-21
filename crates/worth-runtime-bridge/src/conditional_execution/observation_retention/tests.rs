@@ -95,7 +95,7 @@ fn observation_retention_charges_its_copy_without_the_sources_spare_capacity() {
     let expected = observation_bytes(2 * "balance".len() + "retained".len(), 0);
     assert_exact_boundary(&plan, &artifact, expected);
     let ledger = BridgeRetentionLedger::new(BridgeConditionalRetentionBudget {
-        maximum_retained_bytes: expected,
+        maximum_retained_bytes: Some(expected),
         ..BridgeConditionalRetentionBudget::development()
     })
     .unwrap();
@@ -123,7 +123,7 @@ fn assert_exact_boundary(
 ) {
     for bytes in [expected, expected - 1] {
         let ledger = BridgeRetentionLedger::new(BridgeConditionalRetentionBudget {
-            maximum_retained_bytes: bytes,
+            maximum_retained_bytes: Some(bytes),
             ..BridgeConditionalRetentionBudget::development()
         })
         .unwrap();

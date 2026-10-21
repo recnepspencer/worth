@@ -18,7 +18,7 @@ pub(in crate::domain_computation::primary_graph::application_query) use selected
     validate_selected_authorization_currentness, SelectedAuthorizationCurrentnessStop,
 };
 pub(in crate::domain_computation::primary_graph::application_query) use selected_read::{
-    execute_selected_authorized_read, SelectedAuthorizedReadStop,
+    execute_selected_authorized_read_with_native_access, SelectedAuthorizedReadStop,
 };
 
 pub(super) enum WorthQueryAuthorizedApplicationReadDenial {
@@ -201,10 +201,46 @@ pub(super) fn execute_graph_read_with_snapshot<Context, Output, Stop>(
     ),
     Stop,
 > {
-    let (read_outcome, proof) = graph_work
-        .execute_query_read(execution, basis.identity(), |runtime, layout| {
-            perform(runtime, layout, security_snapshot, context)
-        })
+    execute_graph_read_with_snapshot_with_native_access(
+        execution,
+        graph_work,
+        basis,
+        security_snapshot,
+        session_denial,
+        context,
+        &mut super::ApplicationQueryNativeAccess::acquire(),
+        perform,
+    )
+}
+
+pub(super) fn execute_graph_read_with_snapshot_with_native_access<Context, Output, Stop>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    basis: &super::basis::WorthQueryApplicationQueryBasisCustody,
+    security_snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    session_denial: impl Fn() -> Stop,
+    context: Context,
+    native: &mut super::ApplicationQueryNativeAccess<'_>,
+    perform: impl FnOnce(
+        &mut worth_relational::facade::runtime::RelationalRuntime,
+        &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+        &worth_relational::facade::snapshots::SnapshotHandle,
+        Context,
+    ) -> Result<Output, Stop>,
+) -> Result<
+    (
+        Output,
+        crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
+    ),
+    Stop,
+> {
+    let (read_outcome, proof) = native
+        .execute_query_read(
+            execution,
+            graph_work,
+            basis.identity(),
+            |runtime, layout| perform(runtime, layout, security_snapshot, context),
+        )
         .map_err(|_| session_denial())?;
     Ok((read_outcome?, proof))
 }

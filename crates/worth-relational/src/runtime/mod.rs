@@ -32,11 +32,15 @@ pub use crate::visibility::materialization::read_records::{
     QueryReadExecutionStop, QueryReadPacketDenial, RelationProjectionRecord,
     RelationRecordProjection, RelationalAdjacencyDirection, RelationalAdjacencyVisit,
     RelationalBorrowedRecordReadDenial, RelationalEntityMetadata, RelationalEntityRetirement,
-    RelationalPinnedRead, RelationalPinnedReadAdmissionDenial, RelationalRelationMetadata,
-    RelationalSnapshotPositionAdmissionStop, RelationalSnapshotProjectionAdmissionStop,
-    SnapshotPositionDenial, VisibilityProjectionView, VisibilityReadContext,
+    RelationalPinnedRead, RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
+    RelationalRelationMetadata, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
+    VisibilityProjectionView, VisibilityReadContext,
 };
 pub use crate::visibility::retention::VisibilityRetentionAuthority;
+pub use initial_schema_installation::RecoveredCheckpointProgramActivationUpdate;
+pub(crate) use initial_schema_installation::{
+    codec_field_changes, codec_field_changes_in_context, CodecFieldComparisonStop, CodecFieldLocus,
+};
 pub use initial_schema_installation::{
     custom_invariant_inventory_digest, RelationalInitialSchemaInstallation,
     RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
@@ -65,12 +69,12 @@ pub(crate) use state::{
     readmit_positioned_canonical_commit, AdmittedRelationalRuntimeOperation,
     BranchHeadVersionIndexAuthority, CanonicalCheckpointAdmissionError, CanonicalPositionAdmission,
     CanonicalPublicationRecordError, CommitStrategiesSubsystem, DurabilitySubsystem,
-    ExactLookupInputs, HistorySubsystem, IndexingState, IndexingSubsystem,
-    LineageIdentityAllocator, LineageState, LineageSubsystem, PartitionEdition,
-    PendingRecordAllocations, PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
-    PreparedGenerationBatch, PreparedRecoveredVersionedArtifactPublication,
-    PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
-    PublicationSubsystem, PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout,
+    HistorySubsystem, IndexingState, IndexingSubsystem, LineageIdentityAllocator, LineageState,
+    LineageSubsystem, PartitionEdition, PendingRecordAllocations, PerformedCheckpointSelection,
+    PreparedCanonicalPublicationRoute, PreparedGenerationBatch,
+    PreparedRecoveredVersionedArtifactPublication, PreparedVersionedArtifactAccelerators,
+    PreparedVersionedArtifactPublication, PublicationSubsystem, PublishedSnapshotCapacityOwner,
+    PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,
     PublishedSnapshotSlotReservation, ReclaimedRecordSlot, RecordIdentitySubsystem,
     RelationalCandidateRegistrationDenial, RelationalCanonicalPublicationRoutes,
     RelationalDiagnosticArtifactStore, RelationalForkMaterializationCost,

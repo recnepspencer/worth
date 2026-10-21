@@ -88,7 +88,10 @@ where
         };
         let progress = {
             match outputs.advance_in_advancement(phase, &self.runtime, request) {
-                Ok(WorthQueryApplicationProgramOutputProgress::Pending) => {
+                Ok(
+                    WorthQueryApplicationProgramOutputProgress::Pending
+                    | WorthQueryApplicationProgramOutputProgress::Progressed,
+                ) => {
                     self.state = FixedState::Outputs(outputs);
                     Progress::OutputsPending
                 }

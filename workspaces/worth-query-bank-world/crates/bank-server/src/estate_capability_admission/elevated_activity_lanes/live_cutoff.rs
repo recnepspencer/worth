@@ -12,13 +12,9 @@ use crate::{
 #[test]
 fn queued_real_lifecycle_cause_is_cut_off_before_live_payload_and_closes() {
     let mut world = activity_world("estate-emergency-activity-live-cutoff");
-    let live_controls = WorthQueryApplicationLiveControls::bounded(
-        super::super::fixture::request_scope(),
-        4,
-        8,
-        Some(2_048),
-    )
-    .unwrap();
+    let live_controls =
+        WorthQueryApplicationLiveControls::bounded(super::super::fixture::request_scope(), 4, 8)
+            .unwrap();
     let first_requested = take_first_requested(&mut world);
     let mut live = world
         .fixture
@@ -58,13 +54,9 @@ fn queued_real_lifecycle_cause_is_cut_off_before_live_payload_and_closes() {
 fn failed_fresh_principal_resolution_ends_the_live_lease() {
     let mut world = activity_world("estate-emergency-activity-live-principal-cutoff");
     let foreign = activity_world("estate-emergency-activity-live-foreign-principal");
-    let live_controls = WorthQueryApplicationLiveControls::bounded(
-        super::super::fixture::request_scope(),
-        4,
-        8,
-        Some(2_048),
-    )
-    .unwrap();
+    let live_controls =
+        WorthQueryApplicationLiveControls::bounded(super::super::fixture::request_scope(), 4, 8)
+            .unwrap();
     let first_requested = take_first_requested(&mut world);
     let mut live = world
         .fixture
@@ -107,13 +99,9 @@ fn failed_fresh_principal_resolution_ends_the_live_lease() {
 fn revoked_support_refuses_live_subscription_before_open() {
     let world = activity_world("estate-emergency-activity-live-open-cutoff");
     revoke_exact_support(&world, 155);
-    let controls = WorthQueryApplicationLiveControls::bounded(
-        super::super::fixture::request_scope(),
-        4,
-        8,
-        Some(2_048),
-    )
-    .unwrap();
+    let controls =
+        WorthQueryApplicationLiveControls::bounded(super::super::fixture::request_scope(), 4, 8)
+            .unwrap();
     let result = world
         .fixture
         .runtime

@@ -136,6 +136,52 @@ fn a_clone_of_the_installation_reuses_its_state() {
 }
 
 #[test]
+fn retained_reads_require_the_actual_installed_value_catalogue() {
+    let _observation = QueryObservation::install_on_this_thread();
+    let world = installed_authorization_world(true);
+    let foreign = installed_authorization_world(true);
+    let installed = installed(StatusRead::Gather(1), sum);
+    for (same, catalogue) in [
+        (
+            true,
+            world
+                .application
+                .installed_schema()
+                .value_bindings()
+                .clone(),
+        ),
+        (
+            false,
+            foreign
+                .application
+                .installed_schema()
+                .value_bindings()
+                .clone(),
+        ),
+    ] {
+        let first = first_run(&world, &installed);
+        let mut state = first.sealed.unwrap().unwrap().state;
+        state.basis = state.basis.with_value_bindings_for_test(catalogue);
+        let prior = ComputationPrior::new(edition(), Ok(std::sync::Arc::new(state)), None);
+        *installed.owner.calls.lock().unwrap() = [0; 4];
+        let next = attempt(&world, &installed, Some(prior));
+        if same {
+            assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
+            assert!(next.gathered.is_empty());
+            assert_eq!(*installed.owner.calls.lock().unwrap(), [0; 4]);
+        } else {
+            assert!(matches!(
+                next.runs.as_slice(),
+                [(Run::Full(Cause::OtherInstallation), Some(_))]
+            ));
+            assert_eq!(next.gathered, [0, 1]);
+            assert_eq!(*installed.owner.calls.lock().unwrap(), full_call_law());
+        }
+        assert_eq!(next.outcome.unwrap().0, (1..=4).sum::<u64>());
+    }
+}
+
+#[test]
 fn a_reinstalled_reducer_runs_in_full_with_its_own_reduction() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();

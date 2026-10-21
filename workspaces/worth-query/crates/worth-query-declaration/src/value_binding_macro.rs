@@ -9,6 +9,63 @@ macro_rules! worth_query_value_binding {
     (
         $vis:vis $Binding:ident for $Value:ty {
             identity: $identity:literal,
+            scalar: String,
+            canonical: $bounds:expr $(,)?
+        }
+    ) => {
+        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+        $vis struct $Binding;
+        impl $Binding {
+            const CANONICAL_BOUNDS: $crate::facade::application_schema::ValueDecodeBounds = $bounds;
+        }
+        impl $crate::facade::application_schema::ApplicationScalarValueBinding for $Binding {
+            type Value = $Value;
+            type Unit = ();
+            type Decode = $crate::facade::application_schema::ApplicationValueDecodeAvailable;
+            type Identity = $crate::facade::application_schema::ApplicationValueIsNotIdentity;
+            type SignedAggregate = $crate::facade::application_schema::ApplicationValueSignedAggregateUnavailable;
+            const IDENTITY_NAME: &'static str = $identity;
+            const SCALAR_FAMILY: $crate::facade::typed::ScalarAspectType = $crate::facade::typed::ScalarAspectType::String;
+            const SUPPORTS_ADMITTED_DECODE: bool = <$Value as $crate::facade::application_schema::CanonicalValue>::SUPPORTS_ADMISSION;
+            fn canonical_contract() -> Option<$crate::facade::application_schema::ApplicationCanonicalValueContract> {
+                Some($crate::facade::application_schema::ApplicationCanonicalValueContract::of::<$Value>(Self::CANONICAL_BOUNDS))
+            }
+            fn validate(value: &Self::Value) -> Result<(), $crate::facade::application_schema::ApplicationValueValidationDenial> {
+                <$Value as $crate::facade::application_schema::CanonicalValue>::validate_bounds(value, Self::CANONICAL_BOUNDS)
+                    .map_err(|_| $crate::facade::application_schema::ApplicationValueValidationDenial::rejected(
+                        <Self as $crate::facade::application_schema::ApplicationScalarValueBinding>::IDENTITY,
+                        "canonical value exceeds its declared representation bounds",
+                    ))
+            }
+            fn encode(value: &Self::Value) -> Result<$crate::facade::application_schema::ApplicationValue, $crate::facade::application_schema::ApplicationValueEncodeDenial> {
+                $crate::facade::application_schema::encode_canonical_value(value, Self::CANONICAL_BOUNDS)
+                    .map(|text| $crate::facade::application_schema::ApplicationValue::String(text.into()))
+                    .map_err(|_| $crate::facade::application_schema::ApplicationValueEncodeDenial::CodecRejected {
+                        binding_identity: <Self as $crate::facade::application_schema::ApplicationScalarValueBinding>::IDENTITY,
+                        reason: "canonical value encoding refused its declared grammar or bounds",
+                    })
+            }
+        }
+        impl $crate::facade::application_schema::ApplicationReadableScalarValueBinding for $Binding {
+            fn decode(raw: &$crate::facade::application_schema::ApplicationValue) -> Result<Self::Value, $crate::facade::application_schema::ApplicationValueDecodeDenial> {
+                $crate::facade::application_schema::decode_application_canonical_value::<Self::Value>(
+                    raw, Self::CANONICAL_BOUNDS, <Self as $crate::facade::application_schema::ApplicationScalarValueBinding>::IDENTITY,
+                )
+            }
+            fn decode_admitted(
+                raw: &$crate::facade::application_schema::ApplicationValue,
+                admission: &mut $crate::facade::application_schema::ValueDecodeAdmission<'_>,
+            ) -> Result<Self::Value, $crate::facade::application_schema::ApplicationValueDecodeDenial> {
+                $crate::facade::application_schema::decode_application_canonical_value_with_admission::<Self::Value>(
+                    raw, Self::CANONICAL_BOUNDS, <Self as $crate::facade::application_schema::ApplicationScalarValueBinding>::IDENTITY,
+                    admission,
+                )
+            }
+        }
+    };
+    (
+        $vis:vis $Binding:ident for $Value:ty {
+            identity: $identity:literal,
             scalar: $scalar:ident,
             $(unit: $unit:literal,)?
             $(frame: $frame:literal,)?

@@ -16,6 +16,16 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self.installed_program_support()?.activation().published()
     }
 
+    /// Records actual contention on this runtime's existing branch commit lane.
+    /// This closed recorder cannot pause, unlock or authorize a transition.
+    #[doc(hidden)]
+    pub fn observe_application_branch_commit_contention_for_test(
+        &self,
+    ) -> super::super::provider::WorthQueryApplicationBranchCommitContentionForTest {
+        self.primary_provider
+            .observe_branch_commit_contention_for_test()
+    }
+
     /// Parks real application candidates after Relational preparation and
     /// before any owner effect or World product comparison.
     #[doc(hidden)]
@@ -115,7 +125,8 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         let available = self
             .product_runtime
             .owner_cleanup
-            .available_capacity_for_test();
+            .available_capacity_for_test()
+            .expect("exhaustion control requires an explicitly finite cleanup policy");
         let mut held = Vec::with_capacity(available);
         for _ in 0..available {
             held.push(
@@ -205,3 +216,33 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             .expect("the installed Signal owner remains inspectable")
     }
 }
+
+pub use attempt_registration::{
+    WorthQuerySourceFactComparisonPauseForTest, WorthQuerySourcePublicationValidationPauseForTest,
+};
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Parks after full nested availability validation and before native preparation.
+    #[doc(hidden)]
+    pub fn pause_after_source_publication_validation_for_test(
+        &self,
+        attempts: std::num::NonZeroUsize,
+    ) -> WorthQuerySourcePublicationValidationPauseForTest {
+        self.primary_provider
+            .application_attempt_operation_control
+            .pause_after_source_publication_validation(attempts)
+    }
+    /// Parks immediately before an original source Query dependency comparison.
+    #[doc(hidden)]
+    pub fn pause_before_source_fact_comparison_for_test(
+        &self,
+        attempts: std::num::NonZeroUsize,
+    ) -> WorthQuerySourceFactComparisonPauseForTest {
+        self.primary_provider
+            .application_attempt_operation_control
+            .pause_before_source_fact_comparison(attempts)
+    }
+}
+
+pub(in crate::domain_computation::primary_graph) use attempt_registration::{
+    WorthQuerySourcePublicationHeadForTest, WorthQuerySourcePublicationImageForTest,
+};

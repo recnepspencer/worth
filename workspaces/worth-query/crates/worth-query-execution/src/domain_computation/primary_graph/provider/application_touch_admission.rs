@@ -12,6 +12,10 @@ use worth_relational::facade::mvcc::{
     ValidatedMutationTouch, ValidatedMutationTouchProjectionWork, ValidatedRelationalProposal,
 };
 
+mod struct_aspect;
+#[cfg(test)]
+mod tests;
+
 use super::super::schema_layout::WorthQueryPrimaryGraphLayout;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -44,8 +48,8 @@ impl WorthQueryInstalledTouchAdmissionEvidence {
 /// can be compared against.
 ///
 /// Every variant here is an authoring act, because that is all a touch
-/// contract can declare. A candidate touch that authors nothing — a
-/// revalidation demand — resolves to no variant at all, and on a kind this
+/// contract can declare. A candidate touch that authors nothing â€” a
+/// revalidation demand â€” resolves to no variant at all, and on a kind this
 /// application governs it is refused: an operation cannot put its own records
 /// in front of rules under a contract that never admitted the effect.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -58,15 +62,34 @@ enum ResolvedApplicationTouch {
 }
 
 pub(super) fn admit_validated_application_touches(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     candidate: &ValidatedRelationalProposal,
     layout: &WorthQueryPrimaryGraphLayout,
     graph_reads: &WorthQueryOperationGraphReadContract,
     touch_contract: &WorthQueryOperationTouchContract,
     overlap: &WorthQueryOperationReadTouchOverlapIndex,
-) -> Result<WorthQueryInstalledTouchAdmissionEvidence, ()> {
+) -> Result<WorthQueryInstalledTouchAdmissionEvidence, TouchAdmissionFailure> {
+    execution.in_scope(|_| admit_in_scope(execution, candidate, layout, graph_reads, touch_contract, overlap))
+        .map_err(|stop| TouchAdmissionFailure::Projection(
+            worth_relational::facade::mvcc::ValidatedMutationTouchProjectionError::Execution(
+                worth_relational::facade::transactions::CommitExecutionDenial {
+                    kind: worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(stop.into()),
+                    partition_identity: None,
+                })))?
+}
+fn admit_in_scope(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    candidate: &ValidatedRelationalProposal,
+    layout: &WorthQueryPrimaryGraphLayout,
+    graph_reads: &WorthQueryOperationGraphReadContract,
+    touch_contract: &WorthQueryOperationTouchContract,
+    overlap: &WorthQueryOperationReadTouchOverlapIndex,
+) -> Result<WorthQueryInstalledTouchAdmissionEvidence, TouchAdmissionFailure> {
     validate_overlap_basis(graph_reads, touch_contract, overlap)?;
     let installed = resolve_installed_touches(layout, touch_contract)?;
-    let validated = candidate.mutation_touches().map_err(|_| ())?;
+    let validated = candidate
+        .mutation_touches(execution)
+        .map_err(TouchAdmissionFailure::Projection)?;
     let mut validated_application_touches = 0usize;
     let mut read_touch_overlaps = 0usize;
     for actual in validated.touches() {
@@ -77,6 +100,16 @@ pub(super) fn admit_validated_application_touches(
         validated_application_touches = validated_application_touches.checked_add(1).ok_or(())?;
         read_touch_overlaps = read_touch_overlaps
             .checked_add(overlap.touch_overlap_count(touch_index).ok_or(())?)
+            .ok_or(())?;
+    }
+    for actual in validated.struct_touches() {
+        if !layout.is_application_entity_kind(actual.kind()) {
+            continue;
+        }
+        let index = struct_aspect::admit(execution, actual, layout, touch_contract)?;
+        validated_application_touches = validated_application_touches.checked_add(1).ok_or(())?;
+        read_touch_overlaps = read_touch_overlaps
+            .checked_add(overlap.touch_overlap_count(index).ok_or(())?)
             .ok_or(())?;
     }
     Ok(WorthQueryInstalledTouchAdmissionEvidence {
@@ -212,6 +245,10 @@ fn validated_application_touch(
             .is_application_entity_kind(*kind))
         .then_some(None)
         .ok_or(()),
+        ValidatedMutationTouch::RevalidateRelation { kind } => (!layout
+            .is_application_relation_kind(*kind))
+        .then_some(None)
+        .ok_or(()),
         ValidatedMutationTouch::UnrepresentableEntityMutation { kind } => (!layout
             .is_application_entity_kind(*kind))
         .then_some(None)
@@ -237,4 +274,43 @@ fn application_relation_touch(
     touch: ResolvedApplicationTouch,
 ) -> Result<Option<ResolvedApplicationTouch>, ()> {
     Ok(layout.is_application_relation_kind(kind).then_some(touch))
+}
+
+#[derive(Debug)]
+pub(super) enum TouchAdmissionFailure {
+    Contract,
+    Projection(worth_relational::facade::mvcc::ValidatedMutationTouchProjectionError),
+}
+impl From<()> for TouchAdmissionFailure {
+    fn from(_: ()) -> Self {
+        Self::Contract
+    }
+}
+impl TouchAdmissionFailure {
+    pub(super) fn into_invariant_failure(
+        self,
+    ) -> crate::domain_computation::WorthQueryInvariantExecutionFailure {
+        use worth_relational::facade::mvcc::ValidatedMutationTouchProjectionError as Error;
+        match self {
+            Self::Projection(Error::Execution(denial)) =>
+                super::invariant_execution_failure::map_execution_failure(denial),
+            Self::Projection(Error::Allocation(cause)) => {
+                match cause.classify() {
+                    worth_execution::ExecutionAllocationDenialClass::Request(stop) => {
+                        let cause = worth_relational::facade::transactions::RelationalExecutionDenialCause::from(stop);
+                        super::invariant_execution_failure::map_execution_failure(
+                                worth_relational::facade::transactions::CommitExecutionDenial {
+                                    kind: worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause),
+                                    partition_identity: None,
+                                })
+                    }
+                    worth_execution::ExecutionAllocationDenialClass::Physical(_) =>
+                        crate::domain_computation::WorthQueryInvariantExecutionFailure::physical_allocation(
+                            cause, "native mutation-touch backing refused"),
+                }
+            }
+            Self::Contract | Self::Projection(Error::MissingEntityKind(_) | Error::MissingRelationKind(_)) =>
+                super::invariant_execution::touch_failure(),
+        }
+    }
 }

@@ -100,11 +100,7 @@ impl<T: Send + Sync + 'static> CompanionBranchCellSlot<T> {
         &self,
         context: &mut PublicationCompanionPreflight<'_>,
     ) -> Result<Option<PreparedCompanionBranchCell<T>>, CompanionPreflightStop> {
-        let work = u64::try_from(context.branch_id().0.len())
-            .ok()
-            .and_then(|bytes| bytes.checked_add(1))
-            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        context.claim_work(work)?;
+        context.checkpoint()?;
         let SlotSource::Cutover(admission) = &self.source else {
             return Ok(None);
         };
@@ -132,19 +128,6 @@ impl<T: Send + Sync + 'static> CompanionBranchCellSlot<T> {
             admission: Arc::clone(admission),
             candidate_id: context.candidate_id(),
         }))
-    }
-
-    /// Deferred-slot storage beyond its inline map value, including the core
-    /// allocation retained by its weak link after abort. Live Native cell custody
-    /// remains separate, so its bound can conservatively overlap this storage.
-    pub const fn maximum_deferred_retained_bytes() -> u64 {
-        super::super::preflight::arc_allocation_bound::<PublicationCellAdmission>()
-            // After abort the Weak can keep the deinitialized core allocation
-            // alive beyond its Native ticket. The deferred-slot ticket prepays
-            // that storage too; live Native custody can conservatively overlap.
-            .saturating_add(super::super::preflight::arc_allocation_bound::<
-                CompanionBranchCellCore,
-            >())
     }
 }
 impl<T: Send + Sync + 'static> CompanionBranchCell<T> {

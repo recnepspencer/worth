@@ -261,7 +261,8 @@ fn advanced_result_set_substitutions_preserve_original_partial() {
         .unwrap_or_else(|(_, denial)| panic!("original required demand: {denial:?}"));
     let settlement = super::super::super::settle(|| {
         match outputs.advance(&world.application, &request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settlement) => Some(settlement),
         }
     });

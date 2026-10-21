@@ -43,8 +43,8 @@ fn fixture(retained: bool) -> (SignalGraph, Vec<NodeId>) {
         fork_node_roots(&mut graph);
         graph.arena.retained_node_ledger = Some(SignalConditionalRetentionLedger::new(
             SignalConditionalEvaluationBudget {
-                maximum_retained_slots: 8,
-                maximum_retained_bytes: 2 * 1024 * 1024 * 1024,
+                maximum_retained_slots: Some(8),
+                maximum_retained_bytes: Some(2 * 1024 * 1024 * 1024),
                 maximum_attempt_visits: None,
             },
             SignalRuntimePolicy::development().conditional_temporal_budget,

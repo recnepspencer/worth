@@ -6,9 +6,8 @@
 use super::super::super::super::execution::ProducerExecutionStop;
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey;
-use crate::domain_computation::primary_graph::{
-    application_query::WorthQueryObservedSourceEpoch, output_lineage::AcceptedCurrentCandidate,
-};
+use crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch;
+use crate::domain_computation::primary_graph::output_lineage::AcceptedCurrentCandidate;
 
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct PerformedMembers
 {
@@ -43,16 +42,16 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 mod captured_input;
 pub(super) mod certification;
 pub(super) use certification::certify_required_ready;
-pub(in crate::domain_computation::primary_graph) use certification::{CurrentBasis, CurrentProof};
+pub(in crate::domain_computation::primary_graph) use certification::CurrentBasis;
+pub(in crate::domain_computation::primary_graph) use certification::CurrentProof;
 mod member_keys;
 use captured_input::CapturedDecisionInput;
 mod ordinary;
 mod publication;
 mod reinspection;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) use ordinary::DecisionInput;
-pub(super) use reinspection::{InspectionStamp, ReinspectionCredit};
-#[cfg(test)]
-mod tests;
+pub(super) use reinspection::InspectionStamp;
+pub(super) use reinspection::ReinspectionCredit;
 
 impl PerformedMembers {
     pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn start(
@@ -72,16 +71,9 @@ impl PerformedMembers {
             Option<AcceptedCurrentCandidate>,
             captured_input::FullVerificationReason,
         >,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         for entry in &mut self.entries {
-            admission
-                .charge_external_work(entry.comparison_work()?)
-                .map_err(admission_denial)?;
             if entry.names(key) && entry.performed && entry.input.is_uncaptured() {
-                admission
-                    .charge_external_work(std::mem::size_of::<AcceptedCurrentCandidate>() as u64)
-                    .map_err(admission_denial)?;
                 entry.input = CapturedDecisionInput::capture(candidate);
             }
         }
@@ -96,19 +88,12 @@ impl PerformedMembers {
         key: &WorthQueryOutputDemandKey,
         source: WorthQueryObservedSourceEpoch,
         runtime: &DecisionInput<'_, '_, '_, Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<FreshReadiness>, ProducerExecutionStop> {
         for (index, entry) in self.entries.iter_mut().enumerate() {
-            admission
-                .charge_external_work(entry.comparison_work()?)
-                .map_err(admission_denial)?;
             if !entry.names(key) {
                 continue;
             }
             if !entry.performed {
-                admission
-                    .charge_external_work(4)
-                    .map_err(admission_denial)?;
                 entry.source = source;
                 return Ok(Some(FreshReadiness { member: index }));
             }
@@ -117,7 +102,7 @@ impl PerformedMembers {
             } else {
                 match &entry.input {
                     CapturedDecisionInput::Accepted(input) => {
-                        runtime.changed(request_execution, input, admission)?
+                        runtime.changed(request_execution, input)?
                     }
                     CapturedDecisionInput::Withheld | CapturedDecisionInput::Uncaptured => false,
                 }
@@ -125,36 +110,16 @@ impl PerformedMembers {
             if !changed {
                 return Ok(None);
             }
-            admission
-                .charge_external_work(4)
-                .map_err(admission_denial)?;
+
             entry.source = source;
             entry.input = CapturedDecisionInput::Uncaptured;
             entry.performed = false;
             return Ok(Some(FreshReadiness { member: index }));
         }
-        let item = std::mem::size_of::<PerformedMember>();
-        admission
-            .charge_external_work((item + 4) as u64)
-            .map_err(admission_denial)?;
+
         if self.entries.len() == self.entries.capacity() {
             let next = self.entries.capacity().saturating_mul(2).max(1);
-            let peak = next
-                .checked_add(self.entries.capacity())
-                .and_then(|count| count.checked_mul(item))
-                .ok_or_else(capacity_denial)?;
-            admission
-                .admit_read_scratch(u64::try_from(peak).map_err(|_| capacity_denial())?)
-                .map_err(admission_denial)?;
-            let copy_work = self
-                .entries
-                .len()
-                .checked_mul(item)
-                .and_then(|bytes| bytes.checked_mul(2))
-                .ok_or_else(work_denial)?;
-            admission
-                .charge_external_work(u64::try_from(copy_work).map_err(|_| work_denial())?)
-                .map_err(admission_denial)?;
+
             let mut replacement = Vec::new();
             replacement
                 .try_reserve_exact(next)
@@ -166,13 +131,7 @@ impl PerformedMembers {
             self.entries = replacement;
         }
         let index = self.entries.len();
-        let key_bytes = key.producer_identity().len();
-        admission
-            .charge_external_work(key_bytes as u64)
-            .map_err(admission_denial)?;
-        admission
-            .admit_read_scratch(key_bytes as u64)
-            .map_err(admission_denial)?;
+
         self.entries.push(PerformedMember {
             key: key.clone(),
             successor: None,
@@ -199,7 +158,6 @@ impl<Schema: ApplicationSchema + 'static> SelectedDecisionInput<'_, '_, Schema> 
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         input: &AcceptedCurrentCandidate,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, ProducerExecutionStop> {
         let graph = &self.runtime.primary_provider.graph;
         graph
@@ -210,7 +168,6 @@ impl<Schema: ApplicationSchema + 'static> SelectedDecisionInput<'_, '_, Schema> 
                     runtime,
                     self.shared.selected().application_basis().snapshot_handle(),
                     self.positioned,
-                    admission,
                 )
             })
             .map_err(|stop| {

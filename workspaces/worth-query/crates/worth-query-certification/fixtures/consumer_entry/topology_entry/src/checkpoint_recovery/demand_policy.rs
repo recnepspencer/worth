@@ -50,7 +50,8 @@ fn installed_parent_produces_required_child_artifact() {
         .expect("installed parent starts with its required child");
     let settled = (0..256)
         .find_map(|_| match output.advance(&application, &request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         })
         .expect("all installed child outputs settle");
@@ -74,7 +75,8 @@ fn omitted_controls_produce_and_reuse_real_output_under_installed_defaults() {
         .expect("installed defaults admit initial production");
     let first = (0..64)
         .find_map(|_| match initial.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("default initial demand settles");
@@ -88,7 +90,8 @@ fn omitted_controls_produce_and_reuse_real_output_under_installed_defaults() {
         .expect("no application resource arithmetic is needed");
     let settled = (0..64)
         .find_map(|_| match demand.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("default demand settles");

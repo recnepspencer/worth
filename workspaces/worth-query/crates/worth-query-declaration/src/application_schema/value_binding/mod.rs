@@ -1,3 +1,13 @@
+mod canonical;
+pub use canonical::{
+    decode_application_canonical_value, decode_application_canonical_value_with_admission,
+    decode_canonical_value, decode_canonical_value_with_admission, encode_canonical_value,
+    ApplicationCanonicalValueContract, CanonicalValue, ValueCodecDenial, ValueDecodeAdmission,
+    ValueDecodeBounds, ValueShape,
+};
+mod admitted;
+#[cfg(test)]
+mod admitted_tests;
 mod denial;
 mod encoded_scalar;
 mod primitive;
@@ -28,6 +38,6 @@ pub use scalar::{
     ApplicationValueIdentityPosture, ApplicationValueIsIdentity, ApplicationValueIsNotIdentity,
     ApplicationValueSignedAggregateAvailable, ApplicationValueSignedAggregatePosture,
     ApplicationValueSignedAggregateUnavailable, ErasedApplicationSignedAggregateDecode,
-    ErasedApplicationValueDecode,
+    ErasedApplicationValueAdmittedDecode, ErasedApplicationValueDecode,
 };
 pub use structured::ApplicationStructuredValueBinding;

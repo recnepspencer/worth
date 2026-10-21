@@ -36,7 +36,7 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
             .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
             .aspect(Principal::reference(), PrincipalFacts::reference())
             .aspect(Document::reference(), DocumentFacts::reference())
-            .aspect(Document::reference(), DocumentDraftFacts::reference())
+            .optional_aspect(Document::reference(), DocumentDraftFacts::reference())
             .aspect(Audit::reference(), AuditFacts::reference())
             .field(
                 ExternalMapping::reference(),

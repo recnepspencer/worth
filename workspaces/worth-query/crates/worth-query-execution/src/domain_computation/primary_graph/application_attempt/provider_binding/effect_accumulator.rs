@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 
@@ -9,8 +10,7 @@ use super::effect_lowering::{
 };
 use super::{
     invalid_emission_denial, WorthQueryAdmittedApplicationEmissionBatch,
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
-    WorthQueryApplicationRealizedEffect,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEmission;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields;
@@ -20,11 +20,13 @@ mod expected_steps;
 pub(in crate::domain_computation::primary_graph) use expected_steps::WorthQueryExpectedEffectStepPreparationWork;
 use expected_steps::WorthQueryExpectedEffectSteps;
 
-pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout> {
-    facts: ObservedFactIndex<'facts>,
+pub(super) struct WorthQueryProviderEffectAccumulator<'facts, 'layout, Facts: FactSequence + ?Sized>
+{
+    facts: ObservedFactIndex<'facts, Facts>,
     unique: UniqueValueWrites<'layout>,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     created: CreatedEffectReferences,
+    contracts: &'layout super::effect_lowering::AspectContracts<'layout>,
     lowered: Vec<WorthQueryLoweredProviderEffect>,
 }
 
@@ -35,15 +37,21 @@ pub(super) struct WorthQueryRegisteredProviderEffects {
     emissions: WorthQueryAdmittedApplicationEmissionBatch,
     output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     mutation_partition: worth_relational::facade::identity::PartitionId,
+    // Last to drop: physical backing releases before its retained grant.
+
 }
 
-impl<'facts, 'layout> WorthQueryProviderEffectAccumulator<'facts, 'layout> {
+impl<'facts, 'layout, Facts: FactSequence + ?Sized>
+    WorthQueryProviderEffectAccumulator<'facts, 'layout, Facts>
+{
     pub(super) fn new(
-        facts: &'facts [WorthQueryApplicationObservedFact],
+        facts: &'facts Facts,
         unique_fields: WorthQueryUniqueFields<'layout>,
+        contracts: &'layout super::effect_lowering::AspectContracts<'layout>,
         effects: &[WorthQueryApplicationRealizedEffect],
         mutation_partition: worth_relational::facade::identity::PartitionId,
         application_effect_count: usize,
+        routes: std::sync::Arc<super::super::FactRoutes>,
     ) -> Self {
         let mutation_partition = effects[..application_effect_count]
             .iter()
@@ -55,7 +63,8 @@ impl<'facts, 'layout> WorthQueryProviderEffectAccumulator<'facts, 'layout> {
             })
             .unwrap_or(mutation_partition);
         Self {
-            facts: ObservedFactIndex::new(facts),
+            facts: ObservedFactIndex::completed(facts, routes),
+            contracts,
             unique: UniqueValueWrites::new(unique_fields),
             mutation_partition,
             created: CreatedEffectReferences::new(effects, mutation_partition),
@@ -70,6 +79,7 @@ impl<'facts, 'layout> WorthQueryProviderEffectAccumulator<'facts, 'layout> {
         let lowered = lower_provider_effect(
             &self.facts,
             &mut self.unique,
+            self.contracts,
             &self.created,
             self.mutation_partition,
             effect,
@@ -131,6 +141,12 @@ impl WorthQueryRegisteredProviderEffects {
             self.body_external_emission.as_ref(), original,
         )
     }
+    pub(in crate::domain_computation::primary_graph) fn native_publication_roles(
+        &self,
+    ) -> impl ExactSizeIterator<Item = (&str, crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture, &str, &worth_relational::facade::transactions::EntityReference)> + Clone{
+        self.output_correspondence.native_publication_roles()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn native_witness_roles(
         &self,
     ) -> impl ExactSizeIterator<
@@ -258,6 +274,7 @@ fn materialize_commit_projections(
                 intents.push(intent);
                 Some(steps)
             }
+            WorthQueryLoweredProviderEffect::ObservedNoop { steps } => Some(steps),
             WorthQueryLoweredProviderEffect::Emission(emission) => {
                 emissions.push(emission);
                 None
@@ -288,9 +305,20 @@ mod tests {
         let accumulator = WorthQueryProviderEffectAccumulator::new(
             &[],
             WorthQueryUniqueFields::none(),
+            &|_, _| None,
             &effects,
             issued,
             0,
+            crate::domain_computation::primary_graph::application_attempt::FactRoutes::build_iter(
+                [].iter(),
+                0,
+                None,
+                crate::domain_computation::primary_graph::StorageControl::new(
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                    None,
+                ),
+            )
+            .unwrap(),
         );
         assert_eq!(accumulator.mutation_partition, issued);
     }

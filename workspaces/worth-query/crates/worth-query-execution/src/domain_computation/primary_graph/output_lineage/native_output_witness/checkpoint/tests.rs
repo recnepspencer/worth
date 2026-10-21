@@ -137,42 +137,30 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             locator: status.clone(),
             native_revision: Some(original_source),
         }];
-        let mut recovery_admission = owner.edit_admission();
-        let comparison_bound = SealedNativeOutputWitness::checkpoint_comparison_work_bound(
-            &correspondence, layout, &facts, &mut recovery_admission,
-        ).unwrap();
-        assert!(recovery_admission.charged_work() > 0, "ceiling derivation is charged");
-        let reconstruction_start = recovery_admission.charged_work();
-        let restored = SealedNativeOutputWitness::from_checkpoint_facts(
-            &correspondence,
-            layout,
-            &facts,
-            owner,
-            &mut recovery_admission,
-        )
+
+
+
+
+        let restored = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &facts)
         .unwrap()
         .expect("complete old native facts reconstruct the witness");
         assert!(restored.get().unwrap().checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),
-            runtime, &before, &facts, &mut recovery_admission,
+            runtime, &before, &facts,
         ).unwrap());
-        assert!(recovery_admission.charged_work() - reconstruction_start <= comparison_bound);
+
         assert!(facts.len() > 2, "the alias roles cover several real aspects");
-        let alias_bound = SealedNativeOutputWitness::checkpoint_comparison_work_bound(
-            &alias_correspondence, layout, &facts, &mut recovery_admission,
-        ).unwrap();
-        assert!(alias_bound > comparison_bound, "the second role's fan-out is priced");
-        let alias_start = recovery_admission.charged_work();
-        let alias = SealedNativeOutputWitness::from_checkpoint_facts(
-            &alias_correspondence, layout, &facts, owner, &mut recovery_admission,
-        ).unwrap().expect("both roles fill every aspect slot from the one entity's facts");
+
+
+
+        let alias = SealedNativeOutputWitness::from_checkpoint_facts(&alias_correspondence, layout, &facts).unwrap().expect("both roles fill every aspect slot from the one entity's facts");
         assert!(alias.get().unwrap().checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),
-            runtime, &before, &facts, &mut recovery_admission,
+            runtime, &before, &facts,
         ).unwrap());
-        assert!(recovery_admission.charged_work() - alias_start <= alias_bound);
+
         assert!(restored
             .get()
             .unwrap()
-            .unchanged_in( runtime, &before, &mut owner.edit_admission())
+            .unchanged_in( runtime, &before)
             .unwrap());
         assert!(restored
             .get()
@@ -181,7 +169,6 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
                 runtime,
                 &before,
                 &producer_facts,
-                &mut owner.edit_admission(),
             )
             .unwrap());
         let index = layout.equality_field(status_ref.entity(), status_ref.aspect(), status_ref.field())
@@ -192,65 +179,46 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             planned_status.clone(), AspectValue::String("open".into()), 100_001,
         ).expect("the actual installed sparse selection supplies the checkpoint fact");
         let witness = restored.get().unwrap();
-        let mut witness_only = owner.edit_admission_with_work_limit(Some(4_096));
-        assert!(witness.unchanged_in( runtime, &before, &mut witness_only).unwrap());
-        let witness_work = usize::try_from(witness_only.charged_work()).unwrap();
-        let mut sparse = owner.edit_admission_with_work_limit(Some(witness_work + 6));
+
+        assert!(witness.unchanged_in( runtime, &before).unwrap());
+
+
         assert!(witness.checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(), runtime, &before,
-            &[indexed.clone(), indexed.clone()], &mut sparse).unwrap());
-        assert_eq!(sparse.remaining_work(), Some(0), "two one-row selections spend six units beyond the witness");
+            &[indexed.clone(), indexed.clone()]).unwrap());
+
         let mut duplicate_facts = facts.clone();
         duplicate_facts.extend([indexed.clone(), indexed.clone()]);
-        let duplicate_bound = SealedNativeOutputWitness::checkpoint_comparison_work_bound(
-            &correspondence, layout, &duplicate_facts, &mut recovery_admission,
-        ).unwrap();
-        assert!(duplicate_bound >= 200_006,
-            "both authentic 100001 candidate limits contribute, not their one-row results");
-        let duplicate_start = recovery_admission.charged_work();
-        let duplicate_witness = SealedNativeOutputWitness::from_checkpoint_facts(
-            &correspondence, layout, &duplicate_facts, owner, &mut recovery_admission,
-        ).unwrap().unwrap();
+
+
+
+        let duplicate_witness = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &duplicate_facts).unwrap().unwrap();
         assert!(duplicate_witness.get().unwrap().checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(),
-            runtime, &before, &duplicate_facts, &mut recovery_admission,
+            runtime, &before, &duplicate_facts,
         ).unwrap());
-        let duplicate_work = recovery_admission.charged_work() - duplicate_start;
-        assert!(duplicate_work <= duplicate_bound);
-        assert!(duplicate_work < 100_001, "the declared worst case is not prepaid");
-        let mut exhausted = owner.edit_admission_with_work_limit(Some(witness_work + 2));
+
+
+
+
         // A cut-short indexed probe knows the spent allowance, not the work
         // a completed read would require: preserve the incoming refusal law.
-        assert!(matches!(witness.checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(), runtime, &before,
-            std::slice::from_ref(&indexed), &mut exhausted),
-            Err(crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementVerificationStop::Admission(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum }))
-                if maximum == u64::try_from(witness_work + 2).unwrap()));
+
         // One visit cannot fund the index lookup and a candidate visit.
         // The refused probe refunds that reservation without reading a row.
-        assert_eq!(exhausted.remaining_work(), Some(1));
-        assert_eq!(exhausted.charged_work(), u64::try_from(witness_work + 1).unwrap());
+
+
         // Producer selection reads both halves of the retained fact set.
-        let mut selection_work =
-            owner.edit_admission_with_work_limit(Some(4_096));
+
         assert!(matches!(
             compare_retained_output_witness(
                 runtime,
                 &before,
                 restored.get(),
-                &mut selection_work,
             ),
             Ok(OutputDependencySelection::Reuse)
         ));
-        assert!(
-            selection_work.charged_work() > 0,
-            "the witness comparison draws from the selection allowance"
-        );
+
         let missing = &facts[..facts.len() - 1];
-        assert!(SealedNativeOutputWitness::from_checkpoint_facts(
-            &correspondence,
-            layout,
-            missing,
-            owner,
-            &mut owner.edit_admission()
-        )
+        assert!(SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, missing)
         .unwrap()
         .is_none());
         let mut conflicting = facts.clone();
@@ -267,18 +235,10 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             aspect: aspect.clone(),
             native_revision: Some(native_revision.unwrap_or(0).checked_add(1).unwrap()),
         });
-        assert!(SealedNativeOutputWitness::from_checkpoint_facts(
-            &correspondence,
-            layout,
-            &conflicting,
-            owner,
-            &mut owner.edit_admission()
-        )
+        assert!(SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &conflicting)
         .unwrap()
         .is_none());
-        one_pass::assert_one_pass_reconstruction(
-            &correspondence, layout, &facts, &producer_facts[0], owner,
-        );
+        one_pass::assert_one_pass_reconstruction(&correspondence, layout, &facts, &producer_facts[0]);
         change_label(request_execution, runtime, entity, label);
         let after = snapshot(runtime);
         let after_source = runtime
@@ -293,13 +253,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         );
         // Reconstruct after the edit from the old checkpoint facts. A builder
         // that samples the new head would incorrectly accept this output.
-        let after_restore = SealedNativeOutputWitness::from_checkpoint_facts(
-            &correspondence,
-            layout,
-            &facts,
-            owner,
-            &mut owner.edit_admission(),
-        )
+        let after_restore = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &facts)
         .unwrap()
         .unwrap();
         let current_facts: Vec<_> = facts.iter().map(|fact| match fact {
@@ -309,22 +263,17 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             },
             other => other.clone(),
         }).collect();
-        let current = SealedNativeOutputWitness::from_checkpoint_facts(
-            &correspondence, layout, &current_facts, owner, &mut owner.edit_admission(),
-        ).unwrap().unwrap();
+        let current = SealedNativeOutputWitness::from_checkpoint_facts(&correspondence, layout, &current_facts).unwrap().unwrap();
         let changed_output_equal = restored.get().unwrap()
-            .same_output_as(current.get().unwrap(), &mut owner.edit_admission()).unwrap();
+            .same_output_as(current.get().unwrap()).unwrap();
         assert!(!after_restore
             .get()
             .unwrap()
-            .unchanged_in( runtime, &after, &mut owner.edit_admission())
+            .unchanged_in( runtime, &after)
             .unwrap());
         assert!(
             producer_facts[0]
-                .source_currentness_within(runtime,&host_custody.borrowed_request_for_test(),  &after, 1)
-                .unwrap()
-                .0
-                .movement()
+                .source_currentness_in(runtime, &host_custody.borrowed_request_for_test(), &after).unwrap().unwrap().movement()
                 == Movement::Unmoved
         );
         assert!(!after_restore
@@ -334,20 +283,17 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
                 runtime,
                 &after,
                 &producer_facts,
-                &mut owner.edit_admission(),
             )
             .unwrap());
         // The source facts alone would reuse this output. Its performed
         // output moved, so selection may not: a producer has to run again.
-        let mut selection_work =
-            owner.edit_admission_with_work_limit(Some(4_096));
+
         assert!(matches!(
             compare_retained_output_dependencies(&host_custody.borrowed_request_for_test(),
                 runtime,
                 &after,
                 true,
                 Some(&producer_facts),
-                &mut selection_work,
             ),
             Ok(OutputDependencySelection::Reuse)
         ));
@@ -356,35 +302,23 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
                 runtime,
                 &after,
                 after_restore.get(),
-                &mut selection_work,
             ),
             Ok(OutputDependencySelection::FreshRequired)
         ));
         // A row no sealed witness covers is decided by its source facts.
         assert!(matches!(
-            compare_retained_output_witness( runtime, &after, None, &mut selection_work),
+            compare_retained_output_witness( runtime, &after, None),
             Ok(OutputDependencySelection::Reuse)
         ));
-        let mut no_work = owner.edit_admission_with_work_limit(Some(1));
-        no_work
-            .charge_external_work(1)
-            .unwrap();
-        let exhausted = compare_retained_output_witness(
-            runtime,
-            &before,
-            restored.get(),
-            &mut no_work,
-        )
-        .err()
-        .expect("a witness comparison beyond the selection allowance is denied");
-        assert_eq!(
-            exhausted.kind(),
-            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-        );
+
+
+
+
         runtime.snapshots().release_snapshot(&before).unwrap();
         runtime.snapshots().release_snapshot(&after).unwrap();
         changed_output_equal
     }) }).expect("the fixture read owns its installed host call");
+
     assert!(
         !changed_output_equal,
         "a changed consumed output must never be equal evidence"

@@ -104,26 +104,37 @@ where
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial> {
+        let mut runnable = false;
         for (index, branch) in [&mut self.left, &mut self.right].into_iter().enumerate() {
             if self.complete[index] {
                 continue;
             }
-            if let ProgramOutputContinuationProgress::Settled {
-                outputs,
-                work,
-                dependencies,
-            } = branch.advance(phase, application, request)?
-            {
-                self.dependencies[index] = dependencies;
-                self.outputs.extend(outputs);
-                self.work.include(work);
-                // A finished sibling can still supply an exact consumed
-                // predecessor to the unfinished branch. Keep its owners.
-                self.complete[index] = true;
+            match branch.advance(phase, application, request)? {
+                ProgramOutputContinuationProgress::Pending => {}
+                ProgramOutputContinuationProgress::Progressed => {
+                    runnable = true;
+                }
+                ProgramOutputContinuationProgress::Settled {
+                    outputs,
+                    work,
+                    dependencies,
+                } => {
+                    self.dependencies[index] = dependencies;
+                    self.outputs.extend(outputs);
+                    self.work.include(work);
+                    // A finished sibling can still supply an exact consumed
+                    // predecessor to the unfinished branch. Keep its owners.
+                    self.complete[index] = true;
+                    runnable = true;
+                }
             }
         }
         if !self.complete.iter().all(|complete| *complete) {
-            return Ok(ProgramOutputContinuationProgress::Pending);
+            return Ok(if runnable {
+                ProgramOutputContinuationProgress::Progressed
+            } else {
+                ProgramOutputContinuationProgress::Pending
+            });
         }
         let dependencies = if self.dependencies.iter().all(Option::is_none) {
             None

@@ -41,21 +41,6 @@ where
         .parameters
         .retained_owned_capacity_bytes()
         .and_then(|bytes| bytes.checked_add(std::mem::size_of_val(&plan)))
-        .and_then(|bytes| {
-            bytes.checked_add(
-                plan.graph_read_plan()
-                    .budget_check()
-                    .max_inline_index_bytes(),
-            )
-        })
-        .and_then(|bytes| {
-            bytes.checked_add(
-                plan.graph_read_plan()
-                    .cost_estimate()
-                    .supported()
-                    .proof_bytes(),
-            )
-        })
         .and_then(|bytes| bytes.checked_add(plan.graph_authority_identity.capacity()))
         .and_then(|bytes| bytes.checked_add(plan.provider_identity.capacity()))
         .and_then(|bytes| u64::try_from(bytes).ok())

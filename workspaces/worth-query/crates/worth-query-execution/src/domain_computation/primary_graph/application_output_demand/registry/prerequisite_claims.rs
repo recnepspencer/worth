@@ -7,19 +7,18 @@ mod prerequisite_capacity;
 mod prerequisite_denials;
 mod publication;
 use prerequisite_capacity::validate_predecessors;
-use prerequisite_denials::{capacity_denial, closed_denial, coverage_denial, work_denial};
+use prerequisite_denials::capacity_denial;
+use prerequisite_denials::closed_denial;
+use prerequisite_denials::coverage_denial;
 use std::sync::Arc;
 
-use super::{
-    prerequisite_work::predecessor_lookup_work, required_context::RequiredOutputDemandContext,
-    DemandState, WorthQueryOutputDemandKey, WorthQueryOutputDemandRegistry,
-};
-use crate::domain_computation::primary_graph::output_lineage::{
-    invalidation::InvalidationEditAdmission, RecordedSettlementIdentity,
-};
-use crate::domain_computation::primary_graph::{
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-};
+use super::required_context::RequiredOutputDemandContext;
+use super::DemandState;
+use super::WorthQueryOutputDemandKey;
+use super::WorthQueryOutputDemandRegistry;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 /// Claims the exact previously settled inputs of one running output before its
 /// product effect. The successful publication moves these claims into the
@@ -29,7 +28,6 @@ pub(in crate::domain_computation::primary_graph) struct PreparedPrerequisiteClai
     predecessors: Vec<Arc<WorthQueryOutputDemandKey>>,
     claim_batch: Option<super::claim_readthrough::ClaimBatch>,
     checkpoint_predecessors: Option<CheckpointPrerequisiteClaims>,
-    predecessor_slots_bytes: usize,
     reserved_identity: Option<Arc<RecordedSettlementIdentity>>,
     reserved_posting: Option<super::settlement_index::Posting>,
     reserved_cleanup: Option<Box<super::settlement_index::PendingVacancyCleanup>>,
@@ -41,36 +39,17 @@ impl RequiredOutputDemandContext {
         self,
         inputs: impl ExactSizeIterator<Item = &'a crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
         source_owner: &crate::domain_computation::primary_graph::SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PreparedPrerequisiteClaims, WorthQueryOutputDemandDenial> {
         if self.work_membership().is_some() {
             // The performed path can require a local Full cue after World has
             // committed. Its token and queue link were admitted with the row.
-            admission
-                .charge_external_work(8)
-                .map_err(|_| work_denial())?;
         }
         let count = inputs.len();
-        let slots_bytes = count
-            .checked_mul(std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>())
-            .ok_or_else(capacity_denial)?;
-        admission
-            .admit_read_scratch(slots_bytes as u64)
-            .map_err(|_| capacity_denial())?;
-        admission
-            .charge_external_work(count as u64)
-            .map_err(|_| work_denial())?;
         let mut predecessors = Vec::new();
         predecessors
             .try_reserve_exact(count)
             .map_err(|_| capacity_denial())?;
-        admission
-            .charge_external_work(
-                super::key_comparison::comparison_work([self.key()])
-                    .ok_or_else(work_denial)?
-                    .maximum as u64,
-            )
-            .map_err(|_| work_denial())?;
+
         let owner = WorthQueryOutputDemandRegistry::clone(self.registry());
         let mut state = owner
             .state
@@ -95,148 +74,19 @@ impl RequiredOutputDemandContext {
             downstream,
             inputs,
             source_owner,
-            admission,
             &mut predecessors,
         )?;
-        let predecessor_keys =
-            super::key_comparison::comparison_work(predecessors.iter().map(Arc::as_ref))
-                .ok_or_else(work_denial)?;
-        let maximum_key_work = predecessor_keys.maximum;
-        let comparisons = predecessor_keys.sort_bound(count).ok_or_else(work_denial)?;
-        admission
-            .charge_external_work(comparisons as u64)
-            .map_err(|_| work_denial())?;
         predecessors.sort_unstable();
         predecessors.dedup();
-        let lookup_work = predecessor_lookup_work(&state, &predecessors, maximum_key_work)?;
-        admission
-            .charge_external_work(
-                (lookup_work as u64)
-                    .checked_add(1)
-                    .ok_or_else(work_denial)?,
-            )
-            .map_err(|_| work_denial())?;
-        let predecessor_slots_bytes = predecessors
-            .capacity()
-            .checked_mul(std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>())
-            .ok_or_else(capacity_denial)?;
-        let additional_members = validate_predecessors(&state, &predecessors)?;
-        admission
-            .charge_external_work(
-                u64::try_from(predecessors.len().checked_mul(4).ok_or_else(work_denial)?)
-                    .map_err(|_| work_denial())?,
-            )
-            .map_err(|_| work_denial())?;
-        let settlements = &state.records.get(downstream).unwrap().settlements;
-        let old_settlement_capacity = settlements.capacity();
-        let projected_settlement_capacity = if settlements.len() < old_settlement_capacity {
-            old_settlement_capacity
-        } else {
-            old_settlement_capacity
-                .checked_mul(2)
-                .map(|capacity| capacity.max(4))
-                .ok_or_else(capacity_denial)?
-        };
-        let settlement_slot_bytes = std::mem::size_of::<(Arc<RecordedSettlementIdentity>, usize)>();
-        let settlement_growth = projected_settlement_capacity
-            .checked_sub(old_settlement_capacity)
-            .and_then(|slots| slots.checked_mul(settlement_slot_bytes))
-            .ok_or_else(capacity_denial)?;
-        if settlement_growth != 0 {
-            let copy_work = settlements.len();
-            admission
-                .charge_external_work(copy_work as u64)
-                .map_err(|_| work_denial())?;
-        }
-        let prior_keys = &state.records.get(downstream).unwrap().prerequisites;
-        admission
-            .charge_external_work(prior_keys.len() as u64)
-            .map_err(|_| work_denial())?;
-        let prior_key_work =
-            super::key_comparison::comparison_work(prior_keys.iter().map(Arc::as_ref))
-                .ok_or_else(work_denial)?
-                .maximum;
-        let minimum_member_bytes = super::required_members::minimum_member_bytes()
-            .filter(|bytes| *bytes != 0)
-            .ok_or_else(work_denial)?;
-        // Other interests may enter after preparation. The named registry cap
-        // bounds every later ordered-tree height until this ticket publishes.
-        let required_member_ceiling = state.required_budget_bytes / minimum_member_bytes;
-        let release_work = super::prerequisite_work::prior_release_work(
-            required_member_ceiling,
-            prior_keys.len(),
-            prior_key_work,
-        )?;
-        admission
-            .charge_external_work(
-                (release_work as u64)
-                    .checked_add(1)
-                    .ok_or_else(work_denial)?,
-            )
-            .map_err(|_| work_denial())?;
-        // Dropping this ticket can remove the newly selected memberships
-        // after other interests have grown the tree. Reserve that exact
-        // selected rollback under the same finite registry-height ceiling.
-        let rollback_work = super::prerequisite_work::prior_release_work(
-            required_member_ceiling,
-            predecessors.len(),
-            maximum_key_work,
-        )?;
-        admission
-            .charge_external_work(
-                (rollback_work as u64)
-                    .checked_add(1)
-                    .ok_or_else(work_denial)?,
-            )
-            .map_err(|_| work_denial())?;
-        admission
-            .charge_external_work(1)
-            .map_err(|_| work_denial())?;
-        let claimed = predecessor_slots_bytes
-            .checked_add(additional_members)
-            .and_then(|bytes| bytes.checked_add(settlement_growth))
-            .ok_or_else(capacity_denial)?;
-        let required = state
-            .required_reserved_bytes
-            .checked_add(claimed)
-            .ok_or_else(capacity_denial)?;
-        if !state.has_required_capacity(required) {
-            return Err(super::required_custody::full_custody_denial(
-                claimed,
-                state.required_budget_bytes,
-            ));
-        }
-        // Vec growth holds the old backing until the replacement is ready.
-        let settlement_preparation = if settlement_growth == 0 {
-            0
-        } else {
-            projected_settlement_capacity
-                .checked_mul(settlement_slot_bytes)
-                .ok_or_else(capacity_denial)?
-        };
-        let owner_growth = additional_members
-            .checked_add(settlement_preparation)
-            .ok_or_else(capacity_denial)?;
-        admission
-            .admit_read_scratch(owner_growth as u64)
-            .map_err(|_| capacity_denial())?;
-        let claim_batch = state.prepare_claim_readthrough(downstream, &predecessors, admission)?;
+        validate_predecessors(&state, &predecessors)?;
+        let claim_batch = state.prepare_claim_readthrough(downstream, &predecessors)?;
         let mut downstream_record = state.records.get_mut(downstream).unwrap();
         let settlements = &mut downstream_record.settlements;
         settlements
             .try_reserve_exact(1)
             .map_err(|_| capacity_denial())?;
-        let actual_settlement_growth = settlements
-            .capacity()
-            .checked_sub(old_settlement_capacity)
-            .and_then(|slots| slots.checked_mul(settlement_slot_bytes))
-            .ok_or_else(capacity_denial)?;
-        assert!(
-            actual_settlement_growth <= settlement_growth,
-            "admitted settlement slots"
-        );
         downstream_record.finish();
-        state.required_reserved_bytes += actual_settlement_growth;
+
         if let Some(batch) = &claim_batch {
             batch.install();
         }
@@ -256,14 +106,13 @@ impl RequiredOutputDemandContext {
             .get_mut(downstream)
             .unwrap()
             .prepared_prerequisite_claims += 1;
-        state.required_reserved_bytes += predecessor_slots_bytes;
+
         drop(state);
         Ok(PreparedPrerequisiteClaims {
             context: self,
             predecessors,
             claim_batch,
             checkpoint_predecessors,
-            predecessor_slots_bytes,
             reserved_identity: None,
             reserved_posting: None,
             reserved_cleanup: None,

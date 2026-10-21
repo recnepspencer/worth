@@ -201,8 +201,9 @@ fn configuration() -> TemporalContributionConfiguration {
 fn limits() -> WorthQueryInMemoryApplicationLimits {
     WorthQueryInMemoryApplicationLimits::new(
         product_world_resources(1_024),
-        runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
-            .unwrap(),
+        runtime::WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
+        ),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     )
 }
@@ -263,7 +264,6 @@ fn read_intent(application: &Application) -> IntentQueryResult {
                     ApplicationQueryParameterSet::new(),
                     primary_graph::WorthQueryProductQueryControls::new(
                         std::num::NonZeroUsize::new(8).unwrap(),
-                        None,
                         &request,
                     ),
                 )

@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphPr
 
 pub(in crate::domain_computation) struct WorthQueryRegisteredProviderAttempt<'run> {
     staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
-    requests: Vec<crate::domain_computation::WorthQueryDecisionFactRequest>,
+
     steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
     dispatch_outbox:
         Option<crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord>,
@@ -106,7 +106,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
     pub(in crate::domain_computation::primary_graph::application_attempt) fn from_registration(
         _seal: WorthQueryRegisteredProviderAttemptSeal,
         staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
-        requests: Vec<crate::domain_computation::WorthQueryDecisionFactRequest>,
+
         steps: std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]>,
         dispatch_outbox: Option<
             crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord,
@@ -114,7 +114,7 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
     ) -> Self {
         Self {
             staged,
-            requests,
+
             steps,
             dispatch_outbox,
         }
@@ -140,7 +140,6 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
         let read_set = super::fresh::compare_provider_read_set(
             execution,
             self.staged,
-            self.requests,
             authority,
             allocation_policy,
         );

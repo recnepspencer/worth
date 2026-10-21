@@ -14,8 +14,6 @@ use worth_query_installation::facade::{
     APPLICATION_EXECUTION_PROVIDER_FAMILY, APPLICATION_EXECUTION_SAFE_POINT_FAMILY,
 };
 
-pub(super) const UNPUBLISHED_IDEMPOTENCY_CAPACITY: usize = 64;
-
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphResourceSupport {
     graph: WorthQueryExecutionResourceSupport,
     snapshot:

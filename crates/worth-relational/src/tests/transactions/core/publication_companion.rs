@@ -3,9 +3,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use crate::mvcc::{
-    CompanionBranchCell, CompanionBranchCellSlot, CompanionDerivedImageRetention,
-    CompanionDerivedRootAdmission, CompanionDerivedRootCost, CompanionPreflightBudget,
-    CompanionPreflightStop, PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
+    CompanionBranchCell, CompanionBranchCellSlot, CompanionPreflightStop,
+    PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
     RelationalPublicationCompanion, RelationalPublicationDeferred, RelationalPublicationOutcome,
 };
 use crate::tests::support::*;
@@ -15,17 +14,7 @@ mod concurrent_head;
 mod head_cell;
 mod positioned_admission;
 mod preflight_overflow;
-
-struct DerivedMeter(Vec<CompanionDerivedRootCost>);
-
-impl CompanionDerivedRootAdmission for DerivedMeter {
-    type Stop = ();
-
-    fn admit_derived_root(&mut self, cost: CompanionDerivedRootCost) -> Result<(), Self::Stop> {
-        self.0.push(cost);
-        Ok(())
-    }
-}
+mod request_cancellation;
 
 struct DropCounter(Arc<AtomicUsize>);
 
@@ -51,7 +40,7 @@ impl RelationalPublicationCompanion for CountingCompanion {
         &self,
         context: &mut PublicationCompanionPreflight<'_>,
     ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
-        context.claim_work(1)?;
+        context.checkpoint()?;
         let reserved = self.cell.reserve_preflight(context)?;
         let next_value = *reserved.current().payload().as_ref() + 1;
         let effect = context.seal_replacement(reserved, Arc::new(next_value))?;
@@ -120,13 +109,7 @@ fn first_write_companion_mints_from_selected_source_without_runtime_reentry() {
     });
     let consumer: Arc<dyn RelationalPublicationCompanion> = participant.clone();
     let _registration = pending
-        .activate(
-            consumer,
-            CompanionPreflightBudget {
-                maximum_work_visits: Some(16),
-                maximum_preparation_bytes: None,
-            },
-        )
+        .activate(consumer)
         .expect("participant is active without a caller-selected branch cell");
     let written = create_entity_outcome(execution, &runtime, "first-write-after-subscription");
     assert_eq!(
@@ -173,16 +156,10 @@ fn direct_publication_invokes_required_companion_and_positions_its_root() {
         .expect("initial cell belongs to the selected source");
     let calls = Arc::new(AtomicUsize::new(0));
     let registration = pending
-        .activate(
-            Arc::new(CountingCompanion {
-                cell: cell.clone(),
-                calls: Arc::clone(&calls),
-            }),
-            CompanionPreflightBudget {
-                maximum_work_visits: Some(16),
-                maximum_preparation_bytes: None,
-            },
-        )
+        .activate(Arc::new(CountingCompanion {
+            cell: cell.clone(),
+            calls: Arc::clone(&calls),
+        }))
         .expect("required participant is active");
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -280,63 +257,43 @@ fn prepared_derived_image_keeps_conflict_and_retired_drop_custody() {
         )
         .expect("the owner mints a real branch cell");
     let _registration = pending
-        .activate(
-            Arc::new(CountingCompanion {
-                cell: cell.clone(),
-                calls: Arc::new(AtomicUsize::new(0)),
-            }),
-            CompanionPreflightBudget {
-                maximum_work_visits: Some(16),
-                maximum_preparation_bytes: None,
-            },
-        )
+        .activate(Arc::new(CountingCompanion {
+            cell: cell.clone(),
+            calls: Arc::new(AtomicUsize::new(0)),
+        }))
         .expect("the cell stays registered");
-    let dropped = Arc::new(AtomicUsize::new(0));
-    let mut meter = DerivedMeter(Vec::new());
+    let first_payload = Arc::new(8_u64);
+    let first_lifetime = Arc::downgrade(&first_payload);
     let first = cell
-        .prepare_derived_root_at_same_position(
-            cell.read_image(),
-            Arc::new(8),
-            CompanionDerivedImageRetention::from_prepared_owner(Arc::new(DropCounter(Arc::clone(
-                &dropped,
-            )))),
-            &mut meter,
-        )
+        .prepare_derived_root_at_same_position(cell.read_image(), first_payload)
         .unwrap_or_else(|_| panic!("fresh registered image prepares"));
-    assert_eq!(meter.0.len(), 1);
-    assert!(meter.0[0].allocation_bytes > 0);
     let (first_image, old_cleanup) = first
         .install()
         .unwrap_or_else(|_| panic!("first image installs"))
         .into_parts();
     drop(old_cleanup);
     let second = cell
-        .prepare_derived_root_at_same_position(
-            cell.read_image(),
-            Arc::new(9),
-            CompanionDerivedImageRetention::from_prepared_owner(Arc::new(())),
-            &mut meter,
-        )
+        .prepare_derived_root_at_same_position(cell.read_image(), Arc::new(9))
         .unwrap_or_else(|_| panic!("second image prepares"));
     let (second_image, retired_cleanup) = second
         .install()
         .unwrap_or_else(|_| panic!("second image installs"))
         .into_parts();
     drop(first_image);
-    assert_eq!(dropped.load(Ordering::Relaxed), 0);
+    assert!(
+        first_lifetime.upgrade().is_some(),
+        "retired payload remains owned"
+    );
     drop(retired_cleanup);
-    assert_eq!(dropped.load(Ordering::Relaxed), 1);
+    assert!(
+        first_lifetime.upgrade().is_none(),
+        "final cleanup releases the payload"
+    );
 
-    let stale_dropped = Arc::new(AtomicUsize::new(0));
+    let stale_payload = Arc::new(10_u64);
+    let stale_lifetime = Arc::downgrade(&stale_payload);
     let stale = cell
-        .prepare_derived_root_at_same_position(
-            cell.read_image(),
-            Arc::new(10),
-            CompanionDerivedImageRetention::from_prepared_owner(Arc::new(DropCounter(Arc::clone(
-                &stale_dropped,
-            )))),
-            &mut meter,
-        )
+        .prepare_derived_root_at_same_position(cell.read_image(), stale_payload)
         .unwrap_or_else(|_| panic!("preparing does not publish"));
     cell.replace_derived_root_at_same_position(cell.read_image(), Arc::new(11))
         .expect("a newer derived edit moves the same registered cell");
@@ -348,9 +305,15 @@ fn prepared_derived_image_keeps_conflict_and_retired_drop_custody() {
         stopped.reason(),
         crate::mvcc::CompanionCellEditStop::TopologyGenerationChanged
     );
-    assert_eq!(stale_dropped.load(Ordering::Relaxed), 0);
+    assert!(
+        stale_lifetime.upgrade().is_some(),
+        "refusal retains the prepared payload"
+    );
     drop(stopped);
-    assert_eq!(stale_dropped.load(Ordering::Relaxed), 1);
+    assert!(
+        stale_lifetime.upgrade().is_none(),
+        "refusal final drop releases its payload"
+    );
     drop(second_image);
     runtime
         .snapshots()

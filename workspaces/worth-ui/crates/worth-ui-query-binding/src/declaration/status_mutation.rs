@@ -86,8 +86,9 @@ impl ApplicationMutationBinding<WorthUiApplicationSchema> for WorthUiStatusUpdat
     const HANDLER_IDENTITY: &'static str = "worth.ui.status-update-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.ui.status-update-command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements =
-        ApplicationCandidateRequirements::fixed_shape(
+    const CANDIDATES:
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract =
+        worth_query_decl::facade::application_operation::ApplicationCandidateContract::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 2, 1),
             ApplicationCandidateResourceCeiling::representation_bytes(65_544),
         );
@@ -147,6 +148,8 @@ impl OperationHandler<WorthUiApplicationSchema, WorthUiStatusUpdateBinding>
         _: &WorthQueryInvariantMutationTarget<WorthUiApplicationSchema, WorthUiRecord>,
     ) -> ApplicationCandidateRequirements {
         WorthUiStatusUpdateBinding::CANDIDATES
+            .fixed_requirements()
+            .expect("fixed candidate contract")
     }
 
     fn decide(

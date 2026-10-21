@@ -28,7 +28,7 @@ impl PreparedPendingRevalidationIndex {
         self,
         graph: &mut SignalGraph,
         ledger: &Arc<SignalConditionalRetentionLedger>,
-        maximum: Charge,
+        maximum: Option<Charge>,
         work: &mut Work,
     ) -> Result<PreparedRetainedPendingRevalidationIndex, SignalError> {
         let source_growth = graph
@@ -41,7 +41,7 @@ impl PreparedPendingRevalidationIndex {
             .pending_revalidation_waiters
             .prepared_retained_charge()
             .map_err(map_mutation)?;
-        if current > maximum {
+        if maximum.is_some_and(|maximum| current > maximum) {
             return Err(SignalError::EvaluationStorageCapacityExhausted);
         }
         let initial = current
@@ -66,7 +66,7 @@ impl PreparedPendingRevalidationIndex {
             let peak = waiters
                 .prepare_insert_staging_charge(&producer, &next, work)
                 .map_err(map_mutation)?;
-            if peak > maximum {
+            if maximum.is_some_and(|maximum| peak > maximum) {
                 return Err(SignalError::EvaluationStorageCapacityExhausted);
             }
             if peak > admitted {
@@ -88,7 +88,7 @@ impl PreparedPendingRevalidationIndex {
         }
 
         let retained = waiters.prepared_retained_charge().map_err(map_mutation)?;
-        if retained > maximum {
+        if maximum.is_some_and(|maximum| retained > maximum) {
             return Err(SignalError::EvaluationStorageCapacityExhausted);
         }
         let payload = retained

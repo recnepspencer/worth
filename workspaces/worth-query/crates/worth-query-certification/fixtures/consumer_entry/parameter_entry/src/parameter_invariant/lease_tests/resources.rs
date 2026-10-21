@@ -1,11 +1,14 @@
-use worth_query_host::facade::runtime::{
-    RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetInstallation,
-    RuntimeWorldCustodyBudgetInstallation, RuntimeWorldHistoryBudgetInstallation,
-    RuntimeWorldObservationBudgetInstallation, RuntimeWorldPublicationBudgetInstallation,
-    RuntimeWorldRecoveryBudgetInstallation, RuntimeWorldRetentionBudgetInstallation,
-    WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
-    WorthQueryProductWorldClock, WorthQueryProductWorldResources,
-};
+use worth_query_host::facade::runtime::RuntimeWorldBranchBudgetInstallation;
+use worth_query_host::facade::runtime::RuntimeWorldBudgetInstallation;
+use worth_query_host::facade::runtime::RuntimeWorldCustodyBudgetInstallation;
+use worth_query_host::facade::runtime::RuntimeWorldHistoryBudgetInstallation;
+use worth_query_host::facade::runtime::RuntimeWorldObservationBudgetInstallation;
+use worth_query_host::facade::runtime::RuntimeWorldPublicationBudgetInstallation;
+use worth_query_host::facade::runtime::RuntimeWorldRecoveryBudgetInstallation;
+use worth_query_host::facade::runtime::RuntimeWorldRetentionBudgetInstallation;
+use worth_query_host::facade::runtime::WorthQueryInvalidationResources;
+use worth_query_host::facade::runtime::WorthQueryProductWorldClock;
+use worth_query_host::facade::runtime::WorthQueryProductWorldResources;
 
 pub(super) fn world_resources() -> WorthQueryProductWorldResources {
     // Bounds this fixture World's serial request memory and deterministic work.
@@ -38,15 +41,7 @@ pub(super) fn world_resources() -> WorthQueryProductWorldResources {
             },
         },
         WorthQueryProductWorldClock::start(),
-        WorthQueryInvalidationResources::install(
-            WorthQueryInvalidationResourceInstallation::bounded(
-                1_000_000,
-                64 * 1_024 * 1_024,
-                128 * 1_024 * 1_024,
-                64,
-            ),
-        )
-        .expect("the Query invalidation installation is valid"),
+        WorthQueryInvalidationResources::new(),
         execution_policy,
     )
     .expect("the consumer's finite World resources are valid")

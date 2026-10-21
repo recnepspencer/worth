@@ -2,7 +2,7 @@
 use super::super::{
     WorthQueryOutputCheckpoint, WorthQueryOutputDemandAdvanceAdmission as Admission,
 };
-use super::published_retirement::{admit, balances, publish};
+use super::published_retirement::{admit, publish};
 use super::*;
 
 fn scenario(rejoin: bool, late_hold: bool) {
@@ -10,7 +10,7 @@ fn scenario(rejoin: bool, late_hold: bool) {
     let _occurrence = occurrence();
     crate::domain_computation::primary_graph::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
-        let baseline = balances(&registry);
+
         let old_key = key("awaited", 1, 1);
         let newest_key = key("awaited", 2, 1);
         let stale = admit(&registry, &old_key);
@@ -46,7 +46,7 @@ fn scenario(rejoin: bool, late_hold: bool) {
             );
             drop(returned);
             assert!(!registry.state.lock().unwrap().records.contains_key(&key));
-            assert_eq!(balances(&registry), baseline);
+
             return;
         }
         drop(refreshing);
@@ -58,14 +58,12 @@ fn scenario(rejoin: bool, late_hold: bool) {
             );
             assert!(super::super::refreshed_rejoin::awaited_by_stale_owner(
                 &state.records,
-                &newest_key,
-                &mut super::super::lifecycle::release::CleanupWalk::new()
-            )
-            .unwrap());
+                &newest_key
+            ));
         }
         if rejoin {
             let (owner, joined_source) = registry
-                .rejoin_refreshed(&stale, &mut record_admission())
+                .rejoin_refreshed(&stale)
                 .unwrap()
                 .expect("the stale owner rejoins its exact latest answer");
             assert_eq!(owner.key, newest_key);
@@ -127,14 +125,7 @@ fn scenario(rejoin: bool, late_hold: bool) {
                 registry.state.lock().unwrap().records[&newest_key].has_cached_ready(),
                 "closing the owner keeps its delivered Ready cache"
             );
-            assert_eq!(
-                balances(&registry),
-                (
-                    baseline.0,
-                    baseline.1,
-                    super::super::PreparedReadyBacking::retained_bytes()
-                )
-            );
+
             registry.release_product_occurrence(occurrence());
         } else {
             drop(stale);
@@ -149,11 +140,6 @@ fn scenario(rejoin: bool, late_hold: bool) {
             );
         }
         drop(source);
-        assert_eq!(
-            balances(&registry),
-            baseline,
-            "the closed occurrence refunds all three custody totals"
-        );
     });
 }
 #[test]
@@ -175,7 +161,7 @@ fn closing_the_last_stale_owner_releases_its_held_successor() {
     let _occurrence = occurrence();
     crate::domain_computation::primary_graph::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
-        let baseline = balances(&registry);
+
         let stale_key = key("held-awaiting", 1, 1);
         let newest_key = key("held-awaiting", 2, 1);
         let stale = admit(&registry, &stale_key);
@@ -200,6 +186,5 @@ fn closing_the_last_stale_owner_releases_its_held_successor() {
                 .contains_key(&newest_key),
             "the last awaiting owner's release also closes its held successor"
         );
-        assert_eq!(balances(&registry), baseline);
     });
 }

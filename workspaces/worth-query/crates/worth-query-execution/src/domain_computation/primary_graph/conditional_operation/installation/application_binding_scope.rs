@@ -1,9 +1,9 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::{
-    ApplicationSchema, WorthQueryHostConditionalPredicateProvider,
-    WorthQueryInstalledTemporalConditionalOperation, WorthQueryNamedClock,
-    WorthQueryNamedClockSource, WorthQueryPortableApplicationConditionalOperationBinding,
-    WorthQueryTemporalIntentProjector,
+    ApplicationSchema, WorthQueryConditionalNodeLocation,
+    WorthQueryHostConditionalPredicateProvider, WorthQueryInstalledTemporalConditionalOperation,
+    WorthQueryNamedClock, WorthQueryNamedClockSource,
+    WorthQueryPortableApplicationConditionalOperationBinding, WorthQueryTemporalIntentProjector,
 };
 
 use super::{
@@ -40,7 +40,7 @@ where
         &mut self,
         binding: WorthQueryPortableApplicationConditionalOperationBinding,
         operation_type: TypeId,
-        node_identity: String,
+        target: WorthQueryConditionalNodeLocation,
         required_producers: Vec<String>,
     ) {
         assert!(
@@ -50,7 +50,7 @@ where
         self.application_binding_scope = Some(ApplicationConditionalBindingScope {
             binding,
             operation_type,
-            node_identity,
+            target,
             initial_binding_count: self.bindings.len(),
             initial_readiness_count: self.output_readiness.len(),
             required_producers,
@@ -77,7 +77,7 @@ where
         } else {
             Err(denial(
                 DenialKind::IncompleteBindingInventory,
-                scope.node_identity,
+                format!("{:?}", scope.target),
             ))
         }
     }
@@ -134,15 +134,12 @@ where
             return Ok(());
         };
         let node = binding.clocked_node().provider().node();
-        if !scope_matches(
-            scope,
-            node.operation().binding(),
-            node.location().node_identity(),
-        ) || scope.operation_type != TypeId::of::<ApplicationOperation>()
+        if !scope_matches(scope, node.operation().binding(), node.location())
+            || scope.operation_type != TypeId::of::<ApplicationOperation>()
         {
             return Err(denial(
                 DenialKind::ForeignBinding,
-                scope.node_identity.clone(),
+                format!("{:?}", scope.target),
             ));
         }
         Ok(())
@@ -152,9 +149,9 @@ where
 fn scope_matches(
     scope: &ApplicationConditionalBindingScope,
     binding: &WorthQueryPortableApplicationConditionalOperationBinding,
-    node_identity: &str,
+    target: &WorthQueryConditionalNodeLocation,
 ) -> bool {
-    binding == &scope.binding && node_identity == scope.node_identity
+    binding == &scope.binding && target == &scope.target
 }
 
 fn denial(
@@ -192,13 +189,18 @@ mod tests {
         let scope = ApplicationConditionalBindingScope {
             binding: binding("expected"),
             operation_type: TypeId::of::<()>(),
-            node_identity: "ready".into(),
+            target: super::WorthQueryConditionalNodeLocation::operation("ready").unwrap(),
             initial_binding_count: 0,
             initial_readiness_count: 0,
             required_producers: Vec::new(),
         };
-        assert!(scope_matches(&scope, &binding("expected"), "ready"));
-        assert!(!scope_matches(&scope, &binding("foreign"), "ready"));
-        assert!(!scope_matches(&scope, &binding("expected"), "wrong"));
+        let ready = super::WorthQueryConditionalNodeLocation::operation("ready").unwrap();
+        let wrong = super::WorthQueryConditionalNodeLocation::operation("wrong").unwrap();
+        let staged =
+            super::WorthQueryConditionalNodeLocation::workflow_stage("review", "ready").unwrap();
+        assert!(scope_matches(&scope, &binding("expected"), &ready));
+        assert!(!scope_matches(&scope, &binding("foreign"), &ready));
+        assert!(!scope_matches(&scope, &binding("expected"), &wrong));
+        assert!(!scope_matches(&scope, &binding("expected"), &staged));
     }
 }

@@ -1,17 +1,17 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
-use crate::domain_computation::primary_graph::{
-    application_attempt::{
-        Movement, WorthQueryApplicationObservedFact, WorthQuerySourceCurrentnessFailure,
-    },
-    output_lineage::{
-        cutoff_declines,
-        invalidation::{FullVerificationReason, InvalidationEditAdmission},
-        RecordedSettlementIdentity, SealedNativeOutputWitness,
-    },
-    SourceInvalidationOwner, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-};
+use crate::domain_computation::primary_graph::application_attempt::Movement;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
+use crate::domain_computation::primary_graph::output_lineage::cutoff_declines;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
+use crate::domain_computation::primary_graph::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 
 /// Internal choice; callers can only request an output through demand
 /// admission. FreshRequired never grants authority to preserve an output.
@@ -20,19 +20,20 @@ pub(in crate::domain_computation::primary_graph) enum OutputDependencySelection 
     FreshRequired,
 }
 
-pub(in crate::domain_computation::primary_graph) fn compare_retained_output_dependencies(
+pub(in crate::domain_computation::primary_graph) fn compare_retained_output_dependencies<
+    F: FactSequence + ?Sized,
+>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     identity_current: bool,
-    facts: Option<&[WorthQueryApplicationObservedFact]>,
-    admission: &mut InvalidationEditAdmission,
+    facts: Option<&F>,
 ) -> Result<OutputDependencySelection, WorthQueryOutputDemandDenial> {
     let facts = match reusable_facts(identity_current, facts) {
         Ok(facts) => facts,
         Err(fresh) => return Ok(fresh),
     };
-    match first_moved_fact(execution, runtime, snapshot, facts, admission) {
+    match first_moved_fact(execution, runtime, snapshot, facts.iter()) {
         Ok(None) => Ok(OutputDependencySelection::Reuse),
         Ok(Some(_)) => Ok(OutputDependencySelection::FreshRequired),
         Err(stop) => Err(retained_fact_denial(
@@ -47,6 +48,9 @@ pub(in crate::domain_computation::primary_graph) fn retained_fact_denial(
     unavailable: &str,
 ) -> WorthQueryOutputDemandDenial {
     match stop {
+        RetainedFactStop::OutputObservation(stop) => {
+            super::verification_denial(stop, unavailable.to_owned())
+        }
         RetainedFactStop::Work => work_denial(),
         RetainedFactStop::Memory => memory_denial(),
         RetainedFactStop::Execution(cause) => read_denial(cause),
@@ -66,6 +70,7 @@ pub(in crate::domain_computation::primary_graph) fn retained_fact_denial(
 pub(in crate::domain_computation::primary_graph) enum RetainedFactStop<'fact> {
     /// The request's meter, or the fact's own recorded bound, stopped it.
     Work,
+    OutputObservation(crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop),
     Memory,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Interrupted(worth_relational::facade::mvcc::RelationalInterruptionEvent),
@@ -81,12 +86,14 @@ pub(in crate::domain_computation::primary_graph) fn first_moved_fact<'fact>(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<&'fact WorthQueryApplicationObservedFact>, RetainedFactStop<'fact>> {
     for fact in facts {
-        match fact.source_currentness_in(runtime, execution, snapshot, admission) {
+        match fact.source_currentness_in(runtime, execution, snapshot) {
             Ok(Ok(movement)) if movement.movement() == Movement::Moved => return Ok(Some(fact)),
             Ok(Ok(_)) => {}
+            Ok(Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop))) => {
+                return Err(RetainedFactStop::OutputObservation(stop))
+            }
             Ok(Err(WorthQuerySourceCurrentnessFailure::Execution(cause))) => {
                 return Err(RetainedFactStop::Execution(cause))
             }
@@ -150,13 +157,12 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_witn
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     witness: Option<&SealedNativeOutputWitness>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<OutputDependencySelection, WorthQueryOutputDemandDenial> {
     let Some(witness) = witness else {
         return Ok(OutputDependencySelection::Reuse);
     };
     let unchanged = owner_read(
-        witness.unchanged_in(runtime, snapshot, admission),
+        witness.unchanged_in(runtime, snapshot),
         "retained output witness could not be compared",
     )?;
     Ok(if unchanged {
@@ -175,7 +181,6 @@ pub(in crate::domain_computation::primary_graph) fn retained_output_settlement_i
     requirement: Option<FullVerificationReason>,
     settlement: &RecordedSettlementIdentity,
     owner: &SourceInvalidationOwner,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, WorthQueryOutputDemandDenial> {
     const UNAVAILABLE: &str = "retained output settlement could not be read";
     if cutoff_declines(requirement, None) {
@@ -190,10 +195,7 @@ pub(in crate::domain_computation::primary_graph) fn retained_output_settlement_i
                 UNAVAILABLE,
             )
         })?;
-    let current = owner_read(
-        owner.currentness(&selected, settlement, admission),
-        UNAVAILABLE,
-    )?;
+    let current = owner_read(owner.currentness(&selected, settlement), UNAVAILABLE)?;
     Ok(!cutoff_declines(requirement, Some(&current)))
 }
 
@@ -213,10 +215,10 @@ fn work_denial() -> WorthQueryOutputDemandDenial {
     )
 }
 
-fn reusable_facts(
+fn reusable_facts<F: FactSequence + ?Sized>(
     identity_current: bool,
-    facts: Option<&[WorthQueryApplicationObservedFact]>,
-) -> Result<&[WorthQueryApplicationObservedFact], OutputDependencySelection> {
+    facts: Option<&F>,
+) -> Result<&F, OutputDependencySelection> {
     if !identity_current {
         return Err(OutputDependencySelection::FreshRequired);
     }
@@ -253,12 +255,13 @@ pub(in crate::domain_computation::primary_graph) fn interruption_denial(
 
 #[cfg(test)]
 mod tests {
-    use super::{reusable_facts, OutputDependencySelection};
+    use super::reusable_facts;
+    use super::OutputDependencySelection;
 
     #[test]
     fn missing_dependency_facts_never_authorize_retained_output() {
         assert!(matches!(
-            reusable_facts(true, None),
+            reusable_facts::<[super::WorthQueryApplicationObservedFact]>(true, None),
             Err(OutputDependencySelection::FreshRequired)
         ));
         assert!(matches!(
@@ -266,28 +269,8 @@ mod tests {
             Err(OutputDependencySelection::FreshRequired)
         ));
         assert!(matches!(
-            reusable_facts(false, None),
+            reusable_facts::<[super::WorthQueryApplicationObservedFact]>(false, None),
             Err(OutputDependencySelection::FreshRequired)
         ));
-    }
-}
-
-#[cfg(test)]
-mod read_fold_tests {
-    use super::*;
-    #[test]
-    fn read_fold_output_memory_stop_keeps_memory() {
-        let mut admission = InvalidationEditAdmission::new(
-            worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: Some(10),
-                maximum_preparation_bytes: Some(0),
-            },
-        );
-        let stop = admission.admit_read_scratch(1).unwrap_err();
-        let denial = retained_fact_denial(preflight_stop(stop), "retained comparison unavailable");
-        assert_eq!(
-            denial.kind(),
-            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
-        );
     }
 }

@@ -7,7 +7,6 @@ mod admitted_selection;
 mod prepared_publication;
 pub(crate) use prepared_publication::PreparedGenerationBatch;
 mod discard;
-pub(crate) use admitted_selection::ExactLookupInputs;
 mod generation_catalog;
 #[cfg(test)]
 mod query_generation_routing;
@@ -202,6 +201,13 @@ impl IndexingSubsystem {
         index_id: DerivedIndexId,
     ) -> Option<Arc<DerivedIndexDefinition>> {
         self.state.read().definitions.get(&index_id).map(Arc::clone)
+    }
+
+    pub(crate) fn with_definitions<R>(
+        &self,
+        read: impl FnOnce(&BTreeMap<DerivedIndexId, Arc<DerivedIndexDefinition>>) -> R,
+    ) -> R {
+        read(&self.state.read().definitions)
     }
 
     pub(crate) fn definitions(&self) -> Vec<Arc<DerivedIndexDefinition>> {

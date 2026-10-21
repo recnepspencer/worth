@@ -70,7 +70,6 @@ fn scenario(direct: bool) {
                     primary_graph::WorthQueryApplicationQueryAccessContext::new(&actor, &entity);
                 let controls = primary_graph::WorthQueryProductQueryControls::new(
                     limits.maximum_results(),
-                    limits.maximum_work(),
                     &scope,
                 );
                 let plan = selected
@@ -117,7 +116,10 @@ fn scenario(direct: bool) {
         .find_map(
             |_| match output.required_output_mut().advance(&application, &request) {
                 Err(stop) => Some(stop),
-                Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
+                Ok(
+                    WorthQueryApplicationProgramOutputProgress::Pending
+                    | WorthQueryApplicationProgramOutputProgress::Progressed,
+                ) => None,
                 Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
                     panic!("pressure interrupts Ready")
                 }
@@ -193,7 +195,10 @@ fn scenario(direct: bool) {
         let stop = (0..64)
             .find_map(|_| match recovered.advance(&application, &request) {
                 Err(stop) => Some(stop),
-                Ok(WorthQueryApplicationProgramOutputProgress::Pending) => None,
+                Ok(
+                    WorthQueryApplicationProgramOutputProgress::Pending
+                    | WorthQueryApplicationProgramOutputProgress::Progressed,
+                ) => None,
                 Ok(WorthQueryApplicationProgramOutputProgress::Settled(_)) => {
                     panic!("Recovery cannot refresh")
                 }

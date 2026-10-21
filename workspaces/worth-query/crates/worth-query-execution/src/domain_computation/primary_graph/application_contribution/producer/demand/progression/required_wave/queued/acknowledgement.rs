@@ -6,22 +6,21 @@ impl QueuedRequiredRoots {
         &mut self,
         index: usize,
         proof: performed::CurrentProof<std::sync::Arc<super::WorthQueryOutputDemandSettlement>>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let Some(work) = self.roots[index].take() else {
             return Ok(());
         };
-        drop(work.acknowledge_current_admitted(proof, admission)?);
+        drop(work.acknowledge_current_admitted(proof)?);
         Ok(())
     }
 }
 pub(super) fn acknowledge_caller_claim(
     work: SelectedRequiredWork,
     proof: performed::CurrentProof<Arc<WorthQueryOutputDemandSettlement>>,
-    admission: &mut InvalidationEditAdmission,
+
 ) -> Result<
     Option<crate::domain_computation::primary_graph::application_output_demand::ReplacedRequiredWorkHint>,
     WorthQueryOutputDemandDenial,
 >{
-    work.acknowledge_current_admitted(proof, admission)
+    work.acknowledge_current_admitted(proof)
 }

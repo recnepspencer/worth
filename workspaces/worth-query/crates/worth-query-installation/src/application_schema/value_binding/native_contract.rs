@@ -4,8 +4,8 @@ use worth_foundational::facade::{AspectValue, ScalarAspectType};
 use worth_query_declaration::facade::application_schema::{
     ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe, ApplicationFrameIdentity,
     ApplicationNativeInputAdmissionDenial, ApplicationNativeInputDecodeResources,
-    ApplicationSchemaBindingIdentity, ApplicationUnitIdentity, ApplicationValueDecodeDenial,
-    ApplicationValueEncodeDenial,
+    ApplicationScalarValueBinding, ApplicationSchemaBindingIdentity, ApplicationUnitIdentity,
+    ApplicationValueDecodeDenial, ApplicationValueEncodeDenial, ValueDecodeAdmission,
 };
 use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
 
@@ -36,6 +36,14 @@ impl WorthQueryInstalledApplicationValueBinding {
         self.recipe.binding_identity()
     }
 
+    pub const fn canonical_contract(
+        &self,
+    ) -> Option<
+        &worth_query_declaration::facade::application_schema::ApplicationCanonicalValueContract,
+    > {
+        self.recipe.canonical_contract()
+    }
+
     pub const fn scalar_family(&self) -> ScalarAspectType {
         self.recipe.scalar_family()
     }
@@ -58,6 +66,20 @@ impl WorthQueryInstalledApplicationValueBinding {
 
     pub const fn is_readable(&self) -> bool {
         self.recipe.decode().is_some()
+    }
+
+    pub const fn supports_admitted_decode(&self) -> bool {
+        self.recipe.supports_admitted_decode()
+    }
+
+    /// Exact compiled binding/type match, without deriving a second catalogue.
+    pub fn matches_binding<Binding: ApplicationScalarValueBinding>(&self) -> bool {
+        self.binding_type() == TypeId::of::<Binding>()
+            && self.value_type() == TypeId::of::<Binding::Value>()
+            && self.identity() == &Binding::IDENTITY
+            && self.scalar_family() == Binding::SCALAR_FAMILY
+            && self.unit() == Binding::UNIT
+            && self.frame() == Binding::FRAME
     }
 
     pub const fn admits_native_input(&self) -> bool {
@@ -113,6 +135,26 @@ impl WorthQueryInstalledApplicationValueBinding {
             .map_err(|_| ApplicationValueDecodeDenial::CodecRejected {
                 binding_identity: self.recipe.binding_identity().clone(),
             })
+    }
+
+    /// Reconstruct through the installed owner's admitted dispatch. Canonical
+    /// contracts lacking this dispatch cannot enter the installed catalogue.
+    pub fn decode_admitted<Value: 'static>(
+        &self,
+        value: &AspectValue,
+        admission: &mut ValueDecodeAdmission<'_>,
+    ) -> Result<Value, ApplicationValueDecodeDenial> {
+        let rejected = || ApplicationValueDecodeDenial::CodecRejected {
+            binding_identity: self.recipe.binding_identity().clone(),
+        };
+        if self.value_type() != TypeId::of::<Value>() {
+            return Err(rejected());
+        }
+        let decode = self.recipe.admitted_decode().ok_or_else(rejected)?;
+        decode(value, admission)?
+            .downcast::<Value>()
+            .map(|value| *value)
+            .map_err(|_| rejected())
     }
 
     /// Readmits a retained native literal through this exact installed decoder

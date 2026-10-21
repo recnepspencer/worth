@@ -109,7 +109,7 @@ pub(super) fn grants_named(
         .runtime
         .query(crate::queries::estate_governance_context(ESTATE))
         .as_principal(principal)
-        .controls(BankReadControls::current(request_scope(), 1, 20_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 1).unwrap())
         .execute()
         .expect("governance authority must read authoritative delegation state");
     result.rows()[0]

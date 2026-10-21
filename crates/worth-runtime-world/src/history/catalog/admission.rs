@@ -75,7 +75,9 @@ impl CompositeHistoryCatalog {
         }
         validate_parent_for_reservation(&mut state, &parent)?;
         let maximum_commits = state.limits.maximum_commits().get();
-        if state.entries.len() >= maximum_commits {
+        if let Some(maximum_commits) =
+            maximum_commits.filter(|maximum| state.entries.len() >= *maximum)
+        {
             return Err(CompositeHistoryCatalogDenial::CommitCapacityExhausted {
                 maximum: maximum_commits,
             });

@@ -60,10 +60,10 @@ pub mod graph_read_access {
 
 pub mod graph_obligation {
     pub use crate::graph_obligation::{
-        WorthQueryAdmittedGraphWorkPlan, WorthQueryGraphObligationSelectionAdmissionStop,
-        WorthQueryGraphObligationSelectionCounters, WorthQueryGraphObligationSelectionDenial,
-        WorthQueryGraphObligationSelectionDenialKind, WorthQueryGraphWorkAdmissionDenial,
-        WorthQueryGraphWorkIntent, WorthQueryGraphWorkIntentKind, WorthQueryGraphWorkPlanIdentity,
+        WorthQueryAdmittedGraphWorkPlan, WorthQueryGraphObligationSelectionCounters,
+        WorthQueryGraphObligationSelectionDenial, WorthQueryGraphObligationSelectionDenialKind,
+        WorthQueryGraphWorkAdmissionDenial, WorthQueryGraphWorkIntent,
+        WorthQueryGraphWorkIntentKind, WorthQueryGraphWorkPlanIdentity,
         WorthQuerySelectedGraphObligationInspection, WorthQuerySelectedGraphObligations,
     };
 }

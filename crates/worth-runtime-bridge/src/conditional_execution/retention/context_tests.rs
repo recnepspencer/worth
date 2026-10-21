@@ -55,7 +55,7 @@ pub(crate) fn assert_context_retention(
         let capture = Arc::new(ContextRetentionCapture::default());
         let (owner, lowering) = factory(
             BridgeConditionalRetentionBudget {
-                maximum_retained_bytes: ceiling,
+                maximum_retained_bytes: Some(ceiling),
                 ..BridgeConditionalRetentionBudget::development()
             },
             Arc::clone(&capture),

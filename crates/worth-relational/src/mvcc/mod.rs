@@ -12,11 +12,12 @@ pub use crate::runtime::{
 };
 pub use observation::RelationalBranchObservation;
 pub(crate) use publication::PreparedCanonicalBranchMovement;
+pub use publication::RelationalInstalledApplicationPublicationAuthority;
+pub(crate) use publication::{origin_denial, RequiredOutputPublicationAdmission};
 pub use publication::{
     CompanionBranchCell, CompanionBranchCellSlot, CompanionBranchImage, CompanionCellEditStop,
-    CompanionDerivedImageRetention, CompanionDerivedRootAdmission, CompanionDerivedRootCleanup,
-    CompanionDerivedRootCost, CompanionDerivedRootInstalled, CompanionDerivedRootPreparationStop,
-    CompanionDerivedRootStopped, CompanionPreflightBudget, CompanionPreflightStop,
+    CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
+    CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, CompanionPreflightStop,
     CompanionPublicationCompletion, CompanionPublicationCompletionObserver,
     DiscardedRelationalCommitCandidate, PendingCompanionRegistration, PerformedRelationalCommit,
     PreparedCompanionBranchCell, PreparedCompanionDerivedRoot, PreparedPublicationCompanionEffect,
@@ -32,6 +33,11 @@ pub use publication::{
 pub(crate) use publication::{
     PreparedIndexRefreshBasis, PreparedRelationalCandidateAdmissionStop,
     PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
+};
+pub use publication::{
+    RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
+    RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
+    RequiredOutputRoleTarget,
 };
 pub(crate) use transaction::commit_plan::bulk_reservations_for_plan;
 pub(crate) use transaction::RelationalMaterializationTransactionMode;
@@ -49,8 +55,14 @@ pub use transaction::{
 pub(crate) use validation::RelationalTransactionValidationInput;
 pub use validation::{
     CustomInvariantExecutionReceipt, RelationalMutationInvariantEvidence,
-    RelationalMutationProposalIdentity, ValidatedMutationFootprint,
+    RelationalMutationProposalIdentity, ValidatedEntityStructTouch, ValidatedMutationFootprint,
     ValidatedMutationFootprintNotRequested, ValidatedMutationFootprintProjection,
     ValidatedMutationFootprintWork, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
     ValidatedMutationTouchProjectionWork, ValidatedMutationTouches, ValidatedRelationalProposal,
 };
+
+#[cfg(test)]
+pub(crate) use publication::{native_birth_fixture, native_meaning_fixture};
+
+#[cfg(test)]
+pub(crate) use publication::native_roles_fixture;

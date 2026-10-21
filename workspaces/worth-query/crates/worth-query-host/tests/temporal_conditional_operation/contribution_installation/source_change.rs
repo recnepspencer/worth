@@ -118,22 +118,19 @@ pub(super) fn change_input_with_commit_probe<Guard>(
         .into_parts()
         })
         .expect("installed host call opens");
-    let reads = application
-        .with_host_advancement(|phase| {
-            application
-        .begin_projected_application_read_attempt(
-            &phase, admission,
-            projection,
-            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        })
-        .expect("installed host call opens");
     let mut effects = application
-        .with_host_advancement(|host_phase| {
+        .with_host_advancement(|phase| {
+            let reads = application
+                .begin_projected_application_read_attempt(
+                    &phase,
+                    admission,
+                    projection,
+                    worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
             reads
                 .complete_projected_dependencies(
-                    &host_phase,
+                    &phase,
                     worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap()

@@ -32,7 +32,6 @@ fn exact_support_loss_after_continuation_readmission_denies_before_payload() {
             continuation,
             WorthQueryApplicationQueryResumeControls::new(
                 std::num::NonZeroUsize::new(1).unwrap(),
-                Some(std::num::NonZeroUsize::new(20_000).unwrap()),
                 &request,
             ),
             |phase, admitted| {
@@ -98,7 +97,6 @@ fn foreign_approval_cannot_open_or_resume_activity_pages() {
             continuation,
             WorthQueryApplicationQueryResumeControls::new(
                 std::num::NonZeroUsize::new(1).unwrap(),
-                Some(std::num::NonZeroUsize::new(20_000).unwrap()),
                 &request,
             ),
         );

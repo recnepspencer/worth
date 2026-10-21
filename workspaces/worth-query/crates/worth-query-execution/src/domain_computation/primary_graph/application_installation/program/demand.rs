@@ -83,6 +83,7 @@ where
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     Pending,
+    Progressed,
     Settled(WorthQuerySettledProgramOutput<Schema, Program, Demand>),
 }
 

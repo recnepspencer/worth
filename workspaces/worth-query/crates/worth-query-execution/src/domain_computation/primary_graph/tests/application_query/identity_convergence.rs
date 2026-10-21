@@ -43,7 +43,7 @@ fn request_controls_do_not_become_query_or_parameter_identity() {
                 .unwrap();
             let query = installed_query(&world);
             let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
-            let admit = |status: &str, maximum_results: usize, maximum_work: usize| {
+            let admit = |status: &str, maximum_results: usize| {
                 world
                 .selected_product(
                     &(host_custody.phase_for_application(&world.application)).test_host_request(),
@@ -55,25 +55,18 @@ fn request_controls_do_not_become_query_or_parameter_identity() {
                     ApplicationQueryParameterSet::new()
                         .bind(status_parameter(), status.to_string())
                         .expect("fixture query parameter must encode"),
-                    crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
-                        NonZeroUsize::new(maximum_results).unwrap(),
-                        Some(NonZeroUsize::new(maximum_work).unwrap()),
-                        &request,
-                    ),
+                    crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(NonZeroUsize::new(maximum_results).unwrap(), &request),
                 )
             };
 
-            let first = admit("open", 10, 10_000).unwrap();
+            let first = admit("open", 10).unwrap();
             let query_identity = first.query_identity().clone();
             let parameter_identity = *first.parameter_binding_identity();
             assert_eq!(first.controls().maximum_result_count().get(), 10);
-            assert_eq!(
-                first.controls().maximum_work().map(NonZeroUsize::get),
-                Some(10_000)
-            );
+
             drop(first);
 
-            let changed_controls = admit("open", 9, 9_999).unwrap();
+            let changed_controls = admit("open", 9).unwrap();
 
             assert_eq!(changed_controls.query_identity(), &query_identity);
             assert_eq!(
@@ -81,16 +74,10 @@ fn request_controls_do_not_become_query_or_parameter_identity() {
                 &parameter_identity
             );
             assert_eq!(changed_controls.controls().maximum_result_count().get(), 9);
-            assert_eq!(
-                changed_controls
-                    .controls()
-                    .maximum_work()
-                    .map(NonZeroUsize::get),
-                Some(9_999)
-            );
+
             drop(changed_controls);
 
-            let changed_parameter = admit("closed", 10, 10_000).unwrap();
+            let changed_parameter = admit("closed", 10).unwrap();
 
             assert_eq!(changed_parameter.query_identity(), &query_identity);
             assert_ne!(

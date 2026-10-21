@@ -13,8 +13,7 @@ use crate::domain_computation::{
             NestedAccountQuery,
         },
         WorthQueryApplicationOneShotDenialKind, WorthQueryApplicationQueryAccessContext,
-        WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryPrincipalResolutionMode,
-        WorthQueryProductQueryControls,
+        WorthQueryPrincipalResolutionMode, WorthQueryProductQueryControls,
     },
 };
 use worth_query_admission::facade::authenticated_principal::{
@@ -50,7 +49,9 @@ fn nz(value: usize) -> NonZeroUsize {
 #[test]
 fn cancellation_during_real_nested_materialization_releases_all_read_resources() {
     let world = installed_authorization_world_with_resource_profile(
-        WorthQueryApplicationQueryResourceProfile::bounded(5120, 65_536, 100_000, 64).unwrap(),
+        WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(64).expect("concurrent graph work is non-zero"),
+        ),
     );
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
@@ -107,21 +108,16 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
                     ApplicationQueryParameterSet::new()
                         .bind(status_parameter(), "open".to_owned())
                         .unwrap(),
-                    WorthQueryProductQueryControls::new(nz(10), Some(nz(10_000)), &request),
+                    WorthQueryProductQueryControls::new(nz(10), &request),
                 )
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let buffers = world.application.result_buffer_observer();
-    let observed = buffers.clone();
     let triggered = Rc::new(Cell::new(false));
     let witness = Rc::clone(&triggered);
     CHECKPOINT.with(|slot| {
         *slot.borrow_mut() = Some(Box::new(move |subject| {
-            if !witness.get()
-                && subject.contains("relation")
-                && observed.observe().retained_bytes() > 0
-            {
+            if !witness.get() && subject.contains("relation") {
                 witness.set(true);
                 cancellation.cancel();
             }
@@ -140,109 +136,13 @@ fn cancellation_during_real_nested_materialization_releases_all_read_resources()
         .expect("the fixture read owns its installed host call");
     assert!(
         triggered.get(),
-        "must cancel inside nested traversal after real buffer claims"
+        "must cancel inside nested traversal at a real nested relation checkpoint"
     );
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationOneShotDenialKind::Cancelled
     );
-    assert!(buffers.observe().peak_observed_bytes() > 0);
-    assert_eq!(buffers.observe().active_buffers(), 0);
-    assert_eq!(buffers.observe().retained_bytes(), 0);
-    assert_eq!(
-        world
-            .application
-            .application_query_basis_observer()
-            .observe()
-            .active(),
-        0
-    );
-    assert_eq!(
-        world.application.provider_session_resource_count_for_test(),
-        0
-    );
-}
 
-#[test]
-fn direct_query_admission_cannot_bypass_host_work_policy() {
-    let world = installed_authorization_world_with_resource_profile(
-        WorthQueryApplicationQueryResourceProfile::bounded(5120, 65_536, 100_000, 64)
-            .unwrap()
-            .with_maximum_work(nz(100)),
-    );
-    let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
-        cancellation.token(),
-    );
-    let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let selected = world
-        .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
-        .expect("the fixture read owns its installed host call");
-    let principal = world
-        .application
-        .with_host_advancement(|phase| {
-            selected
-                .resolve_authenticated_principal(
-                    &phase,
-                    &world.binding,
-                    &external,
-                    &request,
-                    WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
-    let scope = world
-        .application
-        .with_host_advancement(|phase| {
-            selected
-                .resolve_entity(
-                    &phase,
-                    AccountStatus::reference(),
-                    "open".to_owned(),
-                    &request,
-                    WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .unwrap()
-        })
-        .expect("the fixture read owns its installed host call");
-    let query = world
-        .application
-        .installed_schema()
-        .certification_query(NestedAccountQuery::reference())
-        .unwrap();
-    let access = WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
-    let denial = world
-        .application
-        .with_host_advancement(|phase| {
-            selected
-                .admit_application_query(
-                    &phase,
-                    &query,
-                    &access,
-                    ApplicationQueryParameterSet::new()
-                        .bind(status_parameter(), "open".to_owned())
-                        .unwrap(),
-                    WorthQueryProductQueryControls::new(nz(10), Some(nz(101)), &request),
-                )
-                .err()
-                .expect("lower admission must enforce the host guard without front-door help")
-        })
-        .expect("the fixture read owns its installed host call");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded
-    );
-    assert_eq!(
-        world
-            .application
-            .result_buffer_observer()
-            .observe()
-            .active_buffers(),
-        0
-    );
     assert_eq!(
         world
             .application

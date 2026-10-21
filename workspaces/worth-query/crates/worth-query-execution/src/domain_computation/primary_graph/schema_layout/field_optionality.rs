@@ -5,6 +5,16 @@ use worth_foundational::facade::{AspectFieldLocator, AspectShape, FieldRequireme
 use super::WorthQueryPrimaryGraphLayout;
 
 impl WorthQueryPrimaryGraphLayout {
+    pub(in crate::domain_computation) fn aspect_is_optional(
+        &self,
+        entity: &str,
+        locator: &AspectFieldLocator,
+    ) -> bool {
+        self.aspect_contract(entity, locator.aspect().aspect_key())
+            .is_some_and(|contract| {
+                contract.absence() == worth_foundational::facade::AbsenceLaw::Optional
+            })
+    }
     pub(in crate::domain_computation) fn field_is_optional(
         &self,
         entity: &str,

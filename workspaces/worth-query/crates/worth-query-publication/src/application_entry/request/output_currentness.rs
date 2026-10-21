@@ -33,11 +33,10 @@ where
         settlement: &crate::application_entry::WorthQueryApplicationProgramOutputSettlement<
             RootQuery,
         >,
-        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         self.application
             .with_application_advancement(self.scope, |phase| {
-                self.require_current_program_output_in_advancement(&phase, settlement, maximum_work)
+                self.require_current_program_output_in_advancement(&phase, settlement)
             })
             .map_err(WorthQueryOutputCurrentnessDenial::ExecutionRequest)?
     }
@@ -48,23 +47,17 @@ where
     pub fn require_current_output_demand<Query>(
         &self,
         settlement: &crate::application_entry::WorthQueryApplicationOutputDemandSettlement<Query>,
-        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
-        self.require_current_output_settlements([settlement.retained()], maximum_work)
+        self.require_current_output_settlements([settlement.retained()])
     }
 
     fn require_current_output_settlements<'settlement>(
         &self,
         settlements: impl IntoIterator<Item = &'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement>,
-        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         self.application
             .with_application_advancement(self.scope, |phase| {
-                self.require_current_output_settlements_in_advancement(
-                    &phase,
-                    settlements,
-                    maximum_work,
-                )
+                self.require_current_output_settlements_in_advancement(&phase, settlements)
             })
             .map_err(WorthQueryOutputCurrentnessDenial::ExecutionRequest)?
     }
@@ -76,7 +69,6 @@ where
             '_,
         >,
         settlements: impl IntoIterator<Item = &'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement>,
-        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         let selected = self
             .application
@@ -86,7 +78,7 @@ where
             return Err(WorthQueryOutputCurrentnessDenial::ForeignBranch);
         }
         selected
-            .require_current_output_settlements(phase, settlements, maximum_work)
+            .require_current_output_settlements(phase, settlements)
             .map_err(WorthQueryOutputCurrentnessDenial::Output)
     }
 }

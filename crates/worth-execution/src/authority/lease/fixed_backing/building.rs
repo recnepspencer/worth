@@ -30,15 +30,7 @@ impl<T> BuildingFixedBacking<T> {
         if let Some(status) = &status {
             check_status(status, Some(quote))?;
         }
-        let reservation = match policy {
-            Policy::SystemAllocation => None,
-            Policy::Execution(lease) => Some(lease.reserve_memory(quote).map_err(|error| {
-                Denial::new(
-                    Kind::Lease(super::super::LeaseDenial::MemoryExhausted(error)),
-                    Some(quote),
-                )
-            })?),
-        };
+        let reservation = policy.reserve_memory(quote)?;
         if let Some(status) = &status {
             check_status(status, Some(quote))?;
         }

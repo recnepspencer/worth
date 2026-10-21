@@ -59,9 +59,14 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         ) -> Output,
         retention_control: StorageControl<'_, '_>,
     ) -> Result<CompletedSnapshotRead<Output>, WorthQueryInvariantProjectionDenial> {
-        let (output, work, realized_scope, consumed_outputs, source_facts, (exceeded, overflowed), exhausted, stopped) =
-            match self.graph.with_runtime_mut(execution, |runtime| catch_unwind(AssertUnwindSafe(|| {
+        let decode_work = std::cell::Cell::new(None);
+        let decode =
+            super::super::super::value_decode::ValueDecodeState::new(self.value_bindings.clone());
+        let decoded = decode.run(execution, |value_decode| {
+            self.graph.with_runtime_mut(execution, |runtime| catch_unwind(AssertUnwindSafe(|| {
                 let mut reader = WorthQueryApplicationInvariantProjectionReader {
+                    value_bindings: &self.value_bindings,
+                    value_decode,
                     execution,
                     runtime,
                     layout: &self.layout,
@@ -89,6 +94,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                     _schema: PhantomData,
                 };
                 let output = projection(&mut reader);
+                decode_work.set(Some(reader.work));
                 (
                     output,
                     reader.work,
@@ -99,7 +105,13 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                     reader.retention_exhausted,
                     reader.native_read_stop,
                 )
-            }))) {
+            })))
+        });
+        let projected = decoded.map_err(|cause| {
+            WorthQueryInvariantProjectionDenial::value_decode_stopped(cause, decode_work.get())
+        })?;
+        let (output, work, realized_scope, consumed_outputs, source_facts, (exceeded, overflowed), exhausted, stopped) =
+            match projected {
                 Ok(projected) => projected,
                 // Unwind only after the native runtime loan ends. The owning
                 // entrance releases its snapshot; the borrowed entrance never does.
@@ -129,14 +141,18 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                 Err(retention) => denial.with_retention_denial(retention),
             });
         }
+        let dependent_source_facts = source_facts.map_err(|denial| {
+            WorthQueryInvariantProjectionDenial::source_retention_denied(denial, work)
+        })?;
+        decode.check(execution).map_err(|cause| {
+            WorthQueryInvariantProjectionDenial::value_decode_stopped(cause, Some(work))
+        })?;
         Ok(CompletedSnapshotRead {
             output,
             work,
             realized_scope,
             consumed_outputs,
-            dependent_source_facts: source_facts.map_err(|denial| {
-                WorthQueryInvariantProjectionDenial::source_retention_denied(denial, work)
-            })?,
+            dependent_source_facts,
         })
     }
 }

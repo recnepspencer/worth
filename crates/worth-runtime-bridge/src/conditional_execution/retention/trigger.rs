@@ -42,7 +42,10 @@ impl BridgeRetainedTrigger {
     }
 }
 
-fn charge(change_set: &BridgeDeliveredCorrespondenceChangeSet, work: &mut usize) -> Result<u64, D> {
+fn charge(
+    change_set: &BridgeDeliveredCorrespondenceChangeSet,
+    work: &mut Option<usize>,
+) -> Result<u64, D> {
     let mut size = sum(&[
         // The inline trigger and reservation are embedded in the decision core.
         // Only separately allocated buffers are incremental retained storage.
@@ -90,7 +93,7 @@ fn identity<Tag>(identity: &crate::identity::BridgeIdentity<Tag>) -> Result<u64,
 fn source_identities(
     basis: &BridgeCorrespondenceBasis,
     dependency: &BridgeSemanticDependencyCandidate,
-    work: &mut usize,
+    work: &mut Option<usize>,
 ) -> Result<u64, D> {
     // Correspondence resolution carries these six source identities into the
     // dependency by Arc clone. Compare allocation identity in this fixed set:
@@ -119,7 +122,7 @@ fn source_identities(
     Ok(size)
 }
 
-fn basis(basis: &BridgeCorrespondenceBasis, work: &mut usize) -> Result<u64, D> {
+fn basis(basis: &BridgeCorrespondenceBasis, work: &mut Option<usize>) -> Result<u64, D> {
     let mut size = 0;
     if let Some(profile) = &basis.authoritative_source_profile {
         visit(work)?;
@@ -139,7 +142,10 @@ fn basis(basis: &BridgeCorrespondenceBasis, work: &mut usize) -> Result<u64, D> 
     Ok(size)
 }
 
-fn dependency(dependency: &BridgeSemanticDependencyCandidate, work: &mut usize) -> Result<u64, D> {
+fn dependency(
+    dependency: &BridgeSemanticDependencyCandidate,
+    work: &mut Option<usize>,
+) -> Result<u64, D> {
     visit(work)?;
     let mut size = arc_slice_charge::<u8>(dependency.source_node_identity.len())?;
     if let Some(stage) = &dependency.source_stage_identity {

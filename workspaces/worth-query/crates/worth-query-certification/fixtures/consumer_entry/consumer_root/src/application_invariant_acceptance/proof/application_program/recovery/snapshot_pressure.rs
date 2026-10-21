@@ -124,7 +124,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
             .advance(&world.application, &request)
             .expect("recovered output advances")
         {
-            WorthQueryApplicationProgramOutputProgress::Pending => {}
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => {}
             WorthQueryApplicationProgramOutputProgress::Settled(value) => {
                 settled = Some(value);
                 break;

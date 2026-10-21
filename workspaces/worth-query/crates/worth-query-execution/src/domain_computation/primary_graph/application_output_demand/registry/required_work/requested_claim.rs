@@ -1,9 +1,10 @@
 //! Exact temporary custody between a failed native read and caller publication.
-use super::super::{
-    DemandState, WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint,
-    WorthQueryOutputDemandInterest, WorthQueryOutputDemandNotifications,
-};
-use super::selection::{charge_required_key_lookup, work_denial, SelectedReadyReadmission};
+use super::super::DemandState;
+use super::super::WorthQueryOutputAdvancement;
+use super::super::WorthQueryOutputCheckpoint;
+use super::super::WorthQueryOutputDemandInterest;
+use super::super::WorthQueryOutputDemandNotifications;
+use super::selection::SelectedReadyReadmission;
 use super::*;
 
 /// Each node funds its own Box and interest key. No source is reconstructed.
@@ -11,7 +12,6 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 {
     node: Box<RequestedReadNode>,
     // Refund after the interest key and physical node backing leave custody.
-    _capacity: super::super::required_custody::RequiredOutputCustodyCapacity,
 }
 
 struct RequestedReadNode {
@@ -66,7 +66,6 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn claim_cached_requested_ready(
         &self,
         key: &WorthQueryOutputDemandKey,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         Option<(SelectedReadyReadmission, RequestedOutputReadClaim)>,
         WorthQueryOutputDemandDenial,
@@ -75,8 +74,7 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.charge_record_lookup(key, admission)?;
-        charge_required_key_lookup(&state, key, admission)?;
+
         let Some(record) = state.records.get(key) else {
             return Ok(None);
         };
@@ -105,15 +103,6 @@ impl WorthQueryOutputDemandRegistry {
             .required_interests
             .checked_add(1)
             .ok_or_else(capacity_denial)?;
-        let key_bytes = std::mem::size_of::<RequestedReadNode>()
-            .checked_add(key.producer.len())
-            .ok_or_else(capacity_denial)?;
-        admission
-            .charge_external_work(key.producer.len() as u64 * 2 + 16)
-            .map_err(|_| work_denial())?;
-        admission
-            .admit_read_scratch(key_bytes as u64)
-            .map_err(|_| capacity_denial())?;
         let selected = SelectedReadyReadmission {
             completion: completion.clone(),
             readmission: Arc::clone(source),
@@ -121,19 +110,6 @@ impl WorthQueryOutputDemandRegistry {
         };
         let wake = Arc::clone(&record.wake);
         let member = state.prepare_required_member(key)?;
-        let member_bytes = member.as_ref().map_or(0, |member| member.reserved_bytes());
-        let total = state
-            .required_reserved_bytes
-            .checked_add(member_bytes)
-            .and_then(|bytes| bytes.checked_add(key_bytes))
-            .ok_or_else(capacity_denial)?;
-        if !state.has_required_capacity(total) {
-            return Err(super::super::required_custody::full_custody_denial(
-                key_bytes + member_bytes,
-                state.required_budget_bytes,
-            ));
-        }
-        let capacity = state.reserve_required_custody_capacity(key_bytes)?;
         let interest = WorthQueryOutputDemandInterest {
             key: key.clone(),
             requires_output: true,
@@ -156,7 +132,6 @@ impl WorthQueryOutputDemandRegistry {
                     _interest: interest,
                     next: None,
                 }),
-                _capacity: capacity,
             },
         )))
     }

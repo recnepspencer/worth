@@ -6,7 +6,6 @@ mod admitted_scope;
 mod freshness;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) mod interruption_control;
-mod preflight;
 mod product;
 pub(in crate::domain_computation) use product::WorthQueryIssuedSelectedScope;
 mod resolved;

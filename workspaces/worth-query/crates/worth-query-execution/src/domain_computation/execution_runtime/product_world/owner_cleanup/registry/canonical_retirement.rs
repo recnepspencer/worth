@@ -47,7 +47,7 @@ fn retirement_releases_in_branch_then_incarnation_order() {
     let (alpha_second, second_report) = child("alpha");
     assert_eq!(alpha_first.branch(), alpha_second.branch());
     assert!(alpha_first.incarnation() < alpha_second.incarnation());
-    let registry = WorthQueryProductBranchOwnerCleanupRegistry::new(3);
+    let registry = WorthQueryProductBranchOwnerCleanupRegistry::new(Some(3));
     for (occurrence, report) in [
         (zulu.clone(), zulu_report),
         (alpha_second.clone(), second_report),
@@ -71,4 +71,16 @@ fn retirement_releases_in_branch_then_incarnation_order() {
             (zulu.branch().clone(), zulu.incarnation()),
         ]
     );
+}
+
+#[test]
+fn absent_cleanup_policy_keeps_reservations_until_drop() {
+    let registry = super::WorthQueryProductBranchOwnerCleanupRegistry::new(None);
+    let held: Vec<_> = (0..600)
+        .map(|_| registry.reserve(super::CleanupScope::Application).unwrap())
+        .collect();
+    assert_eq!(super::lock(&registry.state).reserved, held.len());
+    drop(held);
+    assert_eq!(super::lock(&registry.state).reserved, 0);
+    assert!(super::lock(&registry.state).entries.is_empty());
 }

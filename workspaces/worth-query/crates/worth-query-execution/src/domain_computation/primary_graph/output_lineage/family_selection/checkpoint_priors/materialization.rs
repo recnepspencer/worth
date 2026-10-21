@@ -1,60 +1,29 @@
 //! Materialize only native locators not already represented by accepted outputs.
-use super::{Denial, NativePriorCheckpointOutput, Structure};
-use crate::domain_computation::primary_graph::{
-    application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
-    output_lineage::invalidation::InvalidationEditAdmission,
-};
+use super::Denial;
+use super::NativePriorCheckpointOutput;
+use super::Structure;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity;
 
 impl NativePriorCheckpointOutput<'_> {
     pub(in crate::domain_computation::primary_graph) fn materialize_identity(
         &self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<WorthQueryAcceptedOutputCheckpointIdentity>, Denial> {
         let Some(locator) = self.identity.as_ref() else {
             return Ok(None);
         };
+        if let Some(recovered) = locator.recovered {
+            // Preserve original posture/facts and the original immutable heaps'
+            // payer. Reading this locator grants no new Ready or performed claim.
+
+            return Ok(Some(recovered.clone()));
+        }
         let recorded = locator.recorded;
         let partition = self
             .partition
             .ok_or(Denial::Structural(Structure::MissingSourcePartition))?;
         let role_views = recorded.correspondence.native_witness_roles();
         let role_count = role_views.len();
-        let role_bytes = role_views
-            .clone()
-            .try_fold(0usize, |total, (role, _, entity_name, _)| {
-                total
-                    .checked_add(role.len())?
-                    .checked_add(entity_name.len())?
-                    .checked_add(64)
-            })
-            .ok_or(Denial::arithmetic("native role text layout"))?;
-        let retained_bytes = std::mem::size_of::<
-            crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity,
-        >()
-        .checked_add(std::mem::size_of::<String>() + 2 * std::mem::size_of::<usize>())
-        .and_then(|bytes| bytes.checked_add(std::mem::size_of::<Vec<crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole>>() + 2 * std::mem::size_of::<usize>()))
-        .and_then(|bytes| bytes.checked_add(locator.producer.len()))
-        .and_then(|bytes| bytes.checked_add(role_bytes))
-        .and_then(|bytes| {
-            bytes.checked_add(
-                role_count.checked_mul(std::mem::size_of::<
-                    crate::domain_computation::primary_graph::application_attempt::WorthQueryCheckpointOutputRole,
-                >() + 2 * std::mem::size_of::<String>())?,
-            )
-        })
-        .ok_or(Denial::arithmetic("native locator layout"))?;
-        admission
-            .admit_read_scratch(
-                u64::try_from(retained_bytes)
-                    .map_err(|_| Denial::arithmetic("checkpoint size or work conversion"))?,
-            )
-            .map_err(|stop| Denial::admission("native locator scratch", stop))?;
-        admission
-            .charge_external_work(
-                u64::try_from(retained_bytes)
-                    .map_err(|_| Denial::arithmetic("checkpoint size or work conversion"))?,
-            )
-            .map_err(|stop| Denial::admission("native locator copy work", stop))?;
+
         let mut producer = String::new();
         producer
             .try_reserve_exact(locator.producer.len())

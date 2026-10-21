@@ -25,6 +25,7 @@ pub(crate) struct WorthQueryProductActivationRegistry {
 
 struct ActivationRegistryState {
     gates: HashMap<ProductBranchIdentity, ActivationEntry>,
+    reserved_gates: usize,
     live_occurrences: BTreeSet<ProductBranchIncarnation>,
     unavailable_programs: HashSet<ApplicationProgramRevision>,
     in_flight_programs: HashMap<ApplicationProgramRevision, usize>,
@@ -36,13 +37,16 @@ impl WorthQueryProductActivationRegistry {
         limit: RuntimeWorldBudgetLimit,
     ) -> Result<Self, WorthQueryProductActivationDenial> {
         let mut gates = HashMap::new();
-        gates
-            .try_reserve(limit.get())
-            .map_err(|_| WorthQueryProductActivationDenial::AllocationRejected)?;
+        if let Some(maximum) = limit.get() {
+            gates
+                .try_reserve(maximum)
+                .map_err(|_| WorthQueryProductActivationDenial::AllocationRejected)?;
+        }
         let live_occurrences = BTreeSet::new();
         Ok(Self {
             state: Mutex::new(ActivationRegistryState {
                 gates,
+                reserved_gates: 0,
                 live_occurrences,
                 unavailable_programs: HashSet::new(),
                 in_flight_programs: HashMap::new(),
@@ -56,11 +60,18 @@ impl WorthQueryProductActivationRegistry {
         &self,
     ) -> Result<WorthQueryProductActivationReservation<'_>, WorthQueryProductActivationDenial> {
         let capacity = self.capacity.reserve()?;
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| WorthQueryProductActivationDenial::RegistryUnavailable)?;
+        reserve_gate(&mut state)?;
+        drop(state);
         Ok(WorthQueryProductActivationReservation {
             registry: self,
             gate: Arc::new(WorthQueryProductActivationGate::new(capacity)),
             program: None,
             program_reservation_active: false,
+            map_reservation_active: true,
         })
     }
 
@@ -79,11 +90,20 @@ impl WorthQueryProductActivationRegistry {
         if program.is_some_and(|revision| state.unavailable_programs.contains(revision)) {
             return Err(WorthQueryProductActivationDenial::ProgramSupportUnavailable);
         }
-        if let Some(revision) = program {
-            let active = state.in_flight_programs.entry(*revision).or_default();
-            *active = active
-                .checked_add(1)
-                .ok_or(WorthQueryProductActivationDenial::CapacityExhausted)?;
+        let next_active = program
+            .map(|revision| {
+                state
+                    .in_flight_programs
+                    .get(revision)
+                    .copied()
+                    .unwrap_or(0)
+                    .checked_add(1)
+                    .ok_or(WorthQueryProductActivationDenial::CapacityExhausted)
+            })
+            .transpose()?;
+        reserve_gate(&mut state)?;
+        if let Some((revision, active)) = program.zip(next_active) {
+            state.in_flight_programs.insert(*revision, active);
         }
         drop(state);
         Ok(WorthQueryProductActivationReservation {
@@ -91,6 +111,7 @@ impl WorthQueryProductActivationRegistry {
             gate: Arc::new(WorthQueryProductActivationGate::new(capacity)),
             program: program.cloned(),
             program_reservation_active: true,
+            map_reservation_active: true,
         })
     }
 
@@ -208,6 +229,7 @@ pub(crate) struct WorthQueryProductActivationReservation<'a> {
     gate: Arc<WorthQueryProductActivationGate>,
     program: Option<ApplicationProgramRevision>,
     program_reservation_active: bool,
+    map_reservation_active: bool,
 }
 
 impl WorthQueryProductActivationReservation<'_> {
@@ -230,7 +252,18 @@ impl WorthQueryProductActivationReservation<'_> {
         state
             .live_occurrences
             .insert(branch.lifecycle_incarnation());
+        self.release_map_reservation(&mut state);
         self.release_program_reservation(&mut state);
+    }
+
+    fn release_map_reservation(&mut self, state: &mut ActivationRegistryState) {
+        if self.map_reservation_active {
+            state.reserved_gates = state
+                .reserved_gates
+                .checked_sub(1)
+                .expect("an uncommitted activation owns one map reservation");
+            self.map_reservation_active = false;
+        }
     }
 
     fn release_program_reservation(&mut self, state: &mut ActivationRegistryState) {
@@ -256,7 +289,7 @@ impl WorthQueryProductActivationReservation<'_> {
 
 impl Drop for WorthQueryProductActivationReservation<'_> {
     fn drop(&mut self) {
-        if !self.program_reservation_active {
+        if !self.program_reservation_active && !self.map_reservation_active {
             return;
         }
         let mut state = self
@@ -264,8 +297,24 @@ impl Drop for WorthQueryProductActivationReservation<'_> {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        self.release_map_reservation(&mut state);
         self.release_program_reservation(&mut state);
     }
+}
+
+fn reserve_gate(
+    state: &mut ActivationRegistryState,
+) -> Result<(), WorthQueryProductActivationDenial> {
+    let reserved = state
+        .reserved_gates
+        .checked_add(1)
+        .ok_or(WorthQueryProductActivationDenial::CapacityExhausted)?;
+    state
+        .gates
+        .try_reserve(reserved)
+        .map_err(|_| WorthQueryProductActivationDenial::AllocationRejected)?;
+    state.reserved_gates = reserved;
+    Ok(())
 }
 
 pub(crate) struct WorthQueryProgramRetirementBarrier {

@@ -1,14 +1,8 @@
-use super::{PreparedPrerequisiteClaims, WorthQueryOutputDemandRegistry};
+use super::PreparedPrerequisiteClaims;
+use super::WorthQueryOutputDemandRegistry;
 
-use super::super::refreshed_rejoin::{infallible, OccurrenceSearchCharge};
-use core::convert::Infallible;
 impl PreparedPrerequisiteClaims {
-    pub(in super::super) fn cancel_unpublished_prerequisites<
-        C: OccurrenceSearchCharge<Refusal = Infallible>,
-    >(
-        &mut self,
-        charge: &mut C,
-    ) {
+    pub(in super::super) fn cancel_unpublished_prerequisites(&mut self) {
         if self.published {
             return;
         }
@@ -32,23 +26,18 @@ impl PreparedPrerequisiteClaims {
             record.framework_required_count -= 1;
             let pending = record.pending_cleanup_queued;
             record.finish();
-            if !pending && !state.defer_terminal_cleanup(upstream, 0) {
-                infallible(state.remove_required_member_if_released(upstream, charge));
+            if !pending && !state.defer_terminal_cleanup(upstream) {
+                state.remove_required_member_if_released(upstream);
             }
         }
         for upstream in &self.predecessors {
-            state.defer_terminal_cleanup(upstream, 0);
+            state.defer_terminal_cleanup(upstream);
         }
         state
             .records
             .get_mut(self.context.key())
             .expect("prepared demand stays pinned")
             .prepared_prerequisite_claims -= 1;
-        if state.defer_terminal_cleanup(self.context.key_arc(), self.context.retained_bytes()) {
-            self.context.transfer_custody_to_registry();
-        }
-        state.required_reserved_bytes = state
-            .required_reserved_bytes
-            .saturating_sub(self.predecessor_slots_bytes);
+        state.defer_terminal_cleanup(self.context.key_arc());
     }
 }

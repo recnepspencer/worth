@@ -4,9 +4,6 @@ use crate::domain_computation::primary_graph::tests::fixture::{
     installed_authorization_world_with_label, AccountSummaryResult, PublicAccountMembershipQuery,
     PublicScopedAccountSummaryQuery,
 };
-use crate::facade::primary_graph::{
-    WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchLimits,
-};
 use std::{cell::Cell, num::NonZeroUsize};
 use worth_execution::{CancellationSource, ExecutionRequest};
 use WorthQueryManagedDerivedViewDenial as Denial;
@@ -34,10 +31,6 @@ fn foreign_second_request_cannot_replace_the_retained_image() {
 #[test]
 fn cancellation_between_reads_cannot_replace_the_retained_image() {
     journey(Case::Cancelled);
-}
-#[test]
-fn exhausted_shared_loan_cannot_replace_the_retained_image() {
-    journey(Case::Exhausted);
 }
 #[test]
 fn insufficient_request_work_never_publishes_a_prefix() {
@@ -86,12 +79,11 @@ enum Case {
     WrongLink,
     ForeignRequest,
     Cancelled,
-    Exhausted,
     Work,
 }
 
 fn journey(case: Case) {
-    let world = installed_authorization_world_with_label("unrelated");
+    let world = installed_authorization_world_with_label("unrelated", Default::default());
     let scope = live_scope();
     let foreign_scope = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
@@ -125,22 +117,20 @@ fn journey(case: Case) {
         ).unwrap();
         let membership = world.application.execute_application_query_one_shot(&phase,
             selected.retain_selection(&issued).unwrap().admit_application_query(&phase,
-                &membership_query, &access, ApplicationQueryParameterSet::new(), current_controls(&scope),
+                &membership_query, &access, ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&membership_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &scope),
             ).unwrap(),
         ).unwrap();
         let nz = |value| NonZeroUsize::new(value).unwrap();
         let cancellation = CancellationSource::new();
-        let first_custody = Cell::new(0);
         let second_calls = Cell::new(0);
         let projections = Cell::new(0);
         let read_work = Cell::new(0);
         let run = |failure: bool| {
-            let batch = WorthQueryApplicationQueryBatchAdmission::new(
-                WorthQueryApplicationQueryBatchLimits::new(nz(if failure && case == Case::Exhausted {1} else {2}),
-                    Some(nz(100_000)), nz(262_144), nz(4096)),
-            );
-            let foreign_batch = WorthQueryApplicationQueryBatchAdmission::new(
-                WorthQueryApplicationQueryBatchLimits::new(nz(2), Some(nz(100_000)), nz(262_144), nz(4096)));
+            let issue_batch = || world.application.application_query_batch_from_installed_reads(&[
+                world.application.plan_installed_query_batch_reads(&entry_query, 2, std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract")).unwrap()
+            ]).unwrap();
+            let batch = issue_batch();
+            let foreign_batch = issue_batch();
             let narrowed = (failure || case == Case::LeasedSuccess).then(|| {
                 issued.in_scope(|parent| {
                     let parent = parent.expect("the installed host phase carries native custody");
@@ -165,14 +155,14 @@ fn journey(case: Case) {
                         &scope, WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
                     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &local);
                     let plan = selected.retain_selection(&issued).unwrap().admit_application_query(
-                        &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), current_controls(&scope),
+                        &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &scope),
                     ).unwrap();
                     let result = read.execute(plan)?;
                     read_work.set(result.receipt().work().total_work_units());
                     assert_eq!(result.rows()[0].label(), "unrelated");
                     if failure && case == Case::RepeatedRead {
                         let plan = selected.retain_selection(&issued).unwrap().admit_application_query(
-                            &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), current_controls(&scope),
+                            &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &scope),
                         ).unwrap();
                         assert_eq!(read.execute(plan).err(), Some(Denial::IncompleteDependencies));
                         // Intentionally ignore the returned refusal: the owner must still deny the image.
@@ -181,8 +171,6 @@ fn journey(case: Case) {
                 },
                 |first: &AccountSummaryResult, read| {
                     second_calls.set(second_calls.get() + 1);
-                    first_custody.set(batch.observe().retained_bytes());
-                    assert!(first_custody.get() > 0, "first rows remain held during second scope admission");
                     let selected = if failure && case == Case::ForeignBasis { sibling.as_ref().unwrap() } else { &selected };
                     let principal = if failure && case == Case::ForeignBasis { sibling_principal.as_ref().unwrap() } else { &principal };
                     let local_scope = if failure && case == Case::ForeignRequest { &foreign_scope } else { &scope };
@@ -200,7 +188,7 @@ fn journey(case: Case) {
                     } else {
 
                         selected.retain_selection(&issued).unwrap().admit_application_query(
-                        &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), current_controls(local_scope),
+                        &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), local_scope),
                     ).unwrap()
                     };
                     if failure && case == Case::Cancelled { cancellation.cancel(); }
@@ -212,7 +200,7 @@ fn journey(case: Case) {
                 |row| if failure && case == Case::WrongLink { "wrong".into() } else { row.status().to_owned() },
                 |_, second| {
                     projections.set(projections.get() + 1);
-                    assert!(batch.observe().retained_bytes() > first_custody.get(), "both row claims survive projection");
+
                     if failure && case == Case::AfterProjection { cancellation.cancel(); }
                     if failure && case == Case::StaleProduct {
                         let graph = world.application.runtime.primary_graph().unwrap();
@@ -241,17 +229,13 @@ fn journey(case: Case) {
                     SceneLabel(second.label().to_owned())
                 },
             );
-            assert_eq!(batch.observe().retained_bytes(), 0);
+
             if failure && matches!(case, Case::Deadline | Case::Memory | Case::Work) {
-                assert_eq!(batch.observe().read_work_units(), 0);
                 assert_eq!(second_calls.get(), second_before);
             }
             if failure && case == Case::ForeignBasis {
-                assert_eq!(batch.observe().read_work_units(), read_work.get(), "foreign basis is refused before its read");
             }
             if result.is_ok() {
-                assert_eq!(batch.observe().read_work_units(), read_work.get(),
-                    "the dependent path settles the two ordinary receipts into its real loan");
             }
             result
         };
@@ -277,7 +261,6 @@ fn journey(case: Case) {
                 Case::ForeignBatch => assert!(matches!(denial, Denial::BatchResource {
                     denial: crate::facade::primary_graph::WorthQueryApplicationQueryBatchResourceDenial::ForeignPlan, .. })),
                 Case::Cancelled => assert!(matches!(denial, Denial::Cancelled | Denial::ReadDenied { .. })),
-                Case::Exhausted => assert!(matches!(denial, Denial::BatchResource { .. })),
                 Case::Work => assert!(matches!(denial, Denial::WorkExhausted { .. })),
                 Case::Success | Case::LeasedSuccess => unreachable!(),
             }

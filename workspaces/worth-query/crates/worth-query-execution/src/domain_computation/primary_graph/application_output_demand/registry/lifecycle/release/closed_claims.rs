@@ -1,10 +1,11 @@
 //! Release at most two rows' owned edges, without claimant or registry discovery.
-use super::super::super::refreshed_rejoin::{infallible, superseded};
-use super::super::super::{DemandRegistryState, DemandState, WorthQueryOutputDemandKey};
-use super::CleanupWalk;
+use super::super::super::refreshed_rejoin::superseded;
+use super::super::super::DemandRegistryState;
+use super::super::super::DemandState;
+use super::super::super::WorthQueryOutputDemandKey;
 use std::sync::Arc;
 
-const CLOSED_CLAIM_RELEASE_QUOTA: usize = 2;
+const CLOSED_CLAIM_RELEASE_SLOTS: usize = 2;
 
 #[derive(Default)]
 struct ReleasedRowCustody {
@@ -17,7 +18,7 @@ struct ReleasedRowCustody {
 
 /// Stack slots are fixed; moved buffers keep their original admitted backing.
 pub(super) struct ReleasedClosedCustody {
-    rows: [ReleasedRowCustody; CLOSED_CLAIM_RELEASE_QUOTA],
+    rows: [ReleasedRowCustody; CLOSED_CLAIM_RELEASE_SLOTS],
 }
 
 impl DemandRegistryState {
@@ -26,7 +27,6 @@ impl DemandRegistryState {
     pub(super) fn release_closed_claim_custody(
         &mut self,
         dependent: &WorthQueryOutputDemandKey,
-        charge: &mut CleanupWalk,
     ) -> ReleasedClosedCustody {
         let mut released = ReleasedClosedCustody {
             rows: std::array::from_fn(|_| Default::default()),
@@ -50,7 +50,7 @@ impl DemandRegistryState {
                     .records
                     .get(upstream.as_ref())
                     .is_some_and(|old| old.has_cached_ready() && old.prerequisites.is_empty())
-                    || !infallible(self.transfer_closed_claim(key, upstream.as_ref(), charge))
+                    || !self.transfer_closed_claim(key, upstream.as_ref())
                 {
                     break;
                 }
@@ -69,11 +69,7 @@ impl DemandRegistryState {
                 || !row.performed_obligations.is_empty()
                 || row.performed_source.is_some()
                 || row.held_successor.is_some()
-                || !infallible(super::super::closed_retirement::newest_ready(
-                    &self.records,
-                    key,
-                    charge,
-                ))
+                || !super::super::closed_retirement::newest_ready(&self.records, key)
             {
                 break;
             }
@@ -91,19 +87,15 @@ impl DemandRegistryState {
             };
             slot.ready = output.checkpoint.take();
             row.finish();
-            self.required_reserved_bytes = self.required_reserved_bytes.saturating_sub(
-                slot.prior.capacity() * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>(),
-            );
+
             for upstream in &slot.prior {
                 self.records
                     .get_mut(upstream)
                     .expect("claimed row is retained")
                     .framework_required_count -= 1;
             }
-            slot.member = infallible(self.remove_required_member_if_released_detached(key, charge));
-            self.required_reserved_bytes = self
-                .required_reserved_bytes
-                .saturating_sub(slot.member.refund_required_bytes);
+            slot.member = self.remove_required_member_if_released_detached(key);
+
             if slot.prior.is_empty()
                 && self
                     .records

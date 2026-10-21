@@ -6,50 +6,54 @@ impl<Key, Item: ChargedBytes, Reduced, Gathered: ChargedBytes>
 {
     pub(in super::super::super) fn transport_bytes(&self) -> u64 {
         let Self {
+            validated_at: _,
+            ranges: _,
+            rekeyed: _,
+            transition: _,
+            key_memory: _,
             remaining_work: _,
             declared_bytes: _,
             partitions,
+            removed,
             next,
             basis: _,
             prior,
         } = self;
-        let mut bytes = (partitions.len()
-            * size_of::<(PartitionIdentity, Disposition<Key, Gathered>)>())
-            as u64;
-        for disposition in partitions.values() {
-            match disposition {
-                Disposition::Carried(_) => {} // The prior's state custody remains held.
-                Disposition::Recomputed(Recomputed {
-                    value,
-                    key: _,
-                    key_bytes,
-                    gather,
-                    memory,
-                }) => {
-                    bytes = bytes
-                        .saturating_add(
-                            value
-                                .additional_charged_bytes()
-                                .saturating_sub(memory.held_bytes()),
-                        )
-                        .saturating_add(*key_bytes)
-                        .saturating_add(
-                            gather
-                                .as_ref()
-                                .map_or(0, |call| call.additional_bytes().unwrap_or(u64::MAX)),
-                        );
-                }
-            }
+        let mut bytes =
+            (partitions.len() * size_of::<(PartitionIdentity, Recomputed<Key, Gathered>)>()) as u64;
+        bytes = bytes.saturating_add(std::mem::size_of_val(removed.as_slice()) as u64);
+        for Recomputed {
+            value,
+            key: _,
+            key_bytes,
+            gather,
+            memory,
+        } in partitions.values()
+        {
+            bytes = bytes
+                .saturating_add(
+                    value
+                        .additional_charged_bytes()
+                        .saturating_sub(memory.held_bytes()),
+                )
+                .saturating_add(*key_bytes)
+                .saturating_add(
+                    gather
+                        .as_ref()
+                        .map_or(0, |call| call.additional_bytes().unwrap_or(u64::MAX)),
+                );
         }
         let NextPartitioning {
             items,
             digests,
             membership,
-            item_keys,
+            item_keys: _,
             routing: _,
             routing_memory: _,
             carried_membership,
             carried_items,
+            item_bytes: _,
+            item_call_bytes: _,
         } = next;
         let retained = prior.typed();
         if !Arc::ptr_eq(items, &retained.items) {
@@ -70,15 +74,15 @@ impl<Key, Item: ChargedBytes, Reduced, Gathered: ChargedBytes>
                     .map_or(0, |call| call.charge.additional_bytes().unwrap_or(u64::MAX)),
             );
         }
-        for (item, call) in item_keys {
-            bytes = bytes.saturating_add(size_of::<(PartitionItemId, RetainedCall)>() as u64);
-            if !carried_items.contains(item) {
-                bytes = bytes.saturating_add(call.charge.additional_bytes().unwrap_or(u64::MAX));
-            }
-        }
-        bytes.saturating_add((carried_items.len() * size_of::<PartitionItemId>()) as u64)
+        // The persistent call map owns each changed path's direct grant.
+        // Transport borrows its root; copying no entries requires no full walk.
+        let explicit = match carried_items {
+            super::super::retained::CarriedItems::Selected(items) => items.len(),
+            super::super::retained::CarriedItems::All(_) => 0,
+        };
+        bytes.saturating_add((explicit * size_of::<PartitionItemId>()) as u64)
     }
     pub(in super::super::super) fn partition_count(&self) -> usize {
-        self.partitions.len()
+        self.next.routing.partitions().len()
     }
 }

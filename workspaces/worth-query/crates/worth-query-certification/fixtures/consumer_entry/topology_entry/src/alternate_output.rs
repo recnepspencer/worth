@@ -361,8 +361,6 @@ fn alternate_readiness_definition() -> domain::WorthQueryDomainOperationDefiniti
         super::readiness::canonical_query(),
         domain::WorthQueryOperationProjectionRole::new("anchor").unwrap(),
         domain::WorthQueryExecutionStrategyName::new("alternate-planar-readiness").unwrap(),
-        128,
-        128,
         "alternate-planar-readiness-v1",
     )
     .semantic_reads([super::readiness::output_change_projection()])

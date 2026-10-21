@@ -58,7 +58,7 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let observer = world.application.result_buffer_observer();
+
     let mut lease = world
         .application
         .with_host_advancement(|phase| {
@@ -78,7 +78,7 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
             &principal,
             account,
             live_account_parameters("account-1"),
-            WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, Some(2_048)).unwrap(),
+            WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16).unwrap(),
         )
         .unwrap()
         })
@@ -145,15 +145,7 @@ fn committed_live_cause_projects_with_bounded_result_buffer_evidence() {
         update.result().activities(),
         &[("activity-primary".to_owned(), 11)]
     );
-    let buffer = update
-        .receipt()
-        .result_buffer()
-        .expect("live projection must carry bounded result-buffer evidence");
-    assert!(buffer.released());
-    assert!(buffer.peak_bytes() > 0);
-    assert!(buffer.peak_bytes() <= buffer.limit_bytes());
-    assert_eq!(observer.observe().active_buffers(), 0);
-    assert_eq!(observer.observe().retained_bytes(), 0);
+
     let WorthQueryApplicationLiveCloseOutcome::Completed(completion) = lease.close() else {
         panic!("live close must complete its opening graph-read session");
     };

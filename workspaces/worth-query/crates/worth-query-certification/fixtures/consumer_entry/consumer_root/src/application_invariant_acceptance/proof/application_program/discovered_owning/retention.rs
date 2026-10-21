@@ -14,7 +14,6 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
     ];
     let mut world = installation::install_selected_program(
         &crate::installed_schema(),
-        4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),
         &grants,
@@ -197,21 +196,16 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
         WorthQueryOperationDeliveryDenial, WorthQueryOperationDeliveryPolicy as Policy,
     };
     let one = NonZeroUsize::new(1).unwrap();
-    assert!(matches!(
-        settled.read_current_with_policy(&request, Policy::currentness(one)),
-        Err(WorthQueryOperationDeliveryDenial::Currentness(worth_query_host::facade::application_entry::WorthQueryOutputCurrentnessDenial::Output(denial)))
-        if denial.kind()==worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-    ));
+
     let policy = Policy::default();
     let query_denial = settled
-        .read_current_with_policy(&request, policy.query(one, one))
+        .read_current_with_policy(&request, policy.query(NonZeroUsize::new(2).unwrap()))
         .err()
-        .expect("declared query must refuse its narrow work allowance");
+        .expect("declared query must refuse widening its semantic result cardinality");
     assert!(
         matches!(
             &query_denial,
-            WorthQueryOperationDeliveryDenial::Query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::Admission(denial))
-            if matches!(denial.kind(),worth_query_host::facade::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded)
+            WorthQueryOperationDeliveryDenial::Query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::Limit(_))
         ),
         "actual declared query refusal: {query_denial:?}"
     );

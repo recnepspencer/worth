@@ -42,6 +42,7 @@ struct Arguments {
     profile_path: Option<PathBuf>,
     width: usize,
     write_guidance: bool,
+    sealed_sources_only: bool,
 }
 
 enum OutputFormat {
@@ -58,6 +59,7 @@ fn main() {
         profile_path,
         width,
         write_guidance,
+        sealed_sources_only,
     } = match parse_args() {
         Ok(args) => args,
         Err(error) => {
@@ -77,9 +79,19 @@ fn main() {
         return;
     }
     let profile = scan_profile::Session::new(profile_path);
-    let result = scan::run(root, config_path, snapshot_mode, width);
+    let result = if sealed_sources_only {
+        let diagnostics = sealed_sources::validate(&root);
+        if diagnostics.is_empty() {
+            Ok(())
+        } else {
+            Err(diagnostics)
+        }
+    } else {
+        scan::run(root, config_path, snapshot_mode, width)
+    };
     drop(profile);
     match result {
+        Ok(()) if sealed_sources_only => println!("boundary-check: sealed source reach is valid"),
         Ok(()) => println!("boundary-check: Road 1 Cargo topology is valid"),
         Err(diagnostics) => {
             let output = match format {
@@ -100,6 +112,7 @@ fn parse_args() -> Result<Arguments, String> {
     let mut profile = None;
     let mut width = std::thread::available_parallelism().map_or(1, usize::from);
     let mut write_guidance = false;
+    let mut sealed_sources_only = false;
     let mut args = env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -127,12 +140,16 @@ fn parse_args() -> Result<Arguments, String> {
                 }
             }
             "--write-guidance" => write_guidance = true,
+            "--sealed-sources-only" => sealed_sources_only = true,
             "--update-snapshots" => snapshot_mode = SnapshotMode::Update,
             other => return Err(format!("unknown argument: {other}")),
         }
     }
     if write_guidance && matches!(snapshot_mode, SnapshotMode::Update) {
         return Err("guidance writes and snapshot updates are separate operations".into());
+    }
+    if sealed_sources_only && (write_guidance || matches!(snapshot_mode, SnapshotMode::Update)) {
+        return Err("sealed-source validation cannot write guidance or snapshots".into());
     }
     Ok(Arguments {
         root,
@@ -142,5 +159,6 @@ fn parse_args() -> Result<Arguments, String> {
         profile_path: profile,
         width,
         write_guidance,
+        sealed_sources_only,
     })
 }

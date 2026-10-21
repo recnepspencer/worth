@@ -231,13 +231,7 @@ impl WorthQueryOutputDemandRegistry {
             false
         });
         for source in sources {
-            retire_stale_records(
-                &mut state,
-                &receipt,
-                occurrence,
-                source.scope,
-                &source.identity,
-            );
+            retire_stale_records(&mut state, occurrence, source.scope, &source.identity);
         }
         let mut bound = sources.to_vec();
         bound.sort_by_key(|source| source.identity.clone());

@@ -4,7 +4,6 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQuerySessionReadAuthority<'_>,
-        requests: Vec<WorthQueryDecisionFactRequest>,
         request: &WorthQueryRequestScope,
         relation: worth_relational::facade::identity::RelationId,
     ) {
@@ -16,6 +15,7 @@ impl WorthQueryPrimaryGraphProvider {
             .unwrap()
             .shared_observed_facts(authority.session())
             .unwrap();
+        let requests: Vec<_> = facts.requests().collect();
         let fact = facts
             .get("application-principal-currentness")
             .expect("the real admission captures its principal");

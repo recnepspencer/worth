@@ -23,13 +23,9 @@ pub(super) fn installed_application(
         (configuration,),
         WorthQueryInMemoryApplicationLimits::new(
             product_world_resources(1_024),
-            runtime::WorthQueryApplicationQueryResourceProfile::bounded(
-                5_120,
-                2_048,
-                usize::MAX,
-                128,
-            )
-            .unwrap(),
+            runtime::WorthQueryApplicationQueryResourceProfile::new(
+                std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
+            ),
             primary_graph::SignalConditionalEvaluationBudget::development(),
         ),
         |_phase, graph, installed| {

@@ -23,8 +23,6 @@ fn registry_drop_closed_claim_release_is_two_rows_without_a_registry_pass() {
             row.framework_required_count = usize::from(index != 0);
             if let Some(upstream) = old.get(index + 1) {
                 row.prerequisites.push(Arc::new(upstream.clone()));
-                state.required_reserved_bytes += row.prerequisites.capacity()
-                    * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
             }
             state.records.insert(key.clone(), row);
             let member = state.prepare_required_member(key).unwrap();

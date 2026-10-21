@@ -2,7 +2,8 @@
 use super::*;
 use super::member_refusal::RefusalCustody;
 use super::super::super::super::required_continuations::WaveCheckpointTurn;
-use super::readiness_collection::{self, MemberStop};
+use super::readiness_collection;
+use super::readiness_collection::MemberStop;
 use super::super::selection::committed_ready;
 use super::super::super::super::RequiredFreshOutcome;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution::canonical_apply::CanonicalApplyCursor;
@@ -30,7 +31,6 @@ pub(super) fn run<'owner, Schema, Family>(
     queue_custody: &mut RequiredContinuations<Schema>,
     queue: &mut QueuedRequiredRoots,
     performed: &'owner std::cell::RefCell<super::super::performed::PerformedMembers>,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<WaveProgress, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
@@ -54,7 +54,6 @@ where
         demand.admission_kind,
         authority,
         performed,
-        admission,
     )?;
     let prepared = match prepared {
         readiness_collection::CollectedRequiredWave::Frozen(frozen) => {
@@ -82,7 +81,6 @@ where
                         request,
                         wave.branch,
                         contacts,
-                        admission,
                         performed,
                     ) {
                         Ok(receipt) => delivered = receipt,
@@ -97,7 +95,6 @@ where
                                 stop,
                                 member_stop::StopRecording::member(),
                                 queue,
-                                admission,
                             )?;
                         }
                     }
@@ -117,7 +114,6 @@ where
                         request,
                         wave.branch,
                         &mut demand.required_continuations,
-                        admission,
                         performed,
                     )?;
                     if delivered.is_none() {
@@ -147,27 +143,21 @@ where
         });
     }
     let (keys, plans): (Vec<_>, Vec<_>) = prepared.members.into_iter().unzip();
-    for pair in keys.windows(2) {
-        admission
-            .charge_external_work(pair[0].comparison_work(&pair[1])?)
-            .map_err(|_| work_denial())?;
-    }
+
     let keys = worth_proof::CanonicalUniqueVec::try_from_sorted_unique(keys)
         .map_err(|_| foreign_denial())?;
     let execution = phase
         .execution_for(&runtime.product_runtime)
         .map_err(|_| foreign_denial())?;
-    let admitted =
-        runtime
-            .output_demands
-            .admit_prepared_wave(&wave.positioned, keys, plans, admission)?;
+    let admitted = runtime
+        .output_demands
+        .admit_prepared_wave(&wave.positioned, keys, plans)?;
     let cursor = CanonicalApplyCursor::compute_admitted(admitted, execution);
     let mut moved = false;
     let mut deferred = false;
     let mut queued_stops = Vec::new();
     let result = cursor.apply(
-        admission,
-        |key, outcome, admission| {
+        |key, outcome| {
             let mut installed = false;
             let applied = (|| {
                 let mut progress = outcome?;
@@ -196,15 +186,12 @@ where
                 // both loops obtain their checkpoint turns from the paid owner.
                 loop {
                     let successor = storage.last_mut();
-                    let stage = match successor
-                        .checkpoint(admission, admission_denial)
-                        .inspect(&runtime.output_demands)
-                    {
+                    let stage = match successor.checkpoint().inspect(&runtime.output_demands) {
                         Ok(WaveCheckpointTurn::Current(ready)) => {
                             runtime
                                 .output_demands
                                 .clear_required_stop(successor.interest().key());
-                            moved |= committed_ready(ready.ready(), admission)
+                            moved |= committed_ready(ready.ready())
                                 .map_err(|stop| MemberStop::member(index, stop))?;
                             member.ready.rebind_checkpoint(ready);
                             member.resolved_successor = true;
@@ -275,11 +262,7 @@ where
                     }
                     let credit = performed
                         .borrow()
-                        .reinspection(
-                            frontier.members[failure.index].key(),
-                            key.inspection,
-                            admission,
-                        )
+                        .reinspection(frontier.members[failure.index].key(), key.inspection)
                         .map_err(|stop| MemberStop::member(failure.index, stop))?;
                     if credit.is_some()
                         && let Some(slot) = frontier.members[failure.index].queued

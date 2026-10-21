@@ -55,7 +55,7 @@ fn assert_context_denied(fixture: CapabilityFixture, child: CapabilityGrantId, s
         .runtime
         .query(crate::queries::estate_governance_context(ESTATE))
         .as_principal(&fixture.authenticate_executor())
-        .controls(BankReadControls::current(request_scope(), 1, 20_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 1).unwrap())
         .execute()
         .expect("independent governance authority must inspect the denied poststate");
     assert!(readback.rows()[0]

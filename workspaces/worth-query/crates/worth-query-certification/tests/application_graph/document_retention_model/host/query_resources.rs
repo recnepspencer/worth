@@ -2,8 +2,10 @@ use super::*;
 
 pub fn host_limits() -> WorthQueryInMemoryApplicationLimits {
     with_query_resources(
-        runtime::WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 128)
-            .expect("valid query limits"),
+        runtime::WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
+        )
+        .expect("valid query limits"),
     )
 }
 

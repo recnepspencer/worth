@@ -1,35 +1,24 @@
 //! Settlement discovery after publication cannot refuse its occurrence walk.
-use super::super::refreshed_rejoin::{infallible, occurrence_rows, OccurrenceSearchCharge};
+use super::super::refreshed_rejoin::occurrence_rows;
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 type Identity = Arc<RecordedSettlementIdentity>;
-use super::walk_charge::PostCommitWalk;
-use core::convert::Infallible;
+
 use std::sync::Arc;
 
 pub(in super::super) fn after_publication(
     state: &DemandRegistryState,
     key: &WorthQueryOutputDemandKey,
-    published: &SupersededSettlements,
 ) -> Vec<Identity> {
-    infallible(discover(
-        state,
-        key,
-        &mut PostCommitWalk::after_registered(published),
-    ))
+    discover(state, key)
 }
 
-fn discover<C: OccurrenceSearchCharge<Refusal = Infallible>>(
-    state: &DemandRegistryState,
-    key: &WorthQueryOutputDemandKey,
-    charge: &mut C,
-) -> Result<Vec<Identity>, C::Refusal> {
+fn discover(state: &DemandRegistryState, key: &WorthQueryOutputDemandKey) -> Vec<Identity> {
     if !state.records.contains_key(key) {
-        return Ok(Vec::new());
+        return Vec::new();
     }
     let mut candidates = Vec::new();
-    for (other, record) in occurrence_rows(&state.records, key, charge)? {
-        charge.inspect_row()?;
+    for (other, record) in occurrence_rows(&state.records, key) {
         let same_row = {
             #[cfg(test)]
             super::super::demand_key::observe_row_comparison();
@@ -42,18 +31,16 @@ fn discover<C: OccurrenceSearchCharge<Refusal = Infallible>>(
         } else {
             0
         };
-        candidates.extend(
-            record.settlements[..superseded]
-                .iter()
-                .map(|(identity, _)| Arc::clone(identity)),
-        );
+        candidates.extend(record.settlements[..superseded].iter().map(Arc::clone));
     }
-    Ok(candidates)
+    candidates
 }
 
 #[cfg(test)]
 mod tests {
-    use super::super::super::tests::{key, occurrence, record};
+    use super::super::super::tests::key;
+    use super::super::super::tests::occurrence;
+    use super::super::super::tests::record;
     use super::*;
     #[test]
     fn registry_completed_discovery_body_keeps_its_occurrence_bound() {
@@ -77,7 +64,7 @@ mod tests {
             let published =
                 SupersededSettlements::new(registry.clone(), Arc::new(selected.clone()));
             let before = super::super::super::record_map::occurrence_rows_visited();
-            assert!(after_publication(&state, &selected, &published).is_empty());
+            assert!(after_publication(&state, &selected).is_empty());
             contacts.push(super::super::super::record_map::occurrence_rows_visited() - before);
         }
         assert_eq!(contacts, [3, 3]);

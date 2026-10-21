@@ -13,34 +13,43 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use worth_foundational::facade::AspectValue;
-use worth_query::facade::runtime::{
-    RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetInstallation,
-    RuntimeWorldCustodyBudgetInstallation, RuntimeWorldHistoryBudgetInstallation,
-    RuntimeWorldObservationBudgetInstallation, RuntimeWorldPublicationBudgetInstallation,
-    RuntimeWorldRecoveryBudgetInstallation, RuntimeWorldRetentionBudgetInstallation,
-    WorthQueryAspectTouch, WorthQueryConditionalEvaluationCacheBudget,
-    WorthQueryConditionalExecutionResources, WorthQueryExistingTruthTargetBinding,
-    WorthQueryProductWorldClock, WorthQueryProductWorldResources, WorthQueryRuntime,
-    WorthQueryRuntimeBuilder, WorthQueryRuntimeSupportProfile,
-};
+use worth_query::facade::runtime::RuntimeWorldBranchBudgetInstallation;
+use worth_query::facade::runtime::RuntimeWorldBudgetInstallation;
+use worth_query::facade::runtime::RuntimeWorldCustodyBudgetInstallation;
+use worth_query::facade::runtime::RuntimeWorldHistoryBudgetInstallation;
+use worth_query::facade::runtime::RuntimeWorldObservationBudgetInstallation;
+use worth_query::facade::runtime::RuntimeWorldPublicationBudgetInstallation;
+use worth_query::facade::runtime::RuntimeWorldRecoveryBudgetInstallation;
+use worth_query::facade::runtime::RuntimeWorldRetentionBudgetInstallation;
+use worth_query::facade::runtime::WorthQueryAspectTouch;
+use worth_query::facade::runtime::WorthQueryConditionalEvaluationCacheBudget;
+use worth_query::facade::runtime::WorthQueryConditionalExecutionResources;
+use worth_query::facade::runtime::WorthQueryExistingTruthTargetBinding;
+use worth_query::facade::runtime::WorthQueryProductWorldClock;
+use worth_query::facade::runtime::WorthQueryProductWorldResources;
+use worth_query::facade::runtime::WorthQueryRuntime;
+use worth_query::facade::runtime::WorthQueryRuntimeBuilder;
+use worth_query::facade::runtime::WorthQueryRuntimeSupportProfile;
 
-use self::adapters::{
-    PublicInspectorEvidenceAdapter, PublicPreviewBasisAdapter, PublicSchemaAdapter,
-    PublicSignalSinkAdapter, PublicSnapshotIdentityAdapter, PublicSourceAdapter,
-    PublicSubscriptionActivationAdapter, PublicWriteAuthorityAdapter,
-};
+use self::adapters::PublicInspectorEvidenceAdapter;
+use self::adapters::PublicPreviewBasisAdapter;
+use self::adapters::PublicSchemaAdapter;
+use self::adapters::PublicSignalSinkAdapter;
+use self::adapters::PublicSnapshotIdentityAdapter;
+use self::adapters::PublicSourceAdapter;
+use self::adapters::PublicSubscriptionActivationAdapter;
+use self::adapters::PublicWriteAuthorityAdapter;
 use self::aspect_contracts::public_bridge_aspect_contracts;
 use self::existing_truth_adapter::PublicExistingTruthVerificationAdapter;
-use self::state::{PublicBridgeRuntimeState, PublicExistingTruthKey};
+use self::state::PublicBridgeRuntimeState;
+use self::state::PublicExistingTruthKey;
 
 type SharedRuntimeState = Rc<RefCell<PublicBridgeRuntimeState>>;
 
 pub use self::profiles::public_graph_support_profile;
 pub use self::relational_merge::public_relational_merge_runtime;
-pub use common_bootstrap::{
-    public_bridge_runtime_bootstrap_invocation_count,
-    reset_public_bridge_runtime_bootstrap_invocations,
-};
+pub use common_bootstrap::public_bridge_runtime_bootstrap_invocation_count;
+pub use common_bootstrap::reset_public_bridge_runtime_bootstrap_invocations;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PublicBridgeRuntimeBootstrapPath {
@@ -74,8 +83,8 @@ fn public_product_resources() -> WorthQueryConditionalExecutionResources {
         WorthQueryConditionalEvaluationCacheBudget::bounded(128, 8 * 1024 * 1024)
             .expect("public bridge tests require a nonempty Query conditional budget"),
         worth_signal::facade::runtime::SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 128,
-            maximum_retained_bytes: 512 * 1024 * 1024,
+            maximum_retained_slots: Some(128),
+            maximum_retained_bytes: Some(512 * 1024 * 1024),
             maximum_attempt_visits: None,
         },
     )
@@ -122,15 +131,7 @@ pub fn public_product_world_resources_with_branch_limit(
             },
         },
         WorthQueryProductWorldClock::start(),
-        worth_query_execution::facade::runtime::WorthQueryInvalidationResources::install(
-            worth_query_execution::facade::runtime::WorthQueryInvalidationResourceInstallation::bounded(
-                1_000_000,
-                64 * 1_024 * 1_024,
-                128 * 1_024 * 1_024,
-                128,
-            ),
-        )
-        .expect("the Query invalidation installation is valid"),
+        worth_query_execution::facade::runtime::WorthQueryInvalidationResources::new(),
         execution_policy,
     )
     .expect("the public test Product World resources are valid")

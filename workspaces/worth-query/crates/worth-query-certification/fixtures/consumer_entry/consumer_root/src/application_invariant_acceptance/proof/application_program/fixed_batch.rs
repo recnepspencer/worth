@@ -8,9 +8,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationQueryBatchDenial, WorthQueryOperationAdvance as Advance,
     WorthQueryOperationDeliveryDenial, WorthQueryOperationDeliveryPolicy,
 };
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationQueryBatchLimits, WorthQueryApplicationQueryBatchResourceDenial,
-};
+use worth_query_host::facade::primary_graph::WorthQueryApplicationQueryBatchResourceDenial;
 use worth_query_topology_entry::{
     planar_source_adjustment_contacts, reset_planar_source_adjustment_contacts, PlanarOutputRead,
 };
@@ -64,7 +62,6 @@ fn fixed_batch_aggregate_refusal_and_fresh_retry_preserve_settled_owner() {
     ];
     let world = installation::install_selected_program(
         &crate::installed_schema(),
-        4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),
         &grants,
@@ -142,7 +139,6 @@ fn fixed_batch_aggregate_refusal_and_fresh_retry_preserve_settled_owner() {
     assert_eq!(settled.settlement().output_count(), 4);
     let basis = settled.settlement().observation();
     let retained = request.at(basis);
-    let mut works = Vec::new();
     let mut retained_basis = None;
     for key in ["anchor-a", "final:anchor-a"] {
         let scalar = retained
@@ -152,66 +148,7 @@ fn fixed_batch_aggregate_refusal_and_fresh_retry_preserve_settled_owner() {
             .execute()
             .unwrap();
         retained_basis.get_or_insert_with(|| scalar.receipt().inspect().basis().clone());
-        works.push(scalar.receipt().inspect().read_work().total_work_units());
     }
-    // Add no attempt currentness ceiling: these explicit limits must reach
-    // aggregate batch admission under the installed native policy.
-    let policy = WorthQueryOperationDeliveryPolicy::default();
-    let cap = works.iter().copied().max().unwrap();
-    assert!(cap < works.iter().sum::<usize>());
-    let limits = WorthQueryApplicationQueryBatchLimits::new(
-        NonZeroUsize::new(2).unwrap(),
-        Some(NonZeroUsize::new(cap).unwrap()),
-        NonZeroUsize::MAX,
-        NonZeroUsize::MAX,
-    );
-    let observer = world.application.runtime().result_buffer_observer();
-    let before = observer.observe();
-    let custody_cap = WorthQueryApplicationQueryBatchLimits::new(
-        NonZeroUsize::new(2).unwrap(),
-        None,
-        NonZeroUsize::new(1).unwrap(),
-        NonZeroUsize::MAX,
-    );
-    let memory_refusal =
-        match settled.read_batch_current_with_policy::<2>(&request, policy.batch(custody_cap)) {
-            Err(denial) => denial,
-            Ok(_) => panic!("one byte cannot retain both batch result slots"),
-        };
-    assert!(
-        matches!(
-            memory_refusal,
-            WorthQueryOperationDeliveryDenial::Batch(
-                WorthQueryApplicationQueryBatchDenial::Resource {
-                    item: None,
-                    denial: WorthQueryApplicationQueryBatchResourceDenial::MemoryLimit {
-                        maximum: 1,
-                        ..
-                    }
-                }
-            )
-        ),
-        "actual aggregate custody refusal: {memory_refusal:?}",
-    );
-    let refusal = match settled.read_batch_current_with_policy::<2>(&request, policy.batch(limits))
-    {
-        Err(denial) => denial,
-        Ok(_) => panic!("aggregate allowance was renewed for the second item"),
-    };
-    assert!(
-        matches!(
-            refusal,
-            WorthQueryOperationDeliveryDenial::Batch(
-                WorthQueryApplicationQueryBatchDenial::Resource {
-                    item: Some(1),
-                    denial: WorthQueryApplicationQueryBatchResourceDenial::WorkLimit { .. }
-                }
-            )
-        ),
-        "actual native refusal: {refusal:?}"
-    );
-    assert_eq!(observer.observe().retained_bytes(), before.retained_bytes());
-    assert_eq!(observer.observe().active_buffers(), before.active_buffers());
     let fresh_scope = authentication::request_scope();
     let fresh = authentication::block_on(adapter.authenticate(
         authentication::LocalCredential::issued_for_model_owner(),

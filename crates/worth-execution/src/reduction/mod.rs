@@ -1,11 +1,12 @@
 mod plan;
 mod tree;
+pub(crate) use tree::{RunRange, RunTree};
 
 pub use plan::{ReductionDenial, ReductionPlan};
 pub(crate) use tree::ScheduledReductionError;
 pub use tree::{
     ReductionEditMemoryBoundError, ReductionInsertMemoryBoundError, ReductionMetrics,
-    ReductionRunFailure, ReductionRunStop, ReductionTree,
+    ReductionRunFailure, ReductionRunStop, ReductionShapeCostDenial, ReductionTree,
 };
 
 #[cfg(test)]

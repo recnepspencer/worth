@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::durability::data::{
     CheckpointRestoreWork, DurabilityError, DurabilityMode, DurableCheckpoint,
+    RelationalRecoveryStop,
 };
 use crate::history::data::VersionNode;
 use crate::runtime::{HistorySubsystem, IndexingState, LineageState, RelationalRuntime};
@@ -12,6 +13,7 @@ use super::super::authority_continuity::validate_checkpoint_lineage_artifact;
 mod branch_root_images;
 mod partition_images;
 mod record_identity;
+mod recovered_codec_meaning;
 mod root_schema_readmission;
 
 #[cfg(test)]
@@ -34,11 +36,12 @@ struct PreparedCheckpointState {
 }
 
 pub(super) fn restore_checkpoint_state(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     checkpoint: DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
-) -> Result<(), DurabilityError> {
-    let prepared = prepare_checkpoint_state(restored, &checkpoint, work)?;
+) -> Result<(), RelationalRecoveryStop> {
+    let prepared = prepare_checkpoint_state(execution, restored, &checkpoint, work)?;
     let restored = super::unshared_state(restored)?;
     install_checkpoint_state(restored, prepared);
     restored.durability.push_checkpoint(checkpoint);
@@ -46,14 +49,21 @@ pub(super) fn restore_checkpoint_state(
 }
 
 fn prepare_checkpoint_state(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
-) -> Result<PreparedCheckpointState, DurabilityError> {
+) -> Result<PreparedCheckpointState, RelationalRecoveryStop> {
     validate_checkpoint_lineage_artifact(checkpoint)?;
     let symbols = prepare_symbols(restored, checkpoint);
     let record_identity = prepare_record_identity(checkpoint)?;
     let branch_root_images = restore_branch_root_images(restored, checkpoint, work)?;
+    recovered_codec_meaning::check_current_codec_meaning(
+        execution,
+        checkpoint,
+        &branch_root_images,
+        &restored.config.schema.registry,
+    )?;
     let partitions = prepare_partitions(restored, checkpoint, &branch_root_images, work)?;
     let history = prepare_history(restored, checkpoint, branch_root_images, &symbols, work)?;
     let lineage = prepare_lineage(restored, checkpoint);

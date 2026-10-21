@@ -1,3 +1,5 @@
+mod read_condition;
+pub(in crate::mvcc) use read_condition::CompanionReadCondition;
 use std::any::Any;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -13,9 +15,8 @@ pub(super) mod publication_admission;
 pub use publication_admission::{CompanionBranchCellSlot, PreparedCompanionBranchCell};
 mod derived_replacement;
 pub use derived_replacement::{
-    CompanionDerivedImageRetention, CompanionDerivedRootAdmission, CompanionDerivedRootCleanup,
-    CompanionDerivedRootCost, CompanionDerivedRootInstalled, CompanionDerivedRootPreparationStop,
-    CompanionDerivedRootStopped, PreparedCompanionDerivedRoot,
+    CompanionDerivedRootCleanup, CompanionDerivedRootInstalled,
+    CompanionDerivedRootPreparationStop, CompanionDerivedRootStopped, PreparedCompanionDerivedRoot,
 };
 
 pub(super) struct CompanionRootImage {
@@ -23,7 +24,6 @@ pub(super) struct CompanionRootImage {
     pub(super) commit_id: Option<CommitId>,
     pub(super) position: AtomicU64,
     pub(super) payload: Arc<dyn Any + Send + Sync>,
-    pub(super) _derived_retention: Option<CompanionDerivedImageRetention>,
 }
 
 impl CompanionRootImage {
@@ -175,7 +175,6 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
             commit_id,
             position: AtomicU64::new(position.map_or(0, |position| position.0)),
             payload,
-            _derived_retention: None,
         });
         Self {
             core: Arc::new(CompanionBranchCellCore {
@@ -217,7 +216,7 @@ impl<T: Send + Sync + 'static> CompanionBranchCell<T> {
         expected: CompanionBranchImage<T>,
         prepared: Arc<T>,
     ) -> Result<CompanionBranchImage<T>, CompanionCellEditStop> {
-        let prepared = derived_replacement::prepare_admitted(self, expected, prepared, None);
+        let prepared = derived_replacement::prepare_admitted(self, expected, prepared);
         let installed = prepared.install().map_err(|stopped| stopped.reason())?;
         let (image, cleanup) = installed.into_parts();
         drop(cleanup);

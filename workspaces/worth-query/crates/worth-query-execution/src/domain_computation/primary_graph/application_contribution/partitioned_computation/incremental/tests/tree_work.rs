@@ -75,13 +75,71 @@ fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
     )
     .unwrap();
     let partition = template.partitions.values().next().unwrap();
+    let policy = crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::MIN, Some(1 << 36));
+    let native = worth_execution::SerialRequest::from_policy(
+        &policy,
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let map = worth_execution::ExecutionMap::<_, u64>::from_keyless_partitions(
+        keys.iter()
+            .map(|id| {
+                (
+                    *id,
+                    worth_execution::KeylessPartition {
+                        value: (),
+                        kernel_scratch_bytes: 0,
+                        max_result_bytes: 0,
+                    },
+                )
+            })
+            .collect(),
+    )
+    .unwrap();
+    let worth_execution::RetainedRunOutcome::Complete {
+        run: native_run, ..
+    } = map
+        .run_retained_run(
+            worth_execution::ExecutionRequest::serial(&native),
+            worth_execution::ExecutionWorkCeiling::new(None),
+            |_, context| {
+                context.checkpoint(1)?;
+                Ok::<_, worth_execution::MapKernelFailure<()>>(1_u64)
+            },
+        )
+        .unwrap()
+    else {
+        panic!("actual native scalar slots")
+    };
+    let request = live_scope();
+    let execution = QueryRequestExecution::open(serial_placement(), &request);
+    let partitions = super::super::partition_metadata::PartitionMetadata::from_recorded(
+        keys.iter()
+            .map(|id| {
+                (
+                    *id,
+                    (
+                        Arc::clone(&partition.key),
+                        partition.key_bytes,
+                        partition.gather.clone(),
+                    ),
+                )
+            })
+            .collect(),
+        execution.allocation_policy().unwrap(),
+    )
+    .unwrap();
     Retained {
         items: Arc::clone(&template.items),
         digests: template.digests.clone(),
         membership: template.membership.clone(),
         item_keys: Arc::clone(&template.item_keys),
+        item_bytes: template.item_bytes,
+        item_call_bytes: template.item_call_bytes,
+        call_sequence: Arc::clone(&template.call_sequence),
         routing: Arc::clone(&template.routing),
-        partitions: keys.iter().map(|id| (*id, Arc::clone(partition))).collect(),
+        partitions,
+        native_run,
         tree,
     }
 }

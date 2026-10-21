@@ -30,8 +30,8 @@ guidance = "C.11 mechanism crates depend downward; only Store composes Blob, Lay
 [[source_dependency_allowlists]]
 workspace_manifest = "Cargo.toml"
 sources = ["worth-execution"]
-allowed_targets = ["allocator-api2", "rayon", "trybuild", "worth-foundational", "worth-proof"]
-guidance = "Milestone 9.17.6.3: the execution authority is below Relational, Signal and Query; it may use only its worker backend, the exactly pinned fresh payload allocator, portable vocabulary, proof doors and compile-fail test support. Payload layout and reservation precede allocation; higher runtime or graph owners remain forbidden."
+allowed_targets = ["allocator-api2", "rayon", "serde", "serde_json", "trybuild", "worth-foundational", "worth-proof", "worth-value-shape-derive"]
+guidance = "Milestone 9.17.6.3: the execution authority is below Relational, Signal and Query; it may use only its worker backend, the exactly pinned fresh payload allocator, portable vocabulary, proof doors, the host-compiled resident-value derive and test support. Serde dependencies serve only dev-test wire/resident comparison oracles. Payload layout and reservation precede allocation; higher runtime or graph owners remain forbidden."
 
 [[source_dependency_allowlists.dependency_contracts]]
 target = "allocator-api2"

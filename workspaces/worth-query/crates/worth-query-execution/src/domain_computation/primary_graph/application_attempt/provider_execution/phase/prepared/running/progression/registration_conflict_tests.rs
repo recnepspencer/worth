@@ -247,8 +247,7 @@ fn while_peer_is_registered(
     let commit_lane = world
         .application
         .primary_provider
-        .application_branch_commit_lane(product.observation())
-        .unwrap();
+        .application_branch_commit_lane(product.observation());
     let coordination = commit_lane.enter();
     let authority = WorthQueryApplicationCommitProgressionAuthority {
         application: &world.application,

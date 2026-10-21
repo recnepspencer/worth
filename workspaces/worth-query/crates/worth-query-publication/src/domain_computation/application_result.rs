@@ -21,7 +21,6 @@ pub use receipt::{
 };
 pub use terminal_release::{
     WorthQueryPublishedApplicationQueryReleasePosture,
-    WorthQueryPublishedApplicationQueryResultBufferRelease,
     WorthQueryPublishedApplicationQueryTerminalRelease,
 };
 

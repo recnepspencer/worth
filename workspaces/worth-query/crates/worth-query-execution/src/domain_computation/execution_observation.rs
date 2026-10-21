@@ -54,9 +54,6 @@ pub(in crate::domain_computation) fn register_cleanup(cleanup: fn()) {
     CLEANUPS.with(|cleanups| cleanups.borrow_mut().push(Box::new(cleanup)));
 }
 // Law 2, scope: cleanup owns only weak receiver references and ends on guard drop.
-pub(in crate::domain_computation) fn register_owned_cleanup(cleanup: impl FnOnce() + 'static) {
-    owned_control_scope::register(cleanup);
-}
 
 #[cfg(test)]
 mod tests {

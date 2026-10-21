@@ -119,10 +119,7 @@ pub mod integration {
         WorthQueryProductWorldClock, WorthQueryProductWorldResources,
         WorthQueryRelationalSourceInstallationDenial, WorthQueryRelationalSourceOwner,
     };
-    pub use crate::domain_computation::execution_runtime::{
-        WorthQueryInvalidationResourceDenial, WorthQueryInvalidationResourceInstallation,
-        WorthQueryInvalidationResources,
-    };
+    pub use crate::domain_computation::execution_runtime::WorthQueryInvalidationResources;
     pub use worth_execution::{ExecutionAuthority, ExecutionAuthorityConfig};
     pub use worth_foundational::{
         DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -230,10 +227,10 @@ pub mod integration {
             .publication(worth_relational::facade::config::PublicationConfig {
                 coherent_publication_required: true,
                 max_patch_records_per_commit: 4_096,
-                max_published_snapshot_handles: 256,
-                max_active_snapshot_handles: maximum_active_snapshots,
+                max_published_snapshot_handles: Some(256),
+                max_active_snapshot_handles: Some(maximum_active_snapshots),
                 max_transaction_savepoints: 4_096,
-                max_prepared_candidates: 1_024,
+                max_prepared_candidates: Some(1_024),
                 candidate_max_lifetime_millis: 30_000,
             })
             .build();

@@ -1,10 +1,14 @@
 //! Completed custody follows checkpoint dispositions assigned by this fixture.
 //! The commit receipt is real; checkpoint and claim stages are set directly.
-use super::super::{
-    BoundOutputSource, PreparedOutputRootKind, ReadyCompletion, SourceCustody,
-    WorthQueryAcceptedOutputAuthority, WorthQueryCompletedOutputDemand, WorthQueryOutputCheckpoint,
-    WorthQueryOutputClaimIdentity, WorthQueryOutputProgress,
-};
+use super::super::BoundOutputSource;
+use super::super::PreparedOutputRootKind;
+use super::super::ReadyCompletion;
+use super::super::SourceCustody;
+use super::super::WorthQueryAcceptedOutputAuthority;
+use super::super::WorthQueryCompletedOutputDemand;
+use super::super::WorthQueryOutputCheckpoint;
+use super::super::WorthQueryOutputClaimIdentity;
+use super::super::WorthQueryOutputProgress;
 use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
@@ -55,9 +59,7 @@ fn completed_stage(claimed_with_ready: bool) {
     row.source_commits.push(commit.clone());
     state.records.insert(row_key.clone(), row);
     state.note_custody(&commit);
-    state
-        .prune_completed_custody(&mut super::super::lifecycle::release::CleanupWalk::new())
-        .unwrap();
+    state.prune_completed_custody().unwrap();
     assert_eq!(
         state.source_custody.contains_key(&commit),
         claimed_with_ready,
@@ -80,9 +82,7 @@ fn completed_stage(claimed_with_ready: bool) {
             ));
         }
         state.note_custody(&commit);
-        state
-            .prune_completed_custody(&mut super::super::lifecycle::release::CleanupWalk::new())
-            .unwrap();
+        state.prune_completed_custody().unwrap();
         assert!(
             state.source_custody.is_empty(),
             "the completed claim releases its custody"

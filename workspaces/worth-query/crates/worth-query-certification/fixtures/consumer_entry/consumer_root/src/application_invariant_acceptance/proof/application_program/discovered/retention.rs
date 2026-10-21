@@ -284,7 +284,8 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
             .advance(&world.application, &request)
             .unwrap_or_else(|d| panic!("native traversal: {d:?}"))
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Pending
+            | WorthQueryDiscoveredProgramOutputProgress::Progressed => None,
             WorthQueryDiscoveredProgramOutputProgress::Settled(settled) => Some(settled),
         }
     });

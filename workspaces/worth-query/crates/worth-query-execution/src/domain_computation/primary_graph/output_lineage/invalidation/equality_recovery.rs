@@ -3,21 +3,20 @@
 use std::sync::Arc;
 
 use im::OrdSet;
-use worth_relational::facade::{
-    mvcc::{CompanionBranchCell, CompanionBranchImage, CompanionCellEditStop},
-    runtime::PositionedRelationalSnapshot,
-};
+use worth_relational::facade::mvcc::CompanionBranchCell;
+use worth_relational::facade::mvcc::CompanionBranchImage;
+use worth_relational::facade::mvcc::CompanionCellEditStop;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
-use super::{
-    admission::IndexAdmission,
-    mark_state::{MarkState, OutputFactCoverage},
-    output_facts::RegisteredOutputFacts,
-    source_alignment::{BranchMarkRoot, SnapshotAlignedMarkState},
-    InvalidationEditAdmission, SettlementVerificationStop, SourceInvalidationOwner,
-};
-use crate::domain_computation::primary_graph::{
-    output_lineage::RecordedSettlementIdentity, WorthQueryApplicationObservedFact,
-};
+use super::mark_state::MarkState;
+use super::mark_state::OutputFactCoverage;
+use super::output_facts::RegisteredOutputFacts;
+use super::source_alignment::BranchMarkRoot;
+use super::source_alignment::SnapshotAlignedMarkState;
+use super::SettlementVerificationStop;
+use super::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
 
 pub(in crate::domain_computation::primary_graph) struct EqualityRecoveryImage {
     cell: CompanionBranchCell<BranchMarkRoot>,
@@ -48,16 +47,15 @@ impl SourceInvalidationOwner {
     pub(in crate::domain_computation::primary_graph) fn equality_recovery_image(
         &self,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<EqualityRecoveryImage, SettlementVerificationStop> {
         if selected.runtime_instance_id() != self.runtime_instance_id {
             return Err(SettlementVerificationStop::Alignment);
         }
         let cell = self
-            .cell_for_read(selected, admission)?
+            .cell_for_read(selected)?
             .ok_or(SettlementVerificationStop::Alignment)?;
         let image = cell.read_image();
-        admission.ordered_read(image.payload().past.len())?;
+
         let aligned = SnapshotAlignedMarkState::observe_image(&image, selected)
             .map_err(|_| SettlementVerificationStop::Alignment)?;
         Ok(EqualityRecoveryImage {
@@ -72,19 +70,15 @@ impl EqualityRecoveryImage {
     pub(in crate::domain_computation::primary_graph) fn terminal_row(
         &self,
         identity: &Arc<RecordedSettlementIdentity>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<EqualityRecoveryRow, SettlementVerificationStop> {
         let mut current = Arc::clone(identity);
         for _ in 0..=self.state.equal_links.len() {
-            admission.work(1)?;
-            admission.ordered_read(self.state.equal_links.len())?;
             let next = self
                 .state
                 .equal_links
                 .get(&current)
                 .and_then(|link| link.next.as_ref());
             let Some(next) = next else {
-                admission.ordered_read(self.state.settlements.len())?;
                 let row = self
                     .state
                     .settlements
@@ -92,14 +86,14 @@ impl EqualityRecoveryImage {
                     .ok_or(SettlementVerificationStop::Alignment)?;
                 return Ok(EqualityRecoveryRow {
                     _custody: Arc::clone(row),
-                    output_projection: self.output_facts(&current, admission)?,
+                    output_projection: self.output_facts(&current)?,
                     identity: current,
                     facts: row.facts.clone(),
                     upstream: row.consumed_upstream.clone(),
                     read_basis: Arc::clone(&row.read_basis),
                 });
             };
-            admission.ordered_read(self.state.equal_links.len())?;
+
             if self
                 .state
                 .equal_links
@@ -116,12 +110,9 @@ impl EqualityRecoveryImage {
     fn output_facts(
         &self,
         terminal: &Arc<RecordedSettlementIdentity>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<RegisteredOutputFacts>, SettlementVerificationStop> {
         let mut current = terminal;
         for _ in 0..=self.state.equal_links.len() {
-            admission.work(1)?;
-            admission.ordered_read(self.state.settlements.len())?;
             let Some(row) = self.state.settlements.get(current) else {
                 return Ok(None);
             };
@@ -131,14 +122,14 @@ impl EqualityRecoveryImage {
             if row.output_coverage != OutputFactCoverage::Stable {
                 return Ok(None);
             }
-            admission.ordered_read(self.state.equal_links.len())?;
+
             let prior = self
                 .state
                 .equal_links
                 .get(current)
                 .and_then(|link| link.prior.as_ref())
                 .ok_or(SettlementVerificationStop::Alignment)?;
-            admission.ordered_read(self.state.equal_links.len())?;
+
             if self
                 .state
                 .equal_links
@@ -156,9 +147,7 @@ impl EqualityRecoveryImage {
     /// invalidates this read just as a native publication does.
     pub(in crate::domain_computation::primary_graph) fn fence(
         &self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), SettlementVerificationStop> {
-        admission.work(5)?;
         let fresh = self.cell.read_image();
         if fresh.root_id() != self.image.root_id()
             || fresh.commit_id() != self.image.commit_id()

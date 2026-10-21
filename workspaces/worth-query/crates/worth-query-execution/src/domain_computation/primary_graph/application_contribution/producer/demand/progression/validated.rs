@@ -10,9 +10,16 @@ mod execution_preparation;
 pub(super) mod schedule_progression;
 mod source_guard;
 pub(super) use execution_completion::CompletionRefusal;
-pub(super) use execution_preparation::ExecutionPreparation;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)
+enum ExecutionPreparation<'owner, Query, Value> {
+    Reached(OwnStages<Query, Value>),
+    Planned(crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan<'owner, CheckpointProgress, CompletionRefusal>),
+}
+
+use schedule_progression::CheckpointProgress;
 pub(super) use schedule_progression::OwnPublication;
-use schedule_progression::{CheckpointProgress, OwnStages, ScheduleProgression};
+use schedule_progression::OwnStages;
+use schedule_progression::ScheduleProgression;
 use source_guard::SourceGuard;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -33,7 +40,7 @@ where
         >,
         entry: &InstalledProducerProvider<Schema>,
         commit_authority: WorthQueryProducerCommitAuthority,
-        request_admission: &mut InvalidationEditAdmission,
+
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<
         OwnStages<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
@@ -54,7 +61,6 @@ where
             entry,
             commit_authority,
             ScheduleProgression::Ordinary,
-            request_admission,
             performed,
         )?;
         match prepared {

@@ -13,7 +13,7 @@ pub(super) fn validate_outputs(
     body: &ApplicationOperationBodyProgram,
     members: &[ApplicationSchemaMember],
 ) -> Result<(), Denial> {
-    let denied = Denial::MissingOperationProgramDependency;
+    let denied = || Denial::program_body_dependency(operation);
     let mut roles = BTreeSet::new();
     for output in body.outputs() {
         if !roles.insert(&output.role.name)
@@ -34,12 +34,12 @@ pub(super) fn validate_outputs(
                 }
                 _ => None,
             })
-            .ok_or(denied)?;
+            .ok_or_else(denied)?;
         if binding.operation() != operation
             || binding.scope().entity.as_str() != body.scope_entity().unwrap_or_default()
             || !binding.output_roles().contains(&output.role)
         {
-            return Err(denied);
+            return Err(denied());
         }
         let target_valid = match &output.target {
             ApplicationOperationBodyOutputTarget::Scope => {
@@ -63,7 +63,7 @@ pub(super) fn validate_outputs(
             }
         };
         if !target_valid {
-            return Err(denied);
+            return Err(denied());
         }
     }
     // Each binding of this operation must be satisfiable by its one installed body.
@@ -94,7 +94,7 @@ fn validate_coverage(
         .iter()
         .any(|family| family.minimum > 0)
     {
-        return Err(Denial::MissingOperationProgramDependency);
+        return Err(Denial::program_body_dependency(binding.operation()));
     }
     Ok(())
 }

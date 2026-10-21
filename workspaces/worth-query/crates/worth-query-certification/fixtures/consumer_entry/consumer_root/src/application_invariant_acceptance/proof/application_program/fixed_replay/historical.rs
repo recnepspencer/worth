@@ -10,7 +10,6 @@ fn fixed_restored_historical_commit_is_terminal_and_closes_without_rerun() {
         .unwrap();
     let world = installation::install_selected_program(
         &crate::installed_schema(),
-        4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),
         &[],

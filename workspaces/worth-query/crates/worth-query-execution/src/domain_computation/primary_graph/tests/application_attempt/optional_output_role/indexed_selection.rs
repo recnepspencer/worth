@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryApplicationObservedFact as Fact,
     application_checkpoint::{decode_producer_facts, encode_producer_facts},
@@ -209,7 +210,7 @@ fn handler_predicate_rebases_and_its_codec_compares_against_the_reopened_world()
 fn selection(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<IdentityExecutionSchema>,
-    facts: &[Fact],
+    facts: &(impl FactSequence + ?Sized),
 ) -> OutputDependencySelection {
     let selected = application
         .select_product_branch(execution, application.product_runtime().default_branch())
@@ -224,12 +225,6 @@ fn selection(
                 selected.application_basis().snapshot_handle(),
                 true,
                 Some(facts),
-                &mut application
-                    .primary_provider
-                    .graph
-                    .source_owner
-                    .invalidation_owner
-                    .edit_admission_with_work_limit(Some(32)),
             )
             .unwrap()
         })

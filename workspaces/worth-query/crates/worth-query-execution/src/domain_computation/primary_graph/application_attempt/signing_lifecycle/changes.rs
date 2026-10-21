@@ -3,6 +3,7 @@ use super::{
     attempt, capacity, resource, unavailable, Effect, EntityId, Fact, Lease, Locus, Outcome,
     QueryRequestExecution, Rule,
 };
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout as Layout;
 use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectKey, AspectValue, CanonicalFieldPath};
@@ -14,13 +15,13 @@ pub(super) fn select(
     rule: &Rule,
     lease: &Lease,
     effects: &[Effect],
-    facts: &[Fact],
+    facts: &(impl FactSequence + ?Sized),
     execution: &QueryRequestExecution<'_>,
 ) -> Result<BTreeMap<EntityId, Vec<Locus>>, Outcome> {
     let layout: &Layout = &lease.layout;
     let mut before: BTreeMap<(EntityId, &AspectKey, &CanonicalFieldPath), Option<&AspectValue>> =
         BTreeMap::new();
-    for fact in facts {
+    for fact in facts.iter() {
         match fact {
             Fact::Field {
                 entity_id,

@@ -4,11 +4,11 @@ use std::sync::Arc;
 use im::OrdSet;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
-use super::{InputCutoffVerificationStop, InvalidationEditAdmission, SourceInvalidationOwner};
-use crate::domain_computation::primary_graph::output_lineage::{
-    invalidation::{ConsumedOutputCurrentness, SourceSettlementCurrentness},
-    RecordedSettlementIdentity,
-};
+use super::InputCutoffVerificationStop;
+use super::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::ConsumedOutputCurrentness;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 
 /// Scheduling proof only: the cutoff must still verify handler facts and
 /// native consumed evidence before it may certify input reuse.
@@ -22,10 +22,9 @@ pub(super) fn resolve<'edges>(
     edges: &'edges OrdSet<Arc<RecordedSettlementIdentity>>,
     selected: &PositionedRelationalSnapshot,
     owner: &SourceInvalidationOwner,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<Resolution<'edges>, InputCutoffVerificationStop> {
     for identity in edges {
-        let current = owner.consumed_output_currentness(selected, identity, admission)?;
+        let current = owner.consumed_output_currentness(selected, identity)?;
         if !upstream_settled(current) {
             return Ok(Resolution::Awaiting(identity));
         }

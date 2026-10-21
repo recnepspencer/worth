@@ -24,6 +24,13 @@ use crate::domain_computation::primary_graph::application_contribution::Comparat
 use crate::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget;
 use crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWork;
 
+mod ranges;
+mod sequence;
+pub(in crate::domain_computation::primary_graph) use sequence::{
+    CallSequenceDenial, CallShape, CallShapeTransition, CallSummary, CallVisit,
+    ComputationCallSequence,
+};
+
 /// The work one owner call charged and the entities it reached.
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct ComputationCallCharge {
@@ -77,6 +84,7 @@ impl<Schema, Operation>
     ) {
         self.reader.work = start.work;
         self.reader.work_budget = start.work_budget;
+        self.decision_facts.materialize_carried();
     }
 
     /// Makes one owner call, recording every fact key it reads as that call's,
@@ -88,6 +96,7 @@ impl<Schema, Operation>
         call: impl FnOnce(&mut Self) -> Output,
     ) -> (Output, Option<ComputationCallCharge>) {
         let work = self.reader.work;
+        self.decision_facts.begin_fresh_call(read);
         self.reader.work_budget.begin_call();
         self.reader.realized_scope.begin_call();
         let output = self.attributed(read, call);
@@ -125,6 +134,31 @@ impl<Schema, Operation>
         self.reader.work = work;
         self.reader.realized_scope.extend(&charge.reached);
         true
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn computation_changes(
+        &self,
+        _: &Comparator,
+        prior: &crate::domain_computation::primary_graph::application_contribution::ComputationPrior,
+    ) -> Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges,
+    > {
+        prior.changes_at_snapshot(self.reader.runtime, self.reader.snapshot)
+    }
+    pub(in crate::domain_computation::primary_graph) fn computation_snapshot(
+        &self,
+        _: &Comparator,
+    ) -> worth_relational::facade::snapshots::SnapshotHandle {
+        self.reader.snapshot.clone()
+    }
+
+    /// The immutable installed backing which also issued this reader's decode
+    /// session. Identity alone grants no source, snapshot or session custody.
+    pub(in crate::domain_computation::primary_graph) fn computation_value_bindings(
+        &self,
+        _: &Comparator,
+    ) -> worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog {
+        self.reader.value_bindings.clone()
     }
 
     /// The fact `key` names at this projection's snapshot, comparable only

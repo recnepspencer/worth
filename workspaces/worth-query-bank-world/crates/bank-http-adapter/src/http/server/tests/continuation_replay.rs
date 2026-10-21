@@ -94,7 +94,7 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
         .runtime
         .query(queries::account_authorized_users(account))
         .as_principal(&owner)
-        .controls(BankReadControls::current(fresh_scope(), 16, 20_000).unwrap())
+        .controls(BankReadControls::current(fresh_scope(), 16).unwrap())
         .execute()
         .expect("owner should read account grants");
     let authorization = users.rows()[0]

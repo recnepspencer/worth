@@ -118,14 +118,10 @@ where
                 plan.query.name(),
             )
         })?;
-        let result_buffer = self.result_buffers.reserve(
-            plan.graph_read_plan()
-                .budget_check()
-                .max_inline_result_bytes(),
-        );
+
         let (raw, authorization_work, read_proof) =
             execute_authorized_read(execution, self, &plan, |runtime, graph, plan| {
-                read_continuation_page(runtime, execution, graph, plan, after, result_buffer)
+                read_continuation_page(runtime, execution, graph, plan, after)
             })
             .map_err(|read| map_authorized_read_denial(read, plan.query.name()))?;
         if expected_generation.is_some() && raw.raw.ordered_index_generation != expected_generation
@@ -135,7 +131,7 @@ where
                 plan.query.name(),
             ));
         }
-        finalize_continuation_page(self, plan, raw, authorization_work, read_proof)
+        finalize_continuation_page(execution, self, plan, raw, authorization_work, read_proof)
     }
 }
 

@@ -318,7 +318,7 @@ fn emergency(
 }
 
 fn controls() -> BankReadControls {
-    BankReadControls::current(request_scope(), 1, 20_000).unwrap()
+    BankReadControls::current(request_scope(), 1).unwrap()
 }
 
 fn bank_idempotency(seed: u8) -> BankIdempotencyKey {

@@ -13,6 +13,21 @@ use crate::denial::{
 
 use super::super::super::{foundational_aspect, foundational_value};
 
+pub(super) fn require_supported_field_codec(
+    member: &ApplicationSchemaMember,
+) -> Result<(), Denial> {
+    if matches!(
+        member,
+        ApplicationSchemaMember::Field {
+            canonical: Some(_),
+            ..
+        }
+    ) {
+        return Err(Denial::new(Kind::UnsupportedCanonicalValueContract));
+    }
+    Ok(())
+}
+
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     member: &ApplicationSchemaMember,
@@ -24,11 +39,13 @@ pub(super) fn write(
             aspect,
             identity,
             revision,
+            absence,
         } => {
             output.text(entity)?;
             output.text(aspect)?;
             output.u64(identity.0)?;
-            output.u64(revision.0)
+            output.u64(revision.0)?;
+            super::super::super::foundational_aspect::write_absence(output, *absence)
         }
         ApplicationSchemaMember::Field { .. } => write_field(output, member),
         ApplicationSchemaMember::Relation { .. } => write_relation(output, member),
@@ -77,6 +94,7 @@ fn write_field(
         field,
         presence,
         scalar_family,
+        canonical: _,
         value_type,
         unit,
         frame,
@@ -140,6 +158,7 @@ pub(super) fn decode(
             aspect: input.text()?.to_owned(),
             identity: AspectIdentity(input.u64()?),
             revision: AspectContractRevision(input.u64()?),
+            absence: super::super::super::foundational_aspect::decode_absence(input)?,
         },
         3 | 25 => ApplicationSchemaMember::Field {
             entity: input.text()?.to_owned(),
@@ -147,6 +166,7 @@ pub(super) fn decode(
             field: input.text()?.to_owned(),
             presence: decode_presence(input)?,
             scalar_family: foundational_aspect::decode_scalar_type(input)?,
+            canonical: None,
             value_type: input.text()?.to_owned(),
             unit: super::super::wire_vocabulary::decode_optional(input, |input| {
                 Ok(input.text()?.to_owned())

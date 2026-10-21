@@ -110,7 +110,8 @@ impl BulkMutationTelemetryAccumulator {
                 self.entity_target_count += 1;
                 self.lineage_transition_count += 1;
             }
-            MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(_)) => {
+            MutationIntent::Relation(RelationMutationIntent::ApplyAspectPatch(_))
+            | MutationIntent::Relation(RelationMutationIntent::Revalidate(_)) => {
                 self.relation_target_count += 1;
             }
             MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(_))

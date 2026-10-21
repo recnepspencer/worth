@@ -1,9 +1,9 @@
 mod claimed_selection;
 mod declared_predecessors;
-use super::super::{
-    DemandRegistryState, DemandState, ReadyCompletion, WorthQueryOutputAdvancement,
-    WorthQueryOutputCheckpoint,
-};
+use super::super::DemandState;
+use super::super::ReadyCompletion;
+use super::super::WorthQueryOutputAdvancement;
+use super::super::WorthQueryOutputCheckpoint;
 mod exact_ready;
 use super::discontinuity::DiscontinuityPage;
 use super::*;
@@ -23,19 +23,15 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn selected_ready_completion(
         &self,
         selected: &SelectedRequiredWork,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {
         let state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.charge_record_lookup(selected.key(), admission)?;
-        charge_required_key_lookup(&state, selected.key(), admission)?;
+
         // The exact token/version, row state, and shared Arc pin are separate
         // initialized visits from the two ordered searches.
-        admission
-            .charge_external_work(8)
-            .map_err(|_| work_denial())?;
+
         if !state.required_keys.contains(selected.key()) {
             return Ok(None);
         }
@@ -46,8 +42,7 @@ impl WorthQueryOutputDemandRegistry {
             || super::super::refreshed_rejoin::awaited_by_stale_owner(
                 &state.records,
                 selected.key(),
-                admission,
-            )?;
+            );
         if !required
             || !record
                 .work_membership
@@ -89,12 +84,9 @@ impl WorthQueryOutputDemandRegistry {
         product: &crate::basis::WorthQueryProductObservationLease,
         selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
         owner: &crate::domain_computation::primary_graph::SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let basis = product.relational_basis_descriptor();
-        admission
-            .charge_external_work(4)
-            .map_err(|_| work_denial())?;
+
         if basis.runtime_instance_id() != selected.runtime_instance_id()
             || basis.branch_id() != selected.branch_id()
             || basis.root_identity() != selected.root_id()
@@ -105,7 +97,7 @@ impl WorthQueryOutputDemandRegistry {
             ));
         }
         let epoch = owner
-            .selected_installed_discontinuity(selected, admission)
+            .selected_installed_discontinuity(selected)
             .map_err(native_denial)?;
         let Some(epoch) = epoch else {
             return Ok(());
@@ -120,7 +112,6 @@ impl WorthQueryOutputDemandRegistry {
                     product.observation().lifecycle_incarnation(),
                     selected.branch_id(),
                     epoch,
-                    admission,
                 )?
             };
             match page {
@@ -136,9 +127,8 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn next_required_work(
         &self,
         source_owner: &SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<SelectedRequiredWork>, WorthQueryOutputDemandDenial> {
-        self.drain_terminal_cleanup_admitted(source_owner, admission)?;
+        self.drain_terminal_cleanup_admitted(source_owner)?;
         let queue = {
             let state = self
                 .state
@@ -150,9 +140,6 @@ impl WorthQueryOutputDemandRegistry {
             return Ok(None);
         };
         loop {
-            admission
-                .charge_external_work(6)
-                .map_err(|_| work_denial())?;
             let selected = match queue.pop() {
                 RequiredWorkPop::Empty => return Ok(None),
                 RequiredWorkPop::Stale => continue,
@@ -166,15 +153,13 @@ impl WorthQueryOutputDemandRegistry {
                     .state
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);
-                state.charge_record_lookup(selected.key(), admission)?;
-                charge_required_key_lookup(&state, selected.key(), admission)?;
+
                 let live = if let Some(record) = state.records.get(selected.key()) {
                     (record.is_required()
                         || super::super::refreshed_rejoin::awaited_by_stale_owner(
                             &state.records,
                             selected.key(),
-                            admission,
-                        )?)
+                        ))
                         && record
                             .work_membership
                             .as_ref()
@@ -208,27 +193,6 @@ impl RequiredWorkMembership {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn charge_required_key_lookup(
-    state: &DemandRegistryState,
-    key: &WorthQueryOutputDemandKey,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<(), WorthQueryOutputDemandDenial> {
-    let count = state.required_keys.len();
-    let levels = usize::BITS as usize - count.max(1).leading_zeros() as usize;
-    let comparisons = count.min(11).checked_mul(levels).ok_or_else(work_denial)?;
-    let maximum_levels =
-        usize::BITS as usize - state.required_budget_bytes.max(1).leading_zeros() as usize;
-    let work = 11usize
-        .checked_mul(maximum_levels)
-        .and_then(|comparisons| comparisons.checked_mul(key.comparison_work()?))
-        .and_then(|work| work.checked_add(1))
-        .ok_or_else(work_denial)?;
-    admission
-        .charge_external_work(u64::try_from(work).map_err(|_| work_denial())?)
-        .and_then(|()| admission.charge_ordered_operations(1, comparisons as u64))
-        .map_err(|_| work_denial())
-}
-
 fn native_denial(
     stop: worth_relational::facade::mvcc::CompanionPreflightStop,
 ) -> WorthQueryOutputDemandDenial {
@@ -246,11 +210,4 @@ fn native_denial(
         _ => WorthQueryOutputDemandDenialKind::PublicationStale,
     };
     WorthQueryOutputDemandDenial::new(kind, "selected installed discontinuity cannot be observed")
-}
-
-pub(super) fn work_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        "selected required-work lookup exceeds request work",
-    )
 }

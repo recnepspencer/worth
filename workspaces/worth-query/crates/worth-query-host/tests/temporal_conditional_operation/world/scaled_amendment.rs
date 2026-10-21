@@ -102,25 +102,27 @@ impl CourtroomWorld {
             .into_parts()
             })
             .expect("installed host call opens");
-        let reads = self
+        let mut effects = self
             .application
             .with_host_advancement(|phase| {
-                self
-            .application
-            .begin_projected_application_read_attempt(
-                &phase, admission,
-                projection,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap()
+                let reads = self
+                    .application
+                    .begin_projected_application_read_attempt(
+                        &phase,
+                        admission,
+                        projection,
+                        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap();
+                reads
+                    .complete_projected_dependencies(
+                        &phase,
+                        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap()
+                    .begin_effect_program()
             })
             .expect("installed host call opens");
-        let mut effects = self.application.with_host_advancement(|phase| reads
-            .complete_projected_dependencies(
-                &phase, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap()
-            .begin_effect_program()).expect("installed host call opens");
         for (ordinal, target) in targets.iter().enumerate() {
             let target = effects.existing_entity(target).unwrap();
             effects

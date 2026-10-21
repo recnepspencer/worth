@@ -6,6 +6,7 @@ use crate::application_schema::{
 };
 use std::collections::BTreeSet;
 pub(in crate::application_schema::operation_definition::body) fn validate_values(
+    operation: &str,
     body: &Body,
     members: &[Member],
 ) -> Result<(), Denial> {
@@ -47,7 +48,7 @@ pub(in crate::application_schema::operation_definition::body) fn validate_values
             )
             .collect::<Vec<_>>();
         if sinks.is_empty() || sinks.iter().any(|(field,binding)| *binding != value.binding() || !members.iter().any(|member| matches!(member, Member::Field { entity, aspect, field: name, value_type, scalar_family: worth_foundational::facade::ScalarAspectType::UInt64, unit: None, .. } if entity == field.entity() && aspect == field.aspect() && name == field.field() && value_type == binding.as_str()))) {
-            return Err(Denial::MissingOperationProgramDependency);
+            return Err(Denial::program_body_dependency(operation));
         }
     }
     let references = body
@@ -72,7 +73,7 @@ pub(in crate::application_schema::operation_definition::body) fn validate_values
         .into_iter()
         .any(|name| !names.contains(name.as_str()))
     {
-        return Err(Denial::MissingOperationProgramDependency);
+        return Err(Denial::program_body_dependency(operation));
     }
     Ok(())
 }

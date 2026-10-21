@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::identity::{EntityId, KindId};
 
@@ -36,7 +37,7 @@ pub(super) struct WorthQueryElevationLifecycleFactExpectation<'a> {
 }
 
 pub(super) fn lifecycle_facts_are_exact(
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &(impl FactSequence + ?Sized),
     expected: WorthQueryElevationLifecycleFactExpectation<'_>,
 ) -> bool {
     let fields = [
@@ -112,7 +113,7 @@ pub(super) fn lifecycle_facts_are_exact(
 }
 
 fn exact_absent_field(
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &(impl FactSequence + ?Sized),
     entity: EntityId,
     locator: &AspectFieldLocator,
 ) -> bool {
@@ -130,7 +131,7 @@ fn exact_absent_field(
 }
 
 fn exact_relation_set(
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &(impl FactSequence + ?Sized),
     kind: KindId,
     anchor: EntityId,
     direction: WorthQueryApplicationAdjacencyDirection,
@@ -158,7 +159,7 @@ fn exact_relation_set(
 }
 
 fn exact_field(
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &(impl FactSequence + ?Sized),
     entity: EntityId,
     locator: &AspectFieldLocator,
     value: &AspectValue,

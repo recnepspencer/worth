@@ -1,11 +1,14 @@
-use worth_query_host::facade::runtime::{
-    RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetInstallation,
-    RuntimeWorldCustodyBudgetInstallation, RuntimeWorldHistoryBudgetInstallation,
-    RuntimeWorldObservationBudgetInstallation, RuntimeWorldPublicationBudgetInstallation,
-    RuntimeWorldRecoveryBudgetInstallation, RuntimeWorldRetentionBudgetInstallation,
-    WorthQueryInvalidationResourceInstallation, WorthQueryInvalidationResources,
-    WorthQueryProductWorldClock, WorthQueryProductWorldResources,
-};
+use worth_query_host::facade::runtime::RuntimeWorldBranchBudgetInstallation;
+use worth_query_host::facade::runtime::RuntimeWorldBudgetInstallation;
+use worth_query_host::facade::runtime::RuntimeWorldCustodyBudgetInstallation;
+use worth_query_host::facade::runtime::RuntimeWorldHistoryBudgetInstallation;
+use worth_query_host::facade::runtime::RuntimeWorldObservationBudgetInstallation;
+use worth_query_host::facade::runtime::RuntimeWorldPublicationBudgetInstallation;
+use worth_query_host::facade::runtime::RuntimeWorldRecoveryBudgetInstallation;
+use worth_query_host::facade::runtime::RuntimeWorldRetentionBudgetInstallation;
+use worth_query_host::facade::runtime::WorthQueryInvalidationResources;
+use worth_query_host::facade::runtime::WorthQueryProductWorldClock;
+use worth_query_host::facade::runtime::WorthQueryProductWorldResources;
 
 pub(super) const ACTIVE_WORLD_OBSERVATIONS: u64 = 32;
 
@@ -50,32 +53,19 @@ pub(super) fn world_resources() -> WorthQueryProductWorldResources {
             },
         },
         WorthQueryProductWorldClock::start(),
-        WorthQueryInvalidationResources::install(
-            WorthQueryInvalidationResourceInstallation::bounded(
-                1_000_000,
-                64 * 1_024 * 1_024,
-                128 * 1_024 * 1_024,
-                64,
-            ),
-        )
-        .expect("the Query invalidation installation is valid"),
+        WorthQueryInvalidationResources::new(),
         EXECUTION_POLICY,
     )
     .expect("the consumer's finite World resources are valid")
 }
 
 pub(super) fn application_limits(
-    query_bytes: usize,
 ) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
     worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits::new(
         world_resources(),
-        worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::bounded(
-            4096,
-            query_bytes,
-            4096,
-            32,
-        )
-        .unwrap(),
+        worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
+        ),
         worth_query_host::facade::primary_graph::SignalConditionalEvaluationBudget::development(),
     )
 }

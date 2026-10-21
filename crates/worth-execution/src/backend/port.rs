@@ -21,6 +21,7 @@ pub(crate) enum BackendKind {
 }
 
 pub(crate) struct TaskOutcome<R, E> {
+    pub(crate) allocation_denial: Option<LeaseDenial>,
     pub(crate) result: super::task_result::TaskResult<R, E>,
     pub(crate) work: u64,
     pub(crate) span: u64,
@@ -76,6 +77,35 @@ where
     F: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
 {
     run_checked_batch_inner(lease, batch, backend, kernel, charge_parent, None, None)
+}
+
+pub(crate) fn run_checked_batch_recording<T, R, E, F>(
+    lease: Option<&ExecutionResourceLease<'_>>,
+    batch: &AdmittedBatch<T>,
+    backend: BackendKind,
+    records: &super::settlement::records::SettlementRecords,
+    inputs: Option<ExecutionMemoryReservation>,
+    kernel: &F,
+    retained: Option<&mut super::settlement::RetainedSettlement<'_, R>>,
+) -> BatchOutcome<R, E>
+where
+    T: ChargedBytes + Sync,
+    R: ChargedBytes + Send,
+    E: ChargedBytes + Send,
+    F: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
+{
+    run_batch(
+        lease,
+        batch.declaration(),
+        BorrowedInputs(batch.values()),
+        backend,
+        kernel,
+        true,
+        None,
+        inputs,
+        Some(records),
+        retained,
+    )
 }
 
 /// A run whose memory admission takes over `taken`, the caller's reservation
@@ -145,6 +175,8 @@ where
         charge_parent,
         prepared,
         taken,
+        None,
+        None,
     )
 }
 
@@ -171,6 +203,8 @@ where
         true,
         None,
         taken,
+        None,
+        None,
     )
 }
 
@@ -200,6 +234,8 @@ where
         BackendKind::Perturbation(seed),
         kernel,
         true,
+        None,
+        None,
         None,
         None,
     );

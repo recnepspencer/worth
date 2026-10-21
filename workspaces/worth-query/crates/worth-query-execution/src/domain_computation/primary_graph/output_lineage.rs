@@ -2,20 +2,20 @@
 
 pub(in crate::domain_computation) use invalidation::HeadCellRegistrationStop;
 mod source_facts;
-pub(in crate::domain_computation::primary_graph) use source_facts::{
-    ComparableSourceFacts, RetainedSourceFacts,
-};
+mod source_publication;
+pub(in crate::domain_computation::primary_graph) use source_facts::ComparableSourceFacts;
+pub(in crate::domain_computation::primary_graph) use source_facts::RetainedSourceFacts;
+pub(in crate::domain_computation::primary_graph) use source_publication::CoveredSourcePublication;
+pub(in crate::domain_computation::primary_graph) use source_publication::SourcePublication;
 mod computation_source;
-pub(in crate::domain_computation::primary_graph) use computation_source::{
-    ComputationSourceEvidence, CurrentComputation,
-};
+pub(in crate::domain_computation::primary_graph) use computation_source::ComputationSourceEvidence;
+pub(in crate::domain_computation::primary_graph) use computation_source::CurrentComputation;
+mod current_candidate;
 mod current_output;
 pub(in crate::domain_computation::primary_graph) use current_output::RetainedOutputCurrentnessRead;
 mod denial;
 mod family_selection;
-pub(in crate::domain_computation::primary_graph) use family_selection::{
-    CheckpointPriorSelectionDenial, NativePriorCheckpointOutput,
-};
+pub(in crate::domain_computation::primary_graph) use family_selection::NativePriorCheckpointOutput;
 mod input_cutoff;
 mod input_reuse_key;
 pub(in crate::domain_computation::primary_graph) mod invalidation;
@@ -28,26 +28,25 @@ mod prepared_slot;
 mod qualification;
 mod recorded_output;
 mod recorded_source_identity;
+mod required_publication;
 mod required_settlement;
-pub(in crate::domain_computation::primary_graph) use required_settlement::{
-    AcceptedCurrentCandidate, BoundCurrentAcceptedOutput, CurrentAcceptedResult,
-    CurrentAcceptedStop, RequiredSettlementStop,
-};
-mod custodied_computation;
+pub(in crate::domain_computation::primary_graph) use required_settlement::AcceptedCurrentCandidate;
+pub(in crate::domain_computation::primary_graph) use required_settlement::BoundCurrentAcceptedOutput;
+pub(in crate::domain_computation::primary_graph) use required_settlement::CurrentAcceptedResult;
+pub(in crate::domain_computation::primary_graph) use required_settlement::CurrentAcceptedStop;
+pub(in crate::domain_computation::primary_graph) use required_settlement::RequiredSettlementStop;
 mod resolution;
 mod resources;
 mod restoration;
-mod retained_capacity;
 mod retained_computation;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use custodied_computation::custodied_state_for_test;
-pub(in crate::domain_computation::primary_graph) use custodied_computation::CustodiedComputation;
 pub(in crate::domain_computation::primary_graph) use retained_computation::PriorComputationRecord;
 mod fork_origin;
 mod retention;
 mod settlement_identity;
-pub(in crate::domain_computation) use invalidation::InvalidationEditAdmission;
+
 pub(in crate::domain_computation) use invalidation::SourceInvalidationOwner;
+#[cfg(test)]
+mod ownership_oracle;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) mod registry_fixture;
 #[cfg(test)]
@@ -55,38 +54,39 @@ mod tests;
 
 use super::output_family_identity::OutputFamilyIdentity;
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::collections::{BTreeMap, BTreeSet};
-use std::sync::{Arc, OnceLock};
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
+use std::sync::Arc;
+use std::sync::OnceLock;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-pub(in crate::domain_computation::primary_graph) use super::application_attempt::{
-    CompletedDecisionReuseProof, PreparedDecisionReuseContext,
-};
-pub use denial::{WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind};
-pub(in crate::domain_computation::primary_graph) use input_cutoff::{
-    cutoff_declines, prepare_stable_address, InputCutoffVerificationStop, OwnedInputCutoffDecision,
-    PreparedInputCutoffBasis, PublishedStableLineage, StablePublicationStop, VerifiedInputCutoff,
-};
+pub(in crate::domain_computation::primary_graph) use super::application_attempt::CompletedDecisionReuseProof;
+pub(in crate::domain_computation::primary_graph) use super::application_attempt::PreparedDecisionReuseContext;
+pub use denial::WorthQueryPriorOutputDenial;
+pub use denial::WorthQueryPriorOutputDenialKind;
+pub(in crate::domain_computation::primary_graph) use input_cutoff::cutoff_declines;
+pub(in crate::domain_computation::primary_graph) use input_cutoff::prepare_stable_address;
+pub(in crate::domain_computation::primary_graph) use input_cutoff::InputCutoffVerificationStop;
+pub(in crate::domain_computation::primary_graph) use input_cutoff::OwnedInputCutoffDecision;
+pub(in crate::domain_computation::primary_graph) use input_cutoff::PreparedInputCutoffBasis;
+pub(in crate::domain_computation::primary_graph) use input_cutoff::PublishedStableLineage;
+pub(in crate::domain_computation::primary_graph) use input_cutoff::StablePublicationStop;
+pub(in crate::domain_computation::primary_graph) use input_cutoff::VerifiedInputCutoff;
 pub(in crate::domain_computation::primary_graph) use input_reuse_key::PreparedInputReuseKey;
-pub(in crate::domain_computation::primary_graph) use native_output_witness::{
-    PreparedNativeOutputWitness, SealedNativeOutputWitness,
-};
+pub(in crate::domain_computation::primary_graph) use native_output_witness::PreparedNativeOutputWitness;
+pub(in crate::domain_computation::primary_graph) use native_output_witness::SealedNativeOutputWitness;
 pub(in crate::domain_computation::primary_graph) use prepared_slot::prepare as prepare_output_lineage_slot;
 pub(in crate::domain_computation::primary_graph) use prepared_slot::PreparedLineageRecoveryMetadata;
 pub(in crate::domain_computation::primary_graph) use prepared_slot::PreparedOutputLineageSlot;
-pub(in crate::domain_computation::primary_graph) use prepared_slot::{
-    tree_insert_bytes, tree_work,
-};
 pub(in crate::domain_computation::primary_graph) use recorded_output::RecordedOutput;
 use recorded_output::RecordedOutputMutable;
 pub(in crate::domain_computation::primary_graph) use recorded_source_identity::RecordedSourceIdentity;
 use resolution::latest_output_matching;
 pub(in crate::domain_computation::primary_graph) use settlement_identity::RecordedSettlementIdentity;
 
-use super::{
-    provider::WorthQueryPrimaryGraphCommittedApplication, WorthQueryApplicationOutputCorrespondence,
-};
+use super::provider::WorthQueryPrimaryGraphCommittedApplication;
+use super::WorthQueryApplicationOutputCorrespondence;
 
 mod binding_inventory;
 mod semantic_source;
@@ -107,7 +107,7 @@ pub(crate) struct WorthQueryApplicationOutputLineage {
     live_occurrences: BTreeSet<worth_runtime_world::facade::ProductBranchIncarnation>,
     cancelled_slots: Option<Box<prepared_slot::CancelledLineageSlot>>,
     output_families: BTreeMap<OutputFamilyIdentity, Vec<(TypeId, String)>>,
-    retention: retained_capacity::LineageRetentionLedger,
+    source_publication_coverage: source_publication::SourcePublicationCoverage,
 }
 
 type RecordedGeneration = Vec<Arc<OnceLock<RecordedOutput>>>;
@@ -146,7 +146,6 @@ struct ProductCoordinate {
 
 pub(super) struct WorthQueryPriorOutputBindingResolution {
     pub(super) correspondence: Option<Arc<WorthQueryApplicationOutputCorrespondence>>,
-    pub(super) source_lookups: usize,
 }
 
 pub(super) struct WorthQueryCurrentOutputCandidate {
@@ -164,7 +163,6 @@ pub(super) struct WorthQueryCurrentOutputFamilyResolution {
     pub(super) family_installed: bool,
     pub(super) ambiguous_publication: bool,
     pub(super) candidates: Vec<WorthQueryCurrentOutputCandidate>,
-    pub(super) selection_work: usize,
 }
 
 impl WorthQueryApplicationOutputLineage {
@@ -174,15 +172,7 @@ impl WorthQueryApplicationOutputLineage {
     ) {
         assert!(self.output_families.is_empty());
         self.output_families.extend(families);
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn install_lineage_retention(
-        &mut self,
-        maximum_bytes: usize,
-        history_positions: std::num::NonZeroUsize,
-    ) {
-        self.retention
-            .install(maximum_bytes as u64, history_positions);
+        self.source_publication_coverage.install();
     }
 
     fn record_inner(
@@ -195,7 +185,6 @@ impl WorthQueryApplicationOutputLineage {
         completed_decision_reuse: Option<CompletedDecisionReuseProof>,
         prepared_input_reuse_key: Option<PreparedInputReuseKey>,
         native_prior_checkpoint: Option<native_prior_checkpoint::NativePriorCheckpointLocator>,
-        retained_capacity: Option<retained_capacity::RetainedLineageCapacity>,
     ) -> Option<Arc<RecordedSettlementIdentity>> {
         let evidence = application.commit_evidence();
         let correspondence = evidence.output_correspondence();
@@ -296,10 +285,10 @@ impl WorthQueryApplicationOutputLineage {
             };
         let computation_source = ComputationSourceEvidence::from_completed(application);
         let recorded = RecordedOutput {
+            required_publication: prepared.and_then(|slot| slot.required_publication.clone()),
             native_prior_checkpoint,
             computation_source,
             performed_origin: None,
-            _retained_capacity: retained_capacity,
             consumed_outputs,
             completed_handler_facts,
             completed_decision_reuse,

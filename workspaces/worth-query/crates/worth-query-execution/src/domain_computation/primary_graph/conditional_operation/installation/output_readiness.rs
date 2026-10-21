@@ -55,10 +55,8 @@ where
                 Producer::IDENTITY,
             )));
         }
-        if node.operation().binding() != &scope.binding
-            || node.location().node_identity() != scope.node_identity
-        {
-            return Err(denial(scope.node_identity.clone()));
+        if node.operation().binding() != &scope.binding || node.location() != &scope.target {
+            return Err(denial(format!("{:?}", scope.target)));
         }
         self.output_readiness
             .push(Box::new(TypedPendingOutputReadiness::new(

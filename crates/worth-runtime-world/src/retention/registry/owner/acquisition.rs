@@ -149,7 +149,10 @@ where
                     control,
                 ));
             }
-            if state.active_reservations >= state.maximum_in_flight_reservations {
+            if state
+                .maximum_in_flight_reservations
+                .is_some_and(|maximum| state.active_reservations >= maximum)
+            {
                 return Err(
                     RetentionObligationDenial::InFlightAcquisitionCapacityExhausted {
                         maximum_in_flight_reservations: state.maximum_in_flight_reservations,
@@ -157,13 +160,27 @@ where
                 );
             }
             let new_slot = !state.entries.contains_key(&key);
-            if new_slot && state.unique_slots >= state.maximum_unique_pins {
+            if new_slot
+                && state
+                    .maximum_unique_pins
+                    .is_some_and(|maximum| state.unique_slots >= maximum)
+            {
                 return Err(RetentionObligationDenial::UniquePinCapacityExhausted {
                     maximum_unique_component_pins: state.maximum_unique_pins,
                 });
             }
             if state.active_obligations == usize::MAX {
                 return Err(RetentionObligationDenial::DependencyCountExhausted);
+            }
+            state
+                .active_reservations
+                .checked_add(1)
+                .ok_or(RetentionObligationDenial::DependencyCountExhausted)?;
+            if new_slot {
+                state
+                    .unique_slots
+                    .checked_add(1)
+                    .ok_or(RetentionObligationDenial::DependencyCountExhausted)?;
             }
             let ordinal = state.next_lease_ordinal;
             state.next_lease_ordinal = ordinal

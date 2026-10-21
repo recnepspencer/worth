@@ -1,12 +1,7 @@
 //! Native disclosed values and their recursive source footprint stay together.
 //! This interprets the materialized tree; it never reads/traverses the graph.
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOneShotDenialKind as Denial;
-use crate::domain_computation::primary_graph::application_query::{
-    projection::WorthQueryApplicationProjectionNode,
-    resource_lifecycle::{
-        WorthQueryApplicationResultBufferReservation, WorthQueryRetainedSourceCharge,
-    },
-};
+use crate::domain_computation::primary_graph::application_query::projection::WorthQueryApplicationProjectionNode;
 use worth_foundational::expression_api::{ExpressionSchema, ExpressionValue};
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryCardinality, ApplicationQueryExpressionSnapshot,
@@ -18,7 +13,6 @@ use worth_query_installation::facade::{
 pub(in crate::domain_computation::primary_graph::application_query) struct RetainedExpressionContext
 {
     snapshot: ApplicationQueryExpressionSnapshot,
-    _charge: WorthQueryRetainedSourceCharge,
 }
 
 impl RetainedExpressionContext {
@@ -36,7 +30,6 @@ impl RetainedExpressionContext {
         contract: &WorthQueryInstalledGraphReadContract,
         schema: Option<&ExpressionSchema>,
         read: &crate::domain_computation::primary_graph::application_query::read_execution::RawOneShotRows,
-        buffer: &WorthQueryApplicationResultBufferReservation,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<Self, Denial> {
         let ([row], [footprint]) = (read.rows.raw_rows(), read.source_footprints.as_slice()) else {
@@ -50,43 +43,10 @@ impl RetainedExpressionContext {
         }
         let schema = schema.ok_or(Denial::ExpressionContextUnavailable)?.clone();
         let value = project(row, "root", contract, request)?;
-        // The read already bounded the native tree. Retained expression values
-        // use Foundation's conservative backing size; the type vocabulary
-        // is bounded by the exact installed query, not by caller-provided rows.
-        let bytes = value
-            .retained_allocation_bytes()
-            .checked_add(std::mem::size_of::<Self>() + 2 * std::mem::size_of::<usize>())
-            .and_then(|bytes| bytes.checked_add(schema_retained_bytes(contract)?))
-            .ok_or(Denial::ResultBufferLimitExceeded)?;
-        let charge = buffer
-            .claim_retained_source(bytes)
-            .map_err(|()| Denial::ResultBufferLimitExceeded)?;
         Ok(Self {
             snapshot: ApplicationQueryExpressionSnapshot::from_untrusted_parts(schema, value),
-            _charge: charge,
         })
     }
-}
-
-fn schema_retained_bytes(contract: &WorthQueryInstalledGraphReadContract) -> Option<usize> {
-    // Conservative custody for the retained installed vocabulary, including
-    // lookup nodes, field names and nominal type names. No schema is rebuilt.
-    contract
-        .projections()
-        .iter()
-        .map(|field| (field.result_path(), field.output_name()))
-        .chain(
-            contract
-                .relations()
-                .iter()
-                .map(|relation| (relation.result_path(), relation.output_name())),
-        )
-        .try_fold(1024_usize, |bytes, (path, name)| {
-            bytes
-                .checked_add(1024)?
-                .checked_add(path.len().checked_mul(4)?)?
-                .checked_add(name.len().checked_mul(4)?)
-        })
 }
 
 fn project(

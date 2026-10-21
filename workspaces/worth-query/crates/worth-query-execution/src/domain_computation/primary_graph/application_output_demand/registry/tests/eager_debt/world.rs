@@ -1,7 +1,10 @@
 //! Real publication and scope provenance; plain shapes are shared with the model.
-use super::super::super::{BoundOutputSource, PreparedOutputRootKind, SourceCustody};
+use super::super::super::BoundOutputSource;
+use super::super::super::PreparedOutputRootKind;
+use super::super::super::SourceCustody;
 use super::*;
-use crate::domain_computation::primary_graph::tests::{fixture, recoverable_commit_support};
+use crate::domain_computation::primary_graph::tests::fixture;
+use crate::domain_computation::primary_graph::tests::recoverable_commit_support;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
 use crate::equality_type_id::EqualityTypeId;
 use worth_runtime_world::facade::CompositeCommitIdentity;
@@ -220,8 +223,7 @@ impl<'a> World<'a> {
                 .iter()
                 .map(|&up| Arc::new(keys[up].clone()))
                 .collect();
-            state.required_reserved_bytes += record.prerequisites.capacity()
-                * std::mem::size_of::<Arc<WorthQueryOutputDemandKey>>();
+
             if row.source {
                 record.source_commits.push(context.commit(1));
             }
@@ -236,7 +238,7 @@ impl<'a> World<'a> {
             if !row.claims.is_empty() {
                 let upstream = state.records[&keys[id]].prerequisites.clone();
                 let batch = state
-                    .prepare_claim_readthrough(&keys[id], &upstream, &mut record_admission())
+                    .prepare_claim_readthrough(&keys[id], &upstream)
                     .unwrap();
                 if let Some(batch) = &batch {
                     batch.install();
@@ -275,7 +277,7 @@ impl<'a> World<'a> {
         }
         if !late {
             // The claimed predecessor really became superseded under an admission.
-            supersede_predecessors(&mut state, &keys[1], &mut record_admission()).unwrap();
+            supersede_predecessors(&mut state, &keys[1]).unwrap();
         }
         drop(state);
         registry.complete_prepared_source(&context.completed);
@@ -296,11 +298,7 @@ impl<'a> World<'a> {
             self.model.drop_owner(id);
         }
     }
-    pub fn admission(&self, ceiling: u64) -> Result<u64, WorthQueryOutputDemandDenial> {
-        let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: Some(ceiling),
-            maximum_preparation_bytes: None,
-        });
+    pub fn admission(&self) -> Result<(), WorthQueryOutputDemandDenial> {
         let mut interest = self
             .registry
             .admit(
@@ -311,7 +309,6 @@ impl<'a> World<'a> {
                 super::super::super::DemandAdmissionKind::Ordinary,
                 None,
                 None,
-                &mut admission,
             )
             .map(|(interest, _pause)| interest)?;
         // This request row is unrelated to the compared domain; release through real Drop.
@@ -328,27 +325,7 @@ impl<'a> World<'a> {
         ));
         interest.requires_output = false;
         drop(interest);
-        Ok(admission.charged_work())
-    }
-    pub fn own_work(context: &Context, generation: u64) -> u64 {
-        let registry = WorthQueryOutputDemandRegistry::default();
-        let mut admission = record_admission();
-        let interest = registry
-            .admit(
-                key("oracle-reader", generation, 250),
-                None,
-                context.scope,
-                occurrence(),
-                super::super::super::DemandAdmissionKind::Ordinary,
-                None,
-                None,
-                &mut admission,
-            )
-            .map(|(interest, _pause)| interest)
-            .unwrap();
-        let work = admission.charged_work();
-        drop(interest);
-        work
+        Ok(())
     }
     pub fn bind(&mut self) {
         self.registry

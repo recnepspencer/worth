@@ -37,7 +37,7 @@ pub(crate) struct RetainedCauseStorePublicationDraft {
     custody: SignalConditionalRetentionReservation,
     admitted_payload: Charge,
     embedded_growth: Charge,
-    maximum_root: Charge,
+    maximum_root: Option<Charge>,
 }
 
 #[derive(Clone, Copy)]
@@ -64,12 +64,12 @@ impl CanonicalCauseSetStore {
     pub(crate) fn begin_retained_publication(
         &mut self,
         ledger: &Arc<SignalConditionalRetentionLedger>,
-        maximum_root: Charge,
+        maximum_root: Option<Charge>,
     ) -> Result<RetainedCauseStorePublicationDraft, SignalError> {
         let root = root_charges(self)?.total()?;
         let embedded_growth = self.epoch_fork_growth_bound()?;
         let projected_root = root.checked_add(embedded_growth).map_err(map_accounting)?;
-        if projected_root > maximum_root {
+        if maximum_root.is_some_and(|maximum| projected_root > maximum) {
             return Err(SignalError::EvaluationStorageCapacityExhausted);
         }
         let admitted_payload = projected_root
@@ -191,7 +191,10 @@ impl RetainedCauseStorePublicationDraft {
 
     pub(crate) fn finish(mut self) -> Result<PreparedRetainedCauseStorePublication, SignalError> {
         let exact_root = root_charges(&self.store)?.total()?;
-        if exact_root > self.maximum_root {
+        if self
+            .maximum_root
+            .is_some_and(|maximum| exact_root > maximum)
+        {
             return Err(SignalError::EvaluationStorageCapacityExhausted);
         }
         let exact_payload = exact_root
@@ -301,10 +304,10 @@ fn root_charges(store: &CanonicalCauseSetStore) -> Result<CauseStoreRootCharges,
 fn admit_root_peak(
     custody: &mut SignalConditionalRetentionReservation,
     admitted_payload: &mut Charge,
-    maximum_root: Charge,
+    maximum_root: Option<Charge>,
     required_root: Charge,
 ) -> Result<(), SignalError> {
-    if required_root > maximum_root {
+    if maximum_root.is_some_and(|maximum| required_root > maximum) {
         return Err(SignalError::EvaluationStorageCapacityExhausted);
     }
     let required_payload = required_root

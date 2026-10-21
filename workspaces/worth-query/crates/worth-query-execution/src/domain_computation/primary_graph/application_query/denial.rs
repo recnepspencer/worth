@@ -166,3 +166,15 @@ impl std::fmt::Display for WorthQueryApplicationQueryAdmissionDenial {
 }
 
 impl std::error::Error for WorthQueryApplicationQueryAdmissionDenial {}
+
+impl worth_execution::ChargedBytes for WorthQueryApplicationQueryAdmissionDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        (self.subject.capacity() as u64).saturating_add(self.authorization_denial.as_ref().map_or(
+            0,
+            |stop| {
+                (std::mem::size_of_val(stop.as_ref()) as u64)
+                    .saturating_add(stop.additional_charged_bytes())
+            },
+        ))
+    }
+}

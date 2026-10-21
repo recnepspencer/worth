@@ -61,9 +61,7 @@ async fn account_activity_sse_preserves_open_and_deadline_postures() {
             },
             "controls": {
                 "deadline_milliseconds": 3_000,
-                "maximum_results": 8,
-                "maximum_work": 2_048
-            },
+                "maximum_results": 8},
             "account": account.canonical_text(),
             "source_buffer_capacity": 16
         }))
@@ -290,7 +288,7 @@ async fn assert_live_fixture_admits(application: &CausalHttpApplication, account
         cancellation.token(),
     );
     let principal = application.authenticate(&scope).await;
-    let controls = WorthQueryApplicationLiveControls::bounded(scope, 16, 8, Some(2_048)).unwrap();
+    let controls = WorthQueryApplicationLiveControls::bounded(scope, 16, 8).unwrap();
     match application
         .runtime
         .account_activity(account)
@@ -328,9 +326,7 @@ fn credential_json() -> serde_json::Value {
 fn controls_json(maximum_results: usize) -> serde_json::Value {
     serde_json::json!({
         "deadline_milliseconds": 5_000,
-        "maximum_results": maximum_results,
-        "maximum_work": 20_000
-    })
+        "maximum_results": maximum_results})
 }
 
 fn live_request(
@@ -344,9 +340,7 @@ fn live_request(
         "credential": credential_json(),
         "controls": {
             "deadline_milliseconds": deadline_milliseconds,
-            "maximum_results": 8,
-            "maximum_work": 2_048
-        },
+            "maximum_results": 8},
         "account": account.canonical_text(),
         "source_buffer_capacity": 16
     })

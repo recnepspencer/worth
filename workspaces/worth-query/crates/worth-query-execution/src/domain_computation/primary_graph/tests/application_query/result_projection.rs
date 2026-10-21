@@ -23,14 +23,9 @@ mod nested_projection_preserves_sibling_slots_cardinality_and_direct;
 
 #[test]
 fn root_result_limit_does_not_cap_nested_dependency_records() {
-    // One root contains seven projected records plus its funded field and
-    // adjacency evidence. Declare this fixture's finite byte capacity separately
-    // from the root count; the default per-root cap is not a shape guarantee.
-    const RESULT_BYTES: usize = 16 * 1024;
+    // Root cardinality is independent of nested dependency records.
     let world = super::super::fixture::installed_authorization_world_with_resource_profile(
-        crate::domain_computation::execution_runtime::WorthQueryApplicationQueryResourceProfile::bounded(
-            5120, RESULT_BYTES, 10_000, 64,
-        ).unwrap(),
+        crate::domain_computation::execution_runtime::WorthQueryApplicationQueryResourceProfile::new(std::num::NonZeroUsize::new(64).expect("concurrent graph work is non-zero")),
     );
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
@@ -80,7 +75,6 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let controls = crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
         NonZeroUsize::new(1).unwrap(),
-        Some(NonZeroUsize::new(10_000).unwrap()),
         &request,
     );
     let plan = world
@@ -116,9 +110,6 @@ fn root_result_limit_does_not_cap_nested_dependency_records() {
     assert_eq!(result.receipt().projected_record_count(), 7);
     assert!(result.receipt().total_work_units() <= 10_000);
     assert_eq!(result.receipt().fallback_count(), 0);
-    let buffer = result.receipt().result_buffer().unwrap();
-    assert_eq!(buffer.limit_bytes(), RESULT_BYTES);
-    assert!(buffer.peak_bytes() <= RESULT_BYTES);
 }
 
 #[test]
@@ -188,7 +179,6 @@ fn invented_selector_contract_denies_domain_projection() {
         })
         .expect("the fixture read owns its installed host call");
 
-    let buffer_observer = world.application.result_buffer_observer();
     let denial = world
         .application
         .with_host_advancement(|phase| {
@@ -206,14 +196,11 @@ fn invented_selector_contract_denies_domain_projection() {
             WorthQueryApplicationProjectionDenialKind::FieldContractMismatch,
         )
     );
-    assert_eq!(buffer_observer.observe().active_buffers(), 0);
-    assert_eq!(buffer_observer.observe().retained_bytes(), 0);
-    assert!(buffer_observer.observe().peak_observed_bytes() > 0);
 }
 
 #[test]
-fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
-    let world = installed_authorization_world_with_label(&"x".repeat(50_000));
+fn variable_width_scalar_projects_without_a_caller_byte_estimate() {
+    let world = installed_authorization_world_with_label(&"x".repeat(50_000), crate::domain_computation::execution_runtime::WorthQueryApplicationQueryResourceProfile::new(std::num::NonZeroUsize::new(64).expect("concurrent graph work is non-zero")));
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
@@ -277,32 +264,17 @@ fn variable_width_scalar_overflow_denies_and_releases_the_result_buffer() {
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let result_buffer_limit = plan
-        .graph_read_plan()
-        .budget_check()
-        .max_inline_result_bytes();
-    let buffer_observer = world.application.result_buffer_observer();
 
-    let denial = world
+    let result = world
         .application
         .with_host_advancement(|phase| {
             world
                 .application
                 .execute_application_query_one_shot(&phase, plan)
-                .err()
-                .expect("owned scalar memory beyond the admitted buffer must deny")
+                .expect("actual variable-width values need no caller byte forecast")
         })
         .expect("the fixture read owns its installed host call");
 
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded
-    );
-    let observation = buffer_observer.observe();
-    assert_eq!(observation.active_buffers(), 0);
-    assert_eq!(observation.retained_bytes(), 0);
-    assert!(observation.peak_observed_bytes() > 0);
-    assert!(observation.peak_observed_bytes() <= result_buffer_limit);
-    assert!(observation.peak_rejected_bytes() > result_buffer_limit);
-    assert!(observation.peak_rejected_bytes() >= 50_000);
+    assert_eq!(result.rows().len(), 1);
+    assert_eq!(result.rows()[0].label(), "x".repeat(50_000));
 }

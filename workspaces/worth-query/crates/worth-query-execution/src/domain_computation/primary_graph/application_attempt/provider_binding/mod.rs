@@ -1,4 +1,4 @@
-use worth_execution::ExecutionArray;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 mod effect_accumulator;
 pub(in crate::domain_computation::primary_graph) use effect_accumulator::WorthQueryExpectedEffectStepPreparationWork;
 mod effect_lowering;
@@ -28,8 +28,10 @@ use super::{
 pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAttempt {
     local_action_settlement: Option<super::workflow_transition_program::LocalActionSettlementProof>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
-    installed_read_scopes: ExecutionArray<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
-    facts: ExecutionArray<WorthQueryApplicationObservedFact>,
+    installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+    facts: FactPayload,
+    application_projection: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection>>,
+    original_read: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead>>,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     effects: effect_accumulator::WorthQueryRegisteredProviderEffects,
     preimage_demand: Option<InstalledPreImageDemand>,
@@ -109,16 +111,25 @@ pub(super) fn installed_preimage_demand(
     }
 }
 
-pub(super) fn prepare_provider_attempt(
+pub(super) fn prepare_provider_attempt<'layout>(
     unique_fields: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<
-        '_,
+        'layout,
     >,
+    contracts: &'layout effect_lowering::AspectContracts<'layout>,
     mutation_partition: worth_relational::facade::identity::PartitionId,
     application_effect_count: usize,
-    installed_read_scopes: ExecutionArray<
-        worth_query_installation::facade::WorthQueryOperationGraphReadScope,
+    installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+    completed_facts: super::CompletedFactRoutes,
+    application_projection: Option<
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection,
+        >,
     >,
-    facts: ExecutionArray<WorthQueryApplicationObservedFact>,
+    original_read: Option<
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead,
+        >,
+    >,
     consumed_outputs: Vec<
         crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
     >,
@@ -134,12 +145,15 @@ pub(super) fn prepare_provider_attempt(
         &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
     output_currentness_facts: Option<super::OutputCurrentnessFacts>,
 ) -> Result<WorthQueryPreparedApplicationProviderAttempt, WorthQueryApplicationAttemptDenial> {
+    let (facts, effect_routes) = completed_facts.into_parts();
     let mut accumulator = WorthQueryProviderEffectAccumulator::new(
         &facts,
         unique_fields,
+        contracts,
         &effects,
         mutation_partition,
         application_effect_count,
+        effect_routes,
     );
     for effect in effects {
         accumulator.add_effect(effect)?;
@@ -150,6 +164,8 @@ pub(super) fn prepare_provider_attempt(
         required_output_demand: None,
         installed_read_scopes,
         facts,
+        application_projection,
+        original_read,
         consumed_outputs,
         effects: completed,
         preimage_demand,
@@ -161,23 +177,27 @@ pub(super) fn prepare_provider_attempt(
     })
 }
 
-pub(super) fn prepare_program_migration_batch(
+pub(super) fn prepare_program_migration_batch<'layout>(
     unique_fields: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<
-        '_,
+        'layout,
     >,
     mutation_partition: worth_relational::facade::identity::PartitionId,
-    facts: &[WorthQueryApplicationObservedFact],
+    completed_facts: super::CompletedFactRoutes,
+    contracts: &'layout effect_lowering::AspectContracts<'layout>,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
 ) -> Result<
     worth_relational::facade::transactions::WorkerIntentBatch,
     WorthQueryApplicationAttemptDenial,
 > {
+    let (facts, routes) = completed_facts.into_parts();
     let mut accumulator = WorthQueryProviderEffectAccumulator::new(
-        facts,
+        &facts,
         unique_fields,
+        contracts,
         &effects,
         mutation_partition,
         effects.len(),
+        routes,
     );
     for effect in effects {
         accumulator.add_effect(effect)?;

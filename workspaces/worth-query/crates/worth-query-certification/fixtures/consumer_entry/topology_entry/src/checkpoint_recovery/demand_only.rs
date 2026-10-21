@@ -148,7 +148,8 @@ fn demand_only_source_saves_and_reopens_before_explicit_assessment() {
     );
     let settled = (0..256)
         .find_map(|_| match outputs.advance(&restored, &request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         })
         .expect("the same owner settles after fresh live request authority");
@@ -180,7 +181,7 @@ fn demand_only_source_saves_and_reopens_before_explicit_assessment() {
     let current = request.retain_current_read().unwrap();
     request
         .at(&current)
-        .require_current_program_output(&settled, Some((support::currentness_work_limit()).get()))
+        .require_current_program_output(&settled)
         .unwrap();
     let mut repeated = request
         .advanced()
@@ -192,7 +193,8 @@ fn demand_only_source_saves_and_reopens_before_explicit_assessment() {
         .unwrap();
     let repeated = (0..256)
         .find_map(|_| match repeated.advance(&restored, &request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         })
         .unwrap();

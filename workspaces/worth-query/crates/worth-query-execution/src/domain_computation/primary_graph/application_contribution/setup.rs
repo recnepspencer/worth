@@ -1,3 +1,5 @@
+mod collection;
+
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryMarkerIdentity,

@@ -2,9 +2,8 @@
 //! is applied once, before the row is begun, so nothing is claimed.
 
 use super::*;
-use crate::domain_computation::primary_graph::application_output_demand::{
-    OutputRowStage, WorthQueryAcceptedOutputAuthority as Authority,
-};
+use crate::domain_computation::primary_graph::application_output_demand::OutputRowStage;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority as Authority;
 use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 
 /// Whether the disclosed source is still the one the demand names.
@@ -17,6 +16,41 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
+    /// Reclamation can release the cached Ready a fresh source was admitted
+    /// beside. Its empty row no longer carries that predecessor. Admit the
+    /// disclosed source under its own key before any Fresh execution instead
+    /// of publishing a new receipt under the released predecessor's key.
+    pub(super) fn released_predecessor_needs_source<Family>(
+        &self,
+        demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
+        source: &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
+    ) -> Result<bool, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        let interest = demand
+            .interest
+            .as_ref()
+            .expect("progression entry checked live Interest");
+        // SourceEpoch compares fixed owner-issued source coordinates and their
+        // sealed meaning identity. This neither reads the graph nor establishes
+        // equality/currentness for any retained output.
+
+        let epoch = source.output_source_epoch().ok_or_else(|| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "released source identity",
+            )
+        })?;
+        if interest.key().source_epoch().same_semantic_source(&epoch) {
+            return Ok(false);
+        }
+        Ok(matches!(
+            self.output_demands.row_stage_admitted(interest)?,
+            OutputRowStage::BeforeReady
+        ))
+    }
+
     pub(super) fn prepare_progression_entry<Family>(
         &self,
         demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -24,22 +58,19 @@ where
         commit_authority: &WorthQueryProducerCommitAuthority,
         entry: &InstalledProducerProvider<Schema>,
         progression: &ScheduleProgression<'_, '_, '_, Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<SourceGuard, WorthQueryOutputDemandDenial>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        demand.progression_provenance.validate_for_execution(
-            commit_authority,
-            &entry.edition,
-            admission,
-        )?;
+        demand
+            .progression_provenance
+            .validate_for_execution(commit_authority, &entry.edition)?;
         demand
             .interest
             .as_ref()
             .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY))?;
         let named = if progression.is_selected() {
-            demand.matches_observed_source_admitted(source, admission)?
+            demand.matches_observed_source_admitted(source)?
         } else {
             demand.matches_observed_source(source)
         };
@@ -74,7 +105,6 @@ where
             FamilySourceValue<Schema, Family>,
         >,
         selected: bool,
-        request_admission: &mut InvalidationEditAdmission,
     ) -> Result<
         OwnStages<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
         WorthQueryOutputDemandDenial,
@@ -88,9 +118,9 @@ where
             .interest
             .as_ref()
             .expect("progression entry checked live Interest");
-        let mut end_row = || {
+        let end_row = || {
             self.output_demands
-                .finish_superseded(interest, Family::IDENTITY, request_admission)
+                .finish_superseded(interest, Family::IDENTITY)
         };
         if selected {
             return Err(end_row()?);
@@ -129,17 +159,15 @@ where
                 None => end_row()?,
             });
         }
-        request_admission
-            .charge_external_work(std::mem::size_of_val(disclosure.source()) as u64)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
+
         self.refresh_output_demand(
             execution,
             demand,
             disclosure.value(),
             disclosure.source().clone(),
             held,
-            request_admission,
         )?;
+        // Carry source custody unchanged; the admitted successor supplies its seal.
         Ok(OwnStages::Refreshed(disclosure))
     }
 }

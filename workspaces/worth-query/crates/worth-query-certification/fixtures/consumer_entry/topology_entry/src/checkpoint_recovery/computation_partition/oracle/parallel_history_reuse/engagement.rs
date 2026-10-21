@@ -140,13 +140,11 @@ pub(super) fn assert_empty_history(
     };
     // Empty trees still carry the input/edition proof; reuse-off ignores rather
     // than discards that publication. A reported run name cannot prove this.
+    let retained = prior.tree_node_sharing_with_for_test::<RegionKey, Entry, f64>(current);
     assert_eq!(
-        (
-            prior.retained_bytes_for_test().is_some(),
-            current.retained_bytes_for_test().is_some()
-        ),
-        (true, true),
-        "empty histories preserve their actual retained-prior records"
+        retained.len(),
+        expected.0,
+        "the real retained prior keeps its original partitions"
     );
     let declared = match change {
         Change::EmptyBefore => (0, 1),

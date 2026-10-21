@@ -59,6 +59,13 @@ pub(super) struct RelationalRetiredBranchRoot {
 }
 
 impl RelationalBranchRetentionOwner {
+    /// Capacity retained outside the runtime's own live branch heads.
+    /// These are the native admission/release counters, not diagnostic totals.
+    pub(crate) fn has_detached_obligations(&self) -> bool {
+        self.inner.live_retention_count.load(Ordering::Acquire)
+            != self.inner.live_head_count.load(Ordering::Acquire)
+    }
+
     /// Reader/observation obligations are the index-liveness authority. A
     /// retired root can share its Arc with a live sibling without an active
     /// reader of the deleted branch.

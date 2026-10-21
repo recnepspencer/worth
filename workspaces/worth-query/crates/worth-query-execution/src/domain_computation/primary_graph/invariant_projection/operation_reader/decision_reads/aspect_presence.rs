@@ -72,6 +72,9 @@ mod tests {
         reads.record(other_aspect.clone(), DecisionReadOutcome::Observed);
         reads.record(other_entity.clone(), DecisionReadOutcome::Observed);
         let (keys, _) = reads.into_expected().ok().unwrap();
-        assert_eq!(keys, BTreeSet::from([first, other_aspect, other_entity]));
+        assert_eq!(
+            keys.iter().cloned().collect::<BTreeSet<_>>(),
+            BTreeSet::from([first, other_aspect, other_entity])
+        );
     }
 }

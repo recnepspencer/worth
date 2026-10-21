@@ -81,9 +81,8 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
     interests: usize,
 ) -> DemandRecord {
     DemandRecord {
-        _record_capacity: test_record_capacity(),
         work_membership: None,
-        source_commit_capacity: None,
+
         interests,
         required_interests: 0,
         performed_obligations: Vec::new(),
@@ -95,7 +94,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
         pending_cleanup_next: None,
         pending_cleanup_queued: false,
         closed_cleanup: Default::default(),
-        pending_cleanup_key_bytes: 0,
+
         settlements: Vec::new(),
         product_occurrence: occurrence,
         source_scope: None,
@@ -107,7 +106,6 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
         required_stop: None,
         held_successor: None,
         wake: Arc::new(DemandWake {
-            _record_capacity: test_record_capacity(),
             generation: Mutex::new(0),
             changed: Condvar::new(),
         }),
@@ -154,15 +152,12 @@ pub(in super::super) fn retain_owned_key(
     if state.records[key].work_membership.is_some() {
         return;
     }
-    let queue = state.required_work_queue.get_or_insert_with(|| {
-        Arc::new(super::super::required_work::RequiredWorkQueue::new(
-            Arc::new(test_record_capacity()),
-        ))
-    });
+    let queue = state
+        .required_work_queue
+        .get_or_insert_with(|| Arc::new(super::super::required_work::RequiredWorkQueue::new()));
     let member = Arc::new(super::super::required_work::RequiredWorkMembership::new(
         Arc::new(key.clone()),
         queue,
-        test_record_capacity(),
     ));
     state.records.get_mut(key).unwrap().work_membership = Some(member);
 }

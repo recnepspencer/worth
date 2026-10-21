@@ -47,6 +47,9 @@ impl MutationIntent {
             Self::Entity(EntityMutationIntent::Revalidate(spec)) => {
                 visit(spec.entity_id.partition_id)?;
             }
+            Self::Relation(RelationMutationIntent::Revalidate(spec)) => {
+                visit(spec.relation_id.partition_id)?;
+            }
             Self::Create(CreateIntent::Relation(spec)) => {
                 visit(spec.partition_id)?;
                 visit(spec.source.partition_id())?;
@@ -110,6 +113,9 @@ impl MutationIntent {
             Self::Entity(EntityMutationIntent::Revalidate(spec)) => {
                 touched.insert(spec.entity_id.partition_id);
             }
+            Self::Relation(RelationMutationIntent::Revalidate(spec)) => {
+                touched.insert(spec.relation_id.partition_id);
+            }
             Self::Create(CreateIntent::Relation(spec)) => {
                 touched.insert(spec.partition_id);
                 touched.insert(spec.source.partition_id());
@@ -171,6 +177,7 @@ impl MutationIntent {
     pub(crate) fn rollback_effect(&self) -> Option<RollbackEffect> {
         match self {
             Self::Entity(EntityMutationIntent::Revalidate(_)) => None,
+            Self::Relation(RelationMutationIntent::Revalidate(_)) => None,
             Self::Create(CreateIntent::Entity(_))
             | Self::Create(CreateIntent::EntityAspects(_))
             | Self::Create(CreateIntent::BulkEntities(_)) => {
@@ -228,6 +235,9 @@ impl MutationIntent {
             }
             Self::Entity(EntityMutationIntent::Revalidate(spec)) => {
                 Some(ExistingRecordTarget::Entity(spec.entity_id))
+            }
+            Self::Relation(RelationMutationIntent::Revalidate(spec)) => {
+                Some(ExistingRecordTarget::Relation(spec.relation_id))
             }
             Self::Relation(RelationMutationIntent::UpdateEndpoints(spec)) => {
                 Some(ExistingRecordTarget::Relation(spec.relation_id))
@@ -293,6 +303,16 @@ impl MutationIntent {
 }
 
 impl super::MergedCommitPlan {
+    /// Relation judgment needs its real preimage even though it claims no graph write.
+    pub(crate) fn revalidates_relations(&self) -> bool {
+        self.merged_intents.iter().any(|intent| {
+            matches!(
+                intent,
+                MutationIntent::Relation(RelationMutationIntent::Revalidate(_))
+            )
+        })
+    }
+
     pub fn invariant_contract(&self) -> InvariantPlanContract {
         InvariantPlanContract::from_merged_plan(self)
     }

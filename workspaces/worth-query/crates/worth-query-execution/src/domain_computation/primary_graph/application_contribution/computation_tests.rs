@@ -187,9 +187,10 @@ fn installed_owner_enforces_retention_and_real_request_interruption() {
             WorthQueryInstalledManagedComputation::<Schema, Feature, Computation, Owner>::new(
                 Owner,
             );
+
         let denial = match installed.prepare(&65) {
             Err(denial) => denial,
-            Ok(_) => panic!("retention above the ceiling is denied"),
+            Ok(_) => panic!("retention above the declared computation ceiling is denied"),
         };
         assert_eq!(
             denial,

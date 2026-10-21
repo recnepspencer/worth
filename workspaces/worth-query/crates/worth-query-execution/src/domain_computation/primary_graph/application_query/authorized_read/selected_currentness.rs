@@ -5,9 +5,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 use super::super::WorthQueryAdmittedApplicationQueryPlan;
-use crate::domain_computation::primary_graph::{
-    InvalidationEditAdmission, WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(in crate::domain_computation::primary_graph::application_query) enum SelectedAuthorizationCurrentnessStop
 {
@@ -45,16 +43,13 @@ pub(in crate::domain_computation::primary_graph::application_query) fn validate_
         PrincipalIdentity,
         Scope,
     >,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<(), SelectedAuthorizationCurrentnessStop>
 where
     Schema: ApplicationSchema,
 {
     // The selected-access option, governance posture and final request
     // interruption are Query wrapper reads outside their nested owners.
-    admission
-        .charge_external_work(3)
-        .map_err(SelectedAuthorizationCurrentnessStop::Admission)?;
+
     let issued = plan
         .selected_access
         .as_ref()
@@ -67,7 +62,6 @@ where
             security,
             plan.basis.snapshot_handle(),
             plan.controls.request_scope(),
-            admission,
         )
         .map_err(SelectedAuthorizationCurrentnessStop::Admission)?;
     if !exact {
@@ -83,7 +77,6 @@ where
             runtime,
             security,
             application.authorization.bridge(),
-            admission,
         )
         .map_err(|stop| match stop {
             crate::domain_computation::authorization::AuthorizationCurrentnessStop::Admission(

@@ -29,12 +29,6 @@ pub struct WorthQueryMarkedOutputForTest {
 pub struct WorthQueryNativeMarkingForTest {
     pub commit: CommitId,
     pub precision: WorthQueryNativeMarkingPrecision,
-    /// Existing marking-meter debit for matching, propagation and selected
-    /// hint preparation. Navigation/checkpoints and touch extraction are not
-    /// charged by that meter; this is not total physical publication work.
-    /// `None` is an eviction fallback without a completed delivery report:
-    /// its canonical precision carries default counts, not measured work.
-    pub charged_work: Option<u64>,
     pub affected: Option<Vec<WorthQueryMarkedOutputForTest>>,
 }
 
@@ -46,7 +40,6 @@ thread_local! {
 pub(super) fn record(
     report: &NativeMarkingReport,
     affected: Option<&OrdSet<Arc<RecordedSettlementIdentity>>>,
-    charged_work: Option<u64>,
 ) {
     if !execution_observation::is_installed() {
         return;
@@ -75,7 +68,6 @@ pub(super) fn record(
         reports.push(WorthQueryNativeMarkingForTest {
             commit: report.commit,
             precision: report.precision,
-            charged_work,
             affected,
         })
     });

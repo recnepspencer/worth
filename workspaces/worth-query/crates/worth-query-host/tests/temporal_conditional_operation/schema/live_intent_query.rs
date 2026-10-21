@@ -2,9 +2,9 @@ use worth_query_host::facade::declaration::application_query::{
     ApplicationQueryBasisSupport, ApplicationQueryCardinality, ApplicationQueryDefinition,
     ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
     ApplicationQueryLaneEligibility, ApplicationQueryLiveCauseBinding,
-    ApplicationQueryLiveResourceContract, ApplicationQueryOrderingDirection,
-    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationRef,
-    ApplicationQueryResultShapeBuilder, ForwardResultTraversal, ManyResults,
+    ApplicationQueryOrderingDirection, ApplicationQueryResultFieldRef,
+    ApplicationQueryResultRelationRef, ApplicationQueryResultShapeBuilder, ForwardResultTraversal,
+    ManyResults,
 };
 use worth_query_host::facade::{declaration, primary_graph, worth_query_application_query};
 
@@ -90,7 +90,6 @@ pub fn temporal_intent_live_query_definition() -> ApplicationQueryDefinition<
         .live_by::<TemporalIntent, TemporalIntentLiveCause, _, _, _, _, _, _, _, _>(
             scope_identity(),
             target_identity(),
-            ApplicationQueryLiveResourceContract::bounded(4, 2_048, 4_096),
         )
         .build()
         .expect("the temporal live query is canonical")

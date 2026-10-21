@@ -80,14 +80,17 @@ fn retained_epoch_virtual_final_empty_matches_sequential_reuse() {
 
     let ledger = SignalConditionalRetentionLedger::new(
         SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 4,
-            maximum_retained_bytes: 16 * 1024 * 1024,
+            maximum_retained_slots: Some(4),
+            maximum_retained_bytes: Some(16 * 1024 * 1024),
             maximum_attempt_visits: Some(1_000_000),
         },
         SignalRuntimePolicy::development().conditional_temporal_budget,
     );
     let mut draft = source
-        .begin_retained_publication(&ledger, Charge::capacity::<u8>(8 * 1024 * 1024).unwrap())
+        .begin_retained_publication(
+            &ledger,
+            Some(Charge::capacity::<u8>(8 * 1024 * 1024).unwrap()),
+        )
         .unwrap();
     draft
         .release_prepared_producer(producer, &mut work)
@@ -140,8 +143,8 @@ fn retained_epoch_virtual_payload_growth_denies_before_live_publication() {
     source.prepare_fork_growth(&mut work).unwrap();
     let ledger = SignalConditionalRetentionLedger::new(
         SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 4,
-            maximum_retained_bytes: 16 * 1024 * 1024,
+            maximum_retained_slots: Some(4),
+            maximum_retained_bytes: Some(16 * 1024 * 1024),
             maximum_attempt_visits: Some(1_000_000),
         },
         SignalRuntimePolicy::development().conditional_temporal_budget,
@@ -156,7 +159,10 @@ fn retained_epoch_virtual_payload_growth_denies_before_live_publication() {
         )
         .unwrap();
     let mut funded = source
-        .begin_retained_publication(&ledger, Charge::capacity::<u8>(8 * 1024 * 1024).unwrap())
+        .begin_retained_publication(
+            &ledger,
+            Some(Charge::capacity::<u8>(8 * 1024 * 1024).unwrap()),
+        )
         .unwrap();
     funded.apply_epoch_virtual_slot(slot, &mut work).unwrap();
     // The retained owner admits the staging peak, which can exceed the final
@@ -169,7 +175,7 @@ fn retained_epoch_virtual_payload_growth_denies_before_live_publication() {
     let baseline_custody = ledger.usage();
 
     let mut constrained = source
-        .begin_retained_publication(&ledger, metadata_peak)
+        .begin_retained_publication(&ledger, Some(metadata_peak))
         .unwrap();
     constrained
         .apply_epoch_virtual_slot(slot, &mut work)

@@ -84,7 +84,6 @@ fn root_path_guard_reads_its_pinned_truth_version() {
                     ApplicationQueryParameterSet::new(),
                     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                         NonZeroUsize::new(10).unwrap(),
-                        Some(NonZeroUsize::new(10_000).unwrap()),
                         &request,
                     ),
                 )
@@ -170,17 +169,16 @@ fn root_path_guard_reads_its_pinned_truth_version() {
             graph
                 .integration_handle()
                 .with_runtime(request_execution, |runtime| {
-                    unavailable.source_currentness_within(
+                    unavailable.source_currentness_in(
                         runtime,
                         &host_custody.borrowed_request_for_test(),
                         current.application_basis().snapshot_handle(),
-                        1,
                     )
                 })
         })
         .expect("the fixture read owns its installed host call");
     assert!(matches!(
-        unavailable_currentness,
+        unavailable_currentness.unwrap(),
         Err(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::Unavailable)
     ), "an unavailable restored field revision must preserve its typed verification failure");
     world
@@ -191,14 +189,13 @@ fn root_path_guard_reads_its_pinned_truth_version() {
                 !graph
                     .integration_handle()
                     .with_runtime(request_execution, |runtime| {
-                        fact.source_currentness_within(
+                        fact.source_currentness_in(
                             runtime,
                             &host_custody.borrowed_request_for_test(),
                             current.application_basis().snapshot_handle(),
-                            1,
                         )
                         .unwrap()
-                        .0
+                        .unwrap()
                         .movement()
                             == Movement::Unmoved
                     }),
@@ -245,14 +242,13 @@ fn root_path_guard_reads_its_pinned_truth_version() {
                     .integration_handle()
                     .with_runtime(request_execution, |runtime| {
                         absent_fact
-                            .source_currentness_within(
+                            .source_currentness_in(
                                 runtime,
                                 &host_custody.borrowed_request_for_test(),
                                 reopened.application_basis().snapshot_handle(),
-                                1,
                             )
                             .unwrap()
-                            .0
+                            .unwrap()
                             .movement()
                             == Movement::Unmoved
                     }),

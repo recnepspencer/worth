@@ -13,12 +13,14 @@ pub(super) fn members(contract: ErasedContract) -> Vec<ApplicationSchemaMember> 
             entity: "Principal".to_string(),
         },
         ApplicationSchemaMember::Aspect {
+            absence: worth_foundational::facade::AbsenceLaw::Required,
             entity: "Grant".to_string(),
             aspect: "Facts".to_string(),
             identity: worth_foundational::facade::AspectIdentity(0x91613002),
             revision: worth_foundational::facade::AspectContractRevision(1),
         },
         ApplicationSchemaMember::Aspect {
+            absence: worth_foundational::facade::AbsenceLaw::Required,
             entity: "Resource".to_string(),
             aspect: "ResourceFacts".to_string(),
             identity: worth_foundational::facade::AspectIdentity(0x91613003),
@@ -103,6 +105,7 @@ pub(super) fn field_member(field: &str) -> ApplicationSchemaMember {
         field: field.to_string(),
         presence: ApplicationFieldPresence::Required,
         scalar_family: ScalarAspectType::UInt64,
+        canonical: None,
         value_type:
             <u64 as crate::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY
                 .as_str()
@@ -130,6 +133,7 @@ pub(super) fn resource_field_member(field: &str) -> ApplicationSchemaMember {
         field: field.to_string(),
         presence: ApplicationFieldPresence::Required,
         scalar_family: ScalarAspectType::UInt64,
+        canonical: None,
         value_type:
             <u64 as crate::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY
                 .as_str()

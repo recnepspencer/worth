@@ -10,9 +10,8 @@ use super::{
     WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
 };
 
-mod admitted_mutation;
 mod affinity_access;
-mod arc_str_layout;
+
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease;
 
@@ -20,13 +19,10 @@ mod mutation_readmission;
 mod prepared_query_read;
 mod query_preparation;
 mod query_read;
-pub(in crate::domain_computation) use admitted_mutation::WorthQueryAdmittedMutationSessionStartStop;
 pub(in crate::domain_computation) use prepared_query_read::{
     WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
 };
-pub(in crate::domain_computation) use query_preparation::{
-    WorthQueryAdmittedQuerySessionStartStop, WorthQueryPreparedQuerySessionIdentity,
-};
+pub(in crate::domain_computation) use query_preparation::WorthQueryPreparedQuerySessionIdentity;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryGraphWorkAccessContextAffinity {

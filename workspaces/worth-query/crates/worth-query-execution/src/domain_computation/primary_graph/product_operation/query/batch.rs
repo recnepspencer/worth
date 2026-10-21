@@ -88,14 +88,13 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 application.runtime.authority_identity().as_u64(),
                 &application.installed_schema.binding_identity(),
                 query.identity(),
-                controls.maximum_work.map(std::num::NonZeroUsize::get),
                 controls.maximum_results.get(),
             )
             .map_err(Resource)?;
         let application_basis = retained
             .application_basis_mut()
-            .retain_in_batch(batch)
-            .map_err(Resource)?;
+            .retain_in_batch()
+            .map_err(|_| Admission(unavailable()))?;
         let product = retained.product().retained_clone();
         let mut plan = application
             .admit_application_query(
@@ -108,10 +107,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                     product,
                     application_basis,
                     controls.maximum_results,
-                    controls.maximum_work,
                     controls.request,
-                )
-                .limit_inline_result_bytes(batch.maximum_result_bytes_per_item()),
+                ),
             )
             .map_err(Admission)?;
         plan.carry_planned_batch_item(planned_item);

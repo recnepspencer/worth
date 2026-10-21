@@ -79,7 +79,7 @@ fn another_input_or_edition_or_an_evicted_state_runs_in_full() {
     let total = *first.outcome.as_ref().unwrap();
     let mut state = first.sealed.unwrap().unwrap().state;
     state.basis = state.basis.with_input_digest_for_test([0; 32]);
-    let state = super::custodied_state_for_test(state);
+    let state = std::sync::Arc::new(state);
     let cases = [
         (
             ComputationPrior::new(edition(), Ok(Arc::clone(&state)), None),

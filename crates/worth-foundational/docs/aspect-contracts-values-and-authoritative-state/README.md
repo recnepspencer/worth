@@ -3,6 +3,15 @@
 This folder documents the Milestone 1 aspect surface in
 `worth-foundational`.
 
+For nested persisted values, `WorthValue` derives canonical Serde serialization,
+portable `ValueShape` and a bounded seed together. `CanonicalValue` is Query-free;
+opaque numerical/source owners retain their own bounded construction contract.
+`ValueDecodeBounds` declares finite representation limits and carries no runtime
+resource or publication authority. See the [application guide](../../../../docs/build-an-application.md#bounded-canonical-nested-values)
+and its executable nested-value/compiler examples. Deep retained memory
+description is a separate traversal; a Serde-skipped field cannot disappear from
+resident-memory accounting.
+
 Use these docs when you need to answer questions like:
 
 - How do I define the meaning of an aspect before any value becomes

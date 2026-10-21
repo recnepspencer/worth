@@ -10,7 +10,7 @@ impl SignalGraph {
     pub(crate) fn begin_retained_cause_store_publication(
         &mut self,
         ledger: &std::sync::Arc<crate::data::retained_storage::SignalConditionalRetentionLedger>,
-        maximum: crate::data::retained_storage::RetainedStorageCharge,
+        maximum: Option<crate::data::retained_storage::RetainedStorageCharge>,
     ) -> Result<super::RetainedCauseStorePublicationDraft, SignalError> {
         self.cause_sets.begin_retained_publication(ledger, maximum)
     }

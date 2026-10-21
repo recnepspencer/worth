@@ -22,10 +22,10 @@ where
         use WorthQueryOperationDeliveryDenial as Denial;
         if !std::ptr::eq(self.runtime.runtime(), request.application) || self.description.branch != request.branch { return Err(Denial::FreshRequestMismatch); }
         request.application.with_application_advancement(request.scope, |phase| {
-            let observation = self.current_observation(request, &phase, policy)?;
+            let observation = self.current_observation(request, &phase)?;
             let retained = request.at(&observation);
             let query = retained.query(Delivery::<Schema, Intent, Action>::read_input(self.description.intent.input()));
-            let query = match policy.query_limits { Some((results, work)) => query.limits(results, work), None => query };
+            let query = match policy.query_limits { Some(results) => query.limit_results(results), None => query };
             query.execute_in_advancement(&phase).map_err(Denial::Query)
         }).map_err(Denial::Execution)?
     }

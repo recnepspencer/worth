@@ -20,8 +20,10 @@ fn a_tree_stop_keeps_no_kernel_completion_receipt_with_reuse_either_way() {
         placement,
         None,
     );
-    // All kernels fit; the ceiling omits the tree's last accepted unit.
     let ceiling = first.bill.charged_work() - 1;
+
+    // All kernels fit; the ceiling omits the tree's last accepted unit.
+
     let prior = prior_of(first, false);
     let mut stops = Vec::new();
     for prior in [Some(prior), None] {

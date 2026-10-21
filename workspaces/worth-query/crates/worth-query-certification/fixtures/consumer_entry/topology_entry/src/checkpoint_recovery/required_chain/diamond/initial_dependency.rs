@@ -1,47 +1,55 @@
 //! An initial consumer must progress an exact pending native output it reads.
 use super::*;
+mod sibling_program;
 
 #[test]
 fn an_initial_consumer_refreshes_the_pending_output_it_actually_reads() {
-    journey(false, false, false);
+    journey(false, false, false, false, None);
 }
 
 #[test]
 fn an_initial_consumer_does_not_certify_a_cancelled_decision() {
-    journey(true, false, false);
+    journey(true, false, false, false, None);
 }
 
 #[test]
 fn a_cancelled_initial_consumer_releases_and_retries_its_cached_dependency() {
-    journey(true, true, false);
+    journey(true, true, false, false, None);
 }
 
 #[test]
 fn an_initial_consumer_readmits_the_cached_dependency_it_actually_reads() {
-    journey(false, true, false);
+    journey(false, true, false, false, None);
 }
 
 #[test]
 fn a_cached_read_keeps_custody_while_another_demand_delivers_its_pending_child() {
-    journey(false, true, true);
+    journey(false, true, true, false, None);
 }
 
-fn journey(cancel_decision: bool, close_dependencies: bool, delay_child: bool) {
+#[test]
+fn convenience_settlement_follows_two_original_requested_outputs() {
+    journey(false, true, false, true, None);
+}
+
+#[test]
+fn explicit_one_step_returns_original_progress_before_later_same_request_completion() {
+    journey(false, true, false, true, Some(std::num::NonZeroUsize::MIN));
+}
+
+fn journey(
+    cancel_decision: bool,
+    close_dependencies: bool,
+    delay_child: bool,
+    both_changed: bool,
+    steps: Option<std::num::NonZeroUsize>,
+) {
     let _guard = checkpoint_recovery_test_guard();
     take_decisions("diamond-join");
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    let application = support::install_program_with_seed::<program::ChainProgram>(
-        None,
-        profile,
-        4096,
-        128 * 1024 * 1024,
-        profile
-            .limits()
-            .source_currentness_work()
-            .map(|work| u64::try_from(work).unwrap()),
-        seed,
-    );
+    let application =
+        support::install_program_with_seed::<program::ChainProgram>(None, profile, 4096, seed);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut left = request
@@ -55,11 +63,19 @@ fn journey(cancel_decision: bool, close_dependencies: bool, delay_child: bool) {
     settle!(left, request);
     settle!(right, request);
     // No accepted consumer output or prior consumed edge exists yet.
+    let controls = match steps {
+        Some(steps) => WorthQueryOutputDemandControls::default().settlement_attempts(steps),
+        None => WorthQueryOutputDemandControls::default(),
+    };
     let mut join = request
         .demand(ChainDemand("diamond-join".into()))
+        .controls(controls)
         .start_dependent_in_program::<program::ChainProgram, program::ChainConnection>(&application)
         .unwrap();
     change_root!(request, application, "diamond-left", 5, 0x9176_3590_u64);
+    if both_changed {
+        change_root!(request, application, "diamond-right", 55, 0x9176_3592_u64);
+    }
     crate::producer::reset_provider_contacts();
     if close_dependencies {
         drop((left, right));
@@ -67,7 +83,7 @@ fn journey(cancel_decision: bool, close_dependencies: bool, delay_child: bool) {
     if delay_child {
         application.delay_next_output_readiness_delivery_for_test();
         assert!(matches!(
-            join.advance(&request).unwrap(),
+            join.settle(&request).unwrap(),
             WorthQueryApplicationOutputDemandProgress::Pending
         ));
         assert!(take_decisions("diamond-join").is_empty());
@@ -89,7 +105,7 @@ fn journey(cancel_decision: bool, close_dependencies: bool, delay_child: bool) {
             authentication::WorthQueryRequestScope::new(None, cancellation.token());
         super::super::binding::cancel_during_next_decision("diamond-join", cancellation);
         let cancelled = application.request(&principal, &cancelled_scope);
-        let stopped = join.advance(&cancelled);
+        let stopped = join.settle(&cancelled);
         assert!(
             matches!(&stopped,
             Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))
@@ -101,28 +117,34 @@ fn journey(cancel_decision: bool, close_dependencies: bool, delay_child: bool) {
         assert_eq!(output_lengths!(request, ["diamond-left"]), [6]);
         crate::producer::reset_provider_contacts();
     }
-    let initial = (0..16)
-        .find_map(|_| match join.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Settled(done) => Some(done),
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
-        })
-        .unwrap_or_else(|| {
-            panic!(
-                "initial dependency did not settle: lengths={:?}, decisions={:?}, contacts={}",
-                output_lengths!(request, ["diamond-left", "diamond-right"]),
-                take_decisions("diamond-join"),
-                crate::producer::provider_contacts()
-            )
-        });
+    let first = join.settle(&request).unwrap();
+    let initial = match (steps, first) {
+        (None, WorthQueryApplicationOutputDemandProgress::Settled(initial)) => initial,
+        (Some(_), WorthQueryApplicationOutputDemandProgress::Progressed) => loop {
+            match join.settle(&request).unwrap() {
+                WorthQueryApplicationOutputDemandProgress::Settled(initial) => break initial,
+                WorthQueryApplicationOutputDemandProgress::Progressed => {}
+                WorthQueryApplicationOutputDemandProgress::Pending => {
+                    panic!("no external wait remains")
+                }
+            }
+        },
+        _ => panic!("original consumer did not honor its explicit settlement step policy"),
+    };
     assert_eq!(
         initial.producer_contacts_in_this_demand(),
-        if cancel_decision { 3 } else { 2 },
+        if cancel_decision || both_changed {
+            3
+        } else {
+            2
+        },
         "failed and completed producer attempts are counted honestly"
     );
-    assert_eq!(take_decisions("diamond-join"), [[6, 51]]);
+    let right_value = if both_changed { 56 } else { 51 };
+    assert_eq!(take_decisions("diamond-join"), [[6, right_value]]);
     assert_eq!(
         output_lengths!(request, ["diamond-left", "diamond-right"]),
-        [6, 51]
+        [6, right_value]
     );
     if cancel_decision {
         assert_eq!(
@@ -151,11 +173,6 @@ fn an_initial_consumer_finishes_the_requested_middle_before_its_own_decision() {
         None,
         profile,
         4096,
-        128 * 1024 * 1024,
-        profile
-            .limits()
-            .source_currentness_work()
-            .map(|work| u64::try_from(work).unwrap()),
         super::super::source_world::seed,
     );
     let (scope, principal) = authenticate(&application);
@@ -198,4 +215,115 @@ fn an_initial_consumer_finishes_the_requested_middle_before_its_own_decision() {
         0
     );
     assert!(take_all_decisions().is_empty());
+}
+
+// The earlier C read really waits for B's deferred native readiness; the later
+// sibling B owns the exact settlement which makes that read runnable.
+macro_rules! sibling_tree {
+    ($program:ty, $root:ty, $connection:ty, $park_after_settlement:expr) => {{
+        let _guard = checkpoint_recovery_test_guard();
+        take_all_decisions();
+        let mut application = support::install_program_with_seed::<$program>(
+            None, Default::default(), 4096,
+            super::super::source_world::seed,
+        );
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let mut a = request.demand(PlanarOutputDemand::new("anchor-a"))
+            .start_in_program::<$program, $root>(&application).unwrap();
+        settle!(a, request);
+        let mut b = request.demand(ChainDemand("anchor-b".into()))
+            .start_dependent_in_program::<$program, $connection>(&application).unwrap();
+        settle!(b, request);
+        assert_eq!(take_decisions("anchor-b"), [[2]]);
+        drop((a,b));
+        let source = request.query(PlanarRead { body_key: "anchor-a".into() })
+            .execute().unwrap().observed_sources()[0].clone();
+        let changed = request.advanced().mutate(PlanarSourceAdjustment {
+            scope_key: "anchor-a".into(), replacement_y: length(5),
+        }).expect_source(source).idempotency(&0x9176_3593_u64)
+            .execute_performed::<$program, $root>(&application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation).unwrap();
+        assert!(matches!(changed, WorthQueryApplicationPerformedMutationOutcome::Performed(_)));
+        drop(changed);
+        let mut a = request.demand(PlanarOutputDemand::new("anchor-a"))
+            .start_in_program::<$program, $root>(&application).unwrap();
+        settle!(a, request);
+        assert_eq!(output_lengths!(request, ["anchor-a"]), [6]);
+        drop(a);
+        take_all_decisions();
+        let mut original = request.advanced().start_program_outputs::<$program, $root>(
+            &application, PlanarOutputDemand::new("anchor-a"), Default::default(),
+        ).unwrap();
+        application.delay_next_output_readiness_delivery_for_test();
+        let first = if $park_after_settlement {
+            match original.advance(&application, &request).unwrap() {
+                WorthQueryApplicationProgramOutputProgress::Progressed => {},
+                _ => panic!("newly accepted later B must report one-time progress"),
+            }
+            // B is now complete and retained. Defer C's own native readiness:
+            // revisiting B must not manufacture progress on this waiting pass.
+            application.delay_next_output_readiness_delivery_for_test();
+            match original.advance(&application, &request).unwrap() {
+                WorthQueryApplicationProgramOutputProgress::Pending => {},
+                WorthQueryApplicationProgramOutputProgress::Progressed => panic!("completed B replayed progress during C's actual wait"),
+                WorthQueryApplicationProgramOutputProgress::Settled(_) => panic!("C's delayed native readiness must wait"),
+            }
+            original.settle(&application, &request).unwrap()
+        } else {
+            original.settle(&application, &request).unwrap()
+        };
+        let prematurely_pending = matches!(&first, WorthQueryApplicationProgramOutputProgress::Pending);
+        let done = match first {
+            WorthQueryApplicationProgramOutputProgress::Settled(done) => done,
+            WorthQueryApplicationProgramOutputProgress::Pending => {
+                assert_eq!(take_all_decisions(), [("anchor-b".to_owned(), vec![6])],
+                    "later B performed while C still lacked current B");
+                match original.advance(&application, &request).unwrap() {
+                    WorthQueryApplicationProgramOutputProgress::Settled(done) => done,
+                    _ => panic!("the same original tree must complete once B's exact settlement is retained"),
+                }
+            }
+            WorthQueryApplicationProgramOutputProgress::Progressed => panic!("absent step policy must follow progress"),
+        };
+        assert_eq!(output_lengths!(request, ["anchor-a", "anchor-b", "anchor-c"]), [6,16,11]);
+        let decisions = take_all_decisions();
+        if prematurely_pending {
+            assert_eq!(decisions, [("anchor-c".to_owned(), vec![16])]);
+        } else {
+            assert_eq!(decisions, [("anchor-b".to_owned(), vec![6]), ("anchor-c".to_owned(), vec![16])]);
+        }
+        assert_eq!(done.output_count(), 2);
+        drop((done, original));
+        application.close_conditional_runtime().unwrap();
+        assert!(!prematurely_pending, "tree lost newly settled later sibling progress");
+    }};
+}
+#[test]
+fn later_edge_member_settlement_unblocks_earlier_consumer_in_same_settle() {
+    sibling_tree!(
+        sibling_program::EdgeProgram,
+        sibling_program::EdgeRoot,
+        sibling_program::ReverseConnection,
+        false
+    );
+}
+#[test]
+fn later_branch_settlement_unblocks_earlier_consumer_in_same_settle() {
+    sibling_tree!(
+        sibling_program::BranchProgram,
+        sibling_program::BranchRoot,
+        sibling_program::LaterConnection,
+        false
+    );
+}
+
+#[test]
+fn already_settled_edge_member_does_not_replay_progress_during_later_wait() {
+    sibling_tree!(
+        sibling_program::EdgeProgram,
+        sibling_program::EdgeRoot,
+        sibling_program::ReverseConnection,
+        true
+    );
 }

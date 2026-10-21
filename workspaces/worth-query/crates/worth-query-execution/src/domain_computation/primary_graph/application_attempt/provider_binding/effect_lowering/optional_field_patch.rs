@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::{
@@ -28,7 +29,7 @@ struct AspectFieldPatch {
 mod tests;
 
 pub(super) fn lower(
-    facts: &ObservedFactIndex<'_>,
+    facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
     unique: &mut UniqueValueWrites<'_>,
     entity_id: EntityId,
     fields: BTreeMap<AspectFieldLocator, WorthQueryApplicationOptionalFieldWrite>,
@@ -66,7 +67,7 @@ pub(super) fn lower(
 }
 
 fn portable_patch(
-    facts: &ObservedFactIndex<'_>,
+    facts: &ObservedFactIndex<'_, impl FactSequence + ?Sized>,
     entity: EntityId,
     fields: BTreeMap<AspectFieldLocator, WorthQueryApplicationOptionalFieldWrite>,
 ) -> Result<PortableRecordAspectPatch, WorthQueryApplicationAttemptDenial> {

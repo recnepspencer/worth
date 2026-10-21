@@ -5,7 +5,9 @@ use std::ops::Deref;
 #[cfg(test)]
 use std::sync::Arc;
 type Fact = WorthQueryApplicationObservedFact;
-use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::{
+    FactPayload, FactSequence,
+};
 
 /// Retained postconditions have no slice projection or Deref. Only the one
 /// computation-current door can expose them for comparison.
@@ -13,6 +15,8 @@ use crate::domain_computation::primary_graph::application_checkpoint::facts::Fac
 pub(in crate::domain_computation::primary_graph) struct RetainedSourceFacts {
     source: ComputationSourceEvidence,
     facts: FactPayload,
+    payload_bytes: Option<u64>,
+    posting_continuation: Option<super::invalidation::PostingContinuation>,
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct ComparableSourceFacts {
@@ -24,7 +28,25 @@ impl RetainedSourceFacts {
         Self {
             source,
             facts: facts.into(),
+            payload_bytes: None,
+            posting_continuation: None,
         }
+    }
+    pub(super) fn with_posting_continuation(
+        mut self,
+        continuation: Option<super::invalidation::PostingContinuation>,
+    ) -> Self {
+        self.posting_continuation = continuation;
+        self
+    }
+    pub(super) fn take_posting_continuation(
+        &mut self,
+    ) -> Option<super::invalidation::PostingContinuation> {
+        self.posting_continuation.take()
+    }
+    pub(super) fn with_payload_bytes(mut self, bytes: Option<u64>) -> Self {
+        self.payload_bytes = bytes;
+        self
     }
     pub(in crate::domain_computation::primary_graph) fn for_comparison(
         &self,
@@ -70,8 +92,21 @@ impl ComparableSourceFacts {
     }
 }
 impl Deref for ComparableSourceFacts {
-    type Target = [Fact];
+    type Target = FactPayload;
     fn deref(&self) -> &Self::Target {
         &self.facts
+    }
+}
+
+impl FactSequence for ComparableSourceFacts {
+    fn get(&self, ordinal: usize) -> Option<&Fact> {
+        self.facts().get(ordinal)
+    }
+    fn len(&self) -> usize {
+        self.facts().len()
+    }
+
+    fn iter(&self) -> impl DoubleEndedIterator<Item = &Fact> + ExactSizeIterator + Clone {
+        self.facts().iter()
     }
 }

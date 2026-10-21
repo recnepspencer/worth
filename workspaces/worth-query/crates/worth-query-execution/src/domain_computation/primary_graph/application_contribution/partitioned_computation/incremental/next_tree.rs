@@ -1,17 +1,22 @@
 //! The next tree of an incremental run: every partition carried or computed
 //! again, in a full run's order and with a full run's charges.
 
+mod call_recording;
 mod partition_wave;
+mod partitioning;
+pub(in super::super) use partitioning::ComputedIncremental;
+pub(super) use partitioning::NextPartitioning;
+use partitioning::Recomputed;
 mod preparation;
 mod transport;
 
-use std::collections::{BTreeMap, BTreeSet};
+use crate::domain_computation::primary_graph::{
+    application_attempt::ComputationRead, invariant_projection::ComputationCallSequence,
+};
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use worth_execution::{
-    ExecutionMap, KeylessPartition, MapKernelContext, MapKernelFailure, MapOutcome,
-    PartitionItemId, ReductionPlan,
-};
+use worth_execution::{KeylessPartition, MapKernelContext, MapKernelFailure, PartitionItemId};
 use worth_foundational::facade::PartitionIdentity;
 use worth_proof::CanonicalUniqueVec;
 
@@ -38,56 +43,26 @@ use super::{CompletedComputationRetention, PriorAbsence};
 use crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial;
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
 
-/// One marked partition, gathered again for its kernel.
-struct Recomputed<Key, Gathered> {
-    value: GatheredComputationPartition<Key, Gathered>,
-    key: Arc<Key>,
-    key_bytes: u64,
-    gather: Option<ComputationCallCharge>,
-    /// The request memory keeps gathered data held while the wave borrows it.
-    memory: GatheredMemory,
-}
-
-/// How one partition of the run is had: carried from the retained run, or
-/// gathered again for its kernel.
-enum Disposition<Key, Gathered> {
-    Carried(Arc<RetainedPartition<Key>>),
-    Recomputed(Recomputed<Key, Gathered>),
-}
-
-/// The run's items, keys and routes, carried or made again.
-pub(super) struct NextPartitioning<Item> {
-    pub(super) items: Items<Item>,
-    pub(super) digests: ItemDigests,
-    /// `None` when the membership or an item's key was made again and its
-    /// charge did not measure: the run cannot be carried again.
-    pub(super) membership: Option<RetainedCall>,
-    pub(super) item_keys: BTreeMap<PartitionItemId, RetainedCall>,
-    pub(super) routing: Arc<ComputationPartitionRouting>,
-    /// The request memory a routing the run built holds.
-    pub(super) routing_memory: Option<QueryMemoryReservation>,
-    pub(super) carried_membership: bool,
-    pub(super) carried_items: BTreeSet<PartitionItemId>,
-}
-
 /// An incremental run after `prepare`: every partition carried or gathered
 /// again, what is left of the declared work, and the prior run it carries
 /// from.
 pub(in super::super) struct PreparedIncremental<Key, Item, Reduced, Gathered> {
     remaining_work: RemainingWork,
     declared_bytes: u64,
-    partitions: BTreeMap<PartitionIdentity, Disposition<Key, Gathered>>,
+    partitions: BTreeMap<PartitionIdentity, Recomputed<Key, Gathered>>,
+    removed: CanonicalUniqueVec<PartitionIdentity>,
     next: NextPartitioning<Item>,
     basis: RetainedBasis,
     prior: TypedPrior<Key, Item, Reduced>,
-}
-
-/// What computing an incremental run produced.
-pub(in super::super) struct ComputedIncremental<Reduced> {
-    pub(in super::super) reduced: Reduced,
-    /// The kernels' and the combines' work, as a full run charges it.
-    pub(in super::super) computed_work: u64,
-    pub(in super::super) completed: CompletedComputationRetention,
+    validated_at: Option<worth_relational::facade::snapshots::SnapshotHandle>,
+    transition: Option<
+        Arc<crate::domain_computation::primary_graph::invariant_projection::CallShapeTransition>,
+    >,
+    key_memory: Option<QueryMemoryReservation>,
+    rekeyed: worth_execution::ExecutionOrderedMap<PartitionItemId, ()>,
+    ranges: Option<
+        Arc<crate::domain_computation::primary_graph::application_attempt::NativeCallCarriage>,
+    >,
 }
 
 impl<Key, Item, Reduced, Gathered> PreparedIncremental<Key, Item, Reduced, Gathered>
@@ -98,27 +73,15 @@ where
     pub(in super::super) fn restrict_compute_ceiling(&mut self, ceiling: u64) {
         self.remaining_work.restrict(ceiling);
     }
-    pub(in super::super) fn can_retain(&self) -> bool {
-        self.next.membership.is_some()
-            && self.partitions.values().all(|p| match p {
-                Disposition::Carried(_) => true,
-                Disposition::Recomputed(p) => p.gather.is_some(),
-            })
-    }
 
-    /// Settles every partition through one independent map, computing only
-    /// marked partitions. Carried kernels contribute retained work and span;
-    /// a recomputed result with the
-    /// retained result's canonical bits replaces nothing, a new partition's
-    /// is a new leaf, and a partition the run no longer has leaves the
-    /// tree. A recomputed kernel's work
-    /// is execution's admitted receipt in that same wave. The private declared
-    /// budget spends that receipt, which also settles on the member meter.
+    /// Advances the genuine native run with changed gathers and removals.
+    /// Native settlement owns full logical charges and first-stop prefixes.
+    /// Only changed results reach tree maintenance; the declared budget
+    /// spends the admitted native kernel and tree receipts.
     pub(in super::super) fn compute<Stopped, Kernel>(
         self,
         execution: &QueryRequestExecution<'_>,
         kernel: Kernel,
-        recording: &super::KernelRecording,
         observer: Option<&super::super::compute::kernel_observation::KernelCostObservationForTest>,
         reducer: &WorthQueryDeterministicReducer<Reduced>,
         transport: &mut NestedFailureTransport<'_>,
@@ -144,15 +107,26 @@ where
         let Self {
             remaining_work,
             declared_bytes,
-            partitions: dispositions,
+            partitions: recomputed,
+            removed,
             next,
             basis,
             prior,
+            validated_at,
+            ranges,
+            rekeyed,
+            transition,
+            key_memory: _key_memory,
         } = self;
         let retained = prior.typed();
         let mut remaining = remaining_work;
-        let mut partitions = BTreeMap::new();
-        let mut carried = BTreeSet::new();
+        let identities_unchanged = removed.as_slice().is_empty()
+            && recomputed
+                .keys()
+                .all(|id| retained.native_run.result(*id).is_some());
+        let fresh = recomputed.keys().copied().collect();
+        let carried =
+            super::carried_partitions::CarriedPartitions::new(Arc::clone(&next.routing), fresh);
         let mut gathers_measured = true;
         let mut results = BTreeMap::new();
         let mut results_memory = execution
@@ -166,26 +140,19 @@ where
             .ok_or(WorthQueryPartitionedComputationDenial::Resource(
                 WorthQueryManagedComputationResourceDenial::CapacityOverflow,
             ))?;
-        let plan = ReductionPlan::from_canonical(CanonicalUniqueVec::from_btree_set(
-            dispositions.keys().copied().collect(),
-        ));
-        let all_results = u64::try_from(
-            dispositions
-                .values()
-                .filter(|disposition| matches!(disposition, Disposition::Recomputed(_)))
-                .count(),
-        )
-        .ok()
-        .and_then(|count| count.checked_mul(result_bound))
-        .ok_or(WorthQueryPartitionedComputationDenial::Resource(
-            WorthQueryManagedComputationResourceDenial::CapacityOverflow,
-        ))?;
+        let all_results = u64::try_from(recomputed.len())
+            .ok()
+            .and_then(|count| count.checked_mul(result_bound))
+            .ok_or(WorthQueryPartitionedComputationDenial::Resource(
+                WorthQueryManagedComputationResourceDenial::CapacityOverflow,
+            ))?;
         results_memory
             .grow(all_results)
             .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
         let settled_wave = partition_wave::run(
-            &dispositions,
-            retained,
+            &recomputed,
+            &retained.native_run,
+            removed.clone(),
             execution,
             remaining.remaining(),
             declared_bytes,
@@ -197,27 +164,59 @@ where
                 WorthQueryManagedComputationResourceDenial::WorkExhausted,
             )
         })?;
-        let mut values = settled_wave.values;
-        let (mut receipts, steps_memory) = recording.take();
-        let mut results_held = 0_u64;
-        for (identity, disposition) in dispositions {
-            let marked = match disposition {
-                Disposition::Carried(partition) => {
-                    partitions.insert(identity, partition);
-                    carried.insert(identity);
-                    continue;
+        let native_run = settled_wave.native_run;
+        let patched_calls = if ranges.is_some() {
+            let changes = rekeyed
+                .keys()
+                .map(|item| {
+                    let call = &next.item_keys[item];
+                    (
+                        ComputationRead::ItemKey(*item),
+                        &call.charge,
+                        call.declared_units,
+                    )
+                })
+                .chain(recomputed.iter().filter_map(|(id, marked)| {
+                    marked
+                        .gather
+                        .as_ref()
+                        .map(|charge| (ComputationRead::Partition(*id), charge, 0))
+                }));
+            Some(
+                match &transition {
+                    Some(transition) => retained
+                        .call_sequence
+                        .edited(transition, changes, execution),
+                    None => retained.call_sequence.patched(changes, execution),
                 }
-                Disposition::Recomputed(marked) => marked,
-            };
-            let value = values
-                .remove(&identity)
-                .expect("every recomputed partition settles once");
+                .map_err(WorthQueryPartitionedComputationDenial::from_call_sequence)?,
+            )
+        } else {
+            None
+        };
+        let allocation_policy = execution
+            .allocation_policy()
+            .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+        let mut partitions = retained.partitions.fork();
+        for &id in removed.as_slice() {
+            partitions
+                .remove(id, allocation_policy)
+                .map_err(WorthQueryPartitionedComputationDenial::from_ordered)?;
+        }
+        let mut results_held = 0_u64;
+        for (identity, marked) in recomputed {
+            super::super::super::super::fact_verification_observation::computation_result_receiver(
+            );
+            let kernel_result = native_run
+                .result(identity)
+                .expect("changed native partition settled");
+            let value = kernel_result.value();
             let settled = results_held;
             // A partition the retained tree does not hold is a new leaf.
             let replaced = retained
                 .tree
                 .leaf(identity)
-                .is_none_or(|leaf| !same_bits(leaf, &value));
+                .is_none_or(|leaf| !same_bits(leaf, value));
             let kept = if replaced {
                 u64::try_from(size_of::<(PartitionIdentity, Reduced)>())
                     .ok()
@@ -229,18 +228,21 @@ where
             };
             results_held = kept.map_err(WorthQueryPartitionedComputationDenial::Resource)?;
             if replaced {
-                results.insert(identity, value);
+                results.insert(identity, value.clone());
             }
-            let kernel_steps = receipts.remove(&identity).flatten();
-            match marked.gather.zip(kernel_steps) {
-                Some((gather, kernel_steps)) => {
+            match marked
+                .gather
+                .filter(|_| kernel_result.native_reuse_available())
+            {
+                Some(gather) => {
                     let partition = RetainedPartition {
                         key: marked.key,
                         key_bytes: marked.key_bytes,
                         gather,
-                        kernel_steps,
                     };
-                    partitions.insert(identity, Arc::new(partition));
+                    partitions
+                        .put(identity, partition, allocation_policy)
+                        .map_err(WorthQueryPartitionedComputationDenial::from_ordered)?;
                 }
                 None => gathers_measured = false,
             }
@@ -250,7 +252,15 @@ where
             .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
         // The combines a full build of this run's tree charges, from its
         // shape alone, by the reduce's own rule.
-        let reduction_work = plan.checked_build_work();
+        let target = super::tree_update::TreeTarget::new(
+            retained,
+            Arc::clone(&next.routing),
+            removed,
+            identities_unchanged,
+            &results,
+            execution,
+        )?;
+        let reduction_work = target.full_work();
         let (tree, tree_bill) = transport.call(|| {
             execution
                 .dispatch()
@@ -258,7 +268,7 @@ where
                 .tree_stage(remaining.remaining(), |context| {
                     let tree = next_tree(
                         retained,
-                        plan,
+                        target,
                         reduction_work,
                         results,
                         context
@@ -327,6 +337,13 @@ where
         let reduced = tree.result().clone();
         // A call made again whose charge did not measure cannot be carried
         // again, so the run retains nothing.
+        let call_sequence = call_recording::complete(
+            &next,
+            &partitions,
+            patched_calls,
+            gathers_measured,
+            execution,
+        )?;
         let typed = next
             .membership
             .filter(|_| gathers_measured)
@@ -334,9 +351,13 @@ where
                 items: next.items,
                 digests: next.digests,
                 membership,
-                item_keys: Arc::new(next.item_keys),
+                item_keys: next.item_keys,
+                item_bytes: next.item_bytes,
+                item_call_bytes: next.item_call_bytes,
+                call_sequence: Arc::clone(call_sequence.as_ref().unwrap()),
                 routing: next.routing,
                 partitions,
+                native_run,
                 tree,
             });
 
@@ -352,16 +373,18 @@ where
                 Some(typed) => CompletedComputationRetention::Produced(CompletedComputationRun {
                     basis,
                     typed_bytes: typed.charged_bytes(),
+                    call_sequence: Arc::clone(call_sequence.as_ref().unwrap()),
                     typed: Arc::new(typed),
                     carried: Some(CarriedCalls {
+                        validated_at,
                         prior: prior.into_state(),
                         membership: next.carried_membership,
                         items: next.carried_items,
                         partitions: carried,
+                        ranges,
                     }),
                     tree_memory: results_memory,
                     routing_memory: next.routing_memory,
-                    steps_memory,
                 }),
             },
         })

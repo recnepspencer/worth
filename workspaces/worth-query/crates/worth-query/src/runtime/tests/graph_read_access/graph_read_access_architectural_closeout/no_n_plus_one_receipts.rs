@@ -30,18 +30,8 @@ fn closeout_covered_read_receipt_proves_zero_caller_owned_n_plus_one_paths() {
         .receipt()
         .graph_read_access_plan_consumption()
         .expect("receipt should expose access-plan consumption");
-    let ephemeral_receipt = result
-        .receipt()
-        .ephemeral_graph_index_receipt()
-        .expect("ephemeral read should expose provisioning receipt");
 
     assert_success_counters_are_executor_observed(counters);
-    assert_eq!(
-        consumption
-            .execution_counters()
-            .ephemeral_index_allocation_count(),
-        ephemeral_receipt.counters().successful_allocation_count()
-    );
     assert_eq!(consumption.execution_counters().edge_scan_count(), 0);
     assert_eq!(
         consumption

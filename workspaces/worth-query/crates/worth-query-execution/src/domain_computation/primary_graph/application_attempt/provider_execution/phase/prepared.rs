@@ -1,5 +1,4 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use worth_execution::ExecutionArray;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::super::provider_binding::installed_preimage_demand;
@@ -19,7 +18,7 @@ use crate::domain_computation::authorization::WorthQueryProviderCommitAuthorizat
 use crate::domain_computation::primary_graph::application_attempt::{
     effect_program::WorthQueryApplicationRealizedEffect,
     provider_binding::WorthQueryPreparedApplicationProviderAttempt,
-    snapshot_lease::WorthQueryApplicationSnapshotLease, WorthQueryApplicationObservedFact,
+    snapshot_lease::WorthQueryApplicationSnapshotLease,
 };
 use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolution;
 use crate::domain_computation::primary_graph::{
@@ -114,8 +113,10 @@ struct WorthQueryProviderAttemptPreparation {
     local_action_settlement: Option<super::super::super::workflow_transition_program::LocalActionSettlementProof>,
     body_external_emission: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
-    installed_read_scopes: ExecutionArray<worth_query_installation::facade::WorthQueryOperationGraphReadScope>,
-    facts: ExecutionArray<WorthQueryApplicationObservedFact>,
+    installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+    effect_routes: super::super::super::CompletedFactRoutes,
+    application_projection: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection>>,
+    original_read: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead>>,
     consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
     effects: Vec<WorthQueryApplicationRealizedEffect>,
     application_effect_count: usize,
@@ -132,6 +133,8 @@ struct WorthQueryProviderAttemptPreparation {
     workflow_settlement: Option<
         crate::domain_computation::primary_graph::application_attempt::read_set::WorkflowOperationBindingProof,
     >,
+    // Last to drop: physical backing releases before its retained grant.
+
 }
 
 struct WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope> {

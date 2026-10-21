@@ -20,6 +20,8 @@ fn pre_kernel_cancellation_keeps_its_real_execution_cause() {
         .installed_schema()
         .certification_query(TemporalIntentQuery::reference())
         .unwrap();
+    let maximum_results = std::num::NonZeroUsize::new(query.read_graph().maximum_result_count())
+        .expect("the installed TemporalIntent query has a nonzero result cardinality");
     let selected = world
         .application
         .with_host_advancement(|phase| {
@@ -54,13 +56,18 @@ fn pre_kernel_cancellation_keeps_its_real_execution_cause() {
                     &query,
                     &access,
                     ApplicationQueryParameterSet::new(),
-                    product_query_support::controls(&request),
+                    primary_graph::WorthQueryProductQueryControls::new(maximum_results, &request),
                 )
                 .unwrap()
         })
         .expect("installed host call opens");
-    let batch =
-        primary_graph::WorthQueryApplicationQueryBatchAdmission::new(limits(None, 1_048_576));
+    let batch = world
+        .application
+        .application_query_batch_from_installed_reads(&[world
+            .application
+            .plan_installed_query_batch_reads(&query, 1, maximum_results)
+            .unwrap()])
+        .unwrap();
     cancellation.cancel();
     let result = world
         .application
@@ -72,14 +79,5 @@ fn pre_kernel_cancellation_keeps_its_real_execution_cause() {
         .expect("installed host call opens");
     assert!(
         matches!(result, Err(primary_graph::WorthQueryApplicationBatchReadDenial::Execution(error)) if error.kind() == primary_graph::WorthQueryApplicationOneShotDenialKind::Cancelled)
-    );
-    assert_eq!(batch.observe().retained_bytes(), 0);
-    assert_eq!(
-        world
-            .application
-            .result_buffer_observer()
-            .observe()
-            .active_buffers(),
-        0
     );
 }

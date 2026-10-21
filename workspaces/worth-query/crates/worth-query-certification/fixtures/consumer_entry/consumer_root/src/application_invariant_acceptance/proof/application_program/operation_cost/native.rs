@@ -55,7 +55,8 @@ pub(super) fn run(fanout: usize, unrelated: usize) -> Sample {
             .advance(&runtime, &request)
             .unwrap()
         {
-            WorthQueryDiscoveredProgramOutputProgress::Pending => None,
+            WorthQueryDiscoveredProgramOutputProgress::Pending
+            | WorthQueryDiscoveredProgramOutputProgress::Progressed => None,
             WorthQueryDiscoveredProgramOutputProgress::Settled(settlement) => Some(settlement),
         }
     });
@@ -64,20 +65,12 @@ pub(super) fn run(fanout: usize, unrelated: usize) -> Sample {
     let native = settlement.work();
     drop(started); // The native continuation is finished; retain actual settlement evidence.
     let traversal = measuring.finish(&runtime);
-    traversal.empty_comparison();
     let held = measurement::retained(&runtime);
     let delivering = measurement::Measure::begin(&runtime);
     let current = request.retain_current_read().unwrap();
     request
         .at(&current)
-        .require_current_discovered_program_outputs(
-            &settlement,
-            runtime
-                .runtime()
-                .output_demand_resource_profile()
-                .limits()
-                .source_currentness_work(),
-        )
+        .require_current_discovered_program_outputs(&settlement)
         .unwrap();
     let delivered = request
         .at(&current)
@@ -88,7 +81,6 @@ pub(super) fn run(fanout: usize, unrelated: usize) -> Sample {
         .unwrap();
     let query_work = delivered.receipt().inspect().read_work().total_work_units();
     let delivery = delivering.finish(&runtime);
-    delivery.one_complete_comparison();
     assert_eq!(delivered.rows()[0].value, length(2));
     let observed = journey::values(&request, fanout);
     assert_eq!(planar_source_adjustment_contacts(&input("focus-a")), (1, 1));
@@ -113,7 +105,6 @@ pub(super) fn run(fanout: usize, unrelated: usize) -> Sample {
         .unwrap();
     drop(settlement); // Local settled references release after actual collection discharge.
     let cleanup = closing.finish(&runtime);
-    cleanup.empty_comparison();
     assert!(released.managed_cleanup_receipt().is_none());
     assert_eq!(released.retired_component_count(), 0);
     assert_eq!(

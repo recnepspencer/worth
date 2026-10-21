@@ -41,6 +41,7 @@ mod operation_contract_cardinality;
 mod operation_definition;
 mod operation_marker_identity;
 pub(crate) use operation_definition::AftermathAssociationAuthority;
+mod operation_dependency_locus;
 mod operation_program;
 mod portable_schema;
 mod principal_binding_authoring;
@@ -51,6 +52,7 @@ mod references;
 mod relation_integrity;
 mod schema_identity;
 mod schema_member;
+mod shape;
 mod signing_provenance;
 mod signing_supersession;
 pub use signing_provenance::{
@@ -193,6 +195,7 @@ pub use operation_definition::{
     ApplicationOperationDefinitionBuilder, ApplicationSigningEvidenceRef,
     ApplicationSigningEvidenceSource,
 };
+pub use operation_dependency_locus::ApplicationOperationDependencyLocus;
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;
 pub use portable_schema::{
     observe_portable_application_schema_reconstruction_work,
@@ -225,9 +228,15 @@ pub use schema_member::{
     ApplicationOperationDecisionReadTarget, ApplicationOperationProgramTarget,
     ApplicationSchemaMember,
 };
+pub use shape::{
+    ApplicationAspectMeaningChange, ApplicationAspectMeaningPredecessorDenial,
+    ApplicationAspectValueMeaning, ApplicationFieldValueMeaning, ApplicationValueMeaningDenial,
+};
 pub use value_binding::{
-    ApplicationEncodedScalarValue, ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe,
-    ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
+    decode_application_canonical_value, decode_application_canonical_value_with_admission,
+    decode_canonical_value, decode_canonical_value_with_admission, encode_canonical_value,
+    ApplicationCanonicalValueContract, ApplicationEncodedScalarValue, ApplicationFieldBindingLocus,
+    ApplicationFieldBindingRecipe, ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
     ApplicationNativeInputAdmissionDenial, ApplicationNativeInputDecodeProfile,
     ApplicationNativeInputDecodeResources, ApplicationReadableScalarValueBinding,
     ApplicationScalarValueBinding, ApplicationSignedAggregateValueBinding,
@@ -236,11 +245,12 @@ pub use value_binding::{
     ApplicationValueEncodeDenial, ApplicationValueIdentityPosture, ApplicationValueIsIdentity,
     ApplicationValueIsNotIdentity, ApplicationValueSignedAggregateAvailable,
     ApplicationValueSignedAggregatePosture, ApplicationValueSignedAggregateUnavailable,
-    ApplicationValueValidationDenial, BoolApplicationValueBinding,
-    ErasedApplicationSignedAggregateDecode, ErasedApplicationValueDecode,
-    ErasedApplicationValueEncode, ErasedApplicationValueValidation, I64ApplicationValueBinding,
-    InternedStringApplicationValueBinding, StringApplicationValueBinding,
-    U64ApplicationValueBinding,
+    ApplicationValueValidationDenial, BoolApplicationValueBinding, CanonicalValue,
+    ErasedApplicationSignedAggregateDecode, ErasedApplicationValueAdmittedDecode,
+    ErasedApplicationValueDecode, ErasedApplicationValueEncode, ErasedApplicationValueValidation,
+    I64ApplicationValueBinding, InternedStringApplicationValueBinding,
+    StringApplicationValueBinding, U64ApplicationValueBinding, ValueCodecDenial,
+    ValueDecodeAdmission, ValueDecodeBounds, ValueShape,
 };
 pub use values::{
     DeclaredApplicationFieldValue, OptionalApplicationFieldValue, RequiredApplicationFieldValue,

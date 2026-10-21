@@ -7,8 +7,8 @@ use worth_runtime_bridge::facade::{
 
 fn budget(definitions: usize, bytes: u64) -> BridgeConditionalRetentionBudget {
     BridgeConditionalRetentionBudget {
-        maximum_retained_definition_candidates: definitions,
-        maximum_retained_bytes: bytes,
+        maximum_retained_definition_candidates: Some(definitions),
+        maximum_retained_bytes: Some(bytes),
         ..BridgeConditionalRetentionBudget::development()
     }
 }

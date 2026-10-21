@@ -68,12 +68,7 @@ fn run(seed: u64, observations: u64, steps: usize, driven: &mut Driven) {
         } else {
             "opening"
         };
-        let application = install_observing(
-            checkpoint.take(),
-            ring_world::seed::<3>,
-            Retained::AMPLE,
-            observations,
-        );
+        let application = install_observing(checkpoint.take(), ring_world::seed::<3>, observations);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let court = Court::new(&application, &request, idempotency);

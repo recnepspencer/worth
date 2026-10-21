@@ -60,6 +60,11 @@ impl WorkingState {
         )
     }
 
+    /// Preparation is the sole production caller. It admits GraphSparseEntities
+    /// only with Some(entity selection): an empty map, or a missing partition in
+    /// that map, means no existing entity payload is required there. A declined
+    /// global selection (None) must use Full instead. Direct test-only callers
+    /// may construct partial states to exercise storage and validation behavior.
     pub(crate) fn from_touched_partitions_with_layout_and_sparse_slots(
         base_partitions: &(impl PartitionAccess + ?Sized),
         touched_partitions: impl IntoIterator<Item = PartitionId>,

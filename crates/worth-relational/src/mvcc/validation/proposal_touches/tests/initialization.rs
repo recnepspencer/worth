@@ -11,33 +11,93 @@ use worth_foundational::facade::{
 };
 
 #[test]
-fn optional_aspect_initialization_is_exact_but_present_empty_replacement_is_broad() {
+fn optional_aspect_initialization_and_present_empty_replacement_have_exact_presence() {
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (runtime, contract) = world();
-    let entity = create_entity(&execution, &runtime, "source");
+    let born = crate::tests::support::create_entity_outcome(&execution, &runtime, "source");
+    let entity = crate::tests::support::changed_entities(&born)[0];
+    {
+        let read = runtime
+            .read_truth()
+            .read_snapshot(&born.snapshot, &execution)
+            .unwrap()
+            .unwrap();
+        let record = read.get_entity(entity).unwrap();
+        assert!(
+            record
+                .authoritative_aspect_state
+                .as_ref()
+                .and_then(|state| state.get(contract.key()))
+                .is_none(),
+            "the native birth has no assessment aspect"
+        );
+    }
+    crate::tests::support::release_test_commit_snapshot(&runtime, &born);
     let initial = validate(
         &execution,
         &runtime,
         [set(entity, &contract, &[("a", "first")])],
     );
+    let projected = initial.mutation_touches(&execution).unwrap();
+    assert!(projected.touches().is_empty());
     assert_eq!(
-        initial.mutation_touches().unwrap().touches(),
-        &[field_touch(&contract, "a")]
+        projected
+            .struct_touches()
+            .iter()
+            .map(|touch| (
+                touch.kind(),
+                touch.contract(),
+                touch.field(),
+                touch.before_present(),
+                touch.after_present()
+            ))
+            .collect::<Vec<_>>(),
+        vec![(KindId(1), &contract, &field_key("a"), false, true)]
     );
     // Materialize a valid empty aspect through the native mutation authority.
     // Absence of selected fields must not be mistaken for aspect absence.
-    commit(&execution, &runtime, set(entity, &contract, &[]));
+    let committed = commit(&execution, &runtime, set(entity, &contract, &[]));
+    let read = runtime
+        .read_truth()
+        .read_snapshot(&committed.snapshot, &execution)
+        .unwrap()
+        .unwrap();
+    let record = read.get_entity(entity).unwrap();
+    let present = record
+        .authoritative_aspect_state
+        .as_ref()
+        .unwrap()
+        .get(contract.key())
+        .unwrap();
+    assert_eq!(present.contract(), &contract);
+    let worth_foundational::facade::ContractValidatedAspectValueView::Struct(empty) =
+        present.view()
+    else {
+        panic!("native committed aspect must be a struct");
+    };
+    assert!(empty.is_empty(), "the prior aspect is present and empty");
     let replacement = validate(
         &execution,
         &runtime,
         [set(entity, &contract, &[("a", "next")])],
     );
-    assert!(replacement
-        .mutation_touches()
-        .unwrap()
-        .touches()
-        .contains(&ValidatedMutationTouch::UnrepresentableEntityMutation { kind: KindId(1) }));
+    let projected = replacement.mutation_touches(&execution).unwrap();
+    assert!(projected.touches().is_empty());
+    assert_eq!(
+        projected
+            .struct_touches()
+            .iter()
+            .map(|touch| (
+                touch.kind(),
+                touch.contract(),
+                touch.field(),
+                touch.before_present(),
+                touch.after_present()
+            ))
+            .collect::<Vec<_>>(),
+        vec![(KindId(1), &contract, &field_key("a"), true, true)]
+    );
 }
 
 #[test]
@@ -114,10 +174,23 @@ fn optional_aspect_initialization_cannot_publish_over_a_concurrent_sibling() {
         &runtime,
         [set(entity, &contract, &[("a", "stale")])],
     );
+    let projected = candidate.mutation_touches(&execution).unwrap();
+    assert!(projected.touches().is_empty());
     assert_eq!(
-        candidate.mutation_touches().unwrap().touches(),
-        &[field_touch(&contract, "a")]
+        projected
+            .struct_touches()
+            .iter()
+            .map(|touch| (
+                touch.kind(),
+                touch.contract(),
+                touch.field(),
+                touch.before_present(),
+                touch.after_present()
+            ))
+            .collect::<Vec<_>>(),
+        vec![(KindId(1), &contract, &field_key("a"), false, true)]
     );
+    drop(projected);
     let committed = commit(
         &execution,
         &runtime,
@@ -180,16 +253,6 @@ fn runtime_for(contract: &AspectContract) -> crate::runtime::RelationalRuntime {
         contract: contract.clone(),
     });
     schema.build_runtime()
-}
-
-fn field_touch(contract: &AspectContract, field: &str) -> ValidatedMutationTouch {
-    ValidatedMutationTouch::WriteEntityField {
-        kind: KindId(1),
-        locator: crate::transactions::data::planned_single_field_locator(
-            contract.key().clone(),
-            field_key(field),
-        ),
-    }
 }
 
 fn set(

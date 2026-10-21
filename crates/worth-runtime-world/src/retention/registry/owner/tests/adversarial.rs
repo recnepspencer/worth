@@ -22,7 +22,7 @@ fn pair_capacity_denies_before_either_real_component_owner_is_contacted() {
     assert_eq!(
         denial,
         RetentionObligationDenial::UniquePinCapacityExhausted {
-            maximum_unique_component_pins: 1,
+            maximum_unique_component_pins: Some(1),
         }
     );
     assert_eq!(fixture.owner.unique_pin_count(), 0);
@@ -69,7 +69,7 @@ fn pair_reservation_capacity_is_checked_for_both_flights_before_contact() {
     assert_eq!(
         denial,
         RetentionObligationDenial::InFlightAcquisitionCapacityExhausted {
-            maximum_in_flight_reservations: 1,
+            maximum_in_flight_reservations: Some(1),
         }
     );
     assert_eq!(fixture.owner.unique_pin_count(), 0);

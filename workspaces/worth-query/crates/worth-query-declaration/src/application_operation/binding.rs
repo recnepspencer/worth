@@ -5,6 +5,7 @@ pub use admission::{
 };
 mod descriptor;
 mod identity;
+mod input_scope;
 mod intent;
 mod output;
 mod output_role;
@@ -31,6 +32,7 @@ pub use identity::{
     ApplicationOwnedMutationIdentities, ApplicationSharedInput, ApplicationValueIdentityDomain,
     CanonicalEncodingCharge,
 };
+pub use input_scope::ApplicationMutationInputScope;
 pub use intent::{
     ApplicationCapabilityMutationBinding, ApplicationMutationBinding, ApplicationMutationIntent,
 };

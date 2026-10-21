@@ -9,6 +9,7 @@ use super::CanonicalCommitEnvelope;
 pub(crate) struct CheckpointCanonicalEnvelopeRef<'a> {
     envelope: &'a CanonicalCommitEnvelope,
     include_descriptive_touches: bool,
+    include_codec_retirements: bool,
 }
 
 impl<'a> CheckpointCanonicalEnvelopeRef<'a> {
@@ -16,6 +17,7 @@ impl<'a> CheckpointCanonicalEnvelopeRef<'a> {
         Self {
             envelope,
             include_descriptive_touches: true,
+            include_codec_retirements: true,
         }
     }
 
@@ -24,7 +26,14 @@ impl<'a> CheckpointCanonicalEnvelopeRef<'a> {
         Self {
             envelope,
             include_descriptive_touches: false,
+            include_codec_retirements: true,
         }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn without_codec_retirements_for_test(mut self) -> Self {
+        self.include_codec_retirements = false;
+        self
     }
 }
 
@@ -34,6 +43,8 @@ impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
         S: serde::Serializer,
     {
         let CanonicalCommitEnvelope {
+            required_output_codec_retirements,
+            required_output_origin,
             commit,
             branch_context,
             branch_cell_checkpoint,
@@ -58,11 +69,18 @@ impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
             descriptor_semantics_version,
         } = self.envelope;
         let field_count = if self.include_descriptive_touches {
-            22
+            24
         } else {
-            21
-        };
+            23
+        } - usize::from(!self.include_codec_retirements);
         let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", field_count)?;
+        if self.include_codec_retirements {
+            fields.serialize_field(
+                "required_output_codec_retirements",
+                required_output_codec_retirements,
+            )?;
+        }
+        fields.serialize_field("required_output_origin", required_output_origin)?;
         fields.serialize_field("commit", commit)?;
         fields.serialize_field("branch_context", branch_context)?;
         fields.serialize_field("branch_cell_checkpoint", branch_cell_checkpoint)?;

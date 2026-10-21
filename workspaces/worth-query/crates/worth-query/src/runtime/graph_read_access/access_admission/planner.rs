@@ -2,15 +2,15 @@
 use super::WorthQueryAdmittedGraphReadAccessPlan;
 use super::{
     WorthQueryGraphReadAccessAdmission, WorthQueryGraphReadAccessCaseRegistry,
-    WorthQueryGraphReadAccessDenial, WorthQueryGraphReadBudgetExceededDenial,
+    WorthQueryGraphReadAccessDenial,
 };
 #[cfg(test)]
 use crate::runtime::worth_query_graph_index_inventory;
 use crate::runtime::{
     explain_graph_read_access_requirements_for_family_in_authority_with_lookup,
     WorthQueryGraphIndexInventory, WorthQueryGraphReadAccessAuthorityContext,
-    WorthQueryGraphReadAccessShapeExplanationError, WorthQueryGraphReadBudget,
-    WorthQueryGraphReadOperationLookup, WorthQueryReadFamily,
+    WorthQueryGraphReadAccessShapeExplanationError, WorthQueryGraphReadOperationLookup,
+    WorthQueryReadFamily,
 };
 use worth_query_admission::facade::graph_read_access::WorthQueryGraphReadPlanReviewDenialKind;
 
@@ -53,18 +53,13 @@ pub(crate) fn admit_graph_read_access_for_family_in_authority_with_inventory_and
     let requirements = explain_graph_read_access_requirements_for_family_in_authority_with_lookup(
         family, authority, lookup,
     )?;
-    let review = worth_query_admission::integration::review_graph_read_access(
-        requirements,
-        inventory,
-        WorthQueryGraphReadBudget::inline_ephemeral_default(),
-    );
+    let review =
+        worth_query_admission::integration::review_graph_read_access(requirements, inventory);
     let case_registry = WorthQueryGraphReadAccessCaseRegistry::exhaustive();
     if let Some(denial) = review.denial() {
-        let denial = map_denial(denial.kind(), review.cost_estimate(), review.budget_check());
+        let denial = map_denial(denial.kind());
         return Ok(WorthQueryGraphReadAccessAdmission::denied_in_authority(
             review.requirements().clone(),
-            review.cost_estimate().clone(),
-            review.budget_check().clone(),
             case_registry,
             review.inventory().clone(),
             review.inventory_match().clone(),
@@ -74,8 +69,6 @@ pub(crate) fn admit_graph_read_access_for_family_in_authority_with_inventory_and
     }
     Ok(WorthQueryGraphReadAccessAdmission::admitted_in_authority(
         review.requirements().clone(),
-        review.cost_estimate().clone(),
-        review.budget_check().clone(),
         case_registry,
         review.inventory().clone(),
         review.inventory_match().clone(),
@@ -84,24 +77,8 @@ pub(crate) fn admit_graph_read_access_for_family_in_authority_with_inventory_and
     ))
 }
 
-fn map_denial(
-    kind: WorthQueryGraphReadPlanReviewDenialKind,
-    estimate: &crate::runtime::WorthQueryGraphReadAccessCostEstimate,
-    budget: &crate::runtime::WorthQueryGraphReadBudgetCheck,
-) -> WorthQueryGraphReadAccessDenial {
+fn map_denial(kind: WorthQueryGraphReadPlanReviewDenialKind) -> WorthQueryGraphReadAccessDenial {
     match kind {
-        WorthQueryGraphReadPlanReviewDenialKind::BudgetExceeded => {
-            WorthQueryGraphReadAccessDenial::from_budget_exceeded(
-                WorthQueryGraphReadBudgetExceededDenial::new(
-                    budget.max_inline_index_bytes(),
-                    estimate.supported().index_bytes(),
-                    budget.max_inline_result_bytes(),
-                    estimate.supported().result_bytes(),
-                    budget.max_inline_intermediate_set_size(),
-                    estimate.intrinsic().intermediate_set_size(),
-                ),
-            )
-        }
         WorthQueryGraphReadPlanReviewDenialKind::RequiredAsyncMaterialization => {
             WorthQueryGraphReadAccessDenial::required_async_materialization()
         }

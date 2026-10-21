@@ -217,7 +217,7 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema>
     type PrincipalIdentity = u64;
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "worth.query.certification.courtroom-successor-read.v1";
-    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::bounded(1, 128);
+    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
     fn scope_field() -> ApplicationFieldRef<
         Schema,
         Body,

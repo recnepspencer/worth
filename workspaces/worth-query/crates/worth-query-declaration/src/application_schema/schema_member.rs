@@ -77,6 +77,7 @@ pub enum ApplicationSchemaMember {
         entity: String,
     },
     Aspect {
+        absence: worth_foundational::facade::AbsenceLaw,
         entity: String,
         aspect: String,
         identity: AspectIdentity,
@@ -89,6 +90,7 @@ pub enum ApplicationSchemaMember {
         presence: ApplicationFieldPresence,
         scalar_family: ScalarAspectType,
         value_type: String,
+        canonical: Option<super::ApplicationCanonicalValueContract>,
         unit: Option<String>,
         frame: Option<String>,
         writable: bool,

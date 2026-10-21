@@ -1,33 +1,27 @@
 //! Definition-selected governed pages over native retained prefix generations.
-use super::{
-    admission::{admit, WorthQueryWorkflowReadDenial as Denial},
-    read::project_record,
-    *,
-};
-use crate::domain_computation::primary_graph::{
-    application_attempt::workflow_instance_observation::governed_record,
-    application_installation::WorthQueryWorkflowVocabulary,
-    output_lineage::invalidation::InvalidationEditAdmission, WorthQueryAdvancementPhase,
-    WorthQuerySelectedProductOperation,
-};
+use super::admission::admit;
+use super::admission::WorthQueryWorkflowReadDenial as Denial;
+use super::read::project_record;
+use super::*;
+use crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::governed_record;
+use crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use std::marker::PhantomData;
-use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
-use worth_query_declaration::facade::application_program::{
-    ApplicationWorkflowDefinitionReadTarget, ApplicationWorkflowReadBinding,
-    ApplicationWorkflowReadRoute, ApplicationWorkflowSpec,
-};
+use worth_execution::ExecutionArray;
+use worth_execution::ExecutionArrayBuilder;
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowDefinitionReadTarget;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowReadBinding;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowReadRoute;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
 use worth_query_installation::facade::ApplicationSchema;
-use worth_relational::facade::{
-    identity::EntityId,
-    indexes::{
-        BoundedRelatedEntityOrderedLookupRequest, BoundedRelatedEntityPrefixLookupRequest,
-        BoundedRelatedEntityPrefixPage, DerivedIndexMaintenanceBudget,
-    },
-    mvcc::CompanionPreflightBudget,
-};
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::indexes::BoundedRelatedEntityOrderedLookupRequest;
+use worth_relational::facade::indexes::BoundedRelatedEntityPrefixLookupRequest;
+use worth_relational::facade::indexes::BoundedRelatedEntityPrefixPage;
+use worth_relational::facade::indexes::DerivedIndexMaintenanceBudget;
 pub(super) mod currency;
 /// Explicit selected scope; omitting a subject never widens a subject rule.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -111,23 +105,8 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let binding = workflow
             .resolve_read_binding::<B>(self.application().installed_schema(), route)
             .map_err(Denial::Installation)?;
-        let profile = self
-            .application()
-            .runtime
-            .application_query_resource_profile();
-        let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-            maximum_work_visits: profile.maximum_work().map(|work| work.get() as u64),
-            maximum_preparation_bytes: Some(profile.maximum_inline_index_bytes().get() as u64),
-        });
-        let access = admit(
-            self,
-            phase,
-            &binding,
-            principal,
-            input,
-            request,
-            &mut admission,
-        )?;
+
+        let access = admit(self, phase, &binding, principal, input, request)?;
         let resource_scope = access.resource_entity_id();
         let subject = if extent == WorthQueryWorkflowReadExtent::Subject {
             Some(access.resource_entity_id())
@@ -177,7 +156,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     data.product().relational_basis(),
                     layout,
                     target.identity().as_str(),
-                    &mut admission,
                 )?
                 else {
                     let rows = ExecutionArrayBuilder::allocate(0, execution.allocation_policy())
@@ -192,7 +170,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     data.product().relational_basis(),
                     index,
                     index_read,
-                    &mut admission,
                 )?;
                 let pinned = runtime
                     .read_truth()

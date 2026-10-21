@@ -1,0 +1,105 @@
+/// Describes owned heap storage beyond a value's inline Rust representation.
+/// Implementations for domain values must include every owned nested allocation.
+/// This description grants no allocation, reservation, or execution authority.
+///
+/// Derive `ChargedBytes` for concrete resident structs and enums to compose every
+/// field's contract, including fields skipped by Serde. Inline bytes are counted
+/// by admission, not this method. Opaque or shared owners keep explicit native
+/// implementations; derivation neither deduplicates pointers nor moves custody.
+/// Pure value owners select this facade without depending on Execution:
+///
+/// ```
+/// use worth_foundational::facade::ChargedBytes;
+///
+/// #[derive(ChargedBytes)]
+/// #[charged_bytes(crate = "worth_foundational::facade")]
+/// struct Record {
+///     label: String,
+///     references: Vec<String>,
+/// }
+/// ```
+pub trait ChargedBytes {
+    fn additional_charged_bytes(&self) -> u64;
+}
+
+impl ChargedBytes for crate::PartitionIdentity {
+    fn additional_charged_bytes(&self) -> u64 {
+        0
+    }
+}
+
+macro_rules! inline_value {
+    ($($type:ty),+ $(,)?) => {
+        $(impl ChargedBytes for $type {
+            fn additional_charged_bytes(&self) -> u64 { 0 }
+        })+
+    };
+}
+
+inline_value!(
+    (),
+    bool,
+    char,
+    u8,
+    u16,
+    u32,
+    u64,
+    u128,
+    usize,
+    i8,
+    i16,
+    i32,
+    i64,
+    i128,
+    isize,
+    f32,
+    f64,
+    &'static str
+);
+
+impl ChargedBytes for String {
+    fn additional_charged_bytes(&self) -> u64 {
+        u64::try_from(self.capacity()).unwrap_or(u64::MAX)
+    }
+}
+
+impl<T: ChargedBytes> ChargedBytes for Vec<T> {
+    fn additional_charged_bytes(&self) -> u64 {
+        let inline = self.capacity().checked_mul(std::mem::size_of::<T>());
+        let inline = inline
+            .and_then(|bytes| u64::try_from(bytes).ok())
+            .unwrap_or(u64::MAX);
+        self.iter().fold(inline, |sum, item| {
+            sum.saturating_add(item.additional_charged_bytes())
+        })
+    }
+}
+
+impl<T: ChargedBytes, const N: usize> ChargedBytes for [T; N] {
+    fn additional_charged_bytes(&self) -> u64 {
+        self.iter().fold(0_u64, |sum, item| {
+            sum.saturating_add(item.additional_charged_bytes())
+        })
+    }
+}
+
+impl<T: ChargedBytes> ChargedBytes for Option<T> {
+    fn additional_charged_bytes(&self) -> u64 {
+        self.as_ref()
+            .map_or(0, ChargedBytes::additional_charged_bytes)
+    }
+}
+
+impl<T: ChargedBytes> ChargedBytes for Box<T> {
+    fn additional_charged_bytes(&self) -> u64 {
+        u64::try_from(std::mem::size_of::<T>())
+            .unwrap_or(u64::MAX)
+            .saturating_add((**self).additional_charged_bytes())
+    }
+}
+
+impl ChargedBytes for std::convert::Infallible {
+    fn additional_charged_bytes(&self) -> u64 {
+        match *self {}
+    }
+}

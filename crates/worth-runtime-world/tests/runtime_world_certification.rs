@@ -52,16 +52,25 @@ fn installed_budgets_are_nonzero_and_cover_every_runtime_world_population() {
     })
     .expect("all installed limits are nonzero");
 
-    assert_eq!(budgets.live_product_branches().get(), 1);
-    assert_eq!(budgets.retained_composite_commits().get(), 2);
-    assert_eq!(budgets.history_metadata_bytes().get(), 3);
-    assert_eq!(budgets.active_observations().get(), 4);
-    assert_eq!(budgets.active_publication_attempts().get(), 5);
-    assert_eq!(budgets.retained_product_unpublished_records().get(), 6);
-    assert_eq!(budgets.retained_partial_metadata_bytes().get(), 7);
-    assert_eq!(budgets.unique_exact_component_pins().get(), 8);
-    assert_eq!(budgets.in_flight_pin_acquisition_reservations().get(), 9);
-    assert_eq!(budgets.owner_created_component_custody_records().get(), 10);
+    assert_eq!(budgets.live_product_branches().get(), Some(1));
+    assert_eq!(budgets.retained_composite_commits().get(), Some(2));
+    assert_eq!(budgets.history_metadata_bytes().get(), Some(3));
+    assert_eq!(budgets.active_observations().get(), Some(4));
+    assert_eq!(budgets.active_publication_attempts().get(), Some(5));
+    assert_eq!(
+        budgets.retained_product_unpublished_records().get(),
+        Some(6)
+    );
+    assert_eq!(budgets.retained_partial_metadata_bytes().get(), Some(7));
+    assert_eq!(budgets.unique_exact_component_pins().get(), Some(8));
+    assert_eq!(
+        budgets.in_flight_pin_acquisition_reservations().get(),
+        Some(9)
+    );
+    assert_eq!(
+        budgets.owner_created_component_custody_records().get(),
+        Some(10)
+    );
 
     let denial = RuntimeWorldBudgets::install(RuntimeWorldBudgetInstallation {
         branches: RuntimeWorldBranchBudgetInstallation {

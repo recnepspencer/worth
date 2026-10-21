@@ -32,7 +32,8 @@ fn installed_alias_full_oracle_preserves_output_and_rejects_later_output_change(
         .unwrap();
     let performed = (0..256)
         .find_map(|_| match a.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("A performs through the installed producer");
@@ -43,7 +44,8 @@ fn installed_alias_full_oracle_preserves_output_and_rejects_later_output_change(
     let performed_receipt = performed.application_commit_receipt().unwrap().clone();
     let downstream = (0..256)
         .find_map(|_| match b.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("B actually consumes performed A before either alias exists");
@@ -79,7 +81,8 @@ fn installed_alias_full_oracle_preserves_output_and_rejects_later_output_change(
             crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         let alias = (0..256)
             .find_map(|_| match refresh.advance(&request).unwrap() {
-                WorthQueryApplicationOutputDemandProgress::Pending => None,
+                WorthQueryApplicationOutputDemandProgress::Pending
+                | WorthQueryApplicationOutputDemandProgress::Progressed => None,
                 WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
             })
             .expect("fresh admission publishes the next real Stable alias");

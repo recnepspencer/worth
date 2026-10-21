@@ -61,21 +61,19 @@ fn retained_consumer_currentness_checks_original_upstream_before_regeneration() 
     // A's own source fact moved at this same image while its output stayed old.
     // This is a semantic currentness check, not an assertion about cache marks.
     assert_superseded(
-        selected.require_current_output_demand(&a_original, None),
+        selected.require_current_output_demand(&a_original),
         "the original root's direct source fact moved",
     );
-    let consumer = selected.require_current_output_demand(&b_original, None);
-    let descendant = selected.require_current_output_demand(&c_original, None);
-    selected
-        .require_current_output_demand(&d_original, None)
+    let consumer = selected.require_current_output_demand(&b_original);
+    let descendant = selected.require_current_output_demand(&c_original);
+    selected.require_current_output_demand(&d_original).unwrap();
+    request
+        .at(&older)
+        .require_current_output_demand(&b_original)
         .unwrap();
     request
         .at(&older)
-        .require_current_output_demand(&b_original, None)
-        .unwrap();
-    request
-        .at(&older)
-        .require_current_output_demand(&c_original, None)
+        .require_current_output_demand(&c_original)
         .unwrap();
     assert_eq!(
         output_values!(selected),
@@ -111,7 +109,7 @@ fn retained_consumer_currentness_checks_original_upstream_before_regeneration() 
     let now = request.retain_current_read().unwrap();
     request
         .at(&now)
-        .require_current_output_demand(&renewed, None)
+        .require_current_output_demand(&renewed)
         .unwrap();
     assert_eq!(output_values!(request.at(&now))[0][0].value, length(6));
     assert_eq!(

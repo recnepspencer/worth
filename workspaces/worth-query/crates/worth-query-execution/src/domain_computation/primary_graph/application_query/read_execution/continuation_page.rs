@@ -23,7 +23,6 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_cont
         Scope,
     >,
     after: Option<RelatedEntityOrderingBoundary>,
-    mut result_buffer: WorthQueryApplicationResultBufferReservation,
 ) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
     let contract = plan.query.read_family_binding().planning_contract();
     let continuation = plan.query.continuation().ok_or_else(|| {
@@ -52,12 +51,8 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_cont
         execution,
         graph,
         &read_plan::ReadPlan::of(plan),
-        &mut result_buffer,
         false,
         None,
-        plan.controls
-            .maximum_work()
-            .map(std::num::NonZeroUsize::get),
         ReadInterruption::Query(plan.controls.request_scope()),
     )?;
     validate_cardinality_and_limit(contract.cardinality(), selection.candidates.len(), plan)?;
@@ -72,9 +67,6 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_cont
         &selection.candidates,
         selection.selected_predicate_source.as_ref(),
         selection.root_path_source.as_ref(),
-        plan.controls
-            .maximum_work()
-            .map(|maximum| maximum.get().saturating_sub(selection.work_units)),
         ResultTreeCollectionSelection::Ordered(OrderedCollectionWindow {
             snapshot: plan.basis.snapshot_handle().clone(),
             collection_path: continuation.collection_path().to_string(),
@@ -87,35 +79,17 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_cont
             page_width: plan.controls.maximum_result_count().get(),
         }),
         ReadInterruption::Query(plan.controls.request_scope()),
-        &mut result_buffer,
         None,
     )?;
     let actual_work = selection.work_units.saturating_add(tree.work_units);
-    if plan
-        .controls
-        .maximum_work()
-        .is_some_and(|maximum| actual_work > maximum.get())
-    {
-        return Err(read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
-            plan.query.name(),
-        ));
-    }
+
     let progress = tree.continuation.ok_or_else(|| {
         read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::ContinuationIndexUnavailable,
             continuation.collection_path(),
         )
     })?;
-    verify_result_tree_accounting(
-        &result_buffer,
-        tree.rows.raw_rows(),
-        tree.rows.capacity(),
-        &tree.source_footprints,
-        tree.source_footprints.capacity(),
-        selection.result_set_source.as_deref(),
-        plan.query.name(),
-    )?;
+
     Ok(RawNonLiveKernelOutcome {
         raw: RawOneShotRows {
             rows: tree.rows,
@@ -143,6 +117,5 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_cont
             has_more: progress.has_more,
             actual_work,
         },
-        result_buffer,
     })
 }

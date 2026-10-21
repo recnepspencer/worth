@@ -18,15 +18,10 @@ use worth_relational::facade::transactions::{
 fn current_controls(
     scope: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> WorthQueryProductQueryControls<'_> {
-    WorthQueryProductQueryControls::new(
-        NonZeroUsize::new(10).unwrap(),
-        Some(NonZeroUsize::new(10000).unwrap()),
-        scope,
-    )
+    WorthQueryProductQueryControls::new(NonZeroUsize::new(10).unwrap(), scope)
 }
 
 mod map_ceiling;
-mod query_ceiling;
 
 mod parallel_ceiling;
 

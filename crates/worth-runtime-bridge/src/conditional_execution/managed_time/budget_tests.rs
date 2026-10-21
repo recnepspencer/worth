@@ -98,7 +98,7 @@ fn due_output(factory: &impl Fn(BridgeConditionalRetentionBudget) -> Owner) {
 
 fn budget(bytes: u64) -> BridgeConditionalRetentionBudget {
     BridgeConditionalRetentionBudget {
-        maximum_retained_bytes: bytes,
+        maximum_retained_bytes: Some(bytes),
         ..BridgeConditionalRetentionBudget::development()
     }
 }

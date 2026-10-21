@@ -48,7 +48,7 @@ fn observe(scenario: &str, axis: WarmLocalityAxis, count: usize) -> WarmLocality
         .runtime
         .query(queries::estate_legal_compliance(ESTATE))
         .as_principal(&principal)
-        .controls(BankReadControls::current(request_scope(), 1, 50_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 1).unwrap())
         .execute()
         .expect("the legal-compliance query should remain authorized");
     let receipt = result.receipt();

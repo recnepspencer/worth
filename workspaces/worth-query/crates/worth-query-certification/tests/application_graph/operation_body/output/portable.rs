@@ -94,13 +94,13 @@ fn output_only_body_requires_a_real_entity_decision_read() {
         };
     }
     parts.members.sort();
-    assert_eq!(
+    assert!(matches!(
         validate_portable_application_schema_freshly(
             WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
         )
         .unwrap_err(),
-        ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency
-    );
+        ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency { .. }
+    ));
 }
 
 #[test]

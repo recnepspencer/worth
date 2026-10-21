@@ -1,12 +1,11 @@
-use crate::domain_computation::execution_runtime::product_world::publication_denial::{
-    WorthQueryProductPublicationDenial as PublicationDenial,
-    WorthQueryProductPublicationOutcome as PublicationOutcome,
-};
+use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationDenial as PublicationDenial;
+use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
 
-use super::{failure, publication_request_stop, world_no_effect};
-use crate::domain_computation::primary_graph::provider::{
-    WorthQueryPrimaryGraphApplicationAttempt, WorthQueryPrimaryGraphProvider,
-};
+use super::failure;
+use super::publication_request_stop;
+use super::world_no_effect;
+use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphApplicationAttempt;
+use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 
 pub(super) struct WorthQueryPerformedApplicationProductPublication {
     pub publication: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt,
@@ -31,7 +30,6 @@ pub(super) fn publish(
     required_prerequisites: &mut Option<
         crate::domain_computation::primary_graph::PreparedPrerequisiteClaims,
     >,
-    admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> Result<
     WorthQueryApplicationProductPublicationOutcome,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -59,7 +57,6 @@ pub(super) fn publish(
             attempt,
             prepared.planned_successor(),
             required_prerequisites,
-            admission,
         )?;
         let recovery_handle = prepared.unpublished_recovery_handle();
         let terminal = crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt::new(
@@ -138,7 +135,7 @@ pub(super) fn publish(
         let bridge_prepared = bridge
             .prepare_owned_conditional_definition_successor(&predecessor, parts.request)
             .map_err(|_| denied("Bridge rejected combined conditional preparation"))?;
-        let lineage_slot = prepare_lineage_slot(provider, attempt, prepared.planned_successor(), required_prerequisites, admission)?;
+        let lineage_slot = prepare_lineage_slot(provider, attempt, prepared.planned_successor(), required_prerequisites)?;
         let recovery_handle = prepared.unpublished_recovery_handle();
         let terminal = crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt::new(
             product.root_identity(),
@@ -193,7 +190,6 @@ fn prepare_lineage_slot(
     attempt: &WorthQueryPrimaryGraphApplicationAttempt,
     planned: &worth_runtime_world::facade::PlannedProductReferenceSuccessor,
     required: &mut Option<crate::domain_computation::primary_graph::PreparedPrerequisiteClaims>,
-    admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> Result<
     Option<crate::domain_computation::primary_graph::output_lineage::PreparedOutputLineageSlot>,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
@@ -211,25 +207,17 @@ fn prepare_lineage_slot(
             binding,
             attempt.idempotency().source_partition_identity(),
             planned,
-            admission,
         )
         .map_err(lineage_pending)?;
     if let Some(required) = required {
         let (producer, source) = required.native_prior_checkpoint_input();
-        slot.retain_native_prior_checkpoint(producer, source, admission)
+        slot.retain_native_prior_checkpoint(producer, source)
             .map_err(lineage_pending)?;
         // Move already declared resources through the prepared owner record.
         // This also pays its final fixed-width copy before World publication.
-        admission
-            .charge_external_work(4)
-            .map_err(|_| crate::domain_computation::WorthQueryProviderSessionCommitStop::Deferred(
-                crate::domain_computation::WorthQueryProviderSessionCommitDeferred::required_prerequisite(
-                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""),
-                    "",
-                ),
-            ))?;
+
         required
-            .reserve_identity(slot.identity(), admission)
+            .reserve_identity(slot.identity())
             .map_err(lineage_pending)?;
         slot.retain_completed_handler_facts(
             required

@@ -165,11 +165,7 @@ fn install_configured(
     configuration: HistoryConfiguration,
 ) -> Application {
     const RETAINED_COMMITS: u64 = 32;
-    let invalidation = support::invalidation(
-        128 * 1_024 * 1_024,
-        Some(1_000_000),
-        RETAINED_COMMITS as usize,
-    );
+    let invalidation = support::invalidation();
     let limits = support::limits_with_room(RETAINED_COMMITS, 16, 64, invalidation);
     let program = ApplicationProgramAuthoring::<CheckpointSchema, HistoryProgram>::begin()
         .validated_program()
@@ -216,7 +212,8 @@ pub(super) fn demand(
                 .advance(request)
                 .expect("the region output demand advances")
             {
-                WorthQueryApplicationOutputDemandProgress::Pending => None,
+                WorthQueryApplicationOutputDemandProgress::Pending
+                | WorthQueryApplicationOutputDemandProgress::Progressed => None,
                 WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
             }
         })

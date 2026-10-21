@@ -10,30 +10,52 @@ where
         declared_bytes: u64,
         basis: RetainedBasis,
         prior: TypedPrior<Key, Item, Reduced>,
+        validated_at: Option<worth_relational::facade::snapshots::SnapshotHandle>,
         next: NextPartitioning<Item>,
+        removed: CanonicalUniqueVec<PartitionIdentity>,
     ) -> Self {
         Self {
             remaining_work,
             declared_bytes,
             partitions: BTreeMap::new(),
             next,
+            removed,
             basis,
             prior,
+            validated_at,
+            ranges: None,
+            rekeyed: Default::default(),
+            transition: None,
+            key_memory: None,
         }
+    }
+    pub(in super::super) fn transition(
+        &mut self,
+        transition: Arc<
+            crate::domain_computation::primary_graph::invariant_projection::CallShapeTransition,
+        >,
+    ) {
+        self.transition = Some(transition);
+    }
+    pub(in super::super) fn rekeyed(
+        &mut self,
+        calls: worth_execution::ExecutionOrderedMap<worth_execution::PartitionItemId, ()>,
+        memory: QueryMemoryReservation,
+    ) {
+        self.rekeyed = calls;
+        self.key_memory = Some(memory);
+    }
+    pub(in super::super) fn ranges(
+        &mut self,
+        ranges: Arc<
+            crate::domain_computation::primary_graph::application_attempt::NativeCallCarriage,
+        >,
+    ) {
+        self.ranges = Some(ranges);
     }
 
     pub(in super::super::super) const fn remaining_work(&self) -> RemainingWork {
         self.remaining_work
-    }
-
-    /// Carries one partition's gathering and kernel from the retained run.
-    pub(in super::super) fn carried(
-        &mut self,
-        identity: PartitionIdentity,
-        partition: &Arc<RetainedPartition<Key>>,
-    ) {
-        self.partitions
-            .insert(identity, Disposition::Carried(Arc::clone(partition)));
     }
 
     /// Readies one marked partition's kernel.
@@ -56,13 +78,13 @@ where
         memory.after_gather(&value)?;
         self.partitions.insert(
             identity,
-            Disposition::Recomputed(Recomputed {
+            Recomputed {
                 value,
                 key,
                 key_bytes,
                 gather,
                 memory,
-            }),
+            },
         );
         Ok(())
     }

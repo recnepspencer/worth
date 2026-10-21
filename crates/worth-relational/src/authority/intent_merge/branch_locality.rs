@@ -59,6 +59,7 @@ pub(crate) fn validate_branch_locality(
                     RelationMutationIntent::UpdateEndpoints(spec) => spec.relation_id,
                     RelationMutationIntent::ApplyAspectPatch(spec) => spec.relation_id,
                     RelationMutationIntent::Delete(spec) => spec.relation_id,
+                    RelationMutationIntent::Revalidate(spec) => spec.relation_id,
                 };
                 if !relation_exists_in_state(state, relation_id) {
                     return Err(CommitConflict::new(ConflictClass::StaleTarget {

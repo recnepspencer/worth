@@ -124,14 +124,14 @@ fn policy_fact_fanout_does_not_leak_into_closed_disclosure_evidence() {
         .runtime
         .account_activity(fixture.baseline_account)
         .as_principal(&baseline_actor)
-        .execute(BankReadControls::current(request_scope(), 1, 100_000).unwrap())
+        .execute(BankReadControls::current(request_scope(), 1).unwrap())
         .expect("baseline guarded account query should execute");
     let expanded_result = fixture
         .world
         .runtime
         .account_activity(fixture.expanded_account)
         .as_principal(&expanded_actor)
-        .execute(BankReadControls::current(request_scope(), 1, 100_000).unwrap())
+        .execute(BankReadControls::current(request_scope(), 1).unwrap())
         .expect("expanded guarded account query should execute");
 
     assert_eq!(baseline_result.rows().len(), 1);
@@ -212,6 +212,6 @@ fn high_operation_speed_probe_keeps_publication_work_stable() {
 }
 
 fn controls(maximum_results: usize) -> BankReadControls {
-    BankReadControls::current(request_scope(), maximum_results, 100_000)
+    BankReadControls::current(request_scope(), maximum_results)
         .expect("high-operation controls are bounded")
 }

@@ -1,9 +1,12 @@
 //! Where a row stands, read without beginning it.
 
-use super::{
-    DemandRecord, DemandState, ReadyCompletion, WorthQueryOutputAdvancement,
-    WorthQueryOutputCheckpoint, WorthQueryOutputDemandInterest, WorthQueryOutputDemandRegistry,
-};
+use super::DemandRecord;
+use super::DemandState;
+use super::ReadyCompletion;
+use super::WorthQueryOutputAdvancement;
+use super::WorthQueryOutputCheckpoint;
+use super::WorthQueryOutputDemandInterest;
+use super::WorthQueryOutputDemandRegistry;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 /// The stage of a demand's row. Reading it claims nothing and moves nothing,
@@ -39,13 +42,12 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn row_stage_admitted(
         &self,
         interest: &WorthQueryOutputDemandInterest,
-        admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
     ) -> Result<OutputRowStage, WorthQueryOutputDemandDenial> {
         let state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.charge_record_lookup(&interest.key, admission)?;
+
         let record = state
             .records
             .get(&interest.key)

@@ -14,11 +14,6 @@ fn one_caller_advance_rebinds_chain_after_actual_upstream_publication() {
         None,
         profile,
         32,
-        128 * 1_024 * 1_024,
-        profile
-            .limits()
-            .source_currentness_work()
-            .map(|work| u64::try_from(work).unwrap()),
         support::seed_cycle,
     );
     let (scope, principal) = authenticate(&application);
@@ -40,19 +35,22 @@ fn one_caller_advance_rebinds_chain_after_actual_upstream_publication() {
         .unwrap();
     let initial_a = (0..256)
         .find_map(|_| match a.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the actual upstream initially settles");
     let initial_b = (0..256)
         .find_map(|_| match b.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the actual middle consumer initially settles");
     let initial_c = (0..256)
         .find_map(|_| match c.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the actual downstream initially settles");
@@ -115,7 +113,8 @@ fn one_caller_advance_rebinds_chain_after_actual_upstream_publication() {
         .expect("the caller advances the real required chain after an input change")
     {
         WorthQueryApplicationOutputDemandProgress::Settled(settled) => settled,
-        WorthQueryApplicationOutputDemandProgress::Pending => {
+        WorthQueryApplicationOutputDemandProgress::Pending
+        | WorthQueryApplicationOutputDemandProgress::Progressed => {
             panic!("the finite performed chain needs another caller advance")
         }
     };
@@ -158,7 +157,8 @@ fn one_caller_advance_rebinds_chain_after_actual_upstream_publication() {
         .expect("the promoted caller remains usable")
     {
         WorthQueryApplicationOutputDemandProgress::Settled(settled) => settled,
-        WorthQueryApplicationOutputDemandProgress::Pending => {
+        WorthQueryApplicationOutputDemandProgress::Pending
+        | WorthQueryApplicationOutputDemandProgress::Progressed => {
             panic!("a just-settled caller cannot lose its successor interest")
         }
     };

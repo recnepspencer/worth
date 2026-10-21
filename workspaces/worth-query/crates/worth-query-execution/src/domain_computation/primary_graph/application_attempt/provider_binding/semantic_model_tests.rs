@@ -19,10 +19,12 @@ fn mixed_effects_lower_to_the_exact_independent_semantic_model() {
     let world = mixed_effect_world(execution);
     let prepared = prepare_provider_attempt(
         crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
+        &|_, _| None,
         PartitionId::main(),
         world.effects.len(),
-        admitted(Vec::new()),
-        admitted(world.facts),
+        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture, crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
+            crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(admitted(world.facts)), crate::domain_computation::primary_graph::StorageControl::new(
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
         world.effects,
         None,
@@ -46,10 +48,12 @@ fn alternate_effect_insertion_preserves_each_exact_association_and_order() {
     let world = mixed_effect_world(execution);
     let prepared = prepare_provider_attempt(
         crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
+        &|_, _| None,
         PartitionId::main(),
         world.alternate_effects.len(),
-        admitted(Vec::new()),
-        admitted(world.facts),
+        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture, crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
+            crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(admitted(world.facts)), crate::domain_computation::primary_graph::StorageControl::new(
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
         world.alternate_effects,
         None,
@@ -72,10 +76,12 @@ fn created_records_and_symbolic_endpoints_use_the_issued_mutation_partition() {
     let world = mixed_effect_world(execution);
     let prepared = prepare_provider_attempt(
         crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
+        &|_, _| None,
         PartitionId(7),
         world.effects.len(),
-        admitted(Vec::new()),
-        admitted(world.facts),
+        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture, crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
+            crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(admitted(world.facts)), crate::domain_computation::primary_graph::StorageControl::new(
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
         world.effects,
         None,
@@ -127,10 +133,12 @@ fn two_relation_deletes_from_one_adjacency_share_one_provisional_retirement() {
     ];
     let prepared = prepare_provider_attempt(
         crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields::none(),
+        &|_, _| None,
         PartitionId::main(),
         effects.len(),
-        admitted(Vec::new()),
-        admitted(facts),
+        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes::EmptyOwnerFixture, crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
+            crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::native(admitted(facts)), crate::domain_computation::primary_graph::StorageControl::new(
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), None, None,
         Vec::new(),
         effects,
         None,

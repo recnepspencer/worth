@@ -14,15 +14,14 @@
 //! caller's would be; the Ready row answers its dependents ahead of the
 //! record, and an ordinary demand's refresh clears it.
 
-use super::{
-    DemandState, WorthQueryOutputAdvancement, WorthQueryOutputDemandKey,
-    WorthQueryOutputDemandRegistry,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-    WorthQueryOutputDemandRecoveryPosture,
-};
+use super::DemandState;
+use super::WorthQueryOutputAdvancement;
+use super::WorthQueryOutputDemandKey;
+use super::WorthQueryOutputDemandRegistry;
+
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture;
 
 mod source_query;
 
@@ -125,7 +124,6 @@ pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
 pub(super) fn lineage_head(
     records: &super::record_map::DemandRecords,
     key: &WorthQueryOutputDemandKey,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
     let Some(record) = records.get(key) else {
         return Ok(None);
@@ -134,14 +132,8 @@ pub(super) fn lineage_head(
         return Ok(Some(key.clone()));
     }
     // One pass over the rows compares each key's occurrence once.
-    let mut prepaid = super::refreshed_rejoin::charge_whole_map(
-        records,
-        admission,
-        super::refreshed_rejoin::WholeMapPasses::One,
-        0,
-    )
-    .map_err(|_| work_denial())?;
-    Ok(Some(prepaid.newest(key)?.unwrap_or_else(|| key.clone())))
+    let prepaid = records;
+    Ok(Some(crate::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::newest_refresh(prepaid, key).unwrap_or_else(|| key.clone())))
 }
 
 /// Why the head row of a refresh lineage can never become Ready: the row
@@ -166,11 +158,4 @@ pub(super) fn head_stop(
     record.required_stop.as_ref().map(|kind| {
         WorthQueryOutputDemandDenial::new(kind.clone(), "the required upstream refresh stopped")
     })
-}
-
-fn work_denial() -> WorthQueryOutputDemandDenial {
-    WorthQueryOutputDemandDenial::new(
-        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        "required upstream stop lookup exceeds request work",
-    )
 }

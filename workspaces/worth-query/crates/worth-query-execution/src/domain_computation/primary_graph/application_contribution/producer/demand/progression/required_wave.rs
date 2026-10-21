@@ -3,34 +3,32 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::Arc;
 
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
-};
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
-use worth_relational::facade::{
-    mvcc::CompanionPreflightStop,
-    runtime::{PositionedRelationalSnapshot, RelationalSnapshotPositionAdmissionStop},
-};
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::runtime::SnapshotPositionDenial;
 
 use crate::basis::WorthQueryProductBranch;
-use crate::domain_computation::primary_graph::{
-    application_output_demand::{
-        PendingUpstream, SelectedReadyReadmission, WorthQueryOutputDemandInterest,
-        WorthQueryOutputDemandKey, WorthQueryOutputDemandSettlement,
-    },
-    output_lineage::{invalidation::InvalidationEditAdmission, RequiredSettlementStop},
-    product_operation::SharedSelectedProductOperation,
-    WorthQueryPrimaryGraphApplicationRuntime,
-};
+use crate::domain_computation::primary_graph::application_output_demand::PendingUpstream;
+use crate::domain_computation::primary_graph::application_output_demand::SelectedReadyReadmission;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandInterest;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement;
+use crate::domain_computation::primary_graph::output_lineage::RequiredSettlementStop;
+use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-use super::super::super::{
-    execution::{ProducerExecutionStop, RequiredCueProgress},
-    registry::InstalledProducerProvider,
-};
+use super::super::super::execution::ProducerExecutionStop;
+use super::super::super::execution::RequiredCueProgress;
+use super::super::super::registry::InstalledProducerProvider;
 use super::super::RequiredFreshProgress;
-use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
+use super::WorthQueryOutputDemandDenial;
+use super::WorthQueryOutputDemandDenialKind;
 
-pub(in crate::domain_computation::primary_graph) use performed::{CurrentBasis, CurrentProof};
+pub(in crate::domain_computation::primary_graph) use performed::CurrentBasis;
+pub(in crate::domain_computation::primary_graph) use performed::CurrentProof;
 mod caller;
 mod requested;
 pub(super) use requested::advance_requested_output;
@@ -42,11 +40,12 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 mod queued;
 mod resolved;
 mod selection;
+pub(in crate::domain_computation::primary_graph) use resolved::MatchedRequiredPredecessors;
+pub(in crate::domain_computation::primary_graph) use resolved::ReboundConsumedOutput;
 use resolved::ResolvedOnWave;
-pub(in crate::domain_computation::primary_graph) use resolved::{
-    MatchedRequiredPredecessors, ReboundConsumedOutput, ResolvedRequiredPredecessors,
-};
-use selection::{select_required_wave, RequiredWaveSelection};
+pub(in crate::domain_computation::primary_graph) use resolved::ResolvedRequiredPredecessors;
+use selection::select_required_wave;
+use selection::RequiredWaveSelection;
 
 pub(super) use caller::advance_required_before_caller;
 
@@ -80,24 +79,10 @@ enum RequiredWaveStep<'owner, Schema: ApplicationSchema> {
 pub(super) fn installed_for_selected_cue<'runtime, Schema>(
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     producer: &str,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<&'runtime InstalledProducerProvider<Schema>, WorthQueryOutputDemandDenial> {
     // These visits pay the ordered-table and producer-width measurements
     // before the variable lookup quote is computed.
-    admission
-        .charge_external_work(5)
-        .map_err(|_| work_denial())?;
-    let count = runtime.installed_producers.entries.len();
-    let levels = usize::BITS as usize - count.max(1).leading_zeros() as usize;
-    let comparisons = count.min(11).checked_mul(levels).ok_or_else(work_denial)?;
-    let comparison_work = producer.len().checked_add(2).ok_or_else(work_denial)?;
-    let work = comparisons
-        .checked_mul(comparison_work)
-        .and_then(|visits| visits.checked_add(1))
-        .ok_or_else(work_denial)?;
-    admission
-        .charge_external_work(u64::try_from(work).map_err(|_| work_denial())?)
-        .map_err(|_| work_denial())?;
+
     runtime
         .installed_producers
         .entries
@@ -112,20 +97,6 @@ pub(super) fn installed_for_selected_cue<'runtime, Schema>(
 }
 
 use performed::certify_required_ready;
-
-/// The schema getter materializes its inline identity before the lineage
-/// owner receives it. Pay that copy and the caller's fixed owner/getter visits.
-fn preclaim_required_settlement_arguments(
-    admission: &mut InvalidationEditAdmission,
-) -> Result<(), WorthQueryOutputDemandDenial> {
-    let work =
-        std::mem::size_of::<worth_query_installation::facade::ApplicationSchemaBindingIdentity>()
-            .checked_add(6)
-            .ok_or_else(work_denial)?;
-    admission
-        .charge_external_work(u64::try_from(work).map_err(|_| work_denial())?)
-        .map_err(|_| work_denial())
-}
 
 fn work_denial() -> WorthQueryOutputDemandDenial {
     denial(
@@ -176,15 +147,9 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     }
 }
 
-fn position_denial(
-    stop: RelationalSnapshotPositionAdmissionStop<CompanionPreflightStop>,
-) -> WorthQueryOutputDemandDenial {
-    match stop {
-        RelationalSnapshotPositionAdmissionStop::Admission(stop) => admission_denial(stop),
-        RelationalSnapshotPositionAdmissionStop::AccountingOverflow => capacity_denial(),
-        RelationalSnapshotPositionAdmissionStop::Position(_) => denial(
-            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-            "required output native snapshot is unavailable",
-        ),
-    }
+fn position_denial(_: SnapshotPositionDenial) -> WorthQueryOutputDemandDenial {
+    denial(
+        WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+        "required output native snapshot is unavailable",
+    )
 }

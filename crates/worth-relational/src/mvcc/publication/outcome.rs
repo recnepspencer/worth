@@ -190,6 +190,7 @@ impl StaleRelationalBranchObservation {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalPublicationDenial {
+    RecoveredCodecTransitionRequired,
     StaleInvariantGeneration {
         expected_generation: u64,
         actual_generation: u64,
@@ -316,6 +317,7 @@ pub enum RelationalPublicationDeferred {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalPublicationFailureKind {
     SnapshotIdentityExhausted,
+    SnapshotCountOverflow,
     CandidateIdentityExhausted,
     PreparedRootMismatch,
     PreparedBasisDescriptor(crate::branch::RelationalBranchBasisDenial),

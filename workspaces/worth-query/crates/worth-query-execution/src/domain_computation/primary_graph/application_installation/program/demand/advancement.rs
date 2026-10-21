@@ -50,6 +50,9 @@ where
             })
             .map(|progress| match progress {
                 WorthQueryOutputDemandAdvance::Pending => WorthQueryProgramOutputAdvance::Pending,
+                WorthQueryOutputDemandAdvance::Progressed => {
+                    WorthQueryProgramOutputAdvance::Progressed
+                }
                 WorthQueryOutputDemandAdvance::Settled(retained) => {
                     WorthQueryProgramOutputAdvance::Settled(WorthQuerySettledProgramOutput {
                         retained,

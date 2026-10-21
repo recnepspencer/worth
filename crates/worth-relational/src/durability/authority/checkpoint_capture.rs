@@ -16,6 +16,7 @@ pub(super) struct CapturedCheckpointBasis {
     pub(super) envelopes: Vec<PositionedCanonicalCommit>,
     pub(super) partitions: Vec<crate::storage::overlay::PartitionState>,
     pub(super) aspect_contracts: crate::schema::data::AspectContractPlanCatalog,
+    pub(super) mirror_schema_authority: Option<crate::branch::RelationalBranchRootSchemaAuthority>,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
     pub(super) index_definitions: Vec<crate::indexes::data::DerivedIndexDefinition>,
     pub(super) derived_index_checkpoint:
@@ -105,6 +106,17 @@ impl CapturedCheckpointBasis {
                 .live
                 .insert((cell.branch_id.clone(), version, schema));
         }
+        let main_branch = runtime.main_branch_identity();
+        let mirror_schema_authority = branch_cells
+            .iter()
+            .find(|cell| &cell.branch_id == main_branch.branch_id())
+            .and_then(|cell| match cell.observation.target() {
+                worth_foundational::FoundationalBranchTarget::Basis(target) => branch_roots
+                    .iter()
+                    .find(|root| root.commit_id().0 == target.selected_commit_id()),
+                _ => None,
+            })
+            .map(|root| root.schema_authority().clone());
         let captured = Self {
             latest_commit: envelopes
                 .last()
@@ -119,6 +131,7 @@ impl CapturedCheckpointBasis {
             },
             envelopes,
             partitions: runtime.materialize_partitions(),
+            mirror_schema_authority,
             aspect_contracts: runtime
                 .schema_contract_runtime
                 .aspect_contract_plans

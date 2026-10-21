@@ -62,12 +62,7 @@ pub(super) fn observe(
             account,
             capability,
             governed_live_account_parameters("account-1"),
-            WorthQueryApplicationLiveControls::bounded(
-                context.request.clone(),
-                4,
-                16,
-                Some(2_048),
-            )
+            WorthQueryApplicationLiveControls::bounded(context.request.clone(), 4, 16)
             .unwrap(),
         )
         .unwrap()

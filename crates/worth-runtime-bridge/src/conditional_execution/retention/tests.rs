@@ -5,11 +5,11 @@ use crate::policy::BridgeConditionalRetentionBudget;
 fn aggregate_count_and_byte_reservations_are_checked_and_return_on_last_owner() {
     let total = 256;
     let budget = BridgeConditionalRetentionBudget {
-        maximum_managed_clocks: 1,
-        maximum_reserved_temporal_intents: 2,
-        maximum_retained_definition_candidates: 1,
-        maximum_retained_bytes: total,
-        maximum_preparation_visits: 8,
+        maximum_managed_clocks: Some(1),
+        maximum_reserved_temporal_intents: Some(2),
+        maximum_retained_definition_candidates: Some(1),
+        maximum_retained_bytes: Some(total),
+        maximum_preparation_visits: Some(8),
     };
     let ledger = BridgeRetentionLedger::new(budget).unwrap();
     assert!(matches!(
@@ -28,7 +28,7 @@ fn aggregate_count_and_byte_reservations_are_checked_and_return_on_last_owner() 
     drop(reservation);
     assert_eq!(ledger.usage(), (0, 0, 0));
     let short = BridgeRetentionLedger::new(BridgeConditionalRetentionBudget {
-        maximum_retained_bytes: total - 1,
+        maximum_retained_bytes: Some(total - 1),
         ..budget
     })
     .unwrap();
@@ -42,11 +42,8 @@ fn aggregate_count_and_byte_reservations_are_checked_and_return_on_last_owner() 
 
 #[test]
 fn aggregate_bytes_reject_overflow_without_disturbing_live_custody() {
-    let ledger = BridgeRetentionLedger::new(BridgeConditionalRetentionBudget {
-        maximum_retained_bytes: u64::MAX,
-        ..BridgeConditionalRetentionBudget::development()
-    })
-    .unwrap();
+    let ledger =
+        BridgeRetentionLedger::new(BridgeConditionalRetentionBudget::development()).unwrap();
     let held = ledger.reserve(0, 0, u64::MAX - 1).unwrap();
     assert!(matches!(ledger.reserve(0, 0, 2), Err(D::BytesExhausted)));
     assert_eq!(ledger.usage(), (0, 0, u64::MAX - 1));
@@ -62,8 +59,8 @@ fn aggregate_bytes_reject_overflow_without_disturbing_live_custody() {
 fn definition_candidate_slot_and_byte_limits_are_exact_and_recoverable() {
     let total = 257;
     let budget = BridgeConditionalRetentionBudget {
-        maximum_retained_definition_candidates: 1,
-        maximum_retained_bytes: total,
+        maximum_retained_definition_candidates: Some(1),
+        maximum_retained_bytes: Some(total),
         ..BridgeConditionalRetentionBudget::development()
     };
     let ledger = BridgeRetentionLedger::new(budget).unwrap();
@@ -79,7 +76,7 @@ fn definition_candidate_slot_and_byte_limits_are_exact_and_recoverable() {
     assert_eq!(ledger.observation().retained_bytes(), 0);
 
     let short = BridgeRetentionLedger::new(BridgeConditionalRetentionBudget {
-        maximum_retained_bytes: total - 1,
+        maximum_retained_bytes: Some(total - 1),
         ..budget
     })
     .unwrap();

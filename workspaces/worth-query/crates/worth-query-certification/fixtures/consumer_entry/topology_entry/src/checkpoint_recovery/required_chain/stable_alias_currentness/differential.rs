@@ -17,7 +17,6 @@ fn seeded_native_source_edits_agree_with_plain_model_and_full_output_verificatio
             None,
             Default::default(),
             64,
-            512 * 1_024 * 1_024,
         );
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
@@ -150,7 +149,8 @@ fn settle_anchor<'application>(
             match demand.advance(request).unwrap_or_else(|denial| {
                 panic!("seed {seed:x}, progression {progression}: {denial:?}")
             }) {
-                WorthQueryApplicationOutputDemandProgress::Pending => None,
+                WorthQueryApplicationOutputDemandProgress::Pending
+                | WorthQueryApplicationOutputDemandProgress::Progressed => None,
                 WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
             }
         })

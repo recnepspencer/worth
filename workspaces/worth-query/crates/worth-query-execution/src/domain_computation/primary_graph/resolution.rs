@@ -1,35 +1,37 @@
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use worth_foundational::facade::AspectValue;
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestInterruption, WorthQueryRequestScope,
-};
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentityBinding;
-use worth_query_installation::facade::{
-    ApplicationIdentityScalarValueBinding, ApplicationScalarValueBinding, ApplicationSchema,
-    ApplicationSchemaBindingIdentity, WorthQueryInstalledPrincipalBinding,
-};
+use worth_query_installation::facade::ApplicationIdentityScalarValueBinding;
+use worth_query_installation::facade::ApplicationScalarValueBinding;
+use worth_query_installation::facade::ApplicationSchema;
+use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
+use worth_query_installation::facade::WorthQueryInstalledPrincipalBinding;
 use worth_relational::facade::identity::EntityId;
-use worth_relational::facade::indexes::{BoundedEntityFieldLookupRequest, BoundedIndexParityMode};
+use worth_relational::facade::indexes::BoundedEntityFieldLookupRequest;
+use worth_relational::facade::indexes::BoundedIndexParityMode;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
-use crate::domain_computation::execution_runtime::{
-    WorthQueryExecutionRuntime, WorthQueryRuntimeAuthorityIdentity,
-};
+use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntime;
+use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
 use super::authenticated_principal::WorthQueryResolvedPrincipalEvidence;
-use super::freshness::{validate_freshness_at_snapshot, WorthQueryPrincipalFreshnessEvidence};
-use super::observations::{observe_mapping, resolve_principal_target};
-use super::output_lineage::invalidation::InvalidationEditAdmission;
-use super::resolution_denial::{
-    entity_lookup_resolution_denial, principal_binding_resolution_denial, resolution_denial,
-};
+use super::freshness::validate_freshness_at_snapshot;
+use super::freshness::WorthQueryPrincipalFreshnessEvidence;
+use super::observations::observe_mapping;
+use super::observations::resolve_principal_target;
+
+use super::resolution_denial::entity_lookup_resolution_denial;
+use super::resolution_denial::principal_binding_resolution_denial;
+use super::resolution_denial::resolution_denial;
 use super::root::WorthQueryPrimaryGraph;
 use super::schema_layout::WorthQueryPrimaryPrincipalBindingLayout;
-use super::{
-    WorthQueryAuthenticatedPrincipal, WorthQueryPrincipalResolutionDenial,
-    WorthQueryPrincipalResolutionDenialKind,
-};
+use super::WorthQueryAuthenticatedPrincipal;
+use super::WorthQueryPrincipalResolutionDenial;
+use super::WorthQueryPrincipalResolutionDenialKind;
 
 /// How strictly identity lookups are verified while resolving a principal or
 /// entity.
@@ -96,7 +98,6 @@ fn principal_graph_binding<'a>(
 fn principal_graph_binding_admitted<'a>(
     runtime: &'a WorthQueryExecutionRuntime,
     binding: &str,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<
     (
         &'a WorthQueryPrimaryGraph,
@@ -112,15 +113,7 @@ fn principal_graph_binding_admitted<'a>(
             binding,
         )
     })?;
-    let work = graph.layout.principal_lookup_work(binding).ok_or_else(|| {
-        resolution_denial(
-            WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial::WorkCounterOverflow, partition_identity: None, policy_ancestor: None })),
-            binding,
-        )
-    })?;
-    admission
-        .charge_external_work(work)
-        .map_err(|stop| principal_admission_denial(stop, binding))?;
+
     let layout = graph.layout.principal_binding(binding).ok_or_else(|| {
         resolution_denial(
             WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::BindingNotInstalled),

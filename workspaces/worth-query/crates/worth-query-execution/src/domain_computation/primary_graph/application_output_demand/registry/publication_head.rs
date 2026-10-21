@@ -1,8 +1,8 @@
 //! Issued undelivered publications, indexed by their exact Product occurrence.
 use super::*;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
-use std::sync::atomic::{AtomicUsize, Ordering};
+
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
 use worth_runtime_world::facade::ProductBranchIncarnation;
 
 #[derive(Default)]
@@ -48,39 +48,12 @@ impl PublicationHeads {
         head.rows += 1;
         Arc::clone(&head.undelivered)
     }
-    pub(super) fn admit_insertion(
-        &self,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        self.pay_seek(admission)?;
-        let height = usize::BITS as usize - self.0.len().max(1).leading_zeros() as usize;
-        let peak = Self::node_bytes().checked_mul(height + 1).ok_or_else(|| {
-            WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                "",
-            )
-        })?;
-        admission.admit_read_scratch(peak as u64).map_err(|_| {
-            WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                "",
-            )
-        })?;
-        admission
-            .charge_ordered_operations((2 * Self::node_bytes()) as u64, peak as u64)
-            .map_err(|_| {
-                WorthQueryOutputDemandDenial::new(
-                    WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                    "",
-                )
-            })
-    }
+
     pub(super) fn counter(
         &self,
         occurrence: ProductBranchIncarnation,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Arc<AtomicUsize>, WorthQueryOutputDemandDenial> {
-        self.pay_seek(admission)?;
+        self.pay_seek()?;
         Ok(Arc::clone(&self.0[&occurrence].undelivered))
     }
     pub(super) fn remove(&mut self, occurrence: ProductBranchIncarnation) {
@@ -100,9 +73,8 @@ impl PublicationHeads {
     pub(super) fn selection(
         &self,
         occurrence: ProductBranchIncarnation,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PublicationHeadSelection, WorthQueryOutputDemandDenial> {
-        self.pay_seek(admission)?;
+        self.pay_seek()?;
         Ok(
             if self
                 .0
@@ -115,29 +87,11 @@ impl PublicationHeads {
             },
         )
     }
-    fn pay_seek(
-        &self,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
+    fn pay_seek(&self) -> Result<(), WorthQueryOutputDemandDenial> {
         // Pay the ordered seek before inspecting the per-head counter. Each
         // comparison has a fixed Product incarnation key; no row is traversed.
-        let count = self.0.len();
-        let height = usize::BITS as usize - count.max(1).leading_zeros() as usize;
-        let work = count.min(11) * height * 3 + 1;
-        admission.charge_ordered_operations(2, work as u64).map_err(|_| {
-            WorthQueryOutputDemandDenial::new(
-                crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                "the live-head lookup exhausted its request",
-            )
-        })?;
+
         Ok(())
-    }
-    pub(super) fn node_bytes() -> usize {
-        // Each row funds one worst-case head node and the counter allocation,
-        // including an insertion's extra node and the Arc headers.
-        12 * (std::mem::size_of::<ProductBranchIncarnation>() + std::mem::size_of::<Head>())
-            + 14 * std::mem::size_of::<usize>()
-            + 3 * std::mem::size_of::<usize>()
     }
 }
 
@@ -145,13 +99,12 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn publication_head_selection(
         &self,
         occurrence: ProductBranchIncarnation,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PublicationHeadSelection, WorthQueryOutputDemandDenial> {
         let state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.records.publication_selection(occurrence, admission)
+        state.records.publication_selection(occurrence)
     }
     pub(in crate::domain_computation::primary_graph) fn record_selection_state(
         &self,

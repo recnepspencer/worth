@@ -1,3 +1,4 @@
+use super::super::super::demand::ProducerPublicationStale;
 use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::VerificationCapacityStop;
 
@@ -65,7 +66,17 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         }
         CurrentAcceptedStop::Closure(_) | CurrentAcceptedStop::Registration(_) => None,
     };
+    let stale = match &stop {
+        CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::RetryCurrentness(cause)) => {
+            Some(ProducerPublicationStale::ReadyCurrentnessClosure(*cause))
+        }
+        CurrentAcceptedStop::Registration(SettlementRegistrationStop::Edit(cause)) => Some(
+            ProducerPublicationStale::ReadyCurrentnessRegistration(*cause),
+        ),
+        CurrentAcceptedStop::Closure(_) | CurrentAcceptedStop::Registration(_) => None,
+    };
     let kind = match stop {
+        CurrentAcceptedStop::Closure(stop @ ConsumedOutputVerificationStop::SourceQueryAuthorization(_)) => return crate::domain_computation::primary_graph::output_reuse::verification_denial(stop, subject.to_owned()).into(),
         CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::Execution(cause))
         | CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause))) => return crate::domain_computation::primary_graph::output_reuse::read_denial(cause)
             .with_producer_admission_stop(native_stop).into(),
@@ -100,6 +111,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     };
     WorthQueryOutputDemandDenial::new(kind, subject)
         .with_capacity_stop(capacity)
+        .with_publication_stale(stale)
         .with_producer_admission_stop(native_stop)
         .into()
 }

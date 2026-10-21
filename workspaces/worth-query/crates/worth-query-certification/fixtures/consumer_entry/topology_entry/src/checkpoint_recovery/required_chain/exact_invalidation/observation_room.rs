@@ -11,7 +11,7 @@ use super::*;
 /// and a root is written and demanded once more.
 fn a_write_only_caller_leaves_room(starts_outputs: bool) {
     let _guard = checkpoint_recovery_test_guard();
-    let application = install_observing(None, ring_world::seed::<3>, Retained::AMPLE, 16);
+    let application = install_observing(None, ring_world::seed::<3>, 16);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3f00);
@@ -57,7 +57,7 @@ fn a_released_write_refuses_receipt_recovery_and_is_not_performed_again() {
         WorthQueryRequiredOutputPreparationDenial as Preparation,
     };
     let _guard = checkpoint_recovery_test_guard();
-    let application = install_observing(None, ring_world::seed::<3>, Retained::AMPLE, 16);
+    let application = install_observing(None, ring_world::seed::<3>, 16);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let court = Court::new(&application, &request, 0x9176_3f80);

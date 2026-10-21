@@ -36,10 +36,10 @@ fn runtime_with_savepoint_limit(maximum_savepoints: usize) -> crate::runtime::Re
         .publication(PublicationConfig {
             coherent_publication_required: true,
             max_patch_records_per_commit: 4_096,
-            max_published_snapshot_handles: 8,
-            max_active_snapshot_handles: 8,
+            max_published_snapshot_handles: Some(8),
+            max_active_snapshot_handles: Some(8),
             max_transaction_savepoints: maximum_savepoints,
-            max_prepared_candidates: 8,
+            max_prepared_candidates: Some(8),
             candidate_max_lifetime_millis: 30_000,
         })
         .build()

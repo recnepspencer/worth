@@ -76,6 +76,9 @@ where
     {
         return terminal(WorthQueryApplicationCommitOutcome::Denied(denial));
     }
+    if !read_set.effect_routes.matches_body(&read_set.facts) {
+        return terminal(denied(DenialStage::DecisionReadSet));
+    }
     if let Err(outcome) = validate_operation_currentness(&admission) {
         return terminal(outcome);
     }
@@ -144,6 +147,18 @@ where
         phase.execution_for(&application.product_runtime).expect("phase readmitted for this runtime"),
         *idempotency.key_identity(),
     ) { Ok(lifecycle) => lifecycle, Err(outcome) => return terminal(outcome) };
+    let effect_routes = if read_set.effect_routes.matches_body(&lifecycle.facts) {
+        read_set.effect_routes
+    } else {
+        match crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
+            lifecycle.facts.clone(),
+            crate::domain_computation::primary_graph::StorageControl::new(execution.allocation_policy(), Some(admission.publication_request())),
+        ) {
+            Ok(routes) => routes,
+            Err(cause) => return terminal(WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::signing_lifecycle_attempt(cause.into_attempt_denial(admission.operation())))),
+        }
+    };
     let lease = match readmit_current_basis(
         execution,
         application,
@@ -165,7 +180,9 @@ where
                 body_external_emission,
                 required_output_demand,
                 installed_read_scopes: read_set.installed_read_scopes,
-                facts: lifecycle.facts,
+                effect_routes,
+                application_projection: read_set.application_projection,
+                original_read: read_set.original_read,
                 consumed_outputs: read_set.consumed_outputs,
                 application_effect_count: effects.len(),
                 effects,

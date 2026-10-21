@@ -8,7 +8,7 @@ use worth_relational::facade::identity::VersionId;
 use worth_relational::facade::indexes::DerivedIndexGenerationId;
 
 use super::read_execution::NonLiveKernelReceiptEvidence;
-use super::WorthQueryApplicationResultBufferEvidence;
+
 use super::{
     disclosure::WorthQueryApplicationDisclosureReceipt,
     WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryApplicationQueryBasisPosture,
@@ -61,7 +61,7 @@ pub struct WorthQueryApplicationQueryAccessReceipt {
     work: WorthQueryApplicationQueryWorkEvidence,
     omission_posture: WorthQueryApplicationQueryOmissionPosture,
     disclosure: WorthQueryApplicationDisclosureReceipt,
-    result_buffer: Option<WorthQueryApplicationResultBufferEvidence>,
+
     basis_released: bool,
 }
 
@@ -96,7 +96,7 @@ pub(super) struct WorthQueryApplicationQueryAccessReceiptParts {
     pub result_count: usize,
     pub truncation_count: usize,
     pub total_work_units: usize,
-    pub result_buffer: Option<WorthQueryApplicationResultBufferEvidence>,
+
     pub basis_released: bool,
     pub disclosure: WorthQueryApplicationDisclosureReceipt,
 }
@@ -160,7 +160,7 @@ impl WorthQueryApplicationQueryAccessReceipt {
             result_count: kernel.result_count,
             truncation_count: kernel.truncation_count,
             total_work_units: raw.actual_work,
-            result_buffer: Some(kernel.result_buffer),
+
             basis_released: basis.released,
             disclosure,
         })
@@ -304,10 +304,6 @@ impl WorthQueryApplicationQueryAccessReceipt {
         &self.disclosure
     }
 
-    pub const fn result_buffer(&self) -> Option<WorthQueryApplicationResultBufferEvidence> {
-        self.result_buffer
-    }
-
     pub const fn basis_released(&self) -> bool {
         self.basis_released
     }
@@ -360,7 +356,6 @@ impl WorthQueryApplicationQueryAccessReceipt {
                 WorthQueryApplicationQueryOmissionPosture::GovernedOmission
             },
             disclosure: parts.disclosure,
-            result_buffer: parts.result_buffer,
             basis_released: parts.basis_released,
         }
     }

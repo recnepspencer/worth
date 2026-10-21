@@ -12,35 +12,19 @@ where
     /// Allocate the typed erasure slot before the successor can be admitted.
     /// The real demand and its interest are moved into this storage later.
     pub(in crate::domain_computation::primary_graph) fn prepare(
-        registry: &WorthQueryOutputDemandRegistry,
         claim: SelectedRequiredRefreshClaim,
         installed: &InstalledProducerProvider<Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Self, WorthQueryOutputDemandDenial> {
         let pending_provenance =
-            RequiredSuccessorProvenance::prepare_from_ready(&claim, installed, admission)?;
-        let slot_bytes = std::mem::size_of::<TypedRequiredSuccessor<Schema, Family>>();
-        let initialized_work = slot_bytes
-            .checked_add(std::mem::size_of::<
-                WorthQueryAdmittedOutputDemand<Schema, Family>,
-            >())
-            .and_then(|work| work.checked_add(3))
-            .ok_or_else(work_denial)?;
-        admission
-            .charge_external_work(u64::try_from(initialized_work).map_err(|_| work_denial())?)
-            .map_err(|_| work_denial())?;
-        let capacity =
-            registry.reserve_required_continuation_capacity(slot_bytes, slot_bytes, admission)?;
+            RequiredSuccessorProvenance::prepare_from_ready(&claim, installed)?;
+
         let successor = Box::new(TypedRequiredSuccessor {
             demand: None,
             pending_claim: Some(claim),
             pending_provenance: Some(pending_provenance),
             predecessor: None,
         });
-        Ok(Self {
-            successor,
-            capacity,
-        })
+        Ok(Self { successor })
     }
 
     /// The exact owned claim used by this prepared slot is borrowed for the
@@ -89,7 +73,6 @@ where
             contacts: super::contacts::ContactAttribution::Unowned,
             outcome: Some(outcome),
             successor: self.successor,
-            capacity: self.capacity,
         }
     }
 }

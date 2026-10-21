@@ -1,34 +1,25 @@
 //! Total stable lineage installation after exact source and Product checks.
 
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
+use std::sync::OnceLock;
 
-use worth_runtime_world::facade::{
-    CurrentProductHead, ProductBranchCurrentnessFailure, ProductBranchObservation,
-    RuntimeWorldObservationPort,
-};
+use worth_runtime_world::facade::ProductBranchCurrentnessFailure;
+use worth_runtime_world::facade::ProductBranchObservation;
+use worth_runtime_world::facade::RuntimeWorldObservationPort;
 
-use super::super::{
-    invalidation::{
-        CurrentSettlementRegistrationCleanup, InvalidationEditAdmission,
-        PreparedCurrentSettlementRegistration,
-    },
-    partition_index::PreparedStablePartitionLocator,
-    prepared_slot::{denial, tree_work},
-    RecordedGeneration, RecordedOutput,
-};
-use super::{
-    generation_append::PreparedGenerationAppend,
-    stable_publication::PreparedStableLineagePublication,
-};
-use crate::domain_computation::{
-    authorization::{
-        WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
-    },
-    primary_graph::{
-        WorthQueryAdmittedApplicationOperation, WorthQueryOutputDemandDenial,
-        WorthQueryOutputDemandDenialKind as Kind,
-    },
-};
+use super::super::invalidation::CurrentSettlementRegistrationCleanup;
+use super::super::invalidation::PreparedCurrentSettlementRegistration;
+use super::super::partition_index::PreparedStablePartitionLocator;
+use super::super::prepared_slot::denial;
+use super::super::RecordedGeneration;
+use super::super::RecordedOutput;
+use super::generation_append::PreparedGenerationAppend;
+use super::stable_publication::PreparedStableLineagePublication;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind;
+use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
 
 pub(in crate::domain_computation::primary_graph) enum StablePublicationStop {
     Demand(WorthQueryOutputDemandDenial),
@@ -88,18 +79,15 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
         Input,
         Scope,
     >(
-        mut self,
+        self,
         operation: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         observation: &ProductBranchObservation,
         world: &RuntimeWorldObservationPort,
         registration: PreparedCurrentSettlementRegistration<'selected>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PublishedStableLineage, StablePublicationStop> {
         let scope = operation.operation_scope_binding();
-        admission
-            .charge_external_work(12)
-            .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
+
         if !Arc::ptr_eq(registration.identity(), &self.address.identity)
             || !std::ptr::eq(
                 registration.selected_source(),
@@ -111,11 +99,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
         {
             return Err(denial(Kind::PublicationStale).into());
         }
-        let comparison = u64::try_from(CurrentProductHead::comparison_work_bound(observation))
-            .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
-        admission
-            .charge_external_work(comparison)
-            .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
+
         let owner = Arc::clone(&self.address.owner);
         let mut lineage = owner
             .lock()
@@ -123,14 +107,13 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
         // The occurrence lane excludes its own competing producer, while this
         // final locked selection also excludes retirement and other writers.
         let revalidation = (|| {
-            lineage.drain_cancelled_slots(admission)?;
+            lineage.drain_cancelled_slots()?;
             let actual = lineage
                 .prior_input_cutoff_candidate::<Binding>(
                     scope,
                     observation,
                     self.address.partition,
                     execution,
-                    admission,
                 )
                 .map_err(|stop| {
                     crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
@@ -145,14 +128,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
             }) {
                 return Err(denial(Kind::PublicationStale));
             }
-            admission
-                .charge_external_work(
-                    tree_work::<worth_runtime_world::facade::ProductBranchIncarnation>(
-                        lineage.live_occurrences.len(),
-                    )
-                    .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?,
-                )
-                .map_err(|_| denial(Kind::WorkBudgetExceeded))?;
+
             if !lineage
                 .live_occurrences
                 .contains(&self.address.coordinate.occurrence)
@@ -169,11 +145,6 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
             &self.address.source,
             self.address.coordinate,
             self.address.expected_record_count,
-            self.address
-                .retained_capacity
-                .as_mut()
-                .expect("prepared alias retains its capacity"),
-            admission,
         ) {
             Ok(prepared) => prepared,
             Err(stop) => {
@@ -185,11 +156,6 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
             &self.address.source,
             self.address.coordinate,
             self.address.partition,
-            self.address
-                .retained_capacity
-                .as_mut()
-                .expect("prepared alias retains its capacity"),
-            admission,
         ) {
             Ok(prepared) => prepared,
             Err(stop) => {
@@ -246,7 +212,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
                     };
                 }
                 let PreparedStableCutover {
-                    mut publication,
+                    publication,
                     registration,
                     generation,
                     locator,
@@ -272,8 +238,6 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
                 };
                 // No admission, allocation, owner reread, or fallible preparation
                 // follows the source CAS. These cells and buffers were reserved.
-                publication.recorded._retained_capacity =
-                    publication.address.retained_capacity.take();
                 assert!(publication
                     .address
                     .record_cell
@@ -325,8 +289,7 @@ impl<'lane, 'selected> PreparedStableLineagePublication<'lane, 'selected> {
             }
             Ok(StableInstallation::Stopped { prepared, reason }) => (prepared, reason),
             Err(ProductBranchCurrentnessFailure::ExpectedHeadUnavailable(argument))
-            | Err(ProductBranchCurrentnessFailure::AdmissionDenied { argument, .. })
-            | Err(ProductBranchCurrentnessFailure::PreparationDenied(argument)) => {
+            | Err(ProductBranchCurrentnessFailure::AdmissionDenied { argument, .. }) => {
                 (argument, StableInstallationStop::SourceMoved)
             }
         };

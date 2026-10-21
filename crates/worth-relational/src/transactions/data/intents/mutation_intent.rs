@@ -92,6 +92,13 @@ pub struct DeleteRelationIntent {
     pub relation_id: RelationId,
 }
 
+/// Judge one live, unchanged relation under the candidate's rules. This is a
+/// read demand: endpoints, payload, record versions and lineage do not change.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RevalidateRelationIntent {
+    pub relation_id: RelationId,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UpdateRelationEndpointsIntent {
     pub relation_id: RelationId,
@@ -124,6 +131,7 @@ pub enum RelationMutationIntent {
     UpdateEndpoints(UpdateRelationEndpointsIntent),
     ApplyAspectPatch(ApplyRelationAspectPatchIntent),
     Delete(DeleteRelationIntent),
+    Revalidate(RevalidateRelationIntent),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -224,7 +232,7 @@ impl RelationMutationIntent {
             Self::ApplyAspectPatch(intent) => {
                 intent.aspect_patch.owned_allocation_capacity_bytes() as u64
             }
-            Self::Delete(_) => 0,
+            Self::Delete(_) | Self::Revalidate(_) => 0,
         }
     }
 }

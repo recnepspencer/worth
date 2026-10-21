@@ -11,6 +11,8 @@ pub(super) fn write(
     output: &mut dyn std::fmt::Write,
 ) -> std::fmt::Result {
     match fact {
+        WorthQueryApplicationObservedFact::SourcePublication { observation } =>
+            write!(output, "application-source-publication:{:?}", observation.address()),
         WorthQueryApplicationObservedFact::RetiredOutputEntity { read_locator, .. } => output.write_str(read_locator),
         WorthQueryApplicationObservedFact::SourceEntity { entity_id } => write!(output,
             "application-source-entity:{}:{}:{}",
@@ -65,6 +67,8 @@ pub(super) fn write(
             entity_id, locator, ..
         }
         | WorthQueryApplicationObservedFact::AbsentField {
+            entity_id, locator, ..
+        } | WorthQueryApplicationObservedFact::OptionalAspectAbsent {
             entity_id, locator, ..
         } => write!(output,
             "application-field:{}:{}:{}:{}/{}",

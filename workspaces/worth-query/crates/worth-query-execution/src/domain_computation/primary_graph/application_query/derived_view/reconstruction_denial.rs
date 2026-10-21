@@ -113,6 +113,7 @@ impl ChargedBytes for Denial {
             | Self::KernelPanic { root: _root }
             | Self::ResultCapacityExceeded { root: _root } => 0,
             Self::BatchResource { root: _, denial: _ }
+            | Self::MissingPreparedResultCapacity
             | Self::InvalidLimits
             | Self::ViewCapacityExceeded
             | Self::EntryCapacityExceeded

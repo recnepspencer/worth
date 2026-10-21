@@ -56,6 +56,7 @@ pub(super) fn performed(
         )
         .unwrap();
     RecordedOutput {
+        required_publication: None,
         native_prior_checkpoint: None,
         computation_source: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false),
         consumed_outputs: Arc::clone(consumed),
@@ -78,11 +79,7 @@ pub(super) fn assert_continues_the_performed_read(row: &RecordedOutput) {
         1
     );
     let completed = row.completed_decision_reuse.as_ref().unwrap();
-    let same = |key| {
-        decision(key)
-            .matches_completed(completed, |_| Ok::<_, ()>(()))
-            .unwrap()
-    };
+    let same = |key| decision(key).matches_completed(completed);
     assert!(same(DECISION_KEY));
     assert!(!same([0x72; 32]));
 }
@@ -95,8 +92,7 @@ pub(super) fn continues_input(
     row.prepared_input_reuse_key
         .as_ref()
         .unwrap()
-        .same_prepared_input_as(&input_key(selection, input), |_| Ok::<_, ()>(()))
-        .unwrap()
+        .same_prepared_input_as(&input_key(selection, input))
 }
 
 /// A real completed boundary refuses reuse when its context is untracked.
@@ -105,6 +101,7 @@ pub(super) fn untracked(row: RecordedOutput, context: DecisionContextUse) -> Rec
     let completed = boundary.seal_decision_reuse(decision(DECISION_KEY), context);
     assert!(completed.is_none());
     RecordedOutput {
+        required_publication: None,
         completed_handler_facts: Some(boundary),
         completed_decision_reuse: completed,
         prepared_input_reuse_key: None,

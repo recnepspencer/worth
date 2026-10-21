@@ -2,14 +2,13 @@
 use super::*;
 
 pub(super) fn publish<Schema, Binding, OperationType, Input, Scope>(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     observation: &worth_runtime_world::facade::ProductBranchObservation,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     operation: &WorthQueryAdmittedApplicationOperation<Schema, OperationType, Input, Scope>,
     fresh: crate::domain_computation::primary_graph::application_query::BoundStableObservedSourceFacts,
     verified: crate::domain_computation::primary_graph::output_lineage::VerifiedInputCutoff<'_>,
     required_output: RequiredOutputDemandContext,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<PublishedStableLineage, ProducerExecutionStop>
 where
     Schema: ApplicationSchema + 'static,
@@ -20,17 +19,8 @@ where
     let source_owner = &handle.source_owner.invalidation_owner;
     let lane = runtime
         .primary_provider
-        .admitted_application_branch_commit_lane(observation, admission)
-        .map_err(|stop| {
-            use crate::domain_computation::primary_graph::provider::WorthQueryBranchCommitLaneDenial as Stop;
-            match stop {
-                Stop::Preparation(stop) => cutoff_admission_denial(stop),
-                Stop::RetainedCapacityExhausted { .. } | Stop::CapacityCounterOverflow => denial(
-                    WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                    "producer input cutoff branch coordination",
-                ).with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable),
-            }
-        })?;
+        .application_branch_commit_lane(observation);
+
     let coordination = lane.enter();
     let address = prepare_stable_address::<Operation<Schema, Binding>>(
         &handle.output_lineage,
@@ -39,33 +29,19 @@ where
         observation,
         &coordination,
         execution,
-        admission,
     )?;
-    let publication = address.prepare_record(fresh, operation, admission)?;
+    let publication = address.prepare_record(fresh, operation, execution)?;
     // Registry preparation is outside both lineage and Product guards.
-    let mut prerequisites = required_output.prepare_prerequisites(
-        publication.consumed_outputs().iter(),
-        source_owner,
-        admission,
-    )?;
-    prerequisites.reserve_identity(publication.identity(), admission)?;
-    let registration = publication.prepare_current_registration(
-        source_owner,
-        prerequisites.work_membership(),
-        admission,
-    )
+    let mut prerequisites = required_output
+        .prepare_prerequisites(publication.consumed_outputs().iter(), source_owner)?;
+    prerequisites.reserve_identity(publication.identity())?;
+    let registration = publication.prepare_current_registration(source_owner, prerequisites.work_membership())
         .map_err(|stop| match stop {
             crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop::Admission(stop) => cutoff_admission_denial(stop),
             _ => denial(WorthQueryOutputDemandDenialKind::PublicationStale, "producer input cutoff source changed during preparation"),
         })?;
     let displaced = publication.displaced_settlement();
-    let published = publication.publish::<Operation<Schema, Binding>, _, _, _, _>(
-        operation,
-        observation,
-        &runtime.product_runtime.owner.observation_port(),
-        registration,
-        execution, admission,
-    ).map_err(|stop| match stop {
+    let published = publication.publish::<Operation<Schema, Binding>, _, _, _, _>(operation, observation, &runtime.product_runtime.owner.observation_port(), registration, execution).map_err(|stop| match stop {
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::Demand(stop) => ProducerExecutionStop::ExecutionStopped(stop),
         crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::RequestAuthority(stop) => super::denial::request_authority_denied(Binding::IDENTITY, stop),
     })?;

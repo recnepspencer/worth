@@ -52,6 +52,7 @@ fn members(projection_work: Option<usize>) -> Vec<ApplicationSchemaMember> {
             entity: text("Entity"),
         },
         ApplicationSchemaMember::Aspect {
+            absence: worth_foundational::facade::AbsenceLaw::Required,
             entity: text("Entity"),
             aspect: text("Aspect"),
             identity: AspectIdentity(17),
@@ -63,6 +64,7 @@ fn members(projection_work: Option<usize>) -> Vec<ApplicationSchemaMember> {
             field: text("field"),
             presence: ApplicationFieldPresence::Optional,
             scalar_family: ScalarAspectType::UInt64,
+            canonical: None,
             value_type: text("worth.rust.u64"),
             unit: Some(text("count")),
             frame: Some(text("worth.tests.frame.v1")),

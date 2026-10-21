@@ -35,11 +35,6 @@ impl<'a> ResultSetFootprint<'a> {
             context_row,
         })
     }
-    pub(super) fn copy_bytes(&self) -> usize {
-        self.context_row
-            .map_or(0, WorthQueryObservedSourceFootprint::retained_bytes)
-    }
-    /// Caller admits retained bytes and custody-copy work before this clone.
     pub(super) fn materialize(self) -> WorthQueryObservedSourceFootprint {
         let mut footprint =
             self.context_row

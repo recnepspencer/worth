@@ -91,8 +91,8 @@ mod tests {
             .unwrap();
         let exact_total = independently_derived + 2 * handle_bytes;
         let budget = |maximum_retained_bytes| SignalConditionalEvaluationBudget {
-            maximum_retained_slots: 1,
-            maximum_retained_bytes,
+            maximum_retained_slots: Some(1),
+            maximum_retained_bytes: Some(maximum_retained_bytes),
             maximum_attempt_visits: Some(1),
         };
         let exact = SignalConditionalRetentionLedger::new(

@@ -2,7 +2,6 @@
 use super::*;
 // The exact native retirement lookup and three lifecycle comparisons are
 // prepaid before publication, including the commit's own deletion version.
-pub(super) const SEAL_WORK: u64 = 4;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct RetirementMetadata {

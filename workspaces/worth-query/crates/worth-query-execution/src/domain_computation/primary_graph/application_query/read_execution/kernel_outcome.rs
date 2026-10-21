@@ -1,9 +1,10 @@
+use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
 use super::{RawNonLiveKernelOutcome, RawOneShotRows};
 use crate::domain_computation::primary_graph::application_query::{
     WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
-    WorthQueryApplicationProjectionRow, WorthQueryApplicationResultBufferEvidence,
+    WorthQueryApplicationProjectionDenialKind, WorthQueryApplicationProjectionRow,
 };
 
 pub(in crate::domain_computation::primary_graph::application_query) struct ProjectedNonLiveKernelOutcome<
@@ -18,8 +19,6 @@ pub(in crate::domain_computation::primary_graph::application_query) struct NonLi
     pub(in crate::domain_computation::primary_graph::application_query) read: RawOneShotRows,
     pub(in crate::domain_computation::primary_graph::application_query) result_count: usize,
     pub(in crate::domain_computation::primary_graph::application_query) truncation_count: usize,
-    pub(in crate::domain_computation::primary_graph::application_query) result_buffer:
-        WorthQueryApplicationResultBufferEvidence,
 }
 
 impl<QueryResult> ProjectedNonLiveKernelOutcome<QueryResult> {
@@ -44,12 +43,14 @@ impl NonLiveKernelReceiptEvidence {
     }
 }
 
-pub(in crate::domain_computation::primary_graph::application_query) fn project_non_live_kernel<
+pub(in crate::domain_computation::primary_graph::application_query) fn project_non_live_kernel_with_decode<
     Schema,
     Query,
     QueryResult,
     Denial,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    decode: &ValueDecodeState,
     kernel: RawNonLiveKernelOutcome,
     governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
     mut validate: impl FnMut() -> Result<(), Denial>,
@@ -59,18 +60,35 @@ where
     Schema: ApplicationSchema,
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
 {
-    let RawNonLiveKernelOutcome {
-        mut raw,
-        result_buffer,
-    } = kernel;
-    let mut rows = Vec::with_capacity(raw.rows.raw_rows().len());
-    for node in raw.rows.iter() {
-        validate()?;
-        rows.push(
-            QueryResult::project(&WorthQueryApplicationProjectionRow::new(node, governance))
-                .map_err(&map_projection_denial)?,
-        );
-    }
+    let RawNonLiveKernelOutcome { mut raw } = kernel;
+    let projected = decode.run(execution, |session| {
+        let mut rows = Vec::with_capacity(raw.rows.raw_rows().len());
+        for node in raw.rows.iter() {
+            validate()?;
+            let value = QueryResult::project(&WorthQueryApplicationProjectionRow::new(
+                node, governance, session,
+            ));
+            // The native owner checks its latched refusal before accepting a
+            // projector's substituted value or unrelated domain error.
+            if session.stopped() {
+                break;
+            }
+            rows.push(value.map_err(&map_projection_denial)?);
+        }
+        Ok(rows)
+    });
+    let map_decode_denial = |cause| {
+        map_projection_denial(WorthQueryApplicationProjectionDenial::new(
+            WorthQueryApplicationProjectionDenialKind::ValueDecode(cause),
+            "value-decode",
+        ))
+    };
+    // A projector may cancel the original request and return a domain error.
+    // Poll before accepting either result; a produced value from the native
+    // checkpoint scope does not by itself prove that request remained live.
+    decode.check(execution).map_err(map_decode_denial)?;
+    let projected = projected.map_err(map_decode_denial)?;
+    let rows = projected?;
     raw.rows.clear();
     let result_count = rows.len();
     let truncation_count = usize::from(raw.has_more);
@@ -80,7 +98,6 @@ where
             read: raw,
             result_count,
             truncation_count,
-            result_buffer: result_buffer.release(),
         },
     })
 }

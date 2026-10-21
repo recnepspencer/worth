@@ -68,7 +68,11 @@ impl InvariantPlanContract {
         // would silently drop exactly the rule the demand was raised for, and
         // anything on the invalidation channel would bill the commit for
         // damage it never did.
-        if let MutationIntent::Entity(EntityMutationIntent::Revalidate(_)) = intent {
+        if matches!(
+            intent,
+            MutationIntent::Entity(EntityMutationIntent::Revalidate(_))
+                | MutationIntent::Relation(RelationMutationIntent::Revalidate(_))
+        ) {
             self.must_rejudge = InvariantGroupSet::all();
         }
         // A new endpoint can owe a minimum relation without changing an edge.
@@ -152,7 +156,8 @@ impl InvariantPlanContract {
             // The demand handled above. It damages nothing, so it contributes
             // nothing to the effect claim; its selection widening already went
             // to `must_rejudge`.
-            MutationIntent::Entity(EntityMutationIntent::Revalidate(_)) => {
+            MutationIntent::Entity(EntityMutationIntent::Revalidate(_))
+            | MutationIntent::Relation(RelationMutationIntent::Revalidate(_)) => {
                 InvariantGroupSet::empty()
             }
         };

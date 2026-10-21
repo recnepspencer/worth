@@ -12,7 +12,7 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::super::request_execution::{QueryMemoryReservation, QueryRequestExecution};
+use super::super::super::request_execution::QueryRequestExecution;
 use super::super::compute::Denial;
 use super::super::gather_memory::GatheredMemory;
 use super::super::items::{item_digests, planned_items, route_item};
@@ -79,14 +79,47 @@ where
             PartitionResult = Reduced,
         >,
     {
+        if let Some(prepared) = self.prepare_rekeys(
+            owner,
+            reader,
+            execution,
+            input,
+            remaining_work,
+            declared_bytes,
+        )? {
+            return Ok(Some(prepared));
+        }
+        if self.can_prepare_ranges(reader, remaining_work) {
+            return self
+                .prepare_ranges(
+                    owner,
+                    reader,
+                    execution,
+                    input,
+                    remaining_work,
+                    declared_bytes,
+                )
+                .map(Some);
+        }
         let resource = WorthQueryPartitionedComputationDenial::Resource;
         let start = reader.run_start(&COMPARATOR);
+        if let Some(snapshot) = &self.validated_at {
+            reader.begin_native_carriage(
+                &COMPARATOR,
+                super::NativeComputationReads::new(self.prior.retain_state(), snapshot.clone())
+                    .with_rebase_changes(self.rebase_changes.clone()),
+            );
+        }
         let retained_prior = self.prior.clone();
         let retained = retained_prior.typed();
         let carried_membership =
             !self.membership_moved && reader.carry(&COMPARATOR, &retained.membership.charge);
         let (items, digests, membership) = if carried_membership {
-            enter(reader, &self.membership, ComputationRead::Membership);
+            enter(
+                reader,
+                self.calls.keys(ComputationRead::Membership),
+                ComputationRead::Membership,
+            );
             remaining_work
                 .spend(Some(retained.membership.declared_units))
                 .map_err(resource)?;
@@ -118,13 +151,14 @@ where
         let changed = |item: &PartitionItemId| retained.digests.get(item) != digests.get(item);
         let rekeyed = |item: &PartitionItemId| changed(item) || self.moved_items.contains(item);
         let mut copy = None;
-        let mut routing_memory = execution.reserve(0).map_err(resource)?;
+        let routing_memory = execution.reserve(0).map_err(resource)?;
+        let allocation_policy = execution.allocation_policy().map_err(resource)?;
         // The routing is copied, without the items routed again, before the
         // first route changes it: a run that routes nothing again shares it.
-        let copied = |routing_memory: &mut QueryMemoryReservation| {
-            retained.routing.kept(
+        let copied = || {
+            retained.routing.kept_in(
                 |item| items.contains_key(&item) && !rekeyed(&item),
-                |bound| routing_memory.resize(bound),
+                allocation_policy,
             )
         };
         let mut item_keys = BTreeMap::new();
@@ -141,7 +175,7 @@ where
                 .filter(|_| !rekeyed(item))
                 .filter(|call| reader.carry(&COMPARATOR, &call.charge));
             if let Some(call) = carried {
-                enter(reader, self.item_keys.get(item).into_iter().flatten(), read);
+                enter(reader, self.calls.keys(read), read);
                 remaining_work
                     .spend(Some(call.declared_units))
                     .map_err(resource)?;
@@ -156,13 +190,13 @@ where
             let before = remaining_work;
             let routing = match &mut copy {
                 Some(routing) => routing,
-                None => copy.insert(copied(&mut routing_memory).map_err(resource)?),
+                None => copy.insert(copied()?),
             };
             let routed = route_item(
                 *item,
                 &key,
                 routing,
-                &mut routing_memory,
+                execution,
                 &mut remaining_work,
                 declared_bytes,
             );
@@ -206,29 +240,46 @@ where
             removed = true;
         }
         if removed && copy.is_none() {
-            copy = Some(copied(&mut routing_memory).map_err(resource)?);
+            copy = Some(copied()?);
         }
         let (routing, routing_memory) = match copy {
             Some(copy) => (Arc::new(copy), Some(routing_memory)),
             None => (Arc::clone(&retained.routing), None),
         };
+        let removed_partitions = worth_proof::CanonicalUniqueVec::try_from_sorted_unique(
+            moved
+                .iter()
+                .copied()
+                .filter(|id| {
+                    routing.digest(*id).is_none() && retained.routing.digest(*id).is_some()
+                })
+                .collect(),
+        )
+        .expect("changed routing identities remain canonical");
+        let item_calls = super::item_bounds::retain_calls(&item_keys, allocation_policy)
+            .map_err(WorthQueryPartitionedComputationDenial::from_ordered)?;
         let mut prepared = PreparedIncremental::new(
             remaining_work,
             declared_bytes,
             self.basis,
             self.prior,
+            self.validated_at,
             NextPartitioning {
                 items: Arc::clone(&items),
                 digests,
                 membership: membership.filter(|_| measured),
-                item_keys,
+                item_bytes: super::item_bounds::items(&items),
+                item_call_bytes: Some(item_calls.retained_bytes()),
+                item_keys: item_calls,
                 routing: Arc::clone(&routing),
                 routing_memory,
                 carried_membership,
-                carried_items,
+                carried_items: super::retained::CarriedItems::Selected(carried_items),
             },
+            removed_partitions,
         );
         for identity in routing.partitions() {
+            super::super::super::super::fact_verification_observation::computation_prepared_partition();
             let read = ComputationRead::Partition(identity);
             // An emptied old partition frees its compact identity for a
             // different full digest. Neither its typed key nor its result
@@ -241,12 +292,7 @@ where
             if let Some(prior) = prior.filter(|_| unmoved)
                 && reader.carry(&COMPARATOR, &prior.gather)
             {
-                enter(
-                    reader,
-                    self.partitions.get(&identity).into_iter().flatten(),
-                    read,
-                );
-                prepared.carried(identity, prior);
+                enter(reader, self.calls.keys(read), read);
                 continue;
             }
             // A partition with the same full digest keeps its key. Any other

@@ -11,11 +11,6 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
         None,
         profile,
         4_096,
-        128 * 1_024 * 1_024,
-        profile
-            .limits()
-            .source_currentness_work()
-            .map(|work| u64::try_from(work).unwrap()),
         source_world::seed,
     );
     let (scope, principal) = authenticate(&application);
@@ -30,14 +25,16 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
         .unwrap();
     let initial_a = (0..256)
         .find_map(|_| match a.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(v) => Some(v),
         })
         .unwrap();
     assert_eq!(initial_a.producer_contacts_in_this_demand(), 1);
     let old_b = (0..256)
         .find_map(|_| match b.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(v) => Some(v),
         })
         .unwrap();
@@ -74,7 +71,8 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
     };
     let settled = (0..256)
         .find_map(|_| match outputs.advance(&application, &request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
             WorthQueryApplicationProgramOutputProgress::Settled(v) => Some(v),
         })
         .expect("the real program wave must settle after selected-program production");
@@ -82,14 +80,12 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
         crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     request
         .at(&observation)
-        .require_current_program_output(
-            &settled,
-            Some((NonZeroUsize::new(1_000_000).unwrap()).get()),
-        )
+        .require_current_program_output(&settled)
         .unwrap();
     let reused = (0..256)
         .find_map(|_| match b.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(v) => Some(v),
         })
         .unwrap();
@@ -100,7 +96,7 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
     );
     request
         .at(&observation)
-        .require_current_output_demand(&reused, Some((NonZeroUsize::new(1_000_000).unwrap()).get()))
+        .require_current_output_demand(&reused)
         .unwrap();
     assert_ne!(
         reused.application_commit_receipt(),

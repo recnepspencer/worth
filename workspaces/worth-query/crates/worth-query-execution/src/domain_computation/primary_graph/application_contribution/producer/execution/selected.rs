@@ -1,15 +1,16 @@
 //! Installed producer execution on the required wave's one selected Product.
 
-use super::super::demand::{DecisionInput, PerformedMembers, SelectedDecisionInput};
+use super::super::demand::DecisionInput;
+use super::super::demand::PerformedMembers;
+use super::super::demand::ProducerPublicationStale;
+use super::super::demand::SelectedDecisionInput;
 use super::*;
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::MatchedRequiredPredecessors;
+use crate::domain_computation::primary_graph::application_contribution::producer::demand::ResolvedRequiredPredecessors;
+use crate::domain_computation::primary_graph::application_output_demand::RetainedOutputReadmissionSource;
+use crate::domain_computation::primary_graph::application_output_demand::SelectedReadyReadmission;
+use crate::domain_computation::primary_graph::output_lineage::AcceptedCurrentCandidate;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use crate::domain_computation::primary_graph::{
-    application_contribution::producer::demand::{
-        MatchedRequiredPredecessors, ResolvedRequiredPredecessors,
-    },
-    application_output_demand::{RetainedOutputReadmissionSource, SelectedReadyReadmission},
-    output_lineage::AcceptedCurrentCandidate,
-};
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 mod execution_plan;
 
@@ -42,7 +43,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         producer_contacts_in_this_demand: usize,
         refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
         performed: &'owner std::cell::RefCell<PerformedMembers>,
-        request_admission: &mut InvalidationEditAdmission,
     ) -> Result<
         super::required_cue::RequiredCueProgress<'basis, 'owner, Schema>,
         ProducerExecutionStop,
@@ -54,7 +54,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     fn inspect_frozen_ready<'basis>(
         &self,
         inspection: super::required_cue::FrozenInspection<'basis, '_, Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<super::required_cue::FrozenCurrentInspection<'basis>, ProducerExecutionStop>
     where
         Schema: ApplicationSchema;
@@ -63,7 +62,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     fn execute_on_selected<'owner>(
         &self,
         phase: &'owner WorthQueryAdvancementPhase<'owner>,
-
         runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -77,16 +75,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         successor_of: Option<[u8; 32]>,
         commit_authority: WorthQueryProducerCommitAuthority,
         edition: super::super::InstalledProducerEdition,
-        limits: WorthQueryOutputDemandLimits,
-        request_admission: &mut InvalidationEditAdmission,
         producer_contacts: &mut usize,
     ) -> Result<super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop>;
 
-    fn preserved_readiness_output_admitted(
-        &self,
-        receipt: &WorthQueryApplicationCommitReceipt,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, WorthQueryOutputDemandDenial>;
+    fn preserved_readiness_output(&self, receipt: &WorthQueryApplicationCommitReceipt) -> bool;
 }
 
 impl<Schema, Binding> InstalledSelectedProducerExecutor<Schema>
@@ -102,36 +94,15 @@ where
             > + 'static,
     SourceQuery<Schema, Binding>: 'static,
 {
-    fn preserved_readiness_output_admitted(
-        &self,
-        receipt: &WorthQueryApplicationCommitReceipt,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, WorthQueryOutputDemandDenial> {
-        fn denied(
-            stop: worth_relational::facade::mvcc::CompanionPreflightStop,
-        ) -> WorthQueryOutputDemandDenial {
-            use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-            WorthQueryOutputDemandDenial::new(
-                match stop {
-                    Stop::WorkExhausted { .. }
-                    | Stop::WorkExhaustedWithoutRequirement { .. }
-                    | Stop::WorkCounterOverflow => {
-                        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-                    }
-                    _ => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-                },
-                "",
-            )
-        }
-        admission.charge_external_work(1).map_err(denied)?;
+    fn preserved_readiness_output(&self, receipt: &WorthQueryApplicationCommitReceipt) -> bool {
         receipt
             .output_correspondence()
-            .admit_selected_role_lookup(
+            .posture_for_binding_role::<Binding::Operation>(
                 <Binding::OutputRole as WorthQueryApplicationOutputRole>::NAME,
-                admission,
             )
-            .map_err(denied)?;
-        Ok(self.preserved_readiness_output(receipt))
+            == Ok(
+                worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture::Preserve,
+            )
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -155,7 +126,6 @@ where
         producer_contacts_in_this_demand: usize,
         refresh_permission: Result<(), WorthQueryOutputDemandDenial>,
         performed: &'owner std::cell::RefCell<PerformedMembers>,
-        request_admission: &mut InvalidationEditAdmission,
     ) -> Result<
         super::required_cue::RequiredCueProgress<'basis, 'owner, Schema>,
         ProducerExecutionStop,
@@ -175,12 +145,10 @@ where
 
         // The registry selects this entry by the exact Ready producer, and
         // cold registration seals its sole typed executor to that entry.
-        request_admission
-            .charge_external_work(4)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
+
         if let Some(candidate) = candidate {
             let same_ready = candidate
-                .matches_ready_admitted(selected.completion(), request_admission)
+                .matches_ready_admitted(selected.completion())
                 .map_err(|stop| source_readmission::ready_resource_denial("", stop))?;
             if !same_ready {
                 return Err(WorthQueryOutputDemandDenial::new(
@@ -213,21 +181,15 @@ where
             candidate,
             resolved,
             producer_contacts_in_this_demand,
-            request_admission,
-            |permission, matched_predecessors, admission| {
+            |permission, matched_predecessors| {
                 refresh_permission.map_err(ProducerExecutionStop::ExecutionStopped)?;
-                admission
-                    .charge_external_work(
-                        std::mem::size_of::<super::super::InstalledProducerEdition>() as u64,
-                    )
-                    .map_err(|stop| source_readmission::ready_resource_denial("", stop))?;
+
                 let claim = runtime
                     .output_demands
-                    .claim_required_ready_refresh(selected, admission)
+                    .claim_required_ready_refresh(selected)
                     .map_err(ProducerExecutionStop::ExecutionStopped)?
-                    // The selected Ready moved before its refresh was claimed:
-                    // a later wave selects the row as it is now.
-                    .ok_or_else(|| {
+                    // A later wave must select the Ready row after this claim moved.
+                    .map_err(|rejection| {
                         WorthQueryOutputDemandDenial::new(
                             WorthQueryOutputDemandDenialKind::PublicationStale,
                             Binding::IDENTITY,
@@ -235,6 +197,9 @@ where
                         .with_recovery_posture(
                             crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
                         )
+                        .with_publication_stale(Some(ProducerPublicationStale::ready_refresh_claim_moved(
+                            shared.selected().product().observation(), rejection,
+                        )))
                     })?;
                 let fresh = source_readmission::disclose_prepared_on_selected::<Schema, Binding>(
                     &execution,
@@ -246,7 +211,6 @@ where
                     retained,
                     shared,
                     installed.edition,
-                    admission,
                 )?;
                 let Some(readiness) = performed.borrow_mut().fresh(
                     &execution,
@@ -262,7 +226,6 @@ where
                         positioned,
                         runtime,
                     }),
-                    admission,
                 )?
                 else {
                     return Ok(RequiredCueProgress::PendingUnresolved);
@@ -279,7 +242,6 @@ where
                         request_scope,
                         delivery_branch,
                         matched_predecessors,
-                        admission,
                         performed,
                     )
                     .map_err(ProducerExecutionStop::ExecutionStopped)?;
@@ -291,7 +253,6 @@ where
     fn inspect_frozen_ready<'basis>(
         &self,
         inspection: super::required_cue::FrozenInspection<'basis, '_, Schema>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<super::required_cue::FrozenCurrentInspection<'basis>, ProducerExecutionStop> {
         let super::required_cue::FrozenInspection {
             execution,
@@ -304,13 +265,11 @@ where
             candidate,
             contacts: producer_contacts,
         } = inspection;
-        admission
-            .charge_external_work(4)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
+
         let same_ready = candidate
             .map(|candidate| {
                 candidate
-                    .matches_ready_admitted(selected.completion(), admission)
+                    .matches_ready_admitted(selected.completion())
                     .map_err(|stop| source_readmission::ready_resource_denial("", stop))
             })
             .transpose()?
@@ -347,15 +306,13 @@ where
             candidate,
             None,
             producer_contacts,
-            admission,
-            |_, _, _| Ok(super::required_cue::FrozenCurrentInspection::NotCurrent),
+            |_, _| Ok(super::required_cue::FrozenCurrentInspection::NotCurrent),
         )
     }
 
     fn execute_on_selected<'owner>(
         &self,
         phase: &'owner WorthQueryAdvancementPhase<'owner>,
-
         runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -369,8 +326,6 @@ where
         successor_of: Option<[u8; 32]>,
         commit_authority: WorthQueryProducerCommitAuthority,
         edition: super::super::InstalledProducerEdition,
-        limits: WorthQueryOutputDemandLimits,
-        request_admission: &mut InvalidationEditAdmission,
         producer_contacts: &mut usize,
     ) -> Result<super::outcome::PreparedProducerExecutionPlan<'owner>, ProducerExecutionStop> {
         execution_plan::prepare_selected_execution::<Schema, Binding>(
@@ -386,8 +341,6 @@ where
             successor_of,
             commit_authority,
             edition,
-            limits,
-            request_admission,
             producer_contacts,
         )
     }

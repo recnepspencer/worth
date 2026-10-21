@@ -1,9 +1,3 @@
-use std::marker::PhantomData;
-
-use worth_query_declaration::facade::application_schema::ApplicationSchema;
-
-use super::custody_work::RetainedCustodyWork;
-mod result_set_footprint;
 use super::{
     admit_request, denial, validate_authentication_lifetime, validate_basis_lifetime,
     WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind,
@@ -13,16 +7,25 @@ use crate::domain_computation::primary_graph::application_query::{
     access_receipt::{
         WorthQueryApplicationQueryReceiptBasis, WorthQueryApplicationQueryReceiptIdentity,
     },
-    read_execution::{
-        project_non_live_kernel, OneShotReadWorkObservation, RawNonLiveKernelOutcome,
-    },
+    read_execution::{project_non_live_kernel_with_decode, RawNonLiveKernelOutcome},
     WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationAuthorizationWorkEvidence,
     WorthQueryApplicationProjection, WorthQueryApplicationQueryAccessReceipt,
 };
+use crate::domain_computation::primary_graph::value_decode::ValueDecodeState;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use std::marker::PhantomData;
+use worth_query_declaration::facade::application_schema::ApplicationSchema;
+mod ordinary;
+pub(in crate::domain_computation::primary_graph::application_query) use ordinary::{
+    complete_one_shot, finalize_one_shot, finalize_one_shot_with_decode,
+};
+mod completed;
+pub(in crate::domain_computation::primary_graph::application_query) use completed::CompletedOneShotRead;
+mod decode_denial;
+mod result_set_footprint;
 use result_set_footprint::ResultSetFootprint;
-
-pub(in crate::domain_computation::primary_graph::application_query) fn finalize_one_shot<
+pub(in crate::domain_computation::primary_graph::application_query) use decode_denial::value_decode_denial;
+pub(in crate::domain_computation::primary_graph::application_query) fn complete_one_shot_with_decode<
     Schema,
     Query,
     Parameters,
@@ -31,7 +34,9 @@ pub(in crate::domain_computation::primary_graph::application_query) fn finalize_
     PrincipalIdentity,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    decode: &ValueDecodeState,
     plan: WorthQueryAdmittedApplicationQueryPlan<
         '_,
         Schema,
@@ -45,15 +50,14 @@ pub(in crate::domain_computation::primary_graph::application_query) fn finalize_
     mut kernel: RawNonLiveKernelOutcome,
     authorization_work: WorthQueryApplicationAuthorizationWorkEvidence,
     read_proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
-    spent: Option<&OneShotReadWorkObservation<'_>>,
-) -> Result<
-    WorthQueryApplicationOneShotResult<Query, QueryResult>,
-    WorthQueryApplicationOneShotDenial,
->
+) -> Result<CompletedOneShotRead<Query, QueryResult>, WorthQueryApplicationOneShotDenial>
 where
     Schema: ApplicationSchema,
     QueryResult: WorthQueryApplicationProjection<Schema, Query>,
 {
+    if let Some(cause) = decode.denial() {
+        return Err(value_decode_denial(cause, plan.query.name()));
+    }
     let request_affinity =
         super::super::admitted_result::WorthQueryApplicationQueryRequestAffinity::new(
             plan.principal,
@@ -65,7 +69,6 @@ where
                 plan.query.read_graph(),
                 plan.query.expression_context_schema(),
                 &kernel.raw,
-                &kernel.result_buffer,
                 plan.controls.request_scope(),
             )
             .map_err(|kind| denial(kind, plan.query.name(), plan.query.name()))?,
@@ -100,147 +103,20 @@ where
     let parameter_binding_identity = *plan.parameters.identity();
     let scope_locator = plan.scope.identity_locator();
     let scope_value = plan.scope.identity_value();
-    let source_slots = source_footprints
-        .len()
-        .checked_mul(std::mem::size_of::<
-            super::super::WorthQueryObservedSource<Query>,
-        >())
-        .ok_or_else(|| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?;
-    let scope_bytes =
-        super::super::observed_source::WorthQueryObservedScopeSelector::charged_bytes(
-            scope_locator,
-            scope_value,
-        )
-        .and_then(|bytes| bytes.checked_add(source_slots))
-        .ok_or_else(|| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?;
-    // Source slots reserve retained Vec backing. Move the admitted parameter
-    // basis into shared source custody, so its original backing stays charged
-    // without a second canonical clone or serialization pass.
-    let parameter_heap = plan
-        .parameters
-        .retained_owned_capacity_bytes()
-        .ok_or_else(|| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?;
-    let parameter_bytes = parameter_heap
-        .checked_add(std::mem::size_of::<
-            super::super::observed_source::WorthQueryRetainedObservedParameters,
-        >())
-        .and_then(|bytes| bytes.checked_add(2 * std::mem::size_of::<usize>()))
-        .ok_or_else(|| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?;
-    // Custody copies are retention, not reading: the receipt's work and the
-    // Query's declared limit cover only what the read examined.
-    let custody = RetainedCustodyWork::of(
-        scope_locator,
-        scope_value,
-        plan.query.name(),
-        basis_identity.branch_id(),
-    )
-    .and_then(|work| work.with_source_footprint(set_footprint.copy_bytes()))
-    .ok_or_else(|| {
-        denial(
-            WorthQueryApplicationOneShotDenialKind::WorkLimitExceeded,
-            plan.query.name(),
-            plan.query.name(),
-        )
-    })?;
-    let descriptor_bytes = custody.descriptor_retained_bytes().ok_or_else(|| {
-        denial(
-            WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded,
-            plan.query.name(),
-            plan.query.name(),
-        )
-    })?;
     admit_request(request, plan.query.name())?;
-    let scope_charge = kernel
-        .result_buffer
-        .claim_retained_source(scope_bytes)
-        .map_err(|()| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?;
-    if let Some(spent) = spent {
-        spent
-            .charge_scope_copies(custody.scope, plan.query.name())
-            .map_err(|read| {
-                super::map_authorized_read_denial(
-                    super::WorthQueryAuthorizedApplicationReadDenial::Read(read),
-                    plan.query.name(),
-                )
-            })?;
-    }
     let scope_selector = std::sync::Arc::new(
         super::super::observed_source::WorthQueryObservedScopeSelector::new(
             scope_locator,
             scope_value,
-            scope_charge,
         ),
     );
-    let parameter_charge = kernel
-        .result_buffer
-        .claim_retained_source(parameter_bytes)
-        .map_err(|()| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?;
-    let descriptor_charge = kernel
-        .result_buffer
-        .claim_retained_source(descriptor_bytes)
-        .map_err(|()| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::ResultBufferLimitExceeded,
-                plan.query.name(),
-                plan.query.name(),
-            )
-        })?;
     let source_parameters = std::sync::Arc::new(
-        super::super::observed_source::WorthQueryRetainedObservedParameters::new(
-            plan.parameters,
-            parameter_charge,
-        ),
+        super::super::observed_source::WorthQueryRetainedObservedParameters::new(plan.parameters),
     );
-    if let Some(spent) = spent {
-        spent
-            .charge_descriptor_copies(custody.descriptor, plan.query.name())
-            .map_err(|read| {
-                super::map_authorized_read_denial(
-                    super::WorthQueryAuthorizedApplicationReadDenial::Read(read),
-                    plan.query.name(),
-                )
-            })?;
-    }
+
     let query_identifier = std::sync::Arc::new(plan.query.name().to_owned());
     let result_set_footprint = set_footprint.materialize();
     let branch = std::sync::Arc::new(basis_identity.branch_id().clone());
-    let descriptor_charge = std::sync::Arc::new(descriptor_charge);
     let mut observed_sources = Vec::with_capacity(source_footprints.len());
     for footprint in source_footprints {
         admit_request(request, plan.query.name())?;
@@ -273,7 +149,7 @@ where
             model_root: plan.scope.entity_id(),
             source_meaning,
             scope_selector: std::sync::Arc::clone(&scope_selector),
-            _descriptor_charge: std::sync::Arc::clone(&descriptor_charge),
+
             _marker: PhantomData,
         });
     }
@@ -306,7 +182,7 @@ where
             model_root: plan.scope.entity_id(),
             source_meaning: result_set_meaning,
             scope_selector,
-            _descriptor_charge: descriptor_charge,
+
             _marker: PhantomData,
         });
     let basis_release = plan.basis.release();
@@ -325,7 +201,9 @@ where
     admit_request(request, plan.query.name())?;
     validate_authentication_lifetime(application, plan.principal, plan.query.name())?;
 
-    let projected = project_non_live_kernel::<Schema, Query, QueryResult, _>(
+    let projected = project_non_live_kernel_with_decode::<Schema, Query, QueryResult, _>(
+        execution,
+        decode,
         kernel,
         &plan.governance,
         || admit_request(request, plan.query.name()),
@@ -336,10 +214,13 @@ where
                 projection.subject(),
             )
         },
-    )?;
+    );
+    decode
+        .check(execution)
+        .map_err(|cause| value_decode_denial(cause, plan.query.name()))?;
     admit_request(request, plan.query.name())?;
     validate_authentication_lifetime(application, plan.principal, plan.query.name())?;
-    let (rows, kernel_receipt) = projected.into_parts();
+    let (rows, kernel_receipt) = projected?.into_parts();
     let read_completion = plan
         .graph_work
         .complete_query_read(
@@ -376,11 +257,14 @@ where
         plan.governance.receipt(),
         kernel_receipt,
     );
-    Ok(WorthQueryApplicationOneShotResult {
-        rows,
-        observed_sources,
-        result_set_observation,
-        request_affinity,
-        receipt,
+    Ok(CompletedOneShotRead {
+        read: WorthQueryApplicationOneShotResult {
+            rows,
+            observed_sources,
+            result_set_observation,
+            request_affinity,
+            receipt,
+        },
+        authorization: plan.authorization,
     })
 }

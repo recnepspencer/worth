@@ -90,10 +90,7 @@ where
         let occurrence = self.product_runtime.default_occurrence;
         let lane = self
             .primary_provider
-            .application_branch_commit_lane_for_occurrence(occurrence)
-            .map_err(|_| {
-                native_priors::capture_denial("checkpoint branch coordination is unavailable")
-            })?;
+            .application_branch_commit_lane_for_occurrence(occurrence);
         let _coordination = lane.enter();
         let lease = self
             .product_runtime
@@ -112,12 +109,7 @@ where
                     .map_err(WorthQueryCheckpointCaptureDenial::from)
                     .and_then(|checkpoint| {
                         let accepted = self.output_demands.accepted_checkpoint_records();
-                        let mut admission = self
-                            .primary_provider
-                            .graph
-                            .source_owner
-                            .invalidation_owner
-                            .edit_admission();
+
                         let lineage = self
                             .primary_provider
                             .graph
@@ -134,7 +126,6 @@ where
                                 &self.installed_schema.binding_identity(),
                                 occurrence,
                                 lease.observation().reference_generation().get(),
-                                &mut admission,
                             )
                             .map_err(|denial| denial.into_capture_denial())?;
                         let mut accepted = native_priors::merge(
@@ -147,7 +138,6 @@ where
                                 )
                             }),
                             priors,
-                            &mut admission,
                         )?;
                         for (identity, source) in &mut accepted {
                             policy.check_live()?;
@@ -158,11 +148,11 @@ where
                             // payload. Neither the query footprint nor the digest can
                             // reconstruct a producer's original decision reads.
                             identity.producer_facts = match source {
-                                AcceptedCheckpointFactSource::Committed(receipt) => lineage
-                                    .checkpoint_facts_for_receipt(receipt)
-                                    .and_then(|(facts, witness)| {
-                                        output_facts::encode(&facts, witness, &mut admission)
-                                    }),
+                                AcceptedCheckpointFactSource::Committed(receipt) => {
+                                    lineage.checkpoint_facts_for_receipt(receipt).and_then(
+                                        |(facts, witness)| output_facts::encode(&facts, witness),
+                                    )
+                                }
                                 AcceptedCheckpointFactSource::Stable(stable) => stable
                                     .checkpoint_source_facts()
                                     .and_then(|facts| facts::encode(&facts)),

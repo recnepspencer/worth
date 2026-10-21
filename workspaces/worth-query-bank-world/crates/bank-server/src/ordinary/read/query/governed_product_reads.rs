@@ -31,10 +31,7 @@ impl BankReadyQuery<'_, '_, EstateCustomerDisclosureRequest> {
             .application_runtime()
             .request(self.principal.external(), self.controls.request())
             .query(self.query)
-            .limits(
-                self.controls.maximum_result_count(),
-                self.controls.maximum_work(),
-            )
+            .limit_results(self.controls.maximum_result_count())
             .execute_governed(
                 ViewEstateIdentityVerificationCapability::reference(),
                 ViewRestrictedEstateOperation::reference(),
@@ -56,10 +53,7 @@ impl BankReadyQuery<'_, '_, EstateGovernanceRequest> {
             .application_runtime()
             .request(self.principal.external(), self.controls.request())
             .query(self.query)
-            .limits(
-                self.controls.maximum_result_count(),
-                self.controls.maximum_work(),
-            )
+            .limit_results(self.controls.maximum_result_count())
             .execute_governed(
                 ViewEstateAdministrationCapability::reference(),
                 ViewRestrictedEstateOperation::reference(),
@@ -84,10 +78,7 @@ impl BankReadyQuery<'_, '_, EstateLegalComplianceRequest> {
             .application_runtime()
             .request(self.principal.external(), self.controls.request())
             .query(self.query)
-            .limits(
-                self.controls.maximum_result_count(),
-                self.controls.maximum_work(),
-            )
+            .limit_results(self.controls.maximum_result_count())
             .execute_governed(
                 ViewEstateLegalComplianceCapability::reference(),
                 ViewRestrictedEstateOperation::reference(),
@@ -112,10 +103,7 @@ impl BankReadyQuery<'_, '_, EstateMandatoryReviewRequest> {
             .application_runtime()
             .request(self.principal.external(), self.controls.request())
             .query(self.query)
-            .limits(
-                self.controls.maximum_result_count(),
-                self.controls.maximum_work(),
-            )
+            .limit_results(self.controls.maximum_result_count())
             .execute_governed(
                 ViewEstateMandatoryReviewCapability::reference(),
                 ViewRestrictedEstateOperation::reference(),

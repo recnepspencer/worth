@@ -26,6 +26,8 @@ fn canonical<T>(values: &CanonicalUniqueVec<T>) -> u64 {
 impl ChargedBytes for WorthQueryApplicationFactKey {
     fn additional_charged_bytes(&self) -> u64 {
         match self {
+            // The native read retains its own actual backing and custody.
+            Self::SourcePublication(_) => 0,
             Self::Entity { entity, .. } => bytes(entity.capacity()),
             Self::AspectPresence {
                 entity, locator, ..
@@ -48,7 +50,9 @@ impl ChargedBytes for WorthQueryApplicationObservedFact {
             Self::SourceAspectRevision { aspect, .. } | Self::AspectPresence { aspect, .. } => {
                 bytes(aspect.owned_allocation_capacity_bytes())
             }
-            Self::SourceFieldRevision { locator, .. } | Self::AbsentField { locator, .. } => {
+            Self::SourceFieldRevision { locator, .. }
+            | Self::AbsentField { locator, .. }
+            | Self::OptionalAspectAbsent { locator, .. } => {
                 bytes(locator.owned_allocation_capacity_bytes())
             }
             Self::SourceAdjacencyRevision { endpoints, .. } => endpoints.additional_charged_bytes(),
@@ -68,7 +72,8 @@ impl ChargedBytes for WorthQueryApplicationObservedFact {
                 .saturating_add(bytes(value.owned_allocation_capacity_bytes()))
                 .saturating_add(list(candidates)),
             Self::WorkflowInstanceCapacity { instances, .. } => list(instances),
-            Self::SourceEntity { .. }
+            Self::SourcePublication { .. }
+            | Self::SourceEntity { .. }
             | Self::Entity { .. }
             | Self::WorkflowDefinitionPredecessor { .. }
             | Self::WorkflowDefinitionCurrent { .. }
@@ -85,25 +90,22 @@ impl ChargedBytes for ComputationFactReaders {
 
 impl ChargedBytes for SealedComputationFact {
     fn additional_charged_bytes(&self) -> u64 {
-        self.fact
-            .additional_charged_bytes()
-            .saturating_add(self.readers.additional_charged_bytes())
+        self.readers.additional_charged_bytes()
     }
 }
 
 impl SealedComputationFacts {
-    /// What retaining the facts holds: every entry's key, fact and readers
-    /// inline, and what each owns beyond that. `None` when the sum overflows.
-    pub(in crate::domain_computation::primary_graph) fn charged_bytes(&self) -> Option<u64> {
-        let entry = u64::try_from(
-            std::mem::size_of::<WorthQueryApplicationFactKey>()
-                + std::mem::size_of::<SealedComputationFact>(),
-        )
-        .ok()?;
-        self.facts.iter().try_fold(0_u64, |sum, (key, sealed)| {
-            sum.checked_add(entry)?
-                .checked_add(key.additional_charged_bytes())?
-                .checked_add(sealed.additional_charged_bytes())
-        })
+    pub(super) fn calculate_charged_bytes(&self) -> Option<u64> {
+        let backing = self.original.retained_resident_bytes()?.checked_add(
+            self.content
+                .as_ref()
+                .map_or(Some(0), |content| content.charged_bytes())?,
+        )?;
+        self.index
+            .charged_bytes()?
+            .checked_add(backing)?
+            .checked_add(self.layout.charged_bytes()?)?
+            .checked_add(self.projection.as_ref().map_or(0, |p| p.bytes()))?
+            .checked_add(self.metadata.retained_bytes())
     }
 }

@@ -53,7 +53,7 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
             context.account,
             capability,
             elevated_account_activity_parameters("account-1"),
-            WorthQueryApplicationLiveControls::bounded(context.request.clone(), 4, 16, Some(2_048))
+            WorthQueryApplicationLiveControls::bounded(context.request.clone(), 4, 16)
                 .unwrap(),
         )
         .unwrap()
@@ -140,7 +140,7 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
             context.account,
             capability,
             elevated_account_activity_parameters("account-1"),
-            WorthQueryApplicationLiveControls::bounded(context.request.clone(), 4, 16, Some(2_048))
+            WorthQueryApplicationLiveControls::bounded(context.request.clone(), 4, 16)
                 .unwrap(),
         )
         .unwrap()

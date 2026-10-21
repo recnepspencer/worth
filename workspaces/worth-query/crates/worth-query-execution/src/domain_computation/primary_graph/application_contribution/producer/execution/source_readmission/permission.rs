@@ -4,9 +4,7 @@ use worth_query_declaration::facade::application_query::ApplicationQueryDisclosu
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryAuthorization;
 
 use super::*;
-use crate::domain_computation::authorization::{
-    AdmittedQueryAuthorizationStop, WorthQueryRetainedAuthorizationDecisionFacts,
-};
+use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
 use crate::domain_computation::provider_session::WorthQueryPreparedQuerySessionIdentity;
 
 mod principal_dependency;
@@ -44,7 +42,6 @@ pub(super) fn prepare_retained_query_permission<'a, Schema, Binding>(
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     source: crate::domain_computation::primary_graph::application_query::PreparedApplicationQuerySourceReadmission<'a, Schema>,
     request: &WorthQueryRequestScope,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<PreparedRetainedQueryPermission<'a, Schema>, ProducerExecutionStop>
 where
     Schema: ApplicationSchema + 'static,
@@ -84,15 +81,7 @@ where
                 Binding::IDENTITY,
             )
         })?;
-    admission.charge_external_work(entry_work).map_err(|_| {
-        denial(
-            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-            Binding::IDENTITY,
-        )
-    })?;
-    admission
-        .admit_read_scratch(query_name_bytes)
-        .map_err(|stop| request_admission_denied(Binding::IDENTITY, stop))?;
+
     let same_query = source.query_identity() == query.identity();
     let same_basis = source.selected_basis().is_some_and(|(product, snapshot)| {
         product.observation() == selected_observation
@@ -163,20 +152,11 @@ where
             ));
         }
     }
-    admission.charge_external_work(2).map_err(|_| {
-        denial(
-            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-            Binding::IDENTITY,
-        )
-    })?;
+
     let session = WorthQueryPreparedQuerySessionIdentity::reserve()
         .map_err(|error| failed(Binding::IDENTITY, error))?;
-    let principal_currentness = principal_dependency::capture::<Schema, Binding>(
-        runtime,
-        principal,
-        session.identity(),
-        admission,
-    )?;
+    let principal_currentness =
+        principal_dependency::capture::<Schema, Binding>(runtime, principal, session.identity())?;
     let authorization = match query.authorization() {
         WorthQueryInstalledApplicationQueryAuthorization::Public => {
             WorthQueryRetainedAuthorizationDecisionFacts::principal(principal_currentness)
@@ -189,17 +169,7 @@ where
                     Binding::IDENTITY,
                 )
             })?;
-            admission
-                .charge_external_work(branch_bytes.saturating_add(1))
-                .map_err(|_| {
-                    denial(
-                        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                        Binding::IDENTITY,
-                    )
-                })?;
-            admission
-                .admit_read_scratch(branch_bytes)
-                .map_err(|stop| request_admission_denied(Binding::IDENTITY, stop))?;
+
             let access = WorthQueryApplicationQueryAccessContext::new(principal, scope);
             let decisions = runtime
                 .primary_provider
@@ -212,7 +182,6 @@ where
                         query,
                         &access,
                         requirement,
-                        admission,
                     )
                 })
                 .map_err(|stop| match stop {

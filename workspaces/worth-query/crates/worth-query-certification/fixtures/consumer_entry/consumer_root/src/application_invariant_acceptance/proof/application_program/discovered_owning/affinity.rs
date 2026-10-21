@@ -27,7 +27,6 @@ fn discovered_ordinary_fork_refuses_foreign_requests_and_current_changed_deliver
     ];
     let mut world = installation::install_selected_program(
         &crate::installed_schema(),
-        4096,
         roster,
         &grants,
         original,

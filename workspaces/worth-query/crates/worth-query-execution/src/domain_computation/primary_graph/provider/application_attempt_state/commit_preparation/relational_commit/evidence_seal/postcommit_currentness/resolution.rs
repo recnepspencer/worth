@@ -1,19 +1,19 @@
-use worth_foundational::facade::{AspectFieldLocator, LocatorAuthority};
-use worth_relational::facade::{
-    identity::VersionId,
-    mvcc::CompanionPreflightStop,
-    runtime::{AdjacencyStructuralRevisionDenial, RelationalFieldRevision},
-};
+use worth_foundational::facade::AspectFieldLocator;
+use worth_foundational::facade::LocatorAuthority;
+use worth_relational::facade::identity::VersionId;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial;
+use worth_relational::facade::runtime::RelationalFieldRevision;
 
-use crate::domain_computation::primary_graph::application_attempt::{
-    reobserve_indexed_entity_selection, IndexedSelectionReobserveDenial, Movement,
-    WorthQuerySourceCurrentnessFailure,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::application_attempt::reobserve_indexed_entity_selection;
+use crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial;
+use crate::domain_computation::primary_graph::application_attempt::Movement;
+use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
 
-use super::{
-    adjacency, retirement, RebaseVerificationReason, WorthQueryApplicationObservedFact as Fact,
-};
+use super::adjacency;
+use super::retirement;
+use super::RebaseVerificationReason;
+use super::WorthQueryApplicationObservedFact as Fact;
 
 /// A fact a source query read. It stays at the revision it was read at, so
 /// it is the one kind the walk asks the committed effect about: every other
@@ -22,7 +22,11 @@ use super::{
 pub(super) fn reads_source(fact: &Fact) -> bool {
     matches!(
         fact,
-        Fact::SourceEntity { .. } | Fact::Entity { .. } | Fact::SourceFieldRevision { .. }
+        Fact::SourcePublication { .. }
+            | Fact::SourceEntity { .. }
+            | Fact::Entity { .. }
+            | Fact::SourceFieldRevision { .. }
+            | Fact::OptionalAspectAbsent { .. }
     )
 }
 
@@ -54,15 +58,13 @@ impl PreparedFactRebase {
         fact: &Fact,
         retired: &std::collections::BTreeSet<worth_relational::facade::identity::EntityId>,
         producer_output: bool,
-        admission: &mut InvalidationEditAdmission,
-        indexed_width: &mut InvalidationEditAdmission,
+
         prepared_endpoints: Option<
             crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
         >,
     ) -> Result<Result<Self, RebaseVerificationReason>, CompanionPreflightStop> {
         let unavailable = RebaseVerificationReason::NativeRevisionUnavailable;
         if let Some(entity_id) = retirement::retired_anchor(fact, retired) {
-            admission.charge_external_work(1)?;
             // No other fact may stand in for a retirement the snapshot lacks.
             return Ok(
                 retirement::committed_retirement(runtime, snapshot, entity_id, fact)
@@ -70,9 +72,33 @@ impl PreparedFactRebase {
                     .ok_or(unavailable),
             );
         }
-        if producer_output && reads_source(fact) {
+        if producer_output
+            && let Fact::OptionalAspectAbsent {
+                entity_id,
+                kind,
+                locator,
+            } = fact
+        {
+            match crate::domain_computation::primary_graph::application_attempt::observe_aspect_absence(
+                runtime, execution, snapshot, *entity_id, *kind, locator,
+            ) {
+                Err(cause) => return Ok(Err(RebaseVerificationReason::Execution(cause))),
+                Ok(Some(true)) => {},
+                Ok(Some(false)) => return Ok(Ok(Self::KeepSuperseded)),
+                Ok(None) => return Ok(Err(unavailable)),
+            }
+        }
+        if producer_output
+            && reads_source(fact)
+            && !matches!(fact, Fact::OptionalAspectAbsent { .. })
+        {
             return Ok(
-                match fact.source_currentness_in(runtime, execution, snapshot, admission)? {
+                match fact.source_currentness_in(runtime, execution, snapshot)? {
+                    Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop)) => match stop {
+                        crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::Execution(cause) => Err(RebaseVerificationReason::Execution(cause)),
+                        crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop::Interrupted(event) => return Err(CompanionPreflightStop::Interrupted(event)),
+                        _ => Err(unavailable),
+                    },
                     Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
                         Err(RebaseVerificationReason::Execution(cause))
                     }
@@ -87,28 +113,13 @@ impl PreparedFactRebase {
                 },
             );
         }
-        admission.charge_external_work(1)?;
-        let maximum_pair_rebase_work = admission.remaining_work();
-        if matches!(
-            fact,
-            Fact::Relation { .. }
-                | Fact::Adjacency { .. }
-                | Fact::SourceAdjacencyRevision { .. }
-                | Fact::IndexedEntitySelection { .. }
-        ) {
-            // The selected native adjacency revision and the indexed
-            // selection each perform one indexed probe. A probe's per-call
-            // cap alone does not spend request work.
-            admission.charge_external_work(1)?;
-        }
+
         Ok(Self::resolve(
             runtime,
             execution,
             snapshot,
             fact,
             producer_output,
-            maximum_pair_rebase_work,
-            indexed_width,
             prepared_endpoints,
         ))
     }
@@ -119,14 +130,23 @@ impl PreparedFactRebase {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         fact: &Fact,
         producer_output: bool,
-        maximum_pair_rebase_work: Option<usize>,
-        indexed_width: &mut InvalidationEditAdmission,
+
         prepared_endpoints: Option<
             crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
         >,
     ) -> Result<Self, RebaseVerificationReason> {
         let unavailable = RebaseVerificationReason::NativeRevisionUnavailable;
         match fact {
+            Fact::OptionalAspectAbsent {
+                entity_id, locator, ..
+            } => {
+                let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
+                    return Err(unavailable);
+                };
+                view.entity_aspect_version(*entity_id, locator.aspect().aspect_key())
+                    .map(Self::Aspect)
+                    .ok_or(unavailable)
+            }
             Fact::AspectPresence {
                 entity_id,
                 kind,
@@ -198,9 +218,7 @@ impl PreparedFactRebase {
                     *anchor,
                     *relation_kind,
                     *direction,
-                    maximum_pair_rebase_work.map_or(*comparison_work_limit, |maximum| {
-                        (*comparison_work_limit).min(maximum)
-                    }),
+                    *comparison_work_limit,
                 ) {
                     Err(AdjacencyStructuralRevisionDenial::Execution(cause)) => {
                         Err(RebaseVerificationReason::Execution(cause))
@@ -227,7 +245,6 @@ impl PreparedFactRebase {
                     runtime,
                     snapshot,
                     fact,
-                    maximum_pair_rebase_work,
                     prepared_endpoints,
                 )
                 .map_err(RebaseVerificationReason::Execution)?
@@ -243,18 +260,7 @@ impl PreparedFactRebase {
                 // The selection is observed again at the committed snapshot.
                 // The width reserves before probing and settles actual work,
                 // including entries examined by a failed native lookup.
-                let most = candidate_limit.saturating_add(1);
-                let reserved_work = indexed_width
-                    .remaining_work()
-                    .map_or(most, |remaining| most.min(remaining));
-                let reserved = indexed_width
-                    .reserve_external_work(Some(u64::try_from(reserved_work).map_err(|_| {
-                        RebaseVerificationReason::AdmissionDenied(
-                            CompanionPreflightStop::WorkCounterOverflow,
-                        )
-                    })?))
-                    .map_err(RebaseVerificationReason::AdmissionDenied)?;
-                let mut remaining = reserved_work;
+                let mut remaining = candidate_limit.saturating_add(1);
                 let observed = reobserve_indexed_entity_selection(
                     fact,
                     runtime,
@@ -262,24 +268,9 @@ impl PreparedFactRebase {
                     snapshot,
                     &mut remaining,
                 );
-                reserved
-                    .settle(u64::try_from(reserved_work - remaining).map_err(|_| {
-                        RebaseVerificationReason::AdmissionDenied(
-                            CompanionPreflightStop::WorkCounterOverflow,
-                        )
-                    })?)
-                    .map_err(RebaseVerificationReason::AdmissionDenied)?;
                 match observed {
                     Ok(observed) => Ok(Self::Replace(observed)),
                     Err(IndexedSelectionReobserveDenial::Lookup(worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause)))=>Err(RebaseVerificationReason::Execution(cause)),
-                    Err(IndexedSelectionReobserveDenial::WorkBudgetExceeded) => {
-                        let maximum = indexed_width
-                            .charged_work()
-                            .saturating_add(indexed_width.remaining_work_amount().expect("an exhausted indexed allowance is finite"));
-                        Err(RebaseVerificationReason::AdmissionDenied(
-                            CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum },
-                        ))
-                    }
                     Err(denial) if producer_output => {
                         Err(RebaseVerificationReason::IndexedSelectionDenied(denial))
                     }
@@ -303,6 +294,16 @@ impl PreparedFactRebase {
                 entity_id,
                 locator,
                 native_revision: Some(revision),
+            },
+            (
+                Self::Aspect(native_revision),
+                Fact::OptionalAspectAbsent {
+                    entity_id, locator, ..
+                },
+            ) => Fact::SourceAspectRevision {
+                entity_id,
+                aspect: locator.aspect().aspect_key().clone(),
+                native_revision,
             },
             (
                 Self::Aspect(native_revision),

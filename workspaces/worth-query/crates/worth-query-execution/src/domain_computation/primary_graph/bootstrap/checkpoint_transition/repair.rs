@@ -23,8 +23,12 @@ pub struct WorthQueryCheckpointTransitionRecovery {
     graph: WorthQueryPrimaryGraphIntegrationHandle,
     publication: WorthQueryPrimaryGraphPublication,
     settlement: Option<Settlement>,
+    outputs: super::preserved_outputs::PreservedOutputs,
     detail: String,
     capture_denial: Option<WorthQueryCheckpointCaptureDenial>,
+    finalization_denial: Option<
+        Box<crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial>,
+    >,
 }
 
 impl std::fmt::Debug for WorthQueryCheckpointTransitionRecovery {
@@ -41,14 +45,17 @@ impl WorthQueryCheckpointTransitionRecovery {
         graph: WorthQueryPrimaryGraphIntegrationHandle,
         publication: WorthQueryPrimaryGraphPublication,
         authority: RecoveredRelationalRuntimeAuthority,
+        outputs: super::preserved_outputs::PreservedOutputs,
         denial: WorthQueryCheckpointCaptureDenial,
     ) -> Self {
         Self {
             graph,
             publication,
             settlement: Some(Settlement::Acknowledged(authority)),
+            outputs,
             detail: format!("acknowledged target checkpoint capture stopped: {denial:?}"),
             capture_denial: Some(denial),
+            finalization_denial: None,
         }
     }
 
@@ -56,19 +63,48 @@ impl WorthQueryCheckpointTransitionRecovery {
         graph: WorthQueryPrimaryGraphIntegrationHandle,
         publication: WorthQueryPrimaryGraphPublication,
         deferred: DeferredRecoveredCheckpointTransition,
+        outputs: super::preserved_outputs::PreservedOutputs,
     ) -> Self {
         let detail = format!("{:?}", deferred.cause());
         Self {
             graph,
             publication,
             settlement: Some(Settlement::Deferred(deferred)),
+            outputs,
             detail,
             capture_denial: None,
+            finalization_denial: None,
         }
     }
 
     pub fn detail(&self) -> &str {
         &self.detail
+    }
+
+    pub(super) fn finalization_stopped(
+        graph: WorthQueryPrimaryGraphIntegrationHandle,
+        publication: WorthQueryPrimaryGraphPublication,
+        authority: RecoveredRelationalRuntimeAuthority,
+        outputs: super::preserved_outputs::PreservedOutputs,
+        cause: crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+    ) -> Self {
+        Self {
+            graph,
+            publication,
+            settlement: Some(Settlement::Acknowledged(authority)),
+            outputs,
+            detail: format!("acknowledged target finalization stopped: {cause:?}"),
+            capture_denial: None,
+            finalization_denial: Some(Box::new(cause)),
+        }
+    }
+
+    /// Original post-performance refusal. Capture retries never replace it.
+    pub fn finalization_denial(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial>
+    {
+        self.finalization_denial.as_deref()
     }
 
     /// Exact capture refusal from this capsule's latest attempt, if capture
@@ -85,6 +121,9 @@ impl WorthQueryCheckpointTransitionRecovery {
         let request = phase.execution_request();
         let execution = &request;
         self.capture_denial = None;
+        if self.consult_request(request).is_err() {
+            return Err(self);
+        }
         if let Err(error) = policy.check_live() {
             self.retain_capture_denial(error.into());
             return Err(self);
@@ -107,6 +146,7 @@ impl WorthQueryCheckpointTransitionRecovery {
                     Err(error) => {
                         self.detail = format!("{:?}", error.cause());
                         self.settlement = Some(Settlement::Deferred(error.into_transition()));
+                        let _ = self.consult_request(request);
                         return Err(self);
                     }
                 }
@@ -114,6 +154,9 @@ impl WorthQueryCheckpointTransitionRecovery {
             Settlement::Acknowledged(authority) => {
                 self.settlement = Some(Settlement::Acknowledged(authority))
             }
+        }
+        if self.consult_request(request).is_err() {
+            return Err(self);
         }
         match policy
             .check_live()
@@ -126,21 +169,48 @@ impl WorthQueryCheckpointTransitionRecovery {
                     .map_err(WorthQueryCheckpointCaptureDenial::from)
             })
             .and_then(|native| {
-                WorthQueryApplicationCheckpoint::encode(native, &self.publication, &[], policy)
-                    .map(|(checkpoint, _)| checkpoint)
+                WorthQueryApplicationCheckpoint::encode(
+                    native,
+                    &self.publication,
+                    self.outputs.rows(),
+                    policy,
+                )
+                .map(|(checkpoint, _)| checkpoint)
             }) {
-            Ok(checkpoint) => Ok(checkpoint),
+            Ok(checkpoint) => {
+                if self.consult_request(request).is_err() {
+                    Err(self)
+                } else {
+                    Ok(checkpoint)
+                }
+            }
             Err(error) => {
-                self.retain_capture_denial(error);
+                if self.consult_request(request).is_ok() {
+                    self.retain_capture_denial(error);
+                }
                 Err(self)
             }
         }
     }
 
+    fn consult_request(
+        &mut self,
+        request: worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), ()> {
+        request.consult().map_err(|stop| {
+            self.retain_capture_denial(WorthQueryCheckpointCaptureDenial::Execution(
+                super::super::request_denial(crate::domain_computation::primary_graph::application_contribution::advancement_denial(stop))));
+        })
+    }
+
     fn retain_capture_denial(&mut self, denial: WorthQueryCheckpointCaptureDenial) {
-        self.detail = format!("checkpoint capture stopped: {denial:?}");
+        if self.finalization_denial.is_none() {
+            self.detail = format!("checkpoint capture stopped: {denial:?}");
+        }
         self.capture_denial = Some(denial);
     }
 }
 
 mod certification_controls;
+
+mod request;

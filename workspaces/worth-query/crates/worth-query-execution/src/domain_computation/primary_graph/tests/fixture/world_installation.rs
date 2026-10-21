@@ -124,6 +124,7 @@ pub(in crate::domain_computation::primary_graph::tests) fn restored_world(
         crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
         crate::domain_computation::primary_graph::WorthQueryApplicationInvariantFactories::for_installed_schema(&schema),
         &decoded,
+        false,
     )?;
         super::handler_installation::install_fixture_handlers(&schema, &mut bootstrap);
         let application = bootstrap
@@ -153,10 +154,12 @@ pub(in crate::domain_computation) fn installed_authorization_world(
 
 pub(in crate::domain_computation::primary_graph) fn installed_authorization_world_with_label(
     label: &str,
+    resources: WorthQueryApplicationQueryResourceProfile,
 ) -> AuthorizationWorld {
     install_authorization_world(AuthorizationWorldSpec {
         owner_bindings: PRINCIPAL_ZERO_ACCOUNTS,
         primary_label: label,
+        resources,
         ..standard_spec()
     })
 }

@@ -58,8 +58,7 @@ pub use expression_snapshot::ApplicationQueryExpressionSnapshot;
 pub use lane_eligibility::ApplicationQueryLaneEligibility;
 pub use live_cause::{
     ApplicationQueryLiveCauseBinding, ApplicationQueryLiveCauseContract,
-    ApplicationQueryLiveResourceContract, ApplicationQueryLiveTargetMode,
-    WorthQueryPortableApplicationQueryLiveCauseParts,
+    ApplicationQueryLiveTargetMode, WorthQueryPortableApplicationQueryLiveCauseParts,
 };
 pub use marker_identity::ApplicationQueryMarkerIdentity;
 pub use ordering::{

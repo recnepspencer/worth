@@ -67,6 +67,7 @@ pub(super) fn restore<Schema: ApplicationSchema>(
             // The row is recorded, not verified: its first reader or demand
             // compares its facts and output in full.
             None,
+            Some(checkpoint.clone()),
         );
     }
     Ok(())

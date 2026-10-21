@@ -35,7 +35,7 @@ macro_rules! settle {
     ($d:expr,$r:expr) => {
         (0..128)
             .find_map(|_| match $d.advance(&$r).unwrap() {
-                Progress::Pending => None,
+                Progress::Pending | Progress::Progressed => None,
                 Progress::Settled(v) => Some(v),
             })
             .expect("demand settles in declared advance count")

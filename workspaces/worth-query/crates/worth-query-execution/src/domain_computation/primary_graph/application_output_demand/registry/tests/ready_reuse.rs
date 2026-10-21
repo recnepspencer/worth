@@ -1,8 +1,7 @@
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_query::WorthQueryCheckpointSourceIdentity,
-    WorthQueryApplicationOutputCorrespondence, WorthQueryOutputReadinessDeliveryEvidence,
-};
+use crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
+use crate::domain_computation::primary_graph::WorthQueryOutputReadinessDeliveryEvidence;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
@@ -66,15 +65,12 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
         readiness: WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
     };
     let wake = Arc::new(DemandWake {
-        _record_capacity: test_record_capacity(),
         generation: Mutex::new(0),
         changed: Condvar::new(),
     });
     registry.state.lock().unwrap().records.insert(
         output_key.clone(),
         DemandRecord {
-            _record_capacity: test_record_capacity(),
-            source_commit_capacity: None,
             source_scope: Some(scope),
             wake: Arc::clone(&wake),
             ..record(
@@ -98,20 +94,12 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
             super::super::DemandAdmissionKind::Ordinary,
             None,
             None,
-            &mut record_admission(),
         )
         .expect("the equivalent ordinary demand reopens")
         .0;
-    let mut short = InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(0),
-        maximum_preparation_bytes: None,
-    });
-    assert!(matches!(
-        registry.peek_ready(&reopened, &mut short),
-        Err(denial) if denial.kind() == WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-    ));
+
     assert!(registry
-        .peek_ready(&reopened, &mut record_admission())
+        .peek_ready(&reopened)
         .expect("ordered lookup and fixed Arc pin fit the admitted work")
         .is_some());
     assert!(matches!(
@@ -138,7 +126,6 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
             Some(super::super::OutputRefreshPredecessor::of(
                 &lookalike, &reopened,
             )),
-            &mut record_admission(),
         )
         .unwrap()
         .0;
@@ -162,7 +149,6 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
                 &completion.authority,
                 &reopened,
             )),
-            &mut record_admission(),
         )
         .unwrap()
         .0;

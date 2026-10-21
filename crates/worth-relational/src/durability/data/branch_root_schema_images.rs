@@ -25,7 +25,7 @@ pub(crate) struct DurableBranchRootSchemaImage {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-struct DurableEntitySchemaRegistration {
+pub(crate) struct DurableEntitySchemaRegistration {
     kind_id: KindId,
     kind_name: String,
     schema_id: SchemaId,
@@ -188,7 +188,64 @@ fn require_canonical_contract_order(contracts: &[PortableAspectContract]) -> Res
 }
 
 impl DurableEntitySchemaRegistration {
-    fn capture(registration: &EntityKindRegistration) -> Self {
+    pub(crate) fn capture_bytes(registration: &EntityKindRegistration) -> Option<usize> {
+        let declarations = &registration.aspect_contract_declarations;
+        let mut bytes = std::mem::size_of::<Self>()
+            .checked_add(registration.kind_name.len())?
+            .checked_add(registration.schema_id.0.len())?
+            .checked_add(
+                declarations
+                    .aspects
+                    .len()
+                    .checked_mul(std::mem::size_of::<DurableDeclaredAspectBinding>())?,
+            )?
+            .checked_add(
+                declarations
+                    .identity_declarations
+                    .len()
+                    .checked_mul(std::mem::size_of::<IdentityBasisDeclaration>())?,
+            )?
+            .checked_add(
+                declarations
+                    .merge_policy_declarations
+                    .len()
+                    .checked_mul(std::mem::size_of::<AspectMergePolicyDeclaration>())?,
+            )?;
+        for aspect in &declarations.aspects {
+            bytes = bytes
+                .checked_add(aspect.binding.owned_allocation_capacity_bytes())?
+                .checked_add(aspect.contract.owned_allocation_capacity_bytes())?;
+        }
+        for policy in &declarations.merge_policy_declarations {
+            bytes = bytes.checked_add(policy.aspect_key.owned_allocation_capacity_bytes())?;
+            if let crate::merge::data::AspectMergePolicyKind::Custom(identity) = &policy.policy {
+                bytes = bytes.checked_add(identity.name.len())?;
+            }
+        }
+        for identity in &declarations.identity_declarations {
+            if let crate::merge::data::IdentityBasisScope::AspectKey(key) = &identity.scope {
+                bytes = bytes.checked_add(key.owned_allocation_capacity_bytes())?;
+            }
+            match &identity.basis {
+                crate::merge::data::IdentityBasisKind::DeclaredKeySet(keys) => {
+                    bytes = bytes.checked_add(
+                        keys.len().checked_mul(std::mem::size_of::<
+                            worth_foundational::facade::AspectKey,
+                        >())?,
+                    )?;
+                    for key in keys.iter() {
+                        bytes = bytes.checked_add(key.owned_allocation_capacity_bytes())?;
+                    }
+                }
+                crate::merge::data::IdentityBasisKind::Custom(identity) => {
+                    bytes = bytes.checked_add(identity.name.len())?;
+                }
+                _ => {}
+            }
+        }
+        bytes.checked_mul(4)
+    }
+    pub(crate) fn capture(registration: &EntityKindRegistration) -> Self {
         Self {
             kind_id: registration.kind_id,
             kind_name: registration.kind_name.clone(),
@@ -200,7 +257,7 @@ impl DurableEntitySchemaRegistration {
         }
     }
 
-    fn readmit(&self) -> Result<EntityKindRegistration, String> {
+    pub(crate) fn readmit(&self) -> Result<EntityKindRegistration, String> {
         Ok(EntityKindRegistration {
             kind_id: self.kind_id,
             kind_name: self.kind_name.clone(),

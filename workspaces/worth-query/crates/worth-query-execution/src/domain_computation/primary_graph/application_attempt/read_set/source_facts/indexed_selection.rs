@@ -127,7 +127,7 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
                     &world,
                     &predicates[0]
                 ),
-                (true, 1)
+                true
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -142,7 +142,7 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
                     &world,
                     &predicates[1]
                 ),
-                (true, 1)
+                true
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -170,7 +170,7 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         results,
-        vec![(false, 2), (true, 1)],
+        vec![false, true],
         "one predicate changes while the other survives the same index generation update"
     );
 }
@@ -180,22 +180,22 @@ fn currentness(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     fact: &Fact,
-) -> (bool, usize) {
+) -> bool {
     let selected = world.selected_product(&(phase_custody).test_host_request());
     world
         .application
         .primary_provider
         .graph
         .with_runtime(execution, |runtime| {
-            let (movement, work) = fact
-                .source_currentness_within(
+            let movement = fact
+                .source_currentness_in(
                     runtime,
                     execution,
                     selected.application_basis().snapshot_handle(),
-                    3,
                 )
+                .unwrap()
                 .unwrap();
-            (movement.movement() == Movement::Unmoved, work)
+            movement.movement() == Movement::Unmoved
         })
 }
 

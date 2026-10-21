@@ -39,8 +39,8 @@ fn prepare_with_budget(
     runtime.set_runtime_policy(
         SignalRuntimePolicy::development().with_conditional_evaluation_budget(
             SignalConditionalEvaluationBudget {
-                maximum_retained_slots: maximum_slots,
-                maximum_retained_bytes: maximum_bytes,
+                maximum_retained_slots: Some(maximum_slots),
+                maximum_retained_bytes: Some(maximum_bytes),
                 maximum_attempt_visits: Some(maximum_visits.max(100_000)),
             },
         ),

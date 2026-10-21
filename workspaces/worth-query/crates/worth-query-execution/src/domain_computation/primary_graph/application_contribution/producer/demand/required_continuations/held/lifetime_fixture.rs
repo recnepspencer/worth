@@ -2,14 +2,13 @@
 //! Its issued interest, query source, Box and Vec all own production custody.
 //! Execution metadata is dormant fixture transport; no producer can execute.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::{
-    WorthQueryProducerApplicability, WorthQueryProducerLifecyclePosture,
-    WorthQuerySelectedApplicationProducer,
-};
+use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerApplicability;
+use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture;
+use crate::domain_computation::primary_graph::application_contribution::WorthQuerySelectedApplicationProducer;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandInterest;
-use crate::domain_computation::primary_graph::tests::fixture::{
-    self, retained_output_capacity::RetainedFamily as Family, IdentityExecutionSchema as Schema,
-};
+use crate::domain_computation::primary_graph::tests::fixture;
+use crate::domain_computation::primary_graph::tests::fixture::retained_output_capacity::RetainedFamily as Family;
+use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema as Schema;
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
 
 impl WorthQueryOutputDemandInterest {
@@ -28,9 +27,8 @@ impl WorthQueryOutputDemandInterest {
     ) -> impl FnOnce() {
         let registry = self.registry_for_typed_frame_test();
         let limits = crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile::standard().limits();
-        let mut paid = admission();
         let observed_source = registry
-            .retain_readmission_source(source, limits, None, &mut paid)
+            .retain_readmission_source(source, limits, None)
             .unwrap()
             .without_row();
         let demand = WorthQueryAdmittedOutputDemand::<Schema, Family> {
@@ -43,17 +41,14 @@ impl WorthQueryOutputDemandInterest {
             },
             installed_entry: InstalledProducerProvider::lifetime_fixture(),
             observed_source, limits,
-            producer_contacts_in_this_demand: 0, checkpoint_readmission_work_units: 0,
-            checkpoint_readmission_work_bound: 0, checkpoint_readmission_charged_preparation_bytes: 0,
+            producer_contacts_in_this_demand: 0,
+
             settled: false, admission_kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
             retained_program_basis: None, progression_provenance: Default::default(),
             required_continuations: Default::default(), unpublished_selected_checkpoint: None,
             interest: Some(self), settled_at_observation: None, terminal_caller_denial: None,
         };
-        let bytes = std::mem::size_of::<TypedRequiredSuccessor<Schema, Family>>();
-        let capacity = registry
-            .reserve_required_continuation_capacity(bytes, bytes, &mut paid)
-            .unwrap();
+
         let progress = RequiredFreshProgress {
             contacts: super::super::contacts::ContactAttribution::Unowned,
             outcome: Some(RequiredFreshOutcome::Advanced),
@@ -63,21 +58,15 @@ impl WorthQueryOutputDemandInterest {
                 pending_provenance: None,
                 predecessor: None,
             }),
-            capacity,
         };
         let mut continuations = RequiredContinuations::default();
-        let slot = continuations.prepare_slot(&registry, &mut paid).unwrap();
-        paid.charge_external_work(slot.installation_work()).unwrap();
+        let slot = continuations.prepare_slot(&registry).unwrap();
+
         slot.push(progress);
         move || continuations.hold_unfinished(&registry)
     }
 }
-fn admission() -> InvalidationEditAdmission {
-    InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget {
-        maximum_work_visits: Some(1_000_000),
-        maximum_preparation_bytes: None,
-    })
-}
+
 fn observed_account_source() -> crate::domain_computation::primary_graph::WorthQueryObservedSource<
     FamilySourceQuery<Schema, Family>,
 > {
@@ -126,7 +115,6 @@ fn observed_account_source() -> crate::domain_computation::primary_graph::WorthQ
                         .unwrap(),
                     crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
                         std::num::NonZeroUsize::new(10).unwrap(),
-                        Some(std::num::NonZeroUsize::new(10_000).unwrap()),
                         &request,
                     ),
                 )

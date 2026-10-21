@@ -20,7 +20,6 @@ pub(super) enum MoneyCommand {
     },
     Read {
         maximum_results: usize,
-        maximum_work: usize,
     },
     ResumeSource,
     ReleaseCleanup,
@@ -146,7 +145,7 @@ pub(super) fn admit(
             sequence,
             controls,
         } => {
-            if controls.maximum_results == 0 || controls.maximum_work == 0 {
+            if controls.maximum_results == 0 {
                 return Err(reject(
                     Some(request_id),
                     BankHttpDenialKind::MalformedRequest,
@@ -161,7 +160,6 @@ pub(super) fn admit(
                 controls.deadline_milliseconds,
                 MoneyCommand::Read {
                     maximum_results: controls.maximum_results,
-                    maximum_work: controls.maximum_work,
                 },
             )
         }

@@ -1,20 +1,15 @@
-use std::mem::{align_of, size_of};
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
+use std::sync::OnceLock;
 
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use crate::domain_computation::execution_runtime::product_world::WorthQueryRelationalSourceOwner;
-use crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity;
-use crate::domain_computation::primary_graph::{
-    output_lineage::{
-        invalidation::{
-            FullVerificationReason, InvalidationEditAdmission, RetainedConsumedOutputCapacity,
-            SettlementRegistrationStop,
-        },
-        RecordedSettlementIdentity, SealedNativeOutputWitness,
-    },
-    SourceInvalidationOwner,
-};
+
+use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
+use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 
 mod equivalence;
 mod pending_dependency;
@@ -26,12 +21,13 @@ mod requested_read;
 mod test_support;
 mod verification;
 pub(in crate::domain_computation::primary_graph) use pending_dependency::SelectedPendingConsumedOutput;
-pub(in crate::domain_computation::primary_graph::invariant_projection) use verification::map_admission_stop;
+pub(in crate::domain_computation::primary_graph) use verification::map_admission_stop;
+pub(in crate::domain_computation::primary_graph) use verification::map_verification_stop;
+pub(in crate::domain_computation::primary_graph) use verification::reserve_pending;
+pub(in crate::domain_computation::primary_graph) use verification::ConsumedOutputVerification;
+pub(in crate::domain_computation::primary_graph) use verification::ConsumedOutputVerificationStop;
 pub(in crate::domain_computation::primary_graph) use verification::EvidenceView;
 pub use verification::VerificationCapacityStop;
-pub(in crate::domain_computation::primary_graph) use verification::{
-    ConsumedOutputVerification, ConsumedOutputVerificationStop,
-};
 
 /// One output actually selected by a projected read. The lineage owner minted
 /// the identity; Arc only shares retained evidence and is not an identity.
@@ -45,8 +41,6 @@ pub(in crate::domain_computation::primary_graph) struct ConsumedOutputEvidence {
     verification_requirement: Option<FullVerificationReason>,
     native_output_witness: Option<Arc<OnceLock<SealedNativeOutputWitness>>>,
     selected_native_root: Arc<PositionedRelationalSnapshot>,
-    _capacity: RetainedConsumedOutputCapacity,
-    backing_capacity: Option<Arc<RetainedInvalidationCapacity>>,
 }
 
 impl PartialEq for ConsumedOutputEvidence {
@@ -83,7 +77,6 @@ impl ConsumedOutputEvidence {
         verification_requirement: Option<FullVerificationReason>,
         native_output_witness: Arc<OnceLock<SealedNativeOutputWitness>>,
         selected_native_root: Arc<PositionedRelationalSnapshot>,
-        capacity: RetainedConsumedOutputCapacity,
     ) -> Self {
         Self {
             _computation: computation,
@@ -93,43 +86,7 @@ impl ConsumedOutputEvidence {
             verification_requirement,
             native_output_witness: Some(native_output_witness),
             selected_native_root,
-            _capacity: capacity,
-            backing_capacity: None,
         }
-    }
-
-    pub(super) const fn metadata_bytes() -> u64 {
-        (size_of::<Self>()
-            + size_of::<RecordedSettlementIdentity>()
-            + size_of::<usize>() * 2
-            + align_of::<RecordedSettlementIdentity>() * 2) as u64
-    }
-
-    /// Admits the one shared allocation `consumed` is held in, on the meter
-    /// of the request that consumed them. Every edge keeps the ticket, so a
-    /// selected upstream edge keeps the backing funded after the lineage and
-    /// attempt that consumed it retire.
-    pub(in crate::domain_computation::primary_graph) fn admit_backing(
-        consumed: &mut [Self],
-        owner: &SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), ConsumedOutputVerificationStop> {
-        if consumed.is_empty() {
-            return Ok(());
-        }
-        let bytes = consumed
-            .len()
-            .checked_mul(size_of::<Self>())
-            .and_then(|bytes| bytes.checked_add(size_of::<usize>() * 2 + align_of::<Self>() * 2))
-            .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
-        let backing = owner
-            .retain_consumed_output_backing(bytes, admission)
-            .map_err(map_admission_stop)?;
-        for edge in consumed {
-            edge.backing_capacity = Some(Arc::clone(&backing));
-        }
-        Ok(())
     }
 
     pub(in crate::domain_computation::primary_graph) fn identity(
@@ -144,7 +101,6 @@ impl ConsumedOutputEvidence {
     pub(in crate::domain_computation::primary_graph) fn establish_restored(
         &self,
         owner: &SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, SettlementRegistrationStop> {
         if self.verification_requirement != Some(FullVerificationReason::CheckpointRestore) {
             return Ok(true);
@@ -161,7 +117,6 @@ impl ConsumedOutputEvidence {
             &self.identity,
             &self.source_facts,
             witness,
-            admission,
         )
     }
 
@@ -171,7 +126,6 @@ impl ConsumedOutputEvidence {
     pub(in crate::domain_computation::primary_graph) fn claim_verified_checkpoint_root(
         &self,
         owner: &SourceInvalidationOwner,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, SettlementRegistrationStop> {
         if self.verification_requirement != Some(FullVerificationReason::CheckpointRestore)
             || !self.upstream.is_empty()
@@ -180,12 +134,12 @@ impl ConsumedOutputEvidence {
                 .as_ref()
                 .and_then(|witness| witness.get())
                 .is_none()
-            || !self.establish_restored(owner, admission)?
+            || !self.establish_restored(owner)?
         {
             return Ok(false);
         }
         Ok(matches!(
-            owner.currentness(&self.selected_native_root, &self.identity, admission)?,
+            owner.currentness(&self.selected_native_root, &self.identity)?,
             crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness::Clean
         ))
     }
@@ -198,17 +152,13 @@ impl ConsumedOutputEvidence {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source_owner: &WorthQueryRelationalSourceOwner,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), ConsumedOutputVerificationStop> {
         if self.verification_requirement != Some(FullVerificationReason::CheckpointRestore) {
             return Ok(());
         }
         use crate::domain_computation::primary_graph::output_lineage::invalidation::HeadCellRegistrationStop;
-        match source_owner.mint_mark_cell_at_head(
-            execution,
-            self.selected_native_root.branch_id(),
-            admission,
-        ) {
+        match source_owner.mint_mark_cell_at_head(execution, self.selected_native_root.branch_id())
+        {
             Ok(()) => {}
             Err(HeadCellRegistrationStop::Admission(stop)) => return Err(map_admission_stop(stop)),
             Err(HeadCellRegistrationStop::Native(stop)) => {
@@ -226,7 +176,7 @@ impl ConsumedOutputEvidence {
             }
             Err(HeadCellRegistrationStop::LookupChanged) => return Ok(()),
         }
-        let established = self.establish_restored(&source_owner.invalidation_owner, admission);
+        let established = self.establish_restored(&source_owner.invalidation_owner);
         match established {
             Err(SettlementRegistrationStop::Admission(stop)) => Err(map_admission_stop(stop)),
             Ok(_)

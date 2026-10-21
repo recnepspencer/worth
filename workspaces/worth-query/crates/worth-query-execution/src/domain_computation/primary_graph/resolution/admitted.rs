@@ -1,15 +1,14 @@
 //! Fresh installed principal decode from one bounded selected native image.
 
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
-use worth_query_installation::facade::{
-    ApplicationIdentityScalarValueBinding, WorthQueryInstalledPrincipalBinding,
-};
-use worth_relational::facade::mvcc::CompanionPreflightStop;
-use worth_relational::facade::runtime::{RelationalRuntime, VisibilityProjectionView};
+use worth_query_installation::facade::ApplicationIdentityScalarValueBinding;
+use worth_query_installation::facade::WorthQueryInstalledPrincipalBinding;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::runtime::VisibilityProjectionView;
 
 use super::super::authenticated_principal::WorthQueryResolvedPrincipalEvidence;
 use super::super::freshness::WorthQueryPrincipalFreshnessEvidence;
-use super::super::output_lineage::invalidation::InvalidationEditAdmission;
+
 use super::super::WorthQueryPrincipalResolutionDenialKind;
 use super::admitted_lookup::AdmittedPrincipalLookupStop;
 use super::admitted_observations::AdmittedPrincipalObservationStop;
@@ -17,7 +16,6 @@ use super::WorthQueryPrincipalSnapshotResolution;
 
 #[derive(Debug)]
 pub(super) enum AdmittedPrincipalResolutionStop {
-    Admission(CompanionPreflightStop),
     Index(worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind),
     Semantic(WorthQueryPrincipalResolutionDenialKind),
 }
@@ -25,7 +23,6 @@ pub(super) enum AdmittedPrincipalResolutionStop {
 impl From<AdmittedPrincipalLookupStop> for AdmittedPrincipalResolutionStop {
     fn from(stop: AdmittedPrincipalLookupStop) -> Self {
         match stop {
-            AdmittedPrincipalLookupStop::Admission(stop) => Self::Admission(stop),
             AdmittedPrincipalLookupStop::Index(kind) => Self::Index(kind),
             AdmittedPrincipalLookupStop::Semantic(kind) => Self::Semantic(kind),
         }
@@ -35,7 +32,6 @@ impl From<AdmittedPrincipalLookupStop> for AdmittedPrincipalResolutionStop {
 impl From<AdmittedPrincipalObservationStop> for AdmittedPrincipalResolutionStop {
     fn from(stop: AdmittedPrincipalObservationStop) -> Self {
         match stop {
-            AdmittedPrincipalObservationStop::Admission(stop) => Self::Admission(stop),
             AdmittedPrincipalObservationStop::Semantic(kind) => Self::Semantic(kind),
         }
     }
@@ -61,7 +57,6 @@ pub(super) fn resolve_at_snapshot<
         PrincipalIdentity,
         PrincipalIdentityBinding,
     >,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<WorthQueryResolvedPrincipalEvidence<PrincipalIdentity>, AdmittedPrincipalResolutionStop>
 where
     PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
@@ -69,9 +64,9 @@ where
 {
     use AdmittedPrincipalResolutionStop as Stop;
     let checked = super::admitted_lookup::resolve_unique_mapping_candidate(
-        runtime, execution, view, resolution, admission,
+        runtime, execution, view, resolution,
     )?;
-    let mapping = super::admitted_observations::observe_mapping(execution, &checked, admission)?;
+    let mapping = super::admitted_observations::observe_mapping(execution, &checked)?;
     if !mapping.enabled {
         return Err(Stop::Semantic(
             WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::DisabledPrincipal),
@@ -82,9 +77,8 @@ where
         view,
         mapping.entity_id,
         resolution.layout,
-        admission,
     )?;
-    admission.charge_external_work(1).map_err(Stop::Admission)?;
+
     let principal_identity = installed_binding
         .decode_principal_identity(&target.principal_identity)
         .map_err(|_| {
@@ -92,12 +86,7 @@ where
                 PrincipalRefusal::StalePrincipalProof,
             ))
         })?;
-    let text_bytes = u64::try_from(resolution.binding.len())
-        .map_err(|_| Stop::Admission(CompanionPreflightStop::WorkCounterOverflow))?;
-    admission
-        .admit_read_scratch(text_bytes)
-        .and_then(|()| admission.charge_external_work(text_bytes.saturating_add(1)))
-        .map_err(Stop::Admission)?;
+
     let principal_entity_id = target.target;
     let target_relation_id = target.relation_id;
     let mapping_entity_id = mapping.entity_id;

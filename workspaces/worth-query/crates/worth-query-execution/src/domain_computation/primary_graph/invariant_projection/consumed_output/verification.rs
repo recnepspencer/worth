@@ -1,36 +1,40 @@
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
+use std::sync::OnceLock;
 
 use im::OrdSet;
-use worth_relational::facade::mvcc::{
-    CompanionCellEditStop, CompanionPreflightStop, RelationalInterruptionEvent,
-};
-use worth_relational::facade::runtime::{PositionedRelationalSnapshot, RelationalRuntime};
+use worth_relational::facade::mvcc::CompanionCellEditStop;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::mvcc::RelationalInterruptionEvent;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 use super::ConsumedOutputEvidence;
 
 mod at_observation;
+mod candidate;
 mod capacity_stop;
 mod equality_recovery;
 mod marked_walk;
 mod restored_root;
 mod work_budget;
-use crate::domain_computation::primary_graph::{
-    application_attempt::{
-        Movement, WorthQueryApplicationObservedFact, WorthQuerySourceCurrentnessFailure,
-    },
-    output_lineage::{
-        invalidation::{
-            ConsumedOutputCurrentness, DirtyReverification, FullVerificationReason,
-            InvalidationEditAdmission, SettlementVerificationStop, SourceSettlementCurrentness,
-        },
-        RecordedSettlementIdentity, SealedNativeOutputWitness,
-    },
-    SourceInvalidationOwner,
-};
+use crate::domain_computation::primary_graph::application_attempt::Movement;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::ConsumedOutputCurrentness;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::DirtyReverification;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementVerificationStop;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness;
+use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 pub use capacity_stop::VerificationCapacityStop;
-pub(in crate::domain_computation::primary_graph::invariant_projection) use work_budget::map_admission_stop;
-use work_budget::{charge_external, fact_is_current, map_verification_stop, reserve_pending};
+
+use work_budget::fact_is_current;
+pub(in crate::domain_computation::primary_graph) use work_budget::map_admission_stop;
+pub(in crate::domain_computation::primary_graph) use work_budget::map_verification_stop;
+pub(in crate::domain_computation::primary_graph) use work_budget::reserve_pending;
 
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) struct EvidenceView<'a> {
@@ -51,7 +55,8 @@ impl<'a> EvidenceView<'a> {
     }
     pub(in crate::domain_computation::primary_graph) fn source_facts(
         self,
-    ) -> &'a [WorthQueryApplicationObservedFact] {
+    ) -> &'a crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload
+    {
         self.source_facts
     }
     pub(in crate::domain_computation::primary_graph) fn upstream(
@@ -89,11 +94,29 @@ pub(in crate::domain_computation::primary_graph) enum ConsumedOutputVerification
     Current,
     ChangedDirectFact(usize),
     ChangedUpstream,
+    /// Native pending state, prior to ordinary driving-policy translation.
+    PendingUpstream,
+    /// A recorded output witness moved, not merely its input source facts.
+    ChangedOutput,
+    /// Evidence is from a different or later native source position.
+    Unaligned,
+}
+impl ConsumedOutputVerification {
+    fn driving(self) -> Result<Self, ConsumedOutputVerificationStop> {
+        match self {
+            Self::PendingUpstream => Err(ConsumedOutputVerificationStop::PendingUpstream),
+            Self::ChangedOutput | Self::Unaligned => Ok(Self::ChangedUpstream),
+            other => Ok(other),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum ConsumedOutputVerificationStop {
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
+    SourceQueryAuthorization(
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    ),
     Unavailable,
     CapacityExhausted(VerificationCapacityStop),
     PendingUpstream,
@@ -105,74 +128,6 @@ pub(in crate::domain_computation::primary_graph) enum ConsumedOutputVerification
 }
 
 impl ConsumedOutputEvidence {
-    /// The source owner decides whether this settlement is clean, which exact
-    /// fact ordinals are dirty, or whether retained evidence must be verified.
-    /// Every actor lookup and fact comparison is paid from the caller's meter.
-    /// The iterative worklist visits each exact settlement at most once.
-    pub(in crate::domain_computation::primary_graph::invariant_projection) fn verify_candidate_at(
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        identity: &Arc<RecordedSettlementIdentity>,
-        source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
-        upstream: &[ConsumedOutputEvidence],
-        verification_requirement: Option<FullVerificationReason>,
-        native_output_witness: &Arc<OnceLock<SealedNativeOutputWitness>>,
-        observed: &PositionedRelationalSnapshot,
-        owner: &SourceInvalidationOwner,
-        runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
-        selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
-        Self::verify_views(
-            execution,
-            std::iter::once(EvidenceView {
-                identity,
-                source_facts,
-                upstream,
-                verification_requirement,
-                native_output_witness: Some(native_output_witness),
-                selected_native_root: observed,
-            }),
-            owner,
-            runtime,
-            snapshot,
-            selected,
-            admission,
-        )
-    }
-
-    #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn verify_candidate_with_admission(
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        identity: &Arc<RecordedSettlementIdentity>,
-        source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
-        upstream: &[ConsumedOutputEvidence],
-        verification_requirement: Option<FullVerificationReason>,
-        observed: &PositionedRelationalSnapshot,
-        owner: &SourceInvalidationOwner,
-        runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
-        selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
-        Self::verify_views(
-            execution,
-            std::iter::once(EvidenceView {
-                identity,
-                source_facts,
-                upstream,
-                verification_requirement,
-                native_output_witness: None,
-                selected_native_root: observed,
-            }),
-            owner,
-            runtime,
-            snapshot,
-            selected,
-            admission,
-        )
-    }
-
     pub(in crate::domain_computation::primary_graph) fn verify_many_with_admission(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         roots: &[Self],
@@ -180,7 +135,6 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         Self::verify_views(
             execution,
@@ -189,7 +143,6 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
-            admission,
         )
     }
 
@@ -200,7 +153,17 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
+    ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
+        Self::observe_views(execution, roots, owner, runtime, snapshot, selected)?.driving()
+    }
+
+    fn observe_views<'a>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        roots: impl ExactSizeIterator<Item = EvidenceView<'a>> + Clone,
+        owner: &SourceInvalidationOwner,
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+        selected: &PositionedRelationalSnapshot,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         if !owner.invalidation_equivalence_is_armed() {
             return Self::verify_optimized_views(
@@ -210,14 +173,13 @@ impl ConsumedOutputEvidence {
                 runtime,
                 snapshot,
                 selected,
-                admission,
-                |result, _| result,
+                |result| result,
             );
         }
         if roots.len() == 0 {
             return Ok(ConsumedOutputVerification::Current);
         }
-        let image = owner.capture_full_verification(runtime, snapshot, selected, admission);
+        let image = owner.capture_full_verification(runtime, snapshot, selected);
         let oracle_roots = roots.clone();
         Self::verify_optimized_views(
             execution,
@@ -226,10 +188,9 @@ impl ConsumedOutputEvidence {
             runtime,
             snapshot,
             selected,
-            admission,
-            |result, admission| {
+            |result| {
                 owner.record_invalidation_shadow_check();
-                super::equivalence::check(execution, oracle_roots, image, result, admission)
+                super::equivalence::check(execution, oracle_roots, image, result)
             },
         )
     }
@@ -241,10 +202,8 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
         shadow: impl FnOnce(
             Result<ConsumedOutputVerification, ConsumedOutputVerificationStop>,
-            &mut InvalidationEditAdmission,
         )
             -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop>,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
@@ -261,7 +220,6 @@ impl ConsumedOutputEvidence {
             &mut verified,
             &mut marked,
             &mut recovered,
-            admission,
         );
         // Index eviction leaves native evidence intact. Every caller,
         // including precommit verification, compares that evidence at its
@@ -273,26 +231,20 @@ impl ConsumedOutputEvidence {
                     if prior != ConsumedOutputVerification::Current {
                         return Ok(prior);
                     }
-                    Self::compare_in_full(execution, root, runtime, snapshot, selected, admission)
+                    Self::compare_in_full(execution, root, runtime, snapshot, selected)
                 })
         } else {
             marked_result
         };
-        let result = shadow(result, admission);
+        let result = shadow(result);
         if result == Ok(ConsumedOutputVerification::Current) {
             for row in recovered {
                 let facts = row
                     .facts
                     .for_comparison()
                     .expect("only comparable terminal rows completed recovery");
-                let _ = owner.reestablish_verified(
-                    runtime,
-                    snapshot,
-                    selected,
-                    &row.identity,
-                    &facts,
-                    admission,
-                );
+                let _ =
+                    owner.reestablish_verified(runtime, snapshot, selected, &row.identity, &facts);
             }
             // Each of these rows had its facts and output compared in full.
             // Consumed rows come last, so they are re-established first and
@@ -307,12 +259,18 @@ impl ConsumedOutputEvidence {
                     selected,
                     evidence.identity,
                     evidence.source_facts,
-                    admission,
                 );
             }
             // Rows answered from their marks are verified through this image.
-            let _ = owner.carry_read_basis(runtime, snapshot, selected, &marked, admission);
+            let _ = owner.carry_read_basis(runtime, snapshot, selected, &marked);
         }
         result
     }
 }
+
+impl std::fmt::Display for ConsumedOutputVerificationStop {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "native output verification: {self:?}")
+    }
+}
+impl std::error::Error for ConsumedOutputVerificationStop {}

@@ -108,34 +108,6 @@ fn an_output_readmitted_after_a_checkpoint_then_restored_is_never_created_a_seco
     assert_preserved_once(&request, &restored, &ring);
 }
 
-/// Recording a restoration is an invalidation edit, bounded by the installed
-/// invalidation work. Under this allowance the first demand performs, and the
-/// restored row is recorded with no settlement registered for it.
-const RECORDING_STOPS: u64 = 1_024;
-
-#[test]
-fn an_output_whose_restoration_could_not_be_recorded_is_preserved_not_created_again() {
-    let _guard = checkpoint_recovery_test_guard();
-    let application = support::install_program_with_seed::<CheckpointProgram>(
-        None,
-        Default::default(),
-        32,
-        128 * 1_024 * 1_024,
-        Some(RECORDING_STOPS),
-        support::seed_cycle,
-    );
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    drop(settle(&request, &application));
-    let ring = ring(&request);
-
-    suspend_and_restore(&application, &request, &scope, &ring);
-
-    // The restored row has no settlement to cut off against, so its creating
-    // producer is not selected for it.
-    assert_preserved_once(&request, &application, &ring);
-}
-
 /// Demands the program's outputs and reports how its final output settled.
 /// A second creation over the live ring would leave two bodies under one key,
 /// which `ring` refuses to read.

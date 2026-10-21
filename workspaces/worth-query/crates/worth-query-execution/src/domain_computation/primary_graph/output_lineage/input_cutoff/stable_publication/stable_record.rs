@@ -1,24 +1,24 @@
 //! Metered composition of an original handler prefix and a fresh source suffix.
 
-use std::{mem::size_of, sync::Arc};
+use std::sync::Arc;
 
-use worth_foundational::facade::AspectFieldLocator;
-use worth_relational::facade::mvcc::CompanionPreflightStop;
-
-use super::{PreparedStableLineageAddress, PreparedStableLineagePublication};
-use crate::domain_computation::primary_graph::{
-    application_query::BoundStableObservedSourceFacts,
-    output_lineage::{
-        invalidation::{arc_slice_bytes, retained_fact_payload_bytes, InvalidationEditAdmission},
-        RecordedOutput, RecordedOutputMutable, RecordedSourceIdentity,
-    },
-    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationObservedFact as Fact,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind as Kind,
-};
+use super::PreparedStableLineageAddress;
+use super::PreparedStableLineagePublication;
+use super::StableFactSpans;
+use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use crate::domain_computation::primary_graph::application_query::BoundStableObservedSourceFacts;
+use crate::domain_computation::primary_graph::output_lineage::RecordedOutput;
+use crate::domain_computation::primary_graph::output_lineage::RecordedOutputMutable;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity;
+use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
 
 impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
     /// All allocation and retained custody is admitted before copying the
-    /// verified handler facts or consuming the fresh source fact carrier.
+    /// fresh suffix facts or consuming the exact source binding. Shared
+    /// handler facts are never flattened or deep-copied.
     pub(in crate::domain_computation::primary_graph) fn prepare_record<
         Schema,
         Operation,
@@ -28,12 +28,17 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
         mut self,
         fresh: BoundStableObservedSourceFacts,
         operation: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-        admission: &mut InvalidationEditAdmission,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<PreparedStableLineagePublication<'lane, 'selected>, WorthQueryOutputDemandDenial>
     {
         if !fresh.matches_operation(operation) {
             return Err(denial(Kind::ForeignSource));
         }
+        let control = StorageControl::new(
+            execution.allocation_policy(),
+            Some(operation.publication_request()),
+        );
+        control.check_live().map_err(super::storage_denial)?;
         let fresh_key = self
             .verified
             .fresh_key
@@ -50,89 +55,52 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
         let prefix = self
             .verified
             .verified_facts
-            .get(..prefix_count)
+            .checked_slice(0..prefix_count)
             .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
         let witness_facts = candidate
             .native_output_witness()
             .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?
-            .prepare_fact_projection(admission)
-            .map_err(work_denial)?
+            .prepare_fact_projection()
+            .map_err(|stop| {
+                crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
+                    crate::domain_computation::primary_graph::output_reuse::preflight_stop(stop),
+                    "stable output witness projection",
+                )
+            })?
             .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
-        let suffix = fresh.source_facts();
-        let total = prefix_count
-            .checked_add(witness_facts.count())
-            .and_then(|count| count.checked_add(suffix.len()))
-            .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?;
+        let witness_count = witness_facts.count();
         if fresh.bound_source().partition_identity() != self.partition {
             return Err(denial(Kind::ForeignSource));
         }
+        prefix_count
+            .checked_add(witness_count)
+            .and_then(|count| count.checked_add(fresh.source_facts().len()))
+            .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?;
+        // Only genuinely new suffix facts are copied. The verified handler
+        // prefix keeps its native/decoded backing and all existing grants.
 
-        let mut retained_payload = witness_facts.retained_payload_bytes();
-        let mut cloned_payload = retained_payload;
-        for fact in prefix {
-            admission.charge_external_work(1).map_err(work_denial)?;
-            let payload = retained_fact_payload_bytes(fact, admission).map_err(footprint_denial)?;
-            retained_payload = retained_payload
-                .checked_add(payload)
-                .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
-            cloned_payload = cloned_payload
-                .checked_add(payload)
-                .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
-            charge_initialized_clone(fact, admission).map_err(work_denial)?;
-        }
-        for fact in suffix {
-            admission.charge_external_work(1).map_err(work_denial)?;
-            retained_payload = retained_payload
-                .checked_add(
-                    retained_fact_payload_bytes(fact, admission).map_err(footprint_denial)?,
-                )
-                .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
-        }
-        let count = u64::try_from(total).map_err(|_| denial(Kind::WorkBudgetExceeded))?;
-        // Building the flat Vec initializes every row (including the cloned
-        // prefix); Arc conversion copies every initialized row again.
-        admission
-            .charge_external_work(
-                count
-                    .checked_mul(2)
-                    .and_then(|units| units.checked_add(5))
-                    .ok_or_else(|| denial(Kind::WorkBudgetExceeded))?,
-            )
-            .map_err(work_denial)?;
-        let vec_bytes = total
-            .checked_mul(size_of::<Fact>())
-            .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
-        let arc_bytes =
-            arc_slice_bytes::<Fact>(total).ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
-        let peak = vec_bytes
-            .checked_add(crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::retention_storage_bytes().ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?)
-            .and_then(|bytes| bytes.checked_add(arc_bytes))
-            .and_then(|bytes| bytes.checked_add(cloned_payload))
-            .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?;
-        admission.admit_read_scratch(peak).map_err(memory_denial)?;
-        self.retained_capacity
-            .as_mut()
-            .expect("prepared stable address retains capacity")
-            .reserve_additional(
-                arc_bytes
-                    .checked_add(crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload::retention_storage_bytes().ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?)
-                    .and_then(|bytes| bytes.checked_add(retained_payload))
-                    .ok_or_else(|| denial(Kind::RetentionBudgetExceeded))?,
-            )?;
+        let suffix = FactPayload::copy_funded(fresh.source_facts(), control)
+            .map_err(super::storage_denial)?;
+        let witness = witness_facts
+            .retain_payload(control)
+            .map_err(super::storage_denial)?;
+        let facts = prefix
+            .append_completed(witness, control)
+            .and_then(|body| body.append_completed(suffix, control))
+            .map_err(super::storage_denial)?;
+        let spans = StableFactSpans::new(facts.clone(), prefix_count, witness_count)
+            .ok_or_else(|| denial(Kind::IncompleteDependencyCoverage))?;
+        // This is the installed aggregate retention policy's complete cached
+        // descriptor, not an allocation quote for a new copy of shared facts.
 
-        let mut combined = Vec::with_capacity(total);
-        combined.extend(prefix.iter().cloned());
-        witness_facts.append_into(&mut combined);
         let bound = fresh
-            .append_into_stable_facts(operation, &mut combined)
+            .finish_stable(operation)
             .map_err(|_| denial(Kind::ForeignSource))?;
-        let facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload = combined.into();
         let performed_origin = origin_cell(candidate);
         let recorded = RecordedOutput {
+            required_publication: origin.required_publication.clone(),
             native_prior_checkpoint: None,
             computation_source: selected_row.computation_source,
-            _retained_capacity: None,
             performed_origin: Some(performed_origin),
             consumed_outputs: self
                 .verified
@@ -151,17 +119,19 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
             source_partition_identity: Some(bound.partition_identity()),
             producer_dependency_identity: origin.producer_dependency_identity,
             idempotency_key_identity: origin.idempotency_key_identity,
-            mutable: std::sync::Mutex::new(RecordedOutputMutable::new(
-                None,
-                (Some(facts.clone()))
-                    .map(|facts| selected_row.computation_source.retain_facts(facts)),
-                selected_row
-                    .mutable
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner)
-                    .computation
-                    .shared(),
-            )),
+            mutable: std::sync::Mutex::new(
+                RecordedOutputMutable::new(
+                    None,
+                    Some(selected_row.computation_source.retain_facts(facts.clone())),
+                    selected_row
+                        .mutable
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .computation
+                        .shared(),
+                )
+                .with_stable_fact_spans(spans),
+            ),
         };
         Ok(PreparedStableLineagePublication {
             address: self,
@@ -180,85 +150,6 @@ fn origin_cell(
         .as_ref()
         .map(Arc::clone)
         .unwrap_or_else(|| Arc::clone(&candidate.cell))
-}
-
-pub(super) fn charge_initialized_clone(
-    fact: &Fact,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<(), CompanionPreflightStop> {
-    let work = match fact {
-        Fact::SourceEntity { .. }
-        | Fact::Entity { .. }
-        | Fact::WorkflowDefinitionPredecessor { .. }
-        | Fact::WorkflowDefinitionCurrent { .. } => 0,
-        Fact::RetiredOutputEntity { read_locator, .. } => initialized(read_locator.len())?,
-        Fact::SourceAspectRevision { aspect, .. } | Fact::AspectPresence { aspect, .. } => {
-            initialized(aspect.as_str().len())?
-        }
-        Fact::SourceFieldRevision { locator, .. } | Fact::AbsentField { locator, .. } => {
-            return charge_locator(locator, admission);
-        }
-        Fact::SourceAdjacencyRevision { endpoints, .. } => initialized(endpoints.len())?,
-        Fact::Field { locator, value, .. } => {
-            charge_locator(locator, admission)?;
-            initialized(value.semantic_byte_width())?
-        }
-        Fact::Relation {
-            matching_relations, ..
-        } => initialized(matching_relations.len())?,
-        Fact::Adjacency { relations, .. } => initialized(relations.len())?,
-        Fact::IndexedEntitySelection {
-            locator,
-            value,
-            candidates,
-            ..
-        } => {
-            charge_locator(locator, admission)?;
-            initialized(value.semantic_byte_width())?
-                .checked_add(initialized(candidates.len())?)
-                .and_then(|n| n.checked_add(1))
-                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?
-        }
-        Fact::WorkflowInstanceCapacity { instances, .. } => initialized(instances.len())?,
-        Fact::WorkflowHistoryBasis { snapshot, .. } => initialized(snapshot.branch_id().0.len())?,
-    };
-    admission.charge_external_work(work)
-}
-
-fn charge_locator(
-    locator: &AspectFieldLocator,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<(), CompanionPreflightStop> {
-    let fields = locator.field_path().fields();
-    admission.charge_external_work(initialized(fields.len())?)?;
-    let mut work = initialized(locator.aspect().aspect_key().as_str().len())?;
-    for field in fields {
-        work = work
-            .checked_add(initialized(field.as_str().len())?)
-            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-    }
-    admission.charge_external_work(work)
-}
-
-fn initialized(count: usize) -> Result<u64, CompanionPreflightStop> {
-    u64::try_from(count).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)
-}
-
-fn work_denial(_: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
-    denial(Kind::WorkBudgetExceeded)
-}
-
-fn footprint_denial(stop: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
-    match stop {
-        CompanionPreflightStop::WorkExhausted { .. }
-        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-        | CompanionPreflightStop::WorkCounterOverflow => denial(Kind::WorkBudgetExceeded),
-        _ => denial(Kind::RetentionBudgetExceeded),
-    }
-}
-
-fn memory_denial(_: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
-    denial(Kind::RetentionBudgetExceeded)
 }
 
 fn denial(kind: Kind) -> WorthQueryOutputDemandDenial {

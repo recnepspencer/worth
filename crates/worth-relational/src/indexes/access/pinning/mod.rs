@@ -11,7 +11,6 @@ mod inspection;
 mod query_index_parity;
 mod related_ordering;
 mod relation_join;
-mod selected_field;
 mod snapshot_field;
 #[cfg(test)]
 use super::execution::execute_index_backed_query_from_generation;

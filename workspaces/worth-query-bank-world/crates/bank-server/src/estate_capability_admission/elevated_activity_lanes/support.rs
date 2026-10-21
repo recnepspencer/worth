@@ -96,7 +96,7 @@ pub(super) fn activity_request() -> EstateEmergencyAccessActivityRequest {
 }
 
 pub(super) fn controls(maximum_results: usize) -> BankReadControls {
-    BankReadControls::current(request_scope(), maximum_results, 20_000).unwrap()
+    BankReadControls::current(request_scope(), maximum_results).unwrap()
 }
 
 pub(super) fn take_first_requested(world: &mut ActivityWorld) -> BankRequestedEstateElevation {

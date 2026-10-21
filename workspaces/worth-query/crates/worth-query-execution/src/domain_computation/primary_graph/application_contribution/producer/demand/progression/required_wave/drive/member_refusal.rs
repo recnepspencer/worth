@@ -49,7 +49,6 @@ impl<'a, Schema: ApplicationSchema + 'static> RefusingMember<'a, Schema> {
         stop: WorthQueryOutputDemandDenial,
         recording: StopRecording,
         queue: &mut QueuedRequiredRoots,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<RefusalEnd, WorthQueryOutputDemandDenial> {
         let mut stop = member_stop(stop)?;
         let row = match self.row {
@@ -75,7 +74,7 @@ impl<'a, Schema: ApplicationSchema + 'static> RefusingMember<'a, Schema> {
             return Ok(RefusalEnd::QueueBudget);
         }
         if let Some(queued) = self.member.queued.take() {
-            queue.hold_root(queued, Some(stop), admission)?;
+            queue.hold_root(queued, Some(stop))?;
         }
         Ok(RefusalEnd::Held)
     }

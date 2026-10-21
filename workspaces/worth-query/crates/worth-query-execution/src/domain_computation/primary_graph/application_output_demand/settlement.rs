@@ -9,18 +9,19 @@ use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-use super::{ReadyCompletion, WorthQueryAcceptedOutputAuthority};
+use super::ReadyCompletion;
+use super::WorthQueryAcceptedOutputAuthority;
 use crate::basis::WorthQueryProductObservationLease;
-use crate::domain_computation::primary_graph::output_lineage::{
-    invalidation::InvalidationEditAdmission, BoundCurrentAcceptedOutput,
-};
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationOutputCorrespondence,
-    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationReadObservation,
-    WorthQueryApplicationTypedOutputCorrespondence, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQueryPrimaryGraphApplicationRuntime,
-    WorthQuerySelectedProductOperation,
-};
+use crate::domain_computation::primary_graph::output_lineage::BoundCurrentAcceptedOutput;
+use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial;
+use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
+use crate::domain_computation::primary_graph::WorthQueryApplicationTypedOutputCorrespondence;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 
 use super::WorthQueryOutputReadinessDeliveryEvidence;
 
@@ -334,16 +335,7 @@ where
             .output_lineage
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let mut admission = self
-            .primary_provider
-            .graph
-            .source_owner
-            .invalidation_owner
-            .edit_admission_with_work_limit(
-                self.output_demand_resource_profile()
-                    .limits()
-                    .source_currentness_work(),
-            );
+
         let facts = match settlement.application_commit_receipt() {
             Some(receipt) => lineage.source_facts_for_receipt(
                 self.runtime.authority_identity().as_u64(),
@@ -351,7 +343,6 @@ where
                 selected.product().observation(),
                 receipt,
                 execution,
-                &mut admission,
             ),
             None => match settlement.stable.as_ref() {
                 Some(stable) => lineage.source_facts_for_stable_output(
@@ -360,7 +351,6 @@ where
                     selected.product().observation(),
                     stable,
                     execution,
-                    &mut admission,
                 ),
                 None => lineage.source_facts_for_restored_output(
                     self.runtime.authority_identity().as_u64(),
@@ -368,7 +358,6 @@ where
                     selected.product().observation(),
                     settlement,
                     execution,
-                    &mut admission,
                 ),
             },
         };

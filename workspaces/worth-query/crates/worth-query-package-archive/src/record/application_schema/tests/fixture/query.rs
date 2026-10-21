@@ -157,7 +157,7 @@ fn live_cause() -> ApplicationQueryLiveCauseContract {
             target_field: text("field"),
             target_value_type: type_id("u64"),
             target_mode: worth_query_declaration::facade::application_query::ApplicationQueryLiveTargetMode::Collection,
-            resources: ApplicationQueryLiveResourceContract::bounded(8, 16, 1024),
+
         },
     )
 }

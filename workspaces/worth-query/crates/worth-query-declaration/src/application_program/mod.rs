@@ -66,9 +66,9 @@ pub use derived_artifact::{
     ApplicationDerivedArtifactGovernance,
 };
 pub use derived_collection::{
-    ApplicationCollectionContributor, ApplicationCollectionGrouping,
-    ApplicationCollectionIncompletePosture, ApplicationCollectionLineage,
-    ApplicationCollectionMeasures, ApplicationDerivedCollection,
+    ApplicationCollectionCompleteness, ApplicationCollectionContributor,
+    ApplicationCollectionGrouping, ApplicationCollectionIncompletePosture,
+    ApplicationCollectionLineage, ApplicationCollectionMeasures, ApplicationDerivedCollection,
     ApplicationDerivedCollectionDeclaration,
 };
 pub use evaluated_requirement::{

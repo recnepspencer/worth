@@ -10,6 +10,8 @@ pub enum WorthQueryCheckpointCaptureDenial {
     ForeignPhase(super::super::WorthQueryForeignAdvancementPhase),
     Durability(DurabilityError),
     Allocation(ExecutionAllocationDenial),
+    /// Original execution stopped, or cannot fund the required capture contract.
+    Execution(super::super::WorthQueryPrimaryGraphInstallationDenial),
 }
 
 impl From<RelationalNativeCheckpointCaptureDenial> for WorthQueryCheckpointCaptureDenial {
@@ -36,6 +38,7 @@ impl From<ExecutionAllocationDenial> for WorthQueryCheckpointCaptureDenial {
 impl std::fmt::Display for WorthQueryCheckpointCaptureDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Execution(error) => write!(formatter, "checkpoint execution: {error:?}"),
             Self::ForeignPhase(error) => write!(formatter, "checkpoint phase: {error:?}"),
             Self::Durability(error) => write!(formatter, "checkpoint durability: {error:?}"),
             Self::Allocation(error) => write!(formatter, "checkpoint allocation: {error:?}"),

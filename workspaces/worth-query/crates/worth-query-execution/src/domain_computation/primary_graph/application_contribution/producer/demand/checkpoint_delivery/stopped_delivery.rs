@@ -1,15 +1,15 @@
 //! A real World authority mismatch stops delivery without freezing its peers.
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_output_demand::{
-        PreparedReadyBacking, PublicationHeadSelection, RunningSelectedExecution,
-        WorthQueryOutputDemandAdvanceAdmission as Admission, WorthQueryOutputDemandKey,
-    },
-    output_lineage::invalidation::InvalidationEditAdmission,
-    tests::{fixture, recoverable_commit_support},
-};
+use crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking;
+use crate::domain_computation::primary_graph::application_output_demand::PublicationHeadSelection;
+use crate::domain_computation::primary_graph::application_output_demand::RunningSelectedExecution;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandAdvanceAdmission as Admission;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey;
+use crate::domain_computation::primary_graph::tests::fixture;
+use crate::domain_computation::primary_graph::tests::recoverable_commit_support;
 use worth_runtime_bridge::facade::*;
-use worth_signal::facade::{SignalConditionalArtifactReuse, SignalConditionalVersionComparator};
+use worth_signal::facade::SignalConditionalArtifactReuse;
+use worth_signal::facade::SignalConditionalVersionComparator;
 
 struct Compute;
 impl BridgeConditionalProviderSemantics for Compute {
@@ -30,12 +30,6 @@ impl BridgeConditionalComputeProvider for Compute {
     ) -> Result<worth_signal::facade::NodeEvaluationResult, String> {
         panic!("foreign Product authority is refused before a conditional kernel")
     }
-}
-fn admission() -> InvalidationEditAdmission {
-    InvalidationEditAdmission::new(worth_relational::facade::mvcc::CompanionPreflightBudget {
-        maximum_work_visits: Some(1_000_000),
-        maximum_preparation_bytes: None,
-    })
 }
 
 #[test]
@@ -86,20 +80,18 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
         })
         .unwrap();
     world.application.with_application_advancement(&request, |phase| {
-        let owner = registry.admit(key.clone(), None, scope, occurrence,
-            crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary, None, None, &mut admission()).map(|(interest, _pause)| interest).unwrap();
-        let peer = registry.admit(key.clone(), None, scope, occurrence,
-            crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary, None, None, &mut admission()).map(|(interest, _pause)| interest).unwrap();
+        let owner = registry.admit(key.clone(), None, scope, occurrence, crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary, None, None).map(|(interest, _pause)| interest).unwrap();
+        let peer = registry.admit(key.clone(), None, scope, occurrence, crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary, None, None).map(|(interest, _pause)| interest).unwrap();
         assert!(matches!(registry.begin(&owner), Admission::Schedule(None)));
         registry.finish_scheduling(&owner, None, &mut Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::Scheduled));
-        let finish = registry.prepare_selected_execution_finish(&owner, &mut admission()).unwrap();
+        let finish = registry.prepare_selected_execution_finish(&owner).unwrap();
         assert!(matches!(registry.begin(&owner), Admission::Execute { .. }));
         assert!(RunningSelectedExecution::new(finish).publish(Checkpoint::Published {
             receipt: foreign_receipt, delivery: Delivery::Change(change),
-            ready_backing: PreparedReadyBacking::for_registry_test(registry),
+            ready_backing: PreparedReadyBacking::for_registry_test(),
         }).is_ok());
         assert_eq!(registry.publication_counts_for_registry_test(), (1, 1));
-        let (finish, claim, checkpoint) = registry.prepare_selected_checkpoint_finish(&owner, &mut admission()).unwrap().claim().unwrap().unwrap();
+        let (finish, claim, checkpoint) = registry.prepare_selected_checkpoint_finish(&owner).unwrap().claim().unwrap().unwrap();
         let Checkpoint::Published { receipt, delivery, ready_backing } = checkpoint else { panic!("published checkpoint") };
         let stop = world.application.deliver_output_checkpoint_with_finish(&phase, "terminal-delivery",
             receipt, delivery, ready_backing, true, Some(PreparedSelectedDelivery { lowering: &lowering, ordinal: 0, preserved: false }),
@@ -109,7 +101,7 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
             }).err().expect("the foreign root refuses real delivery");
         assert!(matches!(stop.kind(), WorthQueryOutputDemandDenialKind::ProductDelivery(ref cause) if **cause == DeliveryDenialKind::ForeignProductRoot));
         assert_eq!(registry.publication_counts_for_registry_test(), (0, 0));
-        assert!(matches!(registry.publication_head_selection(occurrence, &mut admission()).unwrap(), PublicationHeadSelection::Live(_)));
+        assert!(matches!(registry.publication_head_selection(occurrence).unwrap(), PublicationHeadSelection::Live(_)));
         assert!(matches!(registry.begin(&peer), Admission::Failed(ref cause) if cause.kind() == stop.kind()));
     }).unwrap();
 }

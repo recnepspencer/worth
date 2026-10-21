@@ -24,6 +24,37 @@ pub(super) fn append(
         unreachable!("indexed selection encoder is called only for its fact variant");
     };
     kind(entries, prefix, "indexed-entity-selection");
+    number_u64(
+        entries,
+        prefix,
+        "definition-index-id",
+        definition.index_id.0,
+    );
+    if let worth_relational::facade::indexes::DerivedIndexKind::EntityField { field_locator } =
+        &definition.kind
+    {
+        push(
+            entries,
+            format!("{prefix}.definition-kind"),
+            CanonicalBasisEntryKind::Shape,
+            text("entity-field"),
+        );
+        push(
+            entries,
+            format!("{prefix}.definition-aspect"),
+            CanonicalBasisEntryKind::Locator,
+            text(field_locator.aspect().aspect_key().as_str()),
+        );
+        for (index, field) in field_locator.field_path().fields().iter().enumerate() {
+            push(
+                entries,
+                format!("{prefix}.definition-field.{index}"),
+                CanonicalBasisEntryKind::Locator,
+                text(field.as_str()),
+            );
+        }
+    }
+
     number_u64(entries, prefix, "index-id", index_id.0);
     push(
         entries,

@@ -1,46 +1,40 @@
 //! Eager custody visibility, independent of whether its prune is still queued.
-use super::refreshed_rejoin::{source_rows, OccurrenceSearchCharge};
+use super::refreshed_rejoin::source_rows;
 use super::*;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 impl DemandRegistryState {
-    pub(super) fn custody_prunable<C: OccurrenceSearchCharge>(
-        &self,
-        commit: &CompositeCommitIdentity,
-        charge: &mut C,
-    ) -> Result<bool, C::Refusal> {
-        charge.inspect_row()?;
+    pub(super) fn custody_prunable(&self, commit: &CompositeCommitIdentity) -> bool {
         let Some(custody) = self.source_custody.get(commit) else {
-            return Ok(true);
+            return true;
         };
         if custody.token_count != 0 {
-            return Ok(false);
+            return false;
         }
         if custody.retired.is_some() {
-            return Ok(true);
+            return true;
         }
         let Some(bound) = &custody.bound_sources else {
-            return Ok(false);
+            return false;
         };
         let fully_superseded = !bound.is_empty()
             && bound
                 .iter()
                 .all(|source| custody.source_denial(&source.identity).is_some());
         if !custody.completed && !fully_superseded {
-            return Ok(false);
+            return false;
         }
         if !bound.iter().all(|source| {
             custody.consumed_sources.contains(&source.identity)
                 || custody.source_denial(&source.identity).is_some()
         }) {
-            return Ok(false);
+            return false;
         }
         for source in bound {
-            for (key, record) in source_rows(&self.records, &source.identity, charge)? {
-                charge.inspect_row()?;
+            for (key, record) in source_rows(&self.records, &source.identity) {
                 if !record.source_commits.contains(commit) {
                     continue;
                 }
-                let awaited = claim_readthrough::observe_row(&self.records, key, charge)?.awaited;
+                let awaited = claim_readthrough::observe_row(&self.records, key).awaited;
                 let unfinished = match record.idle_disposition(awaited) {
                     IdleRowDisposition::InFlight | IdleRowDisposition::HeldForStaleOwner => true,
                     IdleRowDisposition::KeptAnswer => false,
@@ -51,10 +45,10 @@ impl DemandRegistryState {
                     || unfinished
                     || awaited
                 {
-                    return Ok(false);
+                    return false;
                 }
             }
         }
-        Ok(true)
+        true
     }
 }

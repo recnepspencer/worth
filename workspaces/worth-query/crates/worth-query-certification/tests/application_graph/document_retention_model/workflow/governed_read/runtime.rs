@@ -12,11 +12,8 @@ pub fn install() -> GovernedRuntime {
     // backing. This fixture declares a finite preparation envelope for that shape;
     // it does not change the native request payer or admit cold population work.
     let queries =
-        worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::bounded(
-            64 * 1024,
-            2_048,
-            usize::MAX,
-            128,
+        worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::new(
+            std::num::NonZeroUsize::new(128).expect("concurrent graph work is non-zero"),
         )
         .expect("finite governed read preparation and unchanged result limits");
     retain(host::publish_on_first_program_with_limits(

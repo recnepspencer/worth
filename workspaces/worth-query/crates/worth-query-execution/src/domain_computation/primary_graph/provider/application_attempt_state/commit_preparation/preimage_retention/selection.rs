@@ -15,7 +15,7 @@ use crate::domain_computation::application_aftermath::{
     demanded_field_slot, WorthQueryPreImageRetentionDenial, WorthQueryRetainedPreImage,
 };
 
-use super::super::super::WorthQueryPrimaryGraphApplicationDecisionFact;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct WorthQueryObservedPreImageCandidate {
@@ -72,22 +72,21 @@ impl WorthQueryObservedPreImageCandidate {
     fn from_decision_fact(fact: &WorthQueryPrimaryGraphApplicationDecisionFact) -> Option<Self> {
         use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
 
-        let WorthQueryPrimaryGraphApplicationDecisionFact::Application {
-            read_scope,
-            fact:
-                WorthQueryApplicationObservedFact::Field {
-                    locator,
-                    value,
-                    entity_id,
-                    kind,
-                    ..
-                },
-        } = fact
+        let WorthQueryPrimaryGraphApplicationDecisionFact::Application { read_scope, fact } = fact
+        else {
+            return None;
+        };
+        let WorthQueryApplicationObservedFact::Field {
+            locator,
+            value,
+            entity_id,
+            kind,
+        } = fact.as_ref()
         else {
             return None;
         };
         Self::from_observed_field(
-            read_scope.clone(),
+            read_scope.as_ref().clone(),
             locator.clone(),
             value.clone(),
             *entity_id,

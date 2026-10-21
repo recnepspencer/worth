@@ -24,6 +24,8 @@ worth-query-declaration = { path = "../worth-query-declaration" }
 worth-query-installation = { path = "../worth-query-installation" }
 
 [dev-dependencies]
+worth-query-package-archive = { path = "../worth-query-package-archive" }
+worth-query-decl = { path = "../worth-query-decl" }
 worth-harness = { path = "../../../../crates/worth-harness" }
 stats_alloc = "0.1"
 worth-relational = { path = "../../../../crates/worth-relational" }

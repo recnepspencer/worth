@@ -116,7 +116,7 @@ impl<S: SchemaBinding> ApplicationQueryBinding<S> for Binding<S> {
     type PrincipalIdentity = u64;
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     const IDENTITY: &'static str = "matrix.source";
-    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::bounded(1, 128);
+    const LIMITS: ApplicationQueryBindingLimits = ApplicationQueryBindingLimits::results(1);
     fn scope_field() -> ApplicationFieldRef<
         S,
         Node,

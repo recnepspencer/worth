@@ -9,17 +9,7 @@ fn a_current_caller_is_retained_while_fresh_queue_work_progresses() {
     let application = support::install_program_with_limits::<program::ChainProgram>(
         None,
         profile,
-        support::limits(
-            4096,
-            support::invalidation(
-                128 * 1024 * 1024,
-                profile
-                    .limits()
-                    .source_currentness_work()
-                    .map(|work| work as u64),
-                4096,
-            ),
-        ),
+        support::limits(4096, support::invalidation()),
         super::super::diamond::seed,
     );
     let (scope, principal) = authenticate(&application);

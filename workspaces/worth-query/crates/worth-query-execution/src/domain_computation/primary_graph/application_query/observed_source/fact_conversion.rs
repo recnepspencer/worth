@@ -3,12 +3,15 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationObservedFact as Fact, WorthQueryPrimaryGraphLayout,
 };
 
-mod preparation_capacity;
+mod field_preparation;
 mod retention_validation;
 mod source_fact_locator;
 use source_fact_locator::SourceFactLocator;
 
-pub(super) struct PreparedSourceFactMaterialization<'source, Query> {
+pub(in crate::domain_computation::primary_graph::application_query) struct PreparedSourceFactMaterialization<
+    'source,
+    Query,
+> {
     source: &'source WorthQueryObservedSource<Query>,
     fields: Vec<ValidatedSourceField<'source>>,
     fact_count: usize,
@@ -131,7 +134,7 @@ fn source_fact_count<Query>(
 }
 
 impl<Query> PreparedSourceFactMaterialization<'_, Query> {
-    pub(super) fn into_facts(
+    pub(in crate::domain_computation::primary_graph::application_query) fn into_facts(
         self,
         control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,
     ) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {

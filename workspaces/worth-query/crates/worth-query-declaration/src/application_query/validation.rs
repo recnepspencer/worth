@@ -286,13 +286,6 @@ fn validate_live_cause(
     if !target_matches {
         return Err(ApplicationQueryDefinitionDenial::LiveCauseTargetSelectorMismatch);
     }
-    let resources = live.resources();
-    if resources.maximum_buffered_causes() == 0
-        || resources.maximum_work_per_delivery() == 0
-        || resources.maximum_retained_payload_bytes() == 0
-    {
-        return Err(ApplicationQueryDefinitionDenial::InvalidLiveResourceContract);
-    }
     Ok(())
 }
 

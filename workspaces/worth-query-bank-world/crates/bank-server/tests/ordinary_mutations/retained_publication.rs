@@ -19,7 +19,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
     let saved_view = fixture.world.runtime.account_activity(account);
     let before = saved_view
         .as_principal(&owner)
-        .execute(BankReadControls::current(request_scope(), 128, 8_192).unwrap())
+        .execute(BankReadControls::current(request_scope(), 128).unwrap())
         .expect("the saved view selects the current product")
         .rows()[0]
         .entries()
@@ -62,7 +62,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
         .as_principal(&owner)
         .retained(
             retained,
-            BankReadControls::current(request_scope(), 128, 8_192).unwrap(),
+            BankReadControls::current(request_scope(), 128).unwrap(),
         )
         .expect("fresh security should admit read-after at the performed product");
     assert_eq!(at_commit.rows()[0].entries().len(), before + 1);
@@ -70,17 +70,14 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
         .as_principal(&viewer)
         .retained(
             retained,
-            BankReadControls::current(request_scope(), 128, 8_192).unwrap(),
+            BankReadControls::current(request_scope(), 128).unwrap(),
         )
         .expect("the currently authorized viewer can read the retained publication");
     assert_eq!(allowed_viewer.rows()[0].entries().len(), before + 1);
 
     let mut live = saved_view
         .as_principal(&owner)
-        .subscribe(
-            WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8, Some(2_048))
-                .unwrap(),
-        )
+        .subscribe(WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8).unwrap())
         .expect("the saved view opens the same query as a live subscription");
     assert!(matches!(
         live.poll(&owner, &request_scope()),
@@ -121,14 +118,14 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
     );
     let page = saved_view
         .as_principal(&owner)
-        .page(BankReadControls::current(request_scope(), 128, 8_192).unwrap())
+        .page(BankReadControls::current(request_scope(), 128).unwrap())
         .expect("the saved view also delivers the current page");
     assert_eq!(page.rows()[0].entries().len(), before + 2);
     let still_exact = saved_view
         .as_principal(&owner)
         .retained(
             retained,
-            BankReadControls::current(request_scope(), 128, 8_192).unwrap(),
+            BankReadControls::current(request_scope(), 128).unwrap(),
         )
         .expect("later publication cannot retarget the retained read");
     assert_eq!(still_exact.rows()[0].entries().len(), before + 1);
@@ -200,7 +197,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
         .unwrap_or_else(|(_, cause)| panic!("revoke close: {cause:?}"));
     let denied = saved_view.as_principal(&viewer).retained(
         retained,
-        BankReadControls::current(request_scope(), 128, 8_192).unwrap(),
+        BankReadControls::current(request_scope(), 128).unwrap(),
     );
     assert!(matches!(
         denied,

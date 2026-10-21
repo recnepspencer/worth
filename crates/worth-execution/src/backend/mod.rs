@@ -11,9 +11,14 @@ mod panic_boundary;
 mod perturbation;
 mod port;
 mod prepared;
+mod retained_result;
 mod run;
 mod scope;
 mod settlement;
+pub use retained_result::ExecutionRetainedResult;
+pub(crate) use retained_result::{
+    run_retained_batch, run_retained_inputs_batch, run_retained_sparse_batch, ResultStorageDenial,
+};
 mod thread_capability;
 pub(crate) use thread_capability::HAS_OS_THREADS;
 
@@ -35,7 +40,9 @@ pub(crate) use meter::MemoryActivityGuard;
 pub use meter::NestedComputationStop;
 pub(crate) use meter::RunLimits;
 pub(crate) use meter::StructuralSpanFailure;
-pub use meter::{KernelContext, KernelFailure, KernelStop};
+pub use meter::{
+    ExecutionKernelReceipt, ExecutionKernelReceiptStorage, KernelContext, KernelFailure, KernelStop,
+};
 pub(crate) use ordered::{
     ordered_memory_requirement, run_ordered, run_ordered_until, OrderedOutcome, OrderedStep,
 };

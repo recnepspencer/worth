@@ -231,7 +231,7 @@ fn estate_overview(fixture: &RecognitionFixture) -> bank_domain::reads::EstateCa
         .runtime
         .query(queries::estate_case(fixture.estate))
         .as_principal(&fixture.authenticate_specialist())
-        .controls(BankReadControls::current(request_scope(), 16, 20_000).unwrap())
+        .controls(BankReadControls::current(request_scope(), 16).unwrap())
         .execute()
         .expect("the assigned specialist should observe the estate")
         .rows()[0]

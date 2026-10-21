@@ -50,7 +50,7 @@ pub(super) fn moved_facts(sealed: SealedComputationRun, keys: bool) -> Computati
         let moved = WorthQueryApplicationObservedFact::SourceEntity { entity_id };
         state.facts.replace_fact(&key, moved);
     }
-    ComputationPrior::new(edition(), Ok(custodied_state_for_test(state)), None)
+    ComputationPrior::new(edition(), Ok(std::sync::Arc::new(state)), None)
 }
 
 /// The edits of the alphabet, each over the items' identities, keys and
@@ -240,8 +240,6 @@ fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
         (PriorAbsence::Republished, Cause::Republished),
         (PriorAbsence::NotProduced, Cause::NotProduced),
         (PriorAbsence::Unmeasured, Cause::Unmeasured),
-        (PriorAbsence::Moved, Cause::Moved),
-        (PriorAbsence::Evicted, Cause::Evicted),
         (PriorAbsence::Stopped, Cause::Stopped),
         (
             PriorAbsence::Suppressed(super::super::Suppression::Policy),
@@ -317,15 +315,18 @@ fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
         ),
         &request,
     );
-    let result = recording.complete(
-        (BTreeMap::new(), None),
-        typed.tree.clone(),
-        execution
-            .reserve(typed.tree.additional_charged_bytes())
-            .unwrap(),
-        Cause::FirstRun,
-        report,
-    );
+    let result = recording
+        .complete::<u64, u64>(
+            None,
+            typed.tree.clone(),
+            execution
+                .reserve(typed.tree.additional_charged_bytes())
+                .unwrap(),
+            &execution,
+            Cause::FirstRun,
+            report,
+        )
+        .unwrap();
     assert!(matches!(
         result,
         CompletedComputationRetention::Absent(PriorAbsence::Unmeasured)

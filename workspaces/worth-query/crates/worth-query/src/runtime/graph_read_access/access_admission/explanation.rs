@@ -5,7 +5,6 @@ use super::{
 };
 use crate::runtime::{
     WorthQueryGraphIndexInventoryMatchReport, WorthQueryGraphReadAccessRequirementRow,
-    WorthQueryGraphReadBudgetCheck, WorthQueryGraphReadCostAttributionRow,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -31,20 +30,12 @@ impl WorthQueryGraphReadAccessPlanExplanation {
         self.admission.requirement_set().rows()
     }
 
-    pub fn attribution_rows(&self) -> &[WorthQueryGraphReadCostAttributionRow] {
-        self.admission.cost_estimate().attribution_rows()
-    }
-
     pub fn inventory_matches(&self) -> &[WorthQueryGraphReadAccessInventoryMatch] {
         self.admission.inventory_matches()
     }
 
     pub fn graph_index_support(&self) -> &WorthQueryGraphIndexInventoryMatchReport {
         self.admission.graph_index_inventory_match_report()
-    }
-
-    pub fn budget_check(&self) -> &WorthQueryGraphReadBudgetCheck {
-        self.admission.budget_check()
     }
 
     pub fn denial(&self) -> Option<&WorthQueryGraphReadAccessDenial> {

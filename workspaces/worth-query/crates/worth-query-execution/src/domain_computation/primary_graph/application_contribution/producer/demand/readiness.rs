@@ -1,14 +1,15 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use worth_query_admission::facade::authenticated_principal::{
-    WorthQueryRequestInterruption, WorthQueryRequestScope,
-};
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
-use super::bridge_denial::{bridge_denial, bridge_denial_kind};
+use super::bridge_denial::bridge_denial;
+use super::bridge_denial::bridge_denial_kind;
 use super::progression::denial;
-use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
-use crate::domain_computation::primary_graph::InvalidationEditAdmission;
+use super::WorthQueryOutputDemandDenial;
+use super::WorthQueryOutputDemandDenialKind;
+
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -49,7 +50,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         delivery: Option<&worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
         request: &WorthQueryRequestScope,
-        admission: &mut InvalidationEditAdmission,
+
     ) -> Result<
         crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence,
         WorthQueryOutputDemandDenial,
@@ -60,7 +61,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             producer_identity,
             receipt,
             delivery,
-            Some((request, admission)),
+            Some(request),
         )
     }
 
@@ -72,22 +73,14 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         producer_identity: &str,
         receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
         delivery: Option<&worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryReceipt>,
-        mut admitted: Option<(&WorthQueryRequestScope, &mut InvalidationEditAdmission)>,
+
+        admitted: Option<&WorthQueryRequestScope>,
     ) -> Result<
         crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence,
         WorthQueryOutputDemandDenial,
     >{
-        if let Some((request, admission)) = admitted.as_mut() {
-            admission
-                .charge_external_work(4)
-                .map_err(readiness_resource_denial)?;
-            admit_selected_readiness_entry(
-                producer_identity,
-                self.output_readiness_routes.len(),
-                self.installed_producers.entries.len(),
-                admission,
-            )?;
-            check_readiness_request(request, admission)?;
+        if let Some(request) = admitted.as_ref() {
+            check_readiness_request(request)?;
         }
         if self
             .primary_provider
@@ -111,10 +104,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             .entries
             .get(producer_identity)
             .expect("readiness route must retain its installed producer");
-        let source_record = producer.executor.readiness_record(
-            receipt,
-            admitted.as_mut().map(|(_, admission)| &mut **admission),
-        )?;
+        let source_record = producer.executor.readiness_record(receipt)?;
         let _held_world_observations = if self.primary_provider.take_readiness_snapshot_pressure() {
             Some(self.hold_world_snapshot_pressure_for_test(receipt.product_branch()))
         } else {
@@ -133,23 +123,14 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                     },
                 )
             })?;
-        let truth = if let Some((request, admission)) = admitted.as_mut() {
-            check_readiness_request(request, admission)?;
-            crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalTruthBasis::from_selected_admitted(selected, admission)
+        let truth = if let Some(request) = admitted.as_ref() {
+            check_readiness_request(request)?;
+            crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalTruthBasis::from_selected_admitted(selected)
                 .map_err(readiness_resource_denial)?
         } else {
             crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalTruthBasis::from_selected(selected)
         };
-        if let Some((_, admission)) = admitted.as_mut() {
-            let result_work = std::mem::size_of::<crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputReadinessDeliveryEvidence>()
-                .checked_add(16)
-                .ok_or_else(readiness_work_denial)?;
-            admission
-                .charge_external_work(
-                    u64::try_from(result_work).map_err(|_| readiness_work_denial())?,
-                )
-                .map_err(readiness_resource_denial)?;
-        }
+
         let attempt = self
             .next_output_producer_attempt
             .fetch_update(
@@ -180,8 +161,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             attempt,
             attempt,
         );
-        if let Some((request, admission)) = admitted.as_mut() {
-            check_readiness_request(request, admission)?;
+        if let Some(request) = admitted.as_ref() {
+            check_readiness_request(request)?;
         }
         let execution = execution.map_err(|error| {
             if admitted.is_some() {
@@ -211,43 +192,9 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     }
 }
 
-fn admit_selected_readiness_entry(
-    producer: &str,
-    route_count: usize,
-    installed_count: usize,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<(), WorthQueryOutputDemandDenial> {
-    // Both B-tree searches inspect at most the selected name's initialized
-    // bytes per comparison. Each node holds at most eleven selected keys.
-    let selected_width = producer
-        .len()
-        .checked_add(1)
-        .ok_or_else(readiness_work_denial)?;
-    let mut work = 0usize;
-    for count in [route_count, installed_count] {
-        let levels = usize::BITS as usize - count.max(1).leading_zeros() as usize;
-        work = count
-            .min(11)
-            .checked_mul(levels)
-            .and_then(|comparisons| comparisons.checked_mul(selected_width))
-            .and_then(|bound| work.checked_add(bound))
-            .ok_or_else(readiness_work_denial)?;
-    }
-    // Selected semantic denials carry their original kind with an empty
-    // subject, so no variable diagnostic String is allocated here.
-    work = work.checked_add(24).ok_or_else(readiness_work_denial)?;
-    admission
-        .charge_external_work(u64::try_from(work).map_err(|_| readiness_work_denial())?)
-        .map_err(readiness_resource_denial)
-}
-
 fn check_readiness_request(
     request: &WorthQueryRequestScope,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
-    admission
-        .charge_external_work(1)
-        .map_err(readiness_resource_denial)?;
     match request.interruption() {
         Some(WorthQueryRequestInterruption::Cancelled) => {
             Err(denial(WorthQueryOutputDemandDenialKind::Cancelled, ""))
@@ -257,10 +204,6 @@ fn check_readiness_request(
         }
         None => Ok(()),
     }
-}
-
-fn readiness_work_denial() -> WorthQueryOutputDemandDenial {
-    denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, "")
 }
 
 fn readiness_resource_denial(stop: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {

@@ -293,30 +293,18 @@ fn install_limits(
 ) -> Result<WorthQueryInstalledApplicationQueryLimits, WorthQueryApplicationQueryInstallationDenial>
 {
     let declared = descriptor.limits();
-    install_declared_limits(
-        declared.maximum_results(),
-        declared.maximum_work(),
-        descriptor.identity(),
-    )
+    install_declared_limits(declared.maximum_results(), descriptor.identity())
 }
 
 fn install_declared_limits(
     declared_results: usize,
-    declared_work: Option<usize>,
     subject: &str,
 ) -> Result<WorthQueryInstalledApplicationQueryLimits, WorthQueryApplicationQueryInstallationDenial>
 {
     let maximum_results = NonZeroUsize::new(declared_results)
         .ok_or_else(|| denial(DenialKind::BindingResultLimitIsZero, subject))?;
-    let maximum_work = declared_work
-        .map(|work| {
-            NonZeroUsize::new(work)
-                .ok_or_else(|| denial(DenialKind::BindingWorkLimitIsZero, subject))
-        })
-        .transpose()?;
     Ok(WorthQueryInstalledApplicationQueryLimits::new(
         maximum_results,
-        maximum_work,
     ))
 }
 
@@ -327,27 +315,18 @@ fn denial(kind: DenialKind, subject: &str) -> WorthQueryApplicationQueryInstalla
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
-    fn result_only_binding_preserves_runtime_policy_at_installation() {
-        let installed = install_declared_limits(1, None, "binding").unwrap();
-        assert_eq!(installed.maximum_results().get(), 1);
-        assert_eq!(installed.maximum_work(), None);
-    }
-
-    #[test]
-    fn zero_request_limits_are_denied_before_installation() {
+    fn result_cardinality_installs_and_zero_is_refused() {
         assert_eq!(
-            install_declared_limits(0, Some(1), "binding")
-                .unwrap_err()
-                .kind(),
-            DenialKind::BindingResultLimitIsZero
+            install_declared_limits(1, "binding")
+                .unwrap()
+                .maximum_results()
+                .get(),
+            1
         );
         assert_eq!(
-            install_declared_limits(1, Some(0), "binding")
-                .unwrap_err()
-                .kind(),
-            DenialKind::BindingWorkLimitIsZero
+            install_declared_limits(0, "binding").unwrap_err().kind(),
+            DenialKind::BindingResultLimitIsZero
         );
     }
 }

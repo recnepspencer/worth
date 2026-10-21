@@ -19,10 +19,7 @@ mod ordinary;
 mod prepared_permission;
 mod readmitted;
 
-use super::{
-    denial::{denial, graph_work_denial},
-    work_limit::{application_query_graph_read_budget, validate_work_limit},
-};
+use super::denial::{denial, graph_work_denial};
 use crate::domain_computation::primary_graph::application_query::{
     admission_preparation::validate_admission_request,
     basis::WorthQueryApplicationQueryBasisCustody,
@@ -197,7 +194,6 @@ where
             worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
             worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
         );
-        validate_work_limit(reviewed.work.review(), controls, query.name())?;
         if let Some(denial) = reviewed.work.review().denial() {
             return Err(WorthQueryApplicationQueryAdmissionDenial::new(
                 WorthQueryApplicationQueryAdmissionDenialKind::GraphReadPlan(denial.kind()),
@@ -249,7 +245,7 @@ where
             query.continuation(),
             query.live(),
             &requirements,
-        );
+        ).map_err(|_| denial(WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted, query.name()))?;
         let obligations = query.retain_graph_obligations_for_admission();
         let obligation_identity = obligations.identity().clone();
         let selected = select_installed_graph_obligations(
@@ -257,16 +253,8 @@ where
             WorthQueryGraphWorkIntent::application_query_read(),
         )
         .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
-        let work = review_application_query_graph_work(
-            selected,
-            requirements,
-            inventory,
-            application_query_graph_read_budget(
-                self.runtime.application_query_resource_profile(),
-                controls,
-            ),
-        )
-        .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
+        let work = review_application_query_graph_work(selected, requirements, inventory)
+            .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))?;
         Ok(ReviewedApplicationQueryGraphWork {
             work,
             obligation_identity,

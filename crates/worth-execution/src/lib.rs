@@ -15,6 +15,8 @@ mod partition;
 mod pattern;
 mod reduction;
 mod report;
+mod storage;
+pub use storage::{ExecutionOrderedMap, ExecutionOrderedMapDenial};
 
 pub use authority::{
     CancellationSource, CancellationToken, ConstructionDenial, EquivalencePredicate,
@@ -30,7 +32,10 @@ pub use oracle::{compare_canonical_values, CanonicalBits};
 
 #[cfg(test)]
 mod tests;
-pub use backend::{ExecutionOwnerContext, NestedComputationStop, ScopeOutcome, ScopeStop};
+pub use backend::{
+    ExecutionKernelReceipt, ExecutionKernelReceiptStorage, ExecutionOwnerContext,
+    ExecutionRetainedResult, NestedComputationStop, ScopeOutcome, ScopeStop,
+};
 pub use partition::{
     Bisection, BisectionDenial, BisectionQuality, ComponentDenial, ComponentPartitioner,
     KeyedDenial, KeyedEditDenial, KeyedItem, KeyedPartitioner, PartitionItemId,
@@ -40,15 +45,19 @@ pub use pattern::{
     BackInput, DecomposeCertificationFailure, DecomposeComplete, DecomposeFailure,
     DecomposeInputDenial, DecomposeKernelEditions, DecomposeReuse, DecomposeRunFailure,
     DecomposeStage, ExecutionDecompose, ExecutionForkJoin, ExecutionMap, ExecutionReduce,
-    ExecutionRounds, ExecutionScan, ExecutionWorkCeiling, ForkChild, ForkJoinDenial,
-    ForkJoinOutcome, InterfaceSolution, InteriorResult, KeylessPartition, MapDenial,
-    MapKernelContext, MapKernelFailure, MapKernelStop, MapMemoryOverflow, MapOutcome, MapPartition,
-    MapStop, OracleMismatch, PreparedExecutionMap, ReduceCertificationFailure, ReduceInputDenial,
-    RoundsDenial, RoundsOutcome, ScanDenial, ScanOutcome, WorkCeilingDenial,
+    ExecutionRetainedPrefix, ExecutionRetainedRun, ExecutionRounds, ExecutionScan,
+    ExecutionWorkCeiling, ForkChild, ForkJoinDenial, ForkJoinOutcome, InterfaceSolution,
+    InteriorResult, KeylessPartition, MapDenial, MapKernelContext, MapKernelFailure, MapKernelStop,
+    MapMemoryOverflow, MapOutcome, MapPartition, MapStop, OracleMismatch, PreparedExecutionMap,
+    ReduceCertificationFailure, ReduceInputDenial, RetainedMapDenial, RetainedMapInput,
+    RetainedReduceDenial, RetainedReduceOutcome, RetainedReduction, RetainedRunDenial,
+    RetainedRunMetrics, RetainedRunOutcome, RoundsDenial, RoundsOutcome, ScanDenial, ScanOutcome,
+    WorkCeilingDenial,
 };
 pub use reduction::{
     ReductionDenial, ReductionEditMemoryBoundError, ReductionInsertMemoryBoundError,
-    ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionRunStop, ReductionTree,
+    ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionRunStop,
+    ReductionShapeCostDenial, ReductionTree,
 };
 pub use report::ChargedBytes;
 

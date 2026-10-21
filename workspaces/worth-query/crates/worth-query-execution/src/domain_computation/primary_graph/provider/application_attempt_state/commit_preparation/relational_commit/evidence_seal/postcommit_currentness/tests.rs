@@ -1,24 +1,29 @@
-use worth_foundational::facade::{
-    AspectFieldLocator, CanonicalFieldPath, FieldKey, LocatorAuthority,
-};
-use worth_query_declaration::facade::application_schema::{
-    ApplicationScalarValueBinding, StringApplicationValueBinding,
-};
-use worth_relational::facade::transactions::{
-    AspectFieldPatch, EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
-    WorkerIntentBatch,
-};
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
+use worth_foundational::facade::AspectFieldLocator;
+use worth_foundational::facade::CanonicalFieldPath;
+use worth_foundational::facade::FieldKey;
+use worth_foundational::facade::LocatorAuthority;
+use worth_query_declaration::facade::application_schema::ApplicationScalarValueBinding;
+use worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
+use worth_relational::facade::transactions::AspectFieldPatch;
+use worth_relational::facade::transactions::EntityMutationIntent;
+use worth_relational::facade::transactions::MutationIntent;
+use worth_relational::facade::transactions::UpdateEntityFieldsIntent;
+use worth_relational::facade::transactions::WorkerIntentBatch;
 
 use super::*;
-use crate::domain_computation::primary_graph::{
-    application_attempt::{FactMovement, Movement, WorthQuerySourceCurrentnessFailure},
-    output_reuse::{compare_retained_output_dependencies, OutputDependencySelection},
-    tests::fixture::{
-        installed_authorization_world, live_scope, publish_relational_mutation, AccountIdentity,
-        AccountNote, AuthorizationWorld,
-    },
-    WorthQueryPrincipalResolutionMode,
-};
+use crate::domain_computation::primary_graph::application_attempt::FactMovement;
+use crate::domain_computation::primary_graph::application_attempt::Movement;
+use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
+use crate::domain_computation::primary_graph::output_reuse::compare_retained_output_dependencies;
+use crate::domain_computation::primary_graph::output_reuse::OutputDependencySelection;
+use crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world;
+use crate::domain_computation::primary_graph::tests::fixture::live_scope;
+use crate::domain_computation::primary_graph::tests::fixture::publish_relational_mutation;
+use crate::domain_computation::primary_graph::tests::fixture::AccountIdentity;
+use crate::domain_computation::primary_graph::tests::fixture::AccountNote;
+use crate::domain_computation::primary_graph::tests::fixture::AuthorizationWorld;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 
 #[path = "tests/failed_rebase.rs"]
 mod failed_rebase;
@@ -70,7 +75,7 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
                     &phase,
                     &host_custody.borrowed_request_for_test(),
                     &world,
-                    read.to_vec()
+                    read.iter().cloned().collect()
                 ),
                 RebasedSourceFacts::Exact(read.clone()),
                 "a source revision nothing moved stays exact"
@@ -100,7 +105,7 @@ fn a_source_revision_the_effect_moved_is_kept_and_reported_superseded() {
                     &phase,
                     &host_custody.borrowed_request_for_test(),
                     &world,
-                    read.to_vec()
+                    read.iter().cloned().collect()
                 ),
                 RebasedSourceFacts::SupersededByOwnEffect {
                     facts: read.clone(),
@@ -201,54 +206,11 @@ pub(super) fn rebase_at_current(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     facts: Vec<WorthQueryApplicationObservedFact>,
-) -> FactPayload {
+) -> super::FactPayload {
     match rebase_result_at_current(phase_custody, execution, world, facts) {
         RebasedSourceFacts::Exact(facts) => facts,
         other => panic!("fresh native facts must be exact: {other:?}"),
     }
-}
-
-fn rebase_result_at_current(
-    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    world: &AuthorizationWorld,
-    facts: Vec<WorthQueryApplicationObservedFact>,
-) -> RebasedSourceFacts {
-    rebase_result_within(phase_custody, execution, world, facts, 64)
-}
-
-/// The rebase under an admission of `maximum_work_visits`.
-pub(super) fn rebase_result_within(
-    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    world: &AuthorizationWorld,
-    facts: Vec<WorthQueryApplicationObservedFact>,
-    maximum_work_visits: u64,
-) -> RebasedSourceFacts {
-    let selected = world.selected_product(&(phase_custody).test_host_request());
-    let mut admission = crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::new(
-            worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: Some(maximum_work_visits),
-                maximum_preparation_bytes: None,
-            },
-        );
-    world
-        .application
-        .runtime
-        .primary_graph()
-        .unwrap()
-        .integration_handle()
-        .with_runtime(execution, |runtime| {
-            rebase(execution,
-                runtime,
-                selected.application_basis().snapshot_handle(),
-                PreparedSourceFactRebase::admit(facts, [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(),
-                &BTreeSet::new(),
-                true,
-                Some(64),
-                &mut admission,
-            )
-        })
 }
 
 fn current(
@@ -259,7 +221,6 @@ fn current(
 ) -> bool {
     currentness(phase_custody, execution, world, fact)
         .unwrap()
-        .0
         .movement()
         == Movement::Unmoved
 }
@@ -268,7 +229,7 @@ fn output_selection(
     phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
-    facts: &[WorthQueryApplicationObservedFact],
+    facts: &(impl FactSequence + ?Sized),
 ) -> OutputDependencySelection {
     let selected = world.selected_product(&(phase_custody).test_host_request());
     world
@@ -284,13 +245,6 @@ fn output_selection(
                 selected.application_basis().snapshot_handle(),
                 true,
                 Some(facts),
-                &mut world
-                    .application
-                    .primary_provider
-                    .graph
-                    .source_owner
-                    .invalidation_owner
-                    .edit_admission_with_work_limit(Some(16)),
             )
             .unwrap()
         })
@@ -301,7 +255,7 @@ fn currentness(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     fact: &WorthQueryApplicationObservedFact,
-) -> Result<(FactMovement, usize), WorthQuerySourceCurrentnessFailure> {
+) -> Result<FactMovement, WorthQuerySourceCurrentnessFailure> {
     let selected = world.selected_product(&(phase_custody).test_host_request());
     world
         .application
@@ -310,12 +264,12 @@ fn currentness(
         .unwrap()
         .integration_handle()
         .with_runtime(execution, |runtime| {
-            fact.source_currentness_within(
+            fact.source_currentness_in(
                 runtime,
                 execution,
                 selected.application_basis().snapshot_handle(),
-                1,
             )
+            .unwrap()
         })
 }
 
@@ -344,3 +298,22 @@ fn set_note(
 
 #[path = "tests/counted_read_stops.rs"]
 mod counted_read_stops;
+
+pub(super) fn rebase_result_at_current(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &AuthorizationWorld,
+    facts: Vec<WorthQueryApplicationObservedFact>,
+) -> RebasedSourceFacts {
+    let selected = world.selected_product(&(phase_custody).test_host_request());
+
+    world
+        .application
+        .runtime
+        .primary_graph()
+        .unwrap()
+        .integration_handle()
+        .with_runtime(execution, |runtime| {
+            rebase(execution, runtime, selected.application_basis().snapshot_handle(), PreparedSourceFactRebase::admit(facts, [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &BTreeSet::new(), true)
+        })
+}

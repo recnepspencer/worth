@@ -131,7 +131,8 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
         .advance(&request)
         .expect("the no-change ready output reopens")
     {
-        WorthQueryApplicationOutputDemandProgress::Pending => {
+        WorthQueryApplicationOutputDemandProgress::Pending
+        | WorthQueryApplicationOutputDemandProgress::Progressed => {
             panic!("no-change readiness must not rerun")
         }
         WorthQueryApplicationOutputDemandProgress::Settled(value) => value,

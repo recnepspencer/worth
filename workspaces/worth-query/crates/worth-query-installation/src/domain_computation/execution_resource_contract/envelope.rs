@@ -65,7 +65,11 @@ impl WorthQueryExecutionResourceEnvelope {
     pub fn admits_resource(&self, dimension: WorthQueryResourceDimension, value: u64) -> bool {
         match self.optional_resource_ceiling(dimension) {
             Some(maximum) => value <= maximum,
-            None => dimension == WorthQueryResourceDimension::CandidateRetainedRepresentationBytes,
+            None => matches!(
+                dimension,
+                WorthQueryResourceDimension::CandidateRetainedRepresentationBytes
+                    | WorthQueryResourceDimension::RetainedBytes
+            ),
         }
     }
 
@@ -96,6 +100,7 @@ impl WorthQueryExecutionResourceEnvelope {
                 axis,
                 WorthQuerySemanticScaleAxis::WorkItems
                     | WorthQuerySemanticScaleAxis::CandidateItems
+                    | WorthQuerySemanticScaleAxis::BatchWidth
             ),
         }
     }

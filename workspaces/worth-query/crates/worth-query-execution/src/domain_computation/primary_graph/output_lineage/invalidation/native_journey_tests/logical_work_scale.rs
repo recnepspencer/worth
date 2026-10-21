@@ -124,8 +124,10 @@ fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
             OrdSet::unit(identities[0].clone()));
         write_field(execution, runtime, entities[0], label.clone(), "after");
         let (after_handle, after) = snapshot(runtime);
-        let report = owner.native_marking_report(&after, &mut owner.edit_admission())
+let report = owner.native_marking_report(&after)
             .unwrap().expect("exact Native publication owns a delivery report");
+
+
         let WorthQueryNativeMarkingPrecision::Exact(counts) = report.precision else {
             panic!("the actual declared field change must have exact logical counts");
         };
@@ -146,14 +148,14 @@ fn run_population(population: usize) -> WorthQueryNativeMarkingWork {
         }
         assert!(matches!(currentness(owner, &after, &downstream),
             SourceSettlementCurrentness::PendingUpstream(edges) if edges == OrdSet::unit(identities[0].clone())));
-        assert!(owner.native_marking_report(&before, &mut owner.edit_admission()).unwrap().is_none(),
+        assert!(owner.native_marking_report(&before).unwrap().is_none(),
             "a historical image cannot report the newer Native delivery");
         let late = RecordedSettlementIdentity::retain(
             &source(entities[0], OutputBindingIdentity::declared("LateOutput")), coordinate, 0,
         );
         register(owner, late, Arc::from([field_fact(execution, runtime, &after_handle, entities[0], label.clone())]),
             &after, OrdSet::new());
-        assert_eq!(owner.native_marking_report(&after, &mut owner.edit_admission()).unwrap(), Some(report),
+        assert_eq!(owner.native_marking_report(&after).unwrap(), Some(report),
             "a derived registration preserves the original delivery report");
         for snapshot in [before_handle, after_handle] {
             runtime.snapshots().release_snapshot(&snapshot).unwrap();

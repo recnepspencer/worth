@@ -1,8 +1,7 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
-use worth_query_declaration::facade::application_operation::{
-    WorthQueryApplicationOutputRoleFamily, WorthQueryApplicationOutputRoleNameDenial,
-};
+use worth_query_declaration::facade::application_operation::WorthQueryApplicationOutputRoleFamily;
+use worth_query_declaration::facade::application_operation::WorthQueryApplicationOutputRoleNameDenial;
 use worth_relational::facade::identity::EntityId;
 
 pub use worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture as WorthQueryApplicationOutputPosture;
@@ -18,9 +17,8 @@ mod family_entry;
 pub use family_entry::WorthQueryApplicationOutputFamilyEntry;
 
 mod projection;
-pub use projection::{
-    WorthQueryApplicationOutputEntity, WorthQueryApplicationOutputProjectionDenial,
-};
+pub use projection::WorthQueryApplicationOutputEntity;
+pub use projection::WorthQueryApplicationOutputProjectionDenial;
 
 mod role_use;
 pub(in crate::domain_computation::primary_graph) use role_use::OutputRoleUse;
@@ -61,26 +59,6 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationOut
 }
 
 impl WorthQueryApplicationOutputCorrespondence {
-    /// Admit the selected role's ordered descent before the ordinary typed
-    /// projection reads the installed correspondence. Other roles contribute
-    /// only the binary-search depth, never copied role text.
-    pub(in crate::domain_computation::primary_graph) fn admit_selected_role_lookup(
-        &self,
-        role: &str,
-        admission: &mut crate::domain_computation::primary_graph::InvalidationEditAdmission,
-    ) -> Result<(), worth_relational::facade::mvcc::CompanionPreflightStop> {
-        use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-        admission.charge_external_work(3)?;
-        let count = self.storage.roles.len();
-        let levels = usize::BITS as usize - count.max(1).leading_zeros() as usize;
-        let comparisons = levels;
-        let work = comparisons
-            .checked_mul(role.len().checked_add(1).ok_or(Stop::WorkCounterOverflow)?)
-            .and_then(|work| work.checked_add(2 * std::mem::size_of::<TypeId>() + 4))
-            .ok_or(Stop::WorkCounterOverflow)?;
-        admission.charge_external_work(u64::try_from(work).map_err(|_| Stop::WorkCounterOverflow)?)
-    }
-
     pub(in crate::domain_computation::primary_graph) fn native_witness_roles(
         &self,
     ) -> impl ExactSizeIterator<Item = (&str, WorthQueryApplicationOutputPosture, &str, EntityId)> + Clone
@@ -113,7 +91,8 @@ impl WorthQueryApplicationOutputCorrespondence {
     pub(in crate::domain_computation::primary_graph) fn workflow_content_identity(
         &self,
     ) -> [u8; 32] {
-        use sha2::{Digest, Sha256};
+        use sha2::Digest;
+        use sha2::Sha256;
 
         let mut digest = Sha256::new();
         digest.update(b"worth-query:workflow-assessment-output:v1");

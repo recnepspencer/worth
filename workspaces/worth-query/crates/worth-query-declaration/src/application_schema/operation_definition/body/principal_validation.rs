@@ -37,7 +37,7 @@ pub(super) fn validate_principals(
     body: &ApplicationOperationBodyProgram,
     members: &[Member],
 ) -> Result<(), Denial> {
-    let denied = Denial::MissingOperationProgramDependency;
+    let denied = || Denial::program_body_dependency(operation);
     for step in body
         .creation()
         .into_iter()
@@ -54,7 +54,7 @@ pub(super) fn validate_principals(
             continue;
         };
         let contract = PrincipalSourceContract {
-            scope: body.scope_entity().ok_or(denied)?,
+            scope: body.scope_entity().ok_or_else(denied)?,
             mutation_binding,
             principal_binding,
             field: source,
@@ -64,12 +64,12 @@ pub(super) fn validate_principals(
         if !contract.is_declared_for(operation, members)
             || !members.iter().any(|member| matches!(member, Member::Field { entity, aspect, field, value_type, scalar_family, unit: None, .. }
                 if entity == step.field().entity() && aspect == step.field().aspect() && field == step.field().field() && value_type == step.binding().as_str() && *scalar_family == step.scalar_family()))
-        { return Err(denied); }
+        { return Err(denied()); }
         if !members.iter().any(|member| {
             matches!(member, Member::OperationDecisionRead { operation: candidate, target }
             if candidate == operation && Some(target.clone()) == step.source_read())
         }) {
-            return Err(Denial::MissingOperationDecisionReadDependency);
+            return Err(Denial::decision_read_body_dependency(operation));
         }
     }
     Ok(())

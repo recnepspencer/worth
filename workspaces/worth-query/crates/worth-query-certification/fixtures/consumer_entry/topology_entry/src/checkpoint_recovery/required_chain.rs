@@ -7,7 +7,9 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::primary_graph::query_read_kernel_entries_on_this_thread_for_test as query_entries;
 
 mod binding;
+mod conditional_native_action;
 mod contact_readings;
+mod custody_source;
 mod diamond;
 mod exact_invalidation;
 mod mixed_mode;
@@ -16,6 +18,7 @@ mod program;
 mod readiness;
 mod reopened_consumer;
 mod required_queue;
+mod restored_closed_predecessors;
 mod restored_currentness;
 mod retained_predecessors;
 mod ring_world;
@@ -55,14 +58,16 @@ pub(crate) fn declare<Schema: TopologySchemaBinding>(
         Schema,
     >,
 ) -> worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<Schema> {
-    binding::declare(schema)
+    custody_source::declare(binding::declare(schema))
 }
 
 pub(crate) fn contracts<Schema: TopologySchemaBinding>(
     contracts: &mut worth_query_host::facade::application_contribution::WorthQueryApplicationContributionContracts<Schema>,
 ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
     contracts.producer::<ChainProducer<Schema>>()?;
+    custody_source::contracts(contracts)?;
     contracts.conditional::<readiness::ChainReadiness<Schema>>()?;
+
     Ok(())
 }
 
@@ -71,7 +76,10 @@ pub(crate) fn configure<Schema: TopologySchemaBinding>(
     uniform_decimal_key_width: bool,
 ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
     setup.handler::<ChainBinding<Schema>, _>(ChainHandler)?;
+    custody_source::configure(setup)?;
+
     setup.producer::<ChainProducer<Schema>>(ChainProvider::new(uniform_decimal_key_width))?;
+
     setup.conditional::<readiness::ChainReadiness<Schema>>(())
 }
 
@@ -84,11 +92,6 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
         None,
         profile,
         32,
-        128 * 1_024 * 1_024,
-        profile
-            .limits()
-            .source_currentness_work()
-            .map(|work| u64::try_from(work).unwrap()),
         source_world::seed,
     );
     let (scope, principal) = authenticate(&application);
@@ -107,7 +110,8 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
         .unwrap();
     let initial_a = (0..256)
         .find_map(|_| match a.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the actual upstream initially settles");
@@ -117,7 +121,8 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
     );
     let initial_b = (0..256)
         .find_map(|_| match b.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the actual middle consumer initially settles");
@@ -127,7 +132,8 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
     );
     let original = (0..256)
         .find_map(|_| match c.advance(&request).unwrap() {
-            WorthQueryApplicationOutputDemandProgress::Pending => None,
+            WorthQueryApplicationOutputDemandProgress::Pending
+            | WorthQueryApplicationOutputDemandProgress::Progressed => None,
             WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
         })
         .expect("the actual A to B to C chain initially settles");
@@ -192,7 +198,8 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
         .expect("one caller pumps the actual prerequisite chain")
     {
         WorthQueryApplicationOutputDemandProgress::Settled(settled) => settled,
-        WorthQueryApplicationOutputDemandProgress::Pending => {
+        WorthQueryApplicationOutputDemandProgress::Pending
+        | WorthQueryApplicationOutputDemandProgress::Progressed => {
             panic!("the finite required chain needs another caller advance")
         }
     };

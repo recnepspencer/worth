@@ -5,12 +5,6 @@ impl WorthQueryWorkspace {
         self.runtime.graph_index_inventory()
     }
 
-    pub fn graph_read_materializations(
-        &mut self,
-    ) -> super::super::WorthQueryGraphReadMaterializationRuntime<'_> {
-        super::super::WorthQueryGraphReadMaterializationRuntime::new(&mut self.runtime)
-    }
-
     pub(crate) fn admit_graph_read_access_for_family(
         &self,
         family: &super::super::WorthQueryReadFamily,

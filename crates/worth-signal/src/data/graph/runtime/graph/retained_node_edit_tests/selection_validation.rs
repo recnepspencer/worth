@@ -9,7 +9,7 @@ fn cumulative_selection_validates_every_node_before_editing() {
             .prepare_retained_node_edits(
                 &test_ledger(),
                 indices,
-                maximum,
+                Some(maximum),
                 &mut Work::new(Some(10_000)),
                 |_| panic!("invalid selection must fail before callback")
             )

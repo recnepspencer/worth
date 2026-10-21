@@ -1,0 +1,12 @@
+[package]
+name = "implementation-edition-macro-guest"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+publish = false
+
+[lib]
+name = "proc_macro"
+
+[lints.clippy]
+all = "deny"

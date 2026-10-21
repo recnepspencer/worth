@@ -5,11 +5,10 @@ pub use pending::WorthQueryPendingSourceExpectation;
 
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationObservedFact,
-    WorthQueryPrimaryGraphLayout,
-};
+
+use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
+use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
 struct CheckedSourceAffinity<'a> {
     layout: &'a WorthQueryPrimaryGraphLayout,
@@ -128,17 +127,16 @@ impl PreparedObservedSourceExpectation {
 }
 
 impl BoundStableObservedSourceFacts {
-    /// Moves only the checked source suffix into a caller-prepared fact buffer.
-    /// The caller retains its sealed cutoff and owns the final admission.
-    pub(in crate::domain_computation::primary_graph) fn append_into_stable_facts<
+    /// Consume the exact operation binding after the publisher retained its
+    /// newly funded suffix. No descriptive payload can issue this binding.
+    pub(in crate::domain_computation::primary_graph) fn finish_stable<
         Schema,
         Operation,
         Input,
         Scope,
     >(
-        mut self,
+        self,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-        target: &mut Vec<WorthQueryApplicationObservedFact>,
     ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial> {
         if !self.matches_operation(admission) {
             return Err(WorthQuerySourceExpectationDenial::new(
@@ -146,13 +144,6 @@ impl BoundStableObservedSourceFacts {
                 "prepared source expectation",
             ));
         }
-        if target.capacity().saturating_sub(target.len()) < self.facts.len() {
-            return Err(WorthQuerySourceExpectationDenial::new(
-                WorthQuerySourceExpectationDenialKind::PreparationMemoryExceeded,
-                "prepared source expectation",
-            ));
-        }
-        target.append(&mut self.facts);
         Ok(self.bound)
     }
 
@@ -253,7 +244,7 @@ where
     }
 
     /// The installed producer calls this before handler contact. Both fresh
-    /// execution and stable output use its one metered fact construction.
+    /// execution and stable output use its checked fact construction.
     pub(in crate::domain_computation::primary_graph) fn prepare_application_source_expectation<
         Binding,
         Scope,
@@ -269,7 +260,7 @@ where
             <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::Query,
         >,
         input: &Binding::Input,
-        request_admission: &mut InvalidationEditAdmission,
+
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<PreparedObservedSourceExpectation, WorthQuerySourceExpectationDenial>
     where
@@ -284,28 +275,12 @@ where
             input,
             |parameters, expected| {
                 parameters
-                    .matches_expected_with_preflight(expected, |work, bytes| {
-                        request_admission.charge_external_work(work).map_err(|_| {
-                            WorthQuerySourceExpectationDenial::new(
-                                WorthQuerySourceExpectationDenialKind::WorkBudgetExceeded,
-                                Binding::IDENTITY,
-                            )
-                        })?;
-                        request_admission.admit_read_scratch(bytes).map_err(|_| {
-                            WorthQuerySourceExpectationDenial::new(
-                                WorthQuerySourceExpectationDenialKind::PreparationMemoryExceeded,
-                                Binding::IDENTITY,
-                            )
-                        })
-                    })?
+                    .matches_expected(expected)
                     .map_err(|denial| parameter_denial(Binding::IDENTITY, denial))
             },
         )?;
-        let prepared_facts = source.admit_fact_materialization(
-            checked.layout,
-            request_admission,
-            Binding::IDENTITY,
-        )?;
+        let prepared_facts =
+            source.admit_fact_materialization(checked.layout, Binding::IDENTITY)?;
         let partition_identity = source.partition_identity();
         let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(admission.publication_request(), allocation_policy);
         let facts = prepared_facts.into_facts(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(admission.publication_request())))?;

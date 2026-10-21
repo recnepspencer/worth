@@ -228,15 +228,18 @@ where
             node.handle = Some(handle);
             self.next_admission += 1;
         }
+        let mut runnable = false;
         for node in nodes.iter_mut() {
             if let Some(handle) = &mut node.handle {
                 match handle.advance(phase, application, request).map_err(WorthQueryRequiredOutputPreparationDenial::Demand)? {
                     WorthQueryApplicationProgramDemandProgress::Pending => continue,
+                    WorthQueryApplicationProgramDemandProgress::Progressed => { runnable = true; continue; },
                     WorthQueryApplicationProgramDemandProgress::Settled { settlement, authority } => {
                         node.settled = Some((settlement, Arc::new(authority)));
                         // Descendants and later siblings can still consume this
                         // exact posting. Retain its real admitted interest.
                         node._retained_handle = node.handle.take();
+                        runnable = true;
                     }
                 }
             }
@@ -251,17 +254,19 @@ where
                 let Some(continuation) = &mut node.continuation else { continue; };
                 match continuation.advance(phase, application, request)? {
                     ProgramOutputContinuationProgress::Pending => {},
+                    ProgramOutputContinuationProgress::Progressed => { runnable = true; },
                     ProgramOutputContinuationProgress::Settled { outputs, work, dependencies } => {
                         node.dependencies = dependencies;
                         self.outputs.extend(outputs);
                         self.work.include(work);
                         node.continuation_complete = true;
+                        runnable = true;
                     }
                 }
             }
         }
         if nodes.iter().any(|node| node.handle.is_some() || node.settled.is_some() || !node.continuation_complete) {
-            return Ok(ProgramOutputContinuationProgress::Pending);
+            return Ok(if runnable { ProgramOutputContinuationProgress::Progressed } else { ProgramOutputContinuationProgress::Pending });
         }
         let dependencies = request.at(&self.basis).combine_query_dependencies(phase,
             self.dependencies.iter().chain(nodes.iter().filter_map(|node| node.dependencies.as_ref())))?;

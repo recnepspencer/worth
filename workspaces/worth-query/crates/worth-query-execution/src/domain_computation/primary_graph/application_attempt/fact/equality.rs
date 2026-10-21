@@ -22,6 +22,13 @@ impl WorthQueryApplicationObservedFact {
         };
         check_request()?;
         let equal = match self {
+            Self::SourcePublication { observation } => observation.remains_equal(runtime, execution, snapshot)
+                .map_err(|cause| match cause {
+                    super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),
+                    super::WorthQuerySourceCurrentnessFailure::Execution(cause) => SelfDenial::relational_read_stopped(cause, "source publication comparison"),
+                    super::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded, "source publication comparison"),
+                    super::WorthQuerySourceCurrentnessFailure::Unavailable => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "source publication comparison"),
+                })?,
             Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => super::retirement_equality::remains_equal(runtime, snapshot, *entity_id, *kind, *created_at, *deleted_at),
             Self::SourceEntity { entity_id } => match runtime.read_truth().project_snapshot(snapshot) {
                 Some(view) => {
@@ -111,6 +118,14 @@ impl WorthQueryApplicationObservedFact {
             } => matches!(
                 super::super::observation::observe_field(runtime, execution, snapshot, *entity_id, *kind, locator)?,
                 Some(super::super::observation::WorthQueryApplicationFieldObservation::Absent)
+            ),
+            Self::OptionalAspectAbsent {
+                entity_id,
+                kind,
+                locator,
+            } => matches!(
+                super::super::observation::observe_field(runtime, execution, snapshot, *entity_id, *kind, locator)?,
+                Some(super::super::observation::WorthQueryApplicationFieldObservation::AspectAbsent)
             ),
             Self::Relation {
                 relation_kind,

@@ -22,10 +22,7 @@ impl WorthQueryOutputDemandRegistry {
             .get_mut(&key)
             .unwrap()
             .state = super::closed_retirement::ready();
-        let ready = self
-            .interest_ready_readmission(&interest, &mut record_admission())
-            .unwrap()
-            .unwrap();
+        let ready = self.interest_ready_readmission(&interest).unwrap().unwrap();
         (interest, ready)
     }
     pub(in crate::domain_computation::primary_graph) fn fixture_stop_kind(

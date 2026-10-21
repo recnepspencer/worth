@@ -1,12 +1,10 @@
 use super::PublishedApplicationGraph;
-use crate::domain_computation::authorization::{
-    WorthQueryInstalledAuthorizationRegistry, WorthQueryRuntimeClock,
-};
+use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
+use crate::domain_computation::authorization::WorthQueryRuntimeClock;
 use crate::domain_computation::primary_graph::authentication_clock::WorthQueryAuthenticationClock;
-use crate::domain_computation::primary_graph::{
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphInstallationDenial,
-    WorthQueryPrimaryGraphInstallationDenialKind,
-};
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 pub(super) fn assemble_application_runtime<Schema>(
@@ -32,15 +30,6 @@ pub(super) fn assemble_application_runtime<Schema>(
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
-    // Output-lineage history keeps the generations the invalidation window keeps.
-    let history_positions = std::num::NonZeroUsize::new(
-        graph
-            .product_world_resources
-            .invalidation_resources()
-            .installation()
-            .maximum_retained_positions,
-    )
-    .expect("installed invalidation resources retain at least one position");
     let product_runtime = crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime::install(
         graph.primary_provider.graph.prepare_product_source(&phase.execution_request(), &graph.relational_branch_identity)
             .map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(
@@ -65,14 +54,10 @@ where
         schema_binding.package_identity().render_hex(),
         schema_binding.schema_identity().render_hex(),
     );
-    let granular_invalidation = crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation::new(
-        schema_binding.clone(),
-        graph.primary_provider.graph.clone(),
-        crate::domain_computation::execution_runtime::product_world::WorthQueryProductSharedRoot::new(
+    let granular_invalidation = crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation::new(schema_binding.clone(), graph.primary_provider.graph.clone(), crate::domain_computation::execution_runtime::product_world::WorthQueryProductSharedRoot::new(
             product_runtime.clone(),
             graph.bridge.conditional_operations(),
-        ),
-    );
+        ));
     let program_required_bindings = installed_schema
         .installed_mutation_binding_inventory()
         .filter(|binding| binding.requires_application_program())
@@ -98,38 +83,13 @@ where
             std::sync::Arc::clone(&authorization_clock),
         ),
     );
-    let obligation_budget = graph
-        .runtime
-        .output_demand_resource_profile()
-        .registry_obligation_retained_bytes();
-    let required_budget = graph
-        .runtime
-        .output_demand_resource_profile()
-        .registry_required_retained_bytes();
-    let record_budget = graph
-        .runtime
-        .output_demand_resource_profile()
-        .registry_record_retained_bytes();
-    graph
-        .primary_provider
-        .graph
-        .output_lineage
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .install_lineage_retention(
-            graph
-                .runtime
-                .output_demand_resource_profile()
-                .lineage_retained_bytes(),
-            history_positions,
-        );
     Ok(WorthQueryPrimaryGraphApplicationRuntime {
         runtime: graph.runtime,
         installed_schema,
         application_readiness_schema_token,
         publication: graph.publication,
         checkpoint_restore_work: graph.checkpoint_restore_work,
-        authorization,
+        authorization: std::sync::Arc::new(authorization),
         authorization_clock,
         authentication_clock: WorthQueryAuthenticationClock::system(),
         relational_branch_identity: graph.relational_branch_identity,
@@ -139,12 +99,11 @@ where
         conditional_operations: std::sync::Mutex::new(conditional_operations),
         primary_provider: graph.primary_provider,
         primary_graph_authority: graph.primary_graph_authority,
-        result_buffers: Default::default(),
+
         source_meanings: crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry::new(
             runtime_authority,
         ),
         recovered_program_source_delivery: Default::default(),
-        required_set_comparison_observations: Default::default(),
         basis_leases: Default::default(),
         next_external_dispatch_attempt: std::sync::atomic::AtomicU64::new(1),
         external_effect_transport: std::sync::OnceLock::new(),
@@ -160,7 +119,7 @@ where
         output_readiness_routes,
         next_output_producer_attempt: std::sync::atomic::AtomicU64::new(1),
         next_application_mutation_partition: std::sync::atomic::AtomicU32::new(1),
-        output_demands: super::super::super::application_output_demand::WorthQueryOutputDemandRegistry::with_budgets(obligation_budget, record_budget, required_budget),
+        output_demands: super::super::super::application_output_demand::WorthQueryOutputDemandRegistry::default(),
         recovered_outputs: Default::default(),
         program_required_bindings,
         program_required_operations,

@@ -17,7 +17,6 @@ where
         &self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
-        policy: WorthQueryOperationDeliveryPolicy,
     ) -> Result<WorthQueryApplicationReadObservation, WorthQueryOperationDeliveryDenial> {
         use WorthQueryOperationDeliveryDenial as Denial;
         if !std::ptr::eq(self.runtime.runtime(), request.application)
@@ -36,19 +35,7 @@ where
         owner
             .resolve_declared_action::<Binding<Schema, Intent>>(&self.installed_action)
             .map_err(Denial::Action)?;
-        let installed = self
-            .runtime
-            .runtime()
-            .output_demand_resource_profile()
-            .limits()
-            .source_currentness_work();
-        let work = policy
-            .currentness_work
-            .map(std::num::NonZeroUsize::get)
-            .into_iter()
-            .chain(installed)
-            .min();
-        request.at(&observation).require_current_discovered_program_outputs_in_advancement(phase, &self.settlement, work).map_err(|denial| match denial {
+        request.at(&observation).require_current_discovered_program_outputs_in_advancement(phase, &self.settlement).map_err(|denial| match denial {
             WorthQueryOutputCurrentnessDenial::Output(output) if matches!(output.kind(), worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded) => Denial::Stale(output),
             other => Denial::Currentness(other),
         })?;

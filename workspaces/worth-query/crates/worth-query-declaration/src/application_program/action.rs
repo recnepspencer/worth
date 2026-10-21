@@ -1,3 +1,7 @@
+mod conditional;
+pub(crate) use conditional::{
+    ApplicationConditionalNativeActionInstanceRef, ApplicationConditionalOperationActionInstanceRef,
+};
 mod authoring;
 mod conditional_mutation;
 pub use authoring::ApplicationActionSpecBuilder;
@@ -93,21 +97,6 @@ pub(crate) struct ApplicationActionInstanceRef<Schema, Instance, Feature, Bindin
 /// One program-owned specialized operation whose effects are issued by Query.
 pub(crate) struct ApplicationOperationActionRef<Schema, Feature, Operation> {
     marker: PhantomData<fn() -> (Schema, Feature, Operation)>,
-}
-
-/// A program operation issued only by its installed conditional owner.
-pub(crate) struct ApplicationConditionalOperationActionRef<Schema, Feature, Operation> {
-    marker: PhantomData<fn() -> (Schema, Feature, Operation)>,
-}
-
-/// Conditional operation owned by a feature in a named composition instance.
-pub(crate) struct ApplicationConditionalOperationActionInstanceRef<
-    Schema,
-    Instance,
-    Feature,
-    Operation,
-> {
-    marker: PhantomData<fn() -> (Schema, Instance, Feature, Operation)>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -352,45 +341,5 @@ where
             locality: None,
             change_shape: None,
         }
-    }
-}
-
-impl<Schema, Feature, Operation> sealed::ActionShape
-    for ApplicationConditionalOperationActionRef<Schema, Feature, Operation>
-{
-}
-
-impl<Schema, Feature, Operation> ApplicationActionShape<Schema>
-    for ApplicationConditionalOperationActionRef<Schema, Feature, Operation>
-where
-    Schema: ApplicationSchema,
-    Feature: ApplicationFeature<Schema>,
-    Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
-{
-    fn declaration() -> ApplicationActionDeclaration {
-        let mut action = ApplicationOperationActionRef::<Schema, Feature, Operation>::declaration();
-        action.conditional_only = true;
-        action
-    }
-}
-
-impl<Schema, Instance, Feature, Operation> sealed::ActionShape
-    for ApplicationConditionalOperationActionInstanceRef<Schema, Instance, Feature, Operation>
-{
-}
-
-impl<Schema, Instance, Feature, Operation> ApplicationActionShape<Schema>
-    for ApplicationConditionalOperationActionInstanceRef<Schema, Instance, Feature, Operation>
-where
-    Schema: ApplicationSchema,
-    Instance: ApplicationCompositionInstance,
-    Feature: ApplicationFeature<Schema>,
-    Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
-{
-    fn declaration() -> ApplicationActionDeclaration {
-        let mut action =
-            ApplicationConditionalOperationActionRef::<Schema, Feature, Operation>::declaration();
-        action.composition_instance = Instance::PATH;
-        action
     }
 }

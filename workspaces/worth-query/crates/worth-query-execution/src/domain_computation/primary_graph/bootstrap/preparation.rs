@@ -67,6 +67,7 @@ impl WorthQueryExecutionInstallationAuthority {
             product_world_resources,
             invariant_factories,
             None,
+            false,
         )
     }
 
@@ -80,6 +81,7 @@ impl WorthQueryExecutionInstallationAuthority {
         product_world_resources: crate::domain_computation::execution_runtime::product_world::WorthQueryProductWorldResources,
         invariant_factories: WorthQueryApplicationInvariantFactories<Schema>,
         checkpoint: Option<&super::super::application_checkpoint::DecodedApplicationCheckpoint>,
+        codec_transition: bool,
     ) -> Result<WorthQueryPrimaryGraphBootstrap<Schema>, WorthQueryPrimaryGraphInstallationDenial>
     where
         Schema: ApplicationSchema,
@@ -96,17 +98,6 @@ impl WorthQueryExecutionInstallationAuthority {
             return Err(primary_graph_denial(
                 WorthQueryPrimaryGraphInstallationDenialKind::AlreadyInstalled,
                 "execution runtime already owns a primary graph",
-            ));
-        }
-        if let Some((retained_positions, retained_commits)) =
-            product_world_resources.invalidation_window_past_history()
-        {
-            return Err(primary_graph_denial(
-                WorthQueryPrimaryGraphInstallationDenialKind::InvalidationWindowExceedsHistory {
-                    retained_positions,
-                    retained_commits,
-                },
-                "the invalidation window retains more positions than the World retains commits",
             ));
         }
         runtime
@@ -142,11 +133,19 @@ impl WorthQueryExecutionInstallationAuthority {
         }
         let (recovered_relational_authority, recovered_checkpoint_restore_work) = match checkpoint {
             Some(checkpoint) => {
-                let (outcome, authority) = relational_runtime
-                    .durability_recovery()
-                    .restore_native_checkpoint_with_authority(&execution, &checkpoint.native)
-                    .map_err(map_checkpoint_recovery_stop)?;
-                invariant_installation_receipt = relational_runtime
+                let mut recovery = relational_runtime.durability_recovery();
+                let (outcome, authority) = if codec_transition {
+                    recovery.restore_native_checkpoint_for_codec_transition_with_authority(
+                        &execution,
+                        &checkpoint.native,
+                    )
+                } else {
+                    recovery
+                        .restore_native_checkpoint_with_authority(&execution, &checkpoint.native)
+                }
+                .map_err(map_checkpoint_recovery_stop)?;
+                if !authority.codec_transition_pending() {
+                    invariant_installation_receipt = relational_runtime
                     .readmit_recovered_initial_schema_installation(invariant_installation_receipt)
                     .map_err(|error| {
                         primary_graph_denial(
@@ -156,11 +155,33 @@ impl WorthQueryExecutionInstallationAuthority {
                             format!("recovered schema authority denied: {error}"),
                         )
                     })?;
+                }
                 (Some(authority), outcome.checkpoint_restore_work)
             }
             None => (None, None),
         };
-        let graph = checkpoint::primary_graph_for_installation(
+        let codec_pending = recovered_relational_authority
+            .as_ref()
+            .is_some_and(|authority| authority.codec_transition_pending());
+        let source_publisher = if codec_pending {
+            let (owner, native) = relational_runtime
+                .durability_recovery()
+                .issue_recovered_codec_source_publication_owner(
+                    &execution,
+                    recovered_relational_authority
+                        .as_ref()
+                        .expect("pending recovery owns its source"),
+                )
+                .map_err(super::checkpoint_transition::codec::map_admission)?;
+            Some(
+                super::super::root::application_publication::ApplicationPublication::recovered(
+                    owner, native,
+                ),
+            )
+        } else {
+            None
+        };
+        let mut graph = checkpoint::primary_graph_for_installation(
             runtime.authority_identity(),
             installed_schema.binding_identity(),
             layout,
@@ -168,10 +189,16 @@ impl WorthQueryExecutionInstallationAuthority {
             product_world_resources.invalidation_resources(),
             checkpoint.is_some(),
         )?;
+        if let Some(publisher) = source_publisher {
+            graph.application_publication = Some(std::sync::Arc::new(publisher));
+        } else {
+            graph.bind_application_publication(&invariant_installation_receipt);
+        }
         let recovered_publication = checkpoint
             .map(|checkpoint| checkpoint.recover_publication(&execution, &graph))
             .transpose()?;
         Ok(WorthQueryPrimaryGraphBootstrap {
+            value_bindings: installed_schema.value_bindings().clone(),
             runtime_authority: runtime.authority_identity(),
             installed_packages: runtime.retain_installed_packages(),
             graph,
@@ -210,7 +237,7 @@ impl WorthQueryExecutionInstallationAuthority {
     }
 }
 
-fn map_checkpoint_recovery_stop(
+pub(super) fn map_checkpoint_recovery_stop(
     stop: worth_relational::facade::durability::RelationalRecoveryStop,
 ) -> WorthQueryPrimaryGraphInstallationDenial {
     use worth_relational::facade::durability::RelationalRecoveryStop;

@@ -49,6 +49,7 @@ pub(super) fn observe(
 }
 
 /// Captures existing execution counters before its work ceiling settles.
+#[cfg(test)]
 pub(in super::super::super) fn observe_full_tree<Tree, E>(
     cause: super::retained::WorthQueryPartitionedComputationFullCause,
     outcome: &Result<
@@ -95,6 +96,44 @@ pub(in super::super::super) fn observe_full_tree<Tree, E>(
     ));
 }
 
+/// Already-settled native evidence; observing work never interrogates the
+/// kernel context or changes whether its actual result may be carried.
+pub(in super::super::super) fn observe_retained_full_tree<R, F, E>(
+    cause: super::retained::WorthQueryPartitionedComputationFullCause,
+    outcome: &worth_execution::RetainedReduceOutcome<R, F, E>,
+) {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
+    let metrics = outcome.reduction_metrics.or_else(|| match &outcome.result {
+        Err(worth_execution::RetainedReduceDenial::Reduction(
+            worth_execution::ReduceInputDenial::ScopeAdmission { report, .. },
+        )) => {
+            let map_work = outcome
+                .mapped_report
+                .map_or(0, |report| report.charged_work());
+            let visits = report
+                .charged_work()
+                .checked_sub(map_work)
+                .expect("native scope covers settled map");
+            (visits != 0).then_some(worth_execution::ReductionMetrics {
+                structural_visits: visits,
+                recombined_nodes: 0,
+                combine_calls: 0,
+                charged_work: visits,
+                charged_span: visits,
+            })
+        }
+        _ => None,
+    });
+    if let Some(metrics) = metrics {
+        observe_tree(WorthQueryPartitionedTreeRun::Full(
+            cause,
+            super::tree_report::WorthQueryPartitionedTreeMetrics::from_native(metrics),
+        ));
+    }
+}
+
 /// Records actual tree work on both completed and stopped executions.
 pub(super) fn observe_tree(report: WorthQueryPartitionedTreeRun) {
     if !crate::domain_computation::execution_observation::is_installed() {
@@ -123,11 +162,13 @@ pub fn partitioned_computation_runs_on_this_thread_for_test() -> Vec<(
 
 /// Captures the completed map's exposed kernel work for post-shape admission.
 /// Scope admission after a completed map accepts every kernel's work.
+#[cfg(test)]
 pub(in super::super::super) struct FullTreeMapWork {
     observing: bool,
     work: std::sync::atomic::AtomicU64,
 }
 
+#[cfg(test)]
 impl Default for FullTreeMapWork {
     fn default() -> Self {
         Self {
@@ -137,6 +178,7 @@ impl Default for FullTreeMapWork {
     }
 }
 
+#[cfg(test)]
 impl FullTreeMapWork {
     pub(in super::super::super) fn kernel<T, R, E>(
         &self,

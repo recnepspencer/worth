@@ -292,7 +292,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn h
     );
     let settled = settle(
         || match outputs.advance(&world.application, &fresh_request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
+            WorthQueryApplicationProgramOutputProgress::Pending
+            | WorthQueryApplicationProgramOutputProgress::Progressed => None,
             WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
         },
     );

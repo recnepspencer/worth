@@ -39,6 +39,7 @@ fn members(extra_provenance: bool) -> Vec<Member> {
             provenance,
         )));
     let field = |name: &str, scalar_family, value_type: &str| Member::Field {
+        canonical: None,
         entity: "Evidence".into(),
         aspect: "Facts".into(),
         field: name.into(),
@@ -86,13 +87,19 @@ fn unsigned_alternative_creators_and_mutable_signed_fields_are_refused() {
     });
     assert!(validate_signed_creations(&alternative).is_err());
     let mut mutable = members(false);
-    let Member::Field { writable, .. } = &mut mutable[0] else {
+    let Member::Field {
+        canonical: None,
+        writable,
+        ..
+    } = &mut mutable[0]
+    else {
         unreachable!()
     };
     *writable = true;
     assert!(validate_signed_creations(&mutable).is_err());
     let mut missing = members(false);
     missing.push(Member::Field {
+        canonical: None,
         entity: "Evidence".into(),
         aspect: "Facts".into(),
         field: "MissingSnapshot".into(),
@@ -110,7 +117,12 @@ fn unsigned_alternative_creators_and_mutable_signed_fields_are_refused() {
 
 fn captured_members(binding: Identity, role: Option<Role>, signed: bool) -> Vec<Member> {
     let mut members = members(false);
-    let Member::Field { value_type, .. } = &mut members[1] else {
+    let Member::Field {
+        canonical: None,
+        value_type,
+        ..
+    } = &mut members[1]
+    else {
         unreachable!()
     };
     *value_type = binding.as_str().into();
@@ -155,6 +167,7 @@ fn captured_members(binding: Identity, role: Option<Role>, signed: bool) -> Vec<
         vec![],
     );
     members.push(Member::Field {
+        canonical: None,
         entity: "Evidence".into(),
         aspect: "Facts".into(),
         field: "Text".into(),
@@ -168,9 +181,10 @@ fn captured_members(binding: Identity, role: Option<Role>, signed: bool) -> Vec<
         unique: false,
     });
     if !signed {
-        members.retain(
-            |member| !matches!(member, Member::Field { field, .. } if field == "Provenance"),
-        );
+        members.retain(|member| {
+            !matches!(member, Member::Field {
+            canonical: None, field, .. } if field == "Provenance")
+        });
     }
     members
 }

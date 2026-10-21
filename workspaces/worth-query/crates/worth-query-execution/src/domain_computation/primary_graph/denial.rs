@@ -97,7 +97,7 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     /// commits. A position past the World's history can never be read, so its
     /// retained marks would only hold capacity.
     InvalidationWindowExceedsHistory {
-        retained_positions: usize,
+        retained_positions: Option<usize>,
         retained_commits: usize,
     },
     /// The schema declares conditional nodes, so the runtime must be published
@@ -186,6 +186,12 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     /// A managed computation declares an equivalence predicate, and no
     /// installed predicate is visible at installation.
     ManagedComputationEquivalenceUnavailable,
+    /// A declared collection has no checked computation/completeness binding.
+    MissingCollectionOwner,
+    /// The installed collection or completeness differs from the declaration.
+    CollectionOwnerMeaningMismatch,
+    /// A checked collection owner has no matching declaration.
+    ForeignCollectionOwner,
 }
 
 /// Refusal to install or publish an application's primary graph runtime.

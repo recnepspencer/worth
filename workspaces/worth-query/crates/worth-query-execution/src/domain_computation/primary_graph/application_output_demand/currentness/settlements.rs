@@ -5,7 +5,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         execution: worth_execution::ExecutionRequest<'_, '_>,
         relational: &worth_relational::facade::runtime::RelationalRuntime,
         settlements: impl IntoIterator<Item = &'s WorthQueryOutputDemandSettlement>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
         for settlement in settlements {
@@ -18,7 +17,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .output_lineage
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            let read = lineage_read(admission, |admission| {
+            let read = lineage_read(|| {
                 if let Some(receipt) = settlement.application_commit_receipt() {
                     lineage.source_facts_for_receipt(
                         runtime.runtime.authority_identity().as_u64(),
@@ -26,7 +25,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         self.product().observation(),
                         receipt,
                         &execution,
-                        admission,
                     )
                 } else if let Some(stable) = settlement.stable.as_ref() {
                     lineage.source_facts_for_stable_output(
@@ -35,7 +33,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         self.product().observation(),
                         stable,
                         &execution,
-                        admission,
                     )
                 } else {
                     lineage.source_facts_for_restored_output(
@@ -44,7 +41,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         self.product().observation(),
                         settlement,
                         &execution,
-                        admission,
                     )
                 }
             })?;
@@ -59,7 +55,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 relational,
                 &read,
                 settlement.application_commit_receipt(),
-                admission,
             )?;
         }
         Ok(())

@@ -4,7 +4,6 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_runtime_bridge::facade::BridgeAuthorizationRuntime;
 
 use super::WorthQueryRetainedAuthorizationDecisionFacts;
-use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 
 pub(in crate::domain_computation) enum AuthorizationCurrentnessStop {
     Admission(CompanionPreflightStop),
@@ -17,6 +16,15 @@ impl From<CompanionPreflightStop> for AuthorizationCurrentnessStop {
 }
 
 impl WorthQueryRetainedAuthorizationDecisionFacts {
+    pub(in crate::domain_computation) fn source_query_principal_facts(
+        &self,
+    ) -> Result<
+        Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
+        CompanionPreflightStop,
+    > {
+        super::principal(self).source_query_facts()
+    }
+
     /// The selected-access proof separately authenticates the principal on
     /// this issued root. This owner rechecks every mutable conventional
     /// authorization decision; capability facts require their own admitted
@@ -27,18 +35,13 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, AuthorizationCurrentnessStop> {
-        admission.charge_external_work(1)?;
         match self {
             Self::Principal(_) => Ok(true),
             Self::Abilities { decisions, .. } => {
-                let visits = u64::try_from(decisions.len())
-                    .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
-                admission.charge_external_work(visits)?;
                 for decision in decisions {
                     if !decision.remains_conventional_current_admitted(
-                        execution, runtime, snapshot, bridge, admission,
+                        execution, runtime, snapshot, bridge,
                     )? {
                         return Ok(false);
                     }

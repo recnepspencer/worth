@@ -74,6 +74,7 @@ fn prepared_publication_rejects_an_existing_envelope_before_any_effect() {
             delta,
             std::sync::Arc::clone(&committed.publication().envelope),
             &schema_registry,
+            None,
         )
         .err()
         .expect("an existing envelope must fail the real prepared-publication court");
@@ -160,6 +161,7 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
             delta,
             std::sync::Arc::new(future_envelope),
             &schema_registry,
+            None,
         )
         .err()
         .expect("the unresolved owner symbol sabotages root capture");

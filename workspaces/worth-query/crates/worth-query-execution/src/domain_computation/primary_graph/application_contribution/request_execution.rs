@@ -9,9 +9,10 @@
 use worth_execution::{
     CanonicalBits, ChargedBytes, ExecutionMap, ExecutionMemoryReservation, ExecutionResourceLease,
     ExecutionWorkCeiling, LeaseDenial, LeaseRequest, MapKernelContext, MapKernelFailure,
-    MapKernelStop, MapOutcome, ReduceInputDenial, ReductionMetrics, ReductionTree,
-    WorkCeilingDenial,
+    MapKernelStop, ReductionTree, WorkCeilingDenial,
 };
+#[cfg(test)]
+use worth_execution::{MapOutcome, ReduceInputDenial, ReductionMetrics};
 use worth_foundational::{ExecutionReport, ExecutionRequestPolicy};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
@@ -37,6 +38,7 @@ type Resource = WorthQueryManagedComputationResourceDenial;
 
 mod decision_stage;
 mod descendants;
+mod retained_dispatch;
 mod tree_charge;
 pub(in crate::domain_computation::primary_graph) use descendants::MemberRequestExecution;
 pub(in crate::domain_computation::primary_graph) mod advancement;
@@ -70,6 +72,18 @@ enum Form<'a> {
 }
 
 impl<'a> QueryRequestExecution<'a> {
+    /// The actual current lease funds new persistent cells; the policy is
+    /// borrowed for allocation only and is never stored in retained state.
+    pub(in crate::domain_computation::primary_graph) fn allocation_policy(
+        &self,
+    ) -> Result<worth_execution::ExecutionAllocationPolicy<'_, 'a>, Resource> {
+        match &self.form {
+            Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
+                .as_ref()
+                .map(worth_execution::ExecutionAllocationPolicy::Execution)
+                .map_err(|e| lease_denial(*e)),
+        }
+    }
     /// The request's execution under `placement`. The request's cancellation
     /// is the one every lease and serial run observes, and its deadline is
     /// theirs.
@@ -184,12 +198,15 @@ pub(in crate::domain_computation::primary_graph) struct QueryMemoryReservation {
 }
 
 impl QueryMemoryReservation {
-    pub(super) const fn bytes(&self) -> u64 {
+    pub(in crate::domain_computation::primary_graph) const fn bytes(&self) -> u64 {
         self.bytes
     }
 
     /// Holds `bytes` in place of what was held; a refusal keeps what was.
-    pub(super) fn resize(&mut self, bytes: u64) -> Result<(), Resource> {
+    pub(in crate::domain_computation::primary_graph) fn resize(
+        &mut self,
+        bytes: u64,
+    ) -> Result<(), Resource> {
         if let Some(held) = &mut self.held {
             held.resize(bytes).map_err(memory_denial)?;
         }
@@ -231,6 +248,7 @@ pub(super) struct QueryDispatch<'d> {
 }
 
 /// What a reduction produced, as `run_reduce` returns it.
+#[cfg(test)]
 pub(super) type Reduced<R, Combine, E> =
     Result<(ReductionTree<R, Combine>, ExecutionReport, ReductionMetrics), ReduceInputDenial<E>>;
 
@@ -243,6 +261,7 @@ impl QueryDispatch<'_> {
     /// Maps every partition of `map` inside `ceiling`. The map's admission
     /// takes over `inputs`, the request memory held for its partitions, in
     /// one ledger step: no byte of them is unreserved between the two holds.
+    #[cfg(test)]
     pub(super) fn map<T, K, R, E, Kernel>(
         &self,
         ceiling: u64,
@@ -273,6 +292,7 @@ impl QueryDispatch<'_> {
     /// to `tree` in one ledger step, so the tree is held from its build until
     /// `tree` drops. Where a test chose certification, a completed reduction
     /// is then certified outside the ceiling.
+    #[cfg(test)]
     pub(super) fn reduce<T, K, R, E, Kernel, Diagnostic, Combine>(
         &self,
         ceiling: u64,
@@ -358,7 +378,7 @@ pub(crate) use advancement::{
     drain_test_advancement_observations, with_test_advancement, TestHostRequest,
 };
 
-pub use advancement::with_bootstrap_advancement;
+pub use advancement::{with_bootstrap_advancement, with_bootstrap_advancement_from_request};
 
 pub use advancement::WorthQueryBootstrapAdvancementPhase;
 

@@ -4,14 +4,11 @@ pub(super) fn rebase(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    prepared: PreparedSourceFactRebase,
+    prepared: FullSourceFactRebase,
     retired: &BTreeSet<EntityId>,
     producer_output: bool,
-    maximum_indexed_rebase_work: Option<usize>,
-    admission: &mut crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission,
 ) -> RebasedSourceFacts {
-    let PreparedSourceFactRebase {
-        retention,
+    let FullSourceFactRebase {
         facts,
         moved_by_own_effect,
         endpoints,
@@ -22,10 +19,7 @@ pub(super) fn rebase(
     let mut endpoints = endpoints.into_iter().peekable();
     // The width the decision declared for its indexed selections, metered
     // across the walk.
-    let mut indexed_width = crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission::with_work_limit(
-        maximum_indexed_rebase_work.map(|work| u64::try_from(work).expect("native work fits u64")),
-        None,
-    );
+
     let mut failure = None;
     let mut own_effect = OwnEffectOnReads::NONE_ASKED;
     if !moved_by_own_effect.is_empty() {
@@ -46,8 +40,6 @@ pub(super) fn rebase(
             fact,
             retired,
             producer_output,
-            admission,
-            &mut indexed_width,
             endpoints
                 .next_if(|(prepared_ordinal, _)| *prepared_ordinal == ordinal)
                 .map(|(_, payload)| payload),
@@ -102,14 +94,19 @@ pub(super) fn rebase(
         {
             superseded.push(ordinal);
         }
-        rebased.push(action.apply(fact));
+        if let Err(cause) = rebased.push(action.apply(fact)) {
+            return storage_stopped(cause, own_effect);
+        }
     }
-    let facts = FactPayload::from_prepared(rebased, retention);
+    let rebased = match rebased.seal() {
+        Ok(facts) => facts,
+        Err(cause) => return storage_stopped(cause, own_effect),
+    };
     if superseded.is_empty() {
-        RebasedSourceFacts::Exact(facts)
+        RebasedSourceFacts::Exact(rebased)
     } else {
         RebasedSourceFacts::SupersededByOwnEffect {
-            facts,
+            facts: rebased,
             ordinals: superseded.into(),
         }
     }
@@ -130,4 +127,27 @@ fn stopped(
         reason: failure.unwrap_or(RebaseVerificationReason::AdmissionDenied(stop)),
         own_effect: own_effect.with_unanswered(unasked, producer_output, OwnEffect::Moved),
     }
+}
+
+pub(super) fn storage_stopped(
+    cause: worth_execution::ExecutionAllocationDenial,
+    own_effect: OwnEffectOnReads,
+) -> RebasedSourceFacts {
+    use worth_execution::ExecutionAllocationDenialClass as Class;
+    use worth_execution::MapKernelStop as Stop;
+    use worth_execution::WorkCeilingDenial as Request;
+    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
+    let reason = match cause.classify() {
+        Class::Request(Request::Stopped(Stop::Cancelled)) => {
+            RebaseVerificationReason::Execution(Native::Cancelled)
+        }
+        Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => {
+            RebaseVerificationReason::Execution(Native::DeadlineElapsed)
+        }
+        class => RebaseVerificationReason::NativePayloadStorage {
+            class,
+            requested: cause.requested_payload_bytes(),
+        },
+    };
+    RebasedSourceFacts::VerificationRequired { reason, own_effect }
 }

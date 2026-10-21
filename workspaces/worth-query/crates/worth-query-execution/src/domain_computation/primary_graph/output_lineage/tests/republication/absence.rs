@@ -31,7 +31,7 @@ fn republication_keeps_a_performed_read_without_inventing_cutoff_proofs() {
         );
         let restored_witness = Arc::clone(&stage.restored_witness);
         stage
-            .republish(generation, &facts, &restored_witness, &mut admission(4_096))
+            .republish(generation, &facts, &restored_witness)
             .expect("a performed read does not require input-cutoff proofs")
             .expect("the republication installs");
         let row = stage.restored();
@@ -54,12 +54,7 @@ fn restoring_existing_unverified_facts_drops_state_as_restored() {
     let sealed = sealed_run_for_lineage_test();
     staged(request_execution, |mut stage| {
         let facts: Arc<[Fact]> = Arc::from([source_entity(1)]);
-        let computation = stage.lineage.retain_computation(
-            sealed,
-            None,
-            None,
-            stage.lineage.prepay_computation_fork_scan_for_test(),
-        );
+        let computation = stage.lineage.retain_computation(sealed);
         assert!(matches!(computation, RecordedComputation::Retained(_)));
         let generation = stage.restored_generation() - 1;
         let cell = stage.retain(
@@ -122,7 +117,7 @@ fn republish_untracked(
         );
         let witness = Arc::clone(&stage.restored_witness);
         stage
-            .republish(generation, &facts, &witness, &mut admission(4_096))
+            .republish(generation, &facts, &witness)
             .unwrap()
             .expect("untracked decision context prevents cutoff, not republication");
         let row = stage.restored();

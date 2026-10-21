@@ -12,21 +12,22 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
 ) {
     let WorthQueryRegisteredProviderAttempt {
         staged,
-        requests,
         steps,
         dispatch_outbox: _dispatch_outbox,
     } = registered;
-    let receipt = staged
-        .read_authority()
-        .capture_decision_read_set(
-            requests,
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            None,
-        )
+    let control = crate::domain_computation::primary_graph::StorageControl::new(
+        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        None,
+    );
+    let receipt = world
+        .application
+        .primary_provider
+        .capture_application_read_set(execution, &staged.read_authority(), control)
         .expect("real registered facts must produce a decision read set");
-    let fresh = match staged
-        .read_authority()
-        .compare_decision_read_set(execution, receipt)
+    let fresh = match world
+        .application
+        .primary_provider
+        .compare_application_read_set(execution, &staged.read_authority(), receipt, control)
         .expect("real registered facts must compare")
     {
         WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh) => fresh,

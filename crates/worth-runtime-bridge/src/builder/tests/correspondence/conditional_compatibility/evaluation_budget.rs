@@ -100,8 +100,8 @@ fn cold_source_recomputes_and_a_live_slot_forces_typed_capacity_denial() {
     let request_execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let budget = worth_signal::facade::runtime::SignalConditionalEvaluationBudget {
-        maximum_retained_slots: 1,
-        maximum_retained_bytes: 512 * 1024 * 1024,
+        maximum_retained_slots: Some(1),
+        maximum_retained_bytes: Some(512 * 1024 * 1024),
         maximum_attempt_visits: None,
     };
     let (mut builder, installation) = installation_fixture_with_budget(

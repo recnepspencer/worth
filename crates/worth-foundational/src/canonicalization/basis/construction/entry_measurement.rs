@@ -20,7 +20,16 @@ pub(super) fn measure<Stop>(
     for entry in entries {
         // Pay each measurement visit before inspecting the entry. String
         // lengths read initialized headers; they do not scan string contents.
-        admit(8, 0).map_err(Resource)?;
+        admit(8, 0).map_err(|cause| Resource {
+            cause,
+            quote: super::CanonicalBasisPreparationQuote {
+                phase: super::CanonicalBasisPreparationPhase::EntryMeasurement,
+                work: 8,
+                bytes: 0,
+                entry_count: entries.len(),
+                comparison_width: None,
+            },
+        })?;
         let domain = match entry.domain() {
             crate::canonicalization::basis::CanonicalBasisDomain::Future(name) => name.len(),
             _ => 0,
@@ -37,7 +46,17 @@ pub(super) fn measure<Stop>(
             CanonicalBasisLocus::AspectField { aspect, path } => {
                 let mut bytes = aspect.as_str().len();
                 let fields = path.fields().len();
-                admit(fields.checked_mul(2).ok_or(AccountingOverflow)?, 0).map_err(Resource)?;
+                let work = fields.checked_mul(2).ok_or(AccountingOverflow)?;
+                admit(work, 0).map_err(|cause| Resource {
+                    cause,
+                    quote: super::CanonicalBasisPreparationQuote {
+                        phase: super::CanonicalBasisPreparationPhase::EntryFieldMeasurement,
+                        work,
+                        bytes: 0,
+                        entry_count: entries.len(),
+                        comparison_width: None,
+                    },
+                })?;
                 for field in path.fields() {
                     bytes = bytes
                         .checked_add(field.as_str().len())

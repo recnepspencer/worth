@@ -22,6 +22,9 @@ pub(crate) fn record_nested(report: ExecutionReport, stop: Option<NestedStopOwne
     ACTIVE_METER.with(|active| {
         if let Some(parent) = active.borrow().last() {
             let mut parent = parent.borrow_mut();
+            if let Some(capture) = &mut parent.capture {
+                capture.invalidate();
+            }
             parent.work = match parent.work.checked_add(report.charged_work()) {
                 Some(work) => work,
                 None => {

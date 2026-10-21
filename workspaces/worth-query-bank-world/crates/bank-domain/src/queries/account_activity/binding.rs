@@ -31,7 +31,7 @@ worth_query_decl::facade::worth_query_query_binding!(
     scope Account, Identity, AccountIdentity, AccountId, ReadOnly, NoApplicationUnit,
     field AccountIdentity::reference(),
     value AccountActivityRequest::account,
-    limits results 1_024, work 100_000
+    limits results 1_024
 );
 
 impl worth_query_decl::facade::application_query::ApplicationLiveQueryIntent<BankSchema>

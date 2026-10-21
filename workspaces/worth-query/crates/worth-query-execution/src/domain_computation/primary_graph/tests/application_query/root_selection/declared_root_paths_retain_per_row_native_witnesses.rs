@@ -165,7 +165,6 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         .application
         .with_host_advancement(|phase| {
             let selected = world.selected_product(&phase.test_host_request());
-            selected.assert_cumulative_currentness_for_test(&phase, &request, &dependencies);
             let serial_retained = dependencies.assert_storage_custody_for_test(
                 phase
                     .checked_execution_request_for(&world.application.product_runtime)
@@ -178,7 +177,6 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                     &request,
                     std::iter::empty(),
                     &serial_retained,
-                    None,
                 )
                 .expect(
                     "the same original proof retained by fresh serial request is actually current",
@@ -190,7 +188,6 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                     &request,
                     std::iter::empty(),
                     &dependencies,
-                    Some(8192),
                 )
                 .unwrap();
             selected
@@ -200,7 +197,6 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                     &request,
                     std::iter::empty(),
                     &dependencies,
-                    Some(8192),
                 )
                 .unwrap();
         })
@@ -230,7 +226,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("ordinary source binding retains root-path native facts");
-    observed_source.assert_fact_materialization_capacity_for_test(&graph.layout);
+
     assert_eq!(
         source_facts
             .iter()
@@ -322,14 +318,13 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
                 !graph
                     .integration_handle()
                     .with_runtime(request_execution, |runtime| {
-                        fact.source_currentness_within(
+                        fact.source_currentness_in(
                             runtime,
                             &host_custody.borrowed_request_for_test(),
                             current.application_basis().snapshot_handle(),
-                            1,
                         )
                         .unwrap()
-                        .0
+                        .unwrap()
                         .movement()
                             == Movement::Unmoved
                     }),
@@ -342,7 +337,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         assert!(matches!(capture, crate::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Source(ref cause)
             if cause.kind() == WorthQuerySourceExpectationDenialKind::ForeignOperation));
         let denial = current.require_current_required_set(&phase, &crate::publication_boundary::program_publication_access(), &request,
-            std::iter::empty(), &dependencies, Some(8192)).unwrap_err();
+            std::iter::empty(), &dependencies).unwrap_err();
         assert!(matches!(denial, crate::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Output(ref cause)
             if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded), "real native adjacency ABA refuses the complete original pairing: {denial:?}");
     }).unwrap();

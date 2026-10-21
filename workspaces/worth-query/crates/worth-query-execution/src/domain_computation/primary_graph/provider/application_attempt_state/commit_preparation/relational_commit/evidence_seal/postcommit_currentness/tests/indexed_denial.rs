@@ -1,22 +1,20 @@
 use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
-use worth_query_declaration::facade::{
-    application_operation::ApplicationMutationIdentities,
-    application_schema::TypedMutationPreconditions,
-};
-use worth_relational::facade::indexes::{BoundedEntityFieldLookupDenialKind, DerivedIndexId};
+use worth_query_declaration::facade::application_operation::ApplicationMutationIdentities;
+use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
+use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind;
+use worth_relational::facade::indexes::DerivedIndexId;
 
 use super::*;
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
-use crate::domain_computation::primary_graph::{
-    application_attempt::IndexedSelectionReobserveDenial,
-    application_entry::mutation::HandlerResult,
-    tests::fixture::{
-        IdentityExecutionSchema, OptionalOutputInput, OptionalOutputMutationBinding,
-        OptionalOutputOperation, OptionalOutputPlan,
-    },
-    WorthQueryApplicationCommitOutcome, WorthQueryApplicationIdempotencyBinding,
-};
-use worth_relational::facade::mvcc::{CompanionPreflightBudget, CompanionPreflightStop};
+
+use crate::domain_computation::primary_graph::application_attempt::IndexedSelectionReobserveDenial;
+use crate::domain_computation::primary_graph::application_entry::mutation::HandlerResult;
+use crate::domain_computation::primary_graph::tests::fixture::IdentityExecutionSchema;
+use crate::domain_computation::primary_graph::tests::fixture::OptionalOutputInput;
+use crate::domain_computation::primary_graph::tests::fixture::OptionalOutputMutationBinding;
+use crate::domain_computation::primary_graph::tests::fixture::OptionalOutputOperation;
+use crate::domain_computation::primary_graph::tests::fixture::OptionalOutputPlan;
+use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
+use crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding;
 
 fn committed_indexed_facts(world: &AuthorizationWorld) -> Vec<WorthQueryApplicationObservedFact> {
     let request = live_scope();
@@ -107,7 +105,7 @@ fn committed_indexed_facts(world: &AuthorizationWorld) -> Vec<WorthQueryApplicat
         .checkpoint_facts_for_receipt(&receipt)
         .unwrap()
         .0;
-    facts.to_vec()
+    facts.iter().cloned().collect()
 }
 
 #[test]
@@ -171,7 +169,7 @@ fn indexed_postcommit_rebase_preserves_the_native_denial_and_fact_ordinal() {
 }
 
 #[test]
-fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() {
+fn sparse_indexed_rebase_keeps_complete_dependencies_without_work_estimates() {
     let world = installed_authorization_world(true);
     {
         let committed = committed_indexed_facts(&world);
@@ -217,45 +215,29 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
             WorthQueryApplicationObservedFact::IndexedEntitySelection { candidates, .. }
             if candidates.len() == 1
         ));
-        for (invalid_limit, expected_work) in [(false, 1), (true, 0)] {
+        for invalid_limit in [false, true] {
             let mut faulted = observed.clone();
             let WorthQueryApplicationObservedFact::IndexedEntitySelection { index_id, candidate_limit, .. } = &mut faulted else { unreachable!() };
             if invalid_limit { *candidate_limit = 0; } else { *index_id = DerivedIndexId(u64::MAX); }
-            let mut admission = request_admission();
-            assert_eq!(faulted.source_currentness_in(runtime,execution,  snapshot, &mut admission),
+
+            assert_eq!(faulted.source_currentness_in(runtime,execution,  snapshot),
                 Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable)));
-            assert_eq!(admission.charged_work(), expected_work,
-                "a failed probe settles navigation plus examined entries; rejected requests read nothing");
+
         }
         let original = vec![observed.clone(), observed.clone()];
-        let outcome = rebase(execution, runtime, snapshot,
-            PreparedSourceFactRebase::admit(
+        let outcome = rebase(execution, runtime, snapshot, PreparedSourceFactRebase::admit(
                 original.clone(),
                 [].into(),
                 StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None),
-            ).unwrap(),
-            &BTreeSet::new(), true, Some(4), &mut request_admission());
+            ).unwrap(), &BTreeSet::new(), true);
         let RebasedSourceFacts::Exact(facts) = outcome else {
-            panic!("two native one-row probes fit four work units: {outcome:?}");
+            panic!("native reobservation keeps the complete original facts: {outcome:?}");
         };
-        assert_eq!(facts.as_ref(), original.as_slice(), "retain the original limits and dependencies");
+        assert_eq!(facts.iter().cloned().collect::<Vec<_>>(), original.as_slice(), "retain the original limits and dependencies");
         for fact in facts.iter() {
-            let (movement, work) = fact.source_currentness_within(runtime,execution,  snapshot, 2).unwrap();
+            let movement = fact.source_currentness_in(runtime,execution,  snapshot).unwrap().unwrap();
             assert_eq!(movement.movement(), Movement::Unmoved);
-            assert_eq!(work, 2);
         }
-        let denied = rebase(execution, runtime, snapshot,
-            PreparedSourceFactRebase::admit(
-                original.clone(),
-                [].into(),
-                StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None),
-            ).unwrap(),
-            &BTreeSet::new(), true, Some(2), &mut request_admission());
-        assert_eq!(denied, RebasedSourceFacts::VerificationRequired {
-            reason: RebaseVerificationReason::AdmissionDenied(
-                CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: 2 }),
-            own_effect: OwnEffectOnReads::NONE_ASKED,
-        }, "width exhaustion keeps no partially rebased facts");
         observed
     }) }).expect("the fixture read owns its installed host call");
         let (second_account, _) = world
@@ -294,60 +276,42 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
                 )
             })
             .expect("the fixture read owns its installed host call");
-        world.application.with_host_advancement(|phase| {   let borrowed_execution = phase.execution_request_for(&world.application.product_runtime).expect("fixture borrows its runtime request"); let execution = &borrowed_execution; graph.integration_handle().with_runtime(execution, |runtime| {
-        let snapshot = selected.application_basis().snapshot_handle();
-        assert_eq!(
-            observed.source_currentness_within(runtime,execution,  snapshot, 2),
-            Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
-        );
-        for (width, spent) in [(1, 0), (2, 2)] {
-            let mut admission = InvalidationEditAdmission::new(CompanionPreflightBudget {
-                maximum_work_visits: Some(width),
-                maximum_preparation_bytes: None,
-            });
-            assert_eq!(observed.source_currentness_in(runtime,execution,  snapshot, &mut admission),
-                Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: width }));
-            assert_eq!(admission.charged_work(), spent,
-                "an unaffordable probe reads nothing; a narrowed overflowing probe spends navigation and its examined row");
-        }
-        let denied = rebase(execution,
-            runtime,
-            snapshot,
-            PreparedSourceFactRebase::admit(
-                vec![observed.clone()],
-                [].into(),
-                StorageControl::new(
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                    None,
-                ),
-            )
-            .unwrap(),
-            &BTreeSet::new(),
-            true,
-            Some(2),
-            &mut request_admission(),
-        );
-        assert_eq!(
-            denied,
-            RebasedSourceFacts::VerificationRequired {
-                reason: RebaseVerificationReason::AdmissionDenied(
-                    CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: 2
-                    }
-                ),
-                own_effect: OwnEffectOnReads::NONE_ASKED,
-            },
-            "a narrowed overflowing probe must not certify a partial posting"
-        );
-    }) }).expect("the fixture read owns its installed host call");
+        world
+            .application
+            .with_host_advancement(|phase| {
+                let borrowed_execution = phase
+                    .execution_request_for(&world.application.product_runtime)
+                    .expect("fixture borrows its runtime request");
+                let execution = &borrowed_execution;
+                graph
+                    .integration_handle()
+                    .with_runtime(execution, |runtime| {
+                        let snapshot = selected.application_basis().snapshot_handle();
+
+                        let current = observed.source_currentness_in(runtime, execution, snapshot)
+                            .expect("the real lookup remains available")
+                            .expect("the installed source is comparable");
+                        assert_eq!(current.movement(), Movement::Moved,
+                            "the independently authored second matching account changes membership");
+                        let normalized = rebase(execution, runtime, snapshot,
+                            PreparedSourceFactRebase::admit(vec![observed.clone()], [].into(),
+                                StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(),
+                            &BTreeSet::new(), true);
+                        let RebasedSourceFacts::Exact(facts) = normalized else {
+                            panic!("postcondition membership is normalized by the native lookup: {normalized:?}");
+                        };
+                        let WorthQueryApplicationObservedFact::IndexedEntitySelection { candidates, .. } = &facts[0] else {
+                            panic!("normalization keeps the actual indexed fact");
+                        };
+                        let WorthQueryApplicationObservedFact::IndexedEntitySelection { candidates: original, .. } = &observed else { unreachable!() };
+                        let mut expected = original.clone();
+                        expected.push(second_account);
+                        expected.sort_unstable();
+                        expected.dedup();
+                        assert_eq!(candidates, &expected);
+
+                    })
+            })
+            .expect("the fixture read owns its installed host call");
     }
 }
-
-fn request_admission() -> InvalidationEditAdmission {
-    InvalidationEditAdmission::new(CompanionPreflightBudget {
-        maximum_work_visits: Some(64),
-        maximum_preparation_bytes: None,
-    })
-}
-
-#[path = "indexed_denial/large_allowance.rs"]
-mod large_allowance;

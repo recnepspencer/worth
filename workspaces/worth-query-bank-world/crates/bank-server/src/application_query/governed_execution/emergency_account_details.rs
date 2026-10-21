@@ -116,14 +116,14 @@ impl<'a> BankEstateEmergencyAccountDetailsAdmission<'a> {
         let application = self.runtime.application_runtime();
         let request = application.request(self.principal.external(), self.controls.request());
         let retained = request
-            .at_approved_elevation(&phase, self.approved.query(), Some(self.controls.maximum_work()))
+            .at_approved_elevation(&phase, self.approved.query(), None)
             .map_err(BankApplicationQueryDenial::from_history_selection)?;
         let capability_input = self.request.capability_request();
         retained
             .query(self.request)
-            .limits(
+            .limit_results(
                 self.controls.maximum_result_count(),
-                self.controls.maximum_work(),
+
             )
             .admit_approved_retained(
                 &phase,
@@ -161,9 +161,9 @@ impl<'a> BankEstateEmergencyAccountDetailsAdmission<'a> {
             .request(self.principal.external(), self.controls.request())
             .at(session.observation())
             .query(self.request)
-            .limits(
+            .limit_results(
                 self.controls.maximum_result_count(),
-                self.controls.maximum_work(),
+
             )
             .admit_approved_retained(
                 &phase,
@@ -197,7 +197,7 @@ pub(crate) fn execute_estate_emergency_account_details(
         .application_runtime()
         .request(principal.external(), controls.request())
         .query(request)
-        .limits(controls.maximum_result_count(), controls.maximum_work())
+        .limit_results(controls.maximum_result_count())
         .execute_approved(
             approved.query(),
             ViewEstateEmergencyProtectionCapability::reference(),

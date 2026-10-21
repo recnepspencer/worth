@@ -94,3 +94,9 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for Planar
         PlanarMutationScope::new(BodyKey::reference(), self.0.scope_key.clone())
     }
 }
+
+impl<Schema: TopologySchemaBinding> ApplicationMutationAdmissionBinding<Schema>
+    for PlanarEditBinding<Schema>
+{
+    type Admission = ApplicationConventionalAdmission;
+}

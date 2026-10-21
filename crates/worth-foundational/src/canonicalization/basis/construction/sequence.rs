@@ -98,7 +98,9 @@ pub fn prepare_canonical_basis_sequence(
         Err(super::CanonicalBasisPreparationStop::Construction(denial)) => {
             TransitionOutcome::denied(denial)
         }
-        Err(super::CanonicalBasisPreparationStop::Resource(impossible)) => match impossible {},
+        Err(super::CanonicalBasisPreparationStop::Resource {
+            cause: impossible, ..
+        }) => match impossible {},
         Err(super::CanonicalBasisPreparationStop::AccountingOverflow) => {
             unreachable!("ordinary preparation performs no resource arithmetic")
         }
@@ -127,7 +129,16 @@ pub(super) fn prepare_owned_sequence<Stop>(
             .and_then(|work| work.checked_mul(entries.len()))
             .and_then(|work| work.checked_add(1))
             .ok_or(AccountingOverflow)?;
-        admit(visit_work, 0).map_err(Resource)?;
+        admit(visit_work, 0).map_err(|cause| Resource {
+            cause,
+            quote: super::CanonicalBasisPreparationQuote {
+                phase: super::CanonicalBasisPreparationPhase::SequenceVisit,
+                work: visit_work,
+                bytes: 0,
+                entry_count: entries.len(),
+                comparison_width: None,
+            },
+        })?;
     }
     if entries.is_empty() {
         return Err(Construction(
@@ -155,16 +166,25 @@ pub(super) fn prepare_owned_sequence<Stop>(
 
     if let Some(admit) = admit.as_mut() {
         let width = super::entry_measurement::measure(&entries, admit)?;
+        let comparison_width = width.entry;
         let (work, bytes) =
             super::sort_admission::sorting_claim(entries.len(), width).ok_or(AccountingOverflow)?;
         let version_bytes = version.as_str().len();
-        admit(
-            work.checked_add(version_bytes)
-                .and_then(|work| work.checked_add(1))
-                .ok_or(AccountingOverflow)?,
-            bytes.checked_add(version_bytes).ok_or(AccountingOverflow)?,
-        )
-        .map_err(Resource)?;
+        let work = work
+            .checked_add(version_bytes)
+            .and_then(|work| work.checked_add(1))
+            .ok_or(AccountingOverflow)?;
+        let bytes = bytes.checked_add(version_bytes).ok_or(AccountingOverflow)?;
+        admit(work, bytes).map_err(|cause| Resource {
+            cause,
+            quote: super::CanonicalBasisPreparationQuote {
+                phase: super::CanonicalBasisPreparationPhase::StableSort,
+                work,
+                bytes,
+                entry_count: entries.len(),
+                comparison_width: Some(comparison_width),
+            },
+        })?;
     }
 
     let mut ordering_comparisons = 0_u32;

@@ -1,6 +1,11 @@
+mod output_availability_candidate;
+pub(in crate::domain_computation::primary_graph) use output_availability_candidate::{
+    ObservedOutputCandidate, ObservedOutputPosture,
+};
 mod admission_denial;
 mod aggregate;
-mod consumed_output;
+pub(in crate::domain_computation::primary_graph) mod consumed_output;
+mod entity_resident;
 #[path = "invariant_projection/field_projection.rs"]
 mod field_projection;
 mod identity_encoding;
@@ -11,6 +16,10 @@ mod locked_reader;
 mod operation_projection_denial;
 mod operation_reader;
 pub(in crate::domain_computation::primary_graph) use operation_reader::BorrowedOperationProjection;
+pub use operation_reader::{
+    WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
+    WorthQueryOutputAvailabilityState,
+};
 mod realized_scope;
 mod relation_identity;
 mod traversal;
@@ -36,6 +45,7 @@ use super::{
 };
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
+pub use super::value_decode::WorthQueryValueDecodeDenial;
 pub use admission_denial::{
     WorthQueryInvariantProjectionDenial, WorthQueryInvariantProjectionDenialKind,
 };
@@ -48,6 +58,7 @@ pub(in crate::domain_computation::primary_graph) use consumed_output::{
     ConsumedOutputEvidence, ConsumedOutputVerification, ConsumedOutputVerificationStop,
     PublicationRecoveryStop, SelectedPendingConsumedOutput,
 };
+pub use field_projection::WorthQueryRetainedSnapshotRead;
 pub use locked_reader::{
     WorthQueryApplicationInvariantProjectionReader, WorthQueryCompletedInvariantProjection,
     WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantProjectionTraversalDenialKind,
@@ -57,7 +68,8 @@ pub use operation_projection_denial::{
 };
 pub(in crate::domain_computation::primary_graph) use operation_reader::WorthQueryPriorOutputRead;
 pub(in crate::domain_computation::primary_graph) use operation_reader::{
-    ComputationCallCharge, ObservedComputationInputs, PreparedCurrentInputs,
+    CallSequenceDenial, CallShape, CallShapeTransition, CallVisit, ComputationCallCharge,
+    ComputationCallSequence, ExpectedFactKeys, ObservedComputationInputs, PreparedCurrentInputs,
 };
 pub use operation_reader::{
     WorthQueryApplicationOperationInvariantProjectionReader,
@@ -86,6 +98,8 @@ pub struct WorthQueryApplicationInvariantProjectionAuthority<Schema> {
     binding_identity: ApplicationSchemaBindingIdentity,
     entity_resolution: WorthQueryInstalledEntityResolutionContext,
     authority_identity: u64,
+    value_bindings:
+        worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     program_activation: Option<super::program_occurrence::WorthQueryProgramActivationCell>,
     _schema: PhantomData<fn() -> Schema>,
 }
@@ -97,6 +111,8 @@ pub struct WorthQueryApplicationInvariantProjectionAuthority<Schema> {
 /// Dropping the snapshot releases it.
 pub struct WorthQueryApplicationInvariantProjectionSnapshot<Schema> {
     graph: WorthQueryPrimaryGraphIntegrationHandle,
+    value_bindings:
+        worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     layout: Arc<WorthQueryPrimaryGraphLayout>,
     basis: Option<worth_relational::facade::branch::AdmittedRelationalBranchBasis>,
     snapshot: Option<worth_relational::facade::snapshots::SnapshotHandle>,
@@ -157,6 +173,7 @@ where
         &self,
     ) -> WorthQueryApplicationInvariantProjectionAuthority<Schema> {
         WorthQueryApplicationInvariantProjectionAuthority {
+            value_bindings: self.value_bindings.clone(),
             graph: self.graph.integration_handle(),
             layout: Arc::clone(&self.graph.layout),
             runtime_authority: self.runtime_authority,
@@ -220,6 +237,7 @@ where
         })?;
         Ok(WorthQueryApplicationInvariantProjectionSnapshot {
             graph: self.graph.clone(),
+            value_bindings: self.value_bindings.clone(),
             layout: Arc::clone(&self.layout),
             basis: Some(basis),
             snapshot: Some(snapshot),

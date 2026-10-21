@@ -4,7 +4,7 @@ use super::*;
 #[test]
 fn authored_ring_fork_diverges_and_parent_remains_current() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
+    let application = install(None, ring_world::seed::<1>);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let parent = Court::new(&application, &request, 0x9176_3e80);
@@ -53,7 +53,7 @@ fn authored_ring_checkpoint_reopens_then_accepts_a_new_source_edit() {
     let mut rings = vec![Ring::seeded(0), Ring::created(1)];
     Reading::decisions();
     let checkpoint = {
-        let application = install(None, ring_world::seed::<1>, Retained::AMPLE);
+        let application = install(None, ring_world::seed::<1>);
         let (scope, principal) = authenticate(&application);
         let request = application.request(&principal, &scope);
         let court = Court::new(&application, &request, 0x9176_3f80);
@@ -72,11 +72,9 @@ fn authored_ring_checkpoint_reopens_then_accepts_a_new_source_edit() {
             })
             .expect("the native capture call is admitted")
     };
-    let restored = install(
-        Some(checkpoint),
-        |_| panic!("native reopen must preserve authored truth without reseeding"),
-        Retained::AMPLE,
-    );
+    let restored = install(Some(checkpoint), |_| {
+        panic!("native reopen must preserve authored truth without reseeding")
+    });
     let (scope, principal) = authenticate(&restored);
     let request = restored.request(&principal, &scope);
     let court = Court::new(&restored, &request, 0x9176_4000);

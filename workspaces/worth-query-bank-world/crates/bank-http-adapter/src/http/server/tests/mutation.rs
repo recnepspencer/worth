@@ -18,7 +18,7 @@ pub(super) fn command(id: &str, kind: &str, sequence: u64) -> serde_json::Value 
     let controls = if kind == "resume" {
         serde_json::json!({ "deadline_milliseconds": 5000, "maximum_history_work": 128 })
     } else if kind == "read" {
-        serde_json::json!({ "deadline_milliseconds": 5000, "maximum_results": 16, "maximum_work": 20000 })
+        serde_json::json!({ "deadline_milliseconds": 5000, "maximum_results": 16})
     } else {
         serde_json::json!({ "deadline_milliseconds": 5000 })
     };

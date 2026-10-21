@@ -19,6 +19,8 @@ pub(super) enum MemberState {
     AcceptedCaller,
     Pending,
     Held(WorthQueryOutputDemandKey),
+    /// The exact predecessor has an actual refresh retained by this caller.
+    RetainedRefresh,
 }
 
 impl MemberState {
@@ -32,7 +34,8 @@ impl MemberState {
             | Self::WaitingDeclaration(_)
             | Self::Prepared
             | Self::Pending
-            | Self::Held(_) => true,
+            | Self::Held(_)
+            | Self::RetainedRefresh => true,
             Self::Current(_) | Self::AcceptedCaller | Self::UnselectedClaim => false,
         }
     }
@@ -76,12 +79,11 @@ impl RequiredFrontier {
         ready: SelectedReadyReadmission,
         caller: bool,
         queued: Option<usize>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<RequiredUpstream, WorthQueryOutputDemandDenial> {
         for (index, member) in self.members.iter_mut().enumerate() {
             let same = match member.ready.claim() {
-                Some(claim) => claim.same_record(&ready, admission)?,
-                None => ready.same_record(member.ready.selected(), admission)?,
+                Some(claim) => claim.same_record(&ready)?,
+                None => ready.same_record(member.ready.selected())?,
             };
             if same {
                 // An owner rejected this claim without issuing a Ready. Its
@@ -96,7 +98,7 @@ impl RequiredFrontier {
                 // Membership identifies the physical row, not its current
                 // readmission binding. Keep the exact pin the owner just issued.
                 let changed = match member.ready.bound_ready() {
-                    Some(current) => !ready.same_ready_cell(current, admission)?,
+                    Some(current) => !ready.same_ready_cell(current)?,
                     None => true,
                 };
                 if changed {
@@ -111,7 +113,7 @@ impl RequiredFrontier {
                 return Ok(RequiredUpstream::Member(index));
             }
         }
-        self.reserve_slot(admission)?;
+        self.reserve_slot()?;
         let index = self.members.len();
         self.members.push(RequiredMember {
             ready: MemberInput::native(ready),
@@ -126,11 +128,7 @@ impl RequiredFrontier {
         Ok(RequiredUpstream::Member(index))
     }
 
-    fn reserve_slot(
-        &mut self,
-        admission: &mut InvalidationEditAdmission,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        let item = std::mem::size_of::<RequiredMember>();
+    fn reserve_slot(&mut self) -> Result<(), WorthQueryOutputDemandDenial> {
         if self.members.len() == self.members.capacity() {
             let next = self
                 .members
@@ -138,33 +136,7 @@ impl RequiredFrontier {
                 .checked_mul(2)
                 .ok_or_else(capacity_denial)?
                 .max(1);
-            let old_bytes = self
-                .members
-                .capacity()
-                .checked_mul(item)
-                .ok_or_else(capacity_denial)?;
-            let new_bytes = next.checked_mul(item).ok_or_else(capacity_denial)?;
-            admission
-                .admit_read_scratch(
-                    u64::try_from(
-                        old_bytes
-                            .checked_add(new_bytes)
-                            .ok_or_else(capacity_denial)?,
-                    )
-                    .map_err(|_| capacity_denial())?,
-                )
-                .map_err(admission_denial)?;
-            admission
-                .charge_external_work(
-                    u64::try_from(
-                        self.members
-                            .len()
-                            .checked_mul(item)
-                            .ok_or_else(work_denial)?,
-                    )
-                    .map_err(|_| work_denial())?,
-                )
-                .map_err(|_| work_denial())?;
+
             let mut replacement = Vec::new();
             replacement
                 .try_reserve_exact(next)
@@ -175,9 +147,7 @@ impl RequiredFrontier {
             replacement.append(&mut self.members);
             self.members = replacement;
         }
-        admission
-            .charge_external_work(u64::try_from(item + 1).map_err(|_| work_denial())?)
-            .map_err(|_| work_denial())?;
+
         Ok(())
     }
 
@@ -187,9 +157,8 @@ impl RequiredFrontier {
         &mut self,
         ready: SelectedReadyReadmission,
         caller: bool,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<RequiredUpstream, WorthQueryOutputDemandDenial> {
-        let RequiredUpstream::Member(index) = self.insert(ready, caller, None, admission)? else {
+        let RequiredUpstream::Member(index) = self.insert(ready, caller, None)? else {
             return Ok(RequiredUpstream::HeldCaller);
         };
         // An actual unresolved consumed edge asks for a new certification.

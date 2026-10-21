@@ -2,19 +2,16 @@
 
 use std::sync::Arc;
 
-use worth_relational::facade::runtime::{PositionedRelationalSnapshot, RelationalRuntime};
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
-use super::{
-    verification::{
-        map_admission_stop as admission_stop, ConsumedOutputVerification,
-        ConsumedOutputVerificationStop,
-    },
-    ConsumedOutputEvidence,
-};
-use crate::domain_computation::primary_graph::output_lineage::invalidation::{
-    ConsumedOutputCurrentness, InvalidationEditAdmission, SourceSettlementCurrentness,
-};
+use super::verification::map_admission_stop as admission_stop;
+use super::verification::ConsumedOutputVerification;
+use super::verification::ConsumedOutputVerificationStop;
+use super::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::ConsumedOutputCurrentness;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
 use crate::domain_computation::primary_graph::SourceInvalidationOwner;
 
@@ -32,9 +29,8 @@ impl<'selected> SelectedPendingConsumedOutput<'selected> {
     pub(in crate::domain_computation::primary_graph) fn matches_output_witness(
         &self,
         witness: &crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, worth_relational::facade::mvcc::CompanionPreflightStop> {
-        self.roots[self.index].matches_output_witness(witness, admission)
+        self.roots[self.index].matches_output_witness(witness)
     }
 
     pub(in crate::domain_computation::primary_graph) fn identity(
@@ -47,16 +43,10 @@ impl<'selected> SelectedPendingConsumedOutput<'selected> {
     /// permission ends. This is a prepaid shallow Arc pin.
     pub(in crate::domain_computation::primary_graph) fn retain_identity(
         &self,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<
         Arc<RecordedSettlementIdentity>,
         worth_relational::facade::mvcc::CompanionPreflightStop,
     > {
-        admission.charge_external_work(
-            u64::try_from(std::mem::size_of::<Arc<RecordedSettlementIdentity>>() + 1).map_err(
-                |_| worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
-            )?,
-        )?;
         Ok(Arc::clone(self.roots[self.index].identity()))
     }
 
@@ -74,7 +64,6 @@ impl<'selected> SelectedPendingConsumedOutput<'selected> {
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<Self>, ConsumedOutputVerificationStop> {
         ConsumedOutputEvidence::select_pending_from(
             execution,
@@ -84,7 +73,6 @@ impl<'selected> SelectedPendingConsumedOutput<'selected> {
             runtime,
             snapshot,
             self.selected,
-            admission,
         )
     }
 
@@ -94,10 +82,8 @@ impl<'selected> SelectedPendingConsumedOutput<'selected> {
     pub(in crate::domain_computation::primary_graph) fn rebind_selected<'rebound>(
         self,
         selected: &'rebound PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<SelectedPendingConsumedOutput<'rebound>>, ConsumedOutputVerificationStop>
     {
-        charge(admission, 1)?;
         if !std::ptr::eq(self.selected, selected) {
             return Ok(None);
         }
@@ -122,12 +108,9 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &'selected PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<SelectedPendingConsumedOutput<'selected>>, ConsumedOutputVerificationStop>
     {
-        Self::select_pending_from(
-            execution, roots, 0, owner, runtime, snapshot, selected, admission,
-        )
+        Self::select_pending_from(execution, roots, 0, owner, runtime, snapshot, selected)
     }
 
     fn select_pending_from<'selected>(
@@ -138,20 +121,11 @@ impl ConsumedOutputEvidence {
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         selected: &'selected PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<SelectedPendingConsumedOutput<'selected>>, ConsumedOutputVerificationStop>
     {
-        charge(admission, roots.len().saturating_sub(start))?;
         for (index, evidence) in roots.iter().enumerate().skip(start) {
             let observed = &evidence.selected_native_root;
-            let branch_comparison = selected
-                .branch_id()
-                .0
-                .len()
-                .checked_add(observed.branch_id().0.len())
-                .and_then(|visits| visits.checked_add(4))
-                .ok_or(ConsumedOutputVerificationStop::WorkExhausted)?;
-            charge(admission, branch_comparison)?;
+
             if selected.runtime_instance_id() != observed.runtime_instance_id()
                 || selected.branch_id() != observed.branch_id()
                 || selected.version_id() < observed.version_id()
@@ -160,7 +134,7 @@ impl ConsumedOutputEvidence {
                 return Ok(None);
             }
             let current = owner
-                .consumed_output_currentness(selected, evidence.identity(), admission)
+                .consumed_output_currentness(selected, evidence.identity())
                 .map_err(admission_stop)?;
             let pending = match current {
                 ConsumedOutputCurrentness::Direct(
@@ -182,7 +156,6 @@ impl ConsumedOutputEvidence {
                     runtime,
                     snapshot,
                     selected,
-                    admission,
                 ) {
                     Ok(verification) => verification != ConsumedOutputVerification::Current,
                     Err(ConsumedOutputVerificationStop::PendingUpstream) => true,
@@ -194,7 +167,7 @@ impl ConsumedOutputEvidence {
             if pending {
                 // This is the retained immediate root, not a descendant
                 // selected by walking through an unresolved producer.
-                charge(admission, 8)?;
+
                 return Ok(Some(SelectedPendingConsumedOutput {
                     roots: Arc::clone(roots),
                     index,
@@ -204,15 +177,4 @@ impl ConsumedOutputEvidence {
         }
         Ok(None)
     }
-}
-
-fn charge(
-    admission: &mut InvalidationEditAdmission,
-    visits: usize,
-) -> Result<(), ConsumedOutputVerificationStop> {
-    admission
-        .charge_external_work(
-            u64::try_from(visits).map_err(|_| ConsumedOutputVerificationStop::WorkExhausted)?,
-        )
-        .map_err(admission_stop)
 }

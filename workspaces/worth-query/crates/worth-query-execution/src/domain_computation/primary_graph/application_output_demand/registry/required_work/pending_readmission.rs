@@ -1,9 +1,11 @@
 //! Exact consumed-edge join to the already retained required demand.
 
-use super::super::{
-    DemandRegistryState, DemandState, WorthQueryOutputAdvancement, WorthQueryOutputCheckpoint,
-};
-use super::selection::{charge_required_key_lookup, work_denial, SelectedReadyReadmission};
+use super::super::DemandRegistryState;
+use super::super::DemandState;
+use super::super::WorthQueryOutputAdvancement;
+use super::super::WorthQueryOutputCheckpoint;
+
+use super::selection::SelectedReadyReadmission;
 use super::*;
 
 /// What a downstream pending edge waits on.
@@ -47,23 +49,13 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         pending: &crate::domain_computation::primary_graph::invariant_projection::SelectedPendingConsumedOutput<'_>,
         selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PendingUpstream, WorthQueryOutputDemandDenial> {
-        let branch_work = selected
-            .branch_id()
-            .0
-            .len()
-            .checked_add(3)
-            .ok_or_else(work_denial)?;
-        admission
-            .charge_external_work(u64::try_from(branch_work).map_err(|_| work_denial())?)
-            .map_err(|_| work_denial())?;
         if pending.selected_root() != selected {
             return Ok(PendingUpstream::Unavailable(
                 ReadmissionUnavailable::DifferentBasis,
             ));
         }
-        self.pending_identity_readmission(pending.identity(), admission)
+        self.pending_identity_readmission(pending.identity())
     }
 
     /// A fresh handler actually requested this exact output on this wave.
@@ -72,18 +64,15 @@ impl WorthQueryOutputDemandRegistry {
         &self,
         requested: &crate::domain_computation::primary_graph::invariant_projection::RequestedOutputRead,
         selected: &worth_relational::facade::runtime::PositionedRelationalSnapshot,
-        admission: &mut InvalidationEditAdmission,
+
         claims: &mut RequestedOutputReadClaims,
     ) -> Result<PendingUpstream, WorthQueryOutputDemandDenial> {
-        admission
-            .charge_external_work(selected.branch_id().0.len() as u64 + 4)
-            .map_err(|_| work_denial())?;
         if requested.selected() != selected {
             return Ok(PendingUpstream::Unavailable(
                 ReadmissionUnavailable::DifferentBasis,
             ));
         }
-        let upstream = self.pending_identity_readmission(requested.identity(), admission)?;
+        let upstream = self.pending_identity_readmission(requested.identity())?;
         if let PendingUpstream::Held(head) = &upstream {
             // A cached Ready can be readmitted only from its actual retained source.
             // The caller keeps its temporary required claim through disclosure retry.
@@ -91,12 +80,10 @@ impl WorthQueryOutputDemandRegistry {
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            charge_required_key_lookup(&state, head, admission)?;
-            if !state.required_keys.contains(head)
-                || state.queued_member_released(head, admission)?
-            {
+
+            if !state.required_keys.contains(head) || state.queued_member_released(head)? {
                 drop(state);
-                if let Some((ready, claim)) = self.claim_cached_requested_ready(head, admission)? {
+                if let Some((ready, claim)) = self.claim_cached_requested_ready(head)? {
                     claims.retain(claim);
                     return Ok(PendingUpstream::Ready(ready));
                 }
@@ -111,39 +98,26 @@ impl WorthQueryOutputDemandRegistry {
     fn pending_identity_readmission(
         &self,
         identity: &crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<PendingUpstream, WorthQueryOutputDemandDenial> {
         let state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let Some(key) = state
-            .settlement_keys
-            .get_exact_admitted(identity, admission)?
-        else {
+        let Some(key) = state.settlement_keys.get_exact_admitted(identity)? else {
             return Ok(PendingUpstream::Unavailable(
                 ReadmissionUnavailable::SettlementNotRetained,
             ));
         };
-        state.charge_record_lookup(&key, admission)?;
-        charge_required_key_lookup(&state, &key, admission)?;
-        admission
-            .charge_external_work(8)
-            .map_err(|_| work_denial())?;
+
         // A refresh of the row this edge read answers for it: the edge waits
         // on the newest row of that refresh lineage, or fails with its stop.
-        let Some(head) =
-            super::super::required_stop::lineage_head(&state.records, &key, admission)?
-        else {
+        let Some(head) = super::super::required_stop::lineage_head(&state.records, &key)? else {
             return Ok(PendingUpstream::Unavailable(
                 ReadmissionUnavailable::LineageNotRetained,
             ));
         };
-        if head != *key {
-            state.charge_record_lookup(&head, admission)?;
-            charge_required_key_lookup(&state, &head, admission)?;
-        }
-        if let Some(ready) = ready_member(&state, &head, admission)? {
+
+        if let Some(ready) = ready_member(&state, &head)? {
             return Ok(PendingUpstream::Ready(ready));
         }
         match super::super::required_stop::head_stop(&state.records, &head) {
@@ -156,7 +130,6 @@ impl WorthQueryOutputDemandRegistry {
 pub(super) fn ready_member(
     state: &DemandRegistryState,
     key: &WorthQueryOutputDemandKey,
-    admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<SelectedReadyReadmission>, WorthQueryOutputDemandDenial> {
     if !state.required_keys.contains(key) {
         return Ok(None);
@@ -168,14 +141,8 @@ pub(super) fn ready_member(
     // refreshed has yet to rejoin it; that owner's dependents read it.
     if !record.is_required() {
         // One pass over the rows compares each key's occurrence once.
-        let mut prepaid = super::super::refreshed_rejoin::charge_whole_map(
-            &state.records,
-            admission,
-            super::super::refreshed_rejoin::WholeMapPasses::One,
-            0,
-        )
-        .map_err(|_| work_denial())?;
-        if !prepaid.stale_owner(key)? {
+        let prepaid = &state.records;
+        if !crate::domain_computation::primary_graph::application_output_demand::registry::refreshed_rejoin::awaited_by_stale_owner(prepaid, key) {
             return Ok(None);
         }
     }

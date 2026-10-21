@@ -1,18 +1,20 @@
 mod consumed;
 mod facts;
 mod settlements;
-use facts::{require_current_facts, require_witnessed_output};
+use facts::require_current_facts;
+use facts::require_witnessed_output;
 
 use worth_query_installation::facade::ApplicationSchema;
 
-use crate::domain_computation::primary_graph::{
-    output_lineage::{invalidation::InvalidationEditAdmission, RetainedOutputCurrentnessRead},
-    output_reuse::{first_moved_fact, RetainedFactStop},
-    provider::FactlessCurrentness,
-    WorthQueryApplicationCommitReceipt, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandSettlement,
-    WorthQuerySelectedProductOperation,
-};
+use crate::domain_computation::primary_graph::output_lineage::RetainedOutputCurrentnessRead;
+use crate::domain_computation::primary_graph::output_reuse::first_moved_fact;
+use crate::domain_computation::primary_graph::output_reuse::RetainedFactStop;
+use crate::domain_computation::primary_graph::provider::FactlessCurrentness;
+use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// Checks retained output settlements, including outputs readmitted from an
@@ -22,7 +24,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         settlements: impl IntoIterator<Item = &'settlement WorthQueryOutputDemandSettlement>,
-        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
         let execution = phase
@@ -32,17 +33,12 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     cause.into(),
                 ))
             })?;
-        let mut admission = self.request_admission(maximum_work);
+
         runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |relational| {
-                self.require_current_settlements_in(
-                    execution,
-                    relational,
-                    settlements,
-                    &mut admission,
-                )
+                self.require_current_settlements_in(execution, relational, settlements)
             })
     }
 
@@ -53,7 +49,6 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         receipts: impl IntoIterator<Item = &'receipt WorthQueryApplicationCommitReceipt>,
-        maximum_work: Option<usize>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
         let execution = phase
@@ -63,7 +58,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     cause.into(),
                 ))
             })?;
-        let mut admission = self.request_admission(maximum_work);
+
         runtime
             .primary_provider
             .graph
@@ -81,14 +76,13 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         .output_lineage
                         .lock()
                         .unwrap_or_else(std::sync::PoisonError::into_inner);
-                    let read = lineage_read(&mut admission, |admission| {
+                    let read = lineage_read(|| {
                         lineage.source_facts_for_receipt(
                             runtime.runtime.authority_identity().as_u64(),
                             &runtime.installed_schema.binding_identity(),
                             self.product().observation(),
                             receipt,
                             &execution,
-                            admission,
                         )
                     })?;
                     drop(lineage);
@@ -96,47 +90,27 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         require_own_publication(Some(receipt), self.product().observation())?;
                         continue;
                     };
-                    self.require_current_read(
-                        &execution,
-                        relational,
-                        &read,
-                        Some(receipt),
-                        &mut admission,
-                    )?;
+                    self.require_current_read(&execution, relational, &read, Some(receipt))?;
                 }
                 Ok(())
             })
     }
 
-    /// The request's meter, within the caller's declared maximum.
-    pub(in crate::domain_computation::primary_graph) fn request_admission(
-        &self,
-        maximum_work: Option<usize>,
-    ) -> InvalidationEditAdmission {
-        self.application()
-            .primary_provider
-            .graph
-            .source_owner
-            .invalidation_owner
-            .edit_admission_with_work_limit(maximum_work)
-    }
-
-    /// Compares the original evidence and consumed lineage at this observation.
-    /// Only nonempty comparable facts may re-establish the row's marks. That
-    /// upkeep uses this request's meter and changes no currentness answer.
+    /// Checks the output witness and exact selected-image native marks. Missing
+    /// or unqualified marks use full source verification and re-establishment;
+    /// neither path borrows authority from content equality or another image.
     pub(in crate::domain_computation::primary_graph) fn require_current_read(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &worth_relational::facade::runtime::RelationalRuntime,
         read: &RetainedOutputCurrentnessRead,
         receipt: Option<&WorthQueryApplicationCommitReceipt>,
-        admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let Some(facts) = read.facts.as_ref().filter(|facts| !facts.is_empty()) else {
             // No computation comparison can replace the original factless
             // publication decision, including a rebase that could not compare.
             require_own_publication(receipt, self.product().observation())?;
-            return self.require_current_consumed(execution, relational, read, admission);
+            return self.require_current_consumed(execution, relational, read);
         };
         let owner = &self
             .application()
@@ -145,13 +119,28 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .source_owner
             .invalidation_owner;
         let snapshot = self.application_basis().snapshot_handle();
-        require_witnessed_output(
-            relational,
-            snapshot,
-            read.native_output_witness.as_ref(),
-            admission,
-        )?;
-        require_current_facts(execution, relational, snapshot, facts, admission).map_err(
+        require_witnessed_output(relational, snapshot, read.native_output_witness.as_ref())?;
+        // Exact lineage selection and the output witness precede the native mark.
+        // Missing/dirty/discontinuous rows retain the original funded comparison.
+        if let Some(selected) = currentness_basis(relational, snapshot)? {
+            use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
+            currentness_live(execution)?;
+            let current = crate::domain_computation::primary_graph::output_reuse::owner_read(
+                owner.currentness(&selected, &read.identity),
+                "settled source marks unavailable",
+            )?;
+            currentness_live(execution)?;
+            if matches!(current, SourceSettlementCurrentness::Clean) {
+                owner.carry_read_basis(relational, snapshot, &selected, std::slice::from_ref(&read.identity))
+                    .map_err(|stop| crate::domain_computation::primary_graph::output_reuse::verification_denial(
+                        crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_verification_stop(stop),
+                        "settled output basis carriage",
+                    ))?;
+                currentness_live(execution)?;
+                return Ok(());
+            }
+        }
+        require_current_facts(execution, relational, snapshot, facts).map_err(
             |error| match read.verification_requirement {
                 Some(crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::NativeFactRevisionUnavailable(ordinal)) => WorthQueryOutputDemandDenial::new(
                     error.kind(),
@@ -173,7 +162,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 None => error,
             },
         )?;
-        self.require_current_consumed(execution, relational, read, admission)?;
+        self.require_current_consumed(execution, relational, read)?;
         if let Ok(selected) = relational.read_truth().positioned_snapshot(snapshot) {
             let witness = read.native_output_witness.as_ref();
             if let Some(witness) = witness
@@ -181,23 +170,11 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .filter(|_| read.consumed_nothing)
             {
                 // A restored output gets its row from this comparison.
-                let _ = owner.establish_verified_root(
-                    &selected,
-                    &read.identity,
-                    facts,
-                    witness,
-                    admission,
-                );
+                let _ = owner.establish_verified_root(&selected, &read.identity, facts, witness);
             }
             // A row that cannot be re-established keeps requiring verification.
-            let _ = owner.reestablish_verified(
-                relational,
-                snapshot,
-                &selected,
-                &read.identity,
-                facts,
-                admission,
-            );
+            let _ =
+                owner.reestablish_verified(relational, snapshot, &selected, &read.identity, facts);
         }
         Ok(())
     }
@@ -205,15 +182,12 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
 
 /// Every visited native prefix charges the same admission, including refusal.
 fn lineage_read(
-    admission: &mut InvalidationEditAdmission,
-    read: impl FnOnce(
-        &mut InvalidationEditAdmission,
-    ) -> Result<
+    read: impl FnOnce() -> Result<
         Option<RetainedOutputCurrentnessRead>,
         worth_relational::facade::mvcc::CompanionPreflightStop,
     >,
 ) -> Result<Option<RetainedOutputCurrentnessRead>, WorthQueryOutputDemandDenial> {
-    read(admission).map_err(|stop| {
+    read().map_err(|stop| {
         crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
             crate::domain_computation::primary_graph::output_reuse::preflight_stop(stop),
             "native lineage read unavailable",
@@ -247,4 +221,43 @@ fn denial(kind: WorthQueryOutputDemandDenialKind) -> WorthQueryOutputDemandDenia
         kind,
         "settled output is not current at the selected observation",
     )
+}
+
+fn currentness_live(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    execution.allocation_policy().check_live().map_err(|cause| {
+        use worth_execution::ExecutionAllocationDenialClass as Class;
+        use worth_execution::MapKernelStop;
+        use worth_execution::WorkCeilingDenial;
+        let kind = match cause.classify() {
+            Class::Request(WorkCeilingDenial::Stopped(MapKernelStop::Cancelled)) => {
+                WorthQueryOutputDemandDenialKind::Cancelled
+            }
+            Class::Request(WorkCeilingDenial::Stopped(MapKernelStop::DeadlineElapsed)) => {
+                WorthQueryOutputDemandDenialKind::TimedOut
+            }
+            Class::Request(
+                WorkCeilingDenial::Admission(_)
+                | WorkCeilingDenial::Panicked
+                | WorkCeilingDenial::Stopped(
+                    MapKernelStop::WorkCounterOverflow
+                    | MapKernelStop::WorkCeiling
+                    | MapKernelStop::NestedStopped,
+                ),
+            )
+            | Class::Physical(_) => WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+        };
+        WorthQueryOutputDemandDenial::new(kind, "settled output request control")
+    })
+}
+
+fn currentness_basis(
+    relational: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+) -> Result<
+    Option<worth_relational::facade::runtime::PositionedRelationalSnapshot>,
+    WorthQueryOutputDemandDenial,
+> {
+    Ok(relational.read_truth().positioned_snapshot(snapshot).ok())
 }

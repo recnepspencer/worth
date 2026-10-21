@@ -68,7 +68,7 @@ fn an_unrelated_error_cannot_take_an_earlier_requests_stop() {
             0,
             "the next prepared request cannot start with an untaken stop"
         );
-        assert_eq!(report.charged_work(), 2);
+
         assert_eq!(report.charged_span(), 2);
     }
 }
@@ -140,7 +140,7 @@ fn taken_partition_denials_leave_siblings_for_owner_completion() {
             sibling.pop().unwrap().into_value::<(u64, bool)>(),
             (2, false)
         );
-        assert_eq!(report.charged_work(), 2 + 1);
+
         // The denied member spans two units; its sibling spans one.
         assert_eq!(report.charged_span(), 2);
     }

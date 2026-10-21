@@ -16,7 +16,7 @@ impl WorthQueryRetainedQueryDependencies {
             "the complete real pairing includes selection and projected rows"
         );
         let quote = u64::try_from(
-            std::alloc::Layout::array::<WorthQueryObservedSource<()>>(count)
+            std::alloc::Layout::array::<RetainedQuerySource>(count)
                 .unwrap()
                 .size(),
         )
@@ -39,7 +39,7 @@ impl WorthQueryRetainedQueryDependencies {
             })
             .unwrap();
         let refusal = retain_descriptors(
-            std::iter::once(self.sources.elements()),
+            self.sources.elements().iter(),
             count,
             &worth_execution::ExecutionRequest::leased(&narrowed),
         )
@@ -50,8 +50,7 @@ impl WorthQueryRetainedQueryDependencies {
         );
         assert_eq!(self.sources.len(), count);
         let retained =
-            retain_descriptors(std::iter::once(self.sources.elements()), count, &execution)
-                .unwrap();
+            retain_descriptors(self.sources.elements().iter(), count, &execution).unwrap();
         assert_eq!(retained.sources.len(), count);
         assert_eq!(retained.sources.charged_payload_bytes(), Some(quote));
         let serial_stop = CancellationSource::new();
@@ -63,7 +62,7 @@ impl WorthQueryRetainedQueryDependencies {
         let stopped_parts =
             std::iter::once(self.sources.elements()).inspect(|_| serial_stop.cancel());
         let refused = retain_descriptors(
-            stopped_parts,
+            stopped_parts.flatten(),
             count,
             &worth_execution::ExecutionRequest::serial(&serial),
         )
@@ -82,7 +81,7 @@ impl WorthQueryRetainedQueryDependencies {
             None,
         );
         let serial_retained = retain_descriptors(
-            std::iter::once(self.sources.elements()),
+            self.sources.elements().iter(),
             count,
             &worth_execution::ExecutionRequest::serial(&fresh_serial),
         )
@@ -93,13 +92,9 @@ impl WorthQueryRetainedQueryDependencies {
         let mut building =
             ExecutionArrayBuilder::allocate(count, ExecutionAllocationPolicy::Execution(&child))
                 .unwrap();
-        building
-            .push(self.sources.elements()[0].retyped::<()>())
-            .unwrap();
+        building.push(self.sources.elements()[0].shared()).unwrap();
         stop.cancel();
-        assert!(building
-            .push(self.sources.elements()[1].retyped::<()>())
-            .is_err());
+        assert!(building.push(self.sources.elements()[1].shared()).is_err());
         assert!(building.seal().is_err());
         assert_eq!(
             self.sources.len(),
