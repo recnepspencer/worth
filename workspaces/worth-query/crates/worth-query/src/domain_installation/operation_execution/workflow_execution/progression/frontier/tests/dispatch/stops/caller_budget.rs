@@ -81,9 +81,8 @@ fn caller_work_ceiling_keeps_the_same_typed_boundary_at_all_widths() {
 
 #[test]
 fn unfunded_native_effect_is_a_typed_caller_work_stop_at_all_widths() {
-    // The checked preparation worker uses identity 1, independently of storage partitions.
-    const CHECKED_PREPARATION_PARTITION: u64 = 1;
     use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
+    use worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
@@ -99,17 +98,22 @@ fn unfunded_native_effect_is_a_typed_caller_work_stop_at_all_widths() {
             &mut workspace,
             None,
         );
-        let expected = Denial::StageExecutionRequest {
-            stage_identity: "left".into(),
-            cause: Ok(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
-                denial: Resource::WorkExhausted,
-                partition_identity: Some(CHECKED_PREPARATION_PARTITION),
-                policy_ancestor: None,
-            }),
+        // The owner's partition attribution is not part of the caller stop.
+        let Denial::StageExecutionRequest {
+            stage_identity,
+            cause:
+                Ok(Kind::ExecutionResource {
+                    denial: resource,
+                    policy_ancestor,
+                    ..
+                }),
+        } = denial(&record)
+        else {
+            panic!("width {workers}: {record:?}");
         };
         assert_eq!(
-            (denial(&record), failed),
-            (&expected, false),
+            (stage_identity.as_str(), resource, policy_ancestor, failed),
+            ("left", &Resource::WorkExhausted, &None, false),
             "width {workers}: {record:?}"
         );
         assert_eq!(work, COSTS[0]);

@@ -80,6 +80,14 @@ pub(crate) fn work_exhausted(
             worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted
         )
     );
-    assert_eq!(denial.partition_identity, Some(1));
     error
+}
+
+/// The owner's own partition attribution, which every boundary must carry
+/// unchanged. Its value is the owner's choice, not a seam contract.
+pub(crate) fn source_partition(error: &TransactionCommitError) -> Option<u64> {
+    let TransactionCommitError::Execution { denial, .. } = error else {
+        panic!("execution refused");
+    };
+    denial.partition_identity
 }

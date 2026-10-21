@@ -1,15 +1,20 @@
 use crate::runtime::tests::graph_read_access::support;
 
 use crate::runtime::{
-    plan_admitted_graph_read_access_for_family, WorthQueryLiveGraphReadAccessPosture,
-    WorthQueryLiveGraphReadMaintenanceBudget, WorthQueryUnrefinedLiveShape,
+    plan_admitted_graph_read_access_for_family, WorthQueryGraphReadAccessRequirementKind,
+    WorthQueryLiveGraphReadAccessPosture, WorthQueryLiveGraphReadMaintenanceBudget,
+    WorthQueryUnrefinedLiveShape,
 };
 use crate::subscription::QueryPatchGroupKind;
 
 use crate::runtime::tests::graph_read_access::support::graph_read_access_cost_model::{
-    dense_traversal_family, simple_traversal_family, workspace,
+    simple_traversal_family, workspace,
 };
 use support::aspect_touch as touch;
+use support::graph_index_inventory::runtime_profiles::profile_requiring_store_backed_graph_index;
+use support::graph_read_access::persistent_requirements::{
+    persistent_predicate_family, persistent_requirement_workspace,
+};
 
 #[test]
 fn live_plan_preserves_one_shot_access_shape_and_required_index_digests() {
@@ -82,26 +87,29 @@ fn live_planning_denies_one_shot_plan_that_requires_stronger_maintenance_support
 }
 
 #[test]
-fn dense_live_planning_denial_still_returns_live_specific_support_posture() {
+fn denied_one_shot_live_planning_returns_live_specific_support_posture() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut workspace = workspace(request_execution, "phase-thirteen-live-plan-denial");
-    let family = dense_traversal_family(&mut workspace, "phase-thirteen-dense");
+    // A missing store-backed predicate index denies the one-shot read for a
+    // support reason, independent of any byte forecast.
+    let mut workspace = persistent_requirement_workspace(
+        request_execution,
+        "phase-thirteen-live-plan-denial",
+        profile_requiring_store_backed_graph_index(
+            WorthQueryGraphReadAccessRequirementKind::PredicateSupport,
+        ),
+    );
+    let family = persistent_predicate_family(&mut workspace, "phase-thirteen-support-denied");
 
     let denial = workspace
         .plan_live_graph_read_access(&family, WorthQueryLiveGraphReadMaintenanceBudget::bounded())
-        .expect_err("dense broad read should not silently become live-maintained");
+        .expect_err("a denied one-shot read must not silently become live-maintained");
 
-    assert!(matches!(
+    assert_eq!(
         denial.posture(),
-        WorthQueryLiveGraphReadAccessPosture::DeniedLiveMaintenanceBudget
-            | WorthQueryLiveGraphReadAccessPosture::DeniedLiveMaintenanceSupport
-            | WorthQueryLiveGraphReadAccessPosture::LivePersistentIndexRequired
-            | WorthQueryLiveGraphReadAccessPosture::LiveAsyncMaterializationRequired
-            | WorthQueryLiveGraphReadAccessPosture::LiveStoreBackedCapabilityRequired
-            | WorthQueryLiveGraphReadAccessPosture::LiveAccessCapabilityRegistrationRequired
-    ));
+        &WorthQueryLiveGraphReadAccessPosture::DeniedLiveMaintenanceSupport
+    );
     assert!(!denial.digest().is_empty());
 }
 

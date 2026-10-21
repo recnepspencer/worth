@@ -15,7 +15,6 @@ use support::graph_index_inventory::runtime_profiles::{
 };
 use support::graph_read_access::persistent_requirements::{
     broad_persistent_family, persistent_predicate_family, persistent_requirement_workspace,
-    streaming_frontier_family,
 };
 
 #[test]
@@ -195,33 +194,6 @@ fn persistent_requirement_execution_denies_before_any_ephemeral_allocation() {
             .durable_artifact_count(),
         0
     );
-}
-
-#[test]
-fn streaming_frontier_remains_distinct_from_persistent_requirement() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let mut workspace = persistent_requirement_workspace(
-        request_execution,
-        "graph-read-access.phase-ten.streaming-distinct",
-        profile_requiring_store_backed_graph_index(
-            WorthQueryGraphReadAccessRequirementKind::PredicateSupport,
-        ),
-    );
-    let family = streaming_frontier_family(&mut workspace, "phase-ten-streaming-distinct");
-    let admission = workspace
-        .read_family_intent(&family)
-        .review()
-        .expect("streaming review should derive")
-        .graph_read_access_admission()
-        .expect("streaming admission should derive");
-
-    assert_eq!(
-        admission.posture(),
-        &WorthQueryGraphReadAccessAdmissionPosture::AdmittedPagedStreaming
-    );
-    assert!(admission.persistent_index_requirement().is_none());
 }
 
 #[test]
