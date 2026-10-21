@@ -11,6 +11,14 @@ fn spelling(ident: &syn::Ident) -> String {
 }
 
 pub(super) fn test_names(source: &str) -> Result<BTreeSet<String>, String> {
+    names(source, true)
+}
+
+pub(super) fn declared_test_names(source: &str) -> Result<BTreeSet<String>, String> {
+    names(source, false)
+}
+
+fn names(source: &str, include_reexports: bool) -> Result<BTreeSet<String>, String> {
     let file = syn::parse_file(source).map_err(|error| error.to_string())?;
     let mut types = PublicTypes::default();
     types.visit_file(&file);
@@ -19,6 +27,7 @@ pub(super) fn test_names(source: &str) -> Result<BTreeSet<String>, String> {
         names: types.0,
         receiver: None,
         macro_error: None,
+        include_reexports,
     };
     names.visit_file(&file);
     if let Some(error) = names.macro_error {
@@ -83,6 +92,7 @@ struct PublicNames {
     names: BTreeSet<String>,
     receiver: Option<String>,
     macro_error: Option<String>,
+    include_reexports: bool,
 }
 impl PublicNames {
     fn macro_invocation(&mut self, item: &syn::Macro) {
@@ -297,7 +307,7 @@ impl<'ast> Visit<'ast> for PublicNames {
         if super::source_regions::test_only(&item.attrs) {
             return;
         }
-        if exported(&item.vis) {
+        if self.include_reexports && exported(&item.vis) {
             reexports(&item.tree, &mut self.names);
         }
     }

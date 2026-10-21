@@ -506,6 +506,14 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ crates/worthy-studio-application/src/tests/locality/observations.rs
 # Unit worker rendezvous is separate from the shared integration observer.
 workspaces/worth-query/crates/worth-query-execution/ crates/worthy-studio-application/src/tests/locality/worker_observations.rs
+
+# Private CAD installation omission: named implementation, mount, hooks and facade;
+# the sole external test consumer is this exact integration leaf (not its neighbors).
+crates/worth-cad-entry/src/contribution/installation_omission_for_test.rs crates/worth-cad-entry/src/contribution.rs
+crates/worth-cad-entry/src/contribution/installation_omission_for_test.rs crates/worth-cad-entry/src/families/chamfer/realization/mod.rs
+crates/worth-cad-entry/src/contribution/installation_omission_for_test.rs crates/worth-cad-entry/src/schema/chamfer_correspondence.rs
+crates/worth-cad-entry/src/contribution/installation_omission_for_test.rs crates/worth-cad-entry/src/facade.rs
+crates/worth-cad-entry/src/contribution/installation_omission_for_test.rs crates/worth-cad-entry/tests/program_declaration/installation.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/input_cutoff/checkpoint_polling.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/input_cutoff/checkpoint_polling.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/retained_predecessors/ordinary/successor_custody.rs
