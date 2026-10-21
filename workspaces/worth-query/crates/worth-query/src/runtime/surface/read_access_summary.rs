@@ -1,7 +1,7 @@
 use crate::identity::hash_parts;
 use crate::runtime::{
     WorthQueryAdmittedGraphReadAccessPlan, WorthQueryGraphReadAccessAdmissionPosture,
-    WorthQueryGraphReadAccessPlanConsumption, WorthQueryGraphReadStreamingReceipt,
+    WorthQueryGraphReadAccessPlanConsumption,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -16,7 +16,6 @@ pub struct WorthQueryGraphReadAccessReceiptSummary {
     execution_strategy: String,
     requirement_set_digest: String,
     graph_index_inventory_match_report_digest: String,
-    graph_read_streaming_receipt_digest: Option<String>,
 }
 
 impl WorthQueryGraphReadAccessReceiptSummary {
@@ -64,10 +63,6 @@ impl WorthQueryGraphReadAccessReceiptSummary {
         &self.graph_index_inventory_match_report_digest
     }
 
-    pub fn graph_read_streaming_receipt_digest(&self) -> Option<&str> {
-        self.graph_read_streaming_receipt_digest.as_deref()
-    }
-
     pub fn has_admitted_access_plan(&self) -> bool {
         !self.admitted_plan_digest.is_empty()
             && self.admission_posture != WorthQueryGraphReadAccessAdmissionPosture::Denied
@@ -77,11 +72,8 @@ impl WorthQueryGraphReadAccessReceiptSummary {
         read_graph_digest: &str,
         plan: &WorthQueryAdmittedGraphReadAccessPlan,
         plan_consumption: &WorthQueryGraphReadAccessPlanConsumption,
-        streaming_receipt: Option<&WorthQueryGraphReadStreamingReceipt>,
     ) -> Self {
         let admission = plan.admission();
-        let graph_read_streaming_receipt_digest =
-            streaming_receipt.map(|receipt| receipt.digest().to_string());
         let digest = hash_parts(&[
             "worth_query_graph_read_access_receipt_summary_v1".to_string(),
             format!("read_graph:{read_graph_digest}"),
@@ -102,12 +94,6 @@ impl WorthQueryGraphReadAccessReceiptSummary {
                 "inventory_match:{}",
                 admission.graph_index_inventory_match_report().digest()
             ),
-            format!(
-                "streaming_receipt:{}",
-                graph_read_streaming_receipt_digest
-                    .as_deref()
-                    .unwrap_or("none")
-            ),
         ]);
         Self {
             digest,
@@ -123,7 +109,6 @@ impl WorthQueryGraphReadAccessReceiptSummary {
                 .graph_index_inventory_match_report()
                 .digest()
                 .to_string(),
-            graph_read_streaming_receipt_digest,
         }
     }
 }

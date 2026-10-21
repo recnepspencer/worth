@@ -32,8 +32,4 @@ impl WorthQueryReadExecutionProduct for WorthQueryCountResult {
     fn receipt_mut(&mut self) -> &mut WorthQueryReadReceipt {
         &mut self.receipt
     }
-
-    fn output_cardinality(&self) -> usize {
-        1
-    }
 }

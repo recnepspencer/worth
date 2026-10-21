@@ -2,8 +2,6 @@
 pub enum WorthQueryGraphReadAccessAdmissionPosture {
     InlineIndexed,
     BoundedEphemeralIndex,
-    AdmittedPagedStreaming,
-    PagedStreamingRequired,
     PersistentIndexRequired,
     AsyncMaterializationRequired,
     StoreBackedCapabilityRequired,
@@ -12,11 +10,9 @@ pub enum WorthQueryGraphReadAccessAdmissionPosture {
 }
 
 impl WorthQueryGraphReadAccessAdmissionPosture {
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 7] = [
         Self::InlineIndexed,
         Self::BoundedEphemeralIndex,
-        Self::AdmittedPagedStreaming,
-        Self::PagedStreamingRequired,
         Self::PersistentIndexRequired,
         Self::AsyncMaterializationRequired,
         Self::StoreBackedCapabilityRequired,
@@ -28,8 +24,6 @@ impl WorthQueryGraphReadAccessAdmissionPosture {
         match self {
             Self::InlineIndexed => "inline_indexed",
             Self::BoundedEphemeralIndex => "bounded_ephemeral_index",
-            Self::AdmittedPagedStreaming => "admitted_paged_streaming",
-            Self::PagedStreamingRequired => "paged_streaming_required",
             Self::PersistentIndexRequired => "persistent_index_required",
             Self::AsyncMaterializationRequired => "async_materialization_required",
             Self::StoreBackedCapabilityRequired => "store_backed_capability_required",

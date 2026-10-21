@@ -358,8 +358,6 @@ pub struct WorthQueryReadReceipt {
         Option<crate::runtime::WorthQueryAdmittedGraphReadAccessPlan>,
     pub(super) graph_read_access_plan_consumption:
         Option<crate::runtime::WorthQueryGraphReadAccessPlanConsumption>,
-    pub(super) graph_read_streaming_receipt:
-        Option<crate::runtime::WorthQueryGraphReadStreamingReceipt>,
     pub(super) graph_read_access_summary:
         Option<crate::runtime::WorthQueryGraphReadAccessReceiptSummary>,
     pub(super) graph_read_access_complexity_counters:

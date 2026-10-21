@@ -186,19 +186,10 @@ fn live_posture_for_one_shot(
         | WorthQueryGraphReadAccessAdmissionPosture::BoundedEphemeralIndex => {
             WorthQueryLiveGraphReadAccessPosture::AdmittedLiveIncrementalMaintenance
         }
-        WorthQueryGraphReadAccessAdmissionPosture::AdmittedPagedStreaming
-            if budget.admits_snapshot_refresh() =>
-        {
-            WorthQueryLiveGraphReadAccessPosture::AdmittedLiveSnapshotRefresh
-        }
-        WorthQueryGraphReadAccessAdmissionPosture::AdmittedPagedStreaming => {
-            WorthQueryLiveGraphReadAccessPosture::DeniedLiveMaintenanceBudget
-        }
         WorthQueryGraphReadAccessAdmissionPosture::PersistentIndexRequired => {
             WorthQueryLiveGraphReadAccessPosture::LivePersistentIndexRequired
         }
-        WorthQueryGraphReadAccessAdmissionPosture::AsyncMaterializationRequired
-        | WorthQueryGraphReadAccessAdmissionPosture::PagedStreamingRequired => {
+        WorthQueryGraphReadAccessAdmissionPosture::AsyncMaterializationRequired => {
             WorthQueryLiveGraphReadAccessPosture::LiveAsyncMaterializationRequired
         }
         WorthQueryGraphReadAccessAdmissionPosture::StoreBackedCapabilityRequired => {

@@ -3,9 +3,8 @@ use crate::runtime::{
     derive_graph_read_cost_evidence, estimate_graph_read_access_cost,
     estimate_graph_read_access_cost_with_planning_observation,
     explain_graph_read_access_requirements_for_family, WorthQueryGraphReadAccessCostEstimate,
-    WorthQueryGraphReadBudget, WorthQueryGraphReadBudgetClassKind,
     WorthQueryGraphReadComplexityContractKind, WorthQueryGraphReadCostEstimateStatusKind,
-    WorthQueryGraphReadInlineEphemeralAllowanceKind, WorthQueryGraphReadResultPressure,
+    WorthQueryGraphReadResultPressure,
 };
 
 use crate::runtime::tests::graph_read_access::support::graph_read_access_cost_model::{
@@ -15,22 +14,20 @@ use crate::runtime::tests::graph_read_access::support::graph_read_access_cost_mo
 };
 
 #[test]
-fn dense_boolean_traversal_exceeds_inline_ephemeral_budget_conservatively() {
+fn dense_boolean_traversal_is_a_conservative_broad_candidate() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut workspace = workspace(
         request_execution,
-        "graph-read-access.phase-five.dense-budget",
+        "graph-read-access.phase-five.dense-broad",
     );
-    let family = dense_traversal_family(&mut workspace, "phase-five-dense-budget");
+    let family = dense_traversal_family(&mut workspace, "phase-five.dense-broad");
     let requirements = explain_graph_read_access_requirements_for_family(&family)
         .expect("requirements should derive");
 
     let evidence = derive_graph_read_cost_evidence(&requirements);
     let estimate = estimate_graph_read_access_cost(&requirements, evidence);
-    let budget = WorthQueryGraphReadBudget::inline_ephemeral_default();
-    let budget_check = budget.check_supported_cost(&estimate);
 
     assert_eq!(
         estimate.status().kind(),
@@ -39,18 +36,6 @@ fn dense_boolean_traversal_exceeds_inline_ephemeral_budget_conservatively() {
     assert_eq!(
         estimate.complexity_contract().kind(),
         &WorthQueryGraphReadComplexityContractKind::BroadTraversalCandidate
-    );
-    assert_eq!(
-        budget_check.class().kind(),
-        &WorthQueryGraphReadBudgetClassKind::ExceedsInlineEphemeralBudget
-    );
-    assert_eq!(
-        budget_check.inline_ephemeral_allowance().kind(),
-        &WorthQueryGraphReadInlineEphemeralAllowanceKind::Rejected
-    );
-    assert_eq!(
-        budget_check.cost_estimate_digest(),
-        estimate.digest().as_str()
     );
 }
 
@@ -189,7 +174,7 @@ fn assert_frontier_search_bucket_contract(estimate: &WorthQueryGraphReadAccessCo
 }
 
 #[test]
-fn proof_memory_is_counted_without_consuming_inline_index_capacity() {
+fn proof_memory_is_counted_outside_index_bytes() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -218,32 +203,10 @@ fn proof_memory_is_counted_without_consuming_inline_index_capacity() {
         memory.total_bytes(),
         index_bytes + memory.proof_bytes() + memory.result_bytes()
     );
-    assert_eq!(
-        WorthQueryGraphReadBudget::bounded(
-            index_bytes,
-            memory.result_bytes(),
-            estimate.intrinsic().intermediate_set_size(),
-        )
-        .check_supported_cost(&estimate)
-        .class()
-        .kind(),
-        &WorthQueryGraphReadBudgetClassKind::InlineEphemeralCandidate
-    );
-    assert_eq!(
-        WorthQueryGraphReadBudget::bounded(
-            index_bytes - 1,
-            memory.result_bytes(),
-            estimate.intrinsic().intermediate_set_size(),
-        )
-        .check_supported_cost(&estimate)
-        .class()
-        .kind(),
-        &WorthQueryGraphReadBudgetClassKind::ExceedsInlineEphemeralBudget
-    );
 }
 
 #[test]
-fn intermediate_set_pressure_marks_broad_even_when_index_bytes_fit() {
+fn intermediate_set_pressure_marks_broad_traversal() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -259,33 +222,9 @@ fn intermediate_set_pressure_marks_broad_even_when_index_bytes_fit() {
         derive_graph_read_cost_evidence(&requirements),
     );
 
-    assert!(
-        estimate.supported().index_bytes()
-            <= WorthQueryGraphReadBudget::inline_ephemeral_default()
-                .max_inline_index_bytes()
-                .expect("this case selects the explicit finite ephemeral strategy")
-    );
     assert_eq!(
         estimate.complexity_contract().kind(),
         &WorthQueryGraphReadComplexityContractKind::BroadTraversalCandidate
-    );
-    assert_eq!(
-        WorthQueryGraphReadBudget::bounded(
-            estimate.supported().index_bytes(),
-            estimate.supported().result_bytes(),
-            estimate.intrinsic().intermediate_set_size() - 1,
-        )
-        .check_supported_cost(&estimate)
-        .class()
-        .kind(),
-        &WorthQueryGraphReadBudgetClassKind::ExceedsInlineEphemeralBudget
-    );
-    assert_eq!(
-        WorthQueryGraphReadBudget::inline_ephemeral_default()
-            .check_supported_cost(&estimate)
-            .class()
-            .kind(),
-        &WorthQueryGraphReadBudgetClassKind::InlineEphemeralCandidate
     );
 }
 

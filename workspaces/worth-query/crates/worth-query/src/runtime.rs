@@ -274,7 +274,6 @@ pub(crate) use fallback_seam_counters::{
     forbidden_fallback_seam_invocation_count, record_forbidden_fallback_seam_invocation,
     reset_forbidden_fallback_seam_invocations, WorthQueryForbiddenFallbackSeam,
 };
-pub(crate) use graph_read_access::streaming_receipt_for_admitted_read_result;
 #[cfg(test)]
 pub(crate) use graph_read_access::{
     admit_graph_read_access_authority_from_policy_tenant_request,

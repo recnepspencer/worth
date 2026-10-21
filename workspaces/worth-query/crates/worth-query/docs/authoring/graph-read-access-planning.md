@@ -32,8 +32,8 @@ Application authors use:
   dependency-tracked decision reads; and
 - terminal/publication inspection for actual work counters.
 
-The admission facade exposes read-only requirement, cost, budget, inventory,
-and review vocabulary. Raw planning input, the review transition, and admitted
+The admission facade exposes read-only requirement, cost, inventory, and
+review vocabulary. Raw planning input, the review transition, and admitted
 plan construction are hidden one-way integration seams. Compiler tests enforce
 that ordinary consumers cannot import the retired public planning constructors
 or the monolith admitted application-query plan.
@@ -47,7 +47,7 @@ requirements rather than accepting a caller-authored list.
 installed canonical read graph
   -> derived requirement set
   -> runtime inventory match
-  -> structural cost and byte budget
+  -> structural cost estimate
   -> read-only review
   -> capacity-reserved admitted graph-work plan
   -> session-owned execution
@@ -78,7 +78,7 @@ capacity and a managed session before they grant executable authority.
 2. Obligation selection selects its `GraphRead` row.
 3. Admission derives exact access requirements from the bound graph.
 4. Query matches those requirements against the current graph-index inventory.
-5. Cost and budget evaluation produces an admitted or typed denied posture.
+5. Inventory and capability review produces an admitted or typed denied posture.
 6. Query reserves provider capacity and seals one graph-work plan.
 7. The managed session consumes that plan through its private read port.
 8. The read terminal reports actual work and exact capacity/basis release.
@@ -164,7 +164,7 @@ Inspect:
 - canonical installed read-graph identity;
 - derived requirement-set identity and rows;
 - graph-index inventory probes and match results;
-- structural cost, byte estimate, budget class, and admission posture;
+- structural cost, byte estimate, complexity contract, and admission posture;
 - reserved plan, session, branch, and basis identities;
 - traversal, projection, delivery, and live-maintenance counters; and
 - capacity and basis release receipts.
@@ -180,13 +180,11 @@ widen ordinary work except along the declared work axis.
 - Importing the monolith admitted graph-read plan.
 - Giving one lane a direct Relational graph handle.
 - Falling back to per-row neighbor queries after admission denies.
-- Treating a budget denial as permission to increase an arbitrary limit.
 - Recomputing canonical digests or scanning registries on the warm path.
 
 ## Current Limits
 
-- A shape may require persistent indexing, paged streaming, async
-  materialization, store support, or domain capability registration instead of
+- A shape may require persistent indexing, async materialization, store support, or domain capability registration instead of
   ordinary inline execution.
 - The current application progression does not add durability or restart
   recovery.

@@ -243,7 +243,7 @@ impl WorthQueryRuntime {
             .evidence_identity();
         let mut executed_read = execute(self, execution, &binding)?;
 
-        attach_graph_read_access_receipt(&mut executed_read, &binding, snapshot_identity.as_str());
+        attach_graph_read_access_receipt(&mut executed_read, &binding);
         attach_read_intent_execution_evidence(&mut executed_read, &binding, &snapshot_identity);
 
         Ok(executed_read.into_product())

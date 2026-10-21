@@ -3,10 +3,7 @@ use super::{
     WorthQueryGraphReadAccessPlanExplanation,
 };
 use crate::identity::hash_parts;
-use crate::runtime::{
-    WorthQueryEphemeralGraphIndexPlan, WorthQueryGraphIndexInventoryMatchReport,
-    WorthQueryGraphReadStreamingPlan,
-};
+use crate::runtime::{WorthQueryEphemeralGraphIndexPlan, WorthQueryGraphIndexInventoryMatchReport};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryAdmittedGraphReadAccessPlan {
@@ -14,7 +11,6 @@ pub struct WorthQueryAdmittedGraphReadAccessPlan {
     admission: WorthQueryGraphReadAccessAdmission,
     execution_strategy: String,
     ephemeral_index_plan: Option<WorthQueryEphemeralGraphIndexPlan>,
-    streaming_plan: Option<WorthQueryGraphReadStreamingPlan>,
 }
 
 impl WorthQueryAdmittedGraphReadAccessPlan {
@@ -38,10 +34,6 @@ impl WorthQueryAdmittedGraphReadAccessPlan {
         self.ephemeral_index_plan.as_ref()
     }
 
-    pub fn streaming_plan(&self) -> Option<&WorthQueryGraphReadStreamingPlan> {
-        self.streaming_plan.as_ref()
-    }
-
     pub fn graph_index_support(&self) -> &WorthQueryGraphIndexInventoryMatchReport {
         self.admission.graph_index_inventory_match_report()
     }
@@ -61,11 +53,7 @@ impl WorthQueryAdmittedGraphReadAccessPlan {
             WorthQueryGraphReadAccessAdmissionPosture::BoundedEphemeralIndex => {
                 "bounded-ephemeral-index-read-execution"
             }
-            WorthQueryGraphReadAccessAdmissionPosture::AdmittedPagedStreaming => {
-                "paged-streaming-frontier-read-execution"
-            }
-            WorthQueryGraphReadAccessAdmissionPosture::PagedStreamingRequired
-            | WorthQueryGraphReadAccessAdmissionPosture::PersistentIndexRequired
+            WorthQueryGraphReadAccessAdmissionPosture::PersistentIndexRequired
             | WorthQueryGraphReadAccessAdmissionPosture::AsyncMaterializationRequired
             | WorthQueryGraphReadAccessAdmissionPosture::StoreBackedCapabilityRequired
             | WorthQueryGraphReadAccessAdmissionPosture::AccessCapabilityRegistrationRequired
@@ -73,7 +61,6 @@ impl WorthQueryAdmittedGraphReadAccessPlan {
         }
         .to_string();
         let ephemeral_index_plan = WorthQueryEphemeralGraphIndexPlan::from_admission(&admission);
-        let streaming_plan = WorthQueryGraphReadStreamingPlan::from_admission(&admission);
         let digest = hash_parts(&[
             "worth_query_admitted_graph_read_access_plan_v1".to_string(),
             format!("admission:{}", admission.digest()),
@@ -86,20 +73,12 @@ impl WorthQueryAdmittedGraphReadAccessPlan {
                     .map(WorthQueryEphemeralGraphIndexPlan::digest)
                     .unwrap_or("none")
             ),
-            format!(
-                "streaming_plan:{}",
-                streaming_plan
-                    .as_ref()
-                    .map(WorthQueryGraphReadStreamingPlan::digest)
-                    .unwrap_or("none")
-            ),
         ]);
         Some(Self {
             digest,
             admission,
             execution_strategy,
             ephemeral_index_plan,
-            streaming_plan,
         })
     }
 }

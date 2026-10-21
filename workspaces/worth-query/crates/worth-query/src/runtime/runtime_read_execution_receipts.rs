@@ -4,7 +4,6 @@ use crate::intent_admission::WorthQueryReadExecutionBinding;
 pub(crate) fn attach_graph_read_access_receipt<Product>(
     executed_read: &mut super::read_composition_runtime::WorthQueryExecutedReadProduct<Product>,
     binding: &WorthQueryReadExecutionBinding,
-    snapshot_identity_digest: &str,
 ) where
     Product: WorthQueryReadExecutionProduct,
 {
@@ -14,16 +13,9 @@ pub(crate) fn attach_graph_read_access_receipt<Product>(
             binding.binding_digest(),
             executed_read.graph_read_access_execution_counters().clone(),
         );
-    let graph_read_streaming_receipt = streaming_receipt_for_admitted_read_result(
-        binding.graph_read_access_plan(),
-        snapshot_identity_digest,
-        executed_read.product().receipt().result_digest(),
-        executed_read.product().output_cardinality(),
-    );
     executed_read.product_mut().attach_graph_read_access_plan(
         binding.graph_read_access_plan().clone(),
         graph_read_access_plan_consumption,
-        graph_read_streaming_receipt,
     );
 }
 

@@ -57,15 +57,11 @@ fn closeout_local_anchored_frontier_and_reusable_reads_emit_consumed_access_plan
         .execute(request_execution)
         .expect("frontier read should execute through admitted access plan");
     let frontier_summary = assert_consumed_access_plan_receipt("frontier", &frontier_result);
-    // With no inline byte forecast, a hostile frontier executes inline.
+    // A hostile frontier still executes inline.
     assert_eq!(
         &frontier_summary.admission_posture,
         &WorthQueryGraphReadAccessAdmissionPosture::InlineIndexed
     );
-    assert!(frontier_result
-        .receipt()
-        .graph_read_streaming_receipt()
-        .is_none());
 
     let mut reusable_workspace = workspace(
         request_execution,
