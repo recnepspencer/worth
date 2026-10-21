@@ -105,13 +105,10 @@ fn contention(execution: &worth_execution::ExecutionRequest<'_, '_>, independent
         .publication_companion_port()
         .begin_required_registration()
         .unwrap()
-        .activate(
-            Arc::new(HeldPreparedCompanion {
-                prepared,
-                release: Mutex::new(observe_release),
-            }),
-            budget(),
-        )
+        .activate(Arc::new(HeldPreparedCompanion {
+            prepared,
+            release: Mutex::new(observe_release),
+        }))
         .unwrap();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction

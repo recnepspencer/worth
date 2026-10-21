@@ -1,4 +1,4 @@
-//! Answers and admission at the remaining exact read doors.
+//! Exact answers at the remaining native read doors.
 use super::*;
 use crate::facade::indexes::{
     BoundedEntityFieldSelectedLookup, BoundedIndexParityMode, BoundedRelationJoinLookupRequest,
@@ -83,7 +83,6 @@ fn runtime_read_law_remaining_selected_view() {
         .unwrap();
     let value = string_aspect_value("a");
     with_backings(|execution| {
-        let mut charges = Vec::new();
         let answer = {
             world
                 .runtime
@@ -96,10 +95,6 @@ fn runtime_read_law_remaining_selected_view() {
                         &world.name,
                         &value,
                         2,
-                        |unit, bytes| {
-                            charges.push((unit, bytes));
-                            Ok::<_, ()>(())
-                        },
                     ),
                     BoundedIndexParityMode::Production,
                     execution,
@@ -110,10 +105,6 @@ fn runtime_read_law_remaining_selected_view() {
         assert_eq!(answer.generation_id(), DerivedIndexGenerationId(1));
         assert_eq!(answer.examined_entry_count(), 1);
         assert!(!answer.overflowed());
-        assert!(
-            !charges.is_empty(),
-            "the selected lookup consults its caller's admission"
-        );
     });
 }
 

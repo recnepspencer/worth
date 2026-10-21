@@ -1,11 +1,8 @@
 use super::*;
-use crate::facade::indexes::{
-    BoundedEntityFieldLookupAdmissionStop as Stop, BoundedEntityFieldLookupDenialKind,
-    BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
-};
+use crate::facade::indexes::{BoundedEntityFieldLookupRequest, BoundedIndexParityMode};
 
 #[test]
-fn complete_equality_selection_uses_the_callers_budget_above_sixty_four() {
+fn complete_equality_selection_preserves_the_callers_cardinality_above_sixty_four() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -21,7 +18,7 @@ fn complete_equality_selection_uses_the_callers_budget_above_sixty_four() {
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(76),
-        name: "entity.name.caller-selection-budget".to_owned(),
+        name: "entity.name.selection-cardinality".to_owned(),
         kind: DerivedIndexKind::EntityField {
             field_locator: locator.clone(),
         },
@@ -42,8 +39,7 @@ fn complete_equality_selection_uses_the_callers_budget_above_sixty_four() {
         .index_access()
         .prepare_entity_field_lookup(&view, index.index_id, KindId(1), &locator, execution)
         .unwrap();
-    let mut admitted_work = false;
-    let denied = runtime
+    let selected = runtime
         .index_access()
         .execute_bounded_entity_field_lookup(
             crate::facade::indexes::BoundedEntityFieldSelectedLookup::new(
@@ -53,18 +49,14 @@ fn complete_equality_selection_uses_the_callers_budget_above_sixty_four() {
                 &locator,
                 &string_aspect_value("shared"),
                 65,
-                |_, _| {
-                    admitted_work = true;
-                    Ok::<_, ()>(())
-                },
             ),
             BoundedIndexParityMode::Production,
             execution,
         )
-        .unwrap_err();
-    assert!(matches!(denied, Stop::Lookup(denial)
-        if denial.kind() == BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit));
-    assert!(!admitted_work);
+        .unwrap();
+    assert_eq!(selected.candidate_entity_ids(), entities);
+    assert_eq!(selected.examined_entry_count(), 65);
+    assert!(!selected.overflowed());
     for limit in [64, 65] {
         let request = BoundedEntityFieldLookupRequest::new(
             snapshot.clone(),

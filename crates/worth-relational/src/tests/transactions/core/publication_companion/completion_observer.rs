@@ -4,7 +4,6 @@ use crate::mvcc::{CompanionPublicationCompletion, CompanionPublicationCompletion
 struct ObservedCompanion {
     cell: CompanionBranchCell<u64>,
     observer: Mutex<Option<CompanionPublicationCompletionObserver>>,
-    retained_drops: Arc<AtomicUsize>,
     stop_after_prepare: bool,
 }
 
@@ -21,9 +20,7 @@ impl RelationalPublicationCompanion for ObservedCompanion {
     ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
         let reserved = self.cell.reserve_preflight(context)?;
         let mut effect = context.seal_replacement(reserved, Arc::new(9_u64))?;
-        let retained: Arc<dyn Send + Sync> =
-            Arc::new(DropCounter(Arc::clone(&self.retained_drops)));
-        let observer = effect.attach_completion_observer(context, retained)?;
+        let observer = effect.attach_completion_observer(context)?;
         *self.observer.lock().unwrap() = Some(observer);
         if self.stop_after_prepare {
             return Err(CompanionPreflightStop::TopologyPending);
@@ -51,11 +48,9 @@ fn actual_companion_cutover_resolves_only_its_prepared_observer() {
                 |cell| cell,
             )
             .unwrap();
-        let retained_drops = Arc::new(AtomicUsize::new(0));
         let participant = Arc::new(ObservedCompanion {
             cell: cell.clone(),
             observer: Mutex::new(None),
-            retained_drops: Arc::clone(&retained_drops),
             stop_after_prepare,
         });
         let registration = pending.activate(participant.clone()).unwrap();
@@ -102,8 +97,14 @@ fn actual_companion_cutover_resolves_only_its_prepared_observer() {
         port.remove_required(&registration).unwrap();
         drop(registration);
         drop(participant);
-        assert_eq!(retained_drops.load(Ordering::Relaxed), 0);
-        drop(observer);
-        assert_eq!(retained_drops.load(Ordering::Relaxed), 1);
+        assert_eq!(
+            observer.state(),
+            if stop_after_prepare {
+                CompanionPublicationCompletion::Aborted
+            } else {
+                CompanionPublicationCompletion::Installed
+            },
+            "the original observer retains its exact outcome after participant removal"
+        );
     }
 }
