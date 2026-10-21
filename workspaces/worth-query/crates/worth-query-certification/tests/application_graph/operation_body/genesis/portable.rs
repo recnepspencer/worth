@@ -99,13 +99,13 @@ fn portable_genesis_cannot_replace_its_scope_with_a_foreign_entity() {
         }
     }
     parts.members.sort();
-    assert_eq!(
+    assert!(matches!(
         validate_portable_application_schema_freshly(
             WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
         )
         .unwrap_err(),
-        ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency
-    );
+        ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency { .. }
+    ));
 }
 
 #[test]

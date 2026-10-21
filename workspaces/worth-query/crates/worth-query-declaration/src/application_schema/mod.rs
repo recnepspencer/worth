@@ -41,6 +41,7 @@ mod operation_contract_cardinality;
 mod operation_definition;
 mod operation_marker_identity;
 pub(crate) use operation_definition::AftermathAssociationAuthority;
+mod operation_dependency_locus;
 mod operation_program;
 mod portable_schema;
 mod principal_binding_authoring;
@@ -179,6 +180,7 @@ pub use operation_definition::{
     ApplicationOperationDefinition, ApplicationOperationDefinitionBuilder,
     ApplicationSigningEvidenceRef, ApplicationSigningEvidenceSource,
 };
+pub use operation_dependency_locus::ApplicationOperationDependencyLocus;
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;
 pub use portable_schema::{
     observe_portable_application_schema_reconstruction_work,

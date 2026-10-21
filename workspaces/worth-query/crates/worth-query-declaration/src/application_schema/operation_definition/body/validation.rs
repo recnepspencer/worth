@@ -18,9 +18,9 @@ pub(crate) fn validate_operation_bodies(
         if !operations.insert(operation) {
             return Err(ApplicationSchemaDeclarationDenial::DuplicateMember);
         }
-        let scope = body
-            .scope_entity()
-            .ok_or(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency)?;
+        let scope = body.scope_entity().ok_or_else(|| {
+            ApplicationSchemaDeclarationDenial::program_body_dependency(operation)
+        })?;
         if !members.iter().any(|member| matches!(member,
             ApplicationSchemaMember::Entity { entity } if entity == scope
         )) || (body.scope_fields().is_empty() && !members.iter().any(|member| matches!(member,
@@ -28,22 +28,28 @@ pub(crate) fn validate_operation_bodies(
                 crate::application_schema::ApplicationOperationDecisionReadTarget::Entity { entity } }
                 if candidate == operation && entity == scope
         ))) {
-            return Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency);
+            return Err(ApplicationSchemaDeclarationDenial::decision_read_body_dependency(operation));
         }
         super::requirement::validate_requirements(operation, body, members)?;
         super::output_validation::validate_outputs(operation, body, members)?;
         if !super::enrollment::valid(body) {
-            return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+            return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
+                operation,
+            ));
         }
         super::principal_validation::validate_principals(operation, body, members)?;
         super::creation_link_validation::validate_links(operation, body, members)?;
         if !super::signing_lifecycle::validate(body, members) {
-            return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+            return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
+                operation,
+            ));
         }
         let mut writes = BTreeSet::new();
         for step in body.scope_fields() {
             if step.field().entity() != scope {
-                return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+                return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
+                    operation,
+                ));
             }
             if step.write_target().is_some() && !writes.insert(step.field()) {
                 return Err(ApplicationSchemaDeclarationDenial::DuplicateMember);
@@ -51,7 +57,9 @@ pub(crate) fn validate_operation_bodies(
         }
         if let Some(creation) = body.creation() {
             if creation.key().is_empty() || creation.key().trim() != creation.key() {
-                return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+                return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
+                    operation,
+                ));
             }
             let creates = ApplicationOperationProgramTarget::Create {
                 entity: creation.entity().to_owned(),
@@ -62,7 +70,7 @@ pub(crate) fn validate_operation_bodies(
                 matches!(member, ApplicationSchemaMember::OperationProgram { operation: candidate, target }
                     if candidate == operation && target == &creates)
             }) {
-                return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+                return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(operation));
             }
             let mut initialized = BTreeSet::new();
             for step in creation.fields() {
@@ -72,7 +80,7 @@ pub(crate) fn validate_operation_bodies(
             canonical: None, entity, aspect, field, presence: ApplicationFieldPresence::Optional, .. }
                     if entity == locus.entity() && aspect == locus.aspect() && field == locus.field()
                 )) {
-                    return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+                    return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(operation));
                 }
                 if locus.entity() != creation.entity() || !initialized.insert(locus.clone()) {
                     return Err(ApplicationSchemaDeclarationDenial::DuplicateMember);
@@ -81,9 +89,9 @@ pub(crate) fn validate_operation_bodies(
                     .input_member()
                     .is_some_and(|member| member.is_empty() || member.trim() != member)
                 {
-                    return Err(
-                        ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency,
-                    );
+                    return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
+                        operation,
+                    ));
                 }
                 super::source_validation::validate(operation, scope, step, members)?;
                 if !members.iter().any(|member| {
@@ -97,7 +105,7 @@ pub(crate) fn validate_operation_bodies(
                     matches!(member, ApplicationSchemaMember::OperationProgram { operation: candidate, target }
                         if candidate == operation && target == &step.write_target())
                 }) {
-                    return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+                    return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(operation));
                 }
             }
             for member in members {
@@ -116,20 +124,24 @@ pub(crate) fn validate_operation_bodies(
                             && locus.field() == field
                     })
                 {
-                    return Err(
-                        ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency,
-                    );
+                    return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
+                        operation,
+                    ));
                 }
             }
         }
         if writes.is_empty() && body.creation().is_none() && body.outputs().is_empty() {
-            return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+            return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
+                operation,
+            ));
         }
         if !members.iter().any(|member| {
             matches!(member, ApplicationSchemaMember::Operation { operation: candidate, .. }
                 if candidate == operation)
         }) {
-            return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+            return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
+                operation,
+            ));
         }
         for step in body.scope_fields() {
             let locus = step.field();
@@ -148,7 +160,9 @@ pub(crate) fn validate_operation_bodies(
                 .input_member()
                 .is_some_and(|member| member.is_empty() || member.trim() != member)
             {
-                return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+                return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
+                    operation,
+                ));
             }
             let found = members.iter().any(|member| {
                 matches!(member, ApplicationSchemaMember::Field {
@@ -161,7 +175,9 @@ pub(crate) fn validate_operation_bodies(
                     && (step.write_target().is_none() || *writable))
             });
             if !found {
-                return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+                return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
+                    operation,
+                ));
             }
             if !members.iter().any(|member| {
                 matches!(member,
@@ -169,7 +185,7 @@ pub(crate) fn validate_operation_bodies(
                     if candidate == operation && target == &step.decision_read())
             }) {
                 return Err(
-                    ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency,
+                    ApplicationSchemaDeclarationDenial::decision_read_body_dependency(operation),
                 );
             }
             if let Some(write) = step.write_target()
@@ -179,7 +195,9 @@ pub(crate) fn validate_operation_bodies(
                         if candidate == operation && target == &write)
                 })
             {
-                return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+                return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
+                    operation,
+                ));
             }
         }
     }
@@ -275,6 +293,9 @@ mod tests {
                     )),
                 ),
             },
+            ApplicationSchemaMember::Entity {
+                entity: "Item".to_owned(),
+            },
         ];
         assert_eq!(validate_operation_bodies(&members), Ok(()));
         let ApplicationSchemaMember::Field {
@@ -286,10 +307,10 @@ mod tests {
             unreachable!()
         };
         *unit = Some("hours".to_owned());
-        assert_eq!(
+        assert!(matches!(
             validate_operation_bodies(&members),
-            Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency),
-        );
+            Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency { .. })
+        ));
     }
 
     #[test]
@@ -333,11 +354,14 @@ mod tests {
                 operation: "Clear".to_owned(),
                 body: ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![step]),
             },
+            ApplicationSchemaMember::Entity {
+                entity: "Item".to_owned(),
+            },
         ];
-        assert_eq!(
+        assert!(matches!(
             validate_operation_bodies(&members),
-            Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency),
-        );
+            Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency { .. })
+        ));
         let ApplicationSchemaMember::Field {
             canonical: None,
             presence,

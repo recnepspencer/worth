@@ -65,13 +65,13 @@ fn authored_body_portable_readmission_preserves_values_and_rejects_incomplete_re
     // valid. The body must refuse its missing exact field read, not an earlier
     // malformed provenance ordinal or an unrelated dangling member.
     parts.members.sort();
-    assert_eq!(
+    assert!(matches!(
         validate_portable_application_schema_freshly(
             WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
         )
         .unwrap_err(),
-        ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency
-    );
+        ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency { .. }
+    ));
 }
 
 #[test]

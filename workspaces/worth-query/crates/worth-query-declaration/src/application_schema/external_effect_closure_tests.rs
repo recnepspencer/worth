@@ -13,10 +13,10 @@ fn external_effect_requires_exact_declared_effect_payload_and_emit_target() {
     for removal in [1_usize, 2] {
         let mut members = closed_members();
         members.remove(removal);
-        assert_eq!(
+        assert!(matches!(
             validate_member_closure(&members),
-            Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency)
-        );
+            Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency { .. })
+        ));
     }
 
     let mut wrong_payload = closed_members();
@@ -25,10 +25,10 @@ fn external_effect_requires_exact_declared_effect_payload_and_emit_target() {
     };
     *payload_type =
         crate::portable_identity::WorthQueryPortableTypeIdentity::declared("WrongPayload");
-    assert_eq!(
+    assert!(matches!(
         validate_member_closure(&wrong_payload),
-        Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency)
-    );
+        Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency { .. })
+    ));
 }
 
 #[test]
@@ -43,10 +43,10 @@ fn external_effect_rejects_a_zero_wire_bound() {
     };
     *maximum_payload_bytes = 0;
 
-    assert_eq!(
+    assert!(matches!(
         validate_member_closure(&members),
-        Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency)
-    );
+        Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency { .. })
+    ));
 }
 
 #[test]
@@ -83,10 +83,10 @@ fn inbound_occurrence_requires_the_exact_outbound_effect() {
         unreachable!()
     };
     *effect = "AnotherEffect".to_owned();
-    assert_eq!(
+    assert!(matches!(
         validate_member_closure(&members),
-        Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency)
-    );
+        Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency { .. })
+    ));
 }
 
 fn closed_members() -> Vec<ApplicationSchemaMember> {

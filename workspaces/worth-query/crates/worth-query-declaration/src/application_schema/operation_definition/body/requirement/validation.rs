@@ -18,7 +18,7 @@ pub(in crate::application_schema::operation_definition::body) fn validate_requir
         }
         for operand in requirement.operands() {
             if Some(operand.source().scope_entity()) != body.scope_entity() {
-                return Err(Denial::MissingOperationDecisionReadDependency);
+                return Err(Denial::decision_read_body_dependency(operation));
             }
             let bound = match operand.source() {
                 Source::SignedEvidence(source) => source.is_declared(members),
@@ -43,7 +43,7 @@ pub(in crate::application_schema::operation_definition::body) fn validate_requir
             };
             if !bound || !operand.source().decision_reads().iter().all(|read| members.iter().any(|member| {
                 matches!(member, Member::OperationDecisionRead { operation: declared, target } if declared == operation && target == read)
-            })) { return Err(Denial::MissingOperationDecisionReadDependency); }
+            })) { return Err(Denial::decision_read_body_dependency(operation)); }
         }
     }
     Ok(())

@@ -1739,6 +1739,21 @@ acknowledged successor.
 
 ---
 
+### 4.5 Declaration failures
+
+Keep the original `decl::application_schema::ApplicationSchemaDeclarationDenial`
+when reporting an installation refusal. Its three `MissingOperation...Dependency`
+variants retain the owned operation name and an `ApplicationOperationDependencyLocus`.
+`ProgramTarget`, `DecisionReadTarget` and `MutationPrecondition` retain the actual
+rejected target, including its field path or relation endpoints. `Body` identifies
+whole-body closure without claiming that one field was uniquely responsible;
+effect and occurrence loci retain their declared identities. Displaying the native
+denial includes this context without looking up a field from another registry.
+
+The denial is `Clone`, not `Copy`. Borrow it when inspecting the cause, or move the
+original through the application's typed installation/start refusal. These values
+describe a rejection; they grant no mutation, currentness, retry or cleanup authority.
+
 ## 5. Run the program
 
 Requests start from the runtime with `WorthQueryApplicationRequestExt`

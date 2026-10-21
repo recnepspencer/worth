@@ -67,12 +67,12 @@ fn replacement_derives_read_and_unlink_membership_and_cold_readmission_requires_
             _ => true,
         });
         assert_eq!(before - members.len(), 1);
-        assert_eq!(
+        assert!(matches!(
             ApplicationSchemaDeclarationBuilder::<Schema>::from_test_members(members)
                 .build()
                 .unwrap_err(),
-            Denial::MissingOperationProgramDependency
-        );
+            Denial::MissingOperationProgramDependency { .. }
+        ));
     }
 }
 

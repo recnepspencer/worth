@@ -138,16 +138,16 @@ fn portable_actor_contract_refuses_missing_read_unit_codec_and_binding() {
         )
         .unwrap_err();
         if defect == "read" {
-            assert_eq!(
+            assert!(matches!(
                 denial,
-                ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency
-            );
+                ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency { .. }
+            ));
         }
         if defect == "unit" {
-            assert_eq!(
+            assert!(matches!(
                 denial,
-                ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency
-            );
+                ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency { .. }
+            ));
         }
     }
 }
