@@ -15,6 +15,9 @@ impl PartialEq for CanonicalBytes {
 }
 
 pub(super) trait ValueStorage<T>: Copy {
+    fn has_accounting(&self) -> bool {
+        true
+    }
     fn backing<E>(
         &self,
         _layout: Layout,
@@ -44,7 +47,7 @@ pub(super) trait ValueStorage<T>: Copy {
         aggregate: &T,
         left: &Link<T>,
         right: &Link<T>,
-    ) -> Result<(u64, Option<ExecutionMemoryReservation>), ReductionRunStop<E>>;
+    ) -> Result<(Option<u64>, Option<ExecutionMemoryReservation>), ReductionRunStop<E>>;
 }
 
 #[derive(Clone, Copy)]
@@ -84,10 +87,12 @@ impl<T: CanonicalBits + ChargedBytes> ValueStorage<T> for BoundedValues {
         aggregate: &T,
         left: &Link<T>,
         right: &Link<T>,
-    ) -> Result<(u64, Option<ExecutionMemoryReservation>), ReductionRunStop<E>> {
+    ) -> Result<(Option<u64>, Option<ExecutionMemoryReservation>), ReductionRunStop<E>> {
         Ok((
-            node_bytes(value, aggregate, left, right)
-                .ok_or(ReductionRunStop::ResultCapacityExceeded)?,
+            Some(
+                node_bytes(value, aggregate, left, right)
+                    .ok_or(ReductionRunStop::ResultCapacityExceeded)?,
+            ),
             None,
         ))
     }
@@ -98,11 +103,16 @@ pub(super) struct NativeValues<'scope, 'authority> {
     pub(super) lease: Option<&'scope ExecutionResourceLease<'authority>>,
 }
 impl<T: CanonicalBits> ValueStorage<T> for NativeValues<'_, '_> {
+    fn has_accounting(&self) -> bool {
+        crate::backend::RunLimits::native_accounting(self.lease)
+    }
     fn backing<E>(
         &self,
         layout: Layout,
     ) -> Result<Option<ExecutionMemoryReservation>, ReductionRunStop<E>> {
-        if layout.size() == 0 {
+        crate::backend::RunLimits::check_native_scope(self.lease)
+            .map_err(|cause| ReductionRunStop::Denial(ReductionDenial::Admission(cause)))?;
+        if !<Self as ValueStorage<T>>::has_accounting(self) || layout.size() == 0 {
             return Ok(None);
         }
         reserve(self.lease, layout.size()).map(Some)
@@ -128,21 +138,29 @@ impl<T: CanonicalBits> ValueStorage<T> for NativeValues<'_, '_> {
         _: &T,
         left: &Link<T>,
         right: &Link<T>,
-    ) -> Result<(u64, Option<ExecutionMemoryReservation>), ReductionRunStop<E>> {
+    ) -> Result<(Option<u64>, Option<ExecutionMemoryReservation>), ReductionRunStop<E>> {
         let layout = Layout::new::<[usize; 2]>()
             .extend(Layout::new::<Node<T>>())
             .map_err(|_| physical(crate::ExecutionPhysicalAllocationDenialKind::Layout))?
             .0
             .pad_to_align();
-        let memory = reserve(self.lease, layout.size())?;
+        let Some(memory) = <Self as ValueStorage<T>>::backing(self, layout)? else {
+            return Ok((None, None));
+        };
+        let child_bytes = |link: &Link<T>| match link {
+            None => Ok(0),
+            Some(node) => node.retained_bytes.ok_or(ReductionRunStop::Denial(
+                ReductionDenial::AccountingUnavailable,
+            )),
+        };
+        let left_bytes = child_bytes(left)?;
+        let right_bytes = child_bytes(right)?;
         let bytes = memory
             .bytes()
-            .checked_add(left.as_ref().map_or(0, |node| node.retained_bytes))
-            .and_then(|bytes| {
-                bytes.checked_add(right.as_ref().map_or(0, |node| node.retained_bytes))
-            })
+            .checked_add(left_bytes)
+            .and_then(|bytes| bytes.checked_add(right_bytes))
             .ok_or_else(|| physical(crate::ExecutionPhysicalAllocationDenialKind::Layout))?;
-        Ok((bytes, Some(memory)))
+        Ok((Some(bytes), Some(memory)))
     }
 }
 

@@ -32,7 +32,6 @@ impl SealedComputationFacts {
         self.original = Arc::<[_]>::from(values).into();
         self.content = None;
         self.layout = super::layout::SealedReadLayout::OwnerFixture;
-        self.charged = self.calculate_charged_bytes();
     }
 
     pub(in crate::domain_computation::primary_graph) fn copy_key(
@@ -99,6 +98,5 @@ impl SealedComputationFacts {
         self.original = Arc::<[_]>::from(values).into();
         self.content = None;
         self.layout = super::layout::SealedReadLayout::OwnerFixture;
-        self.charged = self.calculate_charged_bytes();
     }
 }

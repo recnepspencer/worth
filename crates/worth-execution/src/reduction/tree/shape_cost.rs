@@ -47,7 +47,9 @@ impl<'a, T> ShapeLink<'a, T> {
     fn span(&self) -> u64 {
         match self {
             Self::Empty => 0,
-            Self::Borrowed(n) => n.full_subtree_span,
+            Self::Borrowed(n) => n
+                .full_subtree_span
+                .expect("accounted shape carries dependency span"),
             Self::Edited(n) => n.span,
         }
     }
@@ -162,6 +164,11 @@ impl<T, F> ReductionTree<T, F> {
         inserted: &CanonicalUniqueVec<PartitionIdentity>,
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(u64, u64), ReductionShapeCostDenial> {
+        if !self.accounted {
+            return Err(ReductionShapeCostDenial::Structural(
+                ReductionDenial::AccountingUnavailable,
+            ));
+        }
         let mut engine = ShapeEngine {
             policy,
             borrowed: std::marker::PhantomData,

@@ -54,7 +54,8 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
         }) {
             return Ok(None);
         }
-        let Some(prefix) = sequence.summary(0..sequence.prefix()) else {
+        let Some(prefix) = sequence.summary(0..sequence.prefix(), execution.has_accounting())
+        else {
             return Ok(None);
         };
         if !reader.can_carry_call_range(&COMPARATOR, &prefix) {
@@ -62,7 +63,16 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
         }
         let allocation = execution.allocation_policy().map_err(D::Resource)?;
         let start = reader.run_start(&COMPARATOR);
-        let _selection_memory=execution.reserve((self.moved_items.len()+self.marked.len()+1).checked_mul(64*size_of::<usize>()).and_then(|n|u64::try_from(n).ok()).ok_or(D::Resource(super::super::super::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?).map_err(D::Resource)?;
+        let _selection_memory = if execution.has_accounting() {
+            let bytes = self.moved_items.len().checked_add(self.marked.len())
+                .and_then(|count| count.checked_add(1))
+                .and_then(|count| count.checked_mul(64 * size_of::<usize>()))
+                .and_then(|bytes| u64::try_from(bytes).ok())
+                .ok_or(D::Resource(super::super::super::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
+            Some(execution.reserve(bytes).map_err(D::Resource)?)
+        } else {
+            None
+        };
         let mut marked = std::collections::BTreeSet::new();
         for item in &self.moved_items {
             let Some(ordinal) = sequence.shape().ordinal(ComputationRead::ItemKey(*item)) else {
@@ -91,7 +101,7 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
                         super::super::preparation_work::charge_preparation(
                             execution,
                             &mut remaining,
-                            Some(summary.declared),
+                            summary.declared,
                         )?;
                         Ok(true)
                     } else {
@@ -130,8 +140,7 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
                     if retained.routing.digest(next).is_none() && !fresh_keys.contains_key(&next) {
                         fresh_keys.insert(next, Arc::new(key));
                     }
-                    let Some((charge, declared_units)) = charge.zip(remaining.spent_since(before))
-                    else {
+                    let Some(charge) = charge else {
                         unsupported = true;
                         return Ok(true);
                     };
@@ -140,7 +149,7 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
                             &item,
                             &RetainedCall {
                                 charge,
-                                declared_units,
+                                declared_units: remaining.spent_since(before),
                             },
                             allocation,
                         )

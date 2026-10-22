@@ -80,8 +80,20 @@ fn a_full_run_cancelled_inside_a_combine_stops_at_the_next_tree_node() {
         tree,
         super::super::tree_report::WorthQueryPartitionedTreeRun::Full(Cause::NoProducerPrior, _)
     ));
-    assert_eq!(tree.metrics_for_test().combine_calls, 1);
-    assert_eq!(tree.metrics_for_test().recombined_nodes, 0);
+    assert_eq!(
+        tree.metrics_for_test()
+            .accounted_metrics()
+            .expect("explicit accounted fixture")
+            .combine_calls,
+        1
+    );
+    assert_eq!(
+        tree.metrics_for_test()
+            .accounted_metrics()
+            .expect("explicit accounted fixture")
+            .recombined_nodes,
+        0
+    );
 }
 
 /// A moved fact recombines its leaf's path, two combines a node. Cancelled
@@ -121,6 +133,18 @@ fn an_incremental_run_cancelled_inside_a_recombine_stops_and_does_not_rebuild() 
         tree,
         super::super::tree_report::WorthQueryPartitionedTreeRun::Edited(_)
     ));
-    assert_eq!(tree.metrics_for_test().combine_calls, 1);
-    assert_eq!(tree.metrics_for_test().recombined_nodes, 0);
+    assert_eq!(
+        tree.metrics_for_test()
+            .accounted_metrics()
+            .expect("explicit accounted fixture")
+            .combine_calls,
+        1
+    );
+    assert_eq!(
+        tree.metrics_for_test()
+            .accounted_metrics()
+            .expect("explicit accounted fixture")
+            .recombined_nodes,
+        0
+    );
 }

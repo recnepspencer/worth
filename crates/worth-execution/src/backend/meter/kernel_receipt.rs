@@ -4,7 +4,7 @@ pub(super) use storage::Capture;
 pub use storage::ExecutionKernelReceiptStorage;
 use storage::ReceiptMemory;
 
-use super::{KernelContext, KernelFailure, KernelMeter, KernelStop};
+use super::{KernelContext, KernelFailure, KernelState, KernelStop};
 use crate::ChargedBytes;
 use allocator_api2::vec::Vec;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
@@ -43,13 +43,13 @@ impl ChargedBytes for ExecutionKernelReceipt {
 }
 
 struct CaptureScope {
-    meter: Rc<RefCell<KernelMeter>>,
+    meter: Rc<RefCell<KernelState>>,
     prior: Option<Capture>,
 }
 
 impl Drop for CaptureScope {
     fn drop(&mut self) {
-        self.meter.borrow_mut().capture = self.prior.take();
+        self.meter.borrow_mut().set_capture(self.prior.take());
     }
 }
 
@@ -62,8 +62,11 @@ impl KernelContext<'_, '_> {
         storage: &ExecutionKernelReceiptStorage,
         kernel: impl FnOnce(&mut Self) -> Result<R, KernelFailure<E>>,
     ) -> (Result<R, KernelFailure<E>>, Option<ExecutionKernelReceipt>) {
+        if !self.has_accounting() {
+            return (kernel(self), None);
+        }
         let before = self.cost();
-        let mut prior = self.meter.borrow_mut().capture.take();
+        let mut prior = self.meter.borrow_mut().take_capture();
         if let Some(prior) = &mut prior {
             prior.invalidate();
         }
@@ -71,7 +74,7 @@ impl KernelContext<'_, '_> {
             meter: Rc::clone(&self.meter),
             prior,
         };
-        self.meter.borrow_mut().capture = Some(storage.capture());
+        self.meter.borrow_mut().set_capture(Some(storage.capture()));
         let result = kernel(self);
         let (capture, successful) = {
             let mut meter = self.meter.borrow_mut();
@@ -79,7 +82,7 @@ impl KernelContext<'_, '_> {
                 && meter.checkpoint_stop.is_none()
                 && meter.nested_stop.owner().is_none()
                 && !meter.pending_request_refusal;
-            (meter.capture.take(), successful)
+            (meter.take_capture(), successful)
         };
         let cost = self.cost();
         let receipt = capture.and_then(|capture| {
@@ -97,7 +100,7 @@ impl KernelContext<'_, '_> {
     pub fn carry_kernel(&mut self, receipt: &ExecutionKernelReceipt) -> Result<(), KernelStop> {
         // A carried stage can descend at a tight ceiling; its fast physical
         // checkpoint must never be recaptured as the original kernel's tape.
-        if let Some(capture) = &mut self.meter.borrow_mut().capture {
+        if let Some(capture) = self.meter.borrow_mut().capture_mut() {
             capture.invalidate();
         }
         let remaining = {
@@ -105,7 +108,7 @@ impl KernelContext<'_, '_> {
             meter
                 .limits
                 .ceiling
-                .map(|ceiling| ceiling.saturating_sub(meter.work))
+                .map(|ceiling| ceiling.saturating_sub(meter.work()))
         };
         if remaining.is_none_or(|remaining| receipt.0.work <= remaining) {
             self.checkpoint(receipt.0.work)

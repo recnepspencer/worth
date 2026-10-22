@@ -34,13 +34,18 @@ pub(in crate::domain_computation::primary_graph) use sequence::{
 /// The work one owner call charged and the entities it reached.
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct ComputationCallCharge {
+    accounting: Option<ComputationCallAccounting>,
+    reached: Arc<[EntityId]>,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct ComputationCallAccounting {
     work: WorthQueryInvariantProjectionWork,
     /// The remaining work the call needed at its start to pass every
     /// preflight it made.
     demand: usize,
     /// The work it consumed from the budget.
     consumed: usize,
-    reached: Arc<[EntityId]>,
 }
 
 impl ComputationCallCharge {
@@ -63,6 +68,12 @@ pub(in crate::domain_computation::primary_graph) struct ComputationRunStart {
 impl<Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
+    pub(in crate::domain_computation::primary_graph) fn computation_has_accounting(
+        &self,
+        _: &Comparator,
+    ) -> bool {
+        self.reader.execution.has_accounting()
+    }
     /// Where a computation's run begins.
     pub(in crate::domain_computation::primary_graph) const fn run_start(
         &self,
@@ -95,21 +106,32 @@ impl<Schema, Operation>
         read: ComputationRead,
         call: impl FnOnce(&mut Self) -> Output,
     ) -> (Output, Option<ComputationCallCharge>) {
-        let work = self.reader.work;
+        let accounted = self.reader.execution.has_accounting();
+        let work = accounted.then_some(self.reader.work);
         self.decision_facts.begin_fresh_call(read);
-        self.reader.work_budget.begin_call();
+        if accounted {
+            self.reader.work_budget.begin_call();
+        }
         self.reader.realized_scope.begin_call();
         let output = self.attributed(read, call);
         let reached = self.reader.realized_scope.end_call();
-        let budget = self.reader.work_budget.end_call();
-        let charge = budget
-            .zip(self.reader.work.since(work))
-            .map(|((demand, consumed), work)| ComputationCallCharge {
+        let accounting = if let Some(work) = work {
+            let budget = self.reader.work_budget.end_call();
+            let Some(((demand, consumed), work)) = budget.zip(self.reader.work.since(work)) else {
+                return (output, None);
+            };
+            Some(ComputationCallAccounting {
                 work,
                 demand,
                 consumed,
-                reached: reached.into(),
-            });
+            })
+        } else {
+            None
+        };
+        let charge = Some(ComputationCallCharge {
+            accounting,
+            reached: reached.into(),
+        });
         (output, charge)
     }
 
@@ -121,17 +143,22 @@ impl<Schema, Operation>
         _: &Comparator,
         charge: &ComputationCallCharge,
     ) -> bool {
-        let Some(work) = self.reader.work.with_carried(charge.work) else {
-            return false;
-        };
-        if !self
-            .reader
-            .work_budget
-            .carry(charge.demand, charge.consumed)
-        {
-            return false;
+        if self.reader.execution.has_accounting() {
+            let Some(accounting) = charge.accounting else {
+                return false;
+            };
+            let Some(work) = self.reader.work.with_carried(accounting.work) else {
+                return false;
+            };
+            if !self
+                .reader
+                .work_budget
+                .carry(accounting.demand, accounting.consumed)
+            {
+                return false;
+            }
+            self.reader.work = work;
         }
-        self.reader.work = work;
         self.reader.realized_scope.extend(&charge.reached);
         true
     }

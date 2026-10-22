@@ -32,6 +32,7 @@ impl InputMode for LaterHandedOffFirst<'_> {
         lease: Option<&ExecutionResourceLease<'_>>,
         parallel: bool,
         seed: Option<u64>,
+        accounted: bool,
         execute: &(impl Fn((usize, u64)) + Sync),
     ) -> usize {
         assert!(parallel);
@@ -40,7 +41,7 @@ impl InputMode for LaterHandedOffFirst<'_> {
         let release = Mutex::new(release);
         // The later key is offered first, so a lone worker runs it before the
         // earlier key waits on its hand-off.
-        native::run_order(lease.unwrap(), &[1, 0], &|index| {
+        native::run_order(lease.unwrap(), &[1, 0], accounted, &|index| {
             if index == 0 {
                 release.lock().unwrap().recv().unwrap();
             }

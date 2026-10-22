@@ -26,7 +26,7 @@ fn request_with_memory(memory_bytes: u64) -> worth_execution::LeaseRequest {
         admission.policy.posture(),
         admission.policy.determinism(),
         ExecutionBudget::new(
-            admission.policy.budget().max_workers(),
+            admission.policy.max_workers(),
             Some(memory_bytes),
             Some(10_000_000),
         ),

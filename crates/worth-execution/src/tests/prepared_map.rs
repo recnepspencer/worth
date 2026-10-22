@@ -7,30 +7,38 @@ use crate::{MapKernelFailure, MapKernelStop, MapOutcome, MapStop};
 fn prepared_map_reserves_live_memory_before_dispatch_and_reports_it_once() {
     let _serial = TEST_LOCK.lock().unwrap();
     let authority = authority();
-    let parent = authority.request_lease(request(1, 1_000, 10)).unwrap();
-    let child = parent.child(request(1, 1_000, 10)).unwrap();
-    let occupied = authority.request_lease(request(1, 1_999, 10)).unwrap();
-    let held = occupied.try_reserve(0, 1_999).unwrap();
+    const PARENT_BYTES: u64 = 1_000;
+    let parent = authority
+        .request_lease(request(1, PARENT_BYTES, 10))
+        .unwrap();
+    let child = parent.child(request(1, PARENT_BYTES, 10)).unwrap();
+    // A real sibling allocation leaves one byte in their shared finite parent.
+    // This exercises preparation's allocation owner, independently of process
+    // policy chosen by unrelated scheduling tests.
+    let occupied = parent.child(request(1, PARENT_BYTES, 10)).unwrap();
+    let held = occupied.try_reserve(0, PARENT_BYTES - 1).unwrap();
     assert!(matches!(
         map(&[7], 0).prepare_run::<u64, ()>(child),
         Err(LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
             admitted: 1,
+            level: MemoryLimitLevel::Policy { ancestor: 1 },
             ..
         }))
     ));
     drop(held);
-    let child = parent.child(request(1, 1_000, 10)).unwrap();
+    let child = parent.child(request(1, PARENT_BYTES, 10)).unwrap();
     let prepared = map(&[7], 0)
         .prepare_run::<u64, ()>(child)
         .unwrap_or_else(|denial| panic!("prepared map denied: {denial:?}"));
     assert!(matches!(
-        occupied.try_reserve(0, 1_999),
+        occupied.try_reserve(0, PARENT_BYTES - 1),
         Err(SlotRefusal::Denied(LeaseDenial::MemoryExhausted(
             MemoryLimitDenial::Capacity {
-                requested: 1_999,
+                requested,
+                level: MemoryLimitLevel::Policy { ancestor: 1 },
                 ..
             }
-        )))
+        ))) if requested == PARENT_BYTES - 1
     ));
     let outcome = prepared.run(|value, work| {
         work.checkpoint(1)?;
@@ -39,7 +47,7 @@ fn prepared_map_reserves_live_memory_before_dispatch_and_reports_it_once() {
     assert!(matches!(&outcome, MapOutcome::Complete { values, .. } if values == &vec![7]));
     assert_eq!(outcome.report().charged_work(), 1);
     assert!(outcome.report().physical().peak_charged_memory_bytes() > 0);
-    let released = occupied.try_reserve(0, 1_999).unwrap();
+    let released = occupied.try_reserve(0, PARENT_BYTES - 1).unwrap();
     drop(released);
 }
 

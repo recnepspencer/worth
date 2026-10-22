@@ -17,6 +17,7 @@ pub(super) trait InputMode {
         lease: Option<&ExecutionResourceLease<'_>>,
         parallel: bool,
         seed: Option<u64>,
+        accounted: bool,
         execute: &(impl Fn((usize, Self::Item)) + Sync),
     ) -> usize;
     /// Destroy every remaining input independently; return the least panic index.
@@ -41,6 +42,7 @@ impl<'a, T: Sync> InputMode for BorrowedInputs<'a, T> {
         lease: Option<&ExecutionResourceLease<'_>>,
         parallel: bool,
         seed: Option<u64>,
+        accounted: bool,
         execute: &(impl Fn((usize, Self::Item)) + Sync),
     ) -> usize {
         if !parallel {
@@ -53,9 +55,12 @@ impl<'a, T: Sync> InputMode for BorrowedInputs<'a, T> {
         if let Some(seed) = seed {
             perturbation::permute(order.len(), seed, |a, b| order.swap(a, b));
         }
-        native::run_order(lease.expect("native requires lease"), &order, &|index| {
-            execute((index, &self.0[index]))
-        })
+        native::run_order(
+            lease.expect("native requires lease"),
+            &order,
+            accounted,
+            &|index| execute((index, &self.0[index])),
+        )
     }
     fn discard(&mut self) -> Option<usize> {
         None
@@ -77,12 +82,19 @@ impl<T: Send> InputMode for OwnedInputs<T> {
         lease: Option<&ExecutionResourceLease<'_>>,
         parallel: bool,
         seed: Option<u64>,
+        accounted: bool,
         execute: &(impl Fn((usize, Self::Item)) + Sync),
     ) -> usize {
         let count = self.0.len();
         let tasks = self.tasks(seed);
         if parallel {
-            native::run_tasks(lease.expect("native requires lease"), count, tasks, execute)
+            native::run_tasks(
+                lease.expect("native requires lease"),
+                count,
+                tasks,
+                accounted,
+                execute,
+            )
         } else {
             for task in tasks {
                 execute(task);

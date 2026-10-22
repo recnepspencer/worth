@@ -13,6 +13,30 @@ pub struct ExecutionPhysicalReport {
     discarded_in_flight_work: u64,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn native_observation_has_no_semantic_zero_bill() {
+        let physical = ExecutionPhysicalReport::new(4, 0, None, 8, 0);
+        let report = ExecutionReport::native(ExecutionPosture::Automatic, physical);
+        assert_eq!(report.accounted_cost(), None);
+        assert!(!report.has_accounting());
+        assert_eq!(report.physical(), physical);
+        assert_eq!(
+            ExecutionReport::new(
+                ExecutionPosture::Serial,
+                0,
+                0,
+                ExecutionPhysicalReport::default()
+            )
+            .accounted_cost(),
+            Some((0, 0))
+        );
+    }
+}
+
 impl ExecutionPhysicalReport {
     pub const fn new(
         active_workers_high_watermark: usize,
@@ -71,6 +95,7 @@ pub struct ExecutionReport {
     charged_span: u64,
     physical: ExecutionPhysicalReport,
     fallback: Option<ExecutionFallbackCause>,
+    accounted: bool,
 }
 
 impl ExecutionReport {
@@ -86,6 +111,33 @@ impl ExecutionReport {
             charged_span,
             physical,
             fallback: None,
+            accounted: true,
+        }
+    }
+
+    pub const fn native(
+        resolved_posture: ExecutionPosture,
+        physical: ExecutionPhysicalReport,
+    ) -> Self {
+        Self {
+            resolved_posture,
+            charged_work: 0,
+            charged_span: 0,
+            physical,
+            fallback: None,
+            accounted: false,
+        }
+    }
+
+    pub const fn has_accounting(self) -> bool {
+        self.accounted
+    }
+
+    pub const fn accounted_cost(self) -> Option<(u64, u64)> {
+        if self.accounted {
+            Some((self.charged_work, self.charged_span))
+        } else {
+            None
         }
     }
 
@@ -94,10 +146,18 @@ impl ExecutionReport {
     }
 
     pub const fn charged_work(self) -> u64 {
+        assert!(
+            self.accounted,
+            "physical-only execution has no charged work"
+        );
         self.charged_work
     }
 
     pub const fn charged_span(self) -> u64 {
+        assert!(
+            self.accounted,
+            "physical-only execution has no charged span"
+        );
         self.charged_span
     }
 

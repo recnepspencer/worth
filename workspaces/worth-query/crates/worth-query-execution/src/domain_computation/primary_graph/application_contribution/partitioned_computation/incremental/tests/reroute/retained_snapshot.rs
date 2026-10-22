@@ -4,9 +4,9 @@ use super::*;
 #[derive(Debug, PartialEq)]
 pub(super) struct Retained {
     pub(super) digests: Vec<(PartitionItemId, [u8; 32])>,
-    pub(super) membership_units: u64,
+    pub(super) membership_units: Option<u64>,
     /// Each item key call's declared work.
-    pub(super) item_keys: Vec<(PartitionItemId, u64)>,
+    pub(super) item_keys: Vec<(PartitionItemId, Option<u64>)>,
     pub(super) routing: Vec<(PartitionIdentity, Vec<PartitionItemId>)>,
     /// Each partition's key and native kernel work.
     pub(super) partitions: Vec<(PartitionIdentity, u64, u64)>,

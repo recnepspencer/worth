@@ -34,13 +34,17 @@ impl ExecutionResourceLease<'_> {
             .lock()
             .unwrap_or_else(|e| e.into_inner());
         // Each level counts this charge's old bytes as room.
-        let held = reservation.memory_bytes;
+        let memory = reservation
+            .memory
+            .as_mut()
+            .expect("retained memory reservation");
+        let held = memory.bytes;
         room::check(
             &ledger,
             self.authority.config.charged_memory_bytes,
             held,
             lineage.iter().map(|node| {
-                let old = if reservation.memory_lineage.contains(&node.id) {
+                let old = if memory.lineage.contains(&node.id) {
                     held
                 } else {
                     0
@@ -53,12 +57,12 @@ impl ExecutionResourceLease<'_> {
         let process_used = ledger.charged_memory_bytes - held;
         let process_after = process_used + memory_bytes;
         ledger.charged_memory_bytes = process_after;
-        for id in &reservation.memory_lineage {
+        for id in &memory.lineage {
             let usage = ledger
                 .nodes
                 .get_mut(id)
                 .expect("retained reservation has a node");
-            usage.charged_memory_bytes -= reservation.memory_bytes;
+            usage.charged_memory_bytes -= held;
             if usage.active_workers == 0 && usage.charged_memory_bytes == 0 {
                 ledger.nodes.remove(id);
             }
@@ -72,12 +76,12 @@ impl ExecutionResourceLease<'_> {
                     .charged_memory_bytes += memory_bytes;
             }
         }
-        reservation.memory_lineage = if memory_bytes == 0 {
+        memory.lineage = if memory_bytes == 0 {
             Vec::new()
         } else {
             lineage.iter().map(|node| node.id).collect()
         };
-        reservation.memory_bytes = memory_bytes;
+        memory.bytes = memory_bytes;
         Ok(())
     }
 }

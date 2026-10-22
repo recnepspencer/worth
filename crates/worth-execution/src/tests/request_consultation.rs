@@ -155,7 +155,7 @@ fn nested_latch_case(backend: BackendKind, workers: usize) {
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     let cancellation = CancellationSource::new();
-    let mut policy = request(workers, 2_000, 100);
+    let mut policy = accounted_request(workers, 100);
     policy.cancellation = cancellation.token();
     let parent = authority().request_lease(policy).unwrap();
     let child = parent

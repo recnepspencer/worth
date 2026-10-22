@@ -13,12 +13,14 @@ pub(super) fn calls() -> Vec<(ComputationRead, Call)> {
                 ComputationRead::ItemKey(worth_execution::PartitionItemId(i as u64)),
                 (
                     ComputationCallCharge {
-                        work,
-                        demand,
-                        consumed,
+                        accounting: Some(ComputationCallAccounting {
+                            work,
+                            demand,
+                            consumed,
+                        }),
                         reached: Arc::from([]),
                     },
-                    i as u64 + 1,
+                    Some(i as u64 + 1),
                 ),
             )
         })
@@ -33,21 +35,25 @@ fn call_range_demand_and_consumption_match_independent_sequential_prefixes() {
         for end in start + 1..=calls.len() {
             for remaining in 0..40 {
                 let mut sequential = Budget::bounded(remaining);
-                let fits = calls[start..end]
-                    .iter()
-                    .all(|(_, (charge, _))| sequential.carry(charge.demand, charge.consumed));
+                let fits = calls[start..end].iter().all(|(_, (charge, _))| {
+                    let cost = charge.accounting.unwrap();
+                    sequential.carry(cost.demand, cost.consumed)
+                });
                 let sum = summary(&tree, &(start..end)).unwrap();
                 assert_eq!(
-                    sum.work.field_reads(),
+                    sum.accounting.unwrap().work.field_reads(),
                     calls[start..end]
                         .iter()
-                        .map(|(_, (charge, _))| charge.work.field_reads())
+                        .map(|(_, (charge, _))| charge.accounting.unwrap().work.field_reads())
                         .sum::<usize>(),
                     "descriptive reader work also survives range carriage"
                 );
                 let mut ranged = Budget::bounded(remaining);
                 assert_eq!(
-                    ranged.carry(sum.demand, sum.consumed),
+                    ranged.carry(
+                        sum.accounting.unwrap().demand,
+                        sum.accounting.unwrap().consumed
+                    ),
                     fits,
                     "{start}..{end}, remaining{remaining}"
                 );
@@ -56,10 +62,12 @@ fn call_range_demand_and_consumption_match_independent_sequential_prefixes() {
                 }
                 assert_eq!(
                     sum.declared,
-                    calls[start..end]
-                        .iter()
-                        .map(|(_, (_, declared))| declared)
-                        .sum::<u64>()
+                    Some(
+                        calls[start..end]
+                            .iter()
+                            .map(|(_, (_, declared))| declared.unwrap())
+                            .sum::<u64>()
+                    )
                 );
             }
         }
@@ -73,6 +81,7 @@ fn call_range_refusal_descends_to_the_first_actual_unfitting_call() {
     for remaining in 0..40 {
         let mut full = Budget::bounded(remaining);
         let stop = calls.iter().position(|(_, (charge, _))| {
+            let charge = charge.accounting.unwrap();
             if full.can_afford(charge.demand) {
                 assert!(full.consume(charge.consumed));
                 false
@@ -87,8 +96,12 @@ fn call_range_refusal_descends_to_the_first_actual_unfitting_call() {
             &BTreeSet::new(),
             &mut |entry| -> Result<bool, usize> {
                 match entry {
-                    CallVisit::Range(_, sum) => Ok(ranged.carry(sum.demand, sum.consumed)),
+                    CallVisit::Range(_, sum) => {
+                        let cost = sum.accounting.unwrap();
+                        Ok(ranged.carry(cost.demand, cost.consumed))
+                    }
                     CallVisit::Leaf(at, _, charge, _) => {
+                        let charge = charge.accounting.unwrap();
                         if !ranged.can_afford(charge.demand) {
                             return Err(at);
                         }

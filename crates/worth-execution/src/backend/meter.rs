@@ -15,7 +15,7 @@ use crate::{
 };
 
 thread_local! {
-    static ACTIVE_METER: RefCell<Vec<Rc<RefCell<KernelMeter>>>> = const { RefCell::new(Vec::new()) };
+    static ACTIVE_METER: RefCell<Vec<Rc<RefCell<KernelState>>>> = const { RefCell::new(Vec::new()) };
 }
 
 pub(crate) fn active_serial_memory() -> Option<SerialMemoryBudget> {
@@ -31,15 +31,15 @@ pub(crate) fn active_stop() -> Option<KernelStop> {
     ACTIVE_METER.with(|active| {
         let active = active.borrow();
         let mut meter = active.last()?.borrow_mut();
-        let KernelMeter {
+        let KernelState {
             limits,
             nested_stop,
             ..
         } = &mut *meter;
-        limits.safe_point(nested_stop).err().or_else(|| {
-            (meter.checkpoint_stop == Some(KernelStop::WorkCeiling))
-                .then_some(KernelStop::WorkCeiling)
-        })
+        limits
+            .safe_point(nested_stop)
+            .err()
+            .or(meter.checkpoint_stop)
     })
 }
 
@@ -73,6 +73,8 @@ pub enum KernelStop {
     WorkCounterOverflow,
     WorkCeiling,
     NestedStopped,
+    /// An explicitly accounted API was used without an accounted scope.
+    AccountingUnavailable,
 }
 
 impl KernelStop {
@@ -115,6 +117,7 @@ pub(crate) struct RunLimits {
     /// The memory limit a lease-free run takes from its policy, inherited by
     /// every lease-free descendant.
     serial_memory: Option<SerialMemoryBudget>,
+    accounted: bool,
 }
 
 #[derive(Default)]
@@ -270,25 +273,47 @@ impl RunLimits {
 
 struct KernelMeter {
     capture: Option<kernel_receipt::Capture>,
-    limits: RunLimits,
     work: u64,
     span: u64,
+}
+
+struct KernelState {
+    limits: RunLimits,
+    accounting: Option<KernelMeter>,
     nested_stop: NestedStop,
     pending_request_refusal: bool,
     checkpoint_stop: Option<KernelStop>,
 }
 
+impl KernelState {
+    fn work(&self) -> u64 {
+        self.accounting.as_ref().map_or(0, |meter| meter.work)
+    }
+    fn capture_mut(&mut self) -> Option<&mut kernel_receipt::Capture> {
+        self.accounting.as_mut()?.capture.as_mut()
+    }
+    fn take_capture(&mut self) -> Option<kernel_receipt::Capture> {
+        self.accounting.as_mut()?.capture.take()
+    }
+    fn set_capture(&mut self, capture: Option<kernel_receipt::Capture>) {
+        self.accounting
+            .as_mut()
+            .expect("receipt requires accounted execution")
+            .capture = capture;
+    }
+}
+
 /// Worker-local checkpoint and cost context. Its fields are private so a
 /// kernel cannot claim uncharged work or widen inherited limits.
 pub struct KernelContext<'a, 'lease> {
-    meter: Rc<RefCell<KernelMeter>>,
+    meter: Rc<RefCell<KernelState>>,
     _lease: PhantomData<&'a ExecutionResourceLease<'lease>>,
 }
 
 impl<'a, 'lease> KernelContext<'a, 'lease> {
     pub(crate) fn safe_point(&self) -> Result<(), KernelStop> {
         let mut meter = self.meter.borrow_mut();
-        let KernelMeter {
+        let KernelState {
             limits,
             nested_stop,
             ..
@@ -297,11 +322,13 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
     }
     pub(crate) fn new(limits: RunLimits) -> Self {
         Self {
-            meter: Rc::new(RefCell::new(KernelMeter {
-                capture: None,
+            meter: Rc::new(RefCell::new(KernelState {
+                accounting: limits.accounted.then(|| KernelMeter {
+                    capture: None,
+                    work: 0,
+                    span: 0,
+                }),
                 limits,
-                work: 0,
-                span: 0,
                 nested_stop: NestedStop::Clear,
                 pending_request_refusal: false,
                 checkpoint_stop: None,
@@ -317,7 +344,14 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
 
     pub(crate) fn cost(&self) -> (u64, u64) {
         let meter = self.meter.borrow();
-        (meter.work, meter.span)
+        meter
+            .accounting
+            .as_ref()
+            .map_or((0, 0), |meter| (meter.work, meter.span))
+    }
+
+    pub fn has_accounting(&self) -> bool {
+        self.meter.borrow().accounting.is_some()
     }
 
     pub(crate) fn nested_stopped(&self) -> bool {

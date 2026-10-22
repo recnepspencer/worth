@@ -108,7 +108,7 @@ where
             charge_preparation(
                 execution,
                 &mut preparation_work,
-                Some(retained.membership.declared_units),
+                retained.membership.declared_units,
             )?;
             let membership = Some(retained.membership.clone());
             (
@@ -124,13 +124,10 @@ where
             let items = planned_items(entries)?;
             let before = preparation_work;
             let digests = item_digests(&items, execution, &mut preparation_work)?;
-            let membership =
-                charge
-                    .zip(preparation_work.spent_since(before))
-                    .map(|(charge, declared_units)| RetainedCall {
-                        charge,
-                        declared_units,
-                    });
+            let membership = charge.map(|charge| RetainedCall {
+                charge,
+                declared_units: preparation_work.spent_since(before),
+            });
             (items, digests, membership)
         };
         // An item is new, or its value changed, exactly when its digest is
@@ -162,7 +159,7 @@ where
                 .filter(|call| reader.carry(&COMPARATOR, &call.charge));
             if let Some(call) = carried {
                 enter(reader, self.calls.keys(read), read);
-                charge_preparation(execution, &mut preparation_work, Some(call.declared_units))?;
+                charge_preparation(execution, &mut preparation_work, call.declared_units)?;
                 carried_items.insert(*item);
                 item_keys.insert(*item, call.clone());
                 continue;
@@ -186,13 +183,13 @@ where
                 }
                 routed => routed?,
             };
-            match charge.zip(preparation_work.spent_since(before)) {
-                Some((charge, declared_units)) => {
+            match charge {
+                Some(charge) => {
                     item_keys.insert(
                         *item,
                         RetainedCall {
                             charge,
-                            declared_units,
+                            declared_units: preparation_work.spent_since(before),
                         },
                     );
                 }

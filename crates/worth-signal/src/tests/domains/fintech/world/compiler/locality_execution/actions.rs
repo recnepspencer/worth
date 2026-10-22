@@ -204,7 +204,7 @@ impl CompiledFinancialLocalityWorld {
                 admission.policy.posture(),
                 admission.policy.determinism(),
                 worth_foundational::ExecutionBudget::new(
-                    admission.policy.budget().max_workers(),
+                    admission.policy.max_workers(),
                     Some(self.resources.wave_memory_bytes),
                     Some(self.resources.maximum_work),
                 ),

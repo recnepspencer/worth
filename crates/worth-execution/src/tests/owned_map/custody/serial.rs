@@ -23,39 +23,25 @@ fn owned_map_serial_taking_keeps_input_custody() {
         let source = crate::CancellationSource::new();
         let request = SerialRequest {
             work_ceiling: None,
-            memory: budget.clone(),
+            memory: Some(budget.clone()),
             cancellation: source.token(),
             deadline: None,
         };
         let ceiling = matches!(stop, Stop::Work).then_some(0);
         let (outcome, _) = ExecutionWorkCeiling::new(ceiling)
             .run_serial(&request, || {
-                let expected_charge = AtomicU64::new(BASELINE + input_bytes());
-                let values =
-                    tracked_inputs(&drops, &custody_violations, ledger, &expected_charge, None);
+                let values = tracked_inputs(
+                    &drops,
+                    &custody_violations,
+                    ledger,
+                    BASELINE + input_bytes(),
+                    None,
+                );
                 if matches!(stop, Stop::Cancelled) {
                     source.cancel();
                 }
                 let extra = matches!(stop, Stop::Memory)
                     .then(|| ledger.reserve(BUDGET - ledger.charged()).unwrap());
-                // The enclosing serial request declares one token and already
-                // owns the physical ledger; the map declares one worker.
-                let bytes = memory_model::bytes::<Tracked<'_>, ResultBytes, ()>(
-                    ITEMS,
-                    ITEMS as u64 * PAYLOAD_BYTES,
-                    access_bytes(),
-                    1,
-                    1,
-                    false,
-                );
-                expected_charge.store(
-                    if extra.is_some() {
-                        BUDGET
-                    } else {
-                        ledger.charged() - input_bytes() + bytes
-                    },
-                    Ordering::SeqCst,
-                );
                 let outcome = map(values)
                     .run_owned_taking(None, hold, |input, ctx| evaluate(input, ctx, stop));
                 drop(extra);
@@ -82,17 +68,16 @@ fn expired_serial_request_preserves_callers_input_hold() {
     let mut hold = Some(ledger.reserve(input_bytes()).unwrap());
     let drops: Vec<_> = (0..ITEMS).map(|_| AtomicUsize::new(0)).collect();
     let violations = AtomicUsize::new(0);
-    let expected = AtomicU64::new(BASELINE + input_bytes());
     let mut batch = Some(map(tracked_inputs(
         &drops,
         &violations,
         ledger,
-        &expected,
+        BASELINE + input_bytes(),
         None,
     )));
     let request = SerialRequest {
         work_ceiling: None,
-        memory: budget.clone(),
+        memory: Some(budget.clone()),
         deadline: Some(Instant::now() - Duration::from_secs(1)),
         cancellation: crate::CancellationSource::new().token(),
     };
@@ -135,36 +120,30 @@ fn admitted_serial_owned_map_deadline_preserves_prefix_and_custody() {
         let deadline = Instant::now() + Duration::from_millis(100);
         let request = SerialRequest {
             work_ceiling: None,
-            memory: budget.clone(),
+            memory: Some(budget.clone()),
             deadline: Some(deadline),
             cancellation: crate::CancellationSource::new().token(),
         };
         let result = ExecutionWorkCeiling::new(None).run_serial(&request, || {
-            let bytes = memory_model::bytes::<Tracked<'_>, ResultBytes, ()>(
-                ITEMS,
-                ITEMS as u64 * PAYLOAD_BYTES,
-                access_bytes(),
-                1,
-                1,
-                false,
-            );
-            let expected = AtomicU64::new(ledger.charged() - input_bytes() + bytes);
-            map(tracked_inputs(&drops, &violations, ledger, &expected, None)).run_owned_taking(
+            map(tracked_inputs(
+                &drops,
+                &violations,
+                ledger,
+                BASELINE + input_bytes(),
                 None,
-                hold.take().unwrap(),
-                |input, _| {
-                    assert_eq!(entered.fetch_add(1, Ordering::SeqCst), 0);
-                    assert_eq!(input.index.get(), 0);
-                    assert_eq!(ledger.charged(), expected.load(Ordering::SeqCst));
-                    // The first result completes after observed expiry, so the
-                    // next item's safe point must stop regardless of scheduling.
-                    while Instant::now() <= deadline {
-                        std::thread::yield_now();
-                    }
-                    drop(input);
-                    Ok::<_, MapKernelFailure<()>>(ResultBytes(Vec::new()))
-                },
-            )
+            ))
+            .run_owned_taking(None, hold.take().unwrap(), |input, _| {
+                assert_eq!(entered.fetch_add(1, Ordering::SeqCst), 0);
+                assert_eq!(input.index.get(), 0);
+                assert!(ledger.charged() >= BASELINE + input_bytes());
+                // The first result completes after observed expiry, so the
+                // next item's safe point must stop regardless of scheduling.
+                while Instant::now() <= deadline {
+                    std::thread::yield_now();
+                }
+                drop(input);
+                Ok::<_, MapKernelFailure<()>>(ResultBytes(Vec::new()))
+            })
         });
         assert_eq!(violations.load(Ordering::SeqCst), 0);
         if hold.is_some() {

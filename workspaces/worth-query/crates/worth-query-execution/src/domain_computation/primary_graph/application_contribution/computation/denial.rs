@@ -10,6 +10,8 @@ pub enum WorthQueryManagedComputationResourceDenial {
     WorkExhausted,
     /// A work count did not fit its counter.
     WorkCounterOverflow,
+    /// A deliberate billing call requires an explicitly accounted execution contract.
+    AccountingUnavailable,
     /// What the computation retains would pass its declared bytes.
     RetainedBytesExhausted,
     /// Temporary kernel scratch passed its declared ceiling.

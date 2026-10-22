@@ -151,7 +151,6 @@ pub(crate) fn prepare_borrowed_packets<T>(
     let scan = crate::execution::admit_ordered_scan(vec![(identity, ())])?;
     let ceiling = lease
         .policy()
-        .budget()
         .charged_memory_bytes()
         .map_or(declared_bytes, |limit| limit / PREPARATION_MEMORY_DIVISOR);
     let mut build = Some(build);

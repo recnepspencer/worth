@@ -1,9 +1,9 @@
 mod drop_order;
 
 use crate::{
-    CancellationSource, CancellationToken, ChargedBytes, ExecutionMemoryReservation,
-    ExecutionRequest, ExecutionResourceLease, ExecutionWorkCeiling, LeaseDenial, LeaseRequest,
-    MapKernelFailure, MapKernelStop, MemoryLimitDenial, ScopeStop, SerialRequest,
+    CancellationSource, CancellationToken, ChargedBytes, ExecutionRequest, ExecutionResourceLease,
+    ExecutionWorkCeiling, LeaseDenial, LeaseRequest, MapKernelFailure, MapKernelStop,
+    MemoryLimitDenial, ScopeStop, SerialRequest,
 };
 use std::num::NonZeroUsize;
 use worth_foundational::{
@@ -36,7 +36,10 @@ fn measured_results_keep_the_original_serial_and_lease_charge_until_release() {
         let mut memory = if leased {
             lease.reserve_memory(0)
         } else {
-            serial.memory().reserve(0)
+            serial
+                .memory()
+                .expect("explicit accounted request")
+                .reserve(0)
         }
         .unwrap();
         let measured = request.run_measured_result(
@@ -58,7 +61,10 @@ fn measured_results_keep_the_original_serial_and_lease_charge_until_release() {
             if leased {
                 lease.charged_memory_bytes()
             } else {
-                serial.memory().charged_memory_bytes()
+                serial
+                    .memory()
+                    .expect("explicit accounted request")
+                    .charged_memory_bytes()
             }
         };
         assert_eq!(charged(), 32_768);
@@ -74,15 +80,26 @@ fn measured_opaque_result_admission_keeps_a_finite_parent_and_previous_result() 
     let serial =
         SerialRequest::from_policy(&policy(Some(128 * 1024)), CancellationToken::new(), None);
     let request = ExecutionRequest::serial(&serial);
-    let mut first = serial.memory().reserve(0).unwrap();
+    let mut first = serial
+        .memory()
+        .expect("explicit accounted request")
+        .reserve(0)
+        .unwrap();
     let first_value = request
         .run_measured_result(ExecutionWorkCeiling::new(None), 0, &mut first, |_, _| {
             Ok::<_, MapKernelFailure<()>>(vec![5_u8; 96 * 1024])
         })
         .result
         .unwrap();
-    let original_charge = serial.memory().charged_memory_bytes();
-    let mut second = serial.memory().reserve(0).unwrap();
+    let original_charge = serial
+        .memory()
+        .expect("explicit accounted request")
+        .charged_memory_bytes();
+    let mut second = serial
+        .memory()
+        .expect("explicit accounted request")
+        .reserve(0)
+        .unwrap();
     let rejected =
         request.run_measured_result(ExecutionWorkCeiling::new(None), 0, &mut second, |_, _| {
             Ok::<_, MapKernelFailure<()>>(vec![9_u8; 96 * 1024])
@@ -94,11 +111,23 @@ fn measured_opaque_result_admission_keeps_a_finite_parent_and_previous_result() 
         )))
     ));
     assert_eq!(second.bytes(), 0);
-    assert_eq!(serial.memory().charged_memory_bytes(), original_charge);
+    assert_eq!(
+        serial
+            .memory()
+            .expect("explicit accounted request")
+            .charged_memory_bytes(),
+        original_charge
+    );
     assert_eq!(first_value, vec![5_u8; 96 * 1024]);
     drop(first_value);
     drop(first);
-    assert_eq!(serial.memory().charged_memory_bytes(), 0);
+    assert_eq!(
+        serial
+            .memory()
+            .expect("explicit accounted request")
+            .charged_memory_bytes(),
+        0
+    );
 }
 
 #[test]
@@ -106,7 +135,11 @@ fn measured_domain_error_remains_funded_and_cancellation_releases_its_scope() {
     let cancellation = CancellationSource::new();
     let serial = SerialRequest::from_policy(&policy(None), cancellation.token(), None);
     let request = ExecutionRequest::serial(&serial);
-    let mut memory = serial.memory().reserve(0).unwrap();
+    let mut memory = serial
+        .memory()
+        .expect("explicit accounted request")
+        .reserve(0)
+        .unwrap();
     let stopped =
         request.run_measured_result(ExecutionWorkCeiling::new(None), 0, &mut memory, |_, _| {
             Err::<(), _>(MapKernelFailure::Domain(vec![3_u8; 1_024]))
@@ -135,13 +168,23 @@ fn measured_domain_error_remains_funded_and_cancellation_releases_its_scope() {
         )))
     ));
     assert_eq!(memory.bytes(), 0);
-    assert_eq!(serial.memory().charged_memory_bytes(), 0);
+    assert_eq!(
+        serial
+            .memory()
+            .expect("explicit accounted request")
+            .charged_memory_bytes(),
+        0
+    );
 }
 
 #[test]
 fn measured_scope_cannot_return_success_after_a_swallowed_byte_counter_stop() {
     let serial = SerialRequest::from_policy(&policy(None), CancellationToken::new(), None);
-    let mut memory = serial.memory().reserve(0).unwrap();
+    let mut memory = serial
+        .memory()
+        .expect("explicit accounted request")
+        .reserve(0)
+        .unwrap();
     let stopped = ExecutionRequest::serial(&serial).run_measured_result(
         ExecutionWorkCeiling::new(None),
         0,
@@ -161,5 +204,11 @@ fn measured_scope_cannot_return_success_after_a_swallowed_byte_counter_stop() {
         )))
     ));
     assert_eq!(memory.bytes(), 0);
-    assert_eq!(serial.memory().charged_memory_bytes(), 0);
+    assert_eq!(
+        serial
+            .memory()
+            .expect("explicit accounted request")
+            .charged_memory_bytes(),
+        0
+    );
 }

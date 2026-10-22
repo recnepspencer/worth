@@ -29,9 +29,9 @@ impl WorthQueryRetainedQueryDependencies {
                     inherited.posture(),
                     inherited.determinism(),
                     ExecutionBudget::new(
-                        inherited.budget().max_workers(),
+                        inherited.max_workers(),
                         Some(quote - 1),
-                        inherited.budget().work_ceiling(),
+                        inherited.work_ceiling(),
                     ),
                 ),
                 deadline: None,

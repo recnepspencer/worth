@@ -223,7 +223,7 @@ mod optional_room_tests {
         };
         let parent = ExecutionResourceLease::serial(request(Some(19))).unwrap();
         let child = parent.child(request(None)).unwrap();
-        assert_eq!(child.policy().budget().charged_memory_bytes(), None);
+        assert_eq!(child.policy().charged_memory_bytes(), None);
         let mut held = child.reserve_memory(13).unwrap();
         let sibling = parent.reserve_memory(5).unwrap();
         assert_eq!(child.available_memory_bytes(), Some(1));

@@ -6,7 +6,7 @@ use worth_execution::ChargedBytes;
 use worth_proof::CanonicalUniqueVec;
 
 use super::super::super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
-use super::{ComputationFactReaders, SealedComputationFact, SealedComputationFacts};
+use super::{ComputationFactReaders, SealedComputationFact};
 
 fn bytes(count: usize) -> u64 {
     u64::try_from(count).unwrap_or(u64::MAX)
@@ -91,21 +91,5 @@ impl ChargedBytes for ComputationFactReaders {
 impl ChargedBytes for SealedComputationFact {
     fn additional_charged_bytes(&self) -> u64 {
         self.readers.additional_charged_bytes()
-    }
-}
-
-impl SealedComputationFacts {
-    pub(super) fn calculate_charged_bytes(&self) -> Option<u64> {
-        let backing = self.original.retained_resident_bytes()?.checked_add(
-            self.content
-                .as_ref()
-                .map_or(Some(0), |content| content.charged_bytes())?,
-        )?;
-        self.index
-            .charged_bytes()?
-            .checked_add(backing)?
-            .checked_add(self.layout.charged_bytes()?)?
-            .checked_add(self.projection.as_ref().map_or(0, |p| p.bytes()))?
-            .checked_add(self.metadata.retained_bytes())
     }
 }

@@ -241,7 +241,7 @@ fn settle_current_frontier(
             admission.policy.posture(),
             admission.policy.determinism(),
             worth_foundational::ExecutionBudget::new(
-                admission.policy.budget().max_workers(),
+                admission.policy.max_workers(),
                 Some(world.resources.churn_memory_bytes),
                 Some(world.resources.maximum_work),
             ),

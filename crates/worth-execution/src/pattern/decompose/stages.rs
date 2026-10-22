@@ -143,8 +143,14 @@ where
             && context
                 .apply_structural_span(
                     before,
-                    reduction_metrics.charged_work,
-                    reduction_metrics.charged_span,
+                    reduction_metrics
+                        .accounted_metrics()
+                        .expect("bounded decomposition")
+                        .charged_work,
+                    reduction_metrics
+                        .accounted_metrics()
+                        .expect("bounded decomposition")
+                        .charged_span,
                 )
                 .is_err()
         {
@@ -322,34 +328,38 @@ fn add_metrics(
     aggregate: &mut ReductionMetrics,
     edit: ReductionMetrics,
 ) -> Result<(), ReductionRunFailure<MapKernelStop>> {
-    let Some(nodes) = aggregate
+    let accumulated = aggregate
+        .accounted_metrics()
+        .expect("bounded decomposition");
+    let delta = edit.accounted_metrics().expect("bounded decomposition");
+    let Some(nodes) = accumulated
         .recombined_nodes
-        .checked_add(edit.recombined_nodes)
+        .checked_add(delta.recombined_nodes)
     else {
         return Err(metric_overflow(*aggregate));
     };
-    let Some(calls) = aggregate.combine_calls.checked_add(edit.combine_calls) else {
+    let Some(calls) = accumulated.combine_calls.checked_add(delta.combine_calls) else {
         return Err(metric_overflow(*aggregate));
     };
-    let Some(visits) = aggregate
+    let Some(visits) = accumulated
         .structural_visits
-        .checked_add(edit.structural_visits)
+        .checked_add(delta.structural_visits)
     else {
         return Err(metric_overflow(*aggregate));
     };
-    let Some(work) = aggregate.charged_work.checked_add(edit.charged_work) else {
+    let Some(work) = accumulated.charged_work.checked_add(delta.charged_work) else {
         return Err(metric_overflow(*aggregate));
     };
-    let Some(span) = aggregate.charged_span.checked_add(edit.charged_span) else {
+    let Some(span) = accumulated.charged_span.checked_add(delta.charged_span) else {
         return Err(metric_overflow(*aggregate));
     };
-    *aggregate = ReductionMetrics {
+    *aggregate = ReductionMetrics::from_accounting(crate::ReductionAccounting {
         structural_visits: visits,
         recombined_nodes: nodes,
         combine_calls: calls,
         charged_work: work,
         charged_span: span,
-    };
+    });
     Ok(())
 }
 

@@ -30,6 +30,7 @@ impl ExecutionResourceLease<'_> {
     pub(crate) fn diagnostic_resources_for_test(&self) -> DiagnosticResourcesForTest {
         fn detached(node: &LeaseNode) -> Arc<LeaseNode> {
             Arc::new(LeaseNode {
+                accounted: node.accounted,
                 id: node.id,
                 parent: node.parent.as_deref().map(detached),
                 max_workers: node.max_workers,
@@ -39,11 +40,19 @@ impl ExecutionResourceLease<'_> {
                 cancellation: node.cancellation.clone(),
             })
         }
-        let policy = ExecutionRequestPolicy::new(
-            self.policy.posture(),
-            self.policy.determinism(),
-            ExecutionBudget::new(self.policy.budget().max_workers(), None, None),
-        );
+        let policy = if self.has_accounting() {
+            ExecutionRequestPolicy::new(
+                self.policy.posture(),
+                self.policy.determinism(),
+                ExecutionBudget::new(self.policy.max_workers(), None, None),
+            )
+        } else {
+            ExecutionRequestPolicy::for_workers(
+                self.policy.posture(),
+                self.policy.determinism(),
+                self.policy.max_workers(),
+            )
+        };
         DiagnosticResourcesForTest {
             authority: ExecutionAuthority {
                 inner: Arc::new(AuthorityInner {

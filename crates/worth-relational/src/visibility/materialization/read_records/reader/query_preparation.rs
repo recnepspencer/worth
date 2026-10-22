@@ -111,21 +111,23 @@ pub(super) fn remaining_work_lease<'a>(
     preparation: ExecutionReport,
 ) -> Result<ExecutionResourceLease<'a>, QueryReadExecutionStop> {
     let policy = *lease.policy();
-    let budget = policy.budget();
-    let remaining = budget
-        .work_ceiling()
-        .map(|ceiling| ceiling.saturating_sub(preparation.charged_work()));
+    let child_policy = match policy.accounting() {
+        Some(budget) => worth_foundational::ExecutionRequestPolicy::new(
+            policy.posture(),
+            policy.determinism(),
+            ExecutionBudget::new(
+                budget.max_workers(),
+                budget.charged_memory_bytes(),
+                budget
+                    .work_ceiling()
+                    .map(|ceiling| ceiling.saturating_sub(preparation.charged_work())),
+            ),
+        ),
+        None => policy,
+    };
     lease
         .child(LeaseRequest {
-            policy: worth_foundational::ExecutionRequestPolicy::new(
-                policy.posture(),
-                policy.determinism(),
-                ExecutionBudget::new(
-                    budget.max_workers(),
-                    budget.charged_memory_bytes(),
-                    remaining,
-                ),
-            ),
+            policy: child_policy,
             deadline: None,
             cancellation: CancellationToken::new(),
         })

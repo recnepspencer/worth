@@ -37,92 +37,15 @@ pub(super) struct Node<T> {
     pub(super) aggregate: T,
     pub(super) left: Link<T>,
     pub(super) right: Link<T>,
-    pub(super) retained_bytes: u64,
-    pub(super) full_subtree_span: u64,
+    pub(super) retained_bytes: Option<u64>,
+    pub(super) full_subtree_span: Option<u64>,
     // Native retained slots fund each copied node independently. Ordinary
     // reductions retain their existing enclosing tree reservation.
     pub(super) _memory: Option<crate::ExecutionMemoryReservation>,
 }
 
-/// Completed node recombinations and entered combine calls for one operation.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct ReductionMetrics {
-    pub structural_visits: u64,
-    pub recombined_nodes: u64,
-    pub combine_calls: u64,
-    pub charged_work: u64,
-    pub charged_span: u64,
-}
-
-impl ReductionMetrics {
-    pub(crate) fn add(self, other: Self) -> Result<Self, ReductionRunStop<()>> {
-        Ok(Self {
-            structural_visits: self
-                .structural_visits
-                .checked_add(other.structural_visits)
-                .ok_or_else(ReductionRunStop::work_counter_overflow)?,
-            recombined_nodes: self
-                .recombined_nodes
-                .checked_add(other.recombined_nodes)
-                .ok_or_else(ReductionRunStop::work_counter_overflow)?,
-            combine_calls: self
-                .combine_calls
-                .checked_add(other.combine_calls)
-                .ok_or_else(ReductionRunStop::work_counter_overflow)?,
-            charged_work: self
-                .charged_work
-                .checked_add(other.charged_work)
-                .ok_or_else(ReductionRunStop::work_counter_overflow)?,
-            charged_span: self
-                .charged_span
-                .checked_add(other.charged_span)
-                .ok_or_else(ReductionRunStop::work_counter_overflow)?,
-        })
-    }
-
-    pub(super) fn record_visit(&mut self) -> Result<(), ReductionRunStop<()>> {
-        self.structural_visits = self
-            .structural_visits
-            .checked_add(1)
-            .ok_or_else(ReductionRunStop::work_counter_overflow)?;
-        self.charged_work = self
-            .charged_work
-            .checked_add(1)
-            .ok_or_else(ReductionRunStop::work_counter_overflow)?;
-        self.charged_span = self
-            .charged_span
-            .checked_add(1)
-            .ok_or_else(ReductionRunStop::work_counter_overflow)?;
-        Ok(())
-    }
-
-    pub(super) fn record_combine(&mut self) -> Result<(), ReductionRunStop<()>> {
-        let calls = self
-            .combine_calls
-            .checked_add(1)
-            .ok_or_else(ReductionRunStop::work_counter_overflow)?;
-        let work = self
-            .charged_work
-            .checked_add(1)
-            .ok_or_else(ReductionRunStop::work_counter_overflow)?;
-        let span = self
-            .charged_span
-            .checked_add(1)
-            .ok_or_else(ReductionRunStop::work_counter_overflow)?;
-        self.combine_calls = calls;
-        self.charged_work = work;
-        self.charged_span = span;
-        Ok(())
-    }
-
-    pub(super) fn record_node(&mut self) -> Result<(), ReductionRunStop<()>> {
-        self.recombined_nodes = self
-            .recombined_nodes
-            .checked_add(1)
-            .ok_or_else(ReductionRunStop::work_counter_overflow)?;
-        Ok(())
-    }
-}
+mod metrics;
+pub use metrics::{ReductionAccounting, ReductionMetrics};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ReductionRunStop<E> {
@@ -171,6 +94,7 @@ pub struct ReductionTree<T, F> {
     identity: T,
     combine: F,
     len: usize,
+    accounted: bool,
 }
 
 impl<T: Clone, F: Clone> Clone for ReductionTree<T, F> {
@@ -180,6 +104,7 @@ impl<T: Clone, F: Clone> Clone for ReductionTree<T, F> {
             identity: self.identity.clone(),
             combine: self.combine.clone(),
             len: self.len,
+            accounted: self.accounted,
         }
     }
 }

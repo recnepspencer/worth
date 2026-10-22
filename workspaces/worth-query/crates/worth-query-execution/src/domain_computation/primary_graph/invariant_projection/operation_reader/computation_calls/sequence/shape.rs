@@ -4,15 +4,15 @@ use worth_execution::ExecutionOrderedMap;
 pub(in crate::domain_computation::primary_graph) struct CallShape {
     pub(super) order: ExecutionOrderedMap<ComputationRead, ()>,
     pub(super) prefix: usize,
-    pub(super) _memory: QueryMemoryReservation,
+    pub(super) _memory: Option<QueryMemoryReservation>,
 }
 impl CallShape {
     #[cfg(test)]
-    pub(super) fn bytes(&self) -> u64 {
+    pub(super) fn bytes(&self) -> Option<u64> {
         self._memory
+            .as_ref()?
             .bytes()
-            .checked_add(self.order.retained_bytes())
-            .expect("actual test backing sizes fit")
+            .checked_add(self.order.accounted_bytes()?)
     }
     pub(in crate::domain_computation::primary_graph) fn calls(
         &self,
@@ -83,7 +83,12 @@ impl CallShape {
             Self::issue(order, prefix, execution)?
         };
         let memory = execution
-            .reserve((size_of::<CallShapeTransition>() + 2 * size_of::<usize>()) as u64)?;
+            .has_accounting()
+            .then(|| {
+                execution
+                    .reserve((size_of::<CallShapeTransition>() + 2 * size_of::<usize>()) as u64)
+            })
+            .transpose()?;
         Ok(Arc::new(CallShapeTransition {
             prior: Arc::clone(self),
             target,
@@ -97,7 +102,10 @@ impl CallShape {
         prefix: usize,
         execution: &QueryRequestExecution<'_>,
     ) -> Result<Arc<Self>, Resource> {
-        let memory = execution.reserve((size_of::<Self>() + 2 * size_of::<usize>()) as u64)?;
+        let memory = execution
+            .has_accounting()
+            .then(|| execution.reserve((size_of::<Self>() + 2 * size_of::<usize>()) as u64))
+            .transpose()?;
         Ok(Arc::new(Self {
             order: ordinals,
             prefix,
@@ -112,7 +120,7 @@ pub(in crate::domain_computation::primary_graph) struct CallShapeTransition {
     pub(super) target: Arc<CallShape>,
     pub(super) inserted: ExecutionOrderedMap<ComputationRead, ()>,
     pub(super) retired: ExecutionOrderedMap<ComputationRead, ()>,
-    pub(super) _memory: QueryMemoryReservation,
+    pub(super) _memory: Option<QueryMemoryReservation>,
 }
 impl CallShapeTransition {
     pub(in crate::domain_computation::primary_graph) fn matches_prior(

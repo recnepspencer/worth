@@ -63,7 +63,7 @@ impl CustomPreparationBudget {
     ) -> Result<Self, worth_execution::MemoryLimitDenial> {
         let base = meter_metadata_bytes();
         let payer = lease.reserve_memory(base)?;
-        let budget = Self::new(lease.status(), lease.policy().budget().work_ceiling(), None);
+        let budget = Self::new(lease.status(), lease.policy().work_ceiling(), None);
         *budget
             .0
             .memory

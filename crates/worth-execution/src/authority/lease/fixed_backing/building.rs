@@ -23,10 +23,7 @@ impl<T> BuildingFixedBacking<T> {
         let layout =
             Layout::array::<T>(element_count).map_err(|_| Denial::new(Kind::Layout, None))?;
         let quote = u64::try_from(layout.size()).map_err(|_| Denial::new(Kind::Layout, None))?;
-        let status = match policy {
-            Policy::SystemAllocation => None,
-            Policy::Execution(lease) => Some(lease.status()),
-        };
+        let status = policy.status(Some(quote))?;
         if let Some(status) = &status {
             check_status(status, Some(quote))?;
         }

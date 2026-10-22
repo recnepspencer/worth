@@ -122,7 +122,7 @@ fn wide_checked_epoch_reports_resolved_parallel_admission_and_bounded_workers() 
     // A private process authority has four workers; sixteen tasks exceed the installed one-task thresholds.
     assert!(resolved_parallel);
     rendezvous.assert_if_parallel(resolved_parallel);
-    assert!(workers >= 1 && workers <= lease.policy().budget().max_workers().get());
+    assert!(workers >= 1 && workers <= lease.policy().max_workers().get());
     assert_eq!(
         report
             .stages

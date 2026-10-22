@@ -4,6 +4,7 @@ use worth_foundational::PartitionIdentity;
 /// Exact native costs, never application identity or permission to carry.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) struct RunSummary {
+    pub(crate) accounted: bool,
     pub(crate) count: usize,
     pub(crate) work: u64,
     pub(crate) span: u64,
@@ -15,6 +16,7 @@ pub(crate) struct RunSummary {
 impl RunSummary {
     pub(crate) fn empty() -> Self {
         Self {
+            accounted: true,
             count: 0,
             work: 0,
             span: 0,
@@ -25,11 +27,13 @@ impl RunSummary {
         }
     }
     pub(super) fn slot<R>(value: &ExecutionRetainedResult<R>) -> Self {
+        let cost = value.accounted_cost();
         Self {
+            accounted: cost.is_some(),
             count: 1,
-            work: value.charged_work(),
-            span: value.charged_span(),
-            maximum_slot_work: value.charged_work(),
+            work: cost.map_or(0, |cost| cost.0),
+            span: cost.map_or(0, |cost| cost.1),
+            maximum_slot_work: cost.map_or(0, |cost| cost.0),
             first: Some(value.identity()),
             last: Some(value.identity()),
             unqualified: (!value.native_reuse_available()).then_some(value.identity()),
@@ -37,10 +41,23 @@ impl RunSummary {
     }
     pub(super) fn append(self, right: Self) -> Option<Self> {
         Some(Self {
+            accounted: self.accounted && right.accounted,
             count: self.count.checked_add(right.count)?,
-            work: self.work.checked_add(right.work)?,
-            span: self.span.max(right.span),
-            maximum_slot_work: self.maximum_slot_work.max(right.maximum_slot_work),
+            work: if self.accounted && right.accounted {
+                self.work.checked_add(right.work)?
+            } else {
+                0
+            },
+            span: if self.accounted && right.accounted {
+                self.span.max(right.span)
+            } else {
+                0
+            },
+            maximum_slot_work: if self.accounted && right.accounted {
+                self.maximum_slot_work.max(right.maximum_slot_work)
+            } else {
+                0
+            },
             first: self.first.or(right.first),
             last: right.last.or(self.last),
             unqualified: self.unqualified.or(right.unqualified),

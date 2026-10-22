@@ -10,9 +10,8 @@ pub use canonical_bits::CanonicalBits;
 use crate::{
     authority::{ExecutionResourceLease, LeaseDenial},
     backend::{
-        enter_retained_memory, run_admitting_scope, run_checked_batch,
-        run_checked_batch_with_charge, run_invoking_scope, AdmittedBatch, BackendKind,
-        BatchOutcome, KernelContext, KernelFailure,
+        enter_retained_memory, run_checked_batch, run_checked_batch_with_charge,
+        run_invoking_scope, AdmittedBatch, BackendKind, BatchOutcome, KernelContext, KernelFailure,
     },
     report::ChargedBytes,
 };
@@ -128,13 +127,24 @@ fn same_bits_with_contract<T: CanonicalBits + ?Sized>(
     actual: &T,
 ) -> Result<bool, ComparisonStop> {
     let length = expected.canonical_len().ok_or(OracleMismatch::Stop)?;
-    let bytes = u64::try_from(length)
-        .map_err(|_| LeaseDenial::charged_bytes_overflow())
-        .map_err(|_| OracleMismatch::Stop)?;
-    let _reservation = lease
-        .reserve_retained_memory(bytes)
-        .map_err(|_| ComparisonStop::refused())?;
-    let _physical = enter_retained_memory(bytes);
+    let accounted = crate::backend::RunLimits::native_accounting(Some(lease));
+    let bytes = if accounted {
+        Some(
+            u64::try_from(length)
+                .map_err(|_| LeaseDenial::charged_bytes_overflow())
+                .map_err(|_| OracleMismatch::Stop)?,
+        )
+    } else {
+        None
+    };
+    let _reservation = bytes
+        .map(|bytes| {
+            lease
+                .reserve_retained_memory(bytes)
+                .map_err(|_| ComparisonStop::refused())
+        })
+        .transpose()?;
+    let _physical = bytes.and_then(enter_retained_memory);
     let mut reference = Vec::new();
     reference
         .try_reserve_exact(length)
@@ -147,13 +157,23 @@ fn same_bits_with_contract<T: CanonicalBits + ?Sized>(
     }
     if let Some(predicate) = lease.equivalence_predicate() {
         let candidate_len = actual.canonical_len().ok_or(OracleMismatch::Stop)?;
-        let candidate_bytes = u64::try_from(candidate_len)
-            .map_err(|_| LeaseDenial::charged_bytes_overflow())
-            .map_err(|_| OracleMismatch::Stop)?;
-        let _candidate_reservation = lease
-            .reserve_retained_memory(candidate_bytes)
-            .map_err(|_| ComparisonStop::refused())?;
-        let _candidate_physical = enter_retained_memory(candidate_bytes);
+        let candidate_bytes = if accounted {
+            Some(
+                u64::try_from(candidate_len)
+                    .map_err(|_| LeaseDenial::charged_bytes_overflow())
+                    .map_err(|_| OracleMismatch::Stop)?,
+            )
+        } else {
+            None
+        };
+        let _candidate_reservation = candidate_bytes
+            .map(|bytes| {
+                lease
+                    .reserve_retained_memory(bytes)
+                    .map_err(|_| ComparisonStop::refused())
+            })
+            .transpose()?;
+        let _candidate_physical = candidate_bytes.and_then(enter_retained_memory);
         let mut candidate = Vec::new();
         candidate
             .try_reserve_exact(candidate_len)
@@ -187,16 +207,19 @@ fn same_bits_with_contract<T: CanonicalBits + ?Sized>(
 }
 
 /// Compare two complete canonical results under the lease's installed
-/// determinism contract. Encoding buffers are reserved against the lease.
+/// determinism contract. Accounted encoding buffers retain their lease grants;
+/// worker-only comparison keeps ordinary fallible allocation ownership.
 pub fn compare_canonical_values<T: CanonicalBits + ?Sized>(
     lease: &ExecutionResourceLease<'_>,
     expected: &T,
     actual: &T,
 ) -> Result<bool, OracleMismatch> {
-    let outcome = run_admitting_scope(Some(lease), 0, 0, true, |context| {
-        context.checkpoint(0)?;
-        same_bits(lease, expected, actual).map_err(ComparisonStop::into_scope)
-    });
+    let outcome =
+        crate::backend::run_scope_native_within(Some(lease), true, None, None, |context| {
+            context.poll()?;
+            same_bits(lease, expected, actual)
+                .map_err(|cause| KernelFailure::Domain(cause.finish()))
+        });
     outcome.result.map_err(|_| OracleMismatch::Stop)
 }
 

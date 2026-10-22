@@ -32,7 +32,9 @@ impl TreeTarget {
         Reduced: Clone + worth_execution::CanonicalBits,
     {
         use super::super::WorthQueryPartitionedComputationDenial as D;
-        let work = if identities_unchanged {
+        let work = if !execution.has_accounting() {
+            None
+        } else if identities_unchanged {
             retained.tree.checked_full_build_cost().map(|cost| cost.0)
         } else {
             let bytes = results.len().checked_mul(size_of::<PartitionIdentity>())

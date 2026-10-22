@@ -26,7 +26,7 @@ where
     ) -> WorthQueryDecisionPlan<Value, Domain> {
         WorthQueryDecisionPlan::prepared(
             PreparedCompute::new(move |member| {
-                member.compute(|execution, _charge, _poll, transport| {
+                member.compute(|execution, _poll, transport| {
                     self.compute_with_transport(execution, transport)
                         .map_err(MemberComputeFailure::into_failure)
                 })

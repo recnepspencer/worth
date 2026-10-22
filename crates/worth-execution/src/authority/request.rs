@@ -2,7 +2,7 @@
 
 use super::{ExecutionResourceLease, SerialRequest};
 use crate::{ExecutionWorkCeiling, WorkCeilingDenial};
-use worth_foundational::{ExecutionPosture, ExecutionReport};
+use worth_foundational::{ExecutionPhysicalReport, ExecutionPosture, ExecutionReport};
 
 /// Sealed serial or leased backing borrowed from the host call.
 #[derive(Clone, Copy, Debug)]
@@ -17,6 +17,134 @@ enum RequestBacking<'request, 'authority> {
 }
 
 impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
+    pub fn has_accounting(self) -> bool {
+        match self.form {
+            RequestBacking::Leased(lease) => lease.has_accounting(),
+            RequestBacking::Serial(request) => request.memory().is_some(),
+        }
+    }
+
+    /// Run using the original worker and control authority, without a payload
+    /// or cost contract. Deliberately accounted ancestors remain authoritative.
+    pub fn run_native<R>(
+        self,
+        operation: impl for<'scope> FnOnce(Option<&'scope ExecutionResourceLease<'authority>>) -> R,
+    ) -> Result<(R, ExecutionPhysicalReport), WorkCeilingDenial> {
+        self.run_native_with_checkpoint(|_| match self.form {
+            RequestBacking::Leased(lease) => {
+                let active = lease.current_descendant();
+                operation(Some(active.as_ref().unwrap_or(lease)))
+            }
+            RequestBacking::Serial(_) => operation(None),
+        })
+    }
+
+    /// Lend the same request's control checkpoint. A swallowed first stop is
+    /// still refused at handoff after the callback completes.
+    pub fn run_native_with_checkpoint<R>(
+        self,
+        operation: impl FnOnce(&mut crate::MapKernelContext<'_, '_>) -> R,
+    ) -> Result<(R, ExecutionPhysicalReport), WorkCeilingDenial> {
+        self.run_native_checkpoint_report(None, operation)
+            .map(|(value, report)| (value, report.physical()))
+    }
+
+    /// Run a native diagnostic on the existing isolated test lane, sharing
+    /// physical workers and original controls without changing worker-only mode.
+    #[doc(hidden)]
+    pub fn run_native_detached_for_test<R>(
+        self,
+        operation: impl FnOnce(Option<&ExecutionResourceLease<'_>>) -> R,
+    ) -> Result<(R, ExecutionPhysicalReport), WorkCeilingDenial> {
+        match self.form {
+            RequestBacking::Leased(lease) => {
+                let resources = lease.diagnostic_resources_for_test();
+                let diagnostic = resources.lease_for_test();
+                let _detached = crate::backend::detach_meter_for_test();
+                let _worker = resources.detach_worker_context();
+                ExecutionRequest::leased(&diagnostic).run_native(operation)
+            }
+            RequestBacking::Serial(_) => {
+                let _detached = crate::backend::detach_meter_for_test();
+                self.run_native(operation)
+            }
+        }
+    }
+
+    /// A native pattern owns its typed failure. A successful pattern must also
+    /// pass the original request's final control boundary before handoff.
+    pub(crate) fn run_native_report<R, E>(
+        self,
+        ceiling: ExecutionWorkCeiling,
+        operation: impl for<'scope> FnOnce(
+            Option<&'scope ExecutionResourceLease<'authority>>,
+        ) -> Result<R, E>,
+    ) -> Result<(Result<R, E>, ExecutionReport), WorkCeilingDenial> {
+        use crate::backend::{KernelFailure, ScopeStop};
+        let outcome = self.run_native_scope(ceiling.work_units(), |context| {
+            let value = match self.form {
+                RequestBacking::Leased(lease) => {
+                    let active = lease.current_descendant();
+                    operation(Some(active.as_ref().unwrap_or(lease)))
+                }
+                RequestBacking::Serial(_) => operation(None),
+            }
+            .map_err(KernelFailure::Domain)?;
+            context.poll()?;
+            Ok(value)
+        });
+        match outcome.result {
+            Ok(value) => Ok((Ok(value), outcome.report)),
+            Err(ScopeStop::Failure(KernelFailure::Domain(cause))) => {
+                Ok((Err(cause), outcome.report))
+            }
+            Err(ScopeStop::Admission(cause)) => Err(WorkCeilingDenial::Admission(cause)),
+            Err(ScopeStop::Failure(KernelFailure::Stop(stop))) => {
+                Err(WorkCeilingDenial::Stopped(stop))
+            }
+            Err(_) => Err(WorkCeilingDenial::Panicked),
+        }
+    }
+
+    fn run_native_checkpoint_report<R>(
+        self,
+        ceiling: Option<u64>,
+        operation: impl FnOnce(&mut crate::MapKernelContext<'_, '_>) -> R,
+    ) -> Result<(R, ExecutionReport), WorkCeilingDenial> {
+        let outcome = self.run_native_scope::<R, std::convert::Infallible>(ceiling, |context| {
+            let value = operation(context);
+            context.poll()?;
+            Ok(value)
+        });
+        use crate::backend::{KernelFailure, ScopeStop};
+        match outcome.result {
+            Ok(value) => Ok((value, outcome.report)),
+            Err(ScopeStop::Admission(cause)) => Err(WorkCeilingDenial::Admission(cause)),
+            Err(ScopeStop::Failure(KernelFailure::Stop(stop))) => {
+                Err(WorkCeilingDenial::Stopped(stop))
+            }
+            Err(_) => Err(WorkCeilingDenial::Panicked),
+        }
+    }
+
+    fn run_native_scope<R, E>(
+        self,
+        ceiling: Option<u64>,
+        operation: impl FnOnce(
+            &mut crate::MapKernelContext<'_, '_>,
+        ) -> Result<R, crate::backend::KernelFailure<E>>,
+    ) -> crate::backend::ScopeOutcome<R, E> {
+        let active = match self.form {
+            RequestBacking::Leased(lease) => lease.current_descendant(),
+            RequestBacking::Serial(_) => None,
+        };
+        let (lease, serial) = match self.form {
+            RequestBacking::Leased(lease) => (Some(active.as_ref().unwrap_or(lease)), None),
+            RequestBacking::Serial(serial) => (None, Some(serial)),
+        };
+        crate::backend::run_scope_native_within(lease, true, ceiling, serial, operation)
+    }
+
     pub fn leased(lease: &'request ExecutionResourceLease<'authority>) -> Self {
         Self {
             form: RequestBacking::Leased(lease),
@@ -73,8 +201,11 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
 
     pub fn memory_limit(self) -> Option<u64> {
         match self.form {
-            RequestBacking::Leased(lease) => lease.policy().budget().charged_memory_bytes(),
-            RequestBacking::Serial(request) => request.memory.limit(),
+            RequestBacking::Leased(lease) => lease
+                .policy()
+                .accounting()
+                .and_then(|budget| budget.charged_memory_bytes()),
+            RequestBacking::Serial(request) => request.memory().and_then(|memory| memory.limit()),
         }
     }
 
@@ -83,7 +214,10 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
     /// Charged work is still metered and counter overflow remains a typed stop.
     pub fn work_ceiling(self) -> Option<u64> {
         match self.form {
-            RequestBacking::Leased(lease) => lease.policy().budget().work_ceiling(),
+            RequestBacking::Leased(lease) => lease
+                .policy()
+                .accounting()
+                .and_then(|budget| budget.work_ceiling()),
             RequestBacking::Serial(request) => request.work_ceiling,
         }
     }
@@ -97,7 +231,7 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
 
     pub fn max_workers(self) -> usize {
         match self.form {
-            RequestBacking::Leased(lease) => lease.policy().budget().max_workers().get(),
+            RequestBacking::Leased(lease) => lease.policy().max_workers().get(),
             RequestBacking::Serial(_) => 1,
         }
     }
@@ -125,7 +259,7 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
         })
     }
 
-    /// Adapt only within an active accounted scope. Leased carriage adds no scope.
+    /// Adapt within the original request scope. Leased carriage adds no scope.
     pub fn in_scope<R>(
         self,
         operation: impl for<'scope> FnOnce(Option<&'scope ExecutionResourceLease<'authority>>) -> R,
@@ -134,6 +268,9 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
             RequestBacking::Leased(lease) => {
                 let active = lease.current_descendant();
                 Ok(operation(Some(active.as_ref().unwrap_or(lease))))
+            }
+            RequestBacking::Serial(_) if !self.has_accounting() => {
+                self.run_native(operation).map(|(value, _)| value)
             }
             RequestBacking::Serial(request) => ExecutionWorkCeiling::new(self.work_ceiling())
                 .run_serial(request, || operation(None))

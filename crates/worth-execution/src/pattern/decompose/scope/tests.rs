@@ -133,7 +133,7 @@ fn lease_free_decomposition_entry_fits_its_serial_tree_quote_exactly() {
                 + size_of::<Staged<(), (), (), (), (), Combine>>() as u64
                 + size_of::<DecomposeFailure<()>>() as u64
                 + RunLimits::framework_context_bytes_for_serial_scope(1).unwrap();
-            let budget = request.memory();
+            let budget = request.memory().expect("explicit accounted request");
             let _other = budget
                 .reserve(
                     budget.limit().expect("explicit finite serial tree court")
@@ -209,6 +209,12 @@ fn lease_free_decomposition_entry_fits_its_serial_tree_quote_exactly() {
             Some(short == 0),
             "serial first-build bound, short by {short}"
         );
-        assert_eq!(request.memory().charged_memory_bytes(), 0);
+        assert_eq!(
+            request
+                .memory()
+                .expect("explicit accounted request")
+                .charged_memory_bytes(),
+            0
+        );
     }
 }

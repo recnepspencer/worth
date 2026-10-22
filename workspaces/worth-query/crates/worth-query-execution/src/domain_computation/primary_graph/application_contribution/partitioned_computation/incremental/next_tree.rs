@@ -126,11 +126,13 @@ where
             &kernel,
             transport,
         )?;
-        work_receipt.spend(Some(settled_wave.work)).map_err(|_| {
-            WorthQueryPartitionedComputationDenial::Resource(
-                WorthQueryManagedComputationResourceDenial::WorkCounterOverflow,
-            )
-        })?;
+        work_receipt
+            .spend(settled_wave.accounting.map(|(work, _)| work))
+            .map_err(|_| {
+                WorthQueryPartitionedComputationDenial::Resource(
+                    WorthQueryManagedComputationResourceDenial::WorkCounterOverflow,
+                )
+            })?;
         let native_run = settled_wave.native_run;
         let patched_calls = if ranges.is_some() {
             let changes = rekeyed
@@ -144,10 +146,13 @@ where
                     )
                 })
                 .chain(recomputed.iter().filter_map(|(id, marked)| {
-                    marked
-                        .gather
-                        .as_ref()
-                        .map(|charge| (ComputationRead::Partition(*id), charge, 0))
+                    marked.gather.as_ref().map(|charge| {
+                        (
+                            ComputationRead::Partition(*id),
+                            charge,
+                            execution.has_accounting().then_some(0),
+                        )
+                    })
                 }));
             Some(
                 match &transition {
@@ -212,7 +217,11 @@ where
             &results,
             execution,
         )?;
-        let reduction_work = target.full_work();
+        let reduction_work = if execution.has_accounting() {
+            target.full_work()
+        } else {
+            None
+        };
         let (tree, tree_bill) = transport.call(|| {
             execution
                 .dispatch()
@@ -228,12 +237,22 @@ where
                         execution,
                     );
                     observe_tree(tree.report);
+                    if !context.has_accounting() {
+                        context
+                            .poll()
+                            .map_err(WorthQueryPartitionedComputationDenial::from_kernel_stop)?;
+                        return tree.outcome;
+                    }
                     let (work, span) = if let Ok(completed) = &tree.outcome {
                         completed
                             .checked_full_build_cost()
                             .expect("a completed build has bounded cost")
                     } else {
-                        let metrics = tree.report.metrics();
+                        let metrics = tree
+                            .report
+                            .metrics()
+                            .accounted_metrics()
+                            .expect("accounted tree stage retains its accounting");
                         (
                             u64::try_from(metrics.charged_work).unwrap_or(u64::MAX),
                             u64::try_from(metrics.charged_span).unwrap_or(u64::MAX),
@@ -259,20 +278,16 @@ where
                 .and_then(|(outcome, report)| outcome.map(|tree| (tree, report)))
         })?;
         work_receipt
-            .spend(Some(tree_bill.charged_work()))
+            .spend(tree_bill.accounted_cost().map(|(work, _)| work))
             .map_err(|_| {
                 WorthQueryPartitionedComputationDenial::Resource(
                     WorthQueryManagedComputationResourceDenial::WorkCounterOverflow,
                 )
             })?;
-        let computed_work = work_receipt.spent_since(preparation_work).ok_or(
-            WorthQueryPartitionedComputationDenial::Resource(
-                WorthQueryManagedComputationResourceDenial::WorkCounterOverflow,
-            ),
-        )?;
+        let computed_work = work_receipt.spent_since(preparation_work);
         // Like Full, only a successfully reduced computation settles a receipt.
-        if let Some(observer) = observer {
-            observer.record(settled_wave.work, settled_wave.span);
+        if let Some((observer, (work, span))) = observer.zip(settled_wave.accounting) {
+            observer.record(work, span);
         }
         let reduced = tree.result().clone();
         // A call made again whose charge did not measure cannot be carried
@@ -321,8 +336,13 @@ where
                         ranges,
                     }),
                     attribution_memory: execution
-                        .reserve(0)
-                        .map_err(WorthQueryPartitionedComputationDenial::Resource)?,
+                        .has_accounting()
+                        .then(|| {
+                            execution
+                                .reserve(0)
+                                .map_err(WorthQueryPartitionedComputationDenial::Resource)
+                        })
+                        .transpose()?,
                 }),
             },
         })

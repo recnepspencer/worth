@@ -77,8 +77,8 @@ fn repeated_checkpoints_stop_at_local_work_ceiling() {
 #[test]
 fn public_nested_map_charges_parent_work_and_span() {
     let _serial = TEST_LOCK.lock().unwrap();
-    let parent = authority().request_lease(request(1, 1_000, 3)).unwrap();
-    let child = parent.child(request(1, 500, 3)).unwrap();
+    let parent = authority().request_lease(accounted_request(1, 3)).unwrap();
+    let child = parent.child(accounted_request(1, 3)).unwrap();
     let outer = map(&[1], 0);
     let inner = map(&[2], 0);
     let outcome = outer.run(Some(&parent), |_, context| {
@@ -108,8 +108,8 @@ fn public_nested_map_charges_parent_work_and_span() {
 #[test]
 fn public_nested_map_inherits_parent_remaining_work() {
     let _serial = TEST_LOCK.lock().unwrap();
-    let parent = authority().request_lease(request(1, 1_000, 2)).unwrap();
-    let child = parent.child(request(1, 500, 2)).unwrap();
+    let parent = authority().request_lease(accounted_request(1, 2)).unwrap();
+    let child = parent.child(accounted_request(1, 2)).unwrap();
     let outer = map(&[1], 0);
     let inner = map(&[2], 0);
     let outcome = outer.run(Some(&parent), |_, context| {
@@ -262,7 +262,7 @@ fn exhausted_process_slots_fall_back_to_one_worker_with_honest_report() {
     let authority = authority();
     let occupied = authority.request_lease(request(3, 100, 10)).unwrap();
     let three_slots = occupied.try_reserve(3, 0).unwrap();
-    let lease = authority.request_lease(request(4, 1_000, 10)).unwrap();
+    let lease = authority.request_lease(accounted_request(4, 10)).unwrap();
     let outcome = map(&[1, 2], 0).run(Some(&lease), |value, context| {
         context.checkpoint(1)?;
         Ok::<_, MapKernelFailure<()>>(*value)
@@ -372,7 +372,9 @@ fn singleton_nested_map_resolves_serial_after_an_earlier_parallel_peak() {
 #[test]
 fn enclosing_request_uses_its_caller_slot_in_a_wide_native_map() {
     let _serial = TEST_LOCK.lock().unwrap();
-    let lease = authority().request_lease(request(4, 2_000, 100)).unwrap();
+    let lease = authority()
+        .request_lease(accounted_request(4, 100))
+        .unwrap();
     let wide = map(&[1, 2, 3, 4], 0);
     let rendezvous = std::sync::Barrier::new(4);
     let scoped = run_scope::<(), (), _>(Some(&lease), 0, 0, |_| {

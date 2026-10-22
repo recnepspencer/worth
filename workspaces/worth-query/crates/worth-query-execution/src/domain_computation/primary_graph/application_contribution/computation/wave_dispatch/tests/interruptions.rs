@@ -2,7 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption as Interruption;
 use std::sync::Condvar;
-const CHARGES: [u64; 4] = [3, 1, 4, 2];
+const MEMBERS: usize = 4;
 #[derive(Default)]
 struct Schedule {
     completed: [bool; 4],
@@ -17,7 +17,7 @@ fn cancellation_during_compute_has_a_witness_and_a_safe_canonical_prefix() {
             let cancellation = WorthQueryCancellationSource::new();
             let schedule = Arc::new((Mutex::new(Schedule::default()), Condvar::new()));
             let scope = WorthQueryRequestScope::new(None, cancellation.token());
-            let policy = test_policy(NonZeroUsize::new(width.unwrap_or(1)).unwrap(), None);
+            let policy = worker_policy(width.unwrap_or(1));
             let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
                 RuntimeWorldExecutionPlacement::Leased {
                     authority: test_authority(),
@@ -25,10 +25,8 @@ fn cancellation_during_compute_has_a_witness_and_a_safe_canonical_prefix() {
                 }
             });
             let root = QueryRequestExecution::open(placement, &scope);
-            let members = CHARGES
-                .into_iter()
-                .enumerate()
-                .map(|(rank, units)| {
+            let members = (0..MEMBERS)
+                .map(|rank| {
                     let schedule = schedule.clone();
                     let cancellation = cancellation.clone();
                     PreparedMember {
@@ -60,8 +58,8 @@ fn cancellation_during_compute_has_a_witness_and_a_safe_canonical_prefix() {
                                     .unwrap();
                                 state.watchdog |= waited.timed_out() && !state.fired;
                             }
-                            let (_, mut charge) = member.into_parts();
-                            let result = charge.as_mut().unwrap()(units).map(|()| rank);
+                            let (_, poll) = member.into_parts();
+                            let result = poll().map(|()| rank);
                             if result.is_ok() {
                                 state.lock().unwrap().completed[rank] = true;
                                 wake.notify_all();
@@ -71,13 +69,17 @@ fn cancellation_during_compute_has_a_witness_and_a_safe_canonical_prefix() {
                     }
                 })
                 .collect();
-            let (settled, report) = root
-                .execution_request()
-                .unwrap()
-                .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
-                    dispatch(&root, members)
-                })
-                .unwrap();
+            let mut settled = None;
+            let handoff = root.execution_request().unwrap().run_native(|_| {
+                settled = Some(dispatch(&root, members));
+            });
+            assert_eq!(
+                handoff.unwrap_err(),
+                worth_execution::WorkCeilingDenial::Stopped(
+                    worth_execution::MapKernelStop::Cancelled
+                )
+            );
+            let settled = settled.expect("the callback reached its witnessed cancellation");
             let state = schedule.0.lock().unwrap();
             assert!(
                 !state.watchdog,

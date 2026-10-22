@@ -125,7 +125,7 @@ mod tests {
             )
             .build();
         let lease = authority().request_lease(request(4, 1_000_000)).unwrap();
-        assert_eq!(lease.policy().budget().max_workers().get(), 4);
+        assert_eq!(lease.policy().max_workers().get(), 4);
         // One partition resolves Serial even with four workers permitted; thresholds admit the grouped apply door.
         let report = graph
             .evaluate_checked(

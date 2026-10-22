@@ -48,7 +48,11 @@ impl<K, V> ExecutionOrderedMap<K, V> {
     }
     /// Reachable cells and admitted payload bounds, never a new-allocation quote.
     pub fn retained_bytes(&self) -> u64 {
-        self.root.as_ref().map_or(0, |n| n.bytes)
+        self.accounted_bytes()
+            .expect("retained bytes require accounted ordered storage")
+    }
+    pub fn accounted_bytes(&self) -> Option<u64> {
+        self.root.as_ref().map_or(Some(0), |n| n.bytes)
     }
     pub fn iter(&self) -> iteration::Iter<'_, K, V> {
         iteration::Iter::new(self.root.as_deref(), self.len())

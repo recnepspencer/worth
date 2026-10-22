@@ -41,7 +41,7 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
             let (result, _) = execution
                 .execution_request()
                 .unwrap()
-                .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
+                .run_native(|_| {
                     let cursor = CanonicalApplyCursor::compute(
                         CanonicalUniqueVec::try_from_sorted_unique(vec![0_usize, 1, 2]).unwrap(),
                         plans,

@@ -19,16 +19,22 @@ impl ExecutionResourceLease<'static> {
                 LeaseDenial::EquivalenceContractUnavailable,
             ));
         }
-        let budget = request.policy.budget();
-        let policy = ExecutionRequestPolicy::new(
-            ExecutionPosture::Serial,
-            request.policy.determinism(),
-            ExecutionBudget::new(
-                NonZeroUsize::MIN,
-                budget.charged_memory_bytes(),
-                budget.work_ceiling(),
+        let policy = match request.policy.accounting() {
+            Some(budget) => ExecutionRequestPolicy::new(
+                ExecutionPosture::Serial,
+                request.policy.determinism(),
+                ExecutionBudget::new(
+                    NonZeroUsize::MIN,
+                    budget.charged_memory_bytes(),
+                    budget.work_ceiling(),
+                ),
             ),
-        );
+            None => ExecutionRequestPolicy::for_workers(
+                ExecutionPosture::Serial,
+                request.policy.determinism(),
+                NonZeroUsize::MIN,
+            ),
+        };
         super::ExecutionAuthority::serial().request_lease(LeaseRequest {
             policy,
             cancellation: request.cancellation,

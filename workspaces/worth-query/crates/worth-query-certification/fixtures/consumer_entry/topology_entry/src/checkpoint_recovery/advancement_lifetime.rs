@@ -33,7 +33,9 @@ fn a_leased_output_demand_shares_one_request_with_signal_and_native_reads() {
     let _restore = Restore(
         place(Placement::Leased(NonZeroUsize::MIN)),
         bound(Some(
-            super::support::observation::CHECKPOINT_EXECUTION_POLICY.budget(),
+            super::support::observation::CHECKPOINT_EXECUTION_POLICY
+                .accounting()
+                .expect("this fixture declares accounting"),
         )),
     );
     use worth_query_host::facade::primary_graph::partitioned_computation_runs_on_this_thread_for_test as computation_runs;
@@ -54,7 +56,6 @@ fn a_leased_output_demand_shares_one_request_with_signal_and_native_reads() {
     assert!(
         charged
             <= super::support::observation::CHECKPOINT_EXECUTION_POLICY
-                .budget()
                 .work_ceiling()
                 .expect("checkpoint fixture explicitly chooses a finite request")
     );
@@ -267,9 +268,7 @@ fn signal_reservation_uses_the_advancement_work_ceiling() {
         place(Placement::Leased(NonZeroUsize::MIN)),
         bound(Some(worth_foundational::ExecutionBudget::new(
             NonZeroUsize::MIN,
-            super::support::observation::CHECKPOINT_EXECUTION_POLICY
-                .budget()
-                .charged_memory_bytes(),
+            super::support::observation::CHECKPOINT_EXECUTION_POLICY.charged_memory_bytes(),
             Some(handler_allowance as u64),
         ))),
     );

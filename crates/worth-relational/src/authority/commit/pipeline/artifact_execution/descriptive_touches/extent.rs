@@ -12,11 +12,7 @@ pub(super) fn memory_bound(
 ) -> Result<Option<u64>, TransactionCommitError> {
     if matches!(mode, TouchPreparationMode::NativeMerge) {
         // Full-partition merge growth retains its existing preparation bound.
-        return Ok(lease
-            .policy()
-            .budget()
-            .charged_memory_bytes()
-            .map(|limit| limit / 8));
+        return Ok(lease.policy().charged_memory_bytes().map(|limit| limit / 8));
     }
     let mut bytes = (maximum as u64)
         .saturating_mul(size_of::<Touch>() as u64)

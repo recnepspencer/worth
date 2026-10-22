@@ -69,6 +69,7 @@ pub fn relational_execution_kind(
         Cause::Cancelled => return Err(Control::Cancelled),
         Cause::DeadlineElapsed => return Err(Control::TimedOut),
         Cause::WorkCounterOverflow => resource(Resource::WorkCounterOverflow, None),
+        Cause::AccountingUnavailable => resource(Resource::AccountingUnavailable, None),
         Cause::WorkExhausted => resource(Resource::WorkExhausted, None),
         Cause::NestedStopped => Kind::ExecutionNestedPatternStopped { partition_identity },
         Cause::ResultCapacityExceeded => resource(Resource::ResultCapacityExceeded, None),

@@ -139,7 +139,13 @@ where
                 let context = std::cell::RefCell::new(context);
                 let mut charge = |units| context.borrow_mut().checkpoint(units);
                 let mut poll = || context.borrow_mut().poll();
-                self.compute_with_charge(&mut charge, &mut poll)
+                self.compute_with_checkpoint(WorthQueryManagedComputationCheckpoint {
+                    charge: execution.request.has_accounting().then_some(&mut charge),
+                    poll: &mut poll,
+                    refused: None,
+                    #[cfg(test)]
+                    native: None,
+                })
             })
             .map_err(super::execution_denial::managed_advancement_denial)?
     }
@@ -151,26 +157,16 @@ where
         WorthQueryCompletedManagedComputation<Schema, Feature, Computation, Owner>,
         WorthQueryManagedComputationDenial<Owner::Stopped>,
     > {
-        member.compute(|_execution, charge, poll, _transport| {
-            self.compute_with_charge(charge.expect("member dispatch lends its charge"), poll)
-        })
+        self.compute_with_checkpoint(member.into_checkpoint())
     }
 
-    fn compute_with_charge(
+    fn compute_with_checkpoint(
         self,
-        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-        poll: &mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
+        mut checkpoint: WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<
         WorthQueryCompletedManagedComputation<Schema, Feature, Computation, Owner>,
         WorthQueryManagedComputationDenial<Owner::Stopped>,
     > {
-        let mut checkpoint = WorthQueryManagedComputationCheckpoint {
-            charge,
-            poll,
-            refused: None,
-            #[cfg(test)]
-            native: None,
-        };
         checkpoint.poll()?;
         let computed = self
             .installed

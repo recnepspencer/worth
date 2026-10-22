@@ -4,6 +4,9 @@ impl<T, F> ReductionTree<T, F> {
     /// Cost of a full build over this tree's identity set: the same sequential
     /// shape work and dependent evaluation path as the shipped constructor.
     pub fn checked_full_build_cost(&self) -> Option<(u64, u64)> {
+        if !self.accounted {
+            return None;
+        }
         let spine = |left: bool| {
             std::iter::successors(self.root.as_deref(), |node| {
                 if left {
@@ -20,7 +23,10 @@ impl<T, F> ReductionTree<T, F> {
         checked_cost(
             self.len,
             ends,
-            self.root.as_ref().map_or(0, |root| root.full_subtree_span),
+            match self.root.as_ref() {
+                None => 0,
+                Some(root) => root.full_subtree_span?,
+            },
         )
     }
 }

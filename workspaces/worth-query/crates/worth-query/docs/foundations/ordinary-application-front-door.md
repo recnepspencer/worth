@@ -1125,10 +1125,10 @@ producers. Retained views and handles are reconstructed separately. Compare
 work against the actual scene/dependency shape and report wall time with its
 hardware; an absolute seconds threshold is not a portable Query contract.
 
-## Anti-Patterns
+## Request and operation lifecycle
 
-Use the
-[canonical consumer prohibitions](../../../../../../docs/capability-index.md#consumer-prohibitions).
+Use the [request and retained-operation guide](../../../../../../docs/capability-index.md#use-requests-and-retained-operations)
+to retain original inputs through recovery and close completed work.
 
 ## Observable workflows through ordinary requests
 

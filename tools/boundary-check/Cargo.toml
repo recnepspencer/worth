@@ -30,3 +30,7 @@ opt-level = 3
 [profile.dev]
 opt-level = 3
 debug-assertions = true
+
+# Test edits need fast compilation; optimized dependencies retain parser speed.
+[profile.test]
+opt-level = 0

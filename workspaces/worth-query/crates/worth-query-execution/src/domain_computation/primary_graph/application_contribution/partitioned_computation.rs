@@ -45,9 +45,9 @@ pub use incremental::{
     partitioned_computation_runs_on_this_thread_for_test,
     partitioned_computation_tree_work_on_this_thread_for_test,
     published_partitioned_computations_on_this_thread_for_test,
-    WorthQueryPartitionedComputationRunForTest, WorthQueryPartitionedTreeMetrics,
-    WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
-    WorthQueryPublishedComputationStateForTest,
+    WorthQueryPartitionedComputationRunForTest, WorthQueryPartitionedTreeAccounting,
+    WorthQueryPartitionedTreeMetrics, WorthQueryPartitionedTreeRebuildCause,
+    WorthQueryPartitionedTreeRun, WorthQueryPublishedComputationStateForTest,
 };
 pub(in crate::domain_computation::primary_graph) use incremental::{
     Comparator, CompletedComputationRetention, ComputationDeposit, NativeComputationReads,

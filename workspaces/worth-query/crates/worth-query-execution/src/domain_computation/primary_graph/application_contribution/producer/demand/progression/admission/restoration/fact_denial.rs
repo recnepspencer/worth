@@ -21,7 +21,10 @@ pub(super) fn decode_denial(error: FactDecodeDenial) -> WorthQueryOutputDemandDe
                 Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => Kind::TimedOut,
                 Class::Request(Request::Admission(_))
                 | Class::Request(Request::Stopped(
-                    Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped,
+                    Stop::WorkCounterOverflow
+                    | Stop::AccountingUnavailable
+                    | Stop::WorkCeiling
+                    | Stop::NestedStopped,
                 ))
                 | Class::Request(Request::Panicked)
                 | Class::Physical(_) => Kind::RetentionBudgetExceeded,

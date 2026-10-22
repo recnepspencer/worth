@@ -62,7 +62,7 @@ fn competing_ticket(scratch_bytes: u64) -> Result<HostTicket, LeaseDenial> {
         host_request.policy.posture(),
         host_request.policy.determinism(),
         ExecutionBudget::new(
-            host_request.policy.budget().max_workers(),
+            host_request.policy.max_workers(),
             Some(HOST_MEMORY),
             Some(1_000_000),
         ),

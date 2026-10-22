@@ -11,6 +11,7 @@ pub(super) fn kind(error: &SignalError) -> Kind {
             Checkpoint::Cancelled => Execution::Cancelled,
             Checkpoint::DeadlineElapsed => Execution::DeadlineElapsed,
             Checkpoint::WorkCounterOverflow => Execution::WorkCounterOverflow,
+            Checkpoint::AccountingUnavailable => Execution::AccountingUnavailable,
             Checkpoint::WorkCeiling => Execution::WorkCeiling,
             Checkpoint::NestedStopped => Execution::NestedStopped,
         },
@@ -41,6 +42,9 @@ pub(super) fn kind(error: &SignalError) -> Kind {
                     Failure::DeadlineElapsed => Kind::ExecutionDenied(Execution::DeadlineElapsed),
                     Failure::WorkCounterOverflow => {
                         Kind::ExecutionDenied(Execution::WorkCounterOverflow)
+                    }
+                    Failure::AccountingUnavailable => {
+                        Kind::ExecutionDenied(Execution::AccountingUnavailable)
                     }
                     Failure::WorkCeiling => Kind::ExecutionDenied(Execution::WorkCeiling),
                     Failure::NestedStopped => Kind::ExecutionDenied(Execution::NestedStopped),
@@ -87,6 +91,23 @@ pub(super) fn kind(error: &SignalError) -> Kind {
 #[cfg(test)]
 mod footprint_tests {
     use super::*;
+    #[test]
+    fn unsupported_billing_retains_its_distinct_signal_cause() {
+        assert_eq!(
+            kind(&SignalError::ExecutionCheckpointStopped(
+                Checkpoint::AccountingUnavailable
+            )),
+            Kind::ExecutionDenied(Execution::AccountingUnavailable)
+        );
+        assert_eq!(
+            Execution::from(worth_execution::MapKernelStop::AccountingUnavailable),
+            Execution::AccountingUnavailable
+        );
+        assert_eq!(
+            Execution::AccountingUnavailable.label(),
+            "accounting-unavailable"
+        );
+    }
     #[test]
     fn a_missing_footprint_keeps_its_typed_signal_site() {
         let mut graph = worth_signal::facade::SignalGraph::new();

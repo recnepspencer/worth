@@ -72,6 +72,7 @@ pub(crate) fn kernel_stop(stop: MapKernelStop) -> Cause {
         MapKernelStop::Cancelled => Cause::Cancelled,
         MapKernelStop::DeadlineElapsed => Cause::DeadlineElapsed,
         MapKernelStop::WorkCounterOverflow => Cause::WorkCounterOverflow,
+        MapKernelStop::AccountingUnavailable => Cause::AccountingUnavailable,
         MapKernelStop::WorkCeiling => Cause::WorkExhausted,
         MapKernelStop::NestedStopped => Cause::NestedStopped,
     }

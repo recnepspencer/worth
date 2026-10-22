@@ -158,12 +158,20 @@ fn run(
 
 fn reconcile(report: TreeRun) {
     assert_eq!(
-        report.metrics_for_test().recombined_nodes,
+        report
+            .metrics_for_test()
+            .accounted_metrics()
+            .expect("explicit accounted fixture")
+            .recombined_nodes,
         u128::from(NODES.get()),
         "independently completed combine pairs"
     );
     assert_eq!(
-        report.metrics_for_test().combine_calls,
+        report
+            .metrics_for_test()
+            .accounted_metrics()
+            .expect("explicit accounted fixture")
+            .combine_calls,
         u128::from(CALLS.get()),
         "reported combine entries equal independent reducer entries"
     );
@@ -184,6 +192,9 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
         let TreeRun::Edited(metrics) = next.report else {
             panic!("an ordinary update edits")
         };
+        let metrics = metrics
+            .accounted_metrics()
+            .expect("explicit accounted fixture");
         let path = shape::Shape::update_path(&shape, *key);
         assert!(metrics.recombined_nodes <= u128::try_from(path.len()).unwrap());
         assert_eq!(metrics.combine_calls, 2 * metrics.recombined_nodes);
@@ -192,22 +203,46 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
         let same = run(&retained, &keys, BTreeMap::from([(*key, 1)]), u64::MAX);
         reconcile(same.report);
         assert_eq!(
-            same.report.metrics_for_test().recombined_nodes,
+            same.report
+                .metrics_for_test()
+                .accounted_metrics()
+                .expect("explicit accounted fixture")
+                .recombined_nodes,
             0,
             "identical bits cut off"
         );
-        assert_eq!(same.report.metrics_for_test().combine_calls, 0);
+        assert_eq!(
+            same.report
+                .metrics_for_test()
+                .accounted_metrics()
+                .expect("explicit accounted fixture")
+                .combine_calls,
+            0
+        );
         let deleted: Vec<_> = keys.iter().copied().filter(|id| id != key).collect();
         reset_counts();
         let next = run(&retained, &deleted, BTreeMap::new(), u64::MAX);
         reconcile(next.report);
         assert!(matches!(next.report, TreeRun::Edited(_)));
         assert_eq!(
-            next.report.metrics_for_test().combine_calls,
-            2 * next.report.metrics_for_test().recombined_nodes
+            next.report
+                .metrics_for_test()
+                .accounted_metrics()
+                .expect("explicit accounted fixture")
+                .combine_calls,
+            2 * next
+                .report
+                .metrics_for_test()
+                .accounted_metrics()
+                .expect("explicit accounted fixture")
+                .recombined_nodes
         );
         assert!(
-            next.report.metrics_for_test().recombined_nodes
+            next.report
+                .metrics_for_test()
+                .accounted_metrics()
+                .expect("explicit accounted fixture")
+                .recombined_nodes
                 <= u128::from(shape::Shape::deletion_depth(&shape, *key))
         );
         assert_eq!(*next.outcome.unwrap().result(), 127);
@@ -222,11 +257,24 @@ fn every_edit_obeys_its_pre_edit_shape_bound_and_reconciles() {
         reconcile(next.report);
         assert!(matches!(next.report, TreeRun::Edited(_)));
         assert_eq!(
-            next.report.metrics_for_test().combine_calls,
-            2 * next.report.metrics_for_test().recombined_nodes
+            next.report
+                .metrics_for_test()
+                .accounted_metrics()
+                .expect("explicit accounted fixture")
+                .combine_calls,
+            2 * next
+                .report
+                .metrics_for_test()
+                .accounted_metrics()
+                .expect("explicit accounted fixture")
+                .recombined_nodes
         );
         assert_eq!(
-            next.report.metrics_for_test().recombined_nodes,
+            next.report
+                .metrics_for_test()
+                .accounted_metrics()
+                .expect("explicit accounted fixture")
+                .recombined_nodes,
             u128::from(bound)
         );
         assert_eq!(*next.outcome.unwrap().result(), 130);

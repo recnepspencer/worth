@@ -42,7 +42,11 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
         )
         .unwrap();
     let next = prior
-        .edited(&edit, std::iter::once((read(8), charge, 17)), &execution)
+        .edited(
+            &edit,
+            std::iter::once((read(8), charge, Some(17))),
+            &execution,
+        )
         .unwrap();
     assert!(prior.contains_in(entity, &(3..4)));
     assert!(next.contains_in(entity, &(2..3)));
@@ -70,22 +74,24 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
         .filter(|(key, _)| *key != read(1))
         .cloned()
         .collect::<Vec<_>>();
-    truth.push((read(8), (charge.clone(), 17)));
+    truth.push((read(8), (charge.clone(), Some(17))));
     for start in 0..truth.len() {
         for end in start + 1..=truth.len() {
-            let summary = next.summary(start..end).unwrap();
+            let summary = next.summary(start..end, true).unwrap();
             assert_eq!(
                 summary.declared,
-                truth[start..end]
-                    .iter()
-                    .map(|(_, (_, declared))| *declared)
-                    .sum::<u64>()
+                Some(
+                    truth[start..end]
+                        .iter()
+                        .map(|(_, (_, declared))| declared.unwrap())
+                        .sum::<u64>()
+                )
             );
             assert_eq!(
-                summary.consumed,
+                summary.accounting.unwrap().consumed,
                 truth[start..end]
                     .iter()
-                    .map(|(_, (charge, _))| charge.consumed)
+                    .map(|(_, (charge, _))| charge.accounting.unwrap().consumed)
                     .sum::<usize>()
             );
         }
@@ -96,6 +102,7 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
     for remaining in 0..40 {
         let mut full = Budget::bounded(remaining);
         let expected = truth.iter().position(|(_, (charge, _))| {
+            let charge = charge.accounting.unwrap();
             if full.can_afford(charge.demand) {
                 assert!(full.consume(charge.consumed));
                 false
@@ -110,8 +117,12 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
                 usize,
             > {
                 match visit {
-                    CallVisit::Range(_, sum) => Ok(ranged.carry(sum.demand, sum.consumed)),
+                    CallVisit::Range(_, sum) => {
+                        let cost = sum.accounting.unwrap();
+                        Ok(ranged.carry(cost.demand, cost.consumed))
+                    }
                     CallVisit::Leaf(at, _, charge, _) => {
+                        let charge = charge.accounting.unwrap();
                         if !ranged.can_afford(charge.demand) {
                             return Err(at);
                         }
@@ -144,8 +155,8 @@ fn insert_retire_changes_only_paths_preserving_order_history_range_and_fresh_clo
         .unwrap();
     assert!(returned.shape.calls().eq(prior.shape.calls()));
     assert_eq!(
-        returned.summary(0..calls.len()).unwrap().declared,
-        prior.summary(0..calls.len()).unwrap().declared
+        returned.summary(0..calls.len(), true).unwrap().declared,
+        prior.summary(0..calls.len(), true).unwrap().declared
     );
 }
 #[test]
@@ -203,7 +214,7 @@ fn refused_shape_edit_leaves_original_and_shape_views_usable() {
     assert!(prior
         .edited(
             &edit,
-            std::iter::once((read(8), &calls[0].1 .0, 1)),
+            std::iter::once((read(8), &calls[0].1 .0, Some(1))),
             &narrow
         )
         .is_err());

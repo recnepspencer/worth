@@ -33,7 +33,6 @@ mod controlled_child;
 mod decompose_unknown_identity;
 mod map_dispatch;
 mod measured_result;
-mod memory_level;
 mod nested_certification_refusal;
 mod nested_request_stops;
 mod nested_scope_ownership;
@@ -49,12 +48,13 @@ mod reduction_edit_bounds;
 mod refusal_kinds;
 mod request_consultation;
 mod request_descendant;
+mod worker_only;
 
 pub(crate) fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
             max_workers: NonZeroUsize::new(4).unwrap(),
-            charged_memory_bytes: Some(2_000),
+            charged_memory_bytes: None,
         })
         .expect("one process authority")
     })
@@ -70,6 +70,20 @@ pub(crate) fn request(workers: usize, memory: u64, work: u64) -> LeaseRequest {
                 Some(memory),
                 Some(work),
             ),
+        ),
+        deadline: None,
+        cancellation: CancellationToken::new(),
+    }
+}
+
+// Work and scheduling courts declare the contract they exercise, without an
+// unrelated byte ceiling that can refuse before the kernel reaches that boundary.
+pub(crate) fn accounted_request(workers: usize, work: u64) -> LeaseRequest {
+    LeaseRequest {
+        policy: ExecutionRequestPolicy::new(
+            ExecutionPosture::Automatic,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(NonZeroUsize::new(workers).unwrap(), None, Some(work)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -107,10 +121,6 @@ fn authority_is_process_singleton() {
     assert_eq!(
         authority.request_lease(request(5, 1, 1)).unwrap_err(),
         LeaseDenial::WorkerLimitExceedsParent
-    );
-    assert_eq!(
-        authority.request_lease(request(1, 2_001, 1)).unwrap_err(),
-        LeaseDenial::MemoryLimitExceedsParent
     );
 }
 
@@ -200,7 +210,7 @@ fn batch_memory_denial_precedes_kernel_dispatch() {
 #[test]
 fn least_identity_failure_wins_after_later_partition_finishes() {
     let _serial = TEST_LOCK.lock().unwrap();
-    let lease = authority().request_lease(request(4, 1_000, 10)).unwrap();
+    let lease = authority().request_lease(accounted_request(4, 10)).unwrap();
     let later_finished = AtomicBool::new(false);
     let admitted = batch(&[1, 2], 1);
     let outcome = run_checked_batch(
@@ -239,7 +249,9 @@ fn least_identity_failure_wins_after_later_partition_finishes() {
 #[test]
 fn serial_native_and_perturbed_schedules_settle_identically() {
     let _serial = TEST_LOCK.lock().unwrap();
-    let lease = authority().request_lease(request(4, 2_000, 100)).unwrap();
+    let lease = authority()
+        .request_lease(accounted_request(4, 100))
+        .unwrap();
     let admitted = batch(&[2, 3, 5, 7, 11], 2);
     let kernel = |value: &u64, context: &mut crate::backend::KernelContext<'_, '_>| {
         context.checkpoint(*value)?;

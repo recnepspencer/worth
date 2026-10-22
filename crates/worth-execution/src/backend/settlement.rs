@@ -47,19 +47,21 @@ pub(crate) fn settle<R, E>(
     if let Some(retained) = retained {
         retained.before(None, &mut prefix, lease, limits);
     }
-    limits.add_discarded_work(prefix.discarded);
-    let report = ExecutionReport::new(
-        posture,
-        prefix.work,
-        prefix.span,
-        ExecutionPhysicalReport::new(
-            active_workers_high_watermark,
-            peak_charged_memory_bytes,
-            steals,
-            peak_queue_width,
-            limits.discarded_work(),
-        ),
+    if limits.is_accounted() {
+        limits.add_discarded_work(prefix.discarded);
+    }
+    let physical = ExecutionPhysicalReport::new(
+        active_workers_high_watermark,
+        peak_charged_memory_bytes,
+        steals,
+        peak_queue_width,
+        limits.discarded_work(),
     );
+    let report = if limits.is_accounted() {
+        ExecutionReport::new(posture, prefix.work, prefix.span, physical)
+    } else {
+        ExecutionReport::native(posture, physical)
+    };
     BatchOutcome {
         values: prefix.values,
         stop: prefix.stop,

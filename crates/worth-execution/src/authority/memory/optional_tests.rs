@@ -79,7 +79,13 @@ fn absent_request_ceiling_survives_original_serial_policy_and_cancel() {
         })
         .unwrap()
         .0;
-    assert_eq!(serial.memory().charged_memory_bytes(), 29);
+    assert_eq!(
+        serial
+            .memory()
+            .expect("explicit accounted request")
+            .charged_memory_bytes(),
+        29
+    );
     cancellation.cancel();
     assert_eq!(
         request.consult(),
@@ -88,5 +94,11 @@ fn absent_request_ceiling_survives_original_serial_policy_and_cancel() {
         ))
     );
     drop(held);
-    assert_eq!(serial.memory().charged_memory_bytes(), 0);
+    assert_eq!(
+        serial
+            .memory()
+            .expect("explicit accounted request")
+            .charged_memory_bytes(),
+        0
+    );
 }

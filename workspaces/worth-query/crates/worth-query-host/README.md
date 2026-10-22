@@ -740,8 +740,8 @@ Host code may:
   progress owner-issued branch coverage, recover unpublished adoption, and
   retire unused program support through typed custody inventories.
 
-Host constraints are maintained in the
-[canonical consumer prohibitions](../../../../docs/capability-index.md#consumer-prohibitions).
+Use the [request and retained-operation guide](../../../../docs/capability-index.md#use-requests-and-retained-operations)
+for submission, advancement, recovery and cleanup.
 
 
 ## Application Readiness For Editors

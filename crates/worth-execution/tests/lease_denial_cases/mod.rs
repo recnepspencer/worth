@@ -101,7 +101,10 @@ pub fn denial(cause: Cause) -> LeaseDenial {
             child.policy = ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
                 DeterminismContract::ContractEquivalent(EquivalenceContractId::new(91)),
-                child.policy.budget(),
+                child
+                    .policy
+                    .accounting()
+                    .expect("explicitly accounted fixture"),
             );
             parent.child(child).unwrap_err()
         }

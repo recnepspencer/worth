@@ -25,7 +25,7 @@ impl<T: Sync, K> ExecutionMap<T, K, NativePayload> {
         Combine: Fn(&R, &R) -> R + Sync,
     {
         let mut capture = NativeCapture::default();
-        let run = request.run(ceiling, |lease| {
+        let run = request.run_native_report(ceiling, |lease| {
             self.run_reduce_native_leased(
                 lease,
                 super::super::map::backend_for(lease),

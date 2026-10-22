@@ -20,7 +20,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt::read_set) 
     pub(super) root: EntityId,
     pub(super) decision_count: usize,
     pub(super) calls: worth_execution::ExecutionOrderedMap<ComputationRead, ()>,
-    fixed_bytes: Option<u64>,
     bound_shape:
         Option<Arc<crate::domain_computation::primary_graph::invariant_projection::CallShape>>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
@@ -45,26 +44,7 @@ impl CheckedReadLayout {
             decision_count,
             "completed scopes cover every decision ordinal"
         );
-        use worth_execution::ChargedBytes;
-        let fixed_bytes = handlers
-            .keys()
-            .try_fold(
-                (size_of::<Self>() + 2 * size_of::<usize>()) as u64,
-                |sum, key| {
-                    sum.checked_add(
-                        (11 * size_of::<(WorthQueryApplicationFactKey, usize)>()
-                            + 16 * size_of::<usize>()) as u64,
-                    )?
-                    .checked_add(key.additional_charged_bytes())
-                },
-            )
-            .and_then(|n| n.checked_add(scopes.backing_bytes()?))
-            .and_then(|n| {
-                n.checked_add((computation_ordinals.len().checked_mul(size_of::<usize>())?) as u64)
-            })
-            .and_then(|n| n.checked_add(4 * size_of::<usize>() as u64));
         Self {
-            fixed_bytes,
             bound_shape: None,
             _memory: None,
             contracts,
@@ -84,15 +64,6 @@ impl SealedReadLayout {
             Self::Checked(layout) => Some(layout),
             #[cfg(test)]
             Self::OwnerFixture => None,
-        }
-    }
-    pub(super) fn charged_bytes(&self) -> Option<u64> {
-        match self {
-            Self::Checked(layout) => layout
-                .fixed_bytes?
-                .checked_add(layout.calls.retained_bytes()),
-            #[cfg(test)]
-            Self::OwnerFixture => Some(0),
         }
     }
 }
@@ -181,9 +152,13 @@ impl CheckedReadLayout {
     ) -> Result<Arc<Self>, super::super::super::retained_decision_facts::StoreDenial> {
         use super::reattribution::storage_denial;
         control.check_live()?;
-        let memory = control
-            .policy()
-            .reserve_memory((size_of::<Self>() + 2 * size_of::<usize>()) as u64);
+        let memory = if control.policy().uses_accounting() {
+            control
+                .policy()
+                .reserve_memory((size_of::<Self>() + 2 * size_of::<usize>()) as u64)
+        } else {
+            Ok(None)
+        };
         control.check_live()?;
         let memory = memory?;
         let mut calls = self.calls.clone();
@@ -211,7 +186,6 @@ impl CheckedReadLayout {
             root: self.root,
             decision_count: self.decision_count,
             calls,
-            fixed_bytes: self.fixed_bytes,
             bound_shape: Some(Arc::clone(transition.target())),
             computation_ordinals: Arc::clone(&self.computation_ordinals),
             _memory: memory,

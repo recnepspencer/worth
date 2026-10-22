@@ -2,7 +2,7 @@ use std::mem::size_of;
 
 use crate::authority::{CancellationToken, ExecutionResourceLease};
 
-use super::{activity, KernelMeter, PhysicalActivity, RunLimits, WorkerActivity, ACTIVE_METER};
+use super::{activity, KernelState, PhysicalActivity, RunLimits, WorkerActivity, ACTIVE_METER};
 
 impl RunLimits {
     /// The serial map inherits only the active parent's checkpoint lineage.
@@ -57,7 +57,7 @@ impl RunLimits {
         Self::context_bytes_for_tokens(
             tokens,
             partitions,
-            lease.policy().budget().max_workers().get(),
+            lease.policy().max_workers().get(),
             !has_parent && activity::active_certification_physical().is_none(),
         )
     }
@@ -69,7 +69,7 @@ impl RunLimits {
         physical_cell_charged: bool,
     ) -> Option<u64> {
         let token_bytes = token_count.checked_mul(size_of::<CancellationToken>())?;
-        let per_partition = size_of::<KernelMeter>()
+        let per_partition = size_of::<KernelState>()
             .checked_add(2 * size_of::<usize>())? // Rc allocation header
             .checked_add(token_bytes)? // cloned checkpoint lineage
             .checked_add(size_of::<(usize, u64)>())?; // worker context stack

@@ -110,7 +110,7 @@ let partitions = plans.iter_mut().zip(&roots).enumerate().map(|(index, (pair, ro
         }).collect();
         assert_eq!(crate::facade::primary_graph::installed_source_reads_on_this_thread_for_test() - reads_before, 2, "one owner pin per query side, shared across both roots");
         let map = ExecutionMap::<_, ()>::from_keyless_values(partitions).unwrap();
-        let (outcome, _) = ExecutionWorkCeiling::new(lease.policy().budget().work_ceiling()).run(&lease, || {
+        let (outcome, _) = ExecutionWorkCeiling::new(lease.policy().work_ceiling()).run(&lease, || {
             map.run_owned(Some(&lease), |pair, context| pair.run(&host_custody.borrowed_request_for_test(), context))
         }).unwrap();
         match outcome {

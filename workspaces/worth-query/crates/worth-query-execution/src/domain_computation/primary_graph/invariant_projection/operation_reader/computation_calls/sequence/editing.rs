@@ -4,7 +4,7 @@ use worth_execution::ExecutionOrderedMap;
 impl ComputationCallSequence {
     pub(in crate::domain_computation::primary_graph) fn patched<'a>(
         self: &Arc<Self>,
-        changes: impl Iterator<Item = (ComputationRead, &'a ComputationCallCharge, u64)>,
+        changes: impl Iterator<Item = (ComputationRead, &'a ComputationCallCharge, Option<u64>)>,
         execution: &QueryRequestExecution<'_>,
     ) -> Result<Arc<Self>, CallSequenceDenial> {
         self.edit_core(changes, &ExecutionOrderedMap::default(), None, execution)
@@ -13,7 +13,7 @@ impl ComputationCallSequence {
     pub(in crate::domain_computation::primary_graph) fn edited<'a>(
         self: &Arc<Self>,
         transition: &CallShapeTransition,
-        changes: impl Iterator<Item = (ComputationRead, &'a ComputationCallCharge, u64)>,
+        changes: impl Iterator<Item = (ComputationRead, &'a ComputationCallCharge, Option<u64>)>,
         execution: &QueryRequestExecution<'_>,
     ) -> Result<Arc<Self>, CallSequenceDenial> {
         if !transition.matches_prior(&self.shape) {
@@ -23,7 +23,7 @@ impl ComputationCallSequence {
     }
     fn edit_core<'a>(
         self: &Arc<Self>,
-        changes: impl Iterator<Item = (ComputationRead, &'a ComputationCallCharge, u64)>,
+        changes: impl Iterator<Item = (ComputationRead, &'a ComputationCallCharge, Option<u64>)>,
         retired: &ExecutionOrderedMap<ComputationRead, ()>,
         transition: Option<&CallShapeTransition>,
         execution: &QueryRequestExecution<'_>,
@@ -38,7 +38,6 @@ impl ComputationCallSequence {
         let policy = execution.allocation_policy()?;
         let (mut root, mut reached) = (self.root.clone(), self.reached.clone());
         let mut order = self.shape.order.clone();
-        let (mut pairs, mut payload) = (self.pairs, self.payload);
         let mut inserted = ExecutionOrderedMap::default();
         for read in retired.keys() {
             let ordinal = order.rank_of(read).ok_or(CallSequenceDenial::InvalidEdit)?;
@@ -47,12 +46,6 @@ impl ComputationCallSequence {
                 observed::computation_call_reach();
                 reached.remove(*entity, *read, policy)?;
             }
-            pairs = pairs
-                .checked_sub(old.0.reached.len())
-                .ok_or(Resource::CapacityOverflow)?;
-            payload = payload
-                .checked_sub(old.0.additional_bytes().ok_or(Resource::CapacityOverflow)?)
-                .ok_or(Resource::CapacityOverflow)?;
             root = tree::remove(root.as_ref().unwrap(), ordinal, execution)?;
             order.remove_in(read, policy)?;
         }
@@ -71,12 +64,6 @@ impl ComputationCallSequence {
                     observed::computation_call_reach();
                     reached.remove(*entity, read, policy)?;
                 }
-                pairs = pairs
-                    .checked_sub(old.0.reached.len())
-                    .ok_or(Resource::CapacityOverflow)?;
-                payload = payload
-                    .checked_sub(old.0.additional_bytes().ok_or(Resource::CapacityOverflow)?)
-                    .ok_or(Resource::CapacityOverflow)?;
                 root = Some(patch(
                     root.as_ref().unwrap(),
                     ordinal,
@@ -105,16 +92,6 @@ impl ComputationCallSequence {
                 observed::computation_call_reach();
                 reached.insert(*entity, read, policy)?;
             }
-            pairs = pairs
-                .checked_add(charge.reached.len())
-                .ok_or(Resource::CapacityOverflow)?;
-            payload = payload
-                .checked_add(
-                    charge
-                        .additional_bytes()
-                        .ok_or(Resource::CapacityOverflow)?,
-                )
-                .ok_or(Resource::CapacityOverflow)?;
         }
         let shape = match transition {
             Some(edit) => {
@@ -125,20 +102,22 @@ impl ComputationCallSequence {
             }
             None => Arc::clone(&self.shape),
         };
-        let memory = execution.reserve((size_of::<Self>() + 2 * size_of::<usize>()) as u64)?;
+        let memory = execution
+            .has_accounting()
+            .then(|| execution.reserve((size_of::<Self>() + 2 * size_of::<usize>()) as u64))
+            .transpose()?;
         #[cfg(test)]
-        let bytes = memory
-            .bytes()
-            .checked_add(shape.bytes())
-            .and_then(|v| v.checked_add(root.as_ref().map_or(0, |n| n.bytes)))
-            .and_then(|v| v.checked_add(reached.bytes()))
-            .ok_or(Resource::CapacityOverflow)?;
+        let bytes = memory.as_ref().and_then(|memory| {
+            memory
+                .bytes()
+                .checked_add(shape.bytes()?)?
+                .checked_add(root.as_ref().map_or(Some(0), |n| n.bytes)?)?
+                .checked_add(reached.bytes()?)
+        });
         Ok(Arc::new(Self {
             shape,
             root,
             reached,
-            pairs,
-            payload,
             #[cfg(test)]
             bytes,
             _memory: memory,

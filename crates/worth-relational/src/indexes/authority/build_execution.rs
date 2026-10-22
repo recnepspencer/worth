@@ -77,7 +77,7 @@ pub(super) fn execute_index_packets(
     let mut ordered = packets;
     ordered.sort_by_key(|packet| (packet.definition.index_id.0, packet.header.packet_index));
     let memory = lease
-        .and_then(|lease| lease.policy().budget().charged_memory_bytes())
+        .and_then(|lease| lease.policy().charged_memory_bytes())
         .map_or(crate::execution::PacketMemory::Tracked, |limit| {
             let ceiling = limit / (ordered.len().max(1) as u64).saturating_mul(8);
             crate::execution::PacketMemory::Declared {

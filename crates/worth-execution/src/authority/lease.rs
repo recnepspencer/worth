@@ -125,6 +125,7 @@ struct NodeUsage {
 
 #[derive(Debug)]
 struct LeaseNode {
+    accounted: bool,
     id: u64,
     parent: Option<Arc<LeaseNode>>,
     max_workers: usize,
@@ -176,6 +177,17 @@ impl<'a> ExecutionResourceLease<'a> {
         &self,
         memory_bytes: u64,
     ) -> Result<ResourceReservation, LeaseDenial> {
+        self.reserve_entry_with(Some(memory_bytes))
+    }
+
+    pub(crate) fn reserve_worker_entry(&self) -> Result<ResourceReservation, LeaseDenial> {
+        self.reserve_entry_with(None)
+    }
+
+    fn reserve_entry_with(
+        &self,
+        memory_bytes: Option<u64>,
+    ) -> Result<ResourceReservation, LeaseDenial> {
         let identity = Arc::as_ptr(&self.authority) as usize;
         let active = ACTIVE_WORKER.with(|workers| {
             workers
@@ -215,14 +227,22 @@ impl<'a> ExecutionResourceLease<'a> {
         } else {
             self.lineage().iter().map(|node| node.id).collect()
         };
-        self.reserve::<ClaimSlot>(workers, worker_nodes, workers, memory_bytes)
+        self.reserve::<ClaimSlot>(workers, worker_nodes, workers, Some(memory_bytes))
+    }
+
+    pub(crate) fn try_reserve_workers(
+        &self,
+        workers: usize,
+    ) -> Result<ResourceReservation, SlotRefusal> {
+        let nodes = self.lineage().iter().map(|node| node.id).collect();
+        self.reserve::<ClaimSlot>(workers, nodes, workers, None)
     }
 
     pub(crate) fn reserve_retained_memory(
         &self,
         memory_bytes: u64,
     ) -> Result<ResourceReservation, LeaseDenial> {
-        self.reserve::<RunInline>(0, Vec::new(), 0, memory_bytes)
+        self.reserve::<RunInline>(0, Vec::new(), 0, Some(memory_bytes))
     }
 
     /// Transfer the same live backing charge atomically to this lease.
@@ -245,11 +265,15 @@ impl<'a> ExecutionResourceLease<'a> {
 
 pub(crate) struct ResourceReservation {
     authority: Arc<AuthorityInner>,
-    memory_lineage: Vec<u64>,
+    memory: Option<ReservedMemory>,
     worker_lineage: Vec<u64>,
     worker_count_per_node: usize,
     process_workers: usize,
-    memory_bytes: u64,
+}
+
+struct ReservedMemory {
+    lineage: Vec<u64>,
+    bytes: u64,
 }
 
 pub(crate) struct ActiveWorkerGuard;
@@ -270,15 +294,24 @@ impl Drop for ResourceReservation {
             .lock()
             .unwrap_or_else(|error| error.into_inner());
         ledger.active_workers -= self.process_workers;
-        ledger.charged_memory_bytes -= self.memory_bytes;
-        for id in &self.memory_lineage {
+        if let Some(memory) = &self.memory {
+            ledger.charged_memory_bytes -= memory.bytes;
+        }
+        for id in &self.worker_lineage {
             let usage = ledger.nodes.get_mut(id).expect("reservation has a node");
-            usage.active_workers -= if self.worker_lineage.contains(id) {
-                self.worker_count_per_node
-            } else {
-                0
+            usage.active_workers -= self.worker_count_per_node;
+        }
+        if let Some(memory) = &self.memory {
+            for id in &memory.lineage {
+                let usage = ledger.nodes.get_mut(id).expect("reservation has a node");
+                usage.charged_memory_bytes -= memory.bytes;
+            }
+        }
+        let memory_nodes = self.memory.iter().flat_map(|memory| &memory.lineage);
+        for id in self.worker_lineage.iter().chain(memory_nodes) {
+            let Some(usage) = ledger.nodes.get(id) else {
+                continue;
             };
-            usage.charged_memory_bytes -= self.memory_bytes;
             if usage.active_workers == 0 && usage.charged_memory_bytes == 0 {
                 ledger.nodes.remove(id);
             }

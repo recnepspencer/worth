@@ -19,22 +19,29 @@ impl<'a> ExecutionResourceLease<'a> {
                 LeaseDenial::EquivalenceContractUnavailable,
             ));
         }
-        let budget = request.policy.budget();
-        if budget.max_workers().get() > self.node.max_workers {
+        if request.policy.max_workers().get() > self.node.max_workers {
             return Err(LeaseDenial::refused(LeaseDenial::WorkerLimitExceedsParent));
         }
         if self.node.charged_memory_bytes.is_some_and(|parent| {
-            budget
-                .charged_memory_bytes()
+            request
+                .policy
+                .accounting()
+                .and_then(|budget| budget.charged_memory_bytes())
                 .is_some_and(|child| child > parent)
         }) {
             return Err(LeaseDenial::refused(LeaseDenial::MemoryLimitExceedsParent));
         }
         if self
             .policy
-            .budget()
-            .work_ceiling()
-            .is_some_and(|parent| budget.work_ceiling().is_none_or(|child| child > parent))
+            .accounting()
+            .and_then(|budget| budget.work_ceiling())
+            .is_some_and(|parent| {
+                request
+                    .policy
+                    .accounting()
+                    .and_then(|budget| budget.work_ceiling())
+                    .is_none_or(|child| child > parent)
+            })
         {
             return Err(LeaseDenial::refused(LeaseDenial::WorkLimitExceedsParent));
         }
@@ -57,16 +64,19 @@ impl<'a> ExecutionResourceLease<'a> {
     }
 
     fn child_from_validated_request(&self, request: LeaseRequest) -> Self {
-        let budget = request.policy.budget();
         Self {
             authority: Arc::clone(&self.authority),
             _authority: std::marker::PhantomData,
             node: Arc::new(LeaseNode {
+                accounted: request.policy.accounting().is_some(),
                 id: self.authority.next_id(),
                 parent: Some(Arc::clone(&self.node)),
-                max_workers: budget.max_workers().get(),
+                max_workers: request.policy.max_workers().get(),
                 posture: request.policy.posture(),
-                charged_memory_bytes: budget.charged_memory_bytes(),
+                charged_memory_bytes: request
+                    .policy
+                    .accounting()
+                    .and_then(|budget| budget.charged_memory_bytes()),
                 deadline: match (self.node.deadline, request.deadline) {
                     (Some(parent), Some(child)) => Some(parent.min(child)),
                     (Some(parent), None) => Some(parent),
@@ -80,6 +90,16 @@ impl<'a> ExecutionResourceLease<'a> {
 
     pub fn policy(&self) -> &ExecutionRequestPolicy {
         &self.policy
+    }
+
+    /// An accounted ancestor cannot be bypassed by a worker-only descendant.
+    pub fn has_accounting(&self) -> bool {
+        self.policy.accounting().is_some()
+            || self.authority.config.charged_memory_bytes.is_some()
+            || std::iter::successors(Some(self.node.as_ref()), |node| node.parent.as_deref())
+                .any(|node| node.accounted)
+            || (self.current_descendant().is_some()
+                && crate::backend::RunLimits::parent_accounted())
     }
 
     pub fn resolved_posture(&self) -> ExecutionPosture {

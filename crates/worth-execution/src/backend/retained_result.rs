@@ -40,13 +40,14 @@ impl From<LeaseDenial> for ResultStorageDenial {
 pub struct ExecutionRetainedResult<R>(Arc<SettledValue<R>>);
 
 struct SettledValue<R> {
+    accounted: bool,
     value: R,
     identity: PartitionIdentity,
     work: u64,
     span: u64,
     receipt: Option<ExecutionKernelReceipt>,
     // Release the result and capture before their surviving backing grant.
-    memory: ExecutionMemoryReservation,
+    memory: Option<ExecutionMemoryReservation>,
 }
 
 impl<R> Clone for ExecutionRetainedResult<R> {
@@ -66,14 +67,20 @@ impl<R> ExecutionRetainedResult<R> {
         self.0.identity
     }
     pub fn charged_work(&self) -> u64 {
+        assert!(self.0.accounted, "native result has no accounted cost");
         self.0.work
     }
     pub fn charged_span(&self) -> u64 {
+        assert!(self.0.accounted, "native result has no accounted cost");
         self.0.span
     }
 
+    pub fn accounted_cost(&self) -> Option<(u64, u64)> {
+        self.0.accounted.then_some((self.0.work, self.0.span))
+    }
+
     pub fn native_reuse_available(&self) -> bool {
-        self.0.receipt.is_some()
+        !self.0.accounted || self.0.receipt.is_some()
     }
 
     /// Compare native meter captures only. This is not value equivalence,
@@ -91,6 +98,9 @@ impl<R> ExecutionRetainedResult<R> {
         &'value self,
         context: &mut KernelContext<'_, '_>,
     ) -> Option<Result<&'value R, KernelStop>> {
+        if !context.has_accounting() {
+            return Some(context.poll().map(|()| &self.0.value));
+        }
         Some(
             context
                 .carry_kernel(self.0.receipt.as_ref()?)
@@ -101,12 +111,17 @@ impl<R> ExecutionRetainedResult<R> {
 
 impl<R> ChargedBytes for ExecutionRetainedResult<R> {
     fn additional_charged_bytes(&self) -> u64 {
-        self.0.memory.bytes().saturating_add(
-            self.0
-                .receipt
-                .as_ref()
-                .map_or(0, ChargedBytes::additional_charged_bytes),
-        )
+        self.0
+            .memory
+            .as_ref()
+            .expect("charged backing requires accounted native result")
+            .bytes()
+            .saturating_add(
+                self.0
+                    .receipt
+                    .as_ref()
+                    .map_or(0, ChargedBytes::additional_charged_bytes),
+            )
     }
 }
 
@@ -262,12 +277,13 @@ fn store<R>(
     memory: Option<ExecutionMemoryReservation>,
 ) -> ExecutionRetainedResult<R> {
     ExecutionRetainedResult(Arc::new(SettledValue {
+        accounted: evaluated.accounted,
         value,
         identity,
         work: evaluated.work,
         span: evaluated.span,
         receipt: evaluated.receipt,
-        memory: memory.expect("fresh result admitted before evaluation"),
+        memory,
     }))
 }
 

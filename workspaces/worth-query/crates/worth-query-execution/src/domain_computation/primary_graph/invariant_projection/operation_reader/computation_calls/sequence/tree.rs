@@ -25,21 +25,33 @@ pub(super) fn fresh(
     call: &Call,
     execution: &QueryRequestExecution<'_>,
 ) -> Result<Arc<Node>, Resource> {
-    let held = (size_of::<Node>() + 2 * size_of::<usize>()) as u64;
-    let bytes = held
-        .checked_add(
-            call.0
-                .additional_bytes()
-                .ok_or(Resource::CapacityOverflow)?,
-        )
-        .ok_or(Resource::CapacityOverflow)?;
-    let memory = execution.reserve(bytes)?;
+    let memory = execution
+        .has_accounting()
+        .then(|| {
+            let bytes = (size_of::<Node>() + 2 * size_of::<usize>()) as u64;
+            let bytes = bytes
+                .checked_add(
+                    call.0
+                        .additional_bytes()
+                        .ok_or(Resource::CapacityOverflow)?,
+                )
+                .ok_or(Resource::CapacityOverflow)?;
+            execution.reserve(bytes)
+        })
+        .transpose()?;
+    #[cfg(test)]
+    let bytes = memory.as_ref().map(QueryMemoryReservation::bytes);
     observed::computation_call_copy();
     Ok(Arc::new(Node {
         count: 1,
         height: 1,
-        summary: Some(CallSummary::leaf(&call.0, call.1)),
+        summary: Some(if execution.has_accounting() {
+            CallSummary::leaf(&call.0, call.1)
+        } else {
+            CallSummary::native()
+        }),
         kind: Kind::Leaf(read, call.clone()),
+        #[cfg(test)]
         bytes,
         _memory: memory,
     }))
@@ -58,19 +70,26 @@ fn branch(
         .max(b.height)
         .checked_add(1)
         .ok_or(Resource::CapacityOverflow)?;
-    let summary = a.summary.zip(b.summary).and_then(|(a, b)| a.then(b));
-    let held = (size_of::<Node>() + 2 * size_of::<usize>()) as u64;
-    let bytes = held
-        .checked_add(a.bytes)
-        .and_then(|v| v.checked_add(b.bytes))
-        .ok_or(Resource::CapacityOverflow)?;
-    let memory = execution.reserve(held)?;
+    let summary = if execution.has_accounting() {
+        a.summary.zip(b.summary).and_then(|(a, b)| a.then(b))
+    } else {
+        Some(CallSummary::native())
+    };
+    let memory = execution
+        .has_accounting()
+        .then(|| execution.reserve((size_of::<Node>() + 2 * size_of::<usize>()) as u64))
+        .transpose()?;
+    #[cfg(test)]
+    let bytes = memory
+        .as_ref()
+        .and_then(|memory| memory.bytes().checked_add(a.bytes?)?.checked_add(b.bytes?));
     observed::computation_call_copy();
     Ok(Arc::new(Node {
         count,
         height,
         summary,
         kind: Kind::Branch(a, b),
+        #[cfg(test)]
         bytes,
         _memory: memory,
     }))

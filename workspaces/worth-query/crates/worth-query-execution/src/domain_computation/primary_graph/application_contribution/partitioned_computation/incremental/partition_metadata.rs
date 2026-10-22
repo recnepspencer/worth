@@ -60,6 +60,6 @@ impl<Key> PartitionMetadata<Key> {
     }
     #[cfg(test)]
     pub(super) fn bytes(&self) -> Option<u64> {
-        Some(self.entries.retained_bytes())
+        self.entries.accounted_bytes()
     }
 }

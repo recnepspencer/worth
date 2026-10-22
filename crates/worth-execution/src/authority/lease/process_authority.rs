@@ -9,6 +9,26 @@ use std::sync::{Arc, Mutex, OnceLock};
 static PROCESS_AUTHORITY: OnceLock<()> = OnceLock::new();
 static CONSTRUCTION_LOCK: Mutex<()> = Mutex::new(());
 
+impl std::fmt::Display for ConstructionDenial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AlreadyConstructed => {
+                f.write_str("the process execution authority was already constructed")
+            }
+            Self::PoolConstruction(cause) => {
+                write!(f, "execution worker pool construction failed: {cause}")
+            }
+            Self::DuplicateEquivalenceContract(id) => {
+                write!(f, "duplicate equivalence contract: {id:?}")
+            }
+            Self::DuplicateEquivalenceIdentity(id) => {
+                write!(f, "duplicate equivalence identity: {id:?}")
+            }
+        }
+    }
+}
+impl std::error::Error for ConstructionDenial {}
+
 /// One physical authority is permitted for a process lifetime, including after drop.
 impl ExecutionAuthority {
     pub fn try_construct(config: ExecutionAuthorityConfig) -> Result<Self, ConstructionDenial> {
@@ -64,13 +84,13 @@ impl ExecutionAuthority {
         {
             return Err(ExecutionPolicyDenial::ContractUnavailable);
         }
-        let budget = policy.budget();
-        if budget.max_workers().get() > self.inner.config.max_workers.get() {
+        if policy.max_workers().get() > self.inner.config.max_workers.get() {
             return Err(ExecutionPolicyDenial::WorkersExceedAuthority);
         }
         if self.inner.config.charged_memory_bytes.is_some_and(|cap| {
-            budget
-                .charged_memory_bytes()
+            policy
+                .accounting()
+                .and_then(|budget| budget.charged_memory_bytes())
                 .is_some_and(|bytes| bytes > cap)
         }) {
             return Err(ExecutionPolicyDenial::MemoryExceedsAuthority);
@@ -84,17 +104,20 @@ impl ExecutionAuthority {
     ) -> Result<ExecutionResourceLease<'_>, LeaseDenial> {
         self.admits_policy(&request.policy)
             .map_err(|denial| LeaseDenial::refused(denial.into()))?;
-        let budget = request.policy.budget();
         let id = self.inner.next_id();
         Ok(ExecutionResourceLease {
             authority: Arc::clone(&self.inner),
             _authority: std::marker::PhantomData,
             node: Arc::new(LeaseNode {
+                accounted: request.policy.accounting().is_some(),
                 id,
                 parent: None,
-                max_workers: budget.max_workers().get(),
+                max_workers: request.policy.max_workers().get(),
                 posture: request.policy.posture(),
-                charged_memory_bytes: budget.charged_memory_bytes(),
+                charged_memory_bytes: request
+                    .policy
+                    .accounting()
+                    .and_then(|budget| budget.charged_memory_bytes()),
                 deadline: request.deadline,
                 cancellation: request.cancellation,
             }),

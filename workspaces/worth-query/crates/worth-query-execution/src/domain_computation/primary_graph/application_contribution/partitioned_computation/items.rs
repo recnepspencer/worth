@@ -98,7 +98,12 @@ where
             .allocation_policy()
             .map_err(WorthQueryPartitionedComputationDenial::Resource)?,
     )?;
-    charge_preparation(execution, work, routed.units())?;
+    let units = if execution.has_accounting() {
+        routed.units()
+    } else {
+        None
+    };
+    charge_preparation(execution, work, units)?;
     Ok(partition)
 }
 

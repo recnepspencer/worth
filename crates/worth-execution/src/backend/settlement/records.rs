@@ -14,6 +14,7 @@ use crate::{
 };
 
 pub(crate) struct EvaluatedTask {
+    pub(crate) accounted: bool,
     pub(crate) work: u64,
     pub(crate) span: u64,
     pub(crate) receipt: Option<ExecutionKernelReceipt>,
@@ -29,8 +30,8 @@ pub(crate) struct SettlementSlot {
 /// admission release. Each accepted result takes only its own grant.
 pub(crate) struct SettlementRecords {
     slots: ExecutionArray<SettlementSlot>,
-    storage: ExecutionKernelReceiptStorage,
-    _scratch: ExecutionMemoryReservation,
+    storage: Option<ExecutionKernelReceiptStorage>,
+    _scratch: Option<ExecutionMemoryReservation>,
 }
 
 enum PayloadStorage {
@@ -69,18 +70,35 @@ impl SettlementRecords {
     ) -> Result<Self, ResultStorageDenial> {
         // Current captures and the returned handle vector coexist while
         // native values move into their separately funded cells.
-        let bytes = batch
-            .len()
-            .checked_mul(
-                size_of::<SettlementSlot>() + size_of::<super::super::ExecutionRetainedResult<R>>(),
+        let accounted = !matches!(payload_storage, PayloadStorage::Native)
+            || super::super::meter::RunLimits::native_accounting(lease);
+        let bytes = if accounted {
+            batch
+                .len()
+                .checked_mul(
+                    size_of::<SettlementSlot>()
+                        + size_of::<super::super::ExecutionRetainedResult<R>>(),
+                )
+                .and_then(|bytes| u64::try_from(bytes).ok())
+                .ok_or_else(LeaseDenial::charged_bytes_overflow)?
+        } else {
+            0
+        };
+        let scratch = if accounted {
+            Some(ExecutionMemoryReservation::reserve_in_scope(lease, bytes)?)
+        } else {
+            None
+        };
+        let storage = if accounted {
+            Some(
+                ExecutionKernelReceiptStorage::new(ExecutionMemoryReservation::reserve_in_scope(
+                    lease, 0,
+                )?)
+                .map_err(LeaseDenial::MemoryExhausted)?,
             )
-            .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or_else(LeaseDenial::charged_bytes_overflow)?;
-        let scratch = ExecutionMemoryReservation::reserve_in_scope(lease, bytes)?;
-        let storage = ExecutionKernelReceiptStorage::new(
-            ExecutionMemoryReservation::reserve_in_scope(lease, 0)?,
-        )
-        .map_err(LeaseDenial::MemoryExhausted)?;
+        } else {
+            None
+        };
         // The explicit scope grant above also covers serial backing.
         let mut slots = ExecutionArrayBuilder::allocate(
             batch.len(),
@@ -88,20 +106,26 @@ impl SettlementRecords {
         )
         .map_err(ResultStorageDenial::Allocation)?;
         for index in 0..batch.len() {
-            let bytes = match payload_storage {
-                PayloadStorage::Declared => {
-                    let capacity = batch.result_capacity(index).ok_or(
-                        ResultStorageDenial::RequiresExecution(batch.identities()[index]),
-                    )?;
-                    result_bytes::<R>(capacity)
-                }
-                PayloadStorage::Native => result_layout_bytes::<R>(),
-            }
-            .ok_or_else(LeaseDenial::charged_bytes_overflow)?;
+            let bytes = if accounted {
+                Some(
+                    match payload_storage {
+                        PayloadStorage::Declared => {
+                            let capacity = batch.result_capacity(index).ok_or(
+                                ResultStorageDenial::RequiresExecution(batch.identities()[index]),
+                            )?;
+                            result_bytes::<R>(capacity)
+                        }
+                        PayloadStorage::Native => result_layout_bytes::<R>(),
+                    }
+                    .ok_or_else(LeaseDenial::charged_bytes_overflow)?,
+                )
+            } else {
+                None
+            };
             slots
                 .push(SettlementSlot {
                     evaluated: OnceLock::new(),
-                    memory: if new_result(index) {
+                    memory: if let Some(bytes) = bytes.filter(|_| new_result(index)) {
                         Some(ExecutionMemoryReservation::reserve_in_scope(lease, bytes)?)
                     } else {
                         None
@@ -116,8 +140,8 @@ impl SettlementRecords {
         })
     }
 
-    pub(in crate::backend) fn storage(&self) -> &ExecutionKernelReceiptStorage {
-        &self.storage
+    pub(in crate::backend) fn storage(&self) -> Option<&ExecutionKernelReceiptStorage> {
+        self.storage.as_ref()
     }
 
     pub(in crate::backend) fn record<R, E>(
@@ -126,6 +150,7 @@ impl SettlementRecords {
         outcome: &TaskOutcome<R, E>,
         receipt: Option<ExecutionKernelReceipt>,
         result_heap: Option<u64>,
+        accounted: bool,
     ) {
         let receipt = if matches!(&outcome.result, TaskResult::Value(_)) {
             receipt
@@ -135,6 +160,7 @@ impl SettlementRecords {
         self.slots[index]
             .evaluated
             .set(EvaluatedTask {
+                accounted,
                 work: outcome.work,
                 span: outcome.span,
                 receipt,
@@ -154,8 +180,8 @@ impl SettlementRecords {
 
 struct IntoSlots {
     slots: ExecutionArrayIntoIter<SettlementSlot>,
-    _storage: ExecutionKernelReceiptStorage,
-    _scratch: ExecutionMemoryReservation,
+    _storage: Option<ExecutionKernelReceiptStorage>,
+    _scratch: Option<ExecutionMemoryReservation>,
 }
 impl Iterator for IntoSlots {
     type Item = SettlementSlot;

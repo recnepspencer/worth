@@ -85,7 +85,13 @@ impl ExecutionBudget {
 pub struct ExecutionRequestPolicy {
     posture: ExecutionPosture,
     determinism: DeterminismContract,
-    budget: ExecutionBudget,
+    admission: ExecutionAdmission,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum ExecutionAdmission {
+    WorkerOnly(NonZeroUsize),
+    Accounted(ExecutionBudget),
 }
 
 impl ExecutionRequestPolicy {
@@ -97,7 +103,19 @@ impl ExecutionRequestPolicy {
         Self {
             posture,
             determinism,
-            budget,
+            admission: ExecutionAdmission::Accounted(budget),
+        }
+    }
+
+    pub const fn for_workers(
+        posture: ExecutionPosture,
+        determinism: DeterminismContract,
+        max_workers: NonZeroUsize,
+    ) -> Self {
+        Self {
+            posture,
+            determinism,
+            admission: ExecutionAdmission::WorkerOnly(max_workers),
         }
     }
 
@@ -109,8 +127,32 @@ impl ExecutionRequestPolicy {
         self.determinism
     }
 
-    pub const fn budget(self) -> ExecutionBudget {
-        self.budget
+    pub const fn max_workers(self) -> NonZeroUsize {
+        match self.admission {
+            ExecutionAdmission::WorkerOnly(workers) => workers,
+            ExecutionAdmission::Accounted(budget) => budget.max_workers(),
+        }
+    }
+
+    pub const fn accounting(self) -> Option<ExecutionBudget> {
+        match self.admission {
+            ExecutionAdmission::WorkerOnly(_) => None,
+            ExecutionAdmission::Accounted(budget) => Some(budget),
+        }
+    }
+
+    pub const fn work_ceiling(self) -> Option<u64> {
+        match self.accounting() {
+            Some(budget) => budget.work_ceiling(),
+            None => None,
+        }
+    }
+
+    pub const fn charged_memory_bytes(self) -> Option<u64> {
+        match self.accounting() {
+            Some(budget) => budget.charged_memory_bytes(),
+            None => None,
+        }
     }
 }
 
@@ -128,9 +170,25 @@ mod tests {
             DeterminismContract::CanonicalBitwise,
             budget,
         );
-        assert_eq!(policy.budget().max_workers().get(), 3);
-        assert_eq!(policy.budget().charged_memory_bytes(), Some(4096));
-        assert_eq!(policy.budget().work_ceiling(), Some(77));
+        assert_eq!(policy.max_workers().get(), 3);
+        assert_eq!(
+            policy.accounting().unwrap().charged_memory_bytes(),
+            Some(4096)
+        );
+        assert_eq!(policy.accounting().unwrap().work_ceiling(), Some(77));
         assert_eq!(policy.determinism(), DeterminismContract::CanonicalBitwise);
+    }
+
+    #[test]
+    fn worker_only_intent_has_one_width_and_no_accounting_contract() {
+        let policy = ExecutionRequestPolicy::for_workers(
+            ExecutionPosture::Automatic,
+            DeterminismContract::CanonicalBitwise,
+            NonZeroUsize::new(16).unwrap(),
+        );
+        assert_eq!(policy.max_workers().get(), 16);
+        assert_eq!(policy.accounting(), None);
+        assert_eq!(policy.work_ceiling(), None);
+        assert_eq!(policy.charged_memory_bytes(), None);
     }
 }

@@ -31,7 +31,7 @@ impl<T: Sync, K> ExecutionMap<T, K, NativePayload> {
         let activity = enter_certification_activity();
         let preparation =
             crate::backend::run_scope_native_within(Some(lease), true, None, None, |context| {
-                context.checkpoint(0)?;
+                context.poll()?;
                 Ok::<_, KernelFailure<()>>((identity.clone(), combine.clone()))
             });
         let (oracle_identity, oracle_combine) = preparation
@@ -70,12 +70,16 @@ impl<T: Sync, K> ExecutionMap<T, K, NativePayload> {
         {
             return Err(ReduceCertificationFailure::Mismatch(OracleMismatch::Values));
         }
-        if expected_report.charged_work() != actual_report.charged_work() {
+        if expected_report.accounted_cost().map(|cost| cost.0)
+            != actual_report.accounted_cost().map(|cost| cost.0)
+        {
             return Err(ReduceCertificationFailure::Mismatch(
                 OracleMismatch::ChargedWork,
             ));
         }
-        if expected_report.charged_span() != actual_report.charged_span() {
+        if expected_report.accounted_cost().map(|cost| cost.1)
+            != actual_report.accounted_cost().map(|cost| cost.1)
+        {
             return Err(ReduceCertificationFailure::Mismatch(
                 OracleMismatch::ChargedSpan,
             ));
@@ -88,12 +92,11 @@ impl<T: Sync, K> ExecutionMap<T, K, NativePayload> {
             p.peak_queue_width(),
             p.discarded_in_flight_work(),
         );
-        let mut report = ExecutionReport::new(
-            actual_report.resolved_posture(),
-            actual_report.charged_work(),
-            actual_report.charged_span(),
-            physical,
-        );
+        let mut report = if let Some((work, span)) = actual_report.accounted_cost() {
+            ExecutionReport::new(actual_report.resolved_posture(), work, span, physical)
+        } else {
+            ExecutionReport::native(actual_report.resolved_posture(), physical)
+        };
         if let Some(cause) = actual_report.fallback() {
             report = report.with_fallback(cause);
         }

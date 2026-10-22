@@ -78,7 +78,13 @@ fn changed_shape_cost_matches_cold_priority_history_and_invokes_no_reducer() {
                 .unwrap()
         );
         let (_, actual) = cold(next);
-        assert_eq!(predicted, (actual.charged_work, actual.charged_span));
+        assert_eq!(
+            predicted,
+            (
+                actual.accounted_metrics().unwrap().charged_work,
+                actual.accounted_metrics().unwrap().charged_span
+            )
+        );
         assert_eq!(lease.charged_memory_bytes(), 0, "temporary paths released");
         assert_eq!(prior.result(), history.result());
     }
@@ -87,6 +93,7 @@ fn changed_shape_cost_matches_cold_priority_history_and_invokes_no_reducer() {
         identity: 0,
         combine: |_: &u64, _: &u64| -> u64 { panic!("shape must not combine") },
         len: prior.len,
+        accounted: prior.accounted,
     };
     assert!(panic_combine
         .checked_full_build_cost_after_edits(

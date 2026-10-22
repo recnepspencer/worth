@@ -93,14 +93,14 @@ fn nested_decomposition_metric_overflow_cannot_be_taken() {
     let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
     let outer = run_scope(None, 0, 0, |parent| {
         let inner = run_scope(None, 0, 0, |_| {
-            let mut aggregate = ReductionMetrics {
+            let mut aggregate = ReductionMetrics::from_accounting(crate::ReductionAccounting {
                 charged_span: u64::MAX,
                 ..Default::default()
-            };
-            let edit = ReductionMetrics {
+            });
+            let edit = ReductionMetrics::from_accounting(crate::ReductionAccounting {
                 charged_span: 1,
                 ..Default::default()
-            };
+            });
             let failure = add_metrics(&mut aggregate, edit).unwrap_err();
             assert_eq!(failure.reason, crate::ReductionRunStop::WorkCounterOverflow);
             Err::<(), _>(KernelFailure::Domain(()))

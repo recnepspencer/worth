@@ -9,7 +9,7 @@ use worth_foundational::ExecutionRequestPolicy;
 /// The description grants no access to an absent lease outside that closure.
 #[derive(Debug, Clone)]
 pub struct SerialRequest {
-    pub(crate) memory: SerialMemoryBudget,
+    pub(crate) memory: Option<SerialMemoryBudget>,
     pub(crate) work_ceiling: Option<u64>,
     pub(crate) deadline: Option<Instant>,
     pub(crate) cancellation: CancellationToken,
@@ -36,8 +36,10 @@ impl SerialRequest {
         deadline: Option<Instant>,
     ) -> Self {
         Self {
-            memory: SerialMemoryBudget::from_policy(policy),
-            work_ceiling: policy.budget().work_ceiling(),
+            memory: policy
+                .accounting()
+                .map(|_| SerialMemoryBudget::from_policy(policy)),
+            work_ceiling: policy.accounting().and_then(|budget| budget.work_ceiling()),
             cancellation,
             deadline,
         }
@@ -50,7 +52,7 @@ impl SerialRequest {
         deadline: Option<Instant>,
     ) -> Self {
         Self {
-            memory,
+            memory: Some(memory),
             work_ceiling: None,
             cancellation,
             deadline,
@@ -66,7 +68,7 @@ impl SerialRequest {
         self
     }
 
-    pub fn memory(&self) -> &SerialMemoryBudget {
-        &self.memory
+    pub fn memory(&self) -> Option<&SerialMemoryBudget> {
+        self.memory.as_ref()
     }
 }

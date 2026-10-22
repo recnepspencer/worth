@@ -34,6 +34,8 @@ impl ApplicationSchema for Schema {
 
 #[path = "computation/decision_plan_tests.rs"]
 mod decision_plan_tests;
+#[path = "computation/member_accounting_tests.rs"]
+mod member_accounting_tests;
 struct Feature;
 impl ApplicationFeature<Schema> for Feature {
     type Inputs = ApplicationFeatureInputLeaf;

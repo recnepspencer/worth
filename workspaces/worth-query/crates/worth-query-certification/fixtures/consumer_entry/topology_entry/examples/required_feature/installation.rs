@@ -31,6 +31,24 @@ pub fn install<const ERASE: bool>(
     installation::WorthQueryProgramApplicationRuntime<ExampleSchema, ExampleProgram<ERASE>>,
     installation::WorthQueryInMemoryApplicationDenial,
 > {
+    install_configured::<ERASE>(
+        configuration,
+        installation::ApplicationBuildIdentity::parse("27120000-0000-4000-8000-000000000001")
+            .unwrap(),
+        limits(),
+        seeded,
+    )
+}
+
+pub fn install_configured<const ERASE: bool>(
+    configuration: program::ExampleConfiguration,
+    build_identity: installation::ApplicationBuildIdentity,
+    limits: installation::WorthQueryInMemoryApplicationLimits,
+    seeded: impl FnOnce(),
+) -> Result<
+    installation::WorthQueryProgramApplicationRuntime<ExampleSchema, ExampleProgram<ERASE>>,
+    installation::WorthQueryInMemoryApplicationDenial,
+> {
     let program = ApplicationProgramAuthoring::<ExampleSchema, ExampleProgram<ERASE>>::begin()
         .validated_program()
         .unwrap();
@@ -38,9 +56,8 @@ pub fn install<const ERASE: bool>(
         program,
         ExampleSchema::declaration().unwrap(),
         (configuration,),
-        installation::ApplicationBuildIdentity::parse("27120000-0000-4000-8000-000000000001")
-            .unwrap(),
-        limits(),
+        build_identity,
+        limits,
         |_, graph, installed| {
             seeded();
             let principal = installed
@@ -94,6 +111,12 @@ fn limits() -> installation::WorthQueryInMemoryApplicationLimits {
             Some(8_000_000),
         ),
     );
+    limits_for_policy(policy)
+}
+
+pub fn limits_for_policy(
+    policy: ExecutionRequestPolicy,
+) -> installation::WorthQueryInMemoryApplicationLimits {
     let world = WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
             branches: RuntimeWorldBranchBudgetInstallation {

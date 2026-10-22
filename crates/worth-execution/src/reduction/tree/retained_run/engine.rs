@@ -73,21 +73,41 @@ impl<R> NodeEngine<Slot<R>, LeaseDenial> for RunEngine<'_, '_> {
                 )
             })
             .ok_or_else(|| ReductionRunStop::Hook(LeaseDenial::charged_bytes_overflow()))?;
-        let bytes = std::alloc::Layout::new::<[usize; 2]>()
-            .extend(std::alloc::Layout::new::<Node<Slot<R>>>())
-            .map_err(|_| ReductionRunStop::Hook(LeaseDenial::charged_bytes_overflow()))?
-            .0
-            .pad_to_align()
-            .size() as u64;
-        // Grants cover only this node; result/child cells already own theirs.
-        // No root keeps an obsolete parent or its unrelated allocations alive.
-        let memory = ExecutionMemoryReservation::reserve_in_scope(self.lease, bytes)
+        let accounted = crate::backend::RunLimits::native_accounting(self.lease);
+        crate::backend::RunLimits::check_native_scope(self.lease)
             .map_err(ReductionRunStop::Hook)?;
-        let retained_bytes = bytes
-            .checked_add(value.additional_charged_bytes())
-            .and_then(|v| v.checked_add(left.as_ref().map_or(0, |n| n.retained_bytes)))
-            .and_then(|v| v.checked_add(right.as_ref().map_or(0, |n| n.retained_bytes)))
-            .ok_or_else(|| ReductionRunStop::Hook(LeaseDenial::charged_bytes_overflow()))?;
+        let memory = if accounted {
+            let bytes = std::alloc::Layout::new::<[usize; 2]>()
+                .extend(std::alloc::Layout::new::<Node<Slot<R>>>())
+                .map_err(|_| ReductionRunStop::Hook(LeaseDenial::charged_bytes_overflow()))?
+                .0
+                .pad_to_align()
+                .size() as u64;
+            // Grants cover only this node; result/child cells already own theirs.
+            // No root keeps an obsolete parent or its unrelated allocations alive.
+            Some(
+                ExecutionMemoryReservation::reserve_in_scope(self.lease, bytes)
+                    .map_err(ReductionRunStop::Hook)?,
+            )
+        } else {
+            None
+        };
+        let retained_bytes = if let Some(memory) = &memory {
+            Some(
+                memory
+                    .bytes()
+                    .checked_add(value.additional_charged_bytes())
+                    .and_then(|v| {
+                        v.checked_add(left.as_ref().map_or(Some(0), |n| n.retained_bytes)?)
+                    })
+                    .and_then(|v| {
+                        v.checked_add(right.as_ref().map_or(Some(0), |n| n.retained_bytes)?)
+                    })
+                    .ok_or_else(|| ReductionRunStop::Hook(LeaseDenial::charged_bytes_overflow()))?,
+            )
+        } else {
+            None
+        };
         self.metrics.copied_nodes += 1;
         Ok(Arc::new(Node {
             identity: id,
@@ -99,8 +119,8 @@ impl<R> NodeEngine<Slot<R>, LeaseDenial> for RunEngine<'_, '_> {
             left,
             right,
             retained_bytes,
-            full_subtree_span: 0,
-            _memory: Some(memory),
+            full_subtree_span: None,
+            _memory: memory,
         }))
     }
     fn carry(

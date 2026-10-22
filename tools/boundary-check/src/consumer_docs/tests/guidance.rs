@@ -44,7 +44,7 @@ fn missing_duplicate_reversed_unknown_and_nested_fact_regions_refuse() {
 }
 #[test]
 fn canonical_absence_and_references_need_actual_closed_source_knowledge() {
-    let fixture = Fixture::new("## Consumer prohibitions\n\n<!-- consumer-prohibitions begin -->\n### Prohibition: example\n\nExample constraint.\n<!-- consumer-prohibitions end -->\n<!-- facade-absence: missing -->\n### Gap: missing\n\nUnavailable.\n\n<!-- known-gap: missing -->\n[Canonical gap](guide.md#gap-missing)\n", 0);
+    let fixture = Fixture::new("# Task index\n\n<!-- facade-absence: missing -->\n### Gap: missing\n\nUnavailable.\n\n<!-- known-gap: missing -->\n[Canonical gap](guide.md#gap-missing)\n", 0);
     fixture.write("query/crates/example/src/lib.rs", "pub mod facade {}");
     let config = std::fs::read_to_string(fixture.root.join(CONFIG)).unwrap();
     fixture.write(CONFIG, &(config + "\n[[absence_claims]]\nid='missing'\nmanifest='query/crates/example/Cargo.toml'\ncontainer='facade'\nname='Missing'\nkind='module-export'\n[navigation]\nindex='docs/guide.md'\nguides=[]\ncrate_roots=[]\n"));
@@ -67,7 +67,7 @@ fn canonical_absence_and_references_need_actual_closed_source_knowledge() {
 #[test]
 fn navigation_requires_real_crate_docs_not_an_unrelated_string() {
     let fixture = Fixture::new(
-        "## Consumer prohibitions\n\n<!-- consumer-prohibitions begin -->\n### Prohibition: example\n\nExample constraint.\n<!-- consumer-prohibitions end -->\n",
+        "# Task index\n\nUse the application guide to install and run a program.\n",
         0,
     );
     fixture.write("docs/build-an-application.md", "guide");
@@ -80,6 +80,29 @@ fn navigation_requires_real_crate_docs_not_an_unrelated_string() {
     assert_eq!(fixture.codes(), [DiagnosticCode::Bc8008ConsumerDocMarker]);
     fixture.write("query/crates/example/src/lib.rs", "//! [Guide](https://github.com/recnepspencer/worth/blob/master/docs/build-an-application.md)\n//! [Index](https://github.com/recnepspencer/worth/blob/master/docs/guide.md)\n");
     assert!(fixture.diagnostics().is_empty());
+}
+
+#[test]
+fn task_guides_reach_the_index_without_prescribing_editorial_content() {
+    let fixture = Fixture::new("# Application tasks\n\nInstall and run a program.\n", 0);
+    fixture.write("docs/build-an-application.md", "[Tasks](guide.md)\n");
+    let config = std::fs::read_to_string(fixture.root.join(CONFIG)).unwrap();
+    let config = config.replace(
+        "documents = ['docs/guide.md']",
+        "documents = ['docs/guide.md', 'docs/build-an-application.md']",
+    );
+    fixture.write(CONFIG, &(config + "\n[navigation]\nindex='docs/guide.md'\nguides=['docs/build-an-application.md']\ncrate_roots=[]\n"));
+    let debt = std::fs::read_to_string(fixture.root.join(DEBT)).unwrap();
+    fixture.write(
+        DEBT,
+        &(debt + "\n[[documents]]\npath='docs/build-an-application.md'\nunclassified=0\n"),
+    );
+    assert!(fixture.diagnostics().is_empty());
+    fixture.write("docs/build-an-application.md", "`[Tasks](guide.md)`\n");
+    assert_eq!(fixture.codes(), [DiagnosticCode::Bc8008ConsumerDocMarker]);
+    fixture.write("docs/other.md", "# Other\n");
+    fixture.write("docs/build-an-application.md", "[Other](other.md)\n");
+    assert_eq!(fixture.codes(), [DiagnosticCode::Bc8008ConsumerDocMarker]);
 }
 
 #[test]
@@ -224,24 +247,14 @@ fn document_alias_and_replaced_planned_parent_do_not_touch_other_targets() {
 }
 
 #[test]
-fn canonical_boundaries_and_gap_links_are_parsed_not_marker_counts() {
-    let valid = "## Consumer prohibitions\n\n<!-- consumer-prohibitions begin -->\n### Prohibition: example\n\nConstraint.\n<!-- consumer-prohibitions end -->\n<!-- facade-absence: missing -->\n### Gap: missing\n\nUnavailable.\n\n<!-- known-gap: missing -->\n[Gap](guide.md#gap-missing)\n";
+fn gap_links_require_the_actual_named_heading() {
+    let valid = "# Task index\n\n<!-- facade-absence: missing -->\n### Gap: missing\n\nUnavailable.\n\n<!-- known-gap: missing -->\n[Gap](guide.md#gap-missing)\n";
     let fixture = Fixture::new(valid, 0);
     fixture.write("query/crates/example/src/lib.rs", "pub mod facade {}");
     let config = std::fs::read_to_string(fixture.root.join(CONFIG)).unwrap();
     fixture.write(CONFIG, &(config + "\n[[absence_claims]]\nid='missing'\nmanifest='query/crates/example/Cargo.toml'\ncontainer='facade'\nname='Missing'\nkind='module-export'\n[navigation]\nindex='docs/guide.md'\nguides=[]\ncrate_roots=[]\n"));
     assert!(fixture.diagnostics().is_empty());
     for invalid in [
-        valid
-            .replace(
-                "<!-- consumer-prohibitions begin -->",
-                "<!-- consumer-prohibitions end -->",
-            )
-            .replacen(
-                "<!-- consumer-prohibitions end -->\n<!-- facade",
-                "<!-- consumer-prohibitions begin -->\n<!-- facade",
-                1,
-            ),
         valid.replace("### Gap: missing\n", ""),
         valid.replace("[Gap](guide.md#gap-missing)", "marker without a link"),
         valid.replace("### Gap: missing", "### Gap: other"),

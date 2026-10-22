@@ -1,4 +1,4 @@
-//! Certification is a diagnostic rerun, never part of an advancement's bill.
+//! Certification reruns canonical native reduction without creating accounting.
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::{
     place_managed_computations_on_this_thread_for_test as place,
@@ -25,40 +25,36 @@ fn reducing_member(
                     "diagnostic member rendezvous hang guard expired: second slot unavailable"
                 );
             }
-            member.compute(|managed, _, _, _| {
+            member.compute(|managed, _, _| {
                 let invocations = std::sync::atomic::AtomicUsize::new(0);
-                let map = ExecutionMap::<_, u64>::from_keyless_partitions(
+                let map = ExecutionMap::<_, ()>::from_native_partitions(
                     [3_u64, 7].into_iter().enumerate().map(|(rank, value)| (
                         PartitionIdentity::new(rank as u64 + 1),
-                        worth_execution::KeylessPartition {
-                            value, kernel_scratch_bytes: 0, max_result_bytes: 0,
-                        },
+                        value,
                     )).collect(),
                 ).unwrap();
-                let inputs = managed.request.reserve(0).unwrap();
-                let mut held = managed.request.reserve(0).unwrap();
                 let kernel = |value: &u64, context: &mut MapKernelContext<'_, '_>| {
                     calls.lock().unwrap().push((std::thread::current().id(), invocations.fetch_add(1, std::sync::atomic::Ordering::Relaxed) >= 2));
-                    context.checkpoint(*value)?;
+                    context.poll()?;
                     Ok::<_, MapKernelFailure<()>>(*value)
                 };
-                let (tree, report, _) = managed.request.dispatch().unwrap().reduce(
-                    u64::MAX, &map, inputs, &mut held,
-                    (kernel, kernel), 0_u64, |left, right| left + right, 8,
+                let result = managed.request.dispatch().unwrap().reduce_retained(
+                    None, &map, (kernel, kernel), 0_u64, |left, right| left + right,
                     crate::domain_computation::primary_graph::application_contribution::partitioned_computation::WorthQueryPartitionedComputationFullCause::Unretained,
-                ).unwrap().unwrap();
-                Ok::<_, ()>((*tree.result(), report.charged_work(), report.charged_span()))
+                ).unwrap();
+                assert_eq!(result.metrics.accounted_metrics(), None);
+                Ok::<_, ()>((*result.tree.result(), result.report.accounted_cost()))
             })
         })],
     }
 }
 
 #[test]
-fn certification_never_changes_the_advancements_work_or_span() {
+fn certification_preserves_nested_results_without_billing_the_advancement() {
     let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
     let caller = std::thread::current().id();
     for width in [1, 2] {
-        let mut bills = Vec::new();
+        let mut outcomes = Vec::new();
         for certified in [false, true] {
             let workers = NonZeroUsize::new(width).unwrap();
             place(if certified {
@@ -83,14 +79,14 @@ fn certification_never_changes_the_advancements_work_or_span() {
                         .into_slots()
                         .pop()
                         .unwrap()
-                        .into_value::<Result<(u64, u64, u64), ()>>()
+                        .into_value::<Result<(u64, Option<(u64, u64)>), ()>>()
                         .unwrap()
                 })
                 .collect::<Vec<_>>();
             assert_eq!(
                 values,
-                vec![(10, 25, 22); width],
-                "the declared two-input reduction costs 25 work and 22 span"
+                vec![(10, None); width],
+                "the native two-input reduction preserves its result without accounting"
             );
 
             let calls = calls.lock().unwrap();
@@ -107,11 +103,12 @@ fn certification_never_changes_the_advancements_work_or_span() {
                     "a descendant worker really certifies its owned reduction"
                 );
             }
-            bills.push((values, report.charged_work(), report.charged_span()));
+            assert_eq!(report.accounted_cost(), None);
+            outcomes.push(values);
         }
         assert_eq!(
-            bills[0], bills[1],
-            "a diagnostic certification never changes the advancement's work or span"
+            outcomes[0], outcomes[1],
+            "diagnostic certification preserves canonical nested results"
         );
     }
 }

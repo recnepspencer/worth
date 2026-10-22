@@ -27,11 +27,13 @@ pub(super) fn complete<Key, Item, Stopped>(
                     call.declared_units,
                 )
             }))
-            .chain(
-                partitions
-                    .iter()
-                    .map(|(id, partition)| (ComputationRead::Partition(*id), &partition.gather, 0)),
-            )
+            .chain(partitions.iter().map(|(id, partition)| {
+                (
+                    ComputationRead::Partition(*id),
+                    &partition.gather,
+                    execution.has_accounting().then_some(0),
+                )
+            }))
         },
         execution,
     )

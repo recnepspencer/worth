@@ -6,7 +6,7 @@ pub use plan::{ReductionDenial, ReductionPlan};
 pub(crate) use tree::ScheduledReductionError;
 pub use tree::{
     NativeReductionTree, ReductionEditMemoryBoundError, ReductionInsertMemoryBoundError,
-    ReductionMetrics, ReductionRunFailure, ReductionRunStop, ReductionShapeCostDenial,
+    ReductionAccounting, ReductionMetrics, ReductionRunFailure, ReductionRunStop, ReductionShapeCostDenial,
     ReductionTree,
 };
 

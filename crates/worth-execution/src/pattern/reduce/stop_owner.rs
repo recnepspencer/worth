@@ -35,6 +35,7 @@ fn reduction_owner(
             ReductionDenial::Admission(_) => Owner::Request,
             ReductionDenial::Allocation(kind) => Owner::Computation(Cause::Allocation(*kind)),
             ReductionDenial::WorkCounterOverflow => Owner::Request,
+            ReductionDenial::AccountingUnavailable => Owner::Request,
             ReductionDenial::ReducerPanic => Owner::Computation(Cause::Panic),
             ReductionDenial::ResultCapacityExceeded => {
                 Owner::Computation(Cause::ResultCapacityExceeded)

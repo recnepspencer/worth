@@ -10,9 +10,13 @@ pub(crate) enum StructuralSpanFailure {
 impl KernelContext<'_, '_> {
     /// The work and structural span already admitted on this kernel.
     pub fn charged_cost(&self) -> (u64, u64) {
-        if let Some(capture) = &mut self.meter.borrow_mut().capture {
+        if let Some(capture) = self.meter.borrow_mut().capture_mut() {
             capture.invalidate();
         }
+        assert!(
+            self.has_accounting(),
+            "charged cost requires accounted execution"
+        );
         self.cost()
     }
 
@@ -46,10 +50,16 @@ impl KernelContext<'_, '_> {
             meter.nested_stop.record(NestedStopOwner::Request);
             return Err(StructuralSpanFailure::CounterOverflow);
         };
-        if meter.work != expected_work || meter.span != expected_span || stage_span > stage_work {
+        let Some(accounting) = meter.accounting.as_mut() else {
+            return Err(StructuralSpanFailure::MetricsMismatch);
+        };
+        if accounting.work != expected_work
+            || accounting.span != expected_span
+            || stage_span > stage_work
+        {
             return Err(StructuralSpanFailure::MetricsMismatch);
         }
-        meter.span = next_span;
+        accounting.span = next_span;
         Ok(())
     }
 }

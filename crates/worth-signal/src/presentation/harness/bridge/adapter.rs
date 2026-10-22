@@ -162,11 +162,19 @@ impl HarnessAdapter for SignalHarnessBridge {
                         "parallel Signal harness fixture requires a lease request",
                     )
                 })?;
-                lease_request.policy = ExecutionRequestPolicy::new(
-                    ExecutionPosture::Automatic,
-                    lease_request.policy.determinism(),
-                    lease_request.policy.budget(),
-                );
+                let parent = lease_request.policy;
+                lease_request.policy = match parent.accounting() {
+                    Some(budget) => ExecutionRequestPolicy::new(
+                        ExecutionPosture::Automatic,
+                        parent.determinism(),
+                        budget,
+                    ),
+                    None => ExecutionRequestPolicy::for_workers(
+                        ExecutionPosture::Automatic,
+                        parent.determinism(),
+                        parent.max_workers(),
+                    ),
+                };
                 let lease = authority
                     .request_lease(lease_request)
                     .map_err(SignalError::execution_admission_denied)?;

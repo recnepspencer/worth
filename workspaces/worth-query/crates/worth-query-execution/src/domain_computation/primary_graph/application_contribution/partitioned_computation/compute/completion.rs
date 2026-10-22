@@ -14,6 +14,12 @@ where
     /// whether a partition was computed again or carried from the last run.
     pub const fn charged_work(&self) -> u64 {
         self.charged_work
+            .expect("worker-only computation has no charged work")
+    }
+
+    /// A contractual bill exists only for an explicitly accounted request.
+    pub const fn accounted_work(&self) -> Option<u64> {
+        self.charged_work
     }
 
     /// Completes the reduced result on the calling thread.

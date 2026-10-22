@@ -69,7 +69,7 @@ fn parallel_read_request_exhaustion_keeps_a_canonical_prefix_and_releases_memory
                                     worth_foundational::ExecutionBudget::new(
                                         NonZeroUsize::new(workers).unwrap(),
                                         None,
-                                        parent.policy().budget().work_ceiling(),
+                                        parent.policy().work_ceiling(),
                                     ),
                                 ),
                                 cancellation: scope.cancellation().execution_token(),

@@ -38,7 +38,8 @@ pub struct WorthQueryAdvancementEventForTest {
 
 /// One attempted advancement, including refusal and the actually applied prefix.
 /// Semantic caller failures retain the report of their admitted advancement.
-/// A refusal before admission reports zero work/span and no application events.
+/// A refusal before admission reports no physical work or application events;
+/// a worker-only advancement carries no accounting measurement.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryAdvancementObservationForTest {
     /// The width of the lease actually lent to the admitted dispatch scope.
@@ -52,19 +53,21 @@ pub struct WorthQueryAdvancementObservationForTest {
 struct ActiveObservation {
     workers: Option<usize>,
     posture: ExecutionPosture,
+    accounted: bool,
     applied: Vec<WorthQueryAdvancementEventForTest>,
 }
 thread_local! {
     static REQUESTS: RefCell<Vec<WorthQueryAdvancementObservationForTest>> = const { RefCell::new(Vec::new()) };
     static ACTIVE: RefCell<Option<ActiveObservation>> = const { RefCell::new(None) };
 }
-pub(super) fn begin(posture: ExecutionPosture) {
+pub(super) fn begin(posture: ExecutionPosture, accounted: bool) {
     if !observing() {
         return;
     }
     ACTIVE.with(|active| {
         let previous = active.replace(Some(ActiveObservation {
             posture,
+            accounted,
             workers: None,
             applied: Vec::new(),
         }));
@@ -110,17 +113,19 @@ pub(super) fn record_result<R>(result: &Result<R, WorthQueryAdvancementDenial>) 
         crate::domain_computation::execution_observation::register_cleanup(clear_observations);
     }
     if let Err(cause) = result {
-        let posture = ACTIVE.with(|active| {
+        let (posture, accounted) = ACTIVE.with(|active| {
             active
                 .borrow()
                 .as_ref()
+                .map(|active| (active.posture, active.accounted))
                 .expect("the refused advancement is active")
-                .posture
         });
-        finish(
-            ExecutionReport::new(posture, 0, 0, ExecutionPhysicalReport::default()),
-            Some(*cause),
-        );
+        let report = if accounted {
+            ExecutionReport::new(posture, 0, 0, ExecutionPhysicalReport::default())
+        } else {
+            ExecutionReport::native(posture, ExecutionPhysicalReport::default())
+        };
+        finish(report, Some(*cause));
     }
 }
 

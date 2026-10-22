@@ -166,7 +166,7 @@ fn a_plans_build_work_is_the_work_its_checked_build_charges() {
         let (_, metrics) = from_plan(plan(&identities), values, 0, sum).unwrap();
         assert_eq!(
             plan(&identities).checked_build_work(),
-            Some(metrics.charged_work),
+            Some(metrics.accounted_metrics().unwrap().charged_work),
             "{identities:?}"
         );
     }
@@ -227,19 +227,32 @@ fn incremental_edits_match_fresh_tree_and_charge_only_affected_paths() {
     let original: Vec<u64> = (0..128).collect();
     let mut values = original.iter().map(|v| v + 1).collect::<Vec<_>>();
     let (mut tree, fresh) = from_plan(plan(&original), values.clone(), 0, sum).unwrap();
-    assert!(fresh.combine_calls >= 2 * original.len() as u64);
+    assert!(fresh.accounted_metrics().unwrap().combine_calls >= 2 * original.len() as u64);
     values[31] = 900;
     let changed = tree.update(id(31), 900).unwrap();
-    assert!(changed.recombined_nodes > 0);
-    assert!(changed.recombined_nodes < original.len() as u64);
-    assert_eq!(changed.combine_calls, changed.charged_work);
-    assert_eq!(changed.charged_work, changed.charged_span);
+    assert!(changed.accounted_metrics().unwrap().recombined_nodes > 0);
+    assert!(changed.accounted_metrics().unwrap().recombined_nodes < original.len() as u64);
+    assert_eq!(
+        changed.accounted_metrics().unwrap().combine_calls,
+        changed.accounted_metrics().unwrap().charged_work
+    );
+    assert_eq!(
+        changed.accounted_metrics().unwrap().charged_work,
+        changed.accounted_metrics().unwrap().charged_span
+    );
     let (rebuilt, _) = from_plan(plan(&original), values.clone(), 0, sum).unwrap();
     assert_eq!(tree.result(), rebuilt.result());
-    assert_eq!(tree.update(id(31), 900).unwrap().combine_calls, 0);
+    assert_eq!(
+        tree.update(id(31), 900)
+            .unwrap()
+            .accounted_metrics()
+            .unwrap()
+            .combine_calls,
+        0
+    );
 
     let inserted = tree.insert(id(128), 777).unwrap();
-    assert!(inserted.recombined_nodes < 128);
+    assert!(inserted.accounted_metrics().unwrap().recombined_nodes < 128);
     let mut grown = original.clone();
     grown.push(128);
     values.push(777);
@@ -251,7 +264,7 @@ fn incremental_edits_match_fresh_tree_and_charge_only_affected_paths() {
     ));
 
     let removed = tree.delete(id(31)).unwrap();
-    assert!(removed.recombined_nodes < 128);
+    assert!(removed.accounted_metrics().unwrap().recombined_nodes < 128);
     grown.remove(31);
     values.remove(31);
     let (rebuilt, _) = from_plan(plan(&grown), values, 0, sum).unwrap();
@@ -268,7 +281,7 @@ fn signed_zero_update_is_not_suppressed_by_numeric_equality() {
     let (mut tree, _) = from_plan(plan(&[1]), vec![0.0_f64], 1.0, |a, b| a * b).unwrap();
     assert_eq!(tree.result().to_bits(), 0.0_f64.to_bits());
     let changed = tree.update(id(1), -0.0).unwrap();
-    assert_eq!(changed.recombined_nodes, 1);
+    assert_eq!(changed.accounted_metrics().unwrap().recombined_nodes, 1);
     assert_eq!(tree.result().to_bits(), (-0.0_f64).to_bits());
 }
 
@@ -342,7 +355,7 @@ fn equal_interior_encoding_cuts_off_ancestor_recombination() {
     values[31] = 1;
     let (mut tree, _) = from_plan(plan(&identities), values, 0, |a, b| (*a).max(*b)).unwrap();
     let metrics = tree.update(id(31), 2).unwrap();
-    assert_eq!(metrics.recombined_nodes, 2);
+    assert_eq!(metrics.accounted_metrics().unwrap().recombined_nodes, 2);
     assert!(
         canonical_path_len(
             &identities.iter().copied().map(id).collect::<Vec<_>>(),
@@ -365,6 +378,6 @@ fn declared_build_work_has_hand_counted_small_shapes() {
         assert_eq!(9 * ids.len() as u64 - left - right, expected);
         assert_eq!(plan(ids).checked_build_work(), Some(expected));
         let (_, metrics) = from_plan(plan(ids), vec![1_u64; ids.len()], 0, sum).unwrap();
-        assert_eq!(metrics.charged_work, expected);
+        assert_eq!(metrics.accounted_metrics().unwrap().charged_work, expected);
     }
 }

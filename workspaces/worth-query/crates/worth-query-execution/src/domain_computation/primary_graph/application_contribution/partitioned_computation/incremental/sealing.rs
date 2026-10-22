@@ -5,11 +5,15 @@ use super::{CompletedComputationRetention, SealedComputationRetention};
 use crate::domain_computation::primary_graph::application_attempt::SealedComputationFacts;
 
 impl CompletedComputationRetention {
-    /// New index storage is admitted before seal builds it, with the run's
-    /// existing request reservation held until lineage retention takes custody.
+    /// Explicitly accounted runs admit index storage before sealing. Native
+    /// runs leave both the quote and ledger absent; the actual index builder
+    /// still uses its original allocation policy and checked backing.
     pub(in crate::domain_computation::primary_graph) fn reserve_fact_index(
         &mut self,
-        bytes: Option<u64>,
+        bytes: impl FnOnce() -> Result<
+            Option<u64>,
+            crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial,
+        >,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         Option<worth_execution::ExecutionMemoryReservation>,
@@ -18,18 +22,24 @@ impl CompletedComputationRetention {
         use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
         match self {
             Self::Produced(run) => {
-                run.attribution_memory
-                    .grow(bytes.ok_or(Resource::CapacityOverflow)?)?;
+                if let Some(memory) = &mut run.attribution_memory {
+                    memory.grow(bytes()?.ok_or(Resource::CapacityOverflow)?)?;
+                }
                 Ok(None)
             }
             // No retained run can hold temporary attribution. Its caller's
             // explicit allocation policy owns that storage until completion.
-            Self::Absent(_) => match (bytes, policy) {
-                (Some(bytes), worth_execution::ExecutionAllocationPolicy::Execution(lease)) => {
-                    lease
-                        .reserve_memory(bytes)
-                        .map(Some)
-                        .map_err(super::super::super::execution_denial::memory_denial)
+            Self::Absent(_) => match policy {
+                worth_execution::ExecutionAllocationPolicy::Execution(lease)
+                    if lease.has_accounting() =>
+                {
+                    bytes()?
+                        .map(|bytes| {
+                            lease
+                                .reserve_memory(bytes)
+                                .map_err(super::super::super::execution_denial::memory_denial)
+                        })
+                        .transpose()
                 }
                 _ => Ok(None),
             },

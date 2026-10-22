@@ -31,7 +31,6 @@ impl<'facts, Facts: FactSequence + ?Sized> ObservedFactIndex<'facts, Facts> {
         };
         let routes = FactRoutes::build_iter(
             facts.iter(),
-            0,
             None,
             StorageControl::new(
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,

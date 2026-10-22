@@ -40,6 +40,7 @@ pub(in crate::domain_computation::authorization) fn kernel_stop_kind(
         Stop::DeadlineElapsed => Cause::DeadlineElapsed,
         Stop::WorkCeiling => Cause::WorkExhausted,
         Stop::WorkCounterOverflow => Cause::WorkCounterOverflow,
+        Stop::AccountingUnavailable => Cause::AccountingUnavailable,
         Stop::NestedStopped => Cause::NestedStopped,
     };
     denial(cause, "authorization request").kind()

@@ -31,7 +31,7 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
     let retained =
         crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     let current = request.at(&retained);
-    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.accounting().expect("this fixture declares accounting");
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         for zero_memory in [false, true] {

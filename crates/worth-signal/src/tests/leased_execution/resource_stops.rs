@@ -32,7 +32,7 @@ fn framework_preparation_denial_precedes_evaluator_and_publication() {
         admission.policy.posture(),
         admission.policy.determinism(),
         ExecutionBudget::new(
-            admission.policy.budget().max_workers(),
+            admission.policy.max_workers(),
             Some(16 * 1024),
             Some(1_000_000),
         ),

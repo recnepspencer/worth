@@ -22,7 +22,7 @@ fn measured_call_shape_view_keeps_its_own_grant_after_the_sequence_drops() {
     );
     let sequence=crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence::build(||std::iter::once((ComputationRead::Membership,&prior.membership.charge,prior.membership.declared_units))
         .chain(prior.item_keys.iter().map(|(item,call)|(ComputationRead::ItemKey(*item),&call.charge,call.declared_units)))
-        .chain(prior.partitions.iter().map(|(id,partition)|(ComputationRead::Partition(*id),&partition.gather,0))),&execution).unwrap();
+        .chain(prior.partitions.iter().map(|(id,partition)|(ComputationRead::Partition(*id),&partition.gather,Some(0)))),&execution).unwrap();
     let shape = Arc::clone(sequence.shape());
     drop(sequence);
     assert!(
@@ -50,7 +50,13 @@ fn measured_call_sequence_refuses_before_copy_and_holds_its_view_until_final_dro
     let sequence = &prior.call_sequence;
     let before = sequence.bytes();
     let (identity, partition) = prior.partitions.iter().next().unwrap();
-    let change = || std::iter::once((ComputationRead::Partition(*identity), &partition.gather, 0));
+    let change = || {
+        std::iter::once((
+            ComputationRead::Partition(*identity),
+            &partition.gather,
+            Some(0),
+        ))
+    };
     let request = live_scope();
     let narrow = QueryRequestExecution::open(
         RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, Some(1))),

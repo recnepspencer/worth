@@ -46,11 +46,13 @@ impl From<LeaseDenial> for RetainedRunDenial {
 /// ```
 pub struct ExecutionRetainedRun<R> {
     tree: RunTree<R>,
+    accounted: bool,
 }
 impl<R> Clone for ExecutionRetainedRun<R> {
     fn clone(&self) -> Self {
         Self {
             tree: self.tree.clone(),
+            accounted: self.accounted,
         }
     }
 }
@@ -59,10 +61,16 @@ impl<R> ExecutionRetainedRun<R> {
         self.tree.summary().count
     }
     pub fn charged_work(&self) -> u64 {
+        assert!(self.accounted, "native run has no accounted cost");
         self.tree.summary().work
     }
     pub fn charged_span(&self) -> u64 {
+        assert!(self.accounted, "native run has no accounted cost");
         self.tree.summary().span
+    }
+    pub fn accounted_cost(&self) -> Option<(u64, u64)> {
+        let summary = self.tree.summary();
+        self.accounted.then_some((summary.work, summary.span))
     }
     pub fn result(&self, id: PartitionIdentity) -> Option<&ExecutionRetainedResult<R>> {
         self.tree.get(id)
@@ -122,6 +130,39 @@ impl<R, E> RetainedRunOutcome<R, E> {
     }
 }
 
+/// A stopped DTO contains an accepted prefix and its original cause; it is
+/// not a successful payload for the request's final handoff. Keep that cause
+/// on the scope's existing failed-operation path without clearing its latch.
+fn run_native_retained<'authority, R, E>(
+    request: crate::ExecutionRequest<'_, 'authority>,
+    ceiling: crate::ExecutionWorkCeiling,
+    operation: impl for<'scope> FnOnce(
+        Option<&'scope crate::ExecutionResourceLease<'authority>>,
+    ) -> Result<RetainedRunOutcome<R, E>, RetainedRunDenial>,
+) -> Result<
+    (
+        Result<RetainedRunOutcome<R, E>, RetainedRunDenial>,
+        ExecutionReport,
+    ),
+    crate::WorkCeilingDenial,
+> {
+    let mut completed = None;
+    let (result, report) = request.run_native_report(ceiling, |lease| match operation(lease) {
+        Ok(complete @ RetainedRunOutcome::Complete { .. }) => {
+            completed = Some(complete);
+            Ok(())
+        }
+        stopped_or_denied => Err(stopped_or_denied),
+    })?;
+    let outcome = match result {
+        // A completed value is released only after the original request's
+        // strict successful handoff above; a stop drops it with this scope.
+        Ok(()) => Ok(completed.expect("successful native completion")),
+        Err(stopped_or_denied) => stopped_or_denied,
+    };
+    Ok((outcome, report))
+}
+
 pub(in crate::pattern) fn finish_native_outcome<R, E>(
     mut tree: RunTree<R>,
     outcome: crate::backend::BatchOutcome<ExecutionRetainedResult<R>, E>,
@@ -140,7 +181,10 @@ pub(in crate::pattern) fn finish_native_outcome<R, E>(
     }
     Ok(match outcome.stop {
         None => RetainedRunOutcome::Complete {
-            run: ExecutionRetainedRun { tree },
+            run: ExecutionRetainedRun {
+                tree,
+                accounted: outcome.report.has_accounting(),
+            },
             report: outcome.report,
             metrics,
         },

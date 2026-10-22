@@ -43,7 +43,10 @@ impl<Key: ApplicationComputationPartition, Item: ApplicationComputationPartition
         }
         retained
             .call_sequence
-            .summary(0..retained.call_sequence.prefix())
+            .summary(
+                0..retained.call_sequence.prefix(),
+                reader.computation_has_accounting(&COMPARATOR),
+            )
             .is_some_and(|summary| reader.can_carry_call_range(&COMPARATOR, &summary))
     }
     pub(super) fn prepare_ranges<Schema, Feature, Computation, Owner>(
@@ -81,8 +84,10 @@ impl<Key: ApplicationComputationPartition, Item: ApplicationComputationPartition
         let binding = native
             .call_binding(&sequence)
             .expect("range preparation checked actual sealed shape");
-        let marks_bytes=self.marked.len().checked_mul(11*size_of::<usize>()+16*size_of::<usize>()).and_then(|n|u64::try_from(n).ok()).ok_or_else(||resource(super::super::super::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
-        let _marks_memory = execution.reserve(marks_bytes).map_err(resource)?;
+        let _marks_memory = execution.has_accounting().then(|| {
+            let marks_bytes=self.marked.len().checked_mul(11*size_of::<usize>()+16*size_of::<usize>()).and_then(|n|u64::try_from(n).ok()).ok_or_else(||resource(super::super::super::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
+            execution.reserve(marks_bytes).map_err(resource)
+        }).transpose()?;
         let marked = self
             .marked
             .iter()
@@ -96,7 +101,7 @@ impl<Key: ApplicationComputationPartition, Item: ApplicationComputationPartition
         reader.begin_native_carriage(&COMPARATOR, native);
         reader.begin_call_ranges(&COMPARATOR, binding);
         let prefix = sequence
-            .summary(0..sequence.prefix())
+            .summary(0..sequence.prefix(), execution.has_accounting())
             .expect("preflight checked measured prefix");
         assert!(reader
             .carry_call_range(
@@ -110,7 +115,7 @@ impl<Key: ApplicationComputationPartition, Item: ApplicationComputationPartition
         super::super::preparation_work::charge_preparation(
             execution,
             &mut remaining,
-            Some(prefix.declared),
+            prefix.declared,
         )?;
         let next = NextPartitioning {
             items: Arc::clone(&retained.items),
@@ -133,7 +138,7 @@ impl<Key: ApplicationComputationPartition, Item: ApplicationComputationPartition
             match visit {
                 CallVisit::Range(range,summary)=>reader.carry_call_range(&COMPARATOR,&sequence,range,summary,execution).map_err(resource),
                 CallVisit::Leaf(_ordinal,read,_charge,declared)=>{
-                    debug_assert_eq!(declared,0);
+                    debug_assert!(declared.is_none_or(|declared| declared == 0));
                     let ComputationRead::Partition(id)=read else{unreachable!("only gather calls follow the prefix")};
                     super::super::super::super::fact_verification_observation::computation_prepared_partition();
                     let partition=retained.partitions.get(&id).expect("the sealed shape names an actual partition");

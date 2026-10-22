@@ -265,7 +265,7 @@ fn checked_wide_epoch_preserves_serial_results_and_reports_resolved_placement() 
             .any(|stage| stage.outcome == StageExecutionOutcome::CompletedParallel),
         resolved_parallel
     );
-    let admitted_workers = parallel_lease.policy().budget().max_workers().get();
+    let admitted_workers = parallel_lease.policy().max_workers().get();
     assert!(parallel_report.execution.iter().all(|execution| {
         let workers = execution.physical().active_workers_high_watermark();
         workers >= 1 && workers <= admitted_workers

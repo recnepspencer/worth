@@ -66,7 +66,6 @@ pub(in crate::indexes::authority) fn plan_index_packets_checked(
         ))?;
     let ceiling = lease
         .policy()
-        .budget()
         .charged_memory_bytes()
         .map_or(declared_bytes, |limit| limit / 8);
     let outcome = crate::execution::run_with_remaining_request_work(
@@ -131,7 +130,7 @@ pub(in crate::indexes::authority) fn plan_index_packets_checked(
                         input.value.header.packet_index,
                     )
                 });
-                let memory = lease.policy().budget().charged_memory_bytes().map_or(
+                let memory = lease.policy().charged_memory_bytes().map_or(
                     crate::execution::PacketMemory::Tracked,
                     |limit| {
                         let ceiling = limit / (inputs.len().max(1) as u64).saturating_mul(8);

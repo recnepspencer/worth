@@ -71,6 +71,7 @@ pub enum SignalExecutionFailure {
     Cancelled,
     DeadlineElapsed,
     WorkCounterOverflow,
+    AccountingUnavailable,
     WorkCeiling,
     NestedStopped,
     Panic,

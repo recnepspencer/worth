@@ -47,7 +47,15 @@ fn nested_serial_scope_cannot_replace_parent_memory() {
         entered,
         "the child was admitted before its allocation was refused"
     );
-    assert_eq!(parent.memory().reserve(4_096).unwrap().bytes(), 4_096);
+    assert_eq!(
+        parent
+            .memory()
+            .expect("explicit accounted request")
+            .reserve(4_096)
+            .unwrap()
+            .bytes(),
+        4_096
+    );
 }
 
 #[test]

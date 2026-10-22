@@ -117,7 +117,7 @@ where
     ) -> Result<u64, WorthQueryManagedComputationDenial<Infallible>> {
         let mut peak = 0_u64;
         for millivolts in partition.gathered() {
-            checkpoint.advance(1)?;
+            checkpoint.poll()?;
             peak = peak.max(*millivolts);
         }
         Ok(peak)

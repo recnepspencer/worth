@@ -269,7 +269,7 @@ fn allocation_control(
         Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => Some(Err(Control::TimedOut)),
         Class::Request(Request::Admission(_))
         | Class::Request(Request::Stopped(
-            Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped,
+            Stop::WorkCounterOverflow | Stop::AccountingUnavailable | Stop::WorkCeiling | Stop::NestedStopped,
         ))
         | Class::Request(Request::Panicked)
         | Class::Physical(_) => None,

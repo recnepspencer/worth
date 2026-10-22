@@ -2,12 +2,8 @@
 
 > **The application story, end to end:** declare the program and its
 > features, install the application graph, run it, author and run workflows,
-> and adopt a new program on a branch. A code block that follows a
-> `<!-- compiled: ... -->` marker is checked byte-for-byte by CI against a
-> compiled fixture. A `<!-- doctest: crate -->` marker binds a block to the
-> crate's rustdoc and CI doctest lane. Illustrative blocks visibly say
-> `// Illustrative: not compiled.`. The configured consumer guides require zero
-> unclassified Rust fences; CI refuses debt growth.
+> and adopt a new program on a branch. Code examples link to runnable fixtures;
+> illustrative blocks identify the parts you supply in your own application.
 
 This is the centerpiece guide for building on WORTH. Other public documents
 explain *why* the platform works the way it does
@@ -25,13 +21,9 @@ this guide explain the underlying contracts and support specialized composition.
 | Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
 | Declare operation access | [Operation access](#21-declare-operation-access-once) | Reads, effects and preconditions in one declaration |
 | Compute from tracked inputs | [Managed computation](#36-declare-and-install-a-partitioned-managed-computation) | Tracked gathering, pure numerical data and original-owner completion |
+| Share execution across applications and reopened sessions | [One process execution service](#one-process-execution-service) | One process-owned `Arc<ExecutionAuthority>`, an explicit worker policy and the original requests |
 | Install or reopen an application | [Build identity](#application-build-identity), then [installation](#41-one-program) | One immutable identity from the build pipeline, configuration and installed resources |
 | Submit, recover and close an action | [Owning actions](#53-execute-through-the-program) | Original input, source and key; fresh authorized requests for progression |
-
-These are implemented SDK surfaces. They do not promise that a particular
-application has moved its kernels to workers or qualified a parallel default.
-Computation declaration, physical placement and measured speedup are separate
-facts.
 
 An application imports exactly two crates, `worth-query-decl` and
 `worth-query-host`. Their facades are made of modules, so import from the
@@ -89,7 +81,7 @@ some declaration macros. `worth_query_mutation_binding!`,
 - [5. Run the program](#5-run-the-program)
 - [6. Author, publish, and run workflows](#6-author-publish-and-run-workflows)
 - [7. Adopt a new program on a branch](#7-adopt-a-new-program-on-a-branch)
-- [8. Rules for AI agents](#8-rules-for-ai-agents)
+- [8. Application execution checklist](#8-application-execution-checklist)
 - [9. Use the consumer vocabulary](#9-use-the-consumer-vocabulary)
 - [10. Where to go deeper](#10-where-to-go-deeper)
 
@@ -153,11 +145,9 @@ Terms: [Glossary](glossary.md) — see **Program**, **Feature**,
 A schema is composed from contributions. Each contribution declares its own
 entities, fields, operations, queries, and invariants.
 
-For ordinary feature members, let the [complete definition](#complete-feature-definitions)
-supply those declarations and runtime projections. The contribution below shows
-the composition layer and a standalone conditional. It is useful for
-contribution-wide invariants and host setup; do not copy its separate handler
-registration into a feature whose definition already owns that handler.
+For feature members, use the [complete definition](#complete-feature-definitions)
+to supply declarations and runtime projections. Use the contribution layer below
+for contribution-wide invariants, host setup and standalone conditionals.
 
 <!-- illustrative -->
 ```rust,ignore
@@ -273,20 +263,14 @@ clauses can be omitted. Declare every actual access, including related members;
 the macro does not inspect handler bodies. Effect/aftermath policy and mutation
 binding installation remain explicit at their existing owners.
 
-Edit the access clause when adding a field or relation. Do not also author
-`worth_query_operation_reads!`/`writes!` lists or repeat the same members in
-`operation_read_field`/`operation_write` registration calls. Do not add a
-projection-work invoice to make this declaration install. Native admission still
-checks actual reads and effects; a Rust capability cannot widen that authority.
+Edit the access clause when adding a field or relation. The generated Rust
+capabilities and schema registration follow that declaration; native admission
+checks the handler's actual reads and effects against it.
 
-This form currently targets concrete schemas. Schema-generic operation markers
-keep their existing typed declarations; the concrete `access` form does not
-claim to generate access for an arbitrary schema trait.
 For a [declarative operation body](../workspaces/worth-query/crates/worth-query/docs/authoring/scope-field-operation-bodies.md),
-the body already derives its installed footprint. Follow that authoring path
-without restating the body as a second installed access description.
-The [complete schema and access proof](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/declared_operation/tests.rs)
-checks both projections and schema validation without an invoice. The
+the body derives its installed footprint from the authored statements. See the
+[schema and access examples](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/declared_operation/tests.rs)
+for projections and schema validation. The
 [`ApplicationDeclaredOperation` reference](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/declared_operation.rs)
 includes a passing capability example and an undeclared-member compile refusal.
 
@@ -297,7 +281,7 @@ includes a passing capability example and an undeclared-member compile refusal.
 
 A pure value owner can derive `worth_foundational::facade::WorthValue` to emit
 Serde serialization, portable wire shape, and a checked deserialization seed
-from one definition. Do not also derive `Serialize` or `Deserialize`. Supported
+from one definition. Use those generated serialization implementations. Supported
 grammar includes concrete named/unit/newtype structs, external unit/newtype/named
 variants, internally tagged unit/named variants, 8–64 bit integers, booleans,
 strings, checked `usize` indices on a `u64` wire, fixed arrays, `Vec`, `Option`,
@@ -374,7 +358,7 @@ Opaque implementations describe their wire using the `SHAPE_BODY` constant and
 sealed typed `ValueShapeEdge` links. A transparent delegate uses
 `ValueShapeEdge::value::<Wire>()`; it does not copy Rust identities into the
 portable shape. `SUPPORTS_ADMISSION` declares that implementation's own seed;
-complete closure support is checked separately. `SHAPE_DEPTH` is removed.
+installation checks support across the complete value shape.
 Constructor normalization and retained memory remain owner contracts. A pair
 seed introduces no blanket tuple residency or shared-pointer accounting rule.
 
@@ -420,8 +404,7 @@ Retain the generated contract during installation and use
 `contract.delivery_ordinal(installed, node, Field::reference())` for an explicitly
 declared delivery field. It selects the genuine canonical ordinal and refuses
 eligibility-only fields or a different node. Consume it with
-`into_package_contract(binding.portable().clone())`. Do not copy aspect rosters,
-masks, codec digests or insertion-order ordinals. The
+`into_package_contract(binding.portable().clone())`. The
 [typed readiness examples](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/conditional/output_readiness_contract/typed/tests.rs)
 exercise full optional aspects, nested wire changes, concrete binding mismatch
 and reordered delivery/eligibility inputs.
@@ -433,35 +416,27 @@ authenticated read and current-format native recovery. The
 [compiler fixtures](../crates/worth-foundational/tests/value_shape/compiler.rs)
 cover supported and refused grammar.
 
-Ordinary `reader.field(...)` and query-row calls keep the same API. For canonical
-fields, native projection dispatch uses the installed field's exact codec and
-borrows the original execution request for all root and child decodes. Parser
-scratch and bounded diagnostics are reserved before parsing; owned strings,
-sequences and erased output are admitted
-before allocation. The first refused grant vetoes projection completion even
-when a seed or handler catches its error. A fresh request gets a fresh loan.
-Opaque canonical owners must explicitly implement `deserialize_admitted` and
-declare `SUPPORTS_ADMISSION`; installation refuses representation-only owners.
-The [native admission journey](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission.rs)
-exercises cumulative refusal, a swallowing seed/handler/projector, fresh success
-and current-format restore. Ordinary `begin_application_read_attempt` also
-borrows its original execution request: repeated observations share decode
-grants, and an ignored failure prevents `complete` from sealing facts. See the
-[ordinary read-attempt case](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission/ordinary_attempt.rs).
-Managed collection-pair reconstruction keeps one decode reservation and refusal
-state across both reads and all members until the atomic view decision. Its
-[canonical pair case](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission/paired.rs)
-exercises a late swallowed refusal and a fresh funded retry on the same view.
+Read canonical fields with `reader.field(...)` or the installed query's row
+reader. The installed codec validates canonical grammar, representation bounds,
+binding identity and domain values under the original request's controls.
+For an opaque canonical value, implement `deserialize_admitted` and declare
+`SUPPORTS_ADMISSION` before installing its binding.
 
-Continuation pages retain that custody through page, successor-token and receipt
-finalization. Live delivery retains it through the native cause acknowledgement;
-a refused decode cannot acknowledge a successful delivery. Both recheck the
-original request after application projection returns.
+Propagate a decoder or request-control refusal from the projection. The first
+refusal remains attached to the read, so catching its error still prevents
+`complete` from sealing facts. Retry with a fresh authorized request.
+`begin_application_read_attempt` shares that state across repeated observations;
+managed collection-pair reads share it until their atomic view decision.
+Continuation and live delivery retain it through finalization and recheck the
+request after application projection returns. See the
+[canonical read examples](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission.rs),
+[read-attempt example](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission/ordinary_attempt.rs)
+and [paired-read example](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission/paired.rs).
 
 For several reads from a retained invariant snapshot, use
 `snapshot.read_fields(&execution, |read| { /* read.field(&identity, field) */ })`.
-The closure borrows the existing native pin and shares one cumulative decode
-reservation. A swallowed field refusal or late cancellation discards its output.
+The closure borrows the existing native pin and shares decode state across its
+field reads. A field refusal or late cancellation discards the closure's output.
 `snapshot.field(&execution, &identity, field)` remains a single completed read.
 See the [retained snapshot example](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_admission/retained_snapshot.rs)
 for fresh-request retry at the original version after a source edit.
@@ -513,8 +488,9 @@ which you may override.
 Use `worth_query_host::facade::worth_query_application_contribution!` with its
 `pub feature` form for an ordinary installed feature. Keep genuine schema
 members in its `schema` clause, source actions in `action` members and paired
-production in `required_pair` members. A source-only feature uses actions
-without inventing an Initial/Preserve pair. The same definition provides:
+production in `required_pair` members. A source-only feature declares its actions;
+a producing feature can also declare its Initial/Preserve pair. The same
+definition provides:
 
 | Projection | Owner and use |
 |---|---|
@@ -526,9 +502,9 @@ without inventing an Initial/Preserve pair. The same definition provides:
 
 Compose definitions as typed tuples when appropriate. The application still
 chooses its contributions, feature membership, connections and domain
-configuration explicitly. Generation removes repeated mechanical registration;
-it does not infer business meaning, invent handlers, choose readiness predicates
-or authorize a request. Pure domain/numerical crates remain Query-free.
+configuration explicitly. Supply the handlers and readiness predicates as
+runtime values, then execute actions through authorized application requests.
+Keep domain and numerical types in their own crates.
 
 The required-role example below is a complete feature definition with real
 Initial and Preserve producers. Its linked executable includes schema/program
@@ -537,8 +513,7 @@ publication. For an action member, compare the consumer's
 [source-adjustment definition](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/source_adjustment/feature.rs),
 whose delivery names its actual dependent output tree.
 Use the lower-level `ApplicationFeatureSpec` builders for specialized composition
-and for understanding the generated meaning. Do not maintain a second manual
-operation/handler/producer/output roster beside a complete definition.
+and for inspecting the meaning supplied by a definition.
 
 ### Required Initial and Preserve output roles
 
@@ -593,7 +568,8 @@ role operations are generated from their members.
 An ordinary member uses `action name(Binding, Delivery, HandlerType)` with its
 explicit completed `operation:` definition and the normal action clauses.
 The generated runtime constructor accepts actual handler values in action order,
-then existing two-role runtimes in pair order. It never invents semantic configuration.
+then two-role runtimes in pair order. Supply each runtime's domain configuration
+explicitly.
 Each role remains `WorthQueryFeatureRoleRuntime::new(handler, provider,
 readiness_configuration)` inside `WorthQueryFeatureRuntime::new(initial, preserve)`.
 Readiness predicates and `bind_output_readiness` remain with their existing owners.
@@ -602,10 +578,10 @@ Declare operation access once with `worth_query_operation!(... for Schema:
 SchemaBinding, input Input; access { ... })`. Both Rust capabilities and schema
 access come from those categories. Where a sealed capability family already owns
 inherited access, the optional `inherited_access: |schema, operation| { ... }`
-continuation calls that existing owner. It does not redeclare inherited grants.
+continuation calls that capability family's access declaration.
 Delivery roots come from each actual delivery mode. Identical concrete roots
 are visited once before flattening; distinct roots still undergo the normal
-duplicate-connection checks. There is no separate family output roster.
+duplicate-connection checks.
 
 Program meaning retains both requirements independently of those callbacks.
 Omitting contracts and registration together is refused. Configured `None`
@@ -901,10 +877,9 @@ pub(crate) fn validated_bank_application() -> Result<
 ### 3.6 Declare and install a partitioned managed computation
 
 A managed computation declares its input, output artifact, partition key,
-execution posture and determinism contract. Neither `Deterministic` nor
-`DeterministicPartitioned` requires a per-computation work or byte forecast.
-The original request still owns cancellation, deadlines, placement and native
-allocation controls. Add the computation
+execution posture and determinism contract. Its execution uses the caller's
+request for cancellation, deadlines, placement and allocation controls.
+Add the computation
 with `managed_computation::<Computation>()` beside its `derived_artifact` in the
 feature specification. Install its owner with
 `setup.partitioned_computation::<Feature, Computation, _>(owner)` and retain the
@@ -1003,55 +978,16 @@ The completion consumes carried-fact validation only at the same pinned reader
 snapshot, after the ordinary declared read closure and preconditions pass.
 Applications supply no dirty list or freshness declaration.
 
-The successful native reduction also retains its actual Execution run. On the
-next qualified attempt, Query supplies a fresh descendant request and only
-changed partition inputs and removed identities. Unchanged native result cells
-and fitting cost ranges remain in the native run; Query neither constructs a
-full carry map nor collects every result again. For fixed membership, the
-retained reduction tree supplies its cached full-build cost and receives only
-changed leaves, without constructing a whole reduction plan or scanning for
-deletions. These are runtime behaviors; application code still calls the same
-installed computation and supplies no reuse handle or dirty hints.
+Call the same installed computation on subsequent attempts. Query retains its
+successful partition results, validates the tracked facts against the selected
+snapshot and recomputes changed partitions. Source registration and publication
+use that attempt's current authorization and source evidence.
 
-For fixed membership with unchanged item keys, Query also carries ranges of
-actually measured reader calls under the exact completed read layout. Their
-preflight demand, consumed work and declared encoding charges remain real. A
-tight gather range descends to the actual call rather than skipping its refusal.
-The carried ranges contribute exactly the entities their calls reached to the
-current effect scope; unrelated old calls grant no reach. Immutable item/call
-bounds remain paired with their retained backing. Applications provide neither
-a call roster nor a cached authorization declaration.
-
-On a qualified fixed-shape native attempt, Query pairs original computation
-facts with the previous settlement's revision-bearing postconditions. The exact
-snapshot-aligned frontier includes ABA even when no gather reruns. Fresh reads,
-the fresh source suffix, own writes, retirement and actual native candidate
-touches select postcommit revision work. Unchanged postconditions share their
-funded backing; original pre-effect facts remain separate. The selected native
-result also carries its exact retained payload bound into source registration.
-Missing custody, history, supported fact coverage or source continuity retains
-full reconstruction. Content equality and cached bounds grant no currentness.
-
-Fresh provider/session authorization, effect indexing, posting registration and
-other source comparisons still perform their existing work. Membership or item-key
-changes retain full preparation, and membership changes construct a full tree
-shape plan. Recovery, an unqualified reader basis and explicit rebuild fallbacks
-also remain full. Sparse call/native dispatch and prior-fact comparison do not
-establish whole-computation locality.
-
-A run's result, charged work, structural span, and the
-partition a work ceiling names never depend on reuse: native carried charges settle in a full run's
-order, `charged_work()` counts every partition's kernel and every combine
-whether the partition was computed again or carried, and a work ceiling names
-the partition a full run would name. Execution issues and retains each
-checkpoint-only kernel's native cost receipt; Query supplies no checkpoint tape.
-The native owner consumes its cached cost or descends the original accepted
-checkpoint prefix at a tight ceiling. Context questions, nested stages and
-non-checkpoint accounting require actual execution and leave no reusable kernel
-receipt. Memory reserves
-what is physically held, so a memory denial may depend on reuse. An in-flight
-cancellation or deadline can also distinguish physical runs; neither is a
-promise that a computation reaches the same checkpoint at the same time.
+Keep item identities and partition keys stable across attempts. Membership or
+key changes trigger full preparation; recovery, missing history or an incompatible
+installation also requires reconstruction. The runtime determines reuse from
+tracked reads and retained state. Continue to poll the request during computation
+and handle cancellation, deadlines and allocator failures on every attempt.
 
 The example groups warehouse quantities by storage zone and sums them. Stable
 item IDs identify inventory lines; the zone key defines partition membership.
@@ -1188,7 +1124,7 @@ where
     ) -> Result<f64, WorthQueryManagedComputationDenial<Infallible>> {
         let mut total = 0.0;
         for quantity in partition.gathered() {
-            checkpoint.advance(1)?;
+            checkpoint.poll()?;
             total += quantity;
         }
         Ok(total)
@@ -1347,15 +1283,19 @@ reducer fixes its association tree, so floating-point reduction preserves the
 same result bits at every admitted worker count.
 
 Choose partition membership from the input and observed facts before placement.
-The host's installed policy bounds worker count, memory and aggregate request
-work. Serial placement uses a bounded inline lease with no worker pool; leased
-placement can use the process authority's workers. Neither may rename a partition
-or change its reduction association.
+The [installed worker policy](#one-process-execution-service) supplies a concrete
+worker count. Serial placement runs on the caller's thread; Automatic placement
+can use the same process service's admitted workers. Placement does not rename a
+partition or change its reduction association.
 
-`checkpoint.advance` charges kernel work and checks interruption. Framework
-planning and reduction also contribute charged work; `charged_work()` reports
-the computation's total. Handle the typed denial before authoring a candidate
-from the result. Computing and completing a value do not commit it.
+Call `checkpoint.poll()` during computation to observe the original request's
+cancellation, deadline and untaken nested stop. Propagate a typed denial before
+authoring a candidate from the result. Completion returns the decision to the
+candidate-building and commit steps.
+
+For an explicitly accounted request, `checkpoint.advance(work)` records work
+against that request and its ancestors. Calling it in a worker-only request
+returns `Resource(AccountingUnavailable)`; use `poll()` for control checks.
 
 For specialized lower-level execution and diagnostics, `prepare`, `compute`, and `complete` each fail with a
 `WorthQueryPartitionedComputationDenial<Stopped>`, where `Stopped` is the
@@ -1380,7 +1320,7 @@ The lower-level denial topology is:
 | `ReducedEncodingInvalid` | A reduced value's canonical bits disagree with the length it declares. |
 | `ReductionInputInvalid(..)` | The reduction refused the identities or values it was given. The platform builds both from one canonical list, so no run is expected to produce it; match it for exhaustiveness. |
 
-Inside `compute_partition`, `checkpoint.advance(work)?` converts a refused
+Inside `compute_partition`, `checkpoint.poll()?` converts a refused
 checkpoint (`WorthQueryManagedComputationCheckpointDenial`: `Resource`,
 `Interrupted`, or `NestedPatternStopped`) into the kernel's
 `WorthQueryManagedComputationDenial`. A refusal attributed to a partition
@@ -1512,7 +1452,7 @@ where
     ) -> Result<u64, WorthQueryManagedComputationDenial<Infallible>> {
         let mut peak = 0_u64;
         for millivolts in partition.gathered() {
-            checkpoint.advance(1)?;
+            checkpoint.poll()?;
             peak = peak.max(*millivolts);
         }
         Ok(peak)
@@ -1724,41 +1664,81 @@ The application embeds it with `env!`, parses it through
 `host::application_installation::ApplicationBuildIdentity::parse`, and passes
 it once after contribution configuration to every fresh/reopen installation
 entry point. Missing identity fails compilation; malformed or zero identity
-fails parsing before installation. There is no default identity.
+fails parsing before installation.
 
-Use the thin ordinary build entry point from the repository root:
+Build from the repository root with:
 
 ```sh
 python scripts/application_build.py cargo build --locked
 ```
 
-It supplies a fresh UUID for that invocation while forwarding the original
-arguments and preserving all other environment inputs. It replaces an inherited
-identity rather than accidentally reusing a previous build. The public CI
-workflow uses it for direct application commands; `scripts/ci/query_gate.py`
-issues one identity for its complete grouped build invocation through the same
-issuer. A subsequent build command must enter through this wrapper again.
-Applications outside this repository use the same issuance rule in their own
-build entry point.
+The wrapper supplies a fresh UUID for the invocation and forwards the Cargo
+arguments and other environment inputs. Use it for each complete build command.
+Applications outside this repository should issue and embed a fresh UUID in
+their own build entry point.
 
 The fresh environment value must be supplied for **every complete build
 invocation**, including a dirty checkout, dependency/configuration rebuild or
 an otherwise Cargo-fresh invocation. `env!` embeds that value and makes it a
-compiler input; do not issue it in a cached build script or read it from the
-runtime environment on reopen. Repeated launches of the same artifact retain
-its embedded identity. Runnable application examples use this same environment
-input; test worlds use explicit descriptive fixture identities.
+compiler input. Keep the embedded identity when launching or reopening with the
+same artifact. Runnable application examples use this same environment input;
+test worlds use explicit fixture identities.
 
 Query seals the same identity into every installed producer edition, including
 producers with `INPUT_REUSE=None`. A changed build makes old derived output
-stale even when its value is unchanged; source and historical correspondence
-remain subject to the existing native recovery and reference contracts. The
-UUID grants no authorization or compatibility permission.
+stale even when its value is unchanged. Reopen preserves authored source and
+references, then regenerates derived output as required by the installed program.
 
 
 Installation turns a validated program, a schema declaration, the
 contributions' configuration, and resource limits into a running runtime. The
 `initial_state` closure seeds the primary graph before the first publication.
+
+### One process execution service
+
+Construct the physical execution authority at the process composition root,
+after validating immutable startup inputs and before installing applications.
+Keep it in an `Arc` above application, document and session lifetimes. Every
+fresh installation and checkpoint reopen receives a clone of that same `Arc`
+through `limits.with_execution_authority(Arc::clone(&service))`. Retain the
+process handle while applications close and reopen.
+
+The runnable [shared execution example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/examples/shared_execution.rs)
+shows this complete sequence: two installed applications share one service,
+one closes and reopens from its original checkpoint, the reopened application
+edits its own source, and the other application retains its independent model
+state. Construct the authority once per process: later construction returns
+`ConstructionDenial::AlreadyConstructed`, including after the final handle drops.
+For an application installation retry, reuse the retained process service.
+
+| Composition decision | API and responsibility |
+|---|---|
+| Physical worker service | `ExecutionAuthorityConfig::for_workers(workers)` and `ExecutionAuthority::try_construct(config)`; retain the resulting `Arc` at process scope. `ExecutionAuthorityConfig::available_worker_count()` supplies the machine's available width when that is the intended policy. |
+| Ordinary request policy | `ExecutionRequestPolicy::for_workers(ExecutionPosture::Serial, DeterminismContract::CanonicalBitwise, workers)` selects placement, determinism and worker width. |
+| Application installation | Pass that policy through the ordinary World resources and supply the same service with `with_execution_authority`. The application still supplies its own schema, configuration, build identity and model state. |
+| Reopen and overlapping applications | Retain the process service while applications close or install; pass another `Arc::clone` to each installation alongside its checkpoint or initial state. |
+| Operation execution | Use the application's authorized request. Handlers and retained computations borrow that request's execution authority. |
+
+Start with **Serial** placement. To use admitted workers for independent compute
+partitions, select **Automatic** and measure the application's workload at the
+intended worker width. Both placements preserve cancellation, deadlines,
+canonical settlement and typed allocation failures. Retained computations check
+the fresh request's controls when reusing qualified unchanged inputs.
+
+Platform owners that need a dependent native stage use
+`ExecutionRequest::run_native_with_checkpoint` and `KernelContext::poll`;
+`run_native` lends the same request's optional lease to a native pattern.
+Both return an `ExecutionPhysicalReport`. Native map reports and retained runs
+expose optional cost through `accounted_cost()`: `None` means cost was not
+measured; `Some((work, span))` describes an accounted run. Physical worker
+observations are available independently.
+
+For a caller that needs work or memory accounting, use
+`ExecutionRequestPolicy::new(..., ExecutionBudget::new(...))` and the explicit
+accounted scope APIs. Inside that contract, an absent work or memory ceiling
+still leaves accounting enabled. Supplied ancestor and process limits apply to
+descendants. See [memory policy](#optional-request-memory-policy) for reservation
+lifetimes, failure types and measured-result handling.
 
 ### 4.1 One program
 
@@ -1889,7 +1869,7 @@ The bootstrap phase cannot escape its callback or stand in for an installed-runt
 phase. `OpeningCustody` still refuses a second Query opening from a host advancement
 or managed computation. The opener preserves a callback result that ran: completion
 owners check the original request before success or domain failure, and a generic
-outer stop must not discard a performed transition's recovery capsule.
+outer stop preserves a performed transition's recovery capsule.
 
 For that capsule, call `repair_to_checkpoint_with_request(original_request)`.
 It holds itself outside the opening callback until entry succeeds; refusal returns
@@ -2319,24 +2299,15 @@ A refusal returns the same command. A completed owner exposes native receipt
 evidence and still requires `close_with_evidence(&fresh_request)`; close refusal
 returns that same completed owner. See [owning capability commands](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#owning-capability-commands).
 
-**Provisional.** `compare_and_commit_program_undo::<Binding>` and
-`compare_and_commit_program_redo::<Binding>` take the effect program, the same
-mutation identities and idempotency extension, and the sealed progression
-handoff. Both entries preserve the program membership, selected occurrence,
-workflow authority, conditionals and operation posture checks of an action
-commit. A handoff authorizes only the admission to which it is bound. Linear
-undo and redo are provisional experiments, not an accepted application
-contract: Milestone 9.18 owns any accepted public correction-history contract
-([Ordinary Application Front Door, Current Limits](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md#current-limits)).
-Do not build on them as governed correction.
+For a business reversal, declare a domain action with its own authorization,
+source preconditions and effects, then execute it through its ordinary owner.
 
 The identity is exactly the serialized value, so keep that value complete and
 ordered:
 
-- Do not hide meaning from it. A field marked `#[serde(skip)]`,
-  `skip_serializing_if`, or written by a lossy `serialize_with` or custom
-  `Serialize` does not take part, and two inputs that differ only there
-  replay each other.
+- Serialize every field that distinguishes command meaning. Fields omitted by
+  `#[serde(skip)]`, `skip_serializing_if` or a lossy custom serializer are also
+  omitted from identity; inputs differing only there replay each other.
 - Put anything that must matter in a serialized field. `PhantomData` and
   generic type parameters emit no data, so a `Money<C>` currency marker is not
   in the identity.
@@ -3050,9 +3021,8 @@ on [`deliver_current`](../workspaces/worth-query/crates/worth-query-publication/
 sealed composition contracts; applications choose the provided projection shape
 rather than implementing another installation or authorization policy.
 
-Do not rerun the source or rebuild the descriptor to retry delivery. A caller
-cannot enlarge installed ceilings, replace the declared selector, or refresh
-closed output owners by asking for a current read.
+Retry delivery through the retained settled owner and its declared selector,
+using a fresh authorized request and the installed delivery policy.
 
 For several reads with the same installed query binding, declare
 `ApplicationQueryBatchProjection<Read, N>` and implement
@@ -3145,9 +3115,9 @@ follows closed claims through at most two rows, charges no work, starts no
 computation, and never scans the whole registry. It may hand on at most
 one existing closed-leaf claim; remaining cleanup stays recorded for a later
 funded call. Readers still see the effective successor of a deferred claim.
-The advancement's execution accounting covers all waves, including a failed
-call; ordinary output progress remains `Pending` or `Settled`, with failures
-returned as typed denials.
+An explicitly accounted advancement's bill covers every wave, including a
+failed call. Read physical observations separately from optional cost data.
+Handle output progress as `Pending` or `Settled`, and propagate typed denials.
 
 **Two independent members in one wave.** The planar geometry application has
 two separate source rings, `diamond-left` and `diamond-right`. Each producer
@@ -3253,8 +3223,8 @@ unrepresentable retained total with its original requested/retained operands.
 They are distinct from finite `RetentionCapacityExhausted` and
 `RetainedCompanionCapacityExhausted`, and do not trigger finite-capacity eviction.
 Preparation counter overflow likewise remains distinct from a supplied ceiling.
-Never replace `None` with a maximum integer, infer released predecessor credit,
-or replay a refused publication to manufacture admission.
+Keep the returned original owner and its policy values on refusal; retry that
+owner with a fresh authorized request.
 
 #### Producer publication diagnostics
 
@@ -3508,13 +3478,16 @@ liveness observation is not proof of cleanup or promotion.
 
 ### Optional request-memory policy
 
-Use `ExecutionBudget::new(workers, None, work_ceiling)` for no request-memory
-ceiling, or pass `Some(bytes)` for an explicitly finite caller policy.
-`SerialMemoryBudget::new(None)` has the same meaning for a serial owner. Absence
-is not a memory grant: actual backing, operation declarations and allocation
-failures keep their original owners. Worker counts remain concrete.
+Use the [process execution service](#one-process-execution-service) for application
+execution. When a caller needs memory accounting, select an accounted request
+policy and use the following reservation APIs.
 
-Every reservation still charges the same serial or lease ledger, including its
+Within that contract, use `ExecutionBudget::new(workers, None, work_ceiling)`
+for no request-memory ceiling, or pass `Some(bytes)` for an explicitly finite caller policy.
+`SerialMemoryBudget::new(None)` has the same meaning for a serial owner. Supply
+the worker count explicitly and handle actual allocation failures separately.
+
+Each explicit accounted reservation charges the same serial or lease ledger, including its
 ancestors and process. An absent child ceiling does not escape a finite ancestor.
 `available_memory_bytes()` returns the minimum remaining supplied ceiling, or
 `None` when that lineage has no ceiling. Actual held-byte getters remain concrete
@@ -3523,7 +3496,7 @@ live charge is `MemoryLimitDenial::CounterOverflow`. Refusal preserves the old
 reservation, and final-holder release refunds only its original charge.
 Cancellation and deadlines retain the original request and lineage.
 
-A result without a genuine prior heap maximum uses the original
+An explicitly accounted result without a genuine prior heap maximum uses the original
 `request.run_measured_result(ceiling, known_bytes, &mut reservation, kernel)`.
 The callback borrows its `ExecutionResultMemory` view to reserve source-owned
 clone/growth backing on that same ticket before allocation. The view protects
@@ -3536,13 +3509,14 @@ Known finite Scan/Map result declarations retain their existing checks.
 
 ### Optional invariant work and original interruption
 
-The original execution policy also carries genuine absence:
+Within an explicitly accounted execution policy, the work ceiling can be absent:
 `ExecutionBudget::new(workers, charged_memory_bytes, None)`. Serial and leased
-requests retain that same optional ceiling through child scopes; a child cannot
+requests retain that same optional ceiling through accounted child scopes; a child cannot
 widen a finite parent. Charged counters and typed overflow remain. Signal's
 `SignalConditionalEvaluationBudget::development()` has no attempt-visit ceiling;
 its retained-slot and byte limits still apply. Explicit `Some` limits remain
-caller choices.
+caller choices. Use `for_workers` and checkpoint polling when only placement and
+request controls are needed. Supply invariant work policies separately.
 
 Retained source-only delivery uses `owner.advance(&fresh_request, None)` for
 no additional history work ceiling. `Some(NonZeroUsize)` explicitly bounds an
@@ -3695,7 +3669,7 @@ keepalives before retrying a `RuntimeKeepaliveRetained` refusal. No refusal
 silently drops those inputs or requires a replacement runtime or signing owner.
 `support_workflow_spec(&mut self, installed)` returns `Err((installed, denial))`;
 the caller still owns the borrowed workflow runtime and the returned original
-spec. Signing custody must not be logged as diagnostic material.
+spec. Keep signing custody with its original owner; log the denial description.
 
 Bank retains its surrounding application inputs too:
 `BankIdentityRuntimeBuildError::WorkflowRuntimeBinding { binding, denial }`
@@ -3774,12 +3748,11 @@ let operation = original
 // Supply fresh authority to advance; preserve Progress/Refused or close completion custody.
 ```
 
-Use SourceCompletion or RetainedCommit delivery, not a native-action declaration
-for ordinary mutation retry. Binding checks the frozen original input and key;
+Use SourceCompletion or RetainedCommit delivery for mutation retry. Binding
+checks the frozen original input and key;
 construction failures return original custody without consuming birth authority.
-Native advancement owns atomic creation/enrollment and recovery under fresh
-authorization. The application must not coordinate separate create/start commits
-or repeatedly reissue advanced mutations after interrupted completion. See
+Advance the retained operation under fresh authorization for atomic
+creation/enrollment and recovery after interruption. See
 [workflow-enrolled creations](../workspaces/worth-query/crates/worth-query/docs/authoring/workflow-enrolled-creations.md).
 
 ### 6.3 Author a definition
@@ -4393,8 +4366,9 @@ clone `observation.target()` or `found.target()` rather than assembling an
 identity. Discovery intent, locators, targets and pages retain data custody;
 none retains a grant, principal, request, approval need or command permission.
 Every read uses fresh current disclosure admission even at an old data basis.
-Subject read and audit are independent: withholding actors must not hide an
-approval, pending owner or incomplete recovery state.
+Subject read and audit use independent disclosure: approvals, pending owners and
+incomplete recovery remain visible according to subject-read permission even
+when actor details are withheld.
 
 For current-format restore, retain the typed original start intent as ordinary
 intent data and use a new authenticated request against the restored runtime's
@@ -4742,12 +4716,9 @@ subscription custody. It does not close an operation, settle an inbound effect,
 accept workflow evidence or prove cleanup. Cancellation and read/reconstruction
 resource refusals remain typed; do not convert them to absent workflow state.
 
-The full example includes installation, authentic principals/grants, policies,
-producer verification and assertions outside these excerpts. It covers the
-positive mixed path; current restore, malformed/unsupported formats, revoked
-reads, fork/migration and cleanup failures have their own native courts. Follow
-the [canonical consumer prohibitions](capability-index.md#consumer-prohibitions)
-for the shared constraints rather than creating a host actor/status registry.
+The full example includes installation, principals, grants and policies. Use the
+[request and workflow usage guide](capability-index.md#use-requests-and-retained-operations)
+for admission, progress and cleanup handling.
 
 ---
 
@@ -4769,11 +4740,10 @@ shows the typed arguments; do not substitute a domain mutation handler.
 | `Completed(done)` | Inspect `done.evidence()` for the native Fresh/Recovered result. Independently call `done.close_with_evidence(&request)`; success returns the closed operation and original evidence, while refusal returns the same completed owner and denial. |
 | `Terminal(terminal)` | Stop effect advancement. Inspect the native outcome/idempotency resolution, and independently release cleanup or close the returned terminal owner. Terminality does not authorize resubmission. |
 
-A later request must still match runtime, principal and command meaning and
-pass fresh current authorization. Deferred publication and ambiguous commits
-recover the exact original native result through this owner. Do not interpret
-native replay receipts in a consumer retry loop. Command cleanup, workflow
-operation cleanup and history subscription release have distinct receivers.
+A later request must match runtime, principal and command meaning and pass fresh
+authorization. Recover deferred publication and ambiguous commits through this
+owner to obtain the original native result. Use the corresponding receivers for
+command cleanup, workflow operation cleanup and history subscription release.
 
 ---
 
@@ -5033,15 +5003,15 @@ but did not publish is recovered with
 
 ---
 
-## 8. Rules for AI agents
+<a id="8-rules-for-ai-agents"></a>
 
-**Do:**
+## 8. Application execution checklist
 
 - Import only `worth_query_decl::facade` and `worth_query_host::facade`.
 - Start ordinary features with the [complete definition](#complete-feature-definitions)
   and consume its schema, program, runtime and output projections. Use
   `ApplicationFeatureSpec::root::<S, F>()` (or `at`) for specialized composition;
-  finish each builder and avoid duplicating a definition's generated members.
+  finish each builder before validation.
 - Validate programs with
   `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` and
   install with `application_installation::in_memory_program` or
@@ -5051,40 +5021,37 @@ but did not publish is recovered with
   requests for advancement, delivery and close. Native admission checks the
   original runtime, branch and full action meaning on every attempt.
 - Retain guarded workflow effects with their original issued requirement; use a
-  separate owning assessment demand for observation. Neither replaces evidence
-  acceptance or approval. Fixed, discovered and source-only actions use their
-  declared ordinary owners; do not add a consumer retry engine.
+  separate owning assessment demand for observation, then explicitly accept
+  evidence or request approval as the workflow requires.
 - Match the owning lane's `Progress`, `Refused`, `Terminal`, `Settled` or `Completed`
   variants, retaining each returned owner. `NoEffect`, `ProductUnpublished` and
   `Commit(..)` are native advanced outcomes; workflow `Awaiting*` progress is
-  distinct from business-effect completion. Do not automatically retry a stop.
+  distinct from business-effect completion. Inspect a stop's cause before retrying.
 - `compare` before `adopt`, and pass the requirements you got.
 - Name the expected predecessor when you publish a workflow definition.
 - Pump workflows yourself: one advance per request, until an advance returns
   `Completed(t)` with `t.terminal() == true`. `Completed` alone means one step
   was recorded.
 
-Consumer constraints are maintained in the
-[canonical consumer prohibitions](capability-index.md#consumer-prohibitions).
+See [request and workflow usage](capability-index.md#use-requests-and-retained-operations)
+for the retained-owner lifecycle.
 
 
 ---
 
 ## 9. Use the consumer vocabulary
 
-Plans describe intent; they do not define the consumer API. Use the declarations
-and host functions exported by `worth-query-decl` and `worth-query-host`.
-The table separates authoring tasks from unsupported shortcuts.
+Use the declarations and host functions exported by `worth-query-decl` and
+`worth-query-host`:
 
-| Task or shortcut | Status | Use instead |
-|---|---|---|
-| A separate composition or module specification | Unsupported | `impl ApplicationProgramDefinition` plus `ApplicationFeatureSpec` |
-| A stand-alone action specification | Unsupported | Builder methods on `ApplicationFeatureSpec` (`mutation`, `operation`, ...); `ApplicationActionDeclaration` is the read-back type |
-| Adopting a revision before comparing it | Unsupported | `compare(&revision)` → `adopt(&requirements)` → `[.migration(..)] [.workflow(..)]` → `prepare(max)` |
-| "unchanged / additive / restricting / meaning-changing" diff classes | Not the API | `ApplicationSemanticChangeKind::{Added, Removed, Changed}` per family |
-| A separately owned published-definition value | Unsupported | `PublishedWorkflowDefinitionRef` |
-| `CompiledWorkflowDefinition`, `AdmittedWorkflowTransition` | Crate-private | Nothing to call: the kernel uses them internally |
-| A workflow slot on the program | Does not exist | `retain_workflow_spec` on the program runtime, then `support_workflow_spec` on the workflow runtime it returns |
+| Task | API |
+|---|---|
+| Compose application meaning | `ApplicationProgramDefinition` and complete feature definitions, or `ApplicationFeatureSpec` for specialized composition |
+| Declare an action | `action::<Binding, Delivery>()` on the feature builder; inspect it through `ApplicationActionDeclaration` |
+| Adopt a revision | `compare(&revision)` → `adopt(&requirements)` → `[.migration(..)] [.workflow(..)]` → `prepare(max)` |
+| Inspect semantic changes | `ApplicationSemanticChangeKind::{Added, Removed, Changed}` per family |
+| Retain a published workflow definition | `PublishedWorkflowDefinitionRef` |
+| Install workflow vocabulary | `retain_workflow_spec` on the program runtime, then `support_workflow_spec` on the returned workflow runtime |
 
 ---
 
@@ -5095,16 +5062,14 @@ The table separates authoring tasks from unsupported shortcuts.
 | Programs, rosters, adoption, branch sets, retirement, full denial lists | [Programs and Adoption](../workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md) |
 | Every workflow call, budget, denial, and a worked example | [Workflows](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md) |
 | Feature capsules, ports, connections, and the authoring rule | [Feature Capsule Authoring](../workspaces/worth-query/crates/worth-query/docs/authoring/feature-capsule-authoring.md) |
-| The ordinary application path, anti-patterns, current limits | [Ordinary Application Front Door](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md) |
-| Contribution-composed apps, output demand, host may / must-not | [`worth-query-host` README](../workspaces/worth-query/crates/worth-query-host/README.md) |
+| Application action preparation, execution, recovery and cleanup | [Ordinary Application Front Door](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md) |
+| Contribution composition, installation and output demand | [`worth-query-host` README](../workspaces/worth-query/crates/worth-query-host/README.md) |
 | Declaration surface | [`worth-query-decl` README](../workspaces/worth-query/crates/worth-query-decl/README.md) |
 | The complete pure-facade reference application | [Bank public consumer contract](../workspaces/worth-query-bank-world/docs/public-consumer-contract.md) |
 | What the runtimes guarantee underneath all of this | [How WORTH Works §9, §12, §13](how-it-works.md#9-query-the-life-of-one-request) |
 | Find the call for a task; what to do before concluding a capability is missing | [Capability Index](capability-index.md) |
 
-These four Query guides live under the `worth-query` crate's `docs/`
-directory for historical reasons. They are **consumer guides**: every name
-they use is on the two facades.
+The Query guides use names exported through the two application facades.
 
 ### Whole-aspect absence
 
@@ -5153,37 +5118,28 @@ reconstruction effects. This support does not convert older installed schemas.
 
 ### Runtime World policy ceilings
 
-Use `host::runtime::WorthQueryProductWorldResources::new` with
-`host::runtime::RuntimeWorldBudgets::without_policy_limits()` when the application
-has no population or metadata quota. This omits World ceilings for branches,
-commits, history bytes, original observations, publication attempts, recovery
-records/bytes, exact component pins, acquisition reservations and owner-created
-custody records. Query's activation and cleanup owners preserve this absence.
-It reserves no storage and grants no authority: native allocation, checked
-accounting, component admission, currentness, interruption and exact custody
-remain in force. Observation clones share one original obligation; distinct
-observations retain their own obligations until final drop, including after
-owner close.
+Construct `host::runtime::WorthQueryProductWorldResources::new` with the clock,
+invalidation resources, execution policy and a `RuntimeWorldBudgets` value.
+Choose `RuntimeWorldBudgets::without_policy_limits()` for the standard lifecycle,
+or install explicit finite policies for branches, commits, history, observations,
+publication, recovery and retained custody with `RuntimeWorldBudgets::install`.
+Observation clones share one obligation; distinct observations retain their own
+obligations until final drop, including after owner close.
 
-For an actual caller policy, `RuntimeWorldBudgets::install` and
-`WorthQueryProductWorldResources::install` still require explicit nonzero finite
-installation values. `RuntimeWorldBudgetLimit::get()` returns `Some(maximum)`
-for those policies and `None` for absent ceilings. Keep clock, invalidation
-resources and the real execution request policy in the same resource constructor.
-Use `WorthQueryInvalidationResourceInstallation::new(None, None, None)` to omit
-marking byte and retained-position ceilings too. None retains the actual funded
-history; explicit `Some(positions)` still evicts and requires reconstruction when
-a reader is outside that window. Installation refuses an unlimited invalidation
-window alongside finite World commit history. Output-lineage retention receives
-the same optional position policy while keeping its existing byte accounting.
+`WorthQueryProductWorldResources::install` accepts nonzero finite installation
+values. `RuntimeWorldBudgetLimit::get()` returns `Some(maximum)` for a finite
+policy and `None` otherwise. Configure marking and retained positions with
+`WorthQueryInvalidationResourceInstallation::new(preparation, retained, positions)`.
+For `positions`, `None` keeps available history and `Some(positions)` selects a
+retention window.
+A reader outside that window reconstructs its state. Match the invalidation
+window to World commit history: installation rejects an unlimited window beside
+finite commit history. Output-lineage retention uses the same position policy.
 
-Ordinary Relational profiles omit aggregate published-snapshot, active-snapshot
-and prepared-candidate quotas. Callers with a real finite policy use
-`Some(original_amount)` in `PublicationConfig`. Snapshot/candidate reservations,
-actual allocation and checked counters remain live without a quota. Candidate
-lifetime, exact owner/generation, stale/foreign-runtime refusals and native
-release obligations are unchanged. Do not invent zero/MAX sentinels,
-fit policy numbers to the workload, or discard original owners to admit work.
+Set optional published-snapshot, active-snapshot and prepared-candidate policies
+in `PublicationConfig`; `Some(amount)` selects a finite policy. Retain snapshots
+and candidates through their owning runtime and generation. Handle stale or
+foreign-runtime refusals and release each original holder when finished.
 
 ### Ordinary Query resource policies
 
@@ -5197,47 +5153,35 @@ only `Settled` carries settlement authority.
 Ordinary `WorthQueryOutputDemandResourceProfile::standard()` (also `Default`)
 advances native `Progressed` outcomes until settlement or genuine waiting.
 `new(settlement_attempts)` supplies an explicit finite convenience-step policy.
-Native identity, checked counts, backing ownership, cancellation and normal close
-remain at their owners; ordinary admission does not prebill byte or work forecasts.
+Retain the returned owner through waiting, cancellation and normal close.
 
-Ordinary mutation preparation does not require a candidate quote, retained-byte
-estimate or producer dependency ceiling. The prepared decision carries actual
-values and native targets into the installed writer; mutation authority, required
-output roles/families, cancellation, checked growth and atomic publication remain.
+Prepare mutation values and native targets in the decision, then consume them
+through the installed writer. Declare required output roles and families with the
+action so successful execution can settle its complete output.
 
 `WorthQueryApplicationQueryResourceProfile::new(maximum_concurrent_graph_work)`
-controls actual native graph-work concurrency. Query reads require fresh installed
-admission and semantic result cardinality, with no caller work or byte estimate.
+controls native graph-work concurrency. Supply the installed query's inputs and
+handle its result cardinality under fresh request admission.
 `request.query_batch(intents).execute(&phase)` issues exact installed read slots;
 foreign plans, unscheduled reads and a second planning extension still refuse.
 Each read receives fresh authorization. A result's shared backing or schedule
 association grants no source permission or currentness.
 
-Cold parallel pair reads use native `the native parallel executor` dispatch.
-Its existing run owner admits actual materialized result backing and preserves
-native interruption, first-stop and canonical prefix semantics. Explicit finite
-`from_keyless_partitions` host contracts remain available to callers that have
-such contracts. Ordinary Query does not manufacture a forecast to use them.
+Parallel pair reads share the request's execution policy. Handle interruption
+and first-stop denials while preserving the returned canonical prefix. Platform
+callers with an explicit bounded partition contract can use
+`from_keyless_partitions`.
 
-`SignalConditionalEvaluationBudget::development()` omits slot, byte and attempt
-quotas; the default temporal budget omits owner-wide partition and wake quotas.
-`BridgeConditionalRetentionBudget::development()` omits clock, intent, definition,
-byte and preparation-work quotas. Explicit `Some` values remain finite policies.
-All branches must agree on sealed Signal owner policy, including absence; native
-reservations still account shared backing and retain charges through final drop.
-Concrete prepared node/root footprints remain required before copying or publication.
+Use `SignalConditionalEvaluationBudget::development()` and
+`BridgeConditionalRetentionBudget::development()` for development installations.
+Supply `Some` values for deliberate finite policies and keep the sealed Signal
+owner policy consistent across branches. Retain shared backing until its final
+holder drops, and supply prepared node/root footprints before copying or publication.
 
 With no settlement-step policy, convenience settlement drives the native
 advancement through genuine `Progressed` answers on the same request and parks
 on `Pending`. It does not spin retrying blocked
 work. A subsequent advancement uses a fresh authorized request; explicit finite
-step controls preserve their limit. Branch commit coordination also defaults to
-no byte quota while retaining its shared weak/strong backing grants. Unpublished
-idempotency has no additional fixed population quota; World recovery admission,
-exact identity, allocation and cleanup remain mandatory.
-
-Applications adopting this path should remove manual policy numbers from their
-ordinary query/output resource installation, retaining real semantic
-cardinality, actual native allocation, request interruption and scheduling
-contracts. Policy absence grants no source, authorization, snapshot or settlement
-currentness, and does not widen an explicit finite ancestor request limit.
+step controls preserve their limit. Keep original unpublished-idempotency and
+branch-commit owners through recovery and cleanup, then release their backing
+when their obligations are complete.

@@ -5,11 +5,12 @@ use worth_query_installation::facade::{
     AdmittedFieldBindingStop, ApplicationReadableScalarValueBinding,
 };
 
-/// This is refusal/custody, not another budget. The native meter and reservation
-/// decide whether each request is legal; every child read borrows this same loan.
+/// Every child read borrows the original control. Explicitly accounted reads
+/// also retain their original meter and cumulative reservation.
 pub(in crate::domain_computation::primary_graph) struct ValueDecodeSession<'a> {
     pub(super) state: &'a super::state::ValueDecodeState,
-    pub(super) checkpoint: &'a dyn Fn(u64) -> Result<(), MapKernelStop>,
+    pub(super) checkpoint: Option<&'a dyn Fn(u64) -> Result<(), MapKernelStop>>,
+    pub(super) poll: &'a dyn Fn() -> Result<(), MapKernelStop>,
 }
 
 impl ValueDecodeSession<'_> {
@@ -30,8 +31,11 @@ impl ValueDecodeSession<'_> {
         if self.stopped() {
             return Err(ValueCodecDenial::Admission);
         }
+        let Some(checkpoint) = self.checkpoint else {
+            return self.poll_request();
+        };
         let work = u64::try_from(work).map_err(|_| self.refuse(Stop::AccountingOverflow))?;
-        (self.checkpoint)(work).map_err(|cause| self.refuse(Stop::Checkpoint(cause)))?;
+        checkpoint(work).map_err(|cause| self.refuse(Stop::Checkpoint(cause)))?;
         let mut memory = self.state.memory.borrow_mut();
         let held = memory
             .as_mut()
@@ -42,6 +46,10 @@ impl ValueDecodeSession<'_> {
             .ok_or_else(|| self.refuse(Stop::AccountingOverflow))?;
         held.resize(bytes)
             .map_err(|cause| self.refuse(Stop::Memory(cause)))
+    }
+
+    fn poll_request(&self) -> Result<(), ValueCodecDenial> {
+        (self.poll)().map_err(|cause| self.refuse(Stop::Checkpoint(cause)))
     }
 
     pub(in crate::domain_computation::primary_graph) fn decode<
@@ -67,11 +75,15 @@ impl ValueDecodeSession<'_> {
                 usize::try_from(bytes).map_err(|_| self.refuse(Stop::AccountingOverflow))?;
             self.admit(work, bytes)
         };
-        let binding = match self
-            .state
-            .bindings
-            .field_admitted(entity, aspect, field, &mut lookup)
-        {
+        let binding = if self.checkpoint.is_some() {
+            self.state
+                .bindings
+                .field_admitted(entity, aspect, field, &mut lookup)
+        } else {
+            self.poll_request().ok()?;
+            Ok(self.state.bindings.field(entity, aspect, field))
+        };
+        let binding = match binding {
             Ok(Some(binding)) if binding.matches_binding::<Binding>() => binding,
             Err(AdmittedFieldBindingStop::Admission(_)) => return None,
             Err(AdmittedFieldBindingStop::AccountingOverflow) => {

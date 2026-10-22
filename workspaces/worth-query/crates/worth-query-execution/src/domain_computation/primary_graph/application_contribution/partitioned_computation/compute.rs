@@ -48,7 +48,7 @@ where
     pub(super) installed:
         WorthQueryInstalledPartitionedComputation<Schema, Feature, Computation, Owner>,
     /// The canonical work spent encoding the input and item keys.
-    pub(super) prepared_work: u64,
+    pub(super) prepared_work: Option<u64>,
     pub(super) run: PreparedRun<Schema, Feature, Computation, Owner>,
     /// Where the completed run is left for seal, when a producer runs it.
     pub(super) deposit: ComputationDeposit,
@@ -163,8 +163,14 @@ where
                     Ok(())
                 };
                 let mut poll = || context.borrow_mut().poll();
-                let checkpoint =
-                    WorthQueryManagedComputationCheckpoint::for_partition(&mut charge, &mut poll);
+                let accounted = context.borrow().has_accounting();
+                let checkpoint = WorthQueryManagedComputationCheckpoint::for_partition(
+                    accounted.then_some(
+                        &mut charge
+                            as &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+                    ),
+                    &mut poll,
+                );
                 #[cfg(test)]
                 let checkpoint = checkpoint.with_native_lease_for_test(native);
                 let mut checkpoint = checkpoint;
@@ -237,7 +243,14 @@ where
                         .map_err(WorthQueryPartitionedComputationDenial::from_retained_reduce)?;
                     Ok((reduced.tree, reduced.report, reduced.metrics, reduced.run))
                 })?;
-                if let Some(observer) = &self.kernel_observation_for_test {
+                if let Some(observer) = self
+                    .kernel_observation_for_test
+                    .as_ref()
+                    .filter(|_| report.has_accounting())
+                {
+                    let metrics = metrics
+                        .accounted_metrics()
+                        .expect("accounted reduction retains its accounting");
                     observer.record(
                         report
                             .charged_work()
@@ -263,7 +276,11 @@ where
                         CompletedComputationRetention::Absent(PriorAbsence::Suppressed(reason))
                     }
                 };
-                (reduced, report.charged_work(), completed)
+                (
+                    reduced,
+                    report.accounted_cost().map(|(work, _)| work),
+                    completed,
+                )
             }
             PreparedRun::Incremental(prepared) => {
                 let ComputedIncremental {
@@ -280,10 +297,12 @@ where
                 (reduced, computed_work, completed)
             }
         };
-        let charged_work = self
-            .prepared_work
-            .checked_add(computed_work)
-            .ok_or_else(exhausted)?;
+        let charged_work = match self.prepared_work.zip(computed_work) {
+            Some((prepared, computed)) => {
+                Some(prepared.checked_add(computed).ok_or_else(exhausted)?)
+            }
+            None => None,
+        };
         Ok(WorthQueryCompletedPartitionedComputation {
             installed: self.installed,
             reduced,
@@ -303,7 +322,7 @@ where
 {
     installed: WorthQueryInstalledPartitionedComputation<Schema, Feature, Computation, Owner>,
     reduced: Owner::PartitionResult,
-    charged_work: u64,
+    charged_work: Option<u64>,
     completed: CompletedComputationRetention,
     deposit: ComputationDeposit,
 }

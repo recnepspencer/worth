@@ -28,7 +28,8 @@ impl<'request> WorthQueryManagedComputationExecution<'request> {
 }
 
 pub struct WorthQueryManagedComputationCheckpoint<'request> {
-    pub(super) charge: &'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    pub(super) charge:
+        Option<&'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
     pub(super) poll: &'request mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
     pub(super) refused: Option<WorthQueryManagedComputationCheckpointDenial>,
     #[cfg(test)]
@@ -52,7 +53,7 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
         self.native
     }
     pub(in super::super) fn for_partition(
-        charge: &'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+        charge: Option<&'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
         poll: &'request mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
     ) -> Self {
         Self {
@@ -87,8 +88,14 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
         work: usize,
     ) -> Result<(), WorthQueryManagedComputationCheckpointDenial> {
         self.poll()?;
-        let result =
-            (self.charge)(u64::try_from(work).unwrap_or(u64::MAX)).map_err(checkpoint_denial);
+        let result = match self.charge.as_mut() {
+            Some(charge) => {
+                charge(u64::try_from(work).unwrap_or(u64::MAX)).map_err(checkpoint_denial)
+            }
+            None => Err(WorthQueryManagedComputationCheckpointDenial::Resource(
+                super::WorthQueryManagedComputationResourceDenial::AccountingUnavailable,
+            )),
+        };
         self.refused = result.err();
         result
     }

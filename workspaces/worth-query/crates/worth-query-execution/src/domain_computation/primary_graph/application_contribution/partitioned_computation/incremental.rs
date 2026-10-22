@@ -64,8 +64,8 @@ pub use observed::partitioned_computation_tree_work_on_this_thread_for_test;
 #[cfg(test)]
 pub(in super::super) use observed::{observe_full_tree, FullTreeMapWork};
 pub use tree_report::{
-    WorthQueryPartitionedTreeMetrics, WorthQueryPartitionedTreeRebuildCause,
-    WorthQueryPartitionedTreeRun,
+    WorthQueryPartitionedTreeAccounting, WorthQueryPartitionedTreeMetrics,
+    WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
 };
 
 use std::collections::BTreeSet;
@@ -199,11 +199,13 @@ where
     if let Some(cause) = basis.drift(&retained.basis) {
         return full(basis, cause);
     }
-    if retained.facts.observation_work_bound().is_none_or(|work| {
-        execution
-            .work_ceiling()
-            .is_some_and(|ceiling| work > ceiling)
-    }) {
+    if execution.has_accounting()
+        && retained.facts.observation_work_bound().is_none_or(|work| {
+            execution
+                .work_ceiling()
+                .is_some_and(|ceiling| work > ceiling)
+        })
+    {
         return full(
             basis,
             WorthQueryPartitionedComputationFullCause::ObservationOverBudget,

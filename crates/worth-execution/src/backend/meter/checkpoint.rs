@@ -1,4 +1,4 @@
-use super::{KernelContext, KernelMeter, KernelStop, NestedStopOwner};
+use super::{KernelContext, KernelState, KernelStop, NestedStopOwner};
 
 impl KernelContext<'_, '_> {
     /// Observe the original request and nested-stop state without charging work
@@ -11,11 +11,21 @@ impl KernelContext<'_, '_> {
         self.poll_inner(false)
     }
 
+    /// Control-only canonical settlement after speculative tasks have joined.
+    /// The already-owned stop keeps its canonical position; request controls
+    /// still stop before an earlier join is evaluated.
+    pub(crate) fn poll_frontier(&mut self) -> Result<(), KernelStop> {
+        self.poll_inner(true)
+    }
+
     /// Account work completed by a domain-local checked meter after it stops.
     /// This does not authorize new work or clear the original stop; it keeps
     /// cancellation/deadline reports faithful to work already performed.
     pub fn account_completed_work(&mut self, units: u64) -> Result<(), KernelStop> {
-        if let Some(capture) = &mut self.meter.borrow_mut().capture {
+        if !self.has_accounting() {
+            return self.latch_checkpoint_result(Err(KernelStop::AccountingUnavailable));
+        }
+        if let Some(capture) = self.meter.borrow_mut().capture_mut() {
             capture.invalidate();
         }
         if units > 0 {
@@ -24,26 +34,31 @@ impl KernelContext<'_, '_> {
                     active
                         .borrow()
                         .iter()
-                        .try_fold(units, |sum, meter| sum.checked_add(meter.borrow().work))
+                        .try_fold(units, |sum, meter| sum.checked_add(meter.borrow().work()))
                         .unwrap_or(u64::MAX)
                 })
             });
         }
         let mut meter = self.meter.borrow_mut();
+        let ceiling = meter.limits.ceiling;
+        let accounting = meter
+            .accounting
+            .as_mut()
+            .expect("accounted execution checked above");
         let result = (|| {
-            let next = meter
+            let next = accounting
                 .work
                 .checked_add(units)
                 .ok_or(KernelStop::WorkCounterOverflow)?;
-            let span = meter
+            let span = accounting
                 .span
                 .checked_add(units)
                 .ok_or(KernelStop::WorkCounterOverflow)?;
-            if meter.limits.ceiling.is_some_and(|ceiling| next > ceiling) {
+            if ceiling.is_some_and(|ceiling| next > ceiling) {
                 return Err(KernelStop::WorkCeiling);
             }
-            meter.work = next;
-            meter.span = span;
+            accounting.work = next;
+            accounting.span = span;
             Ok(())
         })();
         if let Err(stop) = result {
@@ -59,18 +74,23 @@ impl KernelContext<'_, '_> {
 
     /// Work units charged to this kernel's existing meter.
     pub fn charged_work(&self) -> u64 {
-        self.meter.borrow().work
+        self.meter
+            .borrow()
+            .accounting
+            .as_ref()
+            .expect("charged work requires accounted execution")
+            .work
     }
 
     pub fn remaining_work(&self) -> Option<u64> {
         let mut meter = self.meter.borrow_mut();
-        if let Some(capture) = &mut meter.capture {
+        if let Some(capture) = meter.capture_mut() {
             capture.invalidate();
         }
         meter
             .limits
             .ceiling
-            .map(|ceiling| ceiling.saturating_sub(meter.work))
+            .map(|ceiling| ceiling.saturating_sub(meter.work()))
     }
 
     /// Kernel checkpoint enforces the local remaining ceiling before work is
@@ -81,11 +101,11 @@ impl KernelContext<'_, '_> {
         if result.is_ok() {
             // Admission may report a native refusal, so release the meter's
             // borrow before the storage owner asks its reservation for growth.
-            let mut capture = self.meter.borrow_mut().capture.take();
+            let mut capture = self.meter.borrow_mut().take_capture();
             if let Some(capture) = &mut capture {
                 capture.accepted(units);
             }
-            self.meter.borrow_mut().capture = capture;
+            self.meter.borrow_mut().set_capture(capture);
         }
         result
     }
@@ -94,7 +114,7 @@ impl KernelContext<'_, '_> {
     /// Ownership is already latched; cancellation, ceilings and counters still
     /// govern this selection. Ordinary kernels cannot enter this lane.
     pub(crate) fn checkpoint_frontier(&mut self, units: u64) -> Result<(), KernelStop> {
-        if let Some(capture) = &mut self.meter.borrow_mut().capture {
+        if let Some(capture) = self.meter.borrow_mut().capture_mut() {
             capture.invalidate();
         }
         self.checkpoint_inner(units, true)
@@ -102,35 +122,42 @@ impl KernelContext<'_, '_> {
 
     fn checkpoint_inner(&mut self, units: u64, settling_frontier: bool) -> Result<(), KernelStop> {
         crate::authority::consult_observation::reached();
+        self.poll_inner(settling_frontier)?;
+        if !self.has_accounting() {
+            return self.latch_checkpoint_result(Err(KernelStop::AccountingUnavailable));
+        }
         if units > 0 {
             crate::authority::consult_observation::charged_prefix(|| {
                 super::ACTIVE_METER.with(|active| {
                     active
                         .borrow()
                         .iter()
-                        .try_fold(units, |sum, meter| sum.checked_add(meter.borrow().work))
+                        .try_fold(units, |sum, meter| sum.checked_add(meter.borrow().work()))
                         .unwrap_or(u64::MAX)
                 })
             });
         }
-        self.poll_inner(settling_frontier)?;
         let mut meter = self.meter.borrow_mut();
-        let result = (|| {
-            let next = meter
-                .work
-                .checked_add(units)
-                .ok_or(KernelStop::WorkCounterOverflow)?;
-            if meter.limits.ceiling.is_some_and(|ceiling| next > ceiling) {
-                return Err(KernelStop::WorkCeiling);
-            }
-            let span = meter
-                .span
-                .checked_add(units)
-                .ok_or(KernelStop::WorkCounterOverflow)?;
-            meter.work = next;
-            meter.span = span;
-            Ok(())
-        })();
+        let ceiling = meter.limits.ceiling;
+        let result = match meter.accounting.as_mut() {
+            None => Err(KernelStop::AccountingUnavailable),
+            Some(accounting) => (|| {
+                let next = accounting
+                    .work
+                    .checked_add(units)
+                    .ok_or(KernelStop::WorkCounterOverflow)?;
+                if ceiling.is_some_and(|ceiling| next > ceiling) {
+                    return Err(KernelStop::WorkCeiling);
+                }
+                let span = accounting
+                    .span
+                    .checked_add(units)
+                    .ok_or(KernelStop::WorkCounterOverflow)?;
+                accounting.work = next;
+                accounting.span = span;
+                Ok(())
+            })(),
+        };
         drop(meter);
         self.latch_checkpoint_result(result)
     }
@@ -145,7 +172,7 @@ impl KernelContext<'_, '_> {
             return Err(stop);
         }
         let result = (|| {
-            let KernelMeter {
+            let KernelState {
                 limits,
                 nested_stop,
                 ..

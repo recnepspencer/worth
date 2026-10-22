@@ -78,6 +78,9 @@ pub(in crate::domain_computation) const fn checkpoint_denial(
         MapKernelStop::WorkCounterOverflow => {
             WorthQueryManagedComputationCheckpointDenial::Resource(Resource::WorkCounterOverflow)
         }
+        MapKernelStop::AccountingUnavailable => {
+            WorthQueryManagedComputationCheckpointDenial::Resource(Resource::AccountingUnavailable)
+        }
         MapKernelStop::NestedStopped => {
             WorthQueryManagedComputationCheckpointDenial::NestedPatternStopped
         }
@@ -133,6 +136,9 @@ pub(super) fn kernel_failure<Stopped>(
             Resource::WorkExhausted => MapKernelFailure::Stop(MapKernelStop::WorkCeiling),
             Resource::WorkCounterOverflow => {
                 MapKernelFailure::Stop(MapKernelStop::WorkCounterOverflow)
+            }
+            Resource::AccountingUnavailable => {
+                MapKernelFailure::Stop(MapKernelStop::AccountingUnavailable)
             }
             Resource::RetainedBytesExhausted
             | Resource::ScratchCapacityExceeded
@@ -247,6 +253,9 @@ impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {
                 Self::Resource(Resource::ResultCapacityExceeded)
             }
             ReductionDenial::WorkCounterOverflow => Self::Resource(Resource::WorkCounterOverflow),
+            ReductionDenial::AccountingUnavailable => {
+                Self::Resource(Resource::AccountingUnavailable)
+            }
             ReductionDenial::InvalidCanonicalEncoding => Self::ReducedEncodingInvalid,
             ReductionDenial::IdentitiesNotCanonical => {
                 Self::ReductionInputInvalid(ReductionInput::IdentitiesNotCanonical)

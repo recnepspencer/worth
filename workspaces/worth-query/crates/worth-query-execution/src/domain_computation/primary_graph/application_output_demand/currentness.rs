@@ -242,6 +242,7 @@ fn currentness_live(
                 | WorkCeilingDenial::Panicked
                 | WorkCeilingDenial::Stopped(
                     MapKernelStop::WorkCounterOverflow
+                    | MapKernelStop::AccountingUnavailable
                     | MapKernelStop::WorkCeiling
                     | MapKernelStop::NestedStopped,
                 ),

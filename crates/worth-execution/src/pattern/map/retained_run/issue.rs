@@ -24,7 +24,7 @@ impl<T: ChargedBytes + Sync, K> ExecutionMap<T, K> {
         E: ChargedBytes + Send,
         F: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
     {
-        issue(self, request, ceiling, |lease| {
+        issue(self, request, ceiling, false, |lease| {
             run_retained_batch(lease, &self.batch, backend_for(lease), None, &kernel)
         })
     }
@@ -44,7 +44,7 @@ impl<T: Sync, K> ExecutionMap<T, K, NativePayload> {
         E: Send,
         F: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
     {
-        issue(self, request, ceiling, |lease| {
+        issue(self, request, ceiling, true, |lease| {
             run_retained_native_batch(lease, &self.batch, backend_for(lease), &kernel)
         })
     }
@@ -54,30 +54,35 @@ fn issue<T, K, Payload, R, E>(
     map: &ExecutionMap<T, K, Payload>,
     request: ExecutionRequest<'_, '_>,
     ceiling: ExecutionWorkCeiling,
+    native: bool,
     run: impl FnOnce(
         Option<&ExecutionResourceLease<'_>>,
     ) -> Result<BatchOutcome<ExecutionRetainedResult<R>, E>, ResultStorageDenial>,
 ) -> Result<RetainedRunOutcome<R, E>, RetainedRunDenial> {
-    let result = request
-        .run(ceiling, |lease| {
-            if !map.has_keyless_retention() {
-                return Err(RetainedRunDenial::RequiresKeyless);
-            }
-            let outcome = run(lease)
-                .map_err(|cause| RetainedRunDenial::Native(RetainedMapDenial::storage(cause)))?;
-            finish_native_outcome(
-                RunTree::empty(),
-                outcome,
-                lease,
-                RetainedRunMetrics {
-                    supplied_inputs: map.partition_count() as u64,
-                    ..Default::default()
-                },
-            )
-            .map_err(RetainedRunDenial::from)
-        })
-        .map_err(|cause| RetainedRunDenial::Native(RetainedMapDenial::Request(cause)))?
-        .0;
+    let operation = |lease: Option<&ExecutionResourceLease<'_>>| {
+        if !map.has_keyless_retention() {
+            return Err(RetainedRunDenial::RequiresKeyless);
+        }
+        let outcome = run(lease)
+            .map_err(|cause| RetainedRunDenial::Native(RetainedMapDenial::storage(cause)))?;
+        finish_native_outcome(
+            RunTree::empty(),
+            outcome,
+            lease,
+            RetainedRunMetrics {
+                supplied_inputs: map.partition_count() as u64,
+                ..Default::default()
+            },
+        )
+        .map_err(RetainedRunDenial::from)
+    };
+    let result = if native {
+        super::run_native_retained(request, ceiling, operation)
+    } else {
+        request.run(ceiling, operation)
+    }
+    .map_err(|cause| RetainedRunDenial::Native(RetainedMapDenial::Request(cause)))?
+    .0;
     request
         .check_live()
         .map_err(|stop| RetainedRunDenial::Native(RetainedMapDenial::interruption(stop)))?;

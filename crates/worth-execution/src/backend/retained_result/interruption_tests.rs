@@ -117,7 +117,12 @@ fn cancellation_at_the_last_combine_releases_the_rejected_tree_target_before_fre
         ))
     ));
     assert_eq!(
-        outcome.reduction_metrics.unwrap().combine_calls,
+        outcome
+            .reduction_metrics
+            .unwrap()
+            .accounted_metrics()
+            .unwrap()
+            .combine_calls,
         2,
         "completed native work stays observed"
     );

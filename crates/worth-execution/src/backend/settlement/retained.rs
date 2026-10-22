@@ -58,6 +58,18 @@ impl<'a, R> RetainedSettlement<'a, R> {
                 return true;
             }
             match range {
+                RunRange::Summary(s) if !limits.is_accounted() => {
+                    if prefix.stop.is_none() {
+                        self.metrics.carried_ranges += 1;
+                        self.metrics.carried_slots += s.count as u64;
+                    }
+                }
+                RunRange::Slot(_) if !limits.is_accounted() => {
+                    if prefix.stop.is_none() {
+                        self.metrics.carried_ranges += 1;
+                        self.metrics.carried_slots += 1;
+                    }
+                }
                 RunRange::Summary(s) => {
                     if prefix.stop.is_some()
                         && limits

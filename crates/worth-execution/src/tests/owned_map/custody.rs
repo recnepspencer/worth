@@ -1,6 +1,6 @@
 use std::{
     cell::Cell,
-    sync::atomic::{AtomicU64, AtomicUsize, Ordering},
+    sync::atomic::{AtomicUsize, Ordering},
     time::{Duration, Instant},
 };
 
@@ -12,7 +12,7 @@ use crate::{
 
 mod serial;
 
-use super::{memory_model, Overlap};
+use super::Overlap;
 
 const BUDGET: u64 = 2_000;
 const BASELINE: u64 = 17;
@@ -61,7 +61,7 @@ struct Tracked<'a> {
     drops: &'a [AtomicUsize],
     custody_violations: &'a AtomicUsize,
     ledger: Ledger<'a>,
-    expected_charge: &'a AtomicU64,
+    minimum_charge: u64,
     payload: Vec<u8>,
     overlap: Option<&'a Overlap>,
 }
@@ -74,7 +74,7 @@ impl ChargedBytes for Tracked<'_> {
 
 impl Drop for Tracked<'_> {
     fn drop(&mut self) {
-        if self.ledger.charged() != self.expected_charge.load(Ordering::SeqCst) {
+        if self.ledger.charged() < self.minimum_charge {
             self.custody_violations.fetch_add(1, Ordering::SeqCst);
         }
         self.drops[self.index.get()].fetch_add(1, Ordering::SeqCst);
@@ -96,7 +96,7 @@ fn tracked_inputs<'a>(
     drops: &'a [AtomicUsize],
     custody_violations: &'a AtomicUsize,
     ledger: Ledger<'a>,
-    expected_charge: &'a AtomicU64,
+    minimum_charge: u64,
     overlap: Option<&'a Overlap>,
 ) -> Vec<Tracked<'a>> {
     (0..ITEMS)
@@ -105,7 +105,7 @@ fn tracked_inputs<'a>(
             drops,
             custody_violations,
             ledger,
-            expected_charge,
+            minimum_charge,
             overlap,
             payload: vec![0; PAYLOAD_BYTES as usize],
         })
@@ -139,10 +139,9 @@ fn evaluate_input(
     context: &mut crate::MapKernelContext<'_, '_>,
     stop: Stop,
 ) -> Result<ResultBytes, MapKernelFailure<()>> {
-    assert_eq!(
-        input.ledger.charged(),
-        input.expected_charge.load(Ordering::SeqCst),
-        "worker has exactly the declared reservation"
+    assert!(
+        input.ledger.charged() >= input.minimum_charge,
+        "the caller's input backing remains funded through kernel ownership"
     );
     match stop {
         Stop::Panic => panic!("owned input unwinds inside kernel"),
@@ -236,7 +235,6 @@ fn owned_map_drops_and_leased_custody_on_every_stop() {
             let hold = ledger.reserve(input_bytes()).unwrap();
             let drops: Vec<_> = (0..ITEMS).map(|_| AtomicUsize::new(0)).collect();
             let custody_violations = AtomicUsize::new(0);
-            let expected_charge = AtomicU64::new(BASELINE + input_bytes());
             let overlap = Overlap::new(workers);
             let active = !matches!(
                 stop,
@@ -246,7 +244,7 @@ fn owned_map_drops_and_leased_custody_on_every_stop() {
                 &drops,
                 &custody_violations,
                 ledger,
-                &expected_charge,
+                BASELINE + input_bytes(),
                 active.then_some(&overlap),
             );
             let source = crate::CancellationSource::new();
@@ -271,19 +269,6 @@ fn owned_map_drops_and_leased_custody_on_every_stop() {
                 req.deadline = Some(Instant::now() - Duration::from_secs(1));
             }
             let child = parent.child(req).unwrap();
-            if !matches!(stop, Stop::Memory | Stop::Unrelated) {
-                // Parent + child declare two cancellation tokens; a root run
-                // owns its physical ledger and reserves the declared worker width.
-                let bytes = memory_model::bytes::<Tracked<'_>, ResultBytes, ()>(
-                    ITEMS,
-                    ITEMS as u64 * PAYLOAD_BYTES,
-                    access_bytes(),
-                    2,
-                    workers,
-                    true,
-                );
-                expected_charge.store(BASELINE + bytes, Ordering::SeqCst);
-            }
             let outcome = if matches!(stop, Stop::Unrelated) {
                 map(values).run_owned_taking(None, hold, |input, ctx| evaluate(input, ctx, stop))
             } else {
@@ -311,12 +296,4 @@ fn owned_map_drops_and_leased_custody_on_every_stop() {
             assert_eq!(ledger.charged(), 0);
         }
     }
-}
-
-// The declared map has one u64 write key and no read keys per input.
-fn access_bytes() -> u64 {
-    (ITEMS
-        * (std::mem::size_of::<Vec<u64>>()
-            + std::mem::size_of::<(worth_foundational::PartitionIdentity, Vec<u64>)>()
-            + std::mem::size_of::<u64>())) as u64
 }

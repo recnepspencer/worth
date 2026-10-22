@@ -49,7 +49,7 @@ pub struct KeyedPartitioner<K> {
     items: ExecutionOrderedMap<PartitionItemId, KeyedItem<K>>,
     keys: ExecutionOrderedMap<K, Group>,
     identities: ExecutionOrderedMap<PartitionIdentity, K>,
-    key_bytes: u64,
+    key_bytes: Option<u64>,
 }
 impl<K> Default for KeyedPartitioner<K> {
     fn default() -> Self {
@@ -57,7 +57,7 @@ impl<K> Default for KeyedPartitioner<K> {
             items: Default::default(),
             keys: Default::default(),
             identities: Default::default(),
-            key_bytes: 0,
+            key_bytes: Some(0),
         }
     }
 }
@@ -90,7 +90,7 @@ impl<K: Ord + Clone + ChargedBytes> KeyedPartitioner<K> {
     }
     /// Complete reachable capacity, separate from actual new allocation.
     pub fn charged_bytes(&self) -> Option<u64> {
-        Self::retained_bytes(self.items.len(), self.keys.len(), self.key_bytes)
+        Self::retained_bytes(self.items.len(), self.keys.len(), self.key_bytes?)
     }
     pub fn retained_bytes(items: usize, keys: usize, key_bytes: u64) -> Option<u64> {
         use crate::storage::ordered::node::cell_bytes;
@@ -185,17 +185,28 @@ impl<K: Ord + Clone + ChargedBytes> KeyedPartitioner<K> {
             .get(&entry.item)
             .map_or(0, |v| v.key.additional_charged_bytes());
         let fresh = !self.keys.contains_key(&entry.key);
-        let heap = self.key_bytes.checked_sub(old)?.checked_add(
-            entry
-                .key
-                .additional_charged_bytes()
-                .checked_mul(if fresh { 3 } else { 1 })?,
-        )?;
+        let heap = self
+            .key_bytes
+            .or_else(|| self.census_key_bytes())?
+            .checked_sub(old)?
+            .checked_add(entry.key.additional_charged_bytes().checked_mul(if fresh {
+                3
+            } else {
+                1
+            })?)?;
         Self::retained_bytes(
             self.items.len() + usize::from(!self.items.contains_key(&entry.item)),
             self.keys.len() + usize::from(fresh),
             heap,
         )
+    }
+    fn census_key_bytes(&self) -> Option<u64> {
+        let items = self.items.values().try_fold(0u64, |bytes, entry| {
+            bytes.checked_add(entry.key.additional_charged_bytes())
+        })?;
+        self.keys.keys().try_fold(items, |bytes, key| {
+            bytes.checked_add(key.additional_charged_bytes().checked_mul(2)?)
+        })
     }
 }
 #[cfg(test)]

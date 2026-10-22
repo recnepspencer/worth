@@ -32,7 +32,7 @@ impl<T> ExecutionArray<T> {
     pub fn is_empty(&self) -> bool {
         self.elements().is_empty()
     }
-    /// None for explicit system allocation; Some(0) for leased empty/ZST arrays.
+    /// None for system/worker-only allocation; Some(0) for accounted empty/ZST arrays.
     pub fn charged_payload_bytes(&self) -> Option<u64> {
         self.backing.charged_payload_bytes()
     }

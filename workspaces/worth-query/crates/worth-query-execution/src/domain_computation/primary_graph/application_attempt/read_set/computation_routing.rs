@@ -325,7 +325,6 @@ pub(in crate::domain_computation::primary_graph) struct SealedComputationFacts {
     >,
     original: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     content: Option<super::super::FactContent>,
-    charged: Option<u64>,
     projection: Option<std::sync::Arc<super::CompletedFactProjection>>,
     layout: layout::SealedReadLayout,
 }

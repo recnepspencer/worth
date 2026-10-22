@@ -86,7 +86,7 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
                 })
                 .execute()
                 .unwrap();
-            let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
+            let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.accounting().expect("this fixture declares accounting");
             bound(Some(worth_foundational::ExecutionBudget::new(
                 NonZeroUsize::MIN,
                 if memory {
@@ -158,7 +158,7 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
                 "admitted discovered mutation contacts its own reader"
             );
             let receipt = performed.receipt().clone();
-            let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
+            let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.accounting().expect("this fixture declares accounting");
             bound(Some(worth_foundational::ExecutionBudget::new(
                 NonZeroUsize::MIN,
                 if memory {

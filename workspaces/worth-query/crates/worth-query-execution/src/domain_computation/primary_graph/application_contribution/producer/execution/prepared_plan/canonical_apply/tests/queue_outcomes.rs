@@ -32,22 +32,22 @@ fn a_queued_member_failure_does_not_withhold_its_independent_sibling() {
             let execution = QueryRequestExecution::open(placement, &scope);
             let failed = if failure == Failure::Complete {
                 OwnerPlan::new(
-                    vec![PreparedCompute::declared_test_request(0, 3, false)],
+                    vec![PreparedCompute::declared_test_request(0, false)],
                     move |_| Err(failure),
                 )
             } else {
                 OwnerPlan::immediate(Err(failure))
             };
             let succeeding = OwnerPlan::new(
-                vec![PreparedCompute::declared_test_request(1, 7, false)],
+                vec![PreparedCompute::declared_test_request(1, false)],
                 |mut slots| Ok(slots.pop().unwrap().into_value::<(usize, bool)>().0),
             );
             let mut held = Vec::new();
             let mut applied = Vec::new();
-            let (outcome, report) = execution
+            let (outcome, _) = execution
                 .execution_request()
                 .unwrap()
-                .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
+                .run_native(|_| {
                     let cursor = CanonicalApplyCursor::compute(
                         CanonicalUniqueVec::try_from_sorted_unique(vec![0, 1]).unwrap(),
                         vec![failed, succeeding],
@@ -102,13 +102,9 @@ fn a_completion_that_catches_a_compute_denial_applies_the_whole_wave() {
         let plans = [3, 7]
             .into_iter()
             .enumerate()
-            .map(|(rank, work)| {
+            .map(|(rank, _)| {
                 OwnerPlan::new(
-                    vec![PreparedCompute::declared_test_request(
-                        rank,
-                        work,
-                        rank == 0,
-                    )],
+                    vec![PreparedCompute::declared_test_request(rank, rank == 0)],
                     |mut slots| {
                         // The handler catches the transported denial and supplies its decision.
                         Ok::<_, ()>(slots.pop().unwrap().into_value::<(usize, bool)>().0)
@@ -117,10 +113,10 @@ fn a_completion_that_catches_a_compute_denial_applies_the_whole_wave() {
             })
             .collect();
         let mut applied = Vec::new();
-        let (outcome, report) = execution
+        let (outcome, _) = execution
             .execution_request()
             .unwrap()
-            .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
+            .run_native(|_| {
                 let cursor = CanonicalApplyCursor::compute(
                     CanonicalUniqueVec::try_from_sorted_unique(vec![0, 1]).unwrap(),
                     plans,

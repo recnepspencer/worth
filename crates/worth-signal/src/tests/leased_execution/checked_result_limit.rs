@@ -56,7 +56,7 @@ fn declared_checked_result_heap_is_enforced_before_publication() {
                 admission.policy.posture(),
                 admission.policy.determinism(),
                 worth_foundational::ExecutionBudget::new(
-                    admission.policy.budget().max_workers(),
+                    admission.policy.max_workers(),
                     memory,
                     Some(2_000_000),
                 ),
@@ -99,7 +99,7 @@ fn omitted_result_declaration_keeps_the_original_output_and_refunds_its_tickets(
         .build();
     let calls = AtomicUsize::new(0);
     let lease = authority().request_lease(request(2, 2_000_000)).unwrap();
-    assert_eq!(lease.policy().budget().charged_memory_bytes(), None);
+    assert_eq!(lease.policy().charged_memory_bytes(), None);
     let report = graph
         .evaluate_checked(
             &[node],

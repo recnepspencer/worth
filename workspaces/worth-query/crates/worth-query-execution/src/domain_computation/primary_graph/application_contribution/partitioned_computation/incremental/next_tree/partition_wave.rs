@@ -5,8 +5,7 @@ use worth_execution::{ExecutionRetainedRun, RetainedRunOutcome};
 struct BorrowedGather<'a, Key, Gathered>(&'a GatheredComputationPartition<Key, Gathered>);
 pub(super) struct SettledPartitions<Reduced> {
     pub native_run: ExecutionRetainedRun<Reduced>,
-    pub work: u64,
-    pub span: u64,
+    pub accounting: Option<(u64, u64)>,
 }
 pub(super) fn run<Key, Gathered, Reduced, Stopped>(
     partitions: &BTreeMap<PartitionIdentity, Recomputed<Key, Gathered>>,
@@ -50,8 +49,7 @@ where
                 match outcome {
                     RetainedRunOutcome::Complete { run, report, .. } => Ok(SettledPartitions {
                         native_run: run,
-                        work: report.charged_work(),
-                        span: report.charged_span(),
+                        accounting: report.accounted_cost(),
                     }),
                     RetainedRunOutcome::Stopped { reason, .. } => Err(
                         WorthQueryPartitionedComputationDenial::from_map_stop(reason),

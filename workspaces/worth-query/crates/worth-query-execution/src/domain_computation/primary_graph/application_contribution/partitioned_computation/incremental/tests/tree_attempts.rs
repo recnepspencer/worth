@@ -27,11 +27,19 @@ fn successful_edits_failed_attempt_and_rebuild_are_all_reported() {
         TreeRun::Rebuilt(Rebuild::ReducerPanicked, _)
     ));
     assert_eq!(
-        next.report.metrics_for_test().combine_calls,
+        next.report
+            .metrics_for_test()
+            .accounted_metrics()
+            .expect("explicit accounted fixture")
+            .combine_calls,
         u128::from(failed_entry + 64)
     );
     assert_eq!(
-        next.report.metrics_for_test().recombined_nodes,
+        next.report
+            .metrics_for_test()
+            .accounted_metrics()
+            .expect("explicit accounted fixture")
+            .recombined_nodes,
         u128::from(first_depth + 32)
     );
     assert_eq!(*next.outcome.unwrap().result(), 35);
@@ -80,8 +88,22 @@ fn a_failed_edit_followed_by_a_stopped_rebuild_preserves_both_attempts() {
         TreeRun::Rebuilt(Rebuild::ReducerPanicked, _)
     ));
     assert!(next.outcome.is_err());
-    assert_eq!(next.report.metrics_for_test().combine_calls, 2);
-    assert_eq!(next.report.metrics_for_test().recombined_nodes, 0);
+    assert_eq!(
+        next.report
+            .metrics_for_test()
+            .accounted_metrics()
+            .expect("explicit accounted fixture")
+            .combine_calls,
+        2
+    );
+    assert_eq!(
+        next.report
+            .metrics_for_test()
+            .accounted_metrics()
+            .expect("explicit accounted fixture")
+            .recombined_nodes,
+        0
+    );
     PANIC_AT.set(None);
 }
 
@@ -118,5 +140,12 @@ fn a_work_stopped_rebuild_reports_the_work_it_entered() {
         TreeRun::Rebuilt(Rebuild::WorkCeiling, _)
     ));
     assert!(next.outcome.is_err());
-    assert!(next.report.metrics_for_test().combine_calls > 0);
+    assert!(
+        next.report
+            .metrics_for_test()
+            .accounted_metrics()
+            .expect("explicit accounted fixture")
+            .combine_calls
+            > 0
+    );
 }

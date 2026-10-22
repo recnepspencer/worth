@@ -273,3 +273,35 @@ fn completion_metadata_retains_the_exact_original_pre_effect_payload() {
         "another observer cannot alter original comparator facts"
     );
 }
+
+#[test]
+fn native_fact_index_preserves_ordinals_and_readers_without_an_observation_bill() {
+    use worth_execution::{CancellationToken, ExecutionRequest, SerialRequest};
+    use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequestPolicy};
+    let policy = ExecutionRequestPolicy::for_workers(
+        ExecutionPosture::Serial,
+        DeterminismContract::CanonicalBitwise,
+        std::num::NonZeroUsize::MIN,
+    );
+    let request = SerialRequest::from_policy(&policy, CancellationToken::new(), None);
+    let (sealed, _) = ExecutionRequest::serial(&request)
+        .run_native(|_| {
+            let observed = BTreeMap::from([(
+                key(1),
+                WorthQueryApplicationObservedFact::Entity {
+                    entity_id: entity(1),
+                    kind: KindId::new(1),
+                },
+            )]);
+            let mut reads = ComputationFactAttribution::default();
+            reads.record(key(1), partition(7));
+            SealedComputationFacts::at_seal(reads, &observed)
+        })
+        .unwrap();
+    assert_eq!(sealed.observation_work_bound(), None);
+    assert_eq!(sealed.at_ordinal(0).unwrap().0, &key(1));
+    assert_eq!(
+        sealed.call_index().keys(partition(7)).collect::<Vec<_>>(),
+        [&key(1)]
+    );
+}

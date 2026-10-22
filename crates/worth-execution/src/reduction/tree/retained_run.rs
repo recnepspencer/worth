@@ -36,7 +36,9 @@ impl<R> RunTree<R> {
             .map_or_else(RunSummary::empty, |n| n.aggregate.summary)
     }
     pub(crate) fn bytes(&self) -> u64 {
-        self.root.as_ref().map_or(0, |n| n.retained_bytes)
+        self.root
+            .as_ref()
+            .map_or(0, |n| n.retained_bytes.expect("accounted run backing"))
     }
     pub(crate) fn get(&self, id: PartitionIdentity) -> Option<&ExecutionRetainedResult<R>> {
         edit::leaf(&self.root, id)?.result.as_ref()

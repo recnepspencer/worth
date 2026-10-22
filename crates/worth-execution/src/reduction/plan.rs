@@ -14,6 +14,8 @@ pub enum ReductionDenial {
     ResultCapacityExceeded,
     Allocation(crate::ExecutionPhysicalAllocationDenialKind),
     WorkCounterOverflow,
+    /// An explicit cost contract requested metadata absent from native storage.
+    AccountingUnavailable,
 }
 
 /// Checked identities for one canonical reduction. Fields are private so a

@@ -142,12 +142,14 @@ fn supplied_native_counter_failure_is_normalized_and_its_metrics_are_carried() {
     let native =
         TreeAttempt::<(), _>::native(Err(ReductionRunFailure::<worth_execution::MapKernelStop> {
             reason: ReductionRunStop::WorkCounterOverflow,
-            metrics: worth_execution::ReductionMetrics {
-                structural_visits: u64::MAX,
-                charged_work: u64::MAX,
-                charged_span: u64::MAX,
-                ..Default::default()
-            },
+            metrics: worth_execution::ReductionMetrics::from_accounting(
+                worth_execution::ReductionAccounting {
+                    structural_visits: u64::MAX,
+                    charged_work: u64::MAX,
+                    charged_span: u64::MAX,
+                    ..Default::default()
+                },
+            ),
         }));
 
     let reported = native.finish_edits::<u32>().resolve(|| {
@@ -166,7 +168,12 @@ fn supplied_native_counter_failure_is_normalized_and_its_metrics_are_carried() {
         TreeRun::Rebuilt(Rebuild::WorkCounterOverflow, _)
     ));
     assert_eq!(
-        reported.report.metrics_for_test().structural_visits,
+        reported
+            .report
+            .metrics_for_test()
+            .accounted_metrics()
+            .expect("explicit accounted fixture")
+            .structural_visits,
         u128::from(u64::MAX)
     );
     for (reason, cause) in [

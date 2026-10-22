@@ -83,6 +83,8 @@ pub enum WorthQueryManagedDerivedViewDenial {
     DeadlineElapsed,
     /// The work counter overflowed.
     WorkCounterOverflow,
+    /// Explicit billing was requested without an accounting contract.
+    AccountingUnavailable,
     /// A worker or owner stage refused a work increment, or settlement refused
     /// a completed root's whole work without charging it. A root is retained
     /// when known; None identifies a stage without a root identity.

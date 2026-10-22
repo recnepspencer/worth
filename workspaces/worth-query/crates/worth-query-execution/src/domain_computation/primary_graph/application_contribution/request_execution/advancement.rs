@@ -49,6 +49,7 @@ impl WorthQueryAdvancementDenial {
             Self::Resource(
                 Resource::WorkExhausted
                 | Resource::WorkCounterOverflow
+                | Resource::AccountingUnavailable
                 | Resource::RetainedBytesExhausted
                 | Resource::ScratchCapacityExceeded
                 | Resource::ResultCapacityExceeded
@@ -102,12 +103,13 @@ impl QueryRequestExecution<'_> {
         source_instance: Option<u64>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
-        observation::begin(match &self.form {
+        let posture = match &self.form {
             Form::Leased { lease, policy } | Form::Serial { lease, policy } => lease
                 .as_ref()
                 .map(|lease| lease.resolved_posture())
                 .unwrap_or(policy.posture()),
-        });
+        };
+        observation::begin(posture, self.has_accounting());
         let result = self.run_admitted_advancement(owner, source_instance, body);
         observation::record_result(&result);
         result
@@ -128,9 +130,9 @@ impl QueryRequestExecution<'_> {
             ));
         }
         let mut body_unwind = None;
-        let outcome = request.run(ExecutionWorkCeiling::new(self.declared_work), |lease| {
+        let execute = |lease: Option<&worth_execution::ExecutionResourceLease<'_>>| {
             observation::record_workers(
-                lease.map_or(1, |lease| lease.policy().budget().max_workers().get()),
+                lease.map_or(1, |lease| lease.policy().max_workers().get()),
             );
             let active = ActiveAdvancement { execution: self };
             let source = match (source_instance, owner) {
@@ -151,7 +153,22 @@ impl QueryRequestExecution<'_> {
                     None
                 }
             }
-        });
+        };
+        let outcome = if self.has_accounting() {
+            request.run(ExecutionWorkCeiling::new(self.declared_work), execute)
+        } else {
+            request.run_native(execute).map(|(value, physical)| {
+                let posture = if physical.active_workers_high_watermark() > 1 {
+                    worth_foundational::ExecutionPosture::Automatic
+                } else {
+                    worth_foundational::ExecutionPosture::Serial
+                };
+                (
+                    value,
+                    worth_foundational::ExecutionReport::native(posture, physical),
+                )
+            })
+        };
         // The execution owner catches unwinds to close its accounting scope.
         // Preserve the host body's original unwind and its existing posture.
         if let Some(payload) = body_unwind {
@@ -220,7 +237,7 @@ fn with_owned_bootstrap_advancement<R>(
     let execution = QueryRequestExecution {
         cancellation: cancellation.clone(),
         deadline: None,
-        declared_work: policy.budget().work_ceiling(),
+        declared_work: policy.work_ceiling(),
         certified_seed: super::test_placement::certifying(),
         form: super::serial_placement::form(policy, cancellation, None),
     };
@@ -295,10 +312,6 @@ mod tests;
 
 pub(in crate::domain_computation::primary_graph) use observation::record_caller_pass_for_test;
 
-#[cfg(test)]
-pub(crate) fn drain_test_advancement_observations() {
-    drop(observation::advancement_observations_on_this_thread_for_test());
-}
 #[cfg(test)]
 mod test_host_policy;
 #[cfg(test)]

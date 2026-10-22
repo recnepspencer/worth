@@ -3,7 +3,10 @@
 use worth_foundational::facade::ExecutionReport;
 
 use super::retained::WorthQueryPartitionedComputationRunForTest;
-use super::tree_report::WorthQueryPartitionedTreeRun;
+use super::tree_report::{
+    WorthQueryPartitionedTreeAccounting as TreeAccounting,
+    WorthQueryPartitionedTreeMetrics as TreeMetrics, WorthQueryPartitionedTreeRun,
+};
 
 thread_local! {
     static RUNS: std::cell::RefCell<Vec<(WorthQueryPartitionedComputationRunForTest, Option<ExecutionReport>)>> =
@@ -63,13 +66,21 @@ pub(in super::super::super) fn observe_full_tree<Tree, E>(
     }
     use worth_execution::ReduceInputDenial;
     let metrics = match outcome {
-        Ok((_, _, metrics)) => *metrics,
-        Err(ReduceInputDenial::ReductionStopped { failure, .. }) => failure.metrics,
+        Ok((_, _, metrics)) => TreeMetrics::from_native(*metrics),
+        Err(ReduceInputDenial::ReductionStopped { failure, .. }) => {
+            TreeMetrics::from_native(failure.metrics)
+        }
         Err(ReduceInputDenial::ScopeAdmission { report, .. }) => {
+            let Some((work, _)) = report.accounted_cost() else {
+                observe_tree(WorthQueryPartitionedTreeRun::Full(
+                    cause,
+                    TreeMetrics::from_native(worth_execution::ReductionMetrics::native()),
+                ));
+                return;
+            };
             // Scope admission precedes kernels or follows a completed map and
             // shape. A completed tree settles inside its already held build bound.
-            let visits = report
-                .charged_work()
+            let visits = work
                 .checked_sub(mapped.work())
                 .expect("scope work covers every completed map kernel");
             if visits == 0 {
@@ -80,20 +91,17 @@ pub(in super::super::super) fn observe_full_tree<Tree, E>(
                 );
                 return;
             }
-            worth_execution::ReductionMetrics {
-                structural_visits: visits,
+            TreeMetrics::from_accounted(TreeAccounting {
+                structural_visits: visits.into(),
                 recombined_nodes: 0,
                 combine_calls: 0,
-                charged_work: visits,
-                charged_span: visits,
-            }
+                charged_work: visits.into(),
+                charged_span: visits.into(),
+            })
         }
         Err(ReduceInputDenial::MapStopped { .. }) => return,
     };
-    observe_tree(WorthQueryPartitionedTreeRun::Full(
-        cause,
-        super::tree_report::WorthQueryPartitionedTreeMetrics::from_native(metrics),
-    ));
+    observe_tree(WorthQueryPartitionedTreeRun::Full(cause, metrics));
 }
 
 /// Already-settled native evidence; observing work never interrogates the
@@ -105,32 +113,37 @@ pub(in super::super::super) fn observe_retained_full_tree<R, F, E, Tree>(
     if !crate::domain_computation::execution_observation::is_installed() {
         return;
     }
-    let metrics = outcome.reduction_metrics.or_else(|| match &outcome.result {
-        Err(worth_execution::RetainedReduceDenial::Reduction(
-            worth_execution::ReduceInputDenial::ScopeAdmission { report, .. },
-        )) => {
-            let map_work = outcome
-                .mapped_report
-                .map_or(0, |report| report.charged_work());
-            let visits = report
-                .charged_work()
-                .checked_sub(map_work)
-                .expect("native scope covers settled map");
-            (visits != 0).then_some(worth_execution::ReductionMetrics {
-                structural_visits: visits,
-                recombined_nodes: 0,
-                combine_calls: 0,
-                charged_work: visits,
-                charged_span: visits,
-            })
-        }
-        _ => None,
-    });
+    let metrics = outcome
+        .reduction_metrics
+        .map(TreeMetrics::from_native)
+        .or_else(|| match &outcome.result {
+            Err(worth_execution::RetainedReduceDenial::Reduction(
+                worth_execution::ReduceInputDenial::ScopeAdmission { report, .. },
+            )) => {
+                let Some((work, _)) = report.accounted_cost() else {
+                    return Some(TreeMetrics::from_native(
+                        worth_execution::ReductionMetrics::native(),
+                    ));
+                };
+                let map_work = outcome
+                    .mapped_report
+                    .and_then(|report| report.accounted_cost())
+                    .map_or(0, |(work, _)| work);
+                let visits = work
+                    .checked_sub(map_work)
+                    .expect("native scope covers settled map");
+                (visits != 0).then_some(TreeMetrics::from_accounted(TreeAccounting {
+                    structural_visits: visits.into(),
+                    recombined_nodes: 0,
+                    combine_calls: 0,
+                    charged_work: visits.into(),
+                    charged_span: visits.into(),
+                }))
+            }
+            _ => None,
+        });
     if let Some(metrics) = metrics {
-        observe_tree(WorthQueryPartitionedTreeRun::Full(
-            cause,
-            super::tree_report::WorthQueryPartitionedTreeMetrics::from_native(metrics),
-        ));
+        observe_tree(WorthQueryPartitionedTreeRun::Full(cause, metrics));
     }
 }
 
@@ -189,7 +202,7 @@ impl FullTreeMapWork {
             &mut worth_execution::MapKernelContext<'_, '_>,
         ) -> Result<R, worth_execution::MapKernelFailure<E>>,
     ) -> Result<R, worth_execution::MapKernelFailure<E>> {
-        if !self.observing {
+        if !self.observing || !context.has_accounting() {
             return kernel(input, context);
         }
         let before = context.charged_work();

@@ -5,17 +5,19 @@ use worth_execution::{
 };
 
 impl QueryRequestExecution<'_> {
-    /// Lends the original request's allocation owner to native retained nodes.
+    /// Lends the original request's active descendant to native retained nodes.
     pub(in crate::domain_computation::primary_graph) fn with_native_lease<R>(
         &self,
         use_lease: impl FnOnce(&ExecutionResourceLease<'_>) -> R,
-    ) -> Result<R, Resource> {
-        match &self.form {
+    ) -> Result<R, worth_execution::WorkCeilingDenial> {
+        let lease = match &self.form {
             Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
                 .as_ref()
-                .map(use_lease)
-                .map_err(|denial| lease_denial(*denial)),
-        }
+                .map_err(|denial| worth_execution::WorkCeilingDenial::Admission(*denial))?,
+        };
+        ExecutionRequest::leased(lease).in_scope(|active| {
+            use_lease(active.expect("a leased request retains its native backing"))
+        })
     }
 }
 

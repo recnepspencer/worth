@@ -201,7 +201,7 @@ fn tracked_packet_claim_refuses_before_growth_and_releases_its_payer() {
 fn tracked_packet_without_request_ceiling_keeps_actual_claims_and_counter_overflow_typed() {
     use crate::execution::RelationalExecutionDenialCause as Cause;
     let lease = crate::tests::support::test_execution_lease();
-    assert_eq!(lease.policy().budget().charged_memory_bytes(), None);
+    assert_eq!(lease.policy().charged_memory_bytes(), None);
     let packet = || {
         vec![ReadOnlyPacket {
             identity: PartitionIdentity::new(9),

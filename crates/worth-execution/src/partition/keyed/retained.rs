@@ -18,11 +18,15 @@ impl Members {
                 insert && old.is_none_or(|m| !m.values.contains(&item)),
             ))
             .ok_or(ExecutionOrderedMapDenial::CapacityOverflow)?;
-        let bytes = (count as u64)
-            .checked_mul(member_bytes())
-            .and_then(|v| v.checked_add((size_of::<Self>() + 2 * size_of::<usize>()) as u64))
-            .ok_or(ExecutionOrderedMapDenial::CapacityOverflow)?;
-        let mut memory = policy.reserve_memory(bytes)?;
+        let mut memory = if policy.uses_accounting() {
+            let bytes = (count as u64)
+                .checked_mul(member_bytes())
+                .and_then(|v| v.checked_add((size_of::<Self>() + 2 * size_of::<usize>()) as u64))
+                .ok_or(ExecutionOrderedMapDenial::CapacityOverflow)?;
+            policy.reserve_memory(bytes)?
+        } else {
+            None
+        };
         let mut values = old.map_or_else(BTreeSet::new, |m| m.values.clone());
         if insert {
             values.insert(item);
@@ -74,6 +78,15 @@ impl<K: Ord + Clone + ChargedBytes> KeyedPartitioner<K> {
             return Ok(PartitionWork::default());
         }
         let mut next = self.clone();
+        next.key_bytes = if policy.uses_accounting() {
+            Some(
+                self.key_bytes
+                    .or_else(|| self.census_key_bytes())
+                    .ok_or(KeyedEditDenial::BoundOverflow)?,
+            )
+        } else {
+            None
+        };
         next.remove_in(entry.item, policy)
             .map_err(KeyedEditDenial::Admission)?;
         let fresh = !next.keys.contains_key(&entry.key);
@@ -88,16 +101,19 @@ impl<K: Ord + Clone + ChargedBytes> KeyedPartitioner<K> {
             next.identities
                 .insert_cloned_in(&entry.partition, &entry.key, policy)
                 .map_err(KeyedEditDenial::Admission)?;
-            next.key_bytes = next
-                .key_bytes
-                .checked_add(
-                    entry
-                        .key
-                        .additional_charged_bytes()
-                        .checked_mul(2)
+            if let Some(bytes) = next.key_bytes {
+                next.key_bytes = Some(
+                    bytes
+                        .checked_add(
+                            entry
+                                .key
+                                .additional_charged_bytes()
+                                .checked_mul(2)
+                                .ok_or(KeyedEditDenial::BoundOverflow)?,
+                        )
                         .ok_or(KeyedEditDenial::BoundOverflow)?,
-                )
-                .ok_or(KeyedEditDenial::BoundOverflow)?;
+                );
+            }
         }
         next.keys
             .insert_cloned_in(&entry.key, &group, policy)
@@ -105,10 +121,13 @@ impl<K: Ord + Clone + ChargedBytes> KeyedPartitioner<K> {
         next.items
             .insert_cloned_in(&entry.item, entry, policy)
             .map_err(KeyedEditDenial::Admission)?;
-        next.key_bytes = next
-            .key_bytes
-            .checked_add(entry.key.additional_charged_bytes())
-            .ok_or(KeyedEditDenial::BoundOverflow)?;
+        if let Some(bytes) = next.key_bytes {
+            next.key_bytes = Some(
+                bytes
+                    .checked_add(entry.key.additional_charged_bytes())
+                    .ok_or(KeyedEditDenial::BoundOverflow)?,
+            );
+        }
         let rerouted = self.route(entry.item) != Some(entry.partition);
         *self = next;
         Ok(PartitionWork {
@@ -128,13 +147,26 @@ impl<K: Ord + Clone + ChargedBytes> KeyedPartitioner<K> {
         };
         let group = self.keys.get(&entry.key).expect("routed item owns a group");
         let mut next = self.clone();
-        let mut released = entry.key.additional_charged_bytes();
+        next.key_bytes = if policy.uses_accounting() {
+            Some(
+                self.key_bytes
+                    .or_else(|| self.census_key_bytes())
+                    .ok_or(ExecutionOrderedMapDenial::CapacityOverflow)?,
+            )
+        } else {
+            None
+        };
+        let mut released = next.key_bytes.map(|_| entry.key.additional_charged_bytes());
         if group.members.values.len() == 1 {
             next.keys.remove_in(&entry.key, policy)?;
             next.identities.remove_in(&entry.partition, policy)?;
             released = released
-                .checked_mul(3)
-                .ok_or(ExecutionOrderedMapDenial::CapacityOverflow)?;
+                .map(|bytes| {
+                    bytes
+                        .checked_mul(3)
+                        .ok_or(ExecutionOrderedMapDenial::CapacityOverflow)
+                })
+                .transpose()?;
         } else {
             let members = Members::edited(Some(&group.members), item, false, policy)?;
             next.keys.insert_cloned_in(
@@ -147,10 +179,13 @@ impl<K: Ord + Clone + ChargedBytes> KeyedPartitioner<K> {
             )?;
         }
         next.items.remove_in(&item, policy)?;
-        next.key_bytes = next
-            .key_bytes
-            .checked_sub(released)
-            .ok_or(ExecutionOrderedMapDenial::CapacityOverflow)?;
+        if let Some((bytes, released)) = next.key_bytes.zip(released) {
+            next.key_bytes = Some(
+                bytes
+                    .checked_sub(released)
+                    .ok_or(ExecutionOrderedMapDenial::CapacityOverflow)?,
+            );
+        }
         *self = next;
         Ok(PartitionWork {
             items_rerouted: 1,

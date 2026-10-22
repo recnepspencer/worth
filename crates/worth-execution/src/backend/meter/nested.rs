@@ -22,30 +22,32 @@ pub(crate) fn record_nested(report: ExecutionReport, stop: Option<NestedStopOwne
     ACTIVE_METER.with(|active| {
         if let Some(parent) = active.borrow().last() {
             let mut parent = parent.borrow_mut();
-            if let Some(capture) = &mut parent.capture {
+            if let Some(capture) = parent.capture_mut() {
                 capture.invalidate();
             }
-            parent.work = match parent.work.checked_add(report.charged_work()) {
-                Some(work) => work,
-                None => {
-                    parent.nested_stop.record(NestedStopOwner::Request);
+            let mut overflowed = false;
+            if let (Some(accounting), Some((work, span))) =
+                (parent.accounting.as_mut(), report.accounted_cost())
+            {
+                accounting.work = accounting.work.checked_add(work).unwrap_or_else(|| {
+                    overflowed = true;
                     u64::MAX
-                }
-            };
-            parent.span = match parent.span.checked_add(report.charged_span()) {
-                Some(span) => span,
-                None => {
-                    parent.nested_stop.record(NestedStopOwner::Request);
+                });
+                accounting.span = accounting.span.checked_add(span).unwrap_or_else(|| {
+                    overflowed = true;
                     u64::MAX
-                }
-            };
+                });
+            }
+            if overflowed {
+                parent.nested_stop.record(NestedStopOwner::Request);
+            }
             if let Some(owner) = stop {
                 parent.nested_stop.record(owner);
             }
             if parent
                 .limits
                 .ceiling
-                .is_some_and(|ceiling| parent.work > ceiling)
+                .is_some_and(|ceiling| parent.work() > ceiling)
             {
                 let owner = parent.limits.ceiling_owner;
                 parent.nested_stop.record(owner);

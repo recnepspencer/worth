@@ -21,7 +21,6 @@ pub(super) fn stage_leased_relation_rows(
     );
     let packet_ceiling = lease
         .policy()
-        .budget()
         .charged_memory_bytes()
         .map(|limit| limit / (packet_count as u64).saturating_mul(8));
     let (inputs, _preparation_report) = crate::execution::prepare_borrowed_packets(

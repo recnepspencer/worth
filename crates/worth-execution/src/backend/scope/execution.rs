@@ -25,28 +25,52 @@ where
         Option<crate::ExecutionResultMemory<'_>>,
     ) -> Result<R, KernelFailure<E>>,
 {
+    let accounted = !matches!(payload, PayloadStorage::Native)
+        || RunLimits::native_accounting(lease)
+        || work_ceiling.is_some()
+        || serial.is_some_and(|serial| serial.memory().is_some());
     if lease.is_none() && RunLimits::has_leased_parent() {
-        return denied(LeaseDenial::unrelated_nested_lease(), charge_parent);
+        return denied(
+            LeaseDenial::unrelated_nested_lease(),
+            charge_parent,
+            accounted,
+        );
     }
-    let limits = RunLimits::for_run(lease, false)
-        .within_work_ceiling(work_ceiling)
-        .within_serial(serial);
-    let memory_bytes = u64::try_from(size_of::<R>())
-        .ok()
-        .and_then(|bytes| bytes.checked_add(u64::try_from(size_of::<E>()).ok()?))
-        .and_then(|bytes| bytes.checked_add(retained_bytes))
-        .and_then(|bytes| bytes.checked_add(max_result_bytes.unwrap_or(0)))
-        .and_then(|bytes| bytes.checked_add(limits.framework_context_bytes(1, 1)?));
+    let limits = if matches!(payload, PayloadStorage::Native) {
+        RunLimits::for_native(lease, false)
+    } else {
+        RunLimits::for_run(lease, false)
+    }
+    .within_work_ceiling(work_ceiling)
+    .within_serial(serial);
+    let memory_bytes = if limits.is_accounted() {
+        u64::try_from(size_of::<R>())
+            .ok()
+            .and_then(|bytes| bytes.checked_add(u64::try_from(size_of::<E>()).ok()?))
+            .and_then(|bytes| bytes.checked_add(retained_bytes))
+            .and_then(|bytes| bytes.checked_add(max_result_bytes.unwrap_or(0)))
+            .and_then(|bytes| bytes.checked_add(limits.framework_context_bytes(1, 1)?))
+    } else {
+        Some(0)
+    };
     let Some(memory_bytes) = memory_bytes else {
-        return denied(LeaseDenial::charged_bytes_overflow(), charge_parent);
+        return denied(
+            LeaseDenial::charged_bytes_overflow(),
+            charge_parent,
+            accounted,
+        );
     };
     // A held scope's memory is the caller's reservation; the entry holds
     // only its worker.
     let entry_bytes = if hold.is_some() { 0 } else { memory_bytes };
     let reservation = if let Some(lease) = lease {
-        match lease.reserve_entry(entry_bytes) {
+        match if limits.is_accounted() {
+            lease.reserve_entry(entry_bytes)
+        } else {
+            lease.reserve_worker_entry()
+        } {
             Ok(guard) => Some(guard),
-            Err(denial) => return denied(denial, charge_parent),
+            Err(denial) => return denied(denial, charge_parent, accounted),
         }
     } else {
         None
@@ -57,7 +81,7 @@ where
                 hold.reservation
                     .take_over(lease, limits.serial_memory(), memory_bytes)
             {
-                return denied(denial, charge_parent);
+                return denied(denial, charge_parent, accounted);
             }
             Some(hold)
         }
@@ -66,7 +90,13 @@ where
     let serial_reservation = match (lease, limits.serial_memory(), &hold) {
         (None, Some(budget), None) => match budget.reserve(memory_bytes) {
             Ok(guard) => Some(guard),
-            Err(denial) => return denied(LeaseDenial::MemoryExhausted(denial), charge_parent),
+            Err(denial) => {
+                return denied(
+                    LeaseDenial::MemoryExhausted(denial),
+                    charge_parent,
+                    accounted,
+                )
+            }
         },
         _ => None,
     };
@@ -77,7 +107,8 @@ where
             .reservation
             .track_activity(&limits);
     }
-    let _memory_activity = (!measures_result
+    let _memory_activity = (limits.is_accounted()
+        && !measures_result
         && (reservation.is_some() || serial_reservation.is_some() || hold.is_some()))
     .then(|| limits.enter_memory(memory_bytes));
     let newly_active = lease.map_or_else(
@@ -166,22 +197,23 @@ where
         result.map_err(ScopeStop::Failure)
     };
     let (work, span) = context.cost();
-    let report = ExecutionReport::new(
-        if limits.worker_high_watermark() > 1 {
-            ExecutionPosture::Automatic
-        } else {
-            ExecutionPosture::Serial
-        },
-        work,
-        span,
-        ExecutionPhysicalReport::new(
-            limits.worker_high_watermark(),
-            limits.peak_memory(),
-            None,
-            0,
-            limits.discarded_work(),
-        ),
+    let posture = if limits.worker_high_watermark() > 1 {
+        ExecutionPosture::Automatic
+    } else {
+        ExecutionPosture::Serial
+    };
+    let physical = ExecutionPhysicalReport::new(
+        limits.worker_high_watermark(),
+        limits.peak_memory(),
+        None,
+        0,
+        limits.discarded_work(),
     );
+    let report = if limits.is_accounted() {
+        ExecutionReport::new(posture, work, span, physical)
+    } else {
+        ExecutionReport::native(posture, physical)
+    };
     let result = match (hold, measured) {
         (Some(hold), Some(_)) => {
             let kept = match &result {
@@ -216,13 +248,17 @@ where
     ScopeOutcome { result, report }
 }
 
-fn denied<R, E>(denial: LeaseDenial, charge_parent: bool) -> ScopeOutcome<R, E> {
-    let report = ExecutionReport::new(
-        ExecutionPosture::Serial,
-        0,
-        0,
-        ExecutionPhysicalReport::default(),
-    );
+fn denied<R, E>(denial: LeaseDenial, charge_parent: bool, accounted: bool) -> ScopeOutcome<R, E> {
+    let report = if accounted {
+        ExecutionReport::new(
+            ExecutionPosture::Serial,
+            0,
+            0,
+            ExecutionPhysicalReport::default(),
+        )
+    } else {
+        ExecutionReport::native(ExecutionPosture::Serial, ExecutionPhysicalReport::default())
+    };
     record_nested_outcome(report, Some(NestedStopOwner::Request), charge_parent);
     ScopeOutcome {
         result: Err(ScopeStop::Admission(denial)),

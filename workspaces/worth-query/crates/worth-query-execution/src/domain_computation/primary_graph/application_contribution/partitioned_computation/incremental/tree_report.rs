@@ -23,6 +23,12 @@ pub enum WorthQueryPartitionedTreeRebuildCause {
 /// Wide sums preserve work even when an individual u64 attempt counter overflows.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryPartitionedTreeMetrics {
+    accounting: Option<WorthQueryPartitionedTreeAccounting>,
+}
+
+/// Serial-prefix accounting exists only for explicitly accounted execution.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct WorthQueryPartitionedTreeAccounting {
     pub structural_visits: u128,
     pub recombined_nodes: u128,
     pub combine_calls: u128,
@@ -31,21 +37,35 @@ pub struct WorthQueryPartitionedTreeMetrics {
 }
 
 impl WorthQueryPartitionedTreeMetrics {
-    pub(super) fn from_native(attempt: ReductionMetrics) -> Self {
-        let ReductionMetrics {
-            structural_visits,
-            recombined_nodes,
-            combine_calls,
-            charged_work,
-            charged_span,
-        } = attempt;
+    pub(super) fn from_accounted(accounting: WorthQueryPartitionedTreeAccounting) -> Self {
         Self {
-            structural_visits: structural_visits.into(),
-            recombined_nodes: recombined_nodes.into(),
-            combine_calls: combine_calls.into(),
-            charged_work: charged_work.into(),
-            charged_span: charged_span.into(),
+            accounting: Some(accounting),
         }
+    }
+    pub(super) fn from_native(attempt: ReductionMetrics) -> Self {
+        Self {
+            accounting: attempt.accounted_metrics().map(|attempt| {
+                let worth_execution::ReductionAccounting {
+                    structural_visits,
+                    recombined_nodes,
+                    combine_calls,
+                    charged_work,
+                    charged_span,
+                    ..
+                } = attempt;
+                WorthQueryPartitionedTreeAccounting {
+                    structural_visits: structural_visits.into(),
+                    recombined_nodes: recombined_nodes.into(),
+                    combine_calls: combine_calls.into(),
+                    charged_work: charged_work.into(),
+                    charged_span: charged_span.into(),
+                }
+            }),
+        }
+    }
+
+    pub const fn accounted_metrics(self) -> Option<WorthQueryPartitionedTreeAccounting> {
+        self.accounting
     }
 }
 
@@ -53,11 +73,15 @@ impl WorthQueryPartitionedTreeMetrics {
     pub(super) fn followed_by(self, later: Self) -> Self {
         // A usize-sized edit sequence plus one rebuild of u64 counters fits u128.
         Self {
-            structural_visits: self.structural_visits + later.structural_visits,
-            recombined_nodes: self.recombined_nodes + later.recombined_nodes,
-            combine_calls: self.combine_calls + later.combine_calls,
-            charged_work: self.charged_work + later.charged_work,
-            charged_span: self.charged_span + later.charged_span,
+            accounting: self.accounting.zip(later.accounting).map(|(this, later)| {
+                WorthQueryPartitionedTreeAccounting {
+                    structural_visits: this.structural_visits + later.structural_visits,
+                    recombined_nodes: this.recombined_nodes + later.recombined_nodes,
+                    combine_calls: this.combine_calls + later.combine_calls,
+                    charged_work: this.charged_work + later.charged_work,
+                    charged_span: this.charged_span + later.charged_span,
+                }
+            }),
         }
     }
 }
@@ -110,7 +134,9 @@ pub(super) fn rebuild_cause<E>(
     match reason {
         cause @ (ReductionRunStop::Hook(_)
         | ReductionRunStop::Denial(
-            ReductionDenial::Allocation(_) | ReductionDenial::Admission(_),
+            ReductionDenial::Allocation(_)
+            | ReductionDenial::Admission(_)
+            | ReductionDenial::AccountingUnavailable,
         )) => Err(cause),
         ReductionRunStop::Panic | ReductionRunStop::Denial(ReductionDenial::ReducerPanic) => {
             Ok(Cause::ReducerPanicked)

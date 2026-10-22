@@ -103,7 +103,7 @@ impl super::KernelContext<'_, '_> {
     /// Request stops cannot be taken, and joined work/span never change.
     pub fn take_nested_computation_stop(&mut self) -> Option<NestedComputationStop> {
         let mut meter = self.meter.borrow_mut();
-        if let Some(capture) = &mut meter.capture {
+        if let Some(capture) = meter.capture_mut() {
             capture.invalidate();
         }
         meter.nested_stop.take()
@@ -164,7 +164,8 @@ impl super::KernelContext<'_, '_> {
             KernelFailure::Stop(
                 KernelStop::Cancelled
                 | KernelStop::DeadlineElapsed
-                | KernelStop::WorkCounterOverflow,
+                | KernelStop::WorkCounterOverflow
+                | KernelStop::AccountingUnavailable,
             ) => NestedStopOwner::Request,
             KernelFailure::Stop(KernelStop::WorkCeiling) => meter.limits.ceiling_owner,
             KernelFailure::Stop(KernelStop::NestedStopped) => meter

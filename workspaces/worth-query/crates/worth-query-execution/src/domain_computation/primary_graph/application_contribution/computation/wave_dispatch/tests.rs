@@ -1,8 +1,6 @@
-//! Declared charges and canonical outcomes judge the one production dispatch.
+//! Canonical outcomes and original controls judge the production member wave.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::request_execution::{
-    query_test_execution_authority_for_test as test_authority, test_policy,
-};
+use crate::domain_computation::primary_graph::application_contribution::request_execution::query_test_execution_authority_for_test as test_authority;
 use std::{
     num::NonZeroUsize,
     sync::{Arc, Mutex},
@@ -12,7 +10,14 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
-mod nested_cost;
+
+fn worker_policy(width: usize) -> worth_foundational::ExecutionRequestPolicy {
+    worth_foundational::ExecutionRequestPolicy::for_workers(
+        worth_foundational::ExecutionPosture::Automatic,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        NonZeroUsize::new(width).unwrap(),
+    )
+}
 
 fn run(
     width: Option<usize>,
@@ -21,9 +26,41 @@ fn run(
     Vec<Result<ComputedMember, WorthQueryAdvancementDenial>>,
     worth_foundational::ExecutionReport,
 ) {
+    let (values, handoff) = run_handoff(width, members);
+    let physical = handoff.expect("a successful wave keeps its native handoff");
+    let posture = if physical.active_workers_high_watermark() > 1 {
+        worth_foundational::ExecutionPosture::Automatic
+    } else {
+        worth_foundational::ExecutionPosture::Serial
+    };
+    (
+        values.expect("the successful request entered its callback"),
+        worth_foundational::ExecutionReport::native(posture, physical),
+    )
+}
+
+fn run_stopped(
+    width: Option<usize>,
+    members: Vec<PreparedMember>,
+) -> Vec<Result<ComputedMember, WorthQueryAdvancementDenial>> {
+    let (values, handoff) = run_handoff(width, members);
+    assert_eq!(
+        handoff.unwrap_err(),
+        worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::NestedStopped)
+    );
+    values.expect("the callback retained the wave's canonical outcomes before handoff")
+}
+
+fn run_handoff(
+    width: Option<usize>,
+    members: Vec<PreparedMember>,
+) -> (
+    Option<Vec<Result<ComputedMember, WorthQueryAdvancementDenial>>>,
+    Result<worth_foundational::ExecutionPhysicalReport, worth_execution::WorkCeilingDenial>,
+) {
     let cancel = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(None, cancel.token());
-    let policy = test_policy(NonZeroUsize::new(width.unwrap_or(1)).unwrap(), None);
+    let policy = worker_policy(width.unwrap_or(1));
     let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
         RuntimeWorldExecutionPlacement::Leased {
             authority: test_authority(),
@@ -31,41 +68,44 @@ fn run(
         }
     });
     let request = QueryRequestExecution::open(placement, &scope);
-    request
+    let mut values = None;
+    let handoff = request
         .execution_request()
         .unwrap()
-        .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
-            dispatch(&request, members)
+        .run_native(|_| {
+            values = Some(dispatch(&request, members));
         })
-        .unwrap()
+        .map(|((), physical)| physical);
+    (values, handoff)
 }
-fn charged(rank: u64, units: u64, fails: bool) -> PreparedMember {
+fn member_result(rank: u64, fails: bool) -> PreparedMember {
     PreparedMember {
         requests: vec![PreparedCompute::new(move |member| {
-            let (_, mut charge) = member.into_parts();
-            charge.as_mut().unwrap()(units).unwrap();
+            let (_, poll) = member.into_parts();
+            poll().unwrap();
             (rank, fails)
         })],
     }
 }
 #[test]
-fn member_denials_travel_as_data_and_charge_the_whole_wave_at_every_width() {
-    const CHARGES: [u64; 4] = [3, 1, 4, 2];
+fn member_denials_remain_canonical_data_without_accounting_at_every_width() {
+    const MEMBERS: [u64; 4] = [0, 1, 2, 3];
     for failure in 0..4 {
         for width in [None, Some(1), Some(2), Some(5)] {
             let (settled, report) = run(
                 width,
-                CHARGES
+                MEMBERS
                     .into_iter()
-                    .enumerate()
-                    .map(|(rank, units)| charged(rank as u64, units, rank == failure))
+                    .map(|rank| member_result(rank, rank as usize == failure))
                     .collect(),
             );
             assert_eq!(
                 settled.len(),
-                CHARGES.len(),
+                MEMBERS.len(),
                 "a member denial leaves every outcome for owner completion"
             );
+            assert_eq!(report.accounted_cost(), None);
+            assert!(report.physical().active_workers_high_watermark() >= 1);
             let actual: Vec<_> = settled
                 .into_iter()
                 .map(|slots| {
@@ -76,33 +116,11 @@ fn member_denials_travel_as_data_and_charge_the_whole_wave_at_every_width() {
                 .collect();
             assert_eq!(
                 actual,
-                (0..CHARGES.len())
+                (0..MEMBERS.len())
                     .map(|rank| (rank as u64, rank == failure))
                     .collect::<Vec<_>>()
             );
         }
-    }
-}
-#[test]
-fn independent_member_spans_compose_by_max_at_serial_and_leased_posture() {
-    const CHARGES: [u64; 4] = [3, 1, 4, 2];
-    for width in [None, Some(1), Some(2), Some(5)] {
-        let (settled, report) = run(
-            width,
-            CHARGES
-                .into_iter()
-                .enumerate()
-                .map(|(rank, units)| charged(rank as u64, units, false))
-                .collect(),
-        );
-        assert_eq!(settled.len(), CHARGES.len());
-        assert!(settled.iter().all(Result::is_ok));
-
-        assert_eq!(
-            report.charged_span(),
-            *CHARGES.iter().max().unwrap(),
-            "independent member spans take the maximum at every posture"
-        );
     }
 }
 #[test]
@@ -112,9 +130,9 @@ fn a_panicking_compute_drops_its_suffix_and_clears_worker_custody() {
     let panics = PreparedMember {
         requests: vec![PreparedCompute::new::<()>(|_| panic!("declared failure"))],
     };
-    let (settled, _) = run(
+    let settled = run_stopped(
         Some(2),
-        vec![charged(0, 1, false), panics, charged(2, 4, false)],
+        vec![member_result(0, false), panics, member_result(2, false)],
     );
     assert_eq!(settled.len(), 2);
     assert!(matches!(
@@ -157,8 +175,8 @@ fn a_later_member_finishes_first_even_when_a_canonical_member_fails() {
                                 // Failure watchdog only; a passing schedule wakes immediately.
                                 state.1 |= waited.timed_out() && !state.0.contains(&3);
                             }
-                            let (_, mut charge) = member.into_parts();
-                            charge.as_mut().unwrap()(rank as u64 + 1).unwrap();
+                            let (_, poll) = member.into_parts();
+                            poll().unwrap();
                             let (state, wake) = &*schedule;
                             state.lock().unwrap().0.push(rank);
                             wake.notify_all();
@@ -168,6 +186,7 @@ fn a_later_member_finishes_first_even_when_a_canonical_member_fails() {
                 })
                 .collect();
             let (settled, report) = run(Some(workers), members);
+            assert_eq!(report.accounted_cost(), None);
             let (finished, watchdog) = &*schedule.0.lock().unwrap();
             assert!(
                 !watchdog,
@@ -201,7 +220,6 @@ fn a_later_member_finishes_first_even_when_a_canonical_member_fails() {
     }
 }
 
-mod exhaustion;
 mod interruptions;
 mod present_interruption;
 

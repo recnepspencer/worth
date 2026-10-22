@@ -136,11 +136,11 @@ impl<Schema, Operation, Input, Scope, Phase>
         let (reads, mut completed) = self.computation_reads;
         let computation_fact_ordinals: std::sync::Arc<[usize]> = reads.ordinals(&self.facts).into();
         let attribution = reads.into_attribution();
-        let _temporary_index_memory = attribution.as_ref().map(|reads| {
+        let _temporary_index_memory = completed.reserve_fact_index(|| attribution.as_ref().map(|reads| {
             reads.index_bytes().ok_or(
                 crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::CapacityOverflow,
             )
-        }).transpose().and_then(|bytes| completed.reserve_fact_index(bytes, allocation_policy))
+        }).transpose(), allocation_policy)
             .map_err(|resource| denial(
                 WorthQueryApplicationAttemptDenialKind::ExecutionRequest(
                     crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {

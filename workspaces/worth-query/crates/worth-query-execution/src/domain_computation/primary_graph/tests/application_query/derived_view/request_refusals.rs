@@ -107,7 +107,7 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
                                     worth_foundational::ExecutionBudget::new(
                                         std::num::NonZeroUsize::new(workers.unwrap_or(1)).unwrap(),
                                         memory,
-                                        parent.policy().budget().work_ceiling(),
+                                        parent.policy().work_ceiling(),
                                     ),
                                 ),
                                 cancellation: if index == 1 {

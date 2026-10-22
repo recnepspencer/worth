@@ -56,7 +56,7 @@ pub use pattern::{
     WorkCeilingDenial,
 };
 pub use reduction::{
-    NativeReductionTree, ReductionDenial, ReductionEditMemoryBoundError,
+    NativeReductionTree, ReductionAccounting, ReductionDenial, ReductionEditMemoryBoundError,
     ReductionInsertMemoryBoundError, ReductionMetrics, ReductionPlan, ReductionRunFailure,
     ReductionRunStop, ReductionShapeCostDenial, ReductionTree,
 };

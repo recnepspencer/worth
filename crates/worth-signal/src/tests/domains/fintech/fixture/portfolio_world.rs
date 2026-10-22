@@ -283,7 +283,7 @@ fn portfolio_lease(
         admission.policy.posture(),
         admission.policy.determinism(),
         worth_foundational::ExecutionBudget::new(
-            admission.policy.budget().max_workers(),
+            admission.policy.max_workers(),
             None,
             Some(100_000_000),
         ),

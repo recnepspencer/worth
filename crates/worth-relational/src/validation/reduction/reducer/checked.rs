@@ -58,7 +58,6 @@ pub(crate) fn reduce_invariant_execution_checked(
     let declared_bytes = owned_bytes.saturating_mul(12).saturating_add(8192);
     let ceiling = lease
         .policy()
-        .budget()
         .charged_memory_bytes()
         .map_or(declared_bytes, |limit| declared_bytes.min(limit / 3));
     let proof_boundary = RefCell::new(Some(proof_boundary));

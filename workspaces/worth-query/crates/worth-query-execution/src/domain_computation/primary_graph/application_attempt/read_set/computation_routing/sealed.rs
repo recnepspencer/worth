@@ -22,7 +22,6 @@ impl SealedComputationFacts {
         &mut self,
         projection: Arc<super::super::CompletedFactProjection>,
     ) {
-        self.charged = self.charged.and_then(|n| n.checked_add(projection.bytes()));
         self.projection = Some(projection);
     }
 
@@ -180,17 +179,14 @@ impl PreparedComputationFacts {
         layout: layout::SealedReadLayout,
         content: Option<super::super::super::FactContent>,
     ) -> SealedComputationFacts {
-        let mut result = SealedComputationFacts {
+        SealedComputationFacts {
             index: self.index,
             metadata: self.metadata,
             original,
             content,
-            charged: None,
             projection: None,
             layout,
-        };
-        result.charged = result.calculate_charged_bytes();
-        result
+        }
     }
 
     #[cfg(test)]

@@ -175,7 +175,7 @@ impl RetainedBasis {
 #[derive(Clone)]
 pub(super) struct RetainedCall {
     pub(super) charge: ComputationCallCharge,
-    pub(super) declared_units: u64,
+    pub(super) declared_units: Option<u64>,
 }
 
 impl worth_execution::ChargedBytes for RetainedCall {
@@ -245,7 +245,8 @@ pub(in crate::domain_computation) struct SealedComputationRun {
     pub(in crate::domain_computation::primary_graph) cloned_from: Option<Arc<RetainedComputation>>,
     /// The request memory the state's tree and routing hold until the
     /// lineage charges the state.
-    pub(in crate::domain_computation::primary_graph) attribution_memory: QueryMemoryReservation,
+    pub(in crate::domain_computation::primary_graph) attribution_memory:
+        Option<QueryMemoryReservation>,
 }
 
 /// The owner calls a run carried from `prior` without making them.
@@ -307,5 +308,5 @@ pub(in crate::domain_computation::primary_graph) struct CompletedComputationRun 
     >,
     pub(super) carried: Option<CarriedCalls>,
     /// Actual fact-index allocation, grown by sealing before index creation.
-    pub(super) attribution_memory: QueryMemoryReservation,
+    pub(super) attribution_memory: Option<QueryMemoryReservation>,
 }

@@ -63,12 +63,11 @@ impl ComputedSlot {
 impl PreparedCompute {
     pub(in crate::domain_computation::primary_graph) fn declared_test_request(
         rank: usize,
-        units: u64,
         fails: bool,
     ) -> Self {
         Self::new(move |member| {
-            let (_, mut charge) = member.into_parts();
-            charge.as_mut().unwrap()(units).unwrap();
+            let (_, poll) = member.into_parts();
+            poll().unwrap();
             (rank, fails)
         })
     }

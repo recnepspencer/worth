@@ -48,12 +48,13 @@ pub mod runtime {
         WorthQueryWorkflowRunCleanupReceipt, WorthQueryWorkflowRunTerminal,
     };
     pub use worth_execution::{
-        CancellationSource, CancellationToken, ExecutionAllocationDenial,
+        CancellationSource, CancellationToken, ConstructionDenial, ExecutionAllocationDenial,
         ExecutionAllocationDenialClass, ExecutionAllocationDenialKind, ExecutionAllocationPolicy,
         ExecutionAuthority, ExecutionAuthorityConfig, ExecutionMemoryReservation,
         ExecutionPhysicalAllocationDenialKind, ExecutionResourceLease, LeaseDenial, LeaseRequest,
         MapKernelStop, MemoryLimitDenial, MemoryLimitLevel, WorkCeilingDenial,
     };
+    pub use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequestPolicy};
     pub use worth_runtime_world::facade::{
         CompositeComponentChangePosture, CompositeSignalPublicationIdentity, NoEffectCause,
         ProductUnpublishedCause, RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetDenial,

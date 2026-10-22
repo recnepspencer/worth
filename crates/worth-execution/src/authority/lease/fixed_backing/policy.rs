@@ -12,7 +12,7 @@ pub enum ExecutionAllocationPolicy<'scope, 'authority> {
     Execution(&'scope ExecutionResourceLease<'authority>),
 }
 
-impl ExecutionAllocationPolicy<'_, '_> {
+impl<'scope, 'authority> ExecutionAllocationPolicy<'scope, 'authority> {
     /// Reserve declared owned payload before copying or allocating it. This
     /// performs no allocation and never adopts or funds an existing raw copy.
     /// The owner must retain the reservation until that payload's final drop.
@@ -20,27 +20,75 @@ impl ExecutionAllocationPolicy<'_, '_> {
         self,
         bytes: u64,
     ) -> Result<Option<ExecutionMemoryReservation>, ExecutionAllocationDenial> {
-        let Self::Execution(lease) = self else {
-            return Ok(None);
-        };
-        let status = lease.status();
-        check_status(&status, Some(bytes))?;
-        let reservation = lease.reserve_memory(bytes).map_err(|cause| {
-            ExecutionAllocationDenial::new(
-                ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(cause)),
-                Some(bytes),
-            )
-        });
-        // Preserve interruption precedence, also when memory was exhausted.
-        check_status(&status, Some(bytes))?;
-        Ok(Some(reservation?))
+        self.with_effective_lease(Some(bytes), |lease| {
+            let Some(lease) = lease else {
+                return Ok(None);
+            };
+            let status = lease.status();
+            check_status(&status, Some(bytes))?;
+            if !crate::backend::RunLimits::native_accounting(Some(lease)) {
+                return Ok(None);
+            }
+            let reservation = lease.reserve_memory(bytes).map_err(|cause| {
+                ExecutionAllocationDenial::new(
+                    ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(cause)),
+                    Some(bytes),
+                )
+            });
+            // Preserve interruption precedence, also when memory was exhausted.
+            check_status(&status, Some(bytes))?;
+            Ok(Some(reservation?))
+        })
     }
 
     /// Check before a layout quote exists; a stop therefore carries no quote.
     pub fn check_live(self) -> Result<(), ExecutionAllocationDenial> {
+        self.status(None)?
+            .as_ref()
+            .map_or(Ok(()), |status| check_status(status, None))
+    }
+
+    /// Capture controls from the same allocation owner as its funding. A
+    /// builder keeps this exact status after its calling scope has returned.
+    pub(super) fn status(
+        self,
+        quote: Option<u64>,
+    ) -> Result<Option<ExecutionLeaseStatus>, ExecutionAllocationDenial> {
+        self.with_effective_lease(quote, |lease| Ok(lease.map(ExecutionResourceLease::status)))
+    }
+
+    fn with_effective_lease<T>(
+        self,
+        quote: Option<u64>,
+        use_lease: impl FnOnce(
+            Option<&ExecutionResourceLease<'authority>>,
+        ) -> Result<T, ExecutionAllocationDenial>,
+    ) -> Result<T, ExecutionAllocationDenial> {
+        let Self::Execution(original) = self else {
+            return use_lease(None);
+        };
+        let active = original.current_descendant();
+        let lease = active.as_ref().unwrap_or(original);
+        if active.is_none() && !lease.accepts_current_worker_context() {
+            return Err(ExecutionAllocationDenial::new(
+                ExecutionAllocationDenialKind::Lease(LeaseDenial::unrelated_nested_lease()),
+                quote,
+            ));
+        }
+        use_lease(Some(lease))
+    }
+
+    /// Whether this allocation's metadata uses accounted bookkeeping.
+    /// System allocation inherits an active scope's mode; outside a scope it
+    /// retains the explicitly accounted layout. This read-only projection
+    /// admits no allocation and grants no unrelated lease authority.
+    pub fn uses_accounting(self) -> bool {
         match self {
-            Self::SystemAllocation => Ok(()),
-            Self::Execution(lease) => check_status(&lease.status(), None),
+            Self::Execution(lease) => crate::backend::RunLimits::native_accounting(Some(lease)),
+            Self::SystemAllocation => {
+                !crate::backend::RunLimits::has_parent()
+                    || crate::backend::RunLimits::native_accounting(None)
+            }
         }
     }
 }

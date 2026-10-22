@@ -219,7 +219,6 @@ fn stage_import_packets(
     };
     let packet_ceiling = lease
         .policy()
-        .budget()
         .charged_memory_bytes()
         .map(|limit| limit / (packets.len() as u64).saturating_mul(8));
     let inputs = packets

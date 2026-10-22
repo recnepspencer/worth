@@ -25,6 +25,8 @@ static SERIAL: Mutex<()> = Mutex::new(());
 
 #[path = "memory_reservation/payload_custody.rs"]
 mod payload_custody;
+#[path = "memory_reservation/process_limit.rs"]
+mod process_limit;
 
 fn authority() -> &'static ExecutionAuthority {
     AUTHORITY.get_or_init(|| {

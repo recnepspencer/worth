@@ -126,6 +126,9 @@ fn native_request_exhaustion_refuses_before_map_or_after_the_last_kernel() {
             let [TreeRun::Full(Cause::NoProducerPrior, metrics)] = reports.as_slice() else {
                 panic!("the refused tree reports its actual constructed shape: {reports:?}");
             };
+            let metrics = metrics
+                .accounted_metrics()
+                .expect("explicit accounted fixture");
             assert_eq!(metrics.structural_visits, u128::from(visits));
             assert_eq!(metrics.charged_work, u128::from(visits));
             assert_eq!(metrics.charged_span, u128::from(visits));

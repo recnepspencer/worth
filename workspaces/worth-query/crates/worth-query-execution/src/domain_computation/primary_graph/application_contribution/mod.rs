@@ -48,9 +48,9 @@ pub use partitioned_computation::{
     partitioned_computation_runs_on_this_thread_for_test,
     partitioned_computation_tree_work_on_this_thread_for_test,
     published_partitioned_computations_on_this_thread_for_test,
-    WorthQueryPartitionedComputationRunForTest, WorthQueryPartitionedTreeMetrics,
-    WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
-    WorthQueryPublishedComputationStateForTest,
+    WorthQueryPartitionedComputationRunForTest, WorthQueryPartitionedTreeAccounting,
+    WorthQueryPartitionedTreeMetrics, WorthQueryPartitionedTreeRebuildCause,
+    WorthQueryPartitionedTreeRun, WorthQueryPublishedComputationStateForTest,
 };
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::{
     Comparator, CompletedComputationRetention, ComputationDeposit, ComputationRetention,
@@ -114,9 +114,7 @@ pub use request_execution::{
 };
 
 #[cfg(test)]
-pub(crate) use request_execution::{
-    drain_test_advancement_observations, with_test_advancement, TestHostRequest,
-};
+pub(crate) use request_execution::{with_test_advancement, TestHostRequest};
 
 pub use request_execution::{with_bootstrap_advancement, with_bootstrap_advancement_from_request};
 

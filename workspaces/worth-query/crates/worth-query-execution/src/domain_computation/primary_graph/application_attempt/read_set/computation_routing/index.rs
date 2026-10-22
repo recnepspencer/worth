@@ -15,12 +15,12 @@ impl ComputationFactIndex {
     ) -> Result<Self, StoreDenial> {
         let mut ordinals = ExecutionOrderedMap::default();
         let mut grouped: BTreeMap<_, Vec<_>> = BTreeMap::new();
-        let mut observation_work = Some(0u64);
+        let mut observation_work = policy.uses_accounting().then_some(0u64);
         for (key, fact) in facts {
             super::super::super::super::fact_verification_observation::sealed_computation_index();
-            observation_work = observation_work
-                .zip(super::super::fact_observation::observation_work_bound(key))
-                .and_then(|(a, b)| a.checked_add(b));
+            observation_work = observation_work.and_then(|work| {
+                work.checked_add(super::super::fact_observation::observation_work_bound(key)?)
+            });
             ordinals
                 .insert_cloned_in(&fact.ordinal, key, policy)
                 .map_err(super::reattribution::storage_denial)?;
@@ -45,10 +45,5 @@ impl ComputationFactIndex {
         read: ComputationRead,
     ) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {
         self.calls.get(&read).into_iter().flatten()
-    }
-    pub(super) fn charged_bytes(&self) -> Option<u64> {
-        (size_of::<Self>() as u64)
-            .checked_add(self.ordinals.retained_bytes())?
-            .checked_add(self.calls.retained_bytes())
     }
 }

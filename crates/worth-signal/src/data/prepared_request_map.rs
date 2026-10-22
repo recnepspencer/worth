@@ -33,13 +33,22 @@ where
         let backing = request
             .in_scope(|lease| {
                 if let Some(lease) = lease {
+                    let parent = *lease.policy();
+                    let policy = match parent.accounting() {
+                        Some(budget) => worth_foundational::ExecutionRequestPolicy::new(
+                            posture,
+                            parent.determinism(),
+                            budget,
+                        ),
+                        None => worth_foundational::ExecutionRequestPolicy::for_workers(
+                            posture,
+                            parent.determinism(),
+                            parent.max_workers(),
+                        ),
+                    };
                     let child = lease
                         .child(worth_execution::LeaseRequest {
-                            policy: worth_foundational::ExecutionRequestPolicy::new(
-                                posture,
-                                lease.policy().determinism(),
-                                lease.policy().budget(),
-                            ),
+                            policy,
                             deadline: None,
                             cancellation: worth_execution::CancellationToken::new(),
                         })

@@ -46,12 +46,29 @@ fn stop_between_combines_keeps_retained_root_and_reports_entered_work() {
         })
         .unwrap_err();
     assert_eq!(stopped.reason, ReductionRunStop::Hook("stop"));
-    assert_eq!(stopped.metrics.combine_calls, 1);
-    assert_eq!(stopped.metrics.recombined_nodes, 0);
-    assert_eq!(stopped.metrics.charged_work, 1);
+    assert_eq!(
+        stopped.metrics.accounted_metrics().unwrap().combine_calls,
+        1
+    );
+    assert_eq!(
+        stopped
+            .metrics
+            .accounted_metrics()
+            .unwrap()
+            .recombined_nodes,
+        0
+    );
+    assert_eq!(stopped.metrics.accounted_metrics().unwrap().charged_work, 1);
     assert_eq!(*tree.result(), 3);
     assert_eq!(tree.partition_count(), 1);
-    assert_eq!(tree.update(id(1), 7).unwrap().combine_calls, 2);
+    assert_eq!(
+        tree.update(id(1), 7)
+            .unwrap()
+            .accounted_metrics()
+            .unwrap()
+            .combine_calls,
+        2
+    );
     assert_eq!(*tree.result(), 7);
 }
 
@@ -163,7 +180,10 @@ fn malformed_encoding_and_capacity_rejection_do_not_publish() {
         invalid.reason,
         ReductionRunStop::Denial(ReductionDenial::InvalidCanonicalEncoding)
     );
-    assert_eq!(invalid.metrics.combine_calls, 0);
+    assert_eq!(
+        invalid.metrics.accounted_metrics().unwrap().combine_calls,
+        0
+    );
     assert_eq!(tree.result().value, 3);
     let capacity = tree
         .update_checked(
@@ -217,7 +237,7 @@ fn malformed_combine_output_is_rejected_after_one_charged_call() {
         failed.reason,
         ReductionRunStop::Denial(ReductionDenial::InvalidCanonicalEncoding)
     );
-    assert_eq!(failed.metrics.combine_calls, 1);
+    assert_eq!(failed.metrics.accounted_metrics().unwrap().combine_calls, 1);
     assert_eq!(tree.result().value, 3);
 }
 
@@ -227,7 +247,7 @@ fn checked_update_distinguishes_signed_zero() {
     let metrics = tree
         .update_checked(id(1), -0.0, 8, || Ok::<_, ()>(()))
         .unwrap();
-    assert_eq!(metrics.combine_calls, 2);
+    assert_eq!(metrics.accounted_metrics().unwrap().combine_calls, 2);
     assert_eq!(tree.result().to_bits(), (-0.0_f64).to_bits());
 }
 
@@ -274,13 +294,20 @@ fn full_tree_span_tracks_dependency_depth() {
         || Ok::<_, ()>(()),
     )
     .unwrap();
-    assert_eq!(metrics.combine_calls, 2 * ids.len() as u64);
     assert_eq!(
-        metrics.charged_work,
-        metrics.combine_calls + metrics.structural_visits
+        metrics.accounted_metrics().unwrap().combine_calls,
+        2 * ids.len() as u64
     );
-    assert!(metrics.structural_visits <= 7 * ids.len() as u64);
-    assert!(metrics.charged_span < metrics.charged_work);
+    assert_eq!(
+        metrics.accounted_metrics().unwrap().charged_work,
+        metrics.accounted_metrics().unwrap().combine_calls
+            + metrics.accounted_metrics().unwrap().structural_visits
+    );
+    assert!(metrics.accounted_metrics().unwrap().structural_visits <= 7 * ids.len() as u64);
+    assert!(
+        metrics.accounted_metrics().unwrap().charged_span
+            < metrics.accounted_metrics().unwrap().charged_work
+    );
 }
 
 #[test]

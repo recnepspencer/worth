@@ -25,6 +25,6 @@ pub(in super::super) struct NextPartitioning<Item> {
 pub(in super::super::super) struct ComputedIncremental<Reduced> {
     pub(in super::super::super) reduced: Reduced,
     /// The kernels' and the combines' work, as a full run charges it.
-    pub(in super::super::super) computed_work: u64,
+    pub(in super::super::super) computed_work: Option<u64>,
     pub(in super::super::super) completed: CompletedComputationRetention,
 }

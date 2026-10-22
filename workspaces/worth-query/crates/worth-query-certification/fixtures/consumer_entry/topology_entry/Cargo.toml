@@ -27,3 +27,8 @@ worth-relational = { path = "../../../../../../../crates/worth-relational" }
 name = "required_feature"
 path = "examples/required_feature.rs"
 test = true
+
+[[example]]
+name = "shared_execution"
+path = "examples/shared_execution.rs"
+test = false

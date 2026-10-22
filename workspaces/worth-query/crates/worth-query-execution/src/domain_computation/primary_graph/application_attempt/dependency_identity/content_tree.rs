@@ -164,7 +164,14 @@ impl FactContent {
             || control.check_live(),
         )
         .map_err(admission::tree_denial)?;
-        work = repeated(work, pair_work, metrics.combine_calls);
+        work = repeated(
+            work,
+            pair_work,
+            metrics
+                .accounted_metrics()
+                .expect("declared tree accounting")
+                .combine_calls,
+        );
         admission::settle(&mut memory, &tree)?;
         control.check_live()?;
         Ok((
@@ -200,7 +207,14 @@ impl FactContent {
                     control.check_live()
                 })
                 .map_err(admission::tree_denial)?;
-            work = repeated(work, self.0.pair_work, metrics.combine_calls);
+            work = repeated(
+                work,
+                self.0.pair_work,
+                metrics
+                    .accounted_metrics()
+                    .expect("declared tree accounting")
+                    .combine_calls,
+            );
         }
         for ordinal in changed {
             let fact = body.get(ordinal).ok_or(StoreDenial::ConflictingBody)?;
@@ -217,7 +231,10 @@ impl FactContent {
             work = repeated(
                 work.combine(billed),
                 self.0.pair_work,
-                metrics.combine_calls,
+                metrics
+                    .accounted_metrics()
+                    .expect("declared tree accounting")
+                    .combine_calls,
             );
         }
         if tree.partition_count() != body.len() {
@@ -255,13 +272,6 @@ impl FactContent {
     }
     pub(in crate::domain_computation::primary_graph) fn reusable(&self) -> bool {
         self.0.tree.result().reusable
-    }
-    pub(in crate::domain_computation::primary_graph) fn charged_bytes(&self) -> Option<u64> {
-        self.0
-            .tree
-            .additional_charged_bytes()
-            .checked_add(self.0.fields.bytes())?
-            .checked_add((size_of::<Content>() + 2 * size_of::<usize>()) as u64)
     }
 }
 

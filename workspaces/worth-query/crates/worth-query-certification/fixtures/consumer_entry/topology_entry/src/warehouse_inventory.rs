@@ -116,7 +116,7 @@ where
     ) -> Result<f64, WorthQueryManagedComputationDenial<Infallible>> {
         let mut total = 0.0;
         for quantity in partition.gathered() {
-            checkpoint.advance(1)?;
+            checkpoint.poll()?;
             total += quantity;
         }
         Ok(total)

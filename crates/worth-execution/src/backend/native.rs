@@ -8,6 +8,7 @@ use std::sync::{
 pub(super) fn run_order(
     lease: &ExecutionResourceLease<'_>,
     order: &[usize],
+    accounted: bool,
     execute: &(impl Fn(usize) + Sync),
 ) -> usize {
     let next = AtomicUsize::new(0);
@@ -18,7 +19,7 @@ pub(super) fn run_order(
         }
         execute(order[position]);
     };
-    run_workers(lease, order.len(), &work)
+    run_workers(lease, order.len(), accounted, &work)
 }
 
 /// Only owned dispatch locks a queue to move an input into exactly one worker.
@@ -26,6 +27,7 @@ pub(super) fn run_tasks<I: Iterator + Send>(
     lease: &ExecutionResourceLease<'_>,
     count: usize,
     tasks: I,
+    accounted: bool,
     execute: &(impl Fn(I::Item) + Sync),
 ) -> usize {
     let tasks = Mutex::new(tasks);
@@ -39,20 +41,26 @@ pub(super) fn run_tasks<I: Iterator + Send>(
         };
         execute(task);
     };
-    run_workers(lease, count, &work)
+    run_workers(lease, count, accounted, &work)
 }
 
 /// Worker admission and joining are shared by both acquisition mechanisms.
 fn run_workers(
     lease: &ExecutionResourceLease<'_>,
     count: usize,
+    accounted: bool,
     work: &(impl Fn() + Sync),
 ) -> usize {
-    let width = count
-        .max(1)
-        .min(lease.policy().budget().max_workers().get());
+    let width = count.max(1).min(lease.policy().max_workers().get());
     let additional = (1..width)
-        .map_while(|_| lease.try_reserve(1, 0).ok())
+        .map_while(|_| {
+            if accounted {
+                lease.try_reserve(1, 0)
+            } else {
+                lease.try_reserve_workers(1)
+            }
+            .ok()
+        })
         .collect::<Vec<_>>();
     let admitted_workers = additional.len() + 1;
     let owner = super::owner_context::CapturedOwnerContext::capture();

@@ -83,10 +83,13 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
                     Ok((_, metrics)) => *metrics,
                     Err(failure) => failure.metrics,
                 };
+                let accounting = metrics
+                    .accounted_metrics()
+                    .expect("explicit bounded reducer accounts its work");
                 if let Err(failure) = context.apply_structural_span(
                     before,
-                    metrics.charged_work,
-                    metrics.charged_span,
+                    accounting.charged_work,
+                    accounting.charged_span,
                 ) {
                     return Err(KernelFailure::Domain(ReduceScopeError::Reduction(
                         ReductionRunFailure::structural_span_failure(failure, metrics),

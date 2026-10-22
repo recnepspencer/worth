@@ -43,7 +43,7 @@ impl RelationalInterruptionEvent {
         let interruption = match stop {
             Stop::Cancelled => RelationalOperationInterruption::Cancelled,
             Stop::DeadlineElapsed => RelationalOperationInterruption::TimedOut,
-            Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped => {
+            Stop::WorkCounterOverflow | Stop::AccountingUnavailable | Stop::WorkCeiling | Stop::NestedStopped => {
                 return Err(stop)
             }
         };

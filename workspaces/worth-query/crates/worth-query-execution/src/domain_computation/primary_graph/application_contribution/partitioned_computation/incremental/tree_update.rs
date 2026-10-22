@@ -13,7 +13,7 @@ use worth_foundational::facade::PartitionIdentity;
 type Tree<Reduced> = NativeReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>;
 
 /// Only entry/preparation can mint a zero-work beginning.
-pub(super) struct TreeBeginning(());
+pub(super) struct TreeBeginning(pub(super) bool);
 
 /// Canonical changed-path edits, or the same full canonical build when the
 /// actual request work ceiling cannot cover the full-build contractual work.
@@ -32,10 +32,13 @@ where
 {
     let target = target.into();
     let removed = target.removed(retained);
-    let edit = if reduction_work.is_some_and(|work| remaining.is_none_or(|left| work <= left)) {
+    let beginning = || TreeBeginning(execution.has_accounting());
+    let edit = if !execution.has_accounting()
+        || reduction_work.is_some_and(|work| remaining.is_none_or(|left| work <= left))
+    {
         match execution.with_native_lease(|lease| {
             super::tree_edits::apply(
-                TreeAttempt::unstarted(TreeBeginning(()), Ok(retained.tree.clone())),
+                TreeAttempt::unstarted(beginning(), Ok(retained.tree.clone())),
                 &removed,
                 &results,
                 execution,
@@ -43,11 +46,14 @@ where
             )
         }) {
             Ok(attempt) => attempt,
-            Err(cause) => TreeAttempt::unstarted(TreeBeginning(()), Err(Denial::Resource(cause))),
+            Err(cause) => TreeAttempt::unstarted(
+                beginning(),
+                Err(Denial::from_work_ceiling(cause, Denial::ReducerPanicked)),
+            ),
         }
     } else {
         TreeAttempt::unstarted(
-            TreeBeginning(()),
+            beginning(),
             Ok(EditDisposition::Rebuild(Cause::WorkCeiling)),
         )
     };
@@ -76,7 +82,7 @@ where
 {
     let mut leaves = Vec::new();
     if leaves.try_reserve_exact(plan.identities().len()).is_err() {
-        return TreeAttempt::unstarted(TreeBeginning(()),Err(Denial::Resource(
+        return TreeAttempt::unstarted(TreeBeginning(execution.has_accounting()),Err(Denial::Resource(
             super::super::super::WorthQueryManagedComputationResourceDenial::NativeAllocationRefused {
                 kind:worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator,
                 requested_payload_bytes:None,
@@ -109,7 +115,10 @@ where
         Ok(outcome) => {
             TreeAttempt::native(outcome).map_result(|result| result.map_err(Denial::from_reduction))
         }
-        Err(cause) => TreeAttempt::unstarted(TreeBeginning(()), Err(Denial::Resource(cause))),
+        Err(cause) => TreeAttempt::unstarted(
+            TreeBeginning(execution.has_accounting()),
+            Err(Denial::from_work_ceiling(cause, Denial::ReducerPanicked)),
+        ),
     }
 }
 

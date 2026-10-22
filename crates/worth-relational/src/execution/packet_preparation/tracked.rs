@@ -26,7 +26,7 @@ pub(crate) fn prepare_tracked_artifact<T>(
             // The child narrows cumulative work; the original caller request
             // remains the execution authority for its measured allocation.
             execution.run_measured_result(
-                ExecutionWorkCeiling::new(child.policy().budget().work_ceiling()),
+                ExecutionWorkCeiling::new(child.policy().work_ceiling()),
                 0,
                 &mut output,
                 |context, memory| {

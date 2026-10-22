@@ -14,6 +14,7 @@ pub enum BridgeExecutionDenial {
     Cancelled,
     DeadlineElapsed,
     WorkCounterOverflow,
+    AccountingUnavailable,
     WorkCeiling,
     NestedStopped,
     Panicked,
@@ -40,6 +41,7 @@ impl From<MapKernelStop> for BridgeExecutionDenial {
             MapKernelStop::Cancelled => Self::Cancelled,
             MapKernelStop::DeadlineElapsed => Self::DeadlineElapsed,
             MapKernelStop::WorkCounterOverflow => Self::WorkCounterOverflow,
+            MapKernelStop::AccountingUnavailable => Self::AccountingUnavailable,
             MapKernelStop::WorkCeiling => Self::WorkCeiling,
             MapKernelStop::NestedStopped => Self::NestedStopped,
         }
@@ -70,6 +72,7 @@ impl BridgeExecutionDenial {
             Self::Cancelled => "execution-cancelled",
             Self::DeadlineElapsed => "execution-deadline-elapsed",
             Self::WorkCounterOverflow => "work-counter-overflow",
+            Self::AccountingUnavailable => "accounting-unavailable",
             Self::WorkCeiling => "work-ceiling",
             Self::NestedStopped => "nested-stopped",
             Self::Panicked => "execution-panicked",

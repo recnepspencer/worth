@@ -25,13 +25,11 @@ pub(super) struct ReachedCalls {
 }
 impl ReachedCalls {
     #[cfg(test)]
-    pub(super) fn bytes(&self) -> u64 {
+    pub(super) fn bytes(&self) -> Option<u64> {
         self.entries
             .values()
-            .fold(self.entries.retained_bytes(), |bytes, calls| {
-                bytes
-                    .checked_add(calls.0.retained_bytes())
-                    .expect("actual test backing sizes fit")
+            .try_fold(self.entries.accounted_bytes()?, |bytes, calls| {
+                bytes.checked_add(calls.0.accounted_bytes()?)
             })
     }
     pub(super) fn contains_in(

@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use super::{room, ExecutionResourceLease, LeaseDenial, ResourceReservation};
+use super::{room, ExecutionResourceLease, LeaseDenial, ReservedMemory, ResourceReservation};
 
 /// What a reservation does when the workers it claims are taken.
 pub(in crate::authority) trait OnBusy {
@@ -59,16 +59,18 @@ impl ExecutionResourceLease<'_> {
         process_workers: usize,
         worker_nodes: Vec<u64>,
         worker_count_per_node: usize,
-        memory_bytes: u64,
+        memory_bytes: Option<u64>,
     ) -> Result<ResourceReservation, Busy::Refusal> {
-        if process_workers == 0 && worker_count_per_node == 0 && memory_bytes == 0 {
+        if process_workers == 0 && worker_count_per_node == 0 && memory_bytes == Some(0) {
             return Ok(ResourceReservation {
                 authority: Arc::clone(&self.authority),
-                memory_lineage: Vec::new(),
+                memory: Some(ReservedMemory {
+                    lineage: Vec::new(),
+                    bytes: 0,
+                }),
                 worker_lineage: Vec::new(),
                 worker_count_per_node: 0,
                 process_workers: 0,
-                memory_bytes: 0,
             });
         }
         let lineage = self.lineage();
@@ -103,30 +105,41 @@ impl ExecutionResourceLease<'_> {
             Busy::busy()?;
             (0, Vec::new(), 0)
         };
-        room::check(
-            &ledger,
-            config.charged_memory_bytes,
-            0,
-            lineage.iter().map(|node| (*node, 0)),
-            memory_bytes,
-        )
-        .map_err(LeaseDenial::MemoryExhausted)?;
+        if let Some(memory_bytes) = memory_bytes {
+            room::check(
+                &ledger,
+                config.charged_memory_bytes,
+                0,
+                lineage.iter().map(|node| (*node, 0)),
+                memory_bytes,
+            )
+            .map_err(LeaseDenial::MemoryExhausted)?;
+        }
         ledger.active_workers += process_workers;
-        ledger.charged_memory_bytes += memory_bytes;
-        for node in &lineage {
+        if let Some(bytes) = memory_bytes {
+            ledger.charged_memory_bytes += bytes;
+        }
+        for node in lineage
+            .iter()
+            .filter(|node| memory_bytes.is_some() || worker_nodes.contains(&node.id))
+        {
             let usage = ledger.nodes.entry(node.id).or_default();
             if worker_nodes.contains(&node.id) {
                 usage.active_workers += worker_count_per_node;
             }
-            usage.charged_memory_bytes += memory_bytes;
+            if let Some(bytes) = memory_bytes {
+                usage.charged_memory_bytes += bytes;
+            }
         }
         Ok(ResourceReservation {
             authority: Arc::clone(&self.authority),
-            memory_lineage: lineage.iter().map(|node| node.id).collect(),
+            memory: memory_bytes.map(|bytes| ReservedMemory {
+                lineage: lineage.iter().map(|node| node.id).collect(),
+                bytes,
+            }),
             worker_lineage: worker_nodes,
             worker_count_per_node,
             process_workers,
-            memory_bytes,
         })
     }
 }

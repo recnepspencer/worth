@@ -24,6 +24,7 @@ pub enum SignalCheckpointDenial {
     Cancelled,
     DeadlineElapsed,
     WorkCounterOverflow,
+    AccountingUnavailable,
     WorkCeiling,
     NestedStopped,
 }
@@ -49,6 +50,7 @@ impl From<MapKernelStop> for SignalCheckpointDenial {
             MapKernelStop::Cancelled => Self::Cancelled,
             MapKernelStop::DeadlineElapsed => Self::DeadlineElapsed,
             MapKernelStop::WorkCounterOverflow => Self::WorkCounterOverflow,
+            MapKernelStop::AccountingUnavailable => Self::AccountingUnavailable,
             MapKernelStop::WorkCeiling => Self::WorkCeiling,
             MapKernelStop::NestedStopped => Self::NestedStopped,
         }
@@ -61,6 +63,7 @@ impl From<SignalCheckpointDenial> for SignalExecutionFailure {
             SignalCheckpointDenial::Cancelled => Self::Cancelled,
             SignalCheckpointDenial::DeadlineElapsed => Self::DeadlineElapsed,
             SignalCheckpointDenial::WorkCounterOverflow => Self::WorkCounterOverflow,
+            SignalCheckpointDenial::AccountingUnavailable => Self::AccountingUnavailable,
             SignalCheckpointDenial::WorkCeiling => Self::WorkCeiling,
             SignalCheckpointDenial::NestedStopped => Self::NestedStopped,
         }
@@ -249,6 +252,7 @@ impl SignalError {
                             MapKernelStop::Cancelled
                             | MapKernelStop::DeadlineElapsed
                             | MapKernelStop::WorkCounterOverflow
+                            | MapKernelStop::AccountingUnavailable
                             | MapKernelStop::WorkCeiling,
                         )
                         | MapKernelFailure::Domain(_)

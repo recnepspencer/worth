@@ -1,6 +1,6 @@
 use super::{
     construction::Shape,
-    edit, failure,
+    edit,
     recombine::Engine,
     value_storage::{NativeValues, ValueStorage},
     ReductionDenial, ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionRunStop,
@@ -130,15 +130,17 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<T, F> {
         before_combine: impl FnMut() -> Result<(), E>,
     ) -> Result<(Self, ReductionMetrics), ReductionRunFailure<E>> {
         if plan.identities().len() != values.len() {
-            return Err(failure(ReductionRunStop::Denial(
-                ReductionDenial::ValueCountMismatch,
-            )));
+            return Err(ReductionRunFailure {
+                reason: ReductionRunStop::Denial(ReductionDenial::ValueCountMismatch),
+                metrics: ReductionMetrics::for_mode(storage.has_accounting()),
+            });
         }
         let mut tree = Self {
             root: None,
             identity,
             combine,
             len: values.len(),
+            accounted: storage.has_accounting(),
         };
         let mut engine =
             Engine::with_storage(&tree.identity, &tree.combine, storage, before_combine);
@@ -147,15 +149,24 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<T, F> {
             .map_err(|reason| engine.failure(reason))?;
         let shape = Shape::build(plan.identities(), values, &mut engine)
             .map_err(|reason| engine.failure(reason))?;
-        let shape_span = engine.metrics().charged_span;
+        let shape_span = engine
+            .metrics()
+            .accounted_metrics()
+            .map(|metrics| metrics.charged_span);
         if let Some(spec) = shape.full_spec() {
             let (candidate, dependency_span) = shape
                 .evaluate(spec, &mut engine)
                 .map_err(|reason| engine.failure(reason))?;
             tree.root = candidate;
-            let span = shape_span
-                .checked_add(dependency_span)
-                .ok_or_else(|| engine.failure(ReductionRunStop::work_counter_overflow()))?;
+            let span = match (shape_span, dependency_span) {
+                (Some(shape), Some(dependency)) => Some(
+                    shape
+                        .checked_add(dependency)
+                        .ok_or_else(|| engine.failure(ReductionRunStop::work_counter_overflow()))?,
+                ),
+                (None, None) => None,
+                _ => unreachable!("one reducer storage mode owns construction"),
+            };
             engine.set_full_span(span);
         }
         let metrics = engine.metrics();
@@ -178,14 +189,15 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<T, F> {
             .copied()
             .eq(entries.iter().map(|(id, _)| *id))
         {
-            return Err(failure(ReductionRunStop::Denial(
-                ReductionDenial::CoverageMismatch,
-            )));
+            return Err(native_failure(
+                lease,
+                ReductionRunStop::Denial(ReductionDenial::CoverageMismatch),
+            ));
         }
         let storage = NativeValues { lease };
         let (mut values, _values_memory) =
             <NativeValues<'_, '_> as ValueStorage<T>>::buffer::<T, E>(&storage, entries.len())
-                .map_err(failure)?;
+                .map_err(|reason| native_failure(lease, reason))?;
         values.extend(entries.into_iter().map(|(_, value)| value));
         Self::from_plan_with_storage(plan, values, identity, combine, storage, checkpoint)
             .map(|(tree, metrics)| (NativeReductionTree(tree), metrics))
@@ -209,6 +221,12 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> NativeReductionTree<T, F> {
         let candidate = edit::update(&self.0.root, partition, value, &mut engine)
             .map_err(|reason| engine.failure(reason))?;
         self.0.root = candidate.link;
+        self.0.accounted = engine.metrics().has_accounting()
+            && self
+                .0
+                .root
+                .as_ref()
+                .is_none_or(|root| root.full_subtree_span.is_some());
         Ok(engine.metrics())
     }
 
@@ -220,9 +238,10 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> NativeReductionTree<T, F> {
         checkpoint: impl FnMut() -> Result<(), E>,
     ) -> Result<ReductionMetrics, ReductionRunFailure<E>> {
         if edit::contains(&self.0.root, partition) {
-            return Err(failure(ReductionRunStop::Denial(
-                ReductionDenial::IdentityAlreadyPresent(partition),
-            )));
+            return Err(native_failure(
+                lease,
+                ReductionRunStop::Denial(ReductionDenial::IdentityAlreadyPresent(partition)),
+            ));
         }
         let mut engine = Engine::with_storage(
             &self.0.identity,
@@ -234,6 +253,12 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> NativeReductionTree<T, F> {
             .map_err(|reason| engine.failure(reason))?;
         self.0.root = candidate;
         self.0.len += 1;
+        self.0.accounted = engine.metrics().has_accounting()
+            && self
+                .0
+                .root
+                .as_ref()
+                .is_none_or(|root| root.full_subtree_span.is_some());
         Ok(engine.metrics())
     }
 
@@ -244,9 +269,10 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> NativeReductionTree<T, F> {
         checkpoint: impl FnMut() -> Result<(), E>,
     ) -> Result<ReductionMetrics, ReductionRunFailure<E>> {
         if !edit::contains(&self.0.root, partition) {
-            return Err(failure(ReductionRunStop::Denial(
-                ReductionDenial::UnknownIdentity(partition),
-            )));
+            return Err(native_failure(
+                lease,
+                ReductionRunStop::Denial(ReductionDenial::UnknownIdentity(partition)),
+            ));
         }
         let mut engine = Engine::with_storage(
             &self.0.identity,
@@ -258,6 +284,22 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> NativeReductionTree<T, F> {
             .map_err(|reason| engine.failure(reason))?;
         self.0.root = candidate;
         self.0.len -= 1;
+        self.0.accounted = engine.metrics().has_accounting()
+            && self
+                .0
+                .root
+                .as_ref()
+                .is_none_or(|root| root.full_subtree_span.is_some());
         Ok(engine.metrics())
+    }
+}
+
+fn native_failure<E>(
+    lease: Option<&ExecutionResourceLease<'_>>,
+    reason: ReductionRunStop<E>,
+) -> ReductionRunFailure<E> {
+    ReductionRunFailure {
+        reason,
+        metrics: ReductionMetrics::for_mode(crate::backend::RunLimits::native_accounting(lease)),
     }
 }

@@ -1,6 +1,6 @@
 use super::{
-    authority, map, observe, request, CancellationSource, MapKernelFailure, MapKernelStop,
-    MapOutcome, MapStop, MeasuredValue, Overlap, TEST_LOCK,
+    accounted_request, authority, map, observe, CancellationSource, MapKernelFailure,
+    MapKernelStop, MapOutcome, MapStop, MeasuredValue, Overlap, TEST_LOCK,
 };
 use crate::backend::BackendKind;
 use worth_foundational::PartitionIdentity;
@@ -13,7 +13,7 @@ fn cancellation_during_dispatch_matches_modes_and_taking_forms() {
             let mut oracle = None;
             for owned in [false, true] {
                 let source = CancellationSource::new();
-                let mut req = request(workers, 2_000, 100);
+                let mut req = accounted_request(workers, 100);
                 req.cancellation = source.token();
                 let lease = authority().request_lease(req).unwrap();
                 let overlap = Overlap::new(workers);

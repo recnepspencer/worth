@@ -52,7 +52,9 @@ fn ordinary_capture_refusal_returns_original_source_conditions_and_key_for_fresh
         place_managed_computations_on_this_thread_for_test(
             WorthQueryExecutionPlacementForTest::Serial,
         );
-        let inherited = resources::EXECUTION_POLICY.budget();
+        let inherited = resources::EXECUTION_POLICY
+            .accounting()
+            .expect("this fixture declares accounting");
         let installed = worth_foundational::ExecutionBudget::new(
             inherited.max_workers(),
             Some(64 << 20),
@@ -76,7 +78,6 @@ fn ordinary_capture_refusal_returns_original_source_conditions_and_key_for_fresh
                         .expect("the proof declares finite memory"),
                     parent
                         .policy()
-                        .budget()
                         .charged_memory_bytes()
                         .expect("the proof declares finite memory"),
                 )

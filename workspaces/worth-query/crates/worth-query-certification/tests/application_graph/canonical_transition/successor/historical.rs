@@ -180,8 +180,8 @@ fn held_v1_result_snapshot_output_and_observation_survive_independent_v2_adoptio
                                     parent.policy().determinism(),
                                     ExecutionBudget::new(
                                         std::num::NonZeroUsize::MIN,
-                                        parent.policy().budget().charged_memory_bytes(),
-                                        parent.policy().budget().work_ceiling(),
+                                        parent.policy().charged_memory_bytes(),
+                                        parent.policy().work_ceiling(),
                                     ),
                                 ),
                                 cancellation: cancellation.token(),
@@ -193,7 +193,7 @@ fn held_v1_result_snapshot_output_and_observation_survive_independent_v2_adoptio
                 let request = ExecutionRequest::leased(&child);
                 request
                     .run(
-                        ExecutionWorkCeiling::new(child.policy().budget().work_ceiling()),
+                        ExecutionWorkCeiling::new(child.policy().work_ceiling()),
                         |_| {
                             old_snapshot.read_fields(&request, |reader| {
                                 let value = reader

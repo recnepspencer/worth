@@ -311,7 +311,6 @@ mod tests {
             0,
             crate::domain_computation::primary_graph::application_attempt::FactRoutes::build_iter(
                 [].iter(),
-                0,
                 None,
                 crate::domain_computation::primary_graph::StorageControl::new(
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,

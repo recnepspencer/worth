@@ -21,18 +21,22 @@ impl SealedComputationFacts {
         control: StorageControl<'_, '_>,
     ) -> Result<Option<Self>, StoreDenial> {
         control.check_live()?;
-        let count = calls
-            .iter()
-            .try_fold(0usize, |sum, read| {
-                sum.checked_add(self.index.keys(*read).count())?
-                    .checked_add(fresh.get(read).map_or(0, Vec::len))
-            })
-            .ok_or(StoreDenial::Representability)?;
-        let bytes = count
-            .checked_mul(64 * size_of::<usize>() + 16 * size_of::<ComputationRead>())
-            .and_then(|n| u64::try_from(n).ok())
-            .ok_or(StoreDenial::Representability)?;
-        let funding = control.policy().reserve_memory(bytes);
+        let funding = if control.policy().uses_accounting() {
+            let count = calls
+                .iter()
+                .try_fold(0usize, |sum, read| {
+                    sum.checked_add(self.index.keys(*read).count())?
+                        .checked_add(fresh.get(read).map_or(0, Vec::len))
+                })
+                .ok_or(StoreDenial::Representability)?;
+            let bytes = count
+                .checked_mul(64 * size_of::<usize>() + 16 * size_of::<ComputationRead>())
+                .and_then(|n| u64::try_from(n).ok())
+                .ok_or(StoreDenial::Representability)?;
+            control.policy().reserve_memory(bytes)
+        } else {
+            Ok(None)
+        };
         control.check_live()?;
         let _funding = funding?;
         let mut changes: BTreeMap<
@@ -82,17 +86,21 @@ impl SealedComputationFacts {
                 .metadata
                 .get(key)
                 .expect("old or checked fresh dependency");
-            let count = old
-                .readers
-                .reads()
-                .count()
-                .checked_add(added.len())
-                .ok_or(StoreDenial::Representability)?;
-            let quote = count
-                .checked_mul(32 * size_of::<usize>() + size_of::<ComputationRead>())
-                .and_then(|n| u64::try_from(n).ok())
-                .ok_or(StoreDenial::Representability)?;
-            let memory = control.policy().reserve_memory(quote);
+            let memory = if control.policy().uses_accounting() {
+                let count = old
+                    .readers
+                    .reads()
+                    .count()
+                    .checked_add(added.len())
+                    .ok_or(StoreDenial::Representability)?;
+                let quote = count
+                    .checked_mul(32 * size_of::<usize>() + size_of::<ComputationRead>())
+                    .and_then(|n| u64::try_from(n).ok())
+                    .ok_or(StoreDenial::Representability)?;
+                control.policy().reserve_memory(quote)
+            } else {
+                Ok(None)
+            };
             control.check_live()?;
             let _memory = memory?;
             let mut reads = ComputationFactReads::default();
@@ -126,17 +134,21 @@ impl SealedComputationFacts {
                     .map_err(storage_denial)?;
                 continue;
             }
-            let mut quote = keys
-                .map_or(0, |v| v.len())
-                .checked_mul(size_of::<WorthQueryApplicationFactKey>())
-                .and_then(|n| u64::try_from(n).ok())
-                .ok_or(StoreDenial::Representability)?;
-            for key in keys.into_iter().flatten() {
-                quote = quote
-                    .checked_add(key.additional_charged_bytes())
+            let funding = if control.policy().uses_accounting() {
+                let mut quote = keys
+                    .map_or(0, |v| v.len())
+                    .checked_mul(size_of::<WorthQueryApplicationFactKey>())
+                    .and_then(|n| u64::try_from(n).ok())
                     .ok_or(StoreDenial::Representability)?;
-            }
-            let funding = control.policy().reserve_memory(quote);
+                for key in keys.into_iter().flatten() {
+                    quote = quote
+                        .checked_add(key.additional_charged_bytes())
+                        .ok_or(StoreDenial::Representability)?;
+                }
+                control.policy().reserve_memory(quote)
+            } else {
+                Ok(None)
+            };
             control.check_live()?;
             let _funding = funding?;
             let mut copied = Vec::with_capacity(keys.map_or(0, Vec::len));
@@ -147,12 +159,6 @@ impl SealedComputationFacts {
                 .map_err(storage_denial)?;
         }
         let mut result = self.clone();
-        result.charged = self
-            .charged
-            .and_then(|v| v.checked_sub(self.metadata.retained_bytes()))
-            .and_then(|v| v.checked_sub(self.index.charged_bytes()?))
-            .and_then(|v| v.checked_add(metadata.retained_bytes()))
-            .and_then(|v| v.checked_add(index.charged_bytes()?));
         result.metadata = Arc::new(metadata);
         result.index = Arc::new(index);
         Ok(Some(result))

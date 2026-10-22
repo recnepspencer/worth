@@ -51,24 +51,42 @@ impl WorthQueryRealizedProjectionScope {
 
     pub(super) fn carry_range(&mut self, sequence:&std::sync::Arc<super::ComputationCallSequence>, range:std::ops::Range<usize>, execution:&crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution<'_>)->Result<(),crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial>{
         use crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
-        let bytes = self
+        if execution.has_accounting() {
+            let bytes = self
+                .carried
+                .len()
+                .checked_add(1)
+                .and_then(|n| {
+                    n.checked_mul(
+                        4 * std::mem::size_of::<(
+                            std::sync::Arc<super::ComputationCallSequence>,
+                            std::ops::Range<usize>,
+                        )>(),
+                    )
+                })
+                .and_then(|n| u64::try_from(n).ok())
+                .ok_or(Resource::CapacityOverflow)?;
+            match &mut self.carried_memory {
+                Some(memory) => memory.resize(bytes)?,
+                None => self.carried_memory = Some(execution.reserve(bytes)?),
+            }
+        }
+        let next = self
             .carried
             .len()
             .checked_add(1)
-            .and_then(|n| {
-                n.checked_mul(
-                    4 * std::mem::size_of::<(
-                        std::sync::Arc<super::ComputationCallSequence>,
-                        std::ops::Range<usize>,
-                    )>(),
-                )
-            })
-            .and_then(|n| u64::try_from(n).ok())
             .ok_or(Resource::CapacityOverflow)?;
-        match &mut self.carried_memory {
-            Some(memory) => memory.resize(bytes)?,
-            None => self.carried_memory = Some(execution.reserve(bytes)?),
-        }
+        std::alloc::Layout::array::<(
+            std::sync::Arc<super::ComputationCallSequence>,
+            std::ops::Range<usize>,
+        )>(next)
+        .map_err(|_| Resource::CapacityOverflow)?;
+        self.carried
+            .try_reserve(1)
+            .map_err(|_| Resource::NativeAllocationRefused {
+                kind: worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator,
+                requested_payload_bytes: None,
+            })?;
         self.carried.push((std::sync::Arc::clone(sequence), range));
         Ok(())
     }

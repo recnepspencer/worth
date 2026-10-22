@@ -114,7 +114,7 @@ where
             combine,
             storage,
             before_combine,
-            metrics: ReductionMetrics::default(),
+            metrics: ReductionMetrics::for_mode(storage.has_accounting()),
         }
     }
 
@@ -131,15 +131,20 @@ where
 
     pub(super) fn visit(&mut self) -> Result<(), ReductionRunStop<E>> {
         (self.before_combine)().map_err(ReductionRunStop::Hook)?;
-        self.metrics
-            .record_visit()
-            .map_err(|_| ReductionRunStop::work_counter_overflow())
+        if self.metrics.has_accounting() {
+            self.metrics
+                .record_visit()
+                .map_err(|_| ReductionRunStop::work_counter_overflow())?;
+        }
+        Ok(())
     }
 
     /// A full tree has independent child subtrees even when this backend
     /// evaluates them serially. Its charged span is the canonical DAG depth.
-    pub(super) fn set_full_span(&mut self, span: u64) {
-        self.metrics.charged_span = span;
+    pub(super) fn set_full_span(&mut self, span: Option<u64>) {
+        if let Some(accounting) = self.metrics.accounted_mut() {
+            accounting.charged_span = span.expect("accounted reducer carries its dependency span");
+        }
     }
 
     pub(super) fn failure(&self, reason: ReductionRunStop<E>) -> ReductionRunFailure<E> {
@@ -159,9 +164,11 @@ where
 
     fn call(&mut self, left: &T, right: &T) -> Result<T, ReductionRunStop<E>> {
         (self.before_combine)().map_err(ReductionRunStop::Hook)?;
-        self.metrics
-            .record_combine()
-            .map_err(|_| ReductionRunStop::work_counter_overflow())?;
+        if self.metrics.has_accounting() {
+            self.metrics
+                .record_combine()
+                .map_err(|_| ReductionRunStop::work_counter_overflow())?;
+        }
         let value = catch_unwind(AssertUnwindSafe(|| (self.combine)(left, right)))
             .map_err(|_| ReductionRunStop::Panic)?;
         self.validate(&value)?;
@@ -180,9 +187,11 @@ where
         let right_aggregate = right.as_ref().map_or(self.identity, |node| &node.aggregate);
         let middle = self.call(left_aggregate, &value)?;
         let aggregate = self.call(&middle, right_aggregate)?;
-        self.metrics
-            .record_node()
-            .map_err(|_| ReductionRunStop::work_counter_overflow())?;
+        if self.metrics.has_accounting() {
+            self.metrics
+                .record_node()
+                .map_err(|_| ReductionRunStop::work_counter_overflow())?;
+        }
         make_node(&self.storage, identity, value, aggregate, left, right)
     }
 
@@ -213,12 +222,22 @@ fn make_node<T, E>(
     right: Link<T>,
 ) -> Result<Arc<Node<T>>, ReductionRunStop<E>> {
     let (retained_bytes, memory) = storage.node(&value, &aggregate, &left, &right)?;
-    let full_subtree_span = left
-        .as_ref()
-        .map_or(0, |node| node.full_subtree_span)
-        .max(right.as_ref().map_or(0, |node| node.full_subtree_span))
-        .checked_add(4)
-        .ok_or_else(ReductionRunStop::work_counter_overflow)?;
+    let full_subtree_span = if storage.has_accounting() {
+        let span = |link: &Link<T>| match link {
+            None => Ok(0),
+            Some(node) => node.full_subtree_span.ok_or(ReductionRunStop::Denial(
+                super::ReductionDenial::AccountingUnavailable,
+            )),
+        };
+        Some(
+            span(&left)?
+                .max(span(&right)?)
+                .checked_add(4)
+                .ok_or_else(ReductionRunStop::work_counter_overflow)?,
+        )
+    } else {
+        None
+    };
     Ok(Arc::new(Node {
         identity,
         value,

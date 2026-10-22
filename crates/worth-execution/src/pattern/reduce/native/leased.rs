@@ -78,7 +78,7 @@ impl<T: Sync, K> ExecutionMap<T, K, NativePayload> {
                 map_stopped = Some((mapped.prefix_boundary, reason));
                 return Err(KernelFailure::Stop(KernelStop::NestedStopped));
             }
-            context.checkpoint(0)?;
+            context.poll()?;
             let (mut values, _values_memory) = buffer::<R>(mapped.values.len(), lease, context)?;
             let (mut ids, _ids_memory) =
                 buffer::<PartitionIdentity>(self.partition_count(), lease, context)?;
@@ -107,7 +107,7 @@ impl<T: Sync, K> ExecutionMap<T, K, NativePayload> {
             let plan = ReductionPlan::try_from_sorted_unique(ids).map_err(|denial| {
                 KernelFailure::Domain(ReduceScopeError::Reduction(ReductionRunFailure {
                     reason: ReductionRunStop::Denial(denial),
-                    metrics: ReductionMetrics::default(),
+                    metrics: ReductionMetrics::for_mode(context.has_accounting()),
                 }))
             })?;
             let reduced = match lease {
@@ -164,7 +164,7 @@ impl<T: Sync, K> ExecutionMap<T, K, NativePayload> {
             Err(ScopeStop::Failure(cause)) => Err(ReduceInputDenial::ReductionStopped {
                 failure: reduction_checkpoint_failure.unwrap_or_else(|| ReductionRunFailure {
                     reason: scope_reduction_reason(cause),
-                    metrics: ReductionMetrics::default(),
+                    metrics: ReductionMetrics::for_mode(report.has_accounting()),
                 }),
                 report,
             }),
@@ -179,17 +179,26 @@ fn serial<R: Clone + CanonicalBits, F: Fn(&R, &R) -> R>(
     combine: F,
     context: &mut KernelContext<'_, '_>,
 ) -> Result<(NativeReductionTree<R, F>, ReductionMetrics), ReductionRunFailure<KernelStop>> {
-    let before = context.cost();
+    let before = context.has_accounting().then(|| context.cost());
     let result = ReductionTree::from_plan_native(plan, values, identity, combine, None, || {
-        context.checkpoint(1)
+        if before.is_some() {
+            context.checkpoint(1)
+        } else {
+            context.poll()
+        }
     });
     let metrics = match &result {
         Ok((_, metrics)) => *metrics,
         Err(failure) => failure.metrics,
     };
-    context
-        .apply_structural_span(before, metrics.charged_work, metrics.charged_span)
-        .map_err(|cause| ReductionRunFailure::structural_span_failure(cause, metrics))?;
+    if let Some(before) = before {
+        let accounting = metrics
+            .accounted_metrics()
+            .expect("accounted reducer context");
+        context
+            .apply_structural_span(before, accounting.charged_work, accounting.charged_span)
+            .map_err(|cause| ReductionRunFailure::structural_span_failure(cause, metrics))?;
+    }
     result
 }
 
@@ -199,7 +208,7 @@ fn allocation(
 ) -> KernelFailure<ReduceScopeError> {
     let failure = ReductionRunFailure {
         reason: ReductionRunStop::Denial(crate::reduction::ReductionDenial::Allocation(kind)),
-        metrics: ReductionMetrics::default(),
+        metrics: ReductionMetrics::for_mode(context.has_accounting()),
     };
     stop_owner::record_reduction(context, &failure.reason);
     KernelFailure::Domain(ReduceScopeError::Reduction(failure))
@@ -213,7 +222,11 @@ fn buffer<T>(
     use crate::ExecutionPhysicalAllocationDenialKind as Kind;
     let layout =
         std::alloc::Layout::array::<T>(length).map_err(|_| allocation(context, Kind::Layout))?;
-    let memory = if layout.size() == 0 {
+    crate::backend::RunLimits::check_native_scope(lease).map_err(|cause| {
+        context.record_nested_stop_owner(NestedStopOwner::Request);
+        KernelFailure::Domain(ReduceScopeError::Admission(cause))
+    })?;
+    let memory = if !context.has_accounting() || layout.size() == 0 {
         None
     } else {
         let bytes = u64::try_from(layout.size()).map_err(|_| allocation(context, Kind::Layout))?;

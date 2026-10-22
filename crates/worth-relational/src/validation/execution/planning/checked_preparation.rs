@@ -29,7 +29,7 @@ pub(crate) fn plan_checked_invariant_preparation<'state>(
     request: &'state InvariantExecutionRequest<'state>,
     lease: &ExecutionResourceLease<'_>,
 ) -> Result<(PreparedInvariantExecution<'state>, u64, ExecutionReport), PacketExecutionStop> {
-    if lease.policy().budget().charged_memory_bytes().is_none() {
+    if lease.policy().charged_memory_bytes().is_none() {
         return tracked::prepare(runtime, execution, request, lease);
     }
     let identity = PartitionIdentity::new(1);
@@ -47,7 +47,7 @@ pub(crate) fn plan_checked_invariant_preparation<'state>(
                     context.checkpoint(0)?;
                     let meter = CustomPreparationBudget::new(
                         child_lease.status(),
-                        child_lease.policy().budget().work_ceiling(),
+                        child_lease.policy().work_ceiling(),
                         Some(ceiling),
                     );
                     let plan = plan_invariant_execution_checked(runtime, execution, request, child_lease, &meter);

@@ -3,6 +3,8 @@ use super::*;
 use crate::{CancellationSource, ReductionDenial, SerialMemoryBudget, SerialRequest};
 use std::collections::BTreeMap;
 
+mod worker_only;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Text(String);
 impl CanonicalBits for Text {
@@ -38,7 +40,6 @@ fn native_canonical_map_keeps_real_cells_and_edits_match_fresh_association_witho
         ExecutionWorkCeiling::new(None),
         |value, context| {
             context.poll()?;
-            context.checkpoint(1)?;
             Ok::<_, KernelFailure<std::convert::Infallible>>(Text(value.to_string().repeat(8192)))
         },
         Text("_".into()),
@@ -58,7 +59,7 @@ fn native_canonical_map_keeps_real_cells_and_edits_match_fresh_association_witho
         Some(run.result(id(3)).unwrap().value())
     );
     request
-        .run(ExecutionWorkCeiling::new(None), |lease| {
+        .run_native(|lease| {
             completed
                 .tree
                 .update_native(id(3), Text("changed".into()), lease, || Ok::<_, ()>(()))
@@ -88,7 +89,7 @@ fn native_canonical_map_keeps_real_cells_and_edits_match_fresh_association_witho
                 .tree
                 .update_native(id(2), Text("inserted".into()), lease, || Ok::<_, ()>(()))
                 .unwrap();
-            assert_eq!(unchanged.combine_calls, 0);
+            assert_eq!(unchanged.accounted_metrics().unwrap().combine_calls, 0);
         })
         .unwrap();
 }
@@ -164,16 +165,23 @@ impl CanonicalBits for Broken {
 
 #[test]
 fn native_storage_preserves_physical_layout_and_original_admission_causes() {
-    let layout = ReductionTree::try_from_declared_native(
-        plan(&[]),
-        vec![],
-        Broken { length: usize::MAX },
-        |_, _| Broken { length: usize::MAX },
-        None,
-        || Ok::<_, ()>(()),
-    )
-    .err()
-    .unwrap();
+    let cancellation = CancellationSource::new();
+    let serial = serial_request(&cancellation);
+    let layout = ExecutionRequest::serial(&serial)
+        .run_native(|lease| {
+            ReductionTree::try_from_declared_native(
+                plan(&[]),
+                vec![],
+                Broken { length: usize::MAX },
+                |_, _| Broken { length: usize::MAX },
+                lease,
+                || Ok::<_, ()>(()),
+            )
+            .err()
+            .unwrap()
+        })
+        .unwrap()
+        .0;
     assert_eq!(
         layout.reason,
         ReductionRunStop::Denial(ReductionDenial::Allocation(
@@ -196,8 +204,6 @@ fn native_storage_preserves_physical_layout_and_original_admission_causes() {
             LeaseDenial::NoActiveExecutionScope
         ))
     );
-    let cancellation = CancellationSource::new();
-    let serial = serial_request(&cancellation);
     let malformed = ExecutionRequest::serial(&serial)
         .run(ExecutionWorkCeiling::new(None), |lease| {
             ReductionTree::try_from_declared_native(

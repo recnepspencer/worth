@@ -134,6 +134,7 @@ pub(in crate::domain_computation) fn check_live(
                 worth_execution::MapKernelStop::DeadlineElapsed => Cause::DeadlineElapsed,
                 worth_execution::MapKernelStop::WorkCeiling => Cause::WorkExhausted,
                 worth_execution::MapKernelStop::WorkCounterOverflow => Cause::WorkCounterOverflow,
+                worth_execution::MapKernelStop::AccountingUnavailable => Cause::AccountingUnavailable,
                 worth_execution::MapKernelStop::NestedStopped => Cause::NestedStopped,
             };
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "workflow actor JSON payload")

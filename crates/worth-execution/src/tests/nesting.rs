@@ -5,8 +5,8 @@ use crate::{MapKernelFailure, MapKernelStop, MapOutcome, MapStop};
 #[test]
 fn nested_map_cannot_spend_work_already_spent_by_its_parent() {
     let _serial = TEST_LOCK.lock().unwrap();
-    let parent = authority().request_lease(request(1, 1_000, 2)).unwrap();
-    let child = parent.child(request(1, 500, 2)).unwrap();
+    let parent = authority().request_lease(accounted_request(1, 2)).unwrap();
+    let child = parent.child(accounted_request(1, 2)).unwrap();
     let outer = map(&[1], 0);
     let inner = map(&[2], 0);
     let observed = Mutex::new(None);

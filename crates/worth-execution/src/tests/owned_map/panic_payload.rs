@@ -77,7 +77,6 @@ fn owned_destructor_contains_panicking_payload_on_every_cleanup_path() {
                 .reserve_memory(
                     lease
                         .policy()
-                        .budget()
                         .charged_memory_bytes()
                         .expect("explicit finite payload court")
                 )

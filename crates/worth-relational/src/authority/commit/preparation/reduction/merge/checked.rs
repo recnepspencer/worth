@@ -95,7 +95,6 @@ where
     )])?;
     let ceiling = lease
         .policy()
-        .budget()
         .charged_memory_bytes()
         .map_or(declared_bytes, |limit| limit / 4);
     let outcome = crate::execution::run_with_remaining_request_work(

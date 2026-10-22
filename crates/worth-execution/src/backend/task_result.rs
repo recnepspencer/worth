@@ -67,7 +67,8 @@ impl<R, E> TaskResult<R, E> {
                     KernelStop::Cancelled
                     | KernelStop::DeadlineElapsed
                     | KernelStop::WorkCounterOverflow
-                    | KernelStop::NestedStopped => Request,
+                    | KernelStop::NestedStopped
+                    | KernelStop::AccountingUnavailable => Request,
                 },
             ),
         };

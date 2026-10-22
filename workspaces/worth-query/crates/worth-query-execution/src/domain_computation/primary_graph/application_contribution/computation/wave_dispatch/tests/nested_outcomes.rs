@@ -11,7 +11,7 @@ fn an_unrelated_error_cannot_take_an_earlier_requests_stop() {
         let member = PreparedMember {
             requests: vec![
                 PreparedCompute::new(|member| {
-                    member.compute(|managed, _charge, _poll, _transport| {
+                    member.compute(|managed, _poll, _transport| {
                         let map = ExecutionMap::<_, u64>::from_keyless_partitions(
                             [(
                                 PartitionIdentity::new(1),
@@ -41,14 +41,14 @@ fn an_unrelated_error_cannot_take_an_earlier_requests_stop() {
                     })
                 }),
                 PreparedCompute::new(move |member| {
-                    member.compute(|_, _, _, _transport| {
+                    member.compute(|_, _, _transport| {
                         count.fetch_add(1, Ordering::SeqCst);
                         Err::<(), _>("unrelated failure")
                     })
                 }),
             ],
         };
-        let (settled, report) = run(width, vec![member, charged(2, 1, false)]);
+        let settled = run_stopped(width, vec![member, member_result(2, false)]);
         assert!(
             matches!(settled[0], Err(WorthQueryAdvancementDenial::NestedStopped)),
             "an unrelated failure cannot acknowledge an earlier request's nested stop"
@@ -58,8 +58,6 @@ fn an_unrelated_error_cannot_take_an_earlier_requests_stop() {
             0,
             "the next prepared request cannot start with an untaken stop"
         );
-
-        assert_eq!(report.charged_span(), 2);
     }
 }
 
@@ -68,7 +66,7 @@ fn taken_partition_denials_leave_siblings_for_owner_completion() {
     for width in [None, Some(1), Some(2), Some(4)] {
         let failed = PreparedMember {
             requests: vec![PreparedCompute::new(|member| {
-                member.compute(|managed, _charge, _poll, transport| {
+                member.compute(|managed, _poll, transport| {
                     let map = ExecutionMap::<_, u64>::from_keyless_partitions(
                         vec![(
                             PartitionIdentity::new(1),
@@ -101,7 +99,7 @@ fn taken_partition_denials_leave_siblings_for_owner_completion() {
                 })
             })],
         };
-        let (members, report) = run(width, vec![failed, charged(2, 1, false)]);
+        let (members, report) = run(width, vec![failed, member_result(2, false)]);
         assert_eq!(
             members.len(),
             2,
@@ -126,7 +124,6 @@ fn taken_partition_denials_leave_siblings_for_owner_completion() {
             (2, false)
         );
 
-        // The denied member spans two units; its sibling spans one.
-        assert_eq!(report.charged_span(), 2);
+        assert_eq!(report.accounted_cost(), None);
     }
 }

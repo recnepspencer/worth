@@ -41,7 +41,6 @@ fn install(
     // read. Keep this proof's exact memory bound and the example's declared work.
     let work = product_workflow_support::application::product_world_resources()
         .execution_policy()
-        .budget()
         .work_ceiling();
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Serial,

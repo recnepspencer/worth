@@ -48,7 +48,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
     /// their digests.
     pub(in super::super) fn membership(
         &mut self,
-        call: Option<(ComputationCallCharge, u64)>,
+        call: Option<(ComputationCallCharge, Option<u64>)>,
         items: &Items<Item>,
         digests: ItemDigests,
     ) {
@@ -69,7 +69,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
     pub(in super::super) fn item(
         &mut self,
         item: PartitionItemId,
-        call: Option<(ComputationCallCharge, u64)>,
+        call: Option<(ComputationCallCharge, Option<u64>)>,
     ) {
         match call {
             Some((charge, declared_units)) => {
@@ -162,11 +162,13 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
                         call.declared_units,
                     )
                 }))
-                .chain(
-                    self.partitions
-                        .iter()
-                        .map(|(id, (_, charge))| (ComputationRead::Partition(*id), charge, 0)),
-                )
+                .chain(self.partitions.iter().map(|(id, (_, charge))| {
+                    (
+                        ComputationRead::Partition(*id),
+                        charge,
+                        execution.has_accounting().then_some(0),
+                    )
+                }))
             },
             execution,
         )
@@ -210,8 +212,13 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
                 call_sequence,
                 carried: None,
                 attribution_memory: execution
-                    .reserve(0)
-                    .map_err(super::super::WorthQueryPartitionedComputationDenial::Resource)?,
+                    .has_accounting()
+                    .then(|| {
+                        execution
+                            .reserve(0)
+                            .map_err(super::super::WorthQueryPartitionedComputationDenial::Resource)
+                    })
+                    .transpose()?,
             },
         ))
     }

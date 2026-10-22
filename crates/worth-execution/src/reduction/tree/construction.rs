@@ -68,13 +68,16 @@ pub(crate) struct SubtreeResult<T> {
 
 impl<T: ChargedBytes> ChargedBytes for SubtreeResult<T> {
     fn additional_charged_bytes(&self) -> u64 {
-        self.root.as_ref().map_or(0, |node| node.retained_bytes)
+        self.root.as_ref().map_or(0, |node| {
+            node.retained_bytes
+                .expect("bounded subtree has byte accounting")
+        })
     }
 }
 
 pub(super) struct Built<T> {
     root: Arc<Node<T>>,
-    span: u64,
+    span: Option<u64>,
 }
 
 impl<T> Shape<T> {
@@ -306,7 +309,7 @@ impl<T: Clone + CanonicalBits> Shape<T> {
         &self,
         spec: SubtreeSpec,
         engine: &mut Engine<'_, T, F, H, Storage>,
-    ) -> Result<(Link<T>, u64), ReductionRunStop<E>>
+    ) -> Result<(Link<T>, Option<u64>), ReductionRunStop<E>>
     where
         F: Fn(&T, &T) -> T,
         H: FnMut() -> Result<(), E>,
@@ -335,12 +338,21 @@ impl<T: Clone + CanonicalBits> Shape<T> {
             let right = node
                 .right
                 .and_then(|child| built[child - spec.first].take());
-            let span = left
-                .as_ref()
-                .map_or(0, |item| item.span)
-                .max(right.as_ref().map_or(0, |item| item.span))
-                .checked_add(4)
-                .ok_or_else(ReductionRunStop::work_counter_overflow)?;
+            let span = if engine.metrics().has_accounting() {
+                Some(
+                    left.as_ref()
+                        .map_or(0, |item| item.span.expect("accounted child span"))
+                        .max(
+                            right
+                                .as_ref()
+                                .map_or(0, |item| item.span.expect("accounted child span")),
+                        )
+                        .checked_add(4)
+                        .ok_or_else(ReductionRunStop::work_counter_overflow)?,
+                )
+            } else {
+                None
+            };
             let root = engine.build(
                 node.identity,
                 node.value.clone(),

@@ -6,8 +6,8 @@ fn heap_input_runs_without_a_payload_invoice() {
     let mut text = String::with_capacity(257);
     text.push_str("captured input");
     let callback = move |member: WorthQueryMemberExecution<'_>| {
-        let (_, mut charge) = member.into_parts();
-        charge.as_mut().unwrap()(1).unwrap();
+        let (_, poll) = member.into_parts();
+        poll().unwrap();
         text.len()
     };
     let prepared = PreparedCompute::new(callback);

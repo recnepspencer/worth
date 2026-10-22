@@ -41,10 +41,16 @@ impl<R, E> Prefix<R, E> {
             self.owner = Some(NestedStopOwner::Request);
         }
         if self.stop.is_some() {
-            self.discarded = self.discarded.saturating_add(outcome.work);
+            if limits.is_accounted() {
+                self.discarded = self.discarded.saturating_add(outcome.work);
+            }
             return None;
         }
-        let next = self.work.checked_add(outcome.work);
+        let next = if limits.is_accounted() {
+            self.work.checked_add(outcome.work)
+        } else {
+            Some(self.work)
+        };
         if next.is_none_or(|sum| limits.ceiling().is_some_and(|ceiling| sum > ceiling)) {
             if self.owner != Some(NestedStopOwner::Request) {
                 self.owner = Some(if next.is_none() {
@@ -65,8 +71,10 @@ impl<R, E> Prefix<R, E> {
             self.discarded = self.discarded.saturating_add(outcome.work);
             return None;
         }
-        self.work += outcome.work;
-        self.span = self.span.max(outcome.span);
+        if limits.is_accounted() {
+            self.work += outcome.work;
+            self.span = self.span.max(outcome.span);
+        }
         if let Some(denial) = outcome.allocation_denial {
             self.owner = Some(NestedStopOwner::Request);
             self.stop = Some(BatchStop::Admission(denial));

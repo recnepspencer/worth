@@ -41,6 +41,10 @@ fn checkpoint_door_keeps_every_cause_distinct() {
     for (stop, expected) in [
         (MapKernelStop::Cancelled, SignalCheckpointDenial::Cancelled),
         (
+            MapKernelStop::AccountingUnavailable,
+            SignalCheckpointDenial::AccountingUnavailable,
+        ),
+        (
             MapKernelStop::DeadlineElapsed,
             SignalCheckpointDenial::DeadlineElapsed,
         ),
@@ -95,6 +99,7 @@ fn waiter_preparation_preserves_checkpoint_and_storage_causes() {
     use crate::data::retained_storage::RetainedStoragePreparationDenial as Denial;
     for cause in [
         SignalCheckpointDenial::Cancelled,
+        SignalCheckpointDenial::AccountingUnavailable,
         SignalCheckpointDenial::DeadlineElapsed,
         SignalCheckpointDenial::WorkCounterOverflow,
         SignalCheckpointDenial::WorkCeiling,

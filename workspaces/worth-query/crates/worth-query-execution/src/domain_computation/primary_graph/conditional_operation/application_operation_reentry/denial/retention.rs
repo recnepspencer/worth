@@ -23,6 +23,7 @@ impl Denial {
                 Stop::Cancelled => Native::Cancelled,
                 Stop::DeadlineElapsed => Native::DeadlineElapsed,
                 Stop::WorkCounterOverflow => Native::WorkCounterOverflow,
+                Stop::AccountingUnavailable => Native::AccountingUnavailable,
                 Stop::WorkCeiling => Native::WorkExhausted,
                 Stop::NestedStopped => Native::NestedStopped,
             }),

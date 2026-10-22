@@ -20,34 +20,38 @@ use super::WorthQueryPartitionedComputationDenial as Denial;
 /// This is a receipt counter, never a separate admission ceiling.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct PreparationWork {
-    spent: u64,
+    spent: Option<u64>,
     request_local: RequestLocal,
 }
 
 assert_request_local!(PreparationWork, EncodingMeter<'static>);
 
 impl PreparationWork {
-    pub(super) const fn new() -> Self {
+    pub(super) const fn new(accounted: bool) -> Self {
         Self {
-            spent: 0,
+            spent: if accounted { Some(0) } else { None },
             request_local: PhantomData,
         }
     }
 
     pub(super) fn spend(&mut self, work: Option<u64>) -> Result<(), Resource> {
-        self.spent = self
-            .spent
-            .checked_add(work.ok_or(Resource::WorkCounterOverflow)?)
-            .ok_or(Resource::WorkCounterOverflow)?;
+        let Some(spent) = self.spent else {
+            return Ok(());
+        };
+        self.spent = Some(
+            spent
+                .checked_add(work.ok_or(Resource::WorkCounterOverflow)?)
+                .ok_or(Resource::WorkCounterOverflow)?,
+        );
         Ok(())
     }
 
-    pub(super) const fn spent(self) -> u64 {
+    pub(super) const fn spent(self) -> Option<u64> {
         self.spent
     }
 
-    pub(super) const fn spent_since(self, earlier: Self) -> Option<u64> {
-        self.spent.checked_sub(earlier.spent)
+    pub(super) fn spent_since(self, earlier: Self) -> Option<u64> {
+        self.spent?.checked_sub(earlier.spent?)
     }
 }
 
@@ -89,7 +93,10 @@ pub(super) fn encode_identity<T, Stopped>(
         .decision_stage(|context| {
             let mut control = |charge| {
                 match charge {
-                    CanonicalEncodingCharge::Work(units) => context.checkpoint(units),
+                    CanonicalEncodingCharge::Work(units) if context.has_accounting() => {
+                        context.checkpoint(units)
+                    }
+                    CanonicalEncodingCharge::Work(_) => context.poll(),
                     CanonicalEncodingCharge::Scratch(_) => context.poll(),
                 }
                 .map_err(checkpoint_denial)
@@ -133,6 +140,9 @@ pub(super) fn charge_preparation<Stopped>(
     work: &mut PreparationWork,
     units: Option<u64>,
 ) -> Result<(), Denial<Stopped>> {
+    if !execution.has_accounting() {
+        return execution.checkpoint().map_err(Denial::from_kernel_stop);
+    }
     let units = units.ok_or(Denial::Resource(Resource::WorkCounterOverflow))?;
     execution
         .decision_stage(|context| context.checkpoint(units).map_err(checkpoint_denial))

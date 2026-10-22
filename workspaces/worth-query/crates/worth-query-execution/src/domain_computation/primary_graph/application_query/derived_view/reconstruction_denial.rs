@@ -39,6 +39,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn kernel(
         MapKernelStop::Cancelled => Denial::Cancelled,
         MapKernelStop::DeadlineElapsed => Denial::DeadlineElapsed,
         MapKernelStop::WorkCounterOverflow => Denial::WorkCounterOverflow,
+        MapKernelStop::AccountingUnavailable => Denial::AccountingUnavailable,
         MapKernelStop::WorkCeiling => Denial::WorkExhausted { root },
         MapKernelStop::NestedStopped => Denial::NestedStopped,
     }
@@ -145,6 +146,7 @@ impl ChargedBytes for Denial {
             | Self::Cancelled
             | Self::DeadlineElapsed
             | Self::WorkCounterOverflow
+            | Self::AccountingUnavailable
             | Self::NestedStopped
             | Self::OwnerPanic => 0,
         }

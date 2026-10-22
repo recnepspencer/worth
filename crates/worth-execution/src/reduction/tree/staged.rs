@@ -76,7 +76,7 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
             shape_metrics,
             frontier,
             children,
-            failed,
+            failed.map(|(identity, failure, work)| (identity, failure, Some(work))),
             BoundedValues(max_value_bytes),
             charge,
         )
@@ -95,7 +95,7 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<T, F> {
         if plan.identities().len() != values.len() {
             return Err(ReductionRunFailure {
                 reason: ReductionRunStop::Denial(ReductionDenial::ValueCountMismatch),
-                metrics: ReductionMetrics::default(),
+                metrics: ReductionMetrics::for_mode(storage.has_accounting()),
             });
         }
         let mut engine = Engine::with_storage(identity, combine, storage, before_work);
@@ -136,7 +136,7 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<T, F> {
         shape_metrics: ReductionMetrics,
         frontier: FrontierPlan,
         children: Vec<SubtreeResult<T>>,
-        mut failed: Option<(PartitionIdentity, ReductionRunFailure<E>, u64)>,
+        mut failed: Option<(PartitionIdentity, ReductionRunFailure<E>, Option<u64>)>,
         storage: Storage,
         mut charge: impl FnMut(FrontierCharge) -> Result<(), E>,
     ) -> Result<(Self, ReductionMetrics), ReductionRunFailure<E>> {
@@ -157,16 +157,24 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<T, F> {
         // A started canonical task implies its preceding DFS entries were
         // reached. These visits belong to the already-performed prefix, not
         // to new owner-side joins after the tasks.
-        let joins_before_stop = failed.as_ref().is_some_and(|(_, _, work)| *work != 0);
+        let accounted = storage.has_accounting();
+        let joins_before_stop = failed
+            .as_ref()
+            .is_some_and(|(_, _, work)| work.is_none_or(|work| work != 0));
         let first = frontier.tasks.first();
         let entered_prefix = first.is_some_and(|spec| {
             built
                 .get(spec.index())
                 .and_then(Option::as_ref)
-                .is_some_and(|child| child.metrics.charged_work != 0)
-                || failed
-                    .as_ref()
-                    .is_some_and(|(id, _, work)| *id == spec.identity && *work != 0)
+                .is_some_and(|child| {
+                    child
+                        .metrics
+                        .accounted_metrics()
+                        .is_none_or(|metrics| metrics.charged_work != 0)
+                })
+                || failed.as_ref().is_some_and(|(id, _, work)| {
+                    *id == spec.identity && work.is_none_or(|work| work != 0)
+                })
         });
         let mut metrics = shape_metrics;
         for event in frontier.events {
@@ -186,18 +194,29 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<T, F> {
                 }
                 FrontierEvent::Task(spec) => {
                     if let Some(child) = built[spec.index()].as_ref() {
-                        charge_task(
-                            &shape,
-                            spec,
-                            child.metrics.charged_work,
-                            &mut metrics,
-                            &mut charge,
-                            storage,
-                        )?;
+                        if let Some(child_metrics) = child.metrics.accounted_metrics() {
+                            charge_task(
+                                &shape,
+                                spec,
+                                child_metrics.charged_work,
+                                &mut metrics,
+                                &mut charge,
+                                storage,
+                            )?;
+                        } else {
+                            charge(FrontierCharge::TaskUnit).map_err(|stop| {
+                                ReductionRunFailure {
+                                    reason: ReductionRunStop::Hook(stop),
+                                    metrics,
+                                }
+                            })?;
+                        }
                         metrics = add(metrics, child.metrics)?;
                     } else if failed.as_ref().is_some_and(|item| item.0 == spec.identity) {
                         let (_, failure, target) = failed.take().expect("checked task failure");
-                        charge_task(&shape, spec, target, &mut metrics, &mut charge, storage)?;
+                        if let Some(target) = target {
+                            charge_task(&shape, spec, target, &mut metrics, &mut charge, storage)?;
+                        }
                         metrics = add(metrics, failure.metrics)?;
                         return Err(ReductionRunFailure {
                             reason: failure.reason,
@@ -216,10 +235,23 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<T, F> {
                     {
                         return Err(denied(metrics));
                     }
-                    let child_span = left
-                        .as_ref()
-                        .map_or(0, |child| child.metrics.charged_span)
-                        .max(right.as_ref().map_or(0, |child| child.metrics.charged_span));
+                    let child_span = accounted.then(|| {
+                        left.as_ref()
+                            .map_or(0, |child| {
+                                child
+                                    .metrics
+                                    .accounted_metrics()
+                                    .expect("accounted child")
+                                    .charged_span
+                            })
+                            .max(right.as_ref().map_or(0, |child| {
+                                child
+                                    .metrics
+                                    .accounted_metrics()
+                                    .expect("accounted child")
+                                    .charged_span
+                            }))
+                    });
                     let (partition, value) = shape.node_value(spec);
                     let mut engine = Engine::with_storage(&identity, &combine, storage, || {
                         // A started later task fixes the canonical stop position.
@@ -245,12 +277,18 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<T, F> {
                     })?;
                     let local = engine.metrics();
                     metrics = add(metrics, local)?;
-                    let mut subtree = entered().add(local).map_err(|_| overflow(metrics))?;
+                    let mut subtree = entered(accounted)
+                        .add(local)
+                        .map_err(|_| overflow(metrics))?;
                     for child in [left, right].into_iter().flatten() {
                         subtree = subtree.add(child.metrics).map_err(|_| overflow(metrics))?;
                     }
-                    subtree.charged_span =
-                        child_span.checked_add(4).ok_or_else(|| overflow(metrics))?;
+                    if let Some(accounting) = subtree.accounted_mut() {
+                        accounting.charged_span = child_span
+                            .expect("accounted children")
+                            .checked_add(4)
+                            .ok_or_else(|| overflow(metrics))?;
+                    }
                     built[spec.index()] = Some(SubtreeResult {
                         root: Some(root),
                         metrics: subtree,
@@ -260,10 +298,18 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<T, F> {
         }
         let root = if let Some(spec) = shape.full_spec() {
             let root = built[spec.index()].take().ok_or_else(|| denied(metrics))?;
-            metrics.charged_span = shape_metrics
-                .charged_span
-                .checked_add(root.metrics.charged_span)
-                .ok_or_else(|| overflow(metrics))?;
+            if let Some(accounting) = root.metrics.accounted_metrics() {
+                let span = shape_metrics
+                    .accounted_metrics()
+                    .expect("same storage mode")
+                    .charged_span
+                    .checked_add(accounting.charged_span)
+                    .ok_or_else(|| overflow(metrics))?;
+                metrics
+                    .accounted_mut()
+                    .expect("same storage mode")
+                    .charged_span = span;
+            }
             root.root
         } else {
             None
@@ -277,6 +323,7 @@ impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<T, F> {
                 identity,
                 combine,
                 len,
+                accounted,
             },
             metrics,
         ))
@@ -312,13 +359,16 @@ fn charge_task<T, E, Storage: ValueStorage<T>>(
     Ok(())
 }
 
-fn entered() -> ReductionMetrics {
-    ReductionMetrics {
+fn entered(accounted: bool) -> ReductionMetrics {
+    if !accounted {
+        return ReductionMetrics::native();
+    }
+    ReductionMetrics::from_accounting(super::ReductionAccounting {
         structural_visits: 1,
         charged_work: 1,
         charged_span: 1,
-        ..ReductionMetrics::default()
-    }
+        ..super::ReductionAccounting::default()
+    })
 }
 
 fn add<E>(

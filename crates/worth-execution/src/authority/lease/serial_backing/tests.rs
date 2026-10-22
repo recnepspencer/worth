@@ -11,7 +11,7 @@ fn serial_lease_uses_the_existing_caller_thread_witness() {
         lease.authority.pool.is_none(),
         "a serial backing has no thread pool"
     );
-    assert_eq!(lease.policy().budget().max_workers(), NonZeroUsize::MIN);
+    assert_eq!(lease.policy().max_workers(), NonZeroUsize::MIN);
     let child = lease.controlled_child(crate::CancellationToken::new(), None);
     let caller = std::thread::current().id();
     let admitted = batch(&[1, 2, 3], 8);

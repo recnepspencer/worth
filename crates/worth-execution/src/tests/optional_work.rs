@@ -87,7 +87,6 @@ fn absent_child_ceiling_cannot_widen_a_finite_parent() {
             .child(optional_request(None))
             .unwrap()
             .policy()
-            .budget()
             .work_ceiling(),
         None
     );
@@ -96,7 +95,6 @@ fn absent_child_ceiling_cannot_widen_a_finite_parent() {
             .child(optional_request(Some(7)))
             .unwrap()
             .policy()
-            .budget()
             .work_ceiling(),
         Some(7)
     );

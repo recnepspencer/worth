@@ -1,4 +1,4 @@
-//! Cold admission checks each actual deep bound before any copy.
+//! Canonical call storage; only explicitly accounted runs perform admission.
 use super::funding::shape_bound;
 use super::*;
 impl ComputationCallSequence {
@@ -7,65 +7,67 @@ impl ComputationCallSequence {
         execution: &QueryRequestExecution<'_>,
     ) -> Result<Arc<Self>, CallSequenceDenial>
     where
-        I: Iterator<Item = (ComputationRead, &'a ComputationCallCharge, u64)>,
+        I: Iterator<Item = (ComputationRead, &'a ComputationCallCharge, Option<u64>)>,
     {
-        let (mut count, mut pairs, mut payload) = (0_usize, 0_usize, 0_u64);
-        for (_, charge, _) in calls() {
-            observed::computation_call_build();
-            count = count.checked_add(1).ok_or(Resource::CapacityOverflow)?;
-            pairs = pairs
-                .checked_add(charge.reached.len())
-                .ok_or(Resource::CapacityOverflow)?;
-            payload = payload
-                .checked_add(
-                    charge
-                        .additional_bytes()
-                        .ok_or(Resource::CapacityOverflow)?,
-                )
-                .ok_or(Resource::CapacityOverflow)?;
-        }
-        let shape_bytes = shape_bound(count).ok_or(Resource::CapacityOverflow)?;
-        let mut shape_memory = execution.reserve(shape_bytes)?;
-        let scratch = (count as u64)
-            .checked_mul((4 * size_of::<(ComputationRead, Call)>()) as u64)
-            .ok_or(Resource::CapacityOverflow)?;
-        let mut memory = execution.reserve(scratch)?;
-        let mut entries = Vec::new();
-        let (mut count, mut pairs, mut payload) = (0_usize, 0_usize, 0_u64);
-        for (read, charge, declared) in calls() {
-            observed::computation_call_build();
-            count = count.checked_add(1).ok_or(Resource::CapacityOverflow)?;
-            pairs = pairs
-                .checked_add(charge.reached.len())
-                .ok_or(Resource::CapacityOverflow)?;
-            payload = payload
-                .checked_add(
-                    charge
-                        .additional_bytes()
-                        .ok_or(Resource::CapacityOverflow)?,
-                )
-                .ok_or(Resource::CapacityOverflow)?;
-            // The actual second pass, not the earlier quote, admits each copy.
+        let (mut shape_memory, mut memory) = if execution.has_accounting() {
+            let mut count = 0_usize;
+            for _ in calls() {
+                observed::computation_call_build();
+                count = count.checked_add(1).ok_or(Resource::CapacityOverflow)?;
+            }
+            let shape_bytes = shape_bound(count).ok_or(Resource::CapacityOverflow)?;
+            let shape_memory = execution.reserve(shape_bytes)?;
             let scratch = (count as u64)
                 .checked_mul((4 * size_of::<(ComputationRead, Call)>()) as u64)
                 .ok_or(Resource::CapacityOverflow)?;
-            let need = scratch;
-            if need > memory.bytes() {
-                memory.resize(need)?;
+            (Some(shape_memory), Some(execution.reserve(scratch)?))
+        } else {
+            (None, None)
+        };
+        let policy = execution.allocation_policy()?;
+        let mut entries = Vec::new();
+        for (read, charge, declared) in calls() {
+            policy
+                .check_live()
+                .map_err(worth_execution::ExecutionOrderedMapDenial::from)?;
+            observed::computation_call_build();
+            let count = entries
+                .len()
+                .checked_add(1)
+                .ok_or(Resource::CapacityOverflow)?;
+            // Accounted copies retain their actual second-pass admission;
+            // worker-only storage makes one traversal and no quote.
+            if let Some(memory) = &mut memory {
+                let scratch = (count as u64)
+                    .checked_mul((4 * size_of::<(ComputationRead, Call)>()) as u64)
+                    .ok_or(Resource::CapacityOverflow)?;
+                if scratch > memory.bytes() {
+                    memory.resize(scratch)?;
+                }
             }
-            let shape_need = shape_bound(count).ok_or(Resource::CapacityOverflow)?;
-            if shape_need > shape_memory.bytes() {
-                shape_memory.resize(shape_need)?;
+            if let Some(shape_memory) = &mut shape_memory {
+                let shape_need = shape_bound(count).ok_or(Resource::CapacityOverflow)?;
+                if shape_need > shape_memory.bytes() {
+                    shape_memory.resize(shape_need)?;
+                }
             }
+            std::alloc::Layout::array::<(ComputationRead, Call)>(count)
+                .map_err(|_| Resource::CapacityOverflow)?;
+            entries
+                .try_reserve(1)
+                .map_err(|_| Resource::NativeAllocationRefused {
+                    kind: worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator,
+                    requested_payload_bytes: None,
+                })?;
             entries.push((read, (charge.clone(), declared)));
         }
-        let shape_bytes = shape_bound(count).ok_or(Resource::CapacityOverflow)?;
-        shape_memory.resize(shape_bytes)?;
+        if let Some(shape_memory) = &mut shape_memory {
+            shape_memory.resize(shape_bound(entries.len()).ok_or(Resource::CapacityOverflow)?)?;
+        }
         assert!(
             entries.windows(2).all(|w| w[0].0 < w[1].0),
             "measured calls are canonical and unique"
         );
-        let policy = execution.allocation_policy()?;
         let mut order = worth_execution::ExecutionOrderedMap::default();
         for (read, _) in &entries {
             order.insert_cloned_in(read, &(), policy)?;
@@ -87,20 +89,22 @@ impl ComputationCallSequence {
         let root = build(0, &entries, execution)?;
         drop(entries);
         drop(memory);
-        let memory = execution.reserve((size_of::<Self>() + 2 * size_of::<usize>()) as u64)?;
+        let memory = execution
+            .has_accounting()
+            .then(|| execution.reserve((size_of::<Self>() + 2 * size_of::<usize>()) as u64))
+            .transpose()?;
         #[cfg(test)]
-        let bytes = memory
-            .bytes()
-            .checked_add(shape.bytes())
-            .and_then(|v| v.checked_add(root.as_ref().map_or(0, |n| n.bytes)))
-            .and_then(|v| v.checked_add(reached.bytes()))
-            .ok_or(Resource::CapacityOverflow)?;
+        let bytes = memory.as_ref().and_then(|memory| {
+            memory
+                .bytes()
+                .checked_add(shape.bytes()?)?
+                .checked_add(root.as_ref().map_or(Some(0), |n| n.bytes)?)?
+                .checked_add(reached.bytes()?)
+        });
         Ok(Arc::new(Self {
             shape,
             root,
             reached,
-            pairs,
-            payload,
             #[cfg(test)]
             bytes,
             _memory: memory,

@@ -27,7 +27,6 @@ pub(in crate::domain_computation::primary_graph) struct FactRoutes {
         ),
         usize,
     >,
-    bytes: u64,
     _memory: Option<ExecutionMemoryReservation>,
 }
 
@@ -76,11 +75,10 @@ impl FactRoutes {
         let memory = control.policy().reserve_memory(bytes);
         control.check_live()?;
         let memory = memory?;
-        Self::build_iter(body.iter(), bytes, memory, control)
+        Self::build_iter(body.iter(), memory, control)
     }
     pub(in crate::domain_computation::primary_graph) fn build_iter<'a>(
         facts: impl Iterator<Item = &'a Fact>,
-        bytes: u64,
         memory: Option<ExecutionMemoryReservation>,
         control: StorageControl<'_, '_>,
     ) -> Result<Arc<Self>, StoreDenial> {
@@ -90,7 +88,6 @@ impl FactRoutes {
             entities: BTreeMap::new(),
             relations: BTreeMap::new(),
             selections: BTreeMap::new(),
-            bytes,
             _memory: memory,
         };
         for (ordinal, fact) in facts.enumerate() {
@@ -287,9 +284,6 @@ impl FactRoutes {
         };
         control.check_live()?;
         Ok(matches)
-    }
-    pub(in crate::domain_computation::primary_graph) fn bytes(&self) -> u64 {
-        self.bytes
     }
 }
 

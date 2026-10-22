@@ -6,13 +6,12 @@ use crate::{
 };
 use worth_foundational::{ExecutionReport, PartitionIdentity};
 
-use super::{authority, request, CancellationSource, LeaseDenial, TEST_LOCK};
+use super::{accounted_request, authority, request, CancellationSource, LeaseDenial, TEST_LOCK};
 
 mod admission_lifetime;
 mod bounded_overlap;
 mod custody;
 mod dispatch_cancellation;
-mod memory_model;
 mod owner_marker;
 mod panic_payload;
 
@@ -195,12 +194,11 @@ fn owned_map_differential_stops_and_schedules() {
                     } else {
                         100
                     };
-                    let memory = if matches!(scenario, Scenario::Memory) {
-                        1
+                    let mut req = if matches!(scenario, Scenario::Memory) {
+                        request(workers, 1, work)
                     } else {
-                        2_000
+                        accounted_request(workers, work)
                     };
-                    let mut req = request(workers, memory, work);
                     req.cancellation = source.token();
                     if matches!(scenario, Scenario::Cancelled) {
                         source.cancel();
@@ -211,7 +209,7 @@ fn owned_map_differential_stops_and_schedules() {
                     }
                     let holder = (taking && matches!(scenario, Scenario::Memory)).then(|| {
                         authority()
-                            .request_lease(request(workers, 2_000, work))
+                            .request_lease(accounted_request(workers, work))
                             .unwrap()
                     });
                     let lease = match &holder {

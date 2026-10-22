@@ -25,7 +25,7 @@ fn legacy_precompute_refuses_memory_after_request_admission() {
                     let LeaseDenial::MemoryExhausted(refusal) =
                         ExecutionMemoryReservation::reserve_in_scope(
                             lease,
-                            policy.budget().charged_memory_bytes().unwrap(),
+                            policy.charged_memory_bytes().unwrap(),
                         )
                         .unwrap_err()
                     else {

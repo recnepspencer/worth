@@ -109,9 +109,8 @@ pub(super) fn placed(
         RuntimeWorldExecutionPlacement::Serial(policy)
         | RuntimeWorldExecutionPlacement::Leased { policy, .. } => policy,
     };
-    let request_policy = |workers| {
-        let budget = REQUEST_BUDGET.get().unwrap_or(policy.budget());
-        ExecutionRequestPolicy::new(
+    let request_policy = |workers| match REQUEST_BUDGET.get().or(policy.accounting()) {
+        Some(budget) => ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
             ExecutionBudget::new(
@@ -119,7 +118,12 @@ pub(super) fn placed(
                 budget.charged_memory_bytes(),
                 budget.work_ceiling(),
             ),
-        )
+        ),
+        None => ExecutionRequestPolicy::for_workers(
+            ExecutionPosture::Automatic,
+            DeterminismContract::CanonicalBitwise,
+            workers,
+        ),
     };
     match placement {
         WorthQueryExecutionPlacementForTest::World => world,
@@ -344,7 +348,7 @@ impl FixturePlacement {
         let (chosen, policy) = match placement {
             RuntimeWorldExecutionPlacement::Serial(policy) => (Placement::Serial, policy),
             RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
-                (Placement::Leased(policy.budget().max_workers()), policy)
+                (Placement::Leased(policy.max_workers()), policy)
             }
         };
         let prior = place(chosen);
@@ -354,7 +358,7 @@ impl FixturePlacement {
         Self {
             _observation: observation,
             placement: prior,
-            budget: bound(Some(policy.budget())),
+            budget: bound(policy.accounting()),
         }
     }
 }

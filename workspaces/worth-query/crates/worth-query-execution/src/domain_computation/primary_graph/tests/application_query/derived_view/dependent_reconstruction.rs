@@ -139,7 +139,7 @@ fn journey(case: Case) {
                             parent.policy().posture(), parent.policy().determinism(),
                             worth_foundational::ExecutionBudget::new(nz(1),
                                 if case == Case::Memory { Some(0) } else { None },
-                                if case == Case::Work { Some(1) } else { parent.policy().budget().work_ceiling() }),
+                                if case == Case::Work { Some(1) } else { parent.policy().work_ceiling() }),
                         ), cancellation: cancellation.token(),
                         deadline: (case == Case::Deadline).then(std::time::Instant::now),
                     }).unwrap()

@@ -59,14 +59,15 @@ pub(in crate::domain_computation::primary_graph) fn dispatch(
                 // A prior request's untaken cause cannot reach a later
                 // request, even when that request returns its own error.
                 context.poll()?;
+                let accounted = context.has_accounting();
                 let context = std::cell::RefCell::new(&mut *context);
-                let mut charge = |units| context.borrow_mut().checkpoint(units);
                 let mut poll = || context.borrow_mut().poll();
+                let mut charge = |units| context.borrow_mut().checkpoint(units);
                 let mut take = || context.borrow_mut().take_nested_computation_stop();
                 let slot = request.run(WorthQueryMemberExecution::for_kernel(
                     &member,
-                    &mut charge,
                     &mut poll,
+                    accounted.then_some(&mut charge),
                     &mut take,
                 ));
                 slots.push(slot);

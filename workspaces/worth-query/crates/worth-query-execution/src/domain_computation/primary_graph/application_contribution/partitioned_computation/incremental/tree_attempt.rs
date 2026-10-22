@@ -42,12 +42,16 @@ impl<T, E> TreeAttempt<EditDisposition<T>, Denial<E>> {
 impl<T, E> TreeAttempt<T, E> {
     /// Preparation has not entered any tree operation yet.
     pub(super) fn unstarted(
-        _beginning: super::tree_update::TreeBeginning,
+        beginning: super::tree_update::TreeBeginning,
         outcome: Result<T, E>,
     ) -> Self {
         Self {
             outcome,
-            work: Metrics::from_native(ReductionMetrics::default()),
+            work: Metrics::from_native(if beginning.0 {
+                ReductionMetrics::default()
+            } else {
+                ReductionMetrics::native()
+            }),
         }
     }
 

@@ -38,6 +38,7 @@ pub use test_authority::query_test_execution_authority_for_test;
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 
+mod accounting;
 mod decision_stage;
 mod descendants;
 mod retained_dispatch;
@@ -106,9 +107,7 @@ impl<'a> QueryRequestExecution<'a> {
         let placement = test_placement::placed(placement);
         let declared_work = match placement {
             RuntimeWorldExecutionPlacement::Serial(policy)
-            | RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
-                policy.budget().work_ceiling()
-            }
+            | RuntimeWorldExecutionPlacement::Leased { policy, .. } => policy.work_ceiling(),
         };
         let form = match placement {
             RuntimeWorldExecutionPlacement::Serial(policy) => {
@@ -159,13 +158,19 @@ impl<'a> QueryRequestExecution<'a> {
         &self,
         bytes: u64,
     ) -> Result<QueryMemoryReservation, Resource> {
-        let held = match &self.form {
-            Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
-                .as_ref()
-                .map_err(|denial| lease_denial(*denial))?
-                .reserve_memory(bytes)
-                .map(Some),
+        let lease = match &self.form {
+            Form::Leased { lease, .. } | Form::Serial { lease, .. } => {
+                lease.as_ref().map_err(|denial| lease_denial(*denial))?
+            }
         };
+        let held = worth_execution::ExecutionRequest::leased(lease)
+            .in_scope(|active| {
+                active
+                    .expect("leased projection retains its backing")
+                    .reserve_memory(bytes)
+                    .map(Some)
+            })
+            .expect("leased projection reborrows without opening a scope");
         held.map(|held| QueryMemoryReservation { held, bytes })
             .map_err(memory_denial)
     }
@@ -377,9 +382,7 @@ pub use advancement::{
 };
 
 #[cfg(test)]
-pub(crate) use advancement::{
-    drain_test_advancement_observations, with_test_advancement, TestHostRequest,
-};
+pub(crate) use advancement::{with_test_advancement, TestHostRequest};
 
 pub use advancement::{with_bootstrap_advancement, with_bootstrap_advancement_from_request};
 

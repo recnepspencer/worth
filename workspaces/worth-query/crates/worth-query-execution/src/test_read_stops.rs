@@ -110,9 +110,9 @@ fn selected_consult_answers_under<T: Eq + Debug, E: Eq + Debug>(
                                     lease.policy().posture(),
                                     lease.policy().determinism(),
                                     worth_foundational::ExecutionBudget::new(
-                                        lease.policy().budget().max_workers(),
+                                        lease.policy().max_workers(),
                                         lease.available_memory_bytes(),
-                                        lease.policy().budget().work_ceiling(),
+                                        lease.policy().work_ceiling(),
                                     ),
                                 ),
                                 cancellation: source.token(),

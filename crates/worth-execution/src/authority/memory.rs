@@ -133,7 +133,11 @@ impl SerialMemoryBudget {
 
     /// Uses only the policy memory limit; the work ceiling belongs to leased requests.
     pub fn from_policy(policy: &ExecutionRequestPolicy) -> Self {
-        Self::new(policy.budget().charged_memory_bytes())
+        Self::new(
+            policy
+                .accounting()
+                .and_then(|budget| budget.charged_memory_bytes()),
+        )
     }
 
     /// Retains an optional caller ceiling; every live byte remains accounted.

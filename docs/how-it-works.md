@@ -2056,7 +2056,8 @@ to see the two facades used end to end.
   binding declares none. Always pass an idempotency key.
 - Match every outcome variant. Treat `Indeterminate` and `SettlementDeferred`
   as recovery, never as failure. Treat `Stale` as "re-read, then retry".
-- Follow the [canonical consumer prohibitions](capability-index.md#consumer-prohibitions).
+- Use the [request and retained-operation guide](capability-index.md#use-requests-and-retained-operations)
+  to submit, advance, recover and close application work.
 - Read touched records, external dispatch posture, and aftermath from the
   receipt. Do not infer them. Touched records sit behind
   `receipt.mutation_work()`, which is an `Option`.

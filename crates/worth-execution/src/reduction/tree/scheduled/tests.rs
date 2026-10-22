@@ -112,14 +112,17 @@ fn a_cancelled_subtree_keeps_its_completed_combines_and_charge() {
         });
         assert_eq!(calls.load(Ordering::SeqCst), 1);
         let metrics = observed.unwrap();
-        assert_eq!(metrics.combine_calls, 1);
+        assert_eq!(metrics.accounted_metrics().unwrap().combine_calls, 1);
         // A singleton enters shape construction three times, evaluation twice,
         // and its first combine once; cancellation refuses the second combine.
         let work = 3 + 2 + 1;
-        assert_eq!(metrics.structural_visits, 3 + 2);
-        assert_eq!(metrics.recombined_nodes, 0);
-        assert_eq!(metrics.charged_work, work);
-        assert_eq!(metrics.charged_span, work);
+        assert_eq!(
+            metrics.accounted_metrics().unwrap().structural_visits,
+            3 + 2
+        );
+        assert_eq!(metrics.accounted_metrics().unwrap().recombined_nodes, 0);
+        assert_eq!(metrics.accounted_metrics().unwrap().charged_work, work);
+        assert_eq!(metrics.accounted_metrics().unwrap().charged_span, work);
         assert_eq!(outcome.report.charged_work(), work);
         assert_eq!(outcome.report.charged_span(), work);
         assert!(matches!(
@@ -185,7 +188,10 @@ fn a_cancelled_canonical_prefix_agrees_at_every_frontier_width() {
             let failure = result
                 .err()
                 .expect("the second combine observes cancellation");
-            assert_eq!(failure.metrics.combine_calls, 1);
+            assert_eq!(
+                failure.metrics.accounted_metrics().unwrap().combine_calls,
+                1
+            );
             assert!(matches!(
                 failure.reason,
                 ReductionRunStop::Hook(KernelStop::Cancelled)
@@ -194,8 +200,14 @@ fn a_cancelled_canonical_prefix_agrees_at_every_frontier_width() {
             Err::<(), _>(KernelFailure::<()>::Stop(KernelStop::Cancelled))
         });
         let metrics = measured.unwrap();
-        assert_eq!(outcome.report.charged_work(), metrics.charged_work);
-        assert_eq!(outcome.report.charged_span(), metrics.charged_span);
+        assert_eq!(
+            outcome.report.charged_work(),
+            metrics.accounted_metrics().unwrap().charged_work
+        );
+        assert_eq!(
+            outcome.report.charged_span(),
+            metrics.accounted_metrics().unwrap().charged_span
+        );
         let observed = (
             metrics,
             outcome.report.charged_work(),
@@ -275,8 +287,8 @@ fn a_stop_after_the_last_combine_waits_for_the_next_checkpoint_at_every_width() 
                         context
                             .apply_structural_span(
                                 before,
-                                metrics.charged_work,
-                                metrics.charged_span,
+                                metrics.accounted_metrics().unwrap().charged_work,
+                                metrics.accounted_metrics().unwrap().charged_span,
                             )
                             .unwrap();
                     }
@@ -290,14 +302,20 @@ fn a_stop_after_the_last_combine_waits_for_the_next_checkpoint_at_every_width() 
                     failure.metrics
                 }
             };
-            assert_eq!(metrics.combine_calls, 2 * 3);
-            assert_eq!(metrics.recombined_nodes, 3);
+            assert_eq!(metrics.accounted_metrics().unwrap().combine_calls, 2 * 3);
+            assert_eq!(metrics.accounted_metrics().unwrap().recombined_nodes, 3);
             measured = Some(metrics);
             Ok::<(), KernelFailure<()>>(())
         });
         let metrics = measured.unwrap();
-        assert_eq!(outcome.report.charged_work(), metrics.charged_work);
-        assert_eq!(outcome.report.charged_span(), metrics.charged_span);
+        assert_eq!(
+            outcome.report.charged_work(),
+            metrics.accounted_metrics().unwrap().charged_work
+        );
+        assert_eq!(
+            outcome.report.charged_span(),
+            metrics.accounted_metrics().unwrap().charged_span
+        );
         let observed = (
             metrics,
             outcome.report.charged_work(),

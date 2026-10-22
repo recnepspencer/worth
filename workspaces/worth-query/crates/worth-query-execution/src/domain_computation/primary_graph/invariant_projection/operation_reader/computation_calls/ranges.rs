@@ -15,9 +15,15 @@ impl<Schema, Operation>
         _: &Comparator,
         summary: &CallSummary,
     ) -> bool {
+        if !self.reader.execution.has_accounting() {
+            return true;
+        }
+        let Some(accounting) = summary.accounting else {
+            return false;
+        };
         let mut budget = self.reader.work_budget;
-        self.reader.work.with_carried(summary.work).is_some()
-            && budget.carry(summary.demand, summary.consumed)
+        self.reader.work.with_carried(accounting.work).is_some()
+            && budget.carry(accounting.demand, accounting.consumed)
     }
     pub(in crate::domain_computation::primary_graph) fn begin_call_ranges(
         &mut self,
@@ -73,15 +79,20 @@ impl<Schema, Operation>
                 .carry_mapped_range(source, target),
             "scope admission retains the checked range"
         );
-        assert!(self
-            .reader
-            .work_budget
-            .carry(summary.demand, summary.consumed));
-        self.reader.work = self
-            .reader
-            .work
-            .with_carried(summary.work)
-            .expect("range preflight checked work arithmetic");
+        if self.reader.execution.has_accounting() {
+            let accounting = summary
+                .accounting
+                .expect("range preflight checked accounting");
+            assert!(self
+                .reader
+                .work_budget
+                .carry(accounting.demand, accounting.consumed));
+            self.reader.work = self
+                .reader
+                .work
+                .with_carried(accounting.work)
+                .expect("range preflight checked work arithmetic");
+        }
         crate::domain_computation::primary_graph::fact_verification_observation::computation_call_carry();
         Ok(true)
     }
@@ -90,12 +101,17 @@ impl<Schema, Operation>
         _: &Comparator,
         execution: &QueryRequestExecution<'_>,
     ) -> Result<Arc<NativeCallCarriage>, Resource> {
-        let bytes = self
-            .decision_facts
-            .computation
-            .range_close_bytes()
-            .ok_or(Resource::CapacityOverflow)?;
-        let memory = execution.reserve(bytes)?;
+        let memory = execution
+            .has_accounting()
+            .then(|| {
+                let bytes = self
+                    .decision_facts
+                    .computation
+                    .range_close_bytes()
+                    .ok_or(Resource::CapacityOverflow)?;
+                execution.reserve(bytes)
+            })
+            .transpose()?;
         Ok(self.decision_facts.computation.close_ranges(memory))
     }
 }

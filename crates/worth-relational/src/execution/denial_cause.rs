@@ -27,6 +27,7 @@ pub enum RelationalExecutionDenialCause {
     Cancelled,
     DeadlineElapsed,
     WorkCounterOverflow,
+    AccountingUnavailable,
     WorkExhausted,
     NestedStopped,
     ResultCapacityExceeded,

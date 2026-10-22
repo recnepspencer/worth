@@ -37,6 +37,7 @@ impl InputMode for LaterHandedOffFirst<'_> {
         _: Option<&ExecutionResourceLease<'_>>,
         parallel: bool,
         seed: Option<u64>,
+        _: bool,
         execute: &(impl Fn((usize, u64)) + Sync),
     ) -> usize {
         assert!(!parallel, "the hand-off twin must use serial dispatch");

@@ -23,6 +23,7 @@ pub(super) fn query_cause(cause: Bridge) -> Result<Denial, Interruption> {
         Bridge::Cancelled => return Err(Interruption::Cancelled),
         Bridge::DeadlineElapsed => return Err(Interruption::DeadlineExceeded),
         Bridge::WorkCounterOverflow => Denial::Resource(Resource::WorkCounterOverflow),
+        Bridge::AccountingUnavailable => Denial::Resource(Resource::AccountingUnavailable),
         Bridge::WorkCeiling => Denial::Resource(Resource::WorkExhausted),
         Bridge::NestedStopped => Denial::NestedStopped,
         Bridge::Panicked => Denial::Panicked,

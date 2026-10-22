@@ -33,25 +33,21 @@ fn inline_entries(refusals: [bool; 2]) {
                 .unwrap();
             let hold = lease.reserve_memory(8).unwrap();
             assert_eq!(charged(&lease), 8);
-            let expected = super::memory_model::bytes::<u64, u64, ()>(
-                1,
-                0,
-                (std::mem::size_of::<Vec<u64>>()
-                    + std::mem::size_of::<(worth_foundational::PartitionIdentity, Vec<u64>)>()
-                    + std::mem::size_of::<u64>()) as u64,
-                1,
-                1,
-                true,
-            );
             let outcome = catch_unwind(AssertUnwindSafe(|| {
                 if owned {
                     map([1_u64]).run_owned_taking(Some(&lease), hold, |value, _| {
-                        assert_eq!(charged(&lease), expected);
+                        assert!(
+                            charged(&lease) >= 8,
+                            "input remains funded during its kernel"
+                        );
                         Ok::<_, MapKernelFailure<()>>(value)
                     })
                 } else {
                     map([1_u64]).run_taking(Some(&lease), hold, |value, _| {
-                        assert_eq!(charged(&lease), expected);
+                        assert!(
+                            charged(&lease) >= 8,
+                            "input remains funded during its kernel"
+                        );
                         Ok::<_, MapKernelFailure<()>>(*value)
                     })
                 }

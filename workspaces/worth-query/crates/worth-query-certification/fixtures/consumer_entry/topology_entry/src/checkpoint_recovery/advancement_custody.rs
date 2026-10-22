@@ -29,7 +29,7 @@ fn query_refuses_zero_request_budgets_before_its_first_read() {
     let application = install(None);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let policy = super::support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = super::support::observation::CHECKPOINT_EXECUTION_POLICY.accounting().expect("this fixture declares accounting");
     let mut memory_causes = Vec::new();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
@@ -147,7 +147,7 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
             else {
                 panic!("the fresh mutation prepares its unpublished candidate");
             };
-            let policy = super::support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
+            let policy = super::support::observation::CHECKPOINT_EXECUTION_POLICY.accounting().expect("this fixture declares accounting");
             let restore = Restore(
                 place(placement),
                 bound(Some(worth_foundational::ExecutionBudget::new(
@@ -261,7 +261,7 @@ fn mutation_commit_report(placement: Placement) -> (u64, u64) {
         .execute()
         .unwrap();
     let before = observed.receipt().inspect().basis().version();
-    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.accounting().expect("this fixture declares accounting");
     // Admit the mutation's complete work, including its read and native commit.
     let restore = Restore(
         place(placement),

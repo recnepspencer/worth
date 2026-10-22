@@ -3,6 +3,12 @@ use super::ExecutionAuthorityConfig;
 use std::num::NonZeroUsize;
 
 impl ExecutionAuthorityConfig {
+    pub const fn for_workers(max_workers: NonZeroUsize) -> Self {
+        Self {
+            max_workers,
+            charged_memory_bytes: None,
+        }
+    }
     /// Proposes the machine's available workers, or one on a serial platform.
     /// The caller still declares and admits its request's worker budget.
     pub fn available_worker_count() -> NonZeroUsize {

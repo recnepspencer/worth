@@ -30,7 +30,7 @@ impl From<worth_execution::ExecutionOrderedMapDenial> for CallSequenceDenial {
         Self::Storage(cause)
     }
 }
-type Call = (ComputationCallCharge, u64);
+type Call = (ComputationCallCharge, Option<u64>);
 
 mod shape;
 pub(in crate::domain_computation::primary_graph) use shape::{CallShape, CallShapeTransition};
@@ -39,26 +39,38 @@ use tree::{build, leaf, patch, summary, visit};
 mod editing;
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) struct CallSummary {
-    pub(super) work: WorthQueryInvariantProjectionWork,
-    pub(super) demand: usize,
-    pub(super) consumed: usize,
-    pub(in crate::domain_computation::primary_graph) declared: u64,
+    pub(super) accounting: Option<ComputationCallAccounting>,
+    pub(in crate::domain_computation::primary_graph) declared: Option<u64>,
 }
 impl CallSummary {
-    fn leaf(charge: &ComputationCallCharge, declared: u64) -> Self {
+    fn native() -> Self {
         Self {
-            work: charge.work,
-            demand: charge.demand,
-            consumed: charge.consumed,
+            accounting: None,
+            declared: None,
+        }
+    }
+    fn leaf(charge: &ComputationCallCharge, declared: Option<u64>) -> Self {
+        Self {
+            accounting: charge.accounting,
             declared,
         }
     }
     fn then(self, next: Self) -> Option<Self> {
+        let accounting = match self.accounting.zip(next.accounting) {
+            Some((a, b)) => Some(ComputationCallAccounting {
+                work: a.work.with_carried(b.work)?,
+                demand: a.demand.max(a.consumed.checked_add(b.demand)?),
+                consumed: a.consumed.checked_add(b.consumed)?,
+            }),
+            None => None,
+        };
+        let declared = match self.declared.zip(next.declared) {
+            Some((a, b)) => Some(a.checked_add(b)?),
+            None => None,
+        };
         Some(Self {
-            work: self.work.with_carried(next.work)?,
-            demand: self.demand.max(self.consumed.checked_add(next.demand)?),
-            consumed: self.consumed.checked_add(next.consumed)?,
-            declared: self.declared.checked_add(next.declared)?,
+            accounting,
+            declared,
         })
     }
 }
@@ -67,8 +79,9 @@ struct Node {
     height: u8,
     summary: Option<CallSummary>,
     kind: Kind,
-    bytes: u64,
-    _memory: QueryMemoryReservation,
+    #[cfg(test)]
+    bytes: Option<u64>,
+    _memory: Option<QueryMemoryReservation>,
 }
 enum Kind {
     Leaf(ComputationRead, Call),
@@ -76,7 +89,12 @@ enum Kind {
 }
 pub(in crate::domain_computation::primary_graph) enum CallVisit<'a> {
     Range(Range<usize>, &'a CallSummary),
-    Leaf(usize, ComputationRead, &'a ComputationCallCharge, u64),
+    Leaf(
+        usize,
+        ComputationRead,
+        &'a ComputationCallCharge,
+        Option<u64>,
+    ),
 }
 /// No request borrow or parent sequence is stored. Each cell funds its own
 /// representation; unchanged nodes and the exact ordinal shape share grants.
@@ -84,11 +102,9 @@ pub(in crate::domain_computation::primary_graph) struct ComputationCallSequence 
     shape: Arc<CallShape>,
     root: Option<Arc<Node>>,
     reached: ReachedCalls,
-    pairs: usize,
-    payload: u64,
     #[cfg(test)]
-    bytes: u64,
-    _memory: QueryMemoryReservation,
+    bytes: Option<u64>,
+    _memory: Option<QueryMemoryReservation>,
 }
 impl ComputationCallSequence {
     pub(in crate::domain_computation::primary_graph) fn shape(&self) -> &Arc<CallShape> {
@@ -98,13 +114,18 @@ impl ComputationCallSequence {
         self.shape.prefix
     }
     #[cfg(test)]
-    pub(in crate::domain_computation::primary_graph) fn bytes(&self) -> u64 {
+    pub(in crate::domain_computation::primary_graph) fn bytes(&self) -> Option<u64> {
         self.bytes
     }
     pub(in crate::domain_computation::primary_graph) fn summary(
         &self,
         range: Range<usize>,
+        accounted: bool,
     ) -> Option<CallSummary> {
+        if !accounted {
+            return (range.start < range.end && range.end <= self.shape.len())
+                .then(CallSummary::native);
+        }
         summary(self.root.as_deref()?, &range)
     }
     pub(in crate::domain_computation::primary_graph) fn contains_in(

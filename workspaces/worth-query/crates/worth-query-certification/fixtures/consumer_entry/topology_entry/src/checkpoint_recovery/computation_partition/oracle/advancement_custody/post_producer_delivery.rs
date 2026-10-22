@@ -47,7 +47,7 @@ fn refused_delivery(placement: Placement) {
         bits: 2.5_f64.to_bits(),
         read: OwnWriteRead::Blind,
     }));
-    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.accounting().expect("this fixture declares accounting");
     bound(Some(worth_foundational::ExecutionBudget::new(
         NonZeroUsize::MIN,
         policy.charged_memory_bytes(),
@@ -91,7 +91,7 @@ fn funded_delivery(placement: Placement) {
     // Use the host's independently declared normal request, not a calibrated
     // replacement ceiling. It must cover both producer and delivery/rejoin work.
     bound(None);
-    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.accounting().expect("this fixture declares accounting");
     assert!(
         policy
             .work_ceiling()

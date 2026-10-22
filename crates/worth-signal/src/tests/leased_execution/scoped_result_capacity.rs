@@ -22,7 +22,7 @@ fn request_with_memory(workers: usize, memory_bytes: u64) -> worth_execution::Le
         admission.policy.posture(),
         admission.policy.determinism(),
         ExecutionBudget::new(
-            admission.policy.budget().max_workers(),
+            admission.policy.max_workers(),
             Some(memory_bytes),
             Some(10_000_000),
         ),

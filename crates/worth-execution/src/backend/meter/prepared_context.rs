@@ -2,13 +2,13 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use crate::authority::ExecutionResourceLease;
 
-use super::{activity, KernelMeter, PhysicalActivity, RunLimits, ACTIVE_METER};
+use super::{activity, KernelState, PhysicalActivity, RunLimits, ACTIVE_METER};
 
 /// A prepared run may retain memory across domain work, but must return to
 /// exactly the request context that prepared it. Keeping the Rc also prevents
 /// a replaced parent meter from reusing the same address.
 pub(crate) struct PreparedMeterContext {
-    parent: Option<Rc<RefCell<KernelMeter>>>,
+    parent: Option<Rc<RefCell<KernelState>>>,
     certification: Option<Arc<PhysicalActivity>>,
     physical: Arc<PhysicalActivity>,
     physical_cell_charged: bool,

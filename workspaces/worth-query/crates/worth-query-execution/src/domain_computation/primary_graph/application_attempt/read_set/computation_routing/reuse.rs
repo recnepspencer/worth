@@ -89,33 +89,38 @@ impl ComputationFactAttribution {
         // This scratch index contains ONLY newly executed reads. Its values
         // borrow keys; no fact/key payload is copied and no retained index is
         // reconstructed. The full call roster above remains measured work.
-        let mut quote = Some(0_u64);
-        for reads in self.readers.values() {
-            observation::completion_fresh_key();
-            let count = usize::from(reads.membership)
-                .checked_add(reads.item_keys.len())
-                .and_then(|count| count.checked_add(reads.partitions.len()))
-                .and_then(|count| u64::try_from(count).ok());
-            let per = (11 * size_of::<(ComputationRead, Vec<&WorthQueryApplicationFactKey>)>()
-                + 16 * size_of::<usize>()
-                + 4 * size_of::<&WorthQueryApplicationFactKey>()) as u64;
-            quote = quote
-                .zip(count)
-                .and_then(|(sum, count)| sum.checked_add(per.checked_mul(count)?));
-        }
-        let replaced_count = self.fresh_calls.len().checked_add(
-            ranges
-                .and_then(|ranges| ranges.transition())
-                .map_or(0, |edit| edit.retired().count()),
-        );
-        quote = quote.zip(replaced_count).and_then(|(sum, count)| {
-            sum.checked_add((count as u64).checked_mul(
-                (11 * size_of::<ComputationRead>() + 16 * size_of::<usize>()) as u64,
-            )?)
-        });
-        let funding = control
-            .policy()
-            .reserve_memory(quote.ok_or(StoreDenial::Representability)?);
+        let funding = if control.policy().uses_accounting() {
+            let mut quote = Some(0_u64);
+            for reads in self.readers.values() {
+                observation::completion_fresh_key();
+                let count = usize::from(reads.membership)
+                    .checked_add(reads.item_keys.len())
+                    .and_then(|count| count.checked_add(reads.partitions.len()))
+                    .and_then(|count| u64::try_from(count).ok());
+                let per = (11 * size_of::<(ComputationRead, Vec<&WorthQueryApplicationFactKey>)>()
+                    + 16 * size_of::<usize>()
+                    + 4 * size_of::<&WorthQueryApplicationFactKey>())
+                    as u64;
+                quote = quote
+                    .zip(count)
+                    .and_then(|(sum, count)| sum.checked_add(per.checked_mul(count)?));
+            }
+            let replaced_count = self.fresh_calls.len().checked_add(
+                ranges
+                    .and_then(|ranges| ranges.transition())
+                    .map_or(0, |edit| edit.retired().count()),
+            );
+            quote = quote.zip(replaced_count).and_then(|(sum, count)| {
+                sum.checked_add((count as u64).checked_mul(
+                    (11 * size_of::<ComputationRead>() + 16 * size_of::<usize>()) as u64,
+                )?)
+            });
+            control
+                .policy()
+                .reserve_memory(quote.ok_or(StoreDenial::Representability)?)
+        } else {
+            Ok(None)
+        };
         control.check_live()?;
         let _funding = funding?;
         let mut fresh: BTreeMap<_, Vec<_>> = BTreeMap::new();
@@ -139,14 +144,6 @@ impl ComputationFactAttribution {
             Some(transition) => layout.after_transition(transition, control)?,
             None => Arc::clone(layout),
         };
-        prior.charged = prior
-            .charged
-            .and_then(|n| n.checked_sub(prior.layout.charged_bytes()?))
-            .and_then(|n| {
-                n.checked_add(
-                    layout::SealedReadLayout::Checked(Arc::clone(&layout)).charged_bytes()?,
-                )
-            });
         prior.layout = layout::SealedReadLayout::Checked(Arc::clone(&layout));
         Ok(Some(NativeReadRefresh {
             prior,
@@ -233,31 +230,6 @@ impl NativeReadRefresh {
         Arc<[usize]>,
         usize,
     ) {
-        let old_content = self
-            .prior
-            .content
-            .as_ref()
-            .map_or(Some(0), |value| value.charged_bytes());
-        let new_content = content
-            .as_ref()
-            .map_or(Some(0), |value| value.charged_bytes());
-        self.prior.charged = self
-            .prior
-            .charged
-            .zip(self.prior.original.retained_resident_bytes())
-            .and_then(|(total, old)| total.checked_sub(old))
-            .zip(original.retained_resident_bytes())
-            .and_then(|(metadata, body)| metadata.checked_add(body))
-            .zip(old_content)
-            .and_then(|(total, old)| total.checked_sub(old))
-            .zip(new_content)
-            .and_then(|(total, new)| total.checked_add(new));
-        let old = self.prior.projection.as_ref().map_or(0, |p| p.bytes());
-        self.prior.charged = self
-            .prior
-            .charged
-            .and_then(|n| n.checked_sub(old))
-            .and_then(|n| n.checked_add(projection.bytes()));
         self.prior.projection = Some(projection);
         self.prior.original = original;
         self.prior.content = content;

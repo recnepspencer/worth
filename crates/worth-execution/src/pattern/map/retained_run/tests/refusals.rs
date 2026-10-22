@@ -1,6 +1,81 @@
 use super::*;
 
 #[test]
+fn native_issue_and_carry_preserve_the_canonical_work_stop_and_original_prior() {
+    let memory = SerialMemoryBudget::new(None);
+    let backing = serial(&memory);
+    let request = ExecutionRequest::serial(&backing);
+    let values = entries(1..=3)
+        .into_iter()
+        .map(|(id, entry)| (id, entry.value))
+        .collect();
+    let map = ExecutionMap::<_, ()>::from_native_partitions(values).unwrap();
+    let (prior, _) = complete(
+        map.run_retained_run(request, ExecutionWorkCeiling::new(Some(100)), kernel)
+            .unwrap(),
+    );
+    let original = prior.result(PartitionIdentity::new(1)).unwrap().clone();
+    for outcome in [
+        map.run_retained_run(request, ExecutionWorkCeiling::new(Some(7)), kernel)
+            .unwrap(),
+        prior
+            .advance_native(
+                request,
+                ExecutionWorkCeiling::new(Some(7)),
+                BTreeMap::<PartitionIdentity, u64>::new(),
+                empty_ids(),
+                kernel,
+            )
+            .unwrap(),
+    ] {
+        let RetainedRunOutcome::Stopped {
+            completed_prefix,
+            boundary,
+            reason,
+            report,
+            ..
+        } = outcome
+        else {
+            panic!("the second kernel must exceed the actual ceiling")
+        };
+        assert_eq!(completed_prefix.partition_count(), 1);
+        assert_eq!(boundary, Some(PartitionIdentity::new(2)));
+        assert_eq!(
+            reason,
+            crate::MapStop::WorkExhausted {
+                identity: PartitionIdentity::new(2),
+            }
+        );
+        // Each slot independently completes its five units under ceiling7.
+        // Canonical settlement accepts slot1, then excludes slot2's entire
+        // five units because the aggregate would exceed7. Carrying the same
+        // completed receipt has the identical accepted-prefix report.
+        assert_eq!(report.charged_work(), 2 + 0 + 3);
+    }
+    let (retry, _) = complete(
+        prior
+            .advance_native(
+                request,
+                ExecutionWorkCeiling::new(Some(100)),
+                BTreeMap::<PartitionIdentity, u64>::new(),
+                empty_ids(),
+                |_, _| panic!("the original completed cells remain reusable"),
+            )
+            .unwrap(),
+    );
+    assert_eq!((retry.partition_count(), retry.charged_work()), (3, 15));
+    assert!(original.same_backing(retry.result(PartitionIdentity::new(1)).unwrap()));
+    assert_eq!(
+        *prior.result(PartitionIdentity::new(2)).unwrap().value(),
+        20
+    );
+    drop(retry);
+    drop(prior);
+    drop(original);
+    assert_eq!(memory.charged_memory_bytes(), 0);
+}
+
+#[test]
 fn context_fallback_and_invalid_membership_refuse_before_effect_and_preserve_prior() {
     let memory = SerialMemoryBudget::new(Some(1_000_000));
     let request = serial(&memory);

@@ -1,8 +1,8 @@
 //! A diagnostic owns its meters instead of inheriting an advancement's bill.
-use super::{KernelMeter, ACTIVE_METER};
+use super::{KernelState, ACTIVE_METER};
 use std::{cell::RefCell, rc::Rc};
 
-pub(crate) struct DetachedMeterForTest(Vec<Rc<RefCell<KernelMeter>>>);
+pub(crate) struct DetachedMeterForTest(Vec<Rc<RefCell<KernelState>>>);
 
 pub(crate) fn detach_meter_for_test() -> DetachedMeterForTest {
     DetachedMeterForTest(ACTIVE_METER.with(|active| std::mem::take(&mut *active.borrow_mut())))

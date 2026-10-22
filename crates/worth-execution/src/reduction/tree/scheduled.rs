@@ -93,13 +93,18 @@ where
         storage: Storage,
         context: &mut KernelContext<'_, '_>,
     ) -> Result<(Self, ReductionMetrics), ScheduledReductionError> {
+        let accounted = storage.has_accounting();
         let (mut shape, shape_metrics) =
             Self::prepare_shape_with_storage(plan, values, &identity, &combine, storage, || {
-                context.checkpoint(1)
+                if accounted {
+                    context.checkpoint(1)
+                } else {
+                    context.poll()
+                }
             })
             .map_err(ScheduledReductionError::Reduction)?;
         let frontier = shape
-            .frontier(lease.policy().budget().max_workers().get(), storage)
+            .frontier(lease.policy().max_workers().get(), storage)
             .map_err(|reason| {
                 ScheduledReductionError::Reduction(ReductionRunFailure {
                     reason,
@@ -110,14 +115,20 @@ where
         // Suppress the backend's task-order parent charge. Canonical tree
         // settlement below charges only the accepted operation prefix.
         let outcomes = storage.run(lease, &batch, backend, &|task, child_context| {
-            let before = child_context.cost();
+            let before = child_context.has_accounting().then(|| child_context.cost());
             let evaluated = Self::evaluate_subtree_with_storage(
                 &shape,
                 task.spec,
                 &identity,
                 &combine,
                 storage,
-                || child_context.checkpoint(1),
+                || {
+                    if accounted {
+                        child_context.checkpoint(1)
+                    } else {
+                        child_context.poll()
+                    }
+                },
             );
             // A request stop replaces a task's result in the backend. Keep
             // its checked metrics on the admitted input before that boundary.
@@ -125,22 +136,26 @@ where
                 Ok(result) => result.metrics,
                 Err(failure) => failure.metrics,
             };
-            task.completed
-                .set(metrics)
-                .expect("a canonical subtree is evaluated once");
+            if let Some(completed) = &task.completed {
+                completed
+                    .set(metrics)
+                    .expect("a canonical subtree is evaluated once");
+            }
             let result = evaluated.map_err(KernelFailure::Domain)?;
-            child_context
-                .apply_structural_span(
-                    before,
-                    result.metrics.charged_work,
-                    result.metrics.charged_span,
-                )
-                .map_err(|failure| {
-                    KernelFailure::Domain(ReductionRunFailure::structural_span_failure(
-                        failure,
-                        result.metrics,
-                    ))
-                })?;
+            if let Some(before) = before {
+                let metrics = result
+                    .metrics
+                    .accounted_metrics()
+                    .expect("accounted child context");
+                child_context
+                    .apply_structural_span(before, metrics.charged_work, metrics.charged_span)
+                    .map_err(|failure| {
+                        KernelFailure::Domain(ReductionRunFailure::structural_span_failure(
+                            failure,
+                            result.metrics,
+                        ))
+                    })?;
+            }
             Ok(result)
         });
 
@@ -168,7 +183,7 @@ where
                     Some((
                         identity,
                         stopped(ReductionRunStop::Hook(KernelStop::WorkCeiling)),
-                        target,
+                        Some(target),
                     ))
                 }
                 Some(BatchStop::Failure { identity, cause }) => {
@@ -176,17 +191,20 @@ where
                         .values()
                         .iter()
                         .find(|task| task.spec.identity == identity)
-                        .and_then(|task| task.completed.get())
+                        .and_then(|task| task.completed.as_ref()?.get())
                         .copied()
-                        .unwrap_or_default();
+                        .unwrap_or_else(|| ReductionMetrics::for_mode(accounted));
                     let failure = task_failure(cause, completed);
-                    let target = failure.metrics.charged_work;
+                    let target = failure
+                        .metrics
+                        .accounted_metrics()
+                        .map(|metrics| metrics.charged_work);
                     Some((identity, failure, target))
                 }
                 None => None,
             };
-            let before_evaluation = context.cost();
-            let mut accepted_task_work = 0_u64;
+            let before_evaluation = accounted.then(|| context.cost());
+            let mut accepted_task_work = accounted.then_some(0_u64);
             let settled = Self::settle_frontier_with_storage(
                 shape,
                 identity,
@@ -196,54 +214,70 @@ where
                 outcomes.values,
                 failed,
                 storage,
-                |charge| match charge {
-                    FrontierCharge::Node => context.checkpoint_frontier(1),
-                    FrontierCharge::CompletedNode
-                    | FrontierCharge::PrefixJoin
-                    | FrontierCharge::TaskUnit => {
-                        // Charge the canonical prefix, including joins before a known
-                        // stopped task. The stop keeps its canonical position;
-                        // refused charges still stop before the join runs.
-                        context.account_completed_work(1)?;
-                        if matches!(charge, FrontierCharge::TaskUnit) {
-                            accepted_task_work = accepted_task_work
-                                .checked_add(1)
-                                .ok_or_else(KernelStop::work_counter_overflow)?;
+                |charge| {
+                    if !accounted {
+                        context.poll_frontier()
+                    } else {
+                        match charge {
+                            FrontierCharge::Node => context.checkpoint_frontier(1),
+                            FrontierCharge::CompletedNode
+                            | FrontierCharge::PrefixJoin
+                            | FrontierCharge::TaskUnit => {
+                                // Charge the canonical prefix, including joins before a known
+                                // stopped task. The stop keeps its canonical position;
+                                // refused charges still stop before the join runs.
+                                context.account_completed_work(1)?;
+                                if matches!(charge, FrontierCharge::TaskUnit) {
+                                    let accepted =
+                                        accepted_task_work.as_mut().expect("accounted frontier");
+                                    *accepted = accepted
+                                        .checked_add(1)
+                                        .ok_or_else(KernelStop::work_counter_overflow)?;
+                                }
+                                Ok(())
+                            }
                         }
-                        Ok(())
                     }
                 },
             );
-            if !context.reconcile_discarded_work(outcomes.report.charged_work(), accepted_task_work)
-            {
-                return Err(metrics_mismatch(shape_metrics));
+            if let Some(accepted) = accepted_task_work {
+                if !context.reconcile_discarded_work(outcomes.report.charged_work(), accepted) {
+                    return Err(metrics_mismatch(shape_metrics));
+                }
             }
             let (tree, metrics) = settled.map_err(|mut failure| {
                 // The serial checked oracle reports an interrupted traversal's
                 // accepted prefix as sequential span. Completed speculative
                 // subtrees may have DAG spans, but they cannot change this
                 // failure-prefix convention when frontier width changes.
-                failure.metrics.charged_span = failure.metrics.charged_work;
+                if let Some(metrics) = failure.metrics.accounted_mut() {
+                    metrics.charged_span = metrics.charged_work;
+                }
                 ScheduledReductionError::Reduction(failure)
             })?;
-            if outcomes.report.charged_work() != accepted_task_work {
+            if accepted_task_work.is_some_and(|accepted| outcomes.report.charged_work() != accepted)
+            {
                 return Err(metrics_mismatch(metrics));
             }
-            let evaluation_work = metrics
-                .charged_work
-                .checked_sub(shape_metrics.charged_work)
-                .ok_or_else(|| metrics_mismatch(metrics))?;
-            let evaluation_span = metrics
-                .charged_span
-                .checked_sub(shape_metrics.charged_span)
-                .ok_or_else(|| metrics_mismatch(metrics))?;
-            context
-                .apply_structural_span(before_evaluation, evaluation_work, evaluation_span)
-                .map_err(|failure| {
-                    ScheduledReductionError::Reduction(
-                        ReductionRunFailure::structural_span_failure(failure, metrics),
-                    )
-                })?;
+            if let Some(before_evaluation) = before_evaluation {
+                let accounting = metrics.accounted_metrics().expect("accounted frontier");
+                let shape_accounting = shape_metrics.accounted_metrics().expect("accounted shape");
+                let evaluation_work = accounting
+                    .charged_work
+                    .checked_sub(shape_accounting.charged_work)
+                    .ok_or_else(|| metrics_mismatch(metrics))?;
+                let evaluation_span = accounting
+                    .charged_span
+                    .checked_sub(shape_accounting.charged_span)
+                    .ok_or_else(|| metrics_mismatch(metrics))?;
+                context
+                    .apply_structural_span(before_evaluation, evaluation_work, evaluation_span)
+                    .map_err(|failure| {
+                        ScheduledReductionError::Reduction(
+                            ReductionRunFailure::structural_span_failure(failure, metrics),
+                        )
+                    })?;
+            }
             Ok((tree, metrics))
         })()
     }
@@ -269,7 +303,7 @@ fn task_failure(
 /// Its full size, including the metric cell, is reserved by batch admission.
 pub(super) struct ScheduledTask {
     spec: SubtreeSpec,
-    completed: OnceLock<ReductionMetrics>,
+    completed: Option<OnceLock<ReductionMetrics>>,
 }
 
 impl ChargedBytes for ScheduledTask {

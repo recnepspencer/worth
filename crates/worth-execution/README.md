@@ -1,11 +1,45 @@
-# Execution fixed payload custody
+# Execution workers and retained custody
 
-The composition root constructs the process execution authority once. Its
-`charged_memory_bytes: Option<u64>` selects an optional ceiling for execution
-payload reservations. `Some` preserves the selected value, including zero;
-`None` keeps checked ledger arithmetic while omitting only that process ceiling.
-Every request and ancestor retains its explicit finite budget. This does not
-make any algorithm budget unbounded or intercept process allocations.
+Use `ExecutionAuthorityConfig::for_workers(width)` to construct the process's
+execution service, and `ExecutionRequestPolicy::for_workers(posture, determinism,
+width)` to choose request placement. Construct the service at process startup
+and share its `Arc` with each application and reopened session. Handle
+`ConstructionDenial` at that startup boundary. The
+[application composition guide](../../docs/build-an-application.md#one-process-execution-service)
+shows the complete installation sequence.
+
+Serial placement executes on the calling thread. Automatic placement uses the
+process pool when the request admits it. Child requests inherit the parent's
+worker width, cancellation and deadline; a narrower child can reserve a subset
+of that concurrency.
+
+Use `ExecutionRequest::run_native` to execute a native pattern with the request's
+lease. Use `run_native_with_checkpoint` when the callback needs
+`KernelContext::poll` between dependent stages. Poll at safe interruption points,
+then propagate the returned failure to the caller. Request handoff checks the
+original controls before returning a successful value. Pattern settlement
+retains canonical result order.
+
+Both methods return the callback's value and an `ExecutionPhysicalReport`.
+Inspect that report for observed placement and worker activity. Handle admission,
+interruption and allocation failures through their typed result at the call that
+owns them.
+
+For algorithms that need work measurement or an explicit work/memory bound,
+construct the policy with `ExecutionRequestPolicy::new(...,
+ExecutionBudget::new(...))` and use `ExecutionRequest::run(ceiling, ...)`.
+`policy.accounting()` exposes that contract; `policy.max_workers()` gives the
+admitted width. Bounds supplied by the process or an ancestor apply to its
+descendants. `ExecutionReport::accounted_cost()` returns the measured work/span
+when the run has this contract. Use the physical report to inspect placement.
+
+## Fixed payload custody
+
+Fixed payload builders allocate a declared contiguous layout and keep its
+storage alive through the returned owner. For accounted execution,
+`charged_memory_bytes: Option<u64>` configures a process payload ceiling:
+`Some(bytes)` enforces that value, including zero, and `None` leaves this
+particular ceiling unspecified. Ancestor bounds also apply.
 
 `ExecutionResourceLease::controlled_child(cancellation, deadline)` retains the
 parent's exact request policy and uses the earlier parent/caller deadline.
@@ -13,15 +47,12 @@ It adds the supplied cancellation token to the existing ancestor constraints
 without mutating the parent. A payload reservation owns its ledger custody;
 dropping this child does not release storage still owned by an array or buffer.
 
-Byte and typed array builders require the same explicit
-`ExecutionAllocationPolicy::SystemAllocation` or `Execution(&lease)`. There is
-no default, pool construction or fallback. A supplied process lease admits
-physical storage; it grants no graph/model permission. The private fixed owner
-checks `Layout::array::<T>(element_count)`, checks cancellation/deadline, admits
-the exact payload-byte reservation, then attempts a fallible fresh Global
-allocation using pinned allocator-api2 0.2.21. For non-zero-sized elements that
-implementation requests that layout and records exactly that capacity. This
-guarantee is scoped to the pinned fresh allocation, not generic/std Vec behavior.
+Pass `ExecutionAllocationPolicy::SystemAllocation` or `Execution(&lease)` to
+byte and typed array builders. The builder checks
+`Layout::array::<T>(element_count)` and the request's cancellation/deadline,
+then attempts a fallible allocation. Accounted leases also admit the exact
+payload-byte reservation. For non-zero-sized elements, the fresh allocation
+requests that layout and records exactly that capacity.
 Zero-sized types have allocator capacity `usize::MAX` but zero payload bytes;
 the independently retained logical count still bounds initialization and seal.
 Over-aligned zero-sized consuming iteration keeps the original Vec and uses
@@ -32,51 +63,48 @@ representation. Non-zero-sized iteration uses the pinned owning Vec iterator.
 within the declared length, overwrite only written regions, and poll live
 status between 64 KiB copy chunks. Sealing requires exact fill, shares the same
 backing without shrink or reallocation, and exposes immutable bytes. Clones of
-`ExecutionImmutableBytes` share one allocation and its noncloneable reservation.
+`ExecutionImmutableBytes` share one allocation and any original noncloneable
+reservation.
 
 `ExecutionArrayBuilder::<T>::allocate(element_count, policy)` moves each value
 through `push` and seals only after exact fill and a live-status check. Push
 consumes the input, including on refusal; a stop detected after the move may
-leave an initialized prefix which cannot seal. Neither the builder nor
-`ExecutionArray<T>` implements Clone, exposes mutable storage, accepts an
-arbitrary Vec, or extracts a reservation. Sharing is explicit through
-`Arc<ExecutionArray<T>>`; it neither clones T nor charges another allocation.
+leave an initialized prefix which cannot seal. Share a completed array through
+`Arc<ExecutionArray<T>>`; clones share the original elements and allocation.
 The immutable slice preserves authored order and T's own interior mutability.
 Consuming iteration moves T without allocation, preserving the original
-backing and reservation even after exhaustion until the iterator drops.
+backing and any reservation even after exhaustion until the iterator drops.
 
-Elements and their allocation drop before the reservation. Custody can outlive
-the originating lease or World; it grants no further permission to execute.
-Moved-out array values own their separate nested resources. The physical owner
-charges only the contiguous element layout, not allocations nested inside T.
+Elements and their allocation drop before any reservation. Storage can outlive
+the originating lease or World. Supply a current request for later execution.
+Moved-out array values own their separate nested resources. When accounted, the
+physical owner charges only the contiguous element layout, not allocations
+nested inside T.
 
-Platform storage owners reserve newly owned nested payload with
-`policy.reserve_memory(bytes)` **before** allocating or copying it. Execution
-returns the genuine `ExecutionMemoryReservation`; explicit system allocation
-returns `None`. The method performs no allocation or retrospective funding.
-It uses the same live-status checks, typed refusal and payload quote as fixed
-backing. The payload owner retains that reservation after its data fields so
+Platform storage owners call `policy.reserve_memory(bytes)` before allocating
+or copying newly owned nested payload. Handle its typed admission failure and
+retain the returned `Option<ExecutionMemoryReservation>` with the payload.
+`Some` holds an accounted reservation. An `Execution(&lease)` policy also checks
+the request's live controls. The payload owner places its reservation after its data fields so
 the data drops first, and shared roots keep the complete owner alive. A cached
 copy bound must cover every newly copied nested allocation; shared existing
 owners keep their original custody.
 
 `ExecutionImmutableBytes::from_external_bytes(Arc<Box<[u8]>>)` retains already
 allocated external bytes without copying or retrospectively admitting them.
-`charged_payload_bytes()` returns `None` for external/system storage and the
-actual retained ticket amount for execution storage, including `Some(0)` for
-empty or zero-sized payloads. Equality compares values, never admission mode
-or allocation identity. The Query checkpoint capture policy remains a semantic
-re-export of this one physical policy, with no independent behavior.
+`charged_payload_bytes()` returns `None` for worker-only, external and system
+storage. Accounted execution storage reports its retained reservation amount,
+including `Some(0)` for empty or zero-sized payloads. Equality compares values.
+Query checkpoint capture uses this same allocation policy.
 
 Allocator, Arc and ledger metadata, nested element heaps, native checkpoint
 image/codec allocations, imported buffers, decoding tables, upstream domain
-maps/sets, temporary provider collections and compression/transport remain
-separate owners. Only callers that explicitly admit this contiguous backing
-retain its charge. This is neither full heap/RSS accounting nor removal of
-domain count gates.
+maps/sets, temporary provider collections and compression/transport have
+separate allocation owners. Use the contiguous-backing reservation to measure
+the payload managed by these builders; use a process memory profiler for RSS.
 
 
-## Native kernel cost receipts
+## Explicitly accounted kernel cost receipts
 
 Platform runtimes retain `ExecutionKernelReceipt` from
 `MapKernelContext::record_kernel(&storage, kernel)`. The callback executes on
@@ -85,8 +113,7 @@ supplied units, create the receipt. `ExecutionKernelReceiptStorage::new` takes
 an existing genuine `ExecutionMemoryReservation`. Capture admits fresh backing
 before allocation, including simultaneous old/new backing during growth. Clones
 retain the original backing and funding; dropping the last receipt releases it.
-The quoted retained bytes include the receipt and shared storage wrappers
-conservatively, without a global deduplication promise.
+The retained-byte measurement includes the receipt and shared storage wrappers.
 
 `context.carry_kernel(&receipt)` consults the current native request. It uses the
 cached cost when the whole receipt fits and descends the original accepted
@@ -94,20 +121,25 @@ checkpoint sequence when the ceiling falls inside it. Work, span and the first
 checkpoint refusal therefore follow actual execution. Cancellation/deadline and
 untaken nested/request stops remain the existing meter's decisions.
 
-These receipts currently admit checkpoint-only kernels. A remaining-work or
-absolute-cost question, nested outcome, completed-work accounting, or another
-carried stage prevents receipt issuance. Such a kernel executes normally and
-leaves no reusable retained state; a context-dependent result is never certified
-by summing its checkpoints. A failed/panicking kernel also issues no receipt.
+Use receipts for checkpoint-only kernels. Kernels that inspect remaining work,
+query absolute cost, join nested outcomes or carry another stage require fresh
+execution. Receipt issuance requires successful kernel completion.
 
-A receipt grants no input equality, graph currentness, installation identity,
-output correspondence or publication authority. Equality compares only cost
-sequences. Query's existing retained-computation owners must independently prove
-which kernel inputs may be carried. The current map still dispatches all slots;
-this cost owner is a prerequisite to sparse retained-map settlement, not that
-capability or whole-computation locality.
+Receipt equality compares cost sequences. Before carrying a receipt, the
+application's retained-computation owner checks current input identity,
+installation and source dependencies. That owner chooses the inputs to carry
+and retains publication authority.
 
 ## Retained native results
+
+Construct native partitions and call `run_retained_run` to retain per-partition
+values, or `run_reduce_retained_native` to retain a canonical reduction.
+`advance_native` reuses immutable cells whose inputs the caller has qualified
+and evaluates changed inputs on a fresh request. Supply the current request
+for each advancement and validate input identity and freshness before reuse.
+An accounted run also exposes its measured cost through `accounted_cost()`.
+
+The following lower-level examples use explicit accounted payload contracts.
 
 Platform runtime owners use `ExecutionMap::run_retained` when later execution
 needs the actual successful value as well as its native meter capture. Query
@@ -131,7 +163,7 @@ fn evaluate(
     map: &ExecutionMap<u64, u64>,
     request: ExecutionRequest<'_, '_>,
 ) -> Result<MapOutcome<ExecutionRetainedResult<u64>, ()>, RetainedMapDenial> {
-    map.run_retained(request, ExecutionWorkCeiling::new(100), |input, context| {
+    map.run_retained(request, ExecutionWorkCeiling::new(Some(100)), |input, context| {
         context.checkpoint(3)?;
         Ok::<_, MapKernelFailure<()>>(*input * 10)
     })
@@ -185,7 +217,7 @@ fn update_two(
             max_result_bytes: 0,
         }),
     ])).map_err(UpdateError::Plan)?;
-    plan.run_retained_inputs(request, ExecutionWorkCeiling::new(100), None,
+    plan.run_retained_inputs(request, ExecutionWorkCeiling::new(Some(100)), None,
         |input, context| {
             context.checkpoint(3)?;
             Ok::<_, MapKernelFailure<()>>(*input * 10)
@@ -286,58 +318,63 @@ if let RetainedRunOutcome::Complete { run: prior, .. } = first {
 }
 ```
 
-Unchanged slots keep the exact funded native value cells. Cached work/span and
-range summaries belong to the persistent native tree. Fitting ranges skip
-individual dispatch; a tight range descends to native slot evaluation and its
-original checkpoints. Changed inputs use the existing scheduler, evaluator
-and canonical settlement, including request ownership of a discarded suffix.
-`RetainedRunMetrics` reports actual supplied inputs, edit/range visits, copied
-nodes and individually evaluated carried slots separately from logical work.
+Native runs retain immutable value cells and structural range summaries.
+Advancement carries unchanged ranges and evaluates changed inputs in canonical
+order under the current request's controls. `RetainedRunMetrics` reports supplied
+inputs, edit/range visits, copied nodes and individually evaluated carried slots.
+Use these counts to inspect the maintenance performed by an advancement.
 
-Each copied node owns its backing grant; old/new roots share unchanged nodes
-without retaining a chain of parent runs. A fresh request re-admits the cached
-incoming backing, and refusal borrows and preserves the prior run. Removal,
-insertion and a move expressed as remove-plus-insert use this same path. No
-request/session borrow survives the call. Context-sensitive results can be
-inspected after completion, but an unqualified unchanged slot returns
-`RequiresExecution` before a new kernel runs; gather current inputs and execute
-them. Arbitrary declared access-key maps do not qualify for sparse keyless
-advancement. Cold issue and recovery remain full; no execution handle is a
-persisted recovery record. Query's ordinary partitioned computation retains
+The accounted example above retains cached costs and backing reservations.
+A fitting accounted range uses its cost summary; a tight
+ceiling descends to the original slot checkpoints. Its fresh request re-admits
+incoming backing, and each copied node owns its new grant. Both modes share
+unchanged nodes without retaining a chain of parent runs, and refusal preserves
+the prior run. Express removal and insertion through their respective change
+collections; express a move as remove-plus-insert. Returned runs own their
+backing. Create a fresh request for each call.
+
+Choose keyless partitions for this advancement API. An unchanged slot whose
+inputs the caller has yet to qualify returns `RequiresExecution`; gather its
+current inputs and execute them. Cold issue and recovery evaluate the full input.
+For persistence, capture the application's checkpoint and restore through its
+normal installation API. Query's partitioned computation retains
 the run issued by successful reduction and advances it with a fresh descendant
 request, changed inputs and actual removals. Its source, installation, input,
-edition and read closure qualify independently. Query's measured reader-call
-ranges preserve its ordinary preflights and charges under a separately checked
-completed layout. Those Query summaries supply no native result or first-stop
-authority. Query still processes provider/session, effects and source publication
-metadata; membership/key changes keep full preparation, and membership changes
-and explicit tree rebuilds still construct a full shape plan.
-Native sparse advancement does not make those remaining Query paths sparse.
+edition and read closure qualify reuse. Query also maintains provider/session,
+effects and source-publication metadata. Membership and key changes require full
+preparation; membership changes and explicit tree rebuilds construct a full
+shape plan.
 
 ## Funded ordered storage
 
 `ExecutionOrderedMap<K, V>` stores platform-owner metadata in canonical `K: Ord`
-order. `Clone` shares the root without allocation. `insert_cloned_in(&key,
-&value, policy)` and `remove_in(&key, policy)` admit new entries and path nodes
-before copying; refusal leaves the old root usable. Keys and values implement
-`Clone + ChargedBytes`: their cloned owned heap must fit the reported bound.
+order. `Clone` shares the root without allocation. Native callers use
+`insert_cloned_native_in(&key, &value, policy)` and `remove_in(&key, policy)`;
+the native insertion requires `Clone`. Edits check the current request and
+construct the new path with checked, fallible allocation. A refused edit leaves
+the previous root usable.
 
-Each entry/node owns its native memory reservation. Shared views keep those
-grants until their final drop, without retaining predecessor roots. The cached
-`retained_bytes()` describes complete reachable storage; it is not a charge to
-reserve again when sharing a root. `get`, `first_at_or_after` and canonical
+For explicitly accounted payload bounds, `insert_cloned_in` requires
+`Clone + ChargedBytes` and admits the new key/value heap bound before copying.
+Accounted entries and path nodes retain their actual grants through final drop;
+shared views retain those owners without predecessor-root chains. Use
+`accounted_bytes()` for the optional reachable-storage information. A populated
+worker-only map returns `None`; an empty map returns `Some(0)`.
+Use `retained_bytes()` when the map has an accounted storage contract.
+`get`, `first_at_or_after` and canonical
 `iter`/`keys`/`values` borrow that backing. `rank_of(&key)` and
-`entry_at(rank)` navigate cached subtree counts without enumerating a prefix. Storage identity confers no source,
-session, installation or successful-result authority.
+`entry_at(rank)` navigate cached subtree counts. The application retains source,
+session and installation checks around access to these values.
 
 `KeyedPartitioner::upsert_in`, `remove_in` and explicit full `kept_in` use this
-same storage with the current allocation policy. A changed member group funds
-its copy before allocation; unchanged groups retain their original grants.
+same storage with the current allocation policy. Edits update membership and
+structural counts. Accounted changed groups reserve their copies before
+allocation; unchanged groups retain their original reservations.
 
 `ReductionTree::checked_full_build_cost_after_edits(&removed, &inserted, policy)`
-borrows native shape and uses the existing Cartesian edit traversal. It admits
-only temporary changed-path metadata, invokes no reducer and copies no retained
-values. Its returned work/span predicts a cold full build; it grants no result,
-source or currentness authority. `ReductionShapeCostDenial` preserves allocation
-and interruption, rejects invalid identities and reports arithmetic overflow.
-The caller still owns ordinary full-run ceiling and first-stop execution.
+predicts the work/span of a cold full build from an accounted tree's shape.
+It allocates temporary changed-path metadata during the Cartesian edit traversal.
+Handle `ReductionShapeCostDenial` for allocation, interruption, invalid identities,
+arithmetic overflow or unavailable accounting. `checked_full_build_cost()` returns
+an optional measurement for the existing shape. Use the normal reduction methods
+to compute the result after selecting the execution policy.

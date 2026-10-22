@@ -134,11 +134,11 @@ fn inconsistent_structural_metrics_are_a_takeable_computation_failure() {
             );
             let failure = crate::ReductionRunFailure::structural_span_failure(
                 failure,
-                crate::ReductionMetrics {
+                crate::ReductionMetrics::from_accounting(crate::ReductionAccounting {
                     charged_work: 2,
                     charged_span: 3,
                     ..Default::default()
-                },
+                }),
             );
             assert_eq!(
                 failure.reason,
@@ -168,10 +168,10 @@ fn absorbed_busy_slots_do_not_own_the_launching_kernels_domain_failure() {
     for workers in [1, 4] {
         let held = (workers == 4).then(|| occupied.try_reserve(4, 0).unwrap());
         let grandparent = authority()
-            .request_lease(request(workers, 2_000, 100))
+            .request_lease(accounted_request(workers, 100))
             .unwrap();
-        let parent = grandparent.child(request(workers, 2_000, 100)).unwrap();
-        let child = parent.child(request(workers, 2_000, 100)).unwrap();
+        let parent = grandparent.child(accounted_request(workers, 100)).unwrap();
+        let child = parent.child(accounted_request(workers, 100)).unwrap();
         let mut returned_failure = None;
         let outer = crate::backend::run_scope(Some(&grandparent), 0, 0, |context| {
             let failed = run_checked_batch(

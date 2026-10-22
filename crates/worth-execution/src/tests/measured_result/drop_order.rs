@@ -25,9 +25,17 @@ impl Drop for Watched {
 fn refused_opaque_payload_is_disposed_before_its_original_scope_credit() {
     let serial =
         SerialRequest::from_policy(&policy(Some(128 * 1024)), CancellationToken::new(), None);
-    let other_memory = serial.memory().reserve(96 * 1024).unwrap();
+    let other_memory = serial
+        .memory()
+        .expect("explicit accounted request")
+        .reserve(96 * 1024)
+        .unwrap();
     let other_value = vec![41_u8; 96 * 1024];
-    let mut memory = serial.memory().reserve(0).unwrap();
+    let mut memory = serial
+        .memory()
+        .expect("explicit accounted request")
+        .reserve(0)
+        .unwrap();
     let before = AtomicU64::new(0);
     let observed = Arc::new(AtomicU64::new(0));
     let stopped = ExecutionRequest::serial(&serial).run_measured_result(
@@ -35,10 +43,16 @@ fn refused_opaque_payload_is_disposed_before_its_original_scope_credit() {
         0,
         &mut memory,
         |_, _| {
-            before.store(serial.memory().charged_memory_bytes(), Ordering::SeqCst);
+            before.store(
+                serial
+                    .memory()
+                    .expect("explicit accounted request")
+                    .charged_memory_bytes(),
+                Ordering::SeqCst,
+            );
             Ok::<_, MapKernelFailure<()>>(Watched {
                 bytes: vec![7_u8; 96 * 1024],
-                ledger: serial.memory().clone(),
+                ledger: serial.memory().expect("explicit accounted request").clone(),
                 observed: Arc::clone(&observed),
             })
         },
@@ -58,18 +72,34 @@ fn refused_opaque_payload_is_disposed_before_its_original_scope_credit() {
         "the original scope charge was live at Drop"
     );
     assert_eq!(memory.bytes(), 0);
-    assert_eq!(serial.memory().charged_memory_bytes(), other_memory.bytes());
+    assert_eq!(
+        serial
+            .memory()
+            .expect("explicit accounted request")
+            .charged_memory_bytes(),
+        other_memory.bytes()
+    );
     assert!(other_value.iter().all(|byte| *byte == 41));
     drop(other_value);
     drop(other_memory);
-    assert_eq!(serial.memory().charged_memory_bytes(), 0);
+    assert_eq!(
+        serial
+            .memory()
+            .expect("explicit accounted request")
+            .charged_memory_bytes(),
+        0
+    );
 }
 
 #[test]
 fn cancelled_callback_payload_drops_while_its_before_growth_charge_is_held() {
     let cancellation = CancellationSource::new();
     let serial = SerialRequest::from_policy(&policy(None), cancellation.token(), None);
-    let mut memory = serial.memory().reserve(0).unwrap();
+    let mut memory = serial
+        .memory()
+        .expect("explicit accounted request")
+        .reserve(0)
+        .unwrap();
     let before = AtomicU64::new(0);
     let observed = Arc::new(AtomicU64::new(0));
     let stopped = ExecutionRequest::serial(&serial).run_measured_result(
@@ -80,10 +110,16 @@ fn cancelled_callback_payload_drops_while_its_before_growth_charge_is_held() {
             result_memory.resize(1_024).unwrap();
             let value = Watched {
                 bytes: vec![11_u8; 1_024],
-                ledger: serial.memory().clone(),
+                ledger: serial.memory().expect("explicit accounted request").clone(),
                 observed: Arc::clone(&observed),
             };
-            before.store(serial.memory().charged_memory_bytes(), Ordering::SeqCst);
+            before.store(
+                serial
+                    .memory()
+                    .expect("explicit accounted request")
+                    .charged_memory_bytes(),
+                Ordering::SeqCst,
+            );
             cancellation.cancel();
             assert_eq!(context.checkpoint(0), Err(MapKernelStop::Cancelled));
             Ok::<_, MapKernelFailure<()>>(value)
@@ -101,5 +137,11 @@ fn cancelled_callback_payload_drops_while_its_before_growth_charge_is_held() {
     );
     assert!(observed.load(Ordering::SeqCst) >= 1_024);
     assert_eq!(memory.bytes(), 0);
-    assert_eq!(serial.memory().charged_memory_bytes(), 0);
+    assert_eq!(
+        serial
+            .memory()
+            .expect("explicit accounted request")
+            .charged_memory_bytes(),
+        0
+    );
 }

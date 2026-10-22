@@ -128,6 +128,10 @@ fn every_kernel_cause_survives_both_domain_doors() {
             Cause::WorkCounterOverflow,
         ),
         (MapKernelStop::NestedStopped, Cause::NestedStopped),
+        (
+            MapKernelStop::AccountingUnavailable,
+            Cause::AccountingUnavailable,
+        ),
     ];
     for (stop, expected) in cases {
         assert_both(

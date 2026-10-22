@@ -46,7 +46,7 @@ impl<T: Clone + Send + Sync + ChargedBytes + CanonicalBits> ScheduledValues<T> f
                     spec.identity,
                     ScheduledTask {
                         spec,
-                        completed: OnceLock::new(),
+                        completed: Some(OnceLock::new()),
                     },
                     scratch,
                     capacity,
@@ -54,7 +54,7 @@ impl<T: Clone + Send + Sync + ChargedBytes + CanonicalBits> ScheduledValues<T> f
             })
             .collect::<Result<Vec<_>, _>>()?;
         AdmittedBatch::try_admit(entries, 0).map_err(|denial| match denial {
-            BatchDenial::Identities => identities(),
+            BatchDenial::Identities => identities(ReductionMetrics::default()),
             BatchDenial::MemoryOverflow => {
                 ScheduledReductionError::Admission(LeaseDenial::charged_bytes_overflow())
             }
@@ -84,22 +84,23 @@ impl<T: Send + Sync + CanonicalBits> ScheduledValues<T> for NativeValues<'_, '_>
         &self,
         tasks: &[SubtreeSpec],
     ) -> Result<AdmittedBatch<ScheduledTask>, ScheduledReductionError> {
+        let metrics = ReductionMetrics::for_mode(<Self as ValueStorage<T>>::has_accounting(self));
         let mut ids = Vec::new();
         let mut values = Vec::new();
         ids.try_reserve_exact(tasks.len())
-            .map_err(|_| allocation())?;
+            .map_err(|_| allocation(metrics))?;
         values
             .try_reserve_exact(tasks.len())
-            .map_err(|_| allocation())?;
+            .map_err(|_| allocation(metrics))?;
         for &spec in tasks {
             ids.push(spec.identity);
             values.push(ScheduledTask {
                 spec,
-                completed: OnceLock::new(),
+                completed: <Self as ValueStorage<T>>::has_accounting(self).then(OnceLock::new),
             });
         }
         let ids = worth_proof::CanonicalUniqueVec::try_from_sorted_unique(ids)
-            .map_err(|_| identities())?;
+            .map_err(|_| identities(metrics))?;
         Ok(AdmittedBatch::admit_native(ids, values))
     }
     fn run<Kernel>(
@@ -121,17 +122,17 @@ impl<T: Send + Sync + CanonicalBits> ScheduledValues<T> for NativeValues<'_, '_>
     }
 }
 
-fn identities() -> ScheduledReductionError {
+fn identities(metrics: ReductionMetrics) -> ScheduledReductionError {
     ScheduledReductionError::Reduction(ReductionRunFailure {
         reason: ReductionRunStop::Denial(ReductionDenial::IdentitiesNotCanonical),
-        metrics: ReductionMetrics::default(),
+        metrics,
     })
 }
-fn allocation() -> ScheduledReductionError {
+fn allocation(metrics: ReductionMetrics) -> ScheduledReductionError {
     ScheduledReductionError::Reduction(ReductionRunFailure {
         reason: ReductionRunStop::Denial(ReductionDenial::Allocation(
             crate::ExecutionPhysicalAllocationDenialKind::Allocator,
         )),
-        metrics: ReductionMetrics::default(),
+        metrics,
     })
 }

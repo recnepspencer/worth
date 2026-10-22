@@ -144,7 +144,7 @@ where
             .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
         let owner = &*self.owner;
         reader.begin_computation_reads();
-        let mut preparation_work = PreparationWork::new();
+        let mut preparation_work = PreparationWork::new(execution.has_accounting());
         let begun = match self.retention {
             ComputationRetention::Unretained => Begun::Full {
                 basis: Err(Suppression::Policy),
@@ -202,7 +202,7 @@ where
             let digests = item_digests(&items, execution, &mut preparation_work)?;
             if let Ok(recording) = &mut recording {
                 recording.membership(
-                    membership.zip(preparation_work.spent_since(before)),
+                    membership.map(|charge| (charge, preparation_work.spent_since(before))),
                     &items,
                     digests,
                 );
@@ -219,7 +219,10 @@ where
             let partition =
                 route_item(*item, &key, &mut routing, execution, &mut preparation_work)?;
             if let Ok(recording) = &mut recording {
-                recording.item(*item, charge.zip(preparation_work.spent_since(before)));
+                recording.item(
+                    *item,
+                    charge.map(|charge| (charge, preparation_work.spent_since(before))),
+                );
             }
             keys.entry(partition).or_insert(key);
         }

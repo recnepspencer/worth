@@ -20,6 +20,7 @@ impl<T: Send> InputMode for TracedOwnedInputsForTest<'_, T> {
         lease: Option<&ExecutionResourceLease<'_>>,
         parallel: bool,
         seed: Option<u64>,
+        accounted: bool,
         execute: &(impl Fn((usize, T)) + Sync),
     ) -> usize {
         let count = self.values.0.len();
@@ -29,7 +30,13 @@ impl<T: Send> InputMode for TracedOwnedInputsForTest<'_, T> {
             .tasks(seed)
             .inspect(move |(rank, _)| order.lock().unwrap().push(*rank));
         if parallel {
-            native::run_tasks(lease.expect("native requires lease"), count, tasks, execute)
+            native::run_tasks(
+                lease.expect("native requires lease"),
+                count,
+                tasks,
+                accounted,
+                execute,
+            )
         } else {
             for task in tasks {
                 execute(task);

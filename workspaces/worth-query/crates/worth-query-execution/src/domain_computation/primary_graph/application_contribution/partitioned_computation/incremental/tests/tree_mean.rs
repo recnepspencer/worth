@@ -88,6 +88,9 @@ fn mean_reported_update_nodes_obey_the_random_treap_depth_law() {
             let TreeRun::Edited(metrics) = next.report else {
                 panic!("mean workload must edit")
             };
+            let metrics = metrics
+                .accounted_metrics()
+                .expect("explicit accounted fixture");
             assert_eq!(
                 *next.outcome.unwrap().result(),
                 u64::try_from(2 * n).unwrap()

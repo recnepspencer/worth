@@ -25,12 +25,14 @@ impl RequestWorkBudget {
         run: impl FnOnce(&ExecutionResourceLease<'_>) -> R,
         report: impl FnOnce(&R) -> ExecutionReport,
     ) -> R {
+        let policy = *lease.policy();
+        let Some(budget) = policy.accounting() else {
+            return run(lease);
+        };
         let mut charged = self
             .charged
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let policy = *lease.policy();
-        let budget = policy.budget();
         let remaining = budget
             .work_ceiling()
             .map(|ceiling| ceiling.saturating_sub(*charged));

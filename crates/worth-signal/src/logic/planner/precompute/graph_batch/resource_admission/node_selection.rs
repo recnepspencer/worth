@@ -82,7 +82,7 @@ mod tests {
             admission.policy.posture(),
             admission.policy.determinism(),
             ExecutionBudget::new(
-                admission.policy.budget().max_workers(),
+                admission.policy.max_workers(),
                 Some(128 * 1024 * 1024),
                 Some(20_000_000),
             ),

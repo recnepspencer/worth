@@ -57,6 +57,7 @@ pub(super) fn stopped(cause: Bridge) -> Result<Kind, Control> {
             resource(Resource::EquivalenceContractUnavailable, None)
         }
         Bridge::WorkCounterOverflow => resource(Resource::WorkCounterOverflow, None),
+        Bridge::AccountingUnavailable => resource(Resource::AccountingUnavailable, None),
         Bridge::WorkCeiling => resource(Resource::WorkExhausted, None),
         Bridge::NestedStopped => Kind::ExecutionNestedPatternStopped {
             partition_identity: None,

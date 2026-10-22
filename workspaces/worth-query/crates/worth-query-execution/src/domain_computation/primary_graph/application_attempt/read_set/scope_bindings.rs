@@ -115,20 +115,4 @@ impl CompletedReadScopes {
             Self::EmptyOwnerFixture => None,
         }
     }
-    pub(super) fn backing_bytes(&self) -> Option<u64> {
-        match self {
-            Self::Installed { positions, .. } => {
-                (size_of::<ExecutionArray<InstalledScopePosition>>() as u64)
-                    .checked_add(
-                        (positions
-                            .len()
-                            .checked_mul(size_of::<InstalledScopePosition>())?)
-                            as u64,
-                    )?
-                    .checked_add(2 * size_of::<usize>() as u64)
-            }
-            #[cfg(test)]
-            Self::EmptyOwnerFixture => Some(0),
-        }
-    }
 }

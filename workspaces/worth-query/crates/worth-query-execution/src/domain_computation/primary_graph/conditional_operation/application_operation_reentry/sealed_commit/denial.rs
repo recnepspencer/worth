@@ -69,6 +69,7 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                             }
                             | Resource::WorkExhausted
                             | Resource::WorkCounterOverflow
+                            | Resource::AccountingUnavailable
                             | Resource::RetainedBytesExhausted
                             | Resource::ScratchCapacityExceeded
                             | Resource::ResultCapacityExceeded
@@ -147,6 +148,9 @@ fn classify_kind(kind: Kind) -> Outcome {
             | Resource::NestedLeaseMisuse
             | Resource::NoActiveExecutionScope
             | Resource::ScratchCapacityExceeded => Outcome::RetryableCommitFailure(kind),
+            Resource::AccountingUnavailable => {
+                Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
+            }
             // Opening another request on the same thread is a caller defect.
             Resource::NestedAdvancementOpening => {
                 Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))

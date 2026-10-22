@@ -35,7 +35,10 @@ impl<T: ChargedBytes, F> ChargedBytes for ReductionTree<T, F> {
     fn additional_charged_bytes(&self) -> u64 {
         self.root
             .as_ref()
-            .map_or(0, |node| node.retained_bytes)
+            .map_or(0, |node| {
+                node.retained_bytes
+                    .expect("bounded tree has byte accounting")
+            })
             .saturating_add(self.identity.additional_charged_bytes())
     }
 }
@@ -59,7 +62,7 @@ impl<T, F> ReductionTree<T, F> {
     pub fn checked_build_memory_bound(partitions: usize, max_value_bytes: u64) -> Option<u64> {
         // Scheduled construction may hold one entry and one admitted input
         // cell for every frontier task; partitions bound the task count.
-        let task_metrics = u64::try_from(size_of::<OnceLock<ReductionMetrics>>())
+        let task_metrics = u64::try_from(size_of::<Option<OnceLock<ReductionMetrics>>>())
             .ok()?
             .checked_mul(u64::try_from(partitions).ok()?)?
             .checked_mul(2)?;
@@ -179,8 +182,14 @@ pub(super) fn node_bytes<T: ChargedBytes>(
         .ok()?
         .checked_add(value.additional_charged_bytes())?
         .checked_add(aggregate.additional_charged_bytes())?
-        .checked_add(left.as_ref().map_or(0, |node| node.retained_bytes))?
-        .checked_add(right.as_ref().map_or(0, |node| node.retained_bytes))
+        .checked_add(match left {
+            None => 0,
+            Some(node) => node.retained_bytes?,
+        })?
+        .checked_add(match right {
+            None => 0,
+            Some(node) => node.retained_bytes?,
+        })
 }
 
 fn node_ceiling<T>(max_value_bytes: u64) -> Option<u64> {
@@ -207,7 +216,8 @@ mod tests {
         type Tree = ReductionTree<u64, fn(&u64, &u64) -> u64>;
         for partitions in [0, 1, 3, 8] {
             let serial = Tree::checked_serial_build_memory_bound(partitions, 8).unwrap();
-            let cells = 2 * partitions as u64 * size_of::<OnceLock<ReductionMetrics>>() as u64;
+            let cells =
+                2 * partitions as u64 * size_of::<Option<OnceLock<ReductionMetrics>>>() as u64;
             assert_eq!(
                 Tree::checked_build_memory_bound(partitions, 8).unwrap(),
                 serial + cells
