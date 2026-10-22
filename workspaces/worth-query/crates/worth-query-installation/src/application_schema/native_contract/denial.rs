@@ -1,5 +1,5 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum WorthQueryApplicationSchemaContractCatalogDenialKind {
+pub enum WorthQueryApplicationSchemaContractCatalogDenialKind {
     DuplicateAspectIdentity,
     DuplicateAspectLocus,
     DuplicateFieldLocus,
@@ -16,7 +16,7 @@ pub(crate) enum WorthQueryApplicationSchemaContractCatalogDenialKind {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct WorthQueryApplicationSchemaContractCatalogDenial {
+pub struct WorthQueryApplicationSchemaContractCatalogDenial {
     kind: WorthQueryApplicationSchemaContractCatalogDenialKind,
     subject: String,
 }
@@ -32,11 +32,11 @@ impl WorthQueryApplicationSchemaContractCatalogDenial {
         }
     }
 
-    pub(crate) const fn kind(&self) -> WorthQueryApplicationSchemaContractCatalogDenialKind {
+    pub const fn kind(&self) -> WorthQueryApplicationSchemaContractCatalogDenialKind {
         self.kind
     }
 
-    pub(crate) fn subject(&self) -> &str {
+    pub fn subject(&self) -> &str {
         &self.subject
     }
 }

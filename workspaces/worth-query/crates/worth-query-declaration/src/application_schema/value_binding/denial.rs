@@ -31,6 +31,10 @@ impl ApplicationValueValidationDenial {
 /// Encoding failed before a value could enter Foundational scalar meaning.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ApplicationValueEncodeDenial {
+    Canonical {
+        binding_identity: WorthQueryPortableTypeIdentity,
+        cause: worth_foundational::facade::ValueCodecDenial,
+    },
     Validation(ApplicationValueValidationDenial),
     CodecRejected {
         binding_identity: WorthQueryPortableTypeIdentity,
@@ -46,6 +50,9 @@ impl ApplicationValueEncodeDenial {
                 binding_identity,
                 reason: _,
             })
+            | Self::Canonical {
+                binding_identity, ..
+            }
             | Self::CodecRejected {
                 binding_identity,
                 reason: _,
@@ -56,7 +63,10 @@ impl ApplicationValueEncodeDenial {
     pub const fn binding_identity(&self) -> &WorthQueryPortableTypeIdentity {
         match self {
             Self::Validation(denial) => denial.binding_identity(),
-            Self::CodecRejected {
+            Self::Canonical {
+                binding_identity, ..
+            }
+            | Self::CodecRejected {
                 binding_identity, ..
             } => binding_identity,
         }
@@ -72,6 +82,10 @@ impl From<ApplicationValueValidationDenial> for ApplicationValueEncodeDenial {
 /// Decoding failed without manufacturing a domain value or permissive default.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ApplicationValueDecodeDenial {
+    Canonical {
+        binding_identity: WorthQueryPortableTypeIdentity,
+        cause: worth_foundational::facade::ValueCodecDenial,
+    },
     ScalarFamilyMismatch {
         binding_identity: WorthQueryPortableTypeIdentity,
         expected: ScalarAspectType,
@@ -89,7 +103,10 @@ impl ApplicationValueDecodeDenial {
             Self::ScalarFamilyMismatch {
                 binding_identity, ..
             }
-            | Self::CodecRejected { binding_identity } => binding_identity,
+            | Self::CodecRejected { binding_identity }
+            | Self::Canonical {
+                binding_identity, ..
+            } => binding_identity,
             Self::Validation(denial) => denial.binding_identity(),
         }
     }

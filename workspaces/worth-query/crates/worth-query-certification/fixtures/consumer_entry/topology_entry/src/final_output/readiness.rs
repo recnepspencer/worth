@@ -41,12 +41,18 @@ impl<Schema: TopologySchemaBinding>
     const IDENTITY: &'static str = "worth.query.certification.planar-final-output-readiness.v1";
 
     fn package_contract(
-    ) -> application_contribution::WorthQueryApplicationConditionalPackageContract {
-        application_contribution::WorthQueryApplicationConditionalPackageContract::new(
-            final_readiness_definition().into_portable(),
-            Self::conditional_binding().portable().clone(),
-            PlanarFinalReadyNode::reference().node_identity(),
-        )
+        _declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
+    ) -> Result<
+        application_contribution::WorthQueryApplicationConditionalPackageContract,
+        worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractDenial,
+    > {
+        Ok({
+            application_contribution::WorthQueryApplicationConditionalPackageContract::new(
+                final_readiness_definition().into_portable(),
+                Self::conditional_binding().portable().clone(),
+                PlanarFinalReadyNode::reference().node_identity(),
+            )
+        })
     }
 
     fn install(

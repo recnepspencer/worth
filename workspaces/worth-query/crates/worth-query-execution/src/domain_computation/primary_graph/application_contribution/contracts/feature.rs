@@ -6,7 +6,7 @@ use worth_query_declaration::facade::application_program::{
     ApplicationRequiredFeatureRoleKind,
 };
 
-impl<Schema: ApplicationSchema> WorthQueryApplicationContributionContracts<Schema> {
+impl<Schema: ApplicationSchema> WorthQueryApplicationContributionContracts<'_, Schema> {
     pub fn feature<Contract>(
         &mut self,
     ) -> Result<&mut Self, WorthQueryPrimaryGraphInstallationDenial>

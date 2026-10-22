@@ -129,17 +129,27 @@ execution. This does not make Query roster, source validation, publication or
 collection membership processing sparse. See
 [persistent native runs](../crates/worth-execution/README.md#persistent-native-runs).
 
-For bounded nested persisted values, use the existing value-binding macro's
-`scalar: String, canonical: ValueDecodeBounds::new(...)` arm with Query-free
+For nested persisted values, use the existing value-binding macro's
+`scalar: String, canonical,` arm with Query-free
 `WorthValue` derivation. The installed value-binding catalog retains the derived
-shape and constant bounds. Guarded recursion uses finite bound references;
-`Box`, exact pair payloads and internally tagged unit/named variants use the
-same bounded seed path. Tag-first canonical objects never require an arbitrary
+shape and any explicit domain representation policy. Ordinary storage needs no
+guessed byte, depth or list ceilings. Fixed arrays, checked indices, `Box`, exact
+pairs and tagged named variants use the same checked seed path. Tag-first
+canonical objects never require an arbitrary
 object buffer. Complete closure admission rejects an unsupported opaque child,
 including an unselected variant. Pure schema owners need no Execution or Query
 dependency for these descriptions. Native canonical projection reads dispatch the exact
 installed codec under the original request's cumulative execution allowance; ignored
 admission failures veto completion. Opaque owners must supply admitted seeds.
+Use an explicit field `worth_value(delegate = ...)` for a real domain-owned
+constructor. For sealed original-text documents, `native_envelope: Envelope`
+delegates the pure owner's `CanonicalDocumentCodec` readers and exact failures.
+For derived readiness, use `WorthQueryOutputReadinessContractBuilder::for_field`
+and typed `field_dependency` entries, then `build_typed`. The generated contract
+is sealed against the actual installed field and complete aspect catalogs before
+configuration. Its `delivery_ordinal` distinguishes delivery selection from
+eligibility and uses the actual canonical node order. See
+[canonical values and derived readiness](build-an-application.md#canonical-nested-values-and-derived-readiness).
 Continuation and live delivery retain decode custody through their native final
 handoff. For cumulative reads of a retained invariant snapshot, use
 `snapshot.read_fields(&execution, |read| ...)`; its scoped `read.field(...)`
@@ -194,7 +204,7 @@ An existing continuation resumes
 through its original runtime and retained index generation, while a new target
 request reads only genuinely regenerated target output. See the
 [historical query lifecycle](build-an-application.md#44-checkpoint-program-transitions).
-See [bounded canonical nested values](build-an-application.md#bounded-canonical-nested-values)
+See [canonical nested values and derived readiness](build-an-application.md#canonical-nested-values-and-derived-readiness)
 for supported grammar, native checkpoint examples and the current package
 archive refusal. Representation limits do not grant request resources,
 currentness or codec-transition permission.
@@ -678,9 +688,12 @@ without caller work or byte estimates. Slots carry no authentication or currentn
 Live declarations name cause/binding/effect/scope/target meaning without a resource
 contract. Request Live controls retain channel buffer capacity and materialized-record
 cardinality; their managed queue occupancy is released on delivery or normal close.
-`WorthQueryOutputReadinessContractBuilder::new` takes identity, node identity,
-native projection, canonical query, projection role, strategy and lowering family;
-readiness is synchronous, effect-free native execution with no work/byte quotation.
+For ordinary derived readiness, use the
+[typed field builder](build-an-application.md#canonical-nested-values-and-derived-readiness)
+against the completed declaration. The lower-level
+`WorthQueryOutputReadinessContractBuilder::new` accepts a native projection for
+families that own that projection directly. Readiness is synchronous, effect-free
+native execution with no work/byte quotation.
 
 
 ### Graph-read admission in the default Query workspace

@@ -54,13 +54,17 @@ macro_rules! ready {
             const IDENTITY: &'static str = $identity;
             const REQUIRED_PRODUCERS: &'static [&'static str] =
                 &[<$producer<Schema> as WorthQueryApplicationProducerBinding<Schema>>::IDENTITY];
-            fn package_contract() -> WorthQueryApplicationConditionalPackageContract {
+            fn package_contract(
+_declaration: &worth_query_declaration::facade::application_schema::ErasedApplicationSchemaDeclaration,
+) -> Result<WorthQueryApplicationConditionalPackageContract, crate::facade::application_contribution::WorthQueryOutputReadinessContractDenial> {
+Ok({
                 WorthQueryApplicationConditionalPackageContract::new(
                     definition::<Schema>().into_portable(),
                     Self::binding().portable().clone(),
                     ReadyNode::reference().node_identity(),
                 )
-            }
+            })
+}
             fn install(
                 _: (),
                 _: &WorthQueryApplicationConditionalProducerAccess<'_, Schema>,

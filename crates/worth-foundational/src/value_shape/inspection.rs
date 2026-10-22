@@ -34,13 +34,13 @@ fn inspect(
     admission: &mut ValueDecodeAdmission<'_>,
     admitted: bool,
 ) -> Result<ValueShapeDepth, D> {
-    admission(1, 0)?;
+    admission.admit(1, 0)?;
     if admitted && !definition.admitted {
         return Err(D::UnsupportedAdmission);
     }
     let mut ancestor = parent;
     while let Some(frame) = ancestor {
-        admission(1, 0)?;
+        admission.admit(1, 0)?;
         if frame.identity == definition.identity {
             return if depth > frame.depth {
                 Ok(ValueShapeDepth::Recursive)
@@ -70,8 +70,8 @@ fn inspect(
     }
     // Unit variants have no child visit to pay for their inventory traversal.
     match definition.body {
-        ValueShapeBody::Enum(variants) => admission(variants.len(), 0)?,
-        ValueShapeBody::TaggedEnum { variants, .. } => admission(variants.len(), 0)?,
+        ValueShapeBody::Enum(variants) => admission.admit(variants.len(), 0)?,
+        ValueShapeBody::TaggedEnum { variants, .. } => admission.admit(variants.len(), 0)?,
         _ => {}
     }
     let mut child = |edge: super::definition::ValueShapeEdge| {
@@ -121,14 +121,14 @@ fn nullable(
     parent: Option<&Frame<'_>>,
     admission: &mut ValueDecodeAdmission<'_>,
 ) -> Result<bool, D> {
-    admission(1, 0)?;
+    admission.admit(1, 0)?;
     match definition.body {
         ValueShapeBody::Primitive(kind) => Ok(kind == ValuePrimitive::Unit),
         ValueShapeBody::Optional(_) => Ok(true),
         ValueShapeBody::Transparent(edge) => {
             let mut ancestor = parent;
             while let Some(frame) = ancestor {
-                admission(1, 0)?;
+                admission.admit(1, 0)?;
                 if frame.identity == definition.identity {
                     return Err(D::UnsupportedShape);
                 }

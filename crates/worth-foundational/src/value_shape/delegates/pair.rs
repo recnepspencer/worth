@@ -17,7 +17,7 @@ impl<Left: ValueSeedDelegate, Right: ValueSeedDelegate> ValueSeedDelegate
     fn deserialize<'de, Decoder: serde::Deserializer<'de>>(
         decoder: Decoder,
         bounds: ValueDecodeBounds,
-        admission: Option<&mut ValueDecodeAdmission<'_>>,
+        mut admission: Option<&mut ValueDecodeAdmission<'_>>,
     ) -> Result<Self::Value, Decoder::Error> {
         struct Pair<'a, 'r, L, R>(
             ValueDecodeBounds,
@@ -39,14 +39,21 @@ impl<Left: ValueSeedDelegate, Right: ValueSeedDelegate> ValueSeedDelegate
                 let right = access
                     .next_element_seed(DelegatedValueSeed::<R>::new(self.0, self.1.as_deref_mut()))?
                     .ok_or_else(|| A::Error::custom(D::Malformed))?;
-                access.next_element_seed(super::super::containers::RejectAdditionalElement)?;
+                access.next_element_seed(super::super::containers::RejectAdditionalElement(
+                    self.1.as_deref_mut(),
+                ))?;
                 Ok((left, right))
             }
         }
         decoder.deserialize_tuple(
             2,
             Pair::<Left, Right>(
-                bounds.descend().map_err(Decoder::Error::custom)?,
+                bounds.descend().map_err(|cause| {
+                    super::super::value_decode_error::<Decoder::Error>(
+                        cause,
+                        admission.as_deref_mut(),
+                    )
+                })?,
                 admission,
                 PhantomData,
             ),

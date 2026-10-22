@@ -1,7 +1,7 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::grammar::{Value, ValueKind};
+use crate::grammar::{Value, ValueKind, VariantPayload};
 
 pub(crate) fn emit(value: &Value) -> TokenStream {
     let ident = &value.ident;
@@ -45,16 +45,26 @@ pub(crate) fn emit(value: &Value) -> TokenStream {
                 let variant_ident = &variant.ident;
                 let variant_name = &variant.wire_name;
                 let index = index as u32;
-                match variant.payload {
-                    Some(_) => quote! {
+                match &variant.payload {
+                    VariantPayload::Newtype(_) => quote! {
                         Self::#variant_ident(payload) => ::serde::Serializer::serialize_newtype_variant(
                             serializer, #wire_name, #index, #variant_name, payload,
                         )
                     },
-                    None => quote! {
+                    VariantPayload::Unit => quote! {
                         Self::#variant_ident => ::serde::Serializer::serialize_unit_variant(
                             serializer, #wire_name, #index, #variant_name,
                         )
+                    },
+                    VariantPayload::Struct(fields) => {
+                        let members = fields.iter().map(|field| &field.ident).collect::<Vec<_>>();
+                        let names = fields.iter().map(|field| &field.wire_name);
+                        let length = fields.len();
+                        quote!(Self::#variant_ident { #(#members),* } => {
+                            let mut state = ::serde::Serializer::serialize_struct_variant(serializer, #wire_name, #index, #variant_name, #length)?;
+                            #(::serde::ser::SerializeStructVariant::serialize_field(&mut state, #names, #members)?;)*
+                            ::serde::ser::SerializeStructVariant::end(state)
+                        })
                     },
                 }
             });

@@ -31,6 +31,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'_, Schem
         >,
     {
         self.conditionals.register_with_requirements::<Binding>(
+            self.installed_schema,
             self.contribution.identity().as_str(),
             configuration,
             feature::required_producers::<Schema, Producer, Binding>(),

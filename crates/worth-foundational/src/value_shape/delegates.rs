@@ -1,12 +1,16 @@
 //! Mechanical seeds for syntactically declared container/product types.
 //! A tuple delegate does not implement a blanket wire or residency trait on tuples.
+mod array;
 mod boxed;
+mod index;
 mod pair;
 pub use super::containers::{OptionalDelegate, SequenceDelegate};
 use super::{
     CanonicalValue, ValueCodecDenial as D, ValueDecodeAdmission, ValueDecodeBounds, ValueShapeBody,
 };
+pub use array::ArrayDelegate;
 pub use boxed::BoxDelegate;
+pub use index::UsizeDelegate;
 pub use pair::PairDelegate;
 use serde::{de::DeserializeSeed, Serialize};
 use std::marker::PhantomData;
@@ -33,7 +37,7 @@ impl<Value: CanonicalValue> ValueSeedDelegate for ValueDelegate<Value> {
     const SHAPE_BODY: ValueShapeBody = { Value::SHAPE_BODY };
     const EDGE: super::ValueShapeEdge = super::ValueShapeEdge::value::<Value>();
     fn validate(value: &Value, bounds: ValueDecodeBounds) -> Result<(), D> {
-        value.validate_bounds(bounds)
+        stacker::maybe_grow(64 * 1024, 2 * 1024 * 1024, || value.validate_bounds(bounds))
     }
     fn deserialize<'de, Decoder: serde::Deserializer<'de>>(
         decoder: Decoder,
@@ -41,6 +45,9 @@ impl<Value: CanonicalValue> ValueSeedDelegate for ValueDelegate<Value> {
         admission: Option<&mut ValueDecodeAdmission<'_>>,
     ) -> Result<Value, Decoder::Error> {
         match admission {
+            Some(admission) if !admission.requires_admission() => {
+                Value::deserialize_reporting(decoder, bounds, admission)
+            }
             Some(admission) => Value::deserialize_admitted(decoder, bounds, admission),
             None => Value::deserialize_bounded(decoder, bounds),
         }
@@ -73,10 +80,14 @@ impl<'de, Delegate: ValueSeedDelegate> DeserializeSeed<'de>
         decoder: Decoder,
     ) -> Result<Self::Value, Decoder::Error> {
         if let Some(admission) = self.admission {
-            admission(3, 0).map_err(serde::de::Error::custom)?;
-            Delegate::deserialize(decoder, self.bounds, Some(admission))
+            admission.admit(3, 0).map_err(serde::de::Error::custom)?;
+            stacker::maybe_grow(64 * 1024, 2 * 1024 * 1024, || {
+                Delegate::deserialize(decoder, self.bounds, Some(admission))
+            })
         } else {
-            Delegate::deserialize(decoder, self.bounds, None)
+            stacker::maybe_grow(64 * 1024, 2 * 1024 * 1024, || {
+                Delegate::deserialize(decoder, self.bounds, None)
+            })
         }
     }
 }

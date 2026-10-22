@@ -15,7 +15,9 @@ impl<Child: ValueSeedDelegate> ValueSeedDelegate for BoxDelegate<Child> {
         mut admission: Option<&mut ValueDecodeAdmission<'_>>,
     ) -> Result<Self::Value, Decoder::Error> {
         if let Some(admit) = admission.as_deref_mut() {
-            admit(1, std::mem::size_of::<Child::Value>()).map_err(serde::de::Error::custom)?;
+            admit
+                .admit(1, std::mem::size_of::<Child::Value>())
+                .map_err(serde::de::Error::custom)?;
         }
         DelegatedValueSeed::<Child>::new(bounds, admission)
             .deserialize(decoder)
@@ -42,5 +44,12 @@ impl<Value: CanonicalValue> CanonicalValue for Box<Value> {
         admission: &mut ValueDecodeAdmission<'_>,
     ) -> Result<Self, Decoder::Error> {
         BoxDelegate::<ValueDelegate<Value>>::deserialize(decoder, bounds, Some(admission))
+    }
+    fn deserialize_reporting<'de, Decoder: serde::Deserializer<'de>>(
+        decoder: Decoder,
+        bounds: ValueDecodeBounds,
+        reporter: &mut ValueDecodeAdmission<'_>,
+    ) -> Result<Self, Decoder::Error> {
+        BoxDelegate::<ValueDelegate<Value>>::deserialize(decoder, bounds, Some(reporter))
     }
 }

@@ -45,12 +45,19 @@ impl<const INITIAL: bool, const CONFLICT: bool, const ORPHAN: u8>
     } else {
         &[PreserveProducer::IDENTITY]
     };
-    fn package_contract() -> WorthQueryApplicationConditionalPackageContract {
-        WorthQueryApplicationConditionalPackageContract::new(
-            definition::<CONFLICT, ORPHAN>().into_portable(),
-            Self::conditional_binding().portable().clone(),
-            RegionOutputReadyNode::reference().node_identity(),
-        )
+    fn package_contract(
+        _declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
+    ) -> Result<
+        WorthQueryApplicationConditionalPackageContract,
+        worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractDenial,
+    > {
+        Ok({
+            WorthQueryApplicationConditionalPackageContract::new(
+                definition::<CONFLICT, ORPHAN>().into_portable(),
+                Self::conditional_binding().portable().clone(),
+                RegionOutputReadyNode::reference().node_identity(),
+            )
+        })
     }
     fn install(
         _: (),

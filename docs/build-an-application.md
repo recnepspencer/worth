@@ -307,14 +307,15 @@ tree sharing and retained reservations continue to own those responsibilities.
 See the [native resident-value tests](../crates/worth-execution/tests/charged_bytes_derive.rs)
 and the [Host facade consumer](../workspaces/worth-query/crates/worth-query-host/tests/charged_bytes_derive.rs).
 
-### Bounded canonical nested values
+### Canonical nested values and derived readiness
 
 A pure value owner can derive `worth_foundational::facade::WorthValue` to emit
-Serde serialization, portable wire shape, and a bounded deserialization seed
+Serde serialization, portable wire shape, and a checked deserialization seed
 from one definition. Do not also derive `Serialize` or `Deserialize`. Supported
-grammar includes concrete named/unit/newtype structs, external unit/newtype
+grammar includes concrete named/unit/newtype structs, external unit/newtype/named
 variants, internally tagged unit/named variants, 8–64 bit integers, booleans,
-strings, `Vec`, `Option`, `Box` and exact two-element tuple payloads. Literal
+strings, checked `usize` indices on a `u64` wire, fixed arrays, `Vec`, `Option`,
+`Box` and exact two-element tuple payloads. Literal
 `serde(rename = "...")`, enum `rename_all = "snake_case"`, and container
 `deny_unknown_fields` are supported. Other Serde behavior and containers fail
 compilation. An opaque domain owner supplies its own bounded `CanonicalValue`
@@ -324,7 +325,10 @@ Recursive types describe a finite grammar with lexical binders/references;
 they do not claim finite type nesting. `ValueShapeDefinition::inspect()` reports
 `ValueShapeDepth::Recursive` or an actual finite extent. Each recursion cycle
 must cross a structural level. Structs, enum envelopes, sequences and pairs
-descend the per-value depth bound; transparent newtypes and boxes do not.
+descend an explicit depth policy when one exists; transparent newtypes and boxes
+do not. Ordinary canonical bindings require no guessed byte, depth or collection
+ceilings. JSON serialization and deserialization use stack growth; recursive
+application-owned `Drop` and `Debug` remain the value owner's responsibility.
 Static grammar functions allocate no descriptor during decoding. Their closure
 inspection and all nested seeds use the same admission callback. The installed
 catalogue refuses an unadmitted child even when another variant is selected.
@@ -339,15 +343,43 @@ Nullable optional payloads, such as `Option<Option<T>>` or `Option<()>`, are
 refused because Serde's `null` would erase the distinction between absence and
 a present null payload. Use an externally tagged enum for that meaning.
 
-The entry uses `worth_query_value_binding!` with `scalar: String` and
-`canonical: ValueDecodeBounds::new(wire_bytes, string_bytes, sequence_length,
-depth)`. The sequence bound limits variable `Vec` lengths; fixed pairs require
-exactly two slots. These finite bounds are constant declaration meaning. Encoding checks
+The ordinary entry uses `worth_query_value_binding!` with `scalar: String`,
+`canonical,` and an optional `validate: domain_validator` returning
+`Result<(), &'static str>`. Domain validation runs on encode and decode. Fixed
+arrays and pairs retain their actual type cardinality. Encoding checks
 structure before emitting bytes; decoding uses generated seeds and requires the
 exact canonical JSON form. There are no omitted fields or permissive defaults.
 The installed field's `canonical_contract()` exposes its shape, bounds and wire
 protocol. Nested field, enum, rename and bound changes participate in portable
-schema identity; semantic aspect revisions remain explicit.
+schema identity; semantic aspect revisions remain explicit. An existing domain
+representation policy may use `canonical: DOMAIN_BOUNDS`; absent policies use
+`ValueDecodeBounds::unrestricted()`, without sentinel ceilings. Known codec
+failures retain their exact `ValueCodecDenial` in
+`Canonical { binding_identity, cause }`; native cancellation retains its original
+request's stop at the owning handoff.
+
+The [canonical binding example](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/value_binding/canonical_tests.rs)
+derives a nondefault `Span`, validates positive length in both directions and
+distinguishes grammar refusal from explicit policy refusal:
+
+```rust
+worth_query_decl::worth_query_value_binding!(SpanBinding for Span {
+    identity: "tests.span.v1",
+    scalar: String,
+    canonical,
+    validate: positive,
+});
+```
+
+A field whose concrete value belongs elsewhere can use
+`#[worth_value(delegate = DomainDelegate)]`. Its existing `ValueSeedDelegate`
+must describe the exact serialized wire and finish through the domain constructor.
+For an already sealed body/original-text document, use
+`native_envelope: DomainEnvelope` instead of repeating scalar bridge methods.
+The pure envelope implements `CanonicalDocumentCodec` with associated `Document`,
+domain-owned `BOUNDS`, original `encoded` borrow and strict `read`/`read_admitted`.
+The generated Entry bridge forwards those readers and copies original text
+fallibly. It never reconstructs a body/text pair or adds Query to the pure owner.
 
 Opaque implementations describe their wire using the `SHAPE_BODY` constant and
 sealed typed `ValueShapeEdge` links. A transparent delegate uses
@@ -384,11 +416,26 @@ reconstruction to the installed target producer. The
 uses nonempty authored source, incompatible V1/V2 output codecs, real producer
 publication, a source edit through Preserve, and current-format reopen.
 
-Producer readiness describes the record selected by the producer's output role.
-Its native carrier, field mask, codec meaning and semantic revision must match
-the installed output contract. The [created-output readiness example](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_transition/readiness.rs)
-derives that description from the same field-meaning emitter; it does not copy
-the authored input's contract or create migration authority.
+For derived readiness, `package_contract` receives the completed schema declaration
+and returns `Result<_, WorthQueryOutputReadinessContractDenial>`. Start
+`WorthQueryOutputReadinessContractBuilder::for_field(declaration,
+PrimaryField::reference::<Schema>(), ...)`, add typed `field_dependency` entries
+and call `build_typed`. Each resolves the complete declared aspect, including
+whole-aspect absence, required/optional siblings and codec digests. The exact
+concrete value binding and full aspect are checked against installed catalogs
+before configuration or initial-state effects.
+
+`Delivery`, `Eligibility` and `DeliveryAndEligibility` express distinct uses.
+All remain native watched inputs; eligibility selects evaluation triggers.
+Retain the generated contract during installation and use
+`contract.delivery_ordinal(installed, node, Field::reference())` for an explicitly
+declared delivery field. It selects the genuine canonical ordinal and refuses
+eligibility-only fields or a different node. Consume it with
+`into_package_contract(binding.portable().clone())`. Do not copy aspect rosters,
+masks, codec digests or insertion-order ordinals. The
+[typed readiness examples](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/conditional/output_readiness_contract/typed/tests.rs)
+exercise full optional aspects, nested wire changes, concrete binding mismatch
+and reordered delivery/eligibility inputs.
 
 The executable [nested-value model](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_value/model.rs)
 and [native checkpoint journey](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_value.rs)

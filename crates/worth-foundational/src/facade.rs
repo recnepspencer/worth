@@ -694,8 +694,9 @@ pub use crate::resident_value::ChargedBytes;
 pub use crate::responsibilities::{foundational_responsibilities, ResponsibilityArea};
 pub use crate::value_shape::{
     decode_canonical_value, decode_canonical_value_with_admission, encode_canonical_value,
-    BoxDelegate, CanonicalValue, CanonicalValueSeed, DelegatedValueSeed, OptionalDelegate,
-    PairDelegate, SequenceDelegate, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds,
+    value_decode_error, ArrayDelegate, BoxDelegate, CanonicalDocumentCodec, CanonicalValue,
+    CanonicalValueSeed, DelegatedValueSeed, OptionalDelegate, PairDelegate, SequenceDelegate,
+    UsizeDelegate, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueDecodeControl,
     ValueDelegate, ValueFieldDefinition, ValueFieldShape, ValuePrimitive, ValueSeedDelegate,
     ValueShape, ValueShapeBody, ValueShapeDefinition, ValueShapeDepth, ValueShapeEdge,
     ValueTaggedVariantDefinition, ValueTaggedVariantShape, ValueVariantDefinition,

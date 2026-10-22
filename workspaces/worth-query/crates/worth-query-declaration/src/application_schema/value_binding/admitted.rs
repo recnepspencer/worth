@@ -11,21 +11,24 @@ pub(super) fn decode_erased<Binding: ApplicationReadableScalarValueBinding>(
     value: &AspectValue,
     admission: &mut ValueDecodeAdmission<'_>,
 ) -> Result<Box<dyn Any>, ApplicationValueDecodeDenial> {
-    let rejected = || ApplicationValueDecodeDenial::CodecRejected {
+    let rejected = |cause| ApplicationValueDecodeDenial::Canonical {
         binding_identity: Binding::IDENTITY,
+        cause,
     };
     let mut refusal = None;
     let mut loan = |work, bytes| {
         if let Some(denial) = refusal {
             return Err(denial);
         }
-        admission(work, bytes).inspect_err(|denial| refusal = Some(*denial))
+        admission
+            .admit(work, bytes)
+            .inspect_err(|denial| refusal = Some(*denial))
     };
     // Type erasure owns this allocation; seeds cannot account for it themselves.
-    loan(1, std::mem::size_of::<Binding::Value>()).map_err(|_| rejected())?;
+    loan(1, std::mem::size_of::<Binding::Value>()).map_err(rejected)?;
     let decoded = Binding::decode_admitted(value, &mut loan);
-    if refusal.is_some() {
-        return Err(rejected());
+    if let Some(cause) = refusal {
+        return Err(rejected(cause));
     }
     let decoded = decoded?;
     Binding::validate(&decoded)?;

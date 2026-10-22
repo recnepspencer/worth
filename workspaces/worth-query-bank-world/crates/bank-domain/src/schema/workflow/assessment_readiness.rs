@@ -57,11 +57,17 @@ impl application_contribution::WorthQueryApplicationConditionalBinding<BankSchem
         &["worth.bank.approved-payment-assessment.producer.v1"];
 
     fn package_contract(
-    ) -> application_contribution::WorthQueryApplicationConditionalPackageContract {
-        application_contribution::WorthQueryApplicationConditionalPackageContract::new(
-            operation_definition().into_portable(),
-            Self::conditional_binding().portable().clone(),
-            ApprovedPaymentAssessmentReadyNode::reference().node_identity(),
+        _: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
+    ) -> Result<
+        application_contribution::WorthQueryApplicationConditionalPackageContract,
+        application_contribution::WorthQueryOutputReadinessContractDenial,
+    > {
+        Ok(
+            application_contribution::WorthQueryApplicationConditionalPackageContract::new(
+                operation_definition().into_portable(),
+                Self::conditional_binding().portable().clone(),
+                ApprovedPaymentAssessmentReadyNode::reference().node_identity(),
+            ),
         )
     }
 

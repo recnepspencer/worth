@@ -24,7 +24,7 @@ use super::{
     WorthQueryInstalledApplicationSchemaContractCatalogCounters,
 };
 
-struct DeclaredAspectSeed {
+pub(super) struct DeclaredAspectSeed {
     identity: AspectIdentity,
     revision: AspectContractRevision,
     absence: AbsenceLaw,
@@ -91,7 +91,7 @@ pub(crate) fn compile_portable_native_contract_records(
         .collect()
 }
 
-fn collect_declared_aspects(
+pub(super) fn collect_declared_aspects(
     schema: &ErasedApplicationSchemaDeclaration,
 ) -> Result<
     BTreeMap<(String, String), DeclaredAspectSeed>,
@@ -153,7 +153,7 @@ fn validate_aspect_identity(
     Ok(())
 }
 
-fn collect_declared_fields(
+pub(super) fn collect_declared_fields(
     schema: &ErasedApplicationSchemaDeclaration,
     aspects: &mut BTreeMap<(String, String), DeclaredAspectSeed>,
 ) -> Result<(), WorthQueryApplicationSchemaContractCatalogDenial> {
@@ -251,7 +251,7 @@ fn install_aspect_contract(
     ))
 }
 
-fn build_foundational_contract(
+pub(super) fn build_foundational_contract(
     aspect_key: &AspectKey,
     aspect_name: &str,
     seed: &DeclaredAspectSeed,

@@ -6,7 +6,7 @@ use worth_foundational::facade::{
 };
 
 #[test]
-fn one_loan_covers_nested_values_and_parser_escape_scratch_before_visits() {
+fn one_loan_visits_nested_values_and_owned_allocations_without_parser_quotes() {
     let mut calls = Vec::new();
     let value = decode_canonical_value_with_admission::<Packet>(RAW, BOUNDS, &mut |work, bytes| {
         calls.push((work, bytes));
@@ -14,27 +14,16 @@ fn one_loan_covers_nested_values_and_parser_escape_scratch_before_visits() {
     })
     .unwrap();
     assert_eq!(value, packet());
-    // Independent arithmetic for parser scratch, diagnostic String growth and
-    // boxed-str conversion, depth-bounded JSON error boxes, and IO error payload.
-    let word = std::mem::size_of::<usize>();
-    let expected = 4 * (RAW.len() + 4)
-        + 16
-        + 5 * (6 * RAW.len() + 128)
-        + (BOUNDS.maximum_depth() + 3)
-            * (std::mem::size_of::<std::io::Error>().max(2 * word) + 3 * word)
-        + 4 * word
-        + std::mem::size_of::<D>();
-    assert_eq!(calls[0], (RAW.len(), expected));
-    // More than the initial parser charge: owned keys/strings and Vec storage.
+    assert_eq!(calls[0], (RAW.len(), 0));
     assert!(calls.iter().skip(1).any(|&(_, bytes)| bytes > 0));
 
     let escaped = r#""line\nδ""#;
-    let mut grants = 0;
+    let mut refused = false;
     assert_eq!(
         decode_canonical_value_with_admission::<String>(escaped, BOUNDS, &mut |_, bytes| {
-            grants += 1;
-            // A wire-length-only grant cannot fund parser scratch and reallocations.
-            if bytes > escaped.len() {
+            assert!(!refused);
+            if bytes > 0 {
+                refused = true;
                 Err(D::Admission)
             } else {
                 Ok(())
@@ -42,7 +31,7 @@ fn one_loan_covers_nested_values_and_parser_escape_scratch_before_visits() {
         }),
         Err(D::Admission)
     );
-    assert_eq!(grants, 1);
+    assert!(refused);
     assert_eq!(
         decode_canonical_value_with_admission::<String>(escaped, BOUNDS, &mut |_, _| Ok(()))
             .unwrap(),
@@ -70,7 +59,7 @@ impl CanonicalValue for Swallowing {
         bounds: ValueDecodeBounds,
         admission: &mut ValueDecodeAdmission<'_>,
     ) -> Result<Self, Decoder::Error> {
-        let _ignored = admission(1, 1000);
+        let _ignored = admission.admit(1, 1000);
         Self::deserialize_bounded(decoder, bounds)
     }
 }
@@ -139,6 +128,10 @@ impl CanonicalValue for Unadmitted {
 
 #[test]
 fn opaque_owner_without_admitted_seed_has_no_deserialize_fallback() {
+    assert_eq!(
+        worth_foundational::facade::decode_canonical_value::<Unadmitted>("true", BOUNDS),
+        Ok(Unadmitted(true))
+    );
     assert_eq!(
         decode_canonical_value_with_admission::<Unadmitted>("true", BOUNDS, &mut |_, _| panic!(
             "unsupported codec must refuse before parser admission"

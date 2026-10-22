@@ -27,59 +27,12 @@ mod target_coverage;
 pub(super) use dependency::validate_required_producer;
 mod output_readiness_contract;
 pub use output_readiness_contract::{
-    WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
+    WorthQueryOutputReadinessContract, WorthQueryOutputReadinessContractBuilder,
+    WorthQueryOutputReadinessContractDenial, WorthQueryReadinessFieldUse,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryApplicationConditionalPackageContract {
-    domain_operation: WorthQueryPortableDomainOperationDefinition,
-    operation_binding: WorthQueryPortableApplicationConditionalOperationBinding,
-    target: WorthQueryConditionalNodeLocation,
-}
-
-impl WorthQueryApplicationConditionalPackageContract {
-    pub fn new(
-        domain_operation: WorthQueryPortableDomainOperationDefinition,
-        operation_binding: WorthQueryPortableApplicationConditionalOperationBinding,
-        node_identity: impl Into<String>,
-    ) -> Self {
-        Self {
-            domain_operation,
-            operation_binding,
-            target: WorthQueryConditionalNodeLocation::Operation {
-                node_identity: node_identity.into(),
-            },
-        }
-    }
-
-    /// Authors a workflow-stage location for this declaration's node. This is
-    /// selection only; complete installed coverage and native binding validate it.
-    pub fn in_workflow_stage(mut self, stage_identity: impl Into<String>) -> Self {
-        self.target = WorthQueryConditionalNodeLocation::WorkflowStage {
-            stage_identity: stage_identity.into(),
-            node_identity: self.target.node_identity().to_owned(),
-        };
-        self
-    }
-
-    pub(super) fn domain_operation(&self) -> &WorthQueryPortableDomainOperationDefinition {
-        &self.domain_operation
-    }
-
-    pub(super) fn operation_binding(
-        &self,
-    ) -> &WorthQueryPortableApplicationConditionalOperationBinding {
-        &self.operation_binding
-    }
-
-    pub(super) fn node_identity(&self) -> &str {
-        self.target.node_identity()
-    }
-
-    pub(super) fn target(&self) -> &WorthQueryConditionalNodeLocation {
-        &self.target
-    }
-}
+mod package_contract;
+pub use package_contract::WorthQueryApplicationConditionalPackageContract;
 
 pub trait WorthQueryApplicationConditionalBinding<Schema>: Sized + 'static
 where
@@ -92,7 +45,12 @@ where
     const IDENTITY: &'static str;
     const REQUIRED_PRODUCERS: &'static [&'static str] = &[];
 
-    fn package_contract() -> WorthQueryApplicationConditionalPackageContract;
+    fn package_contract(
+        declaration: &worth_query_declaration::facade::application_schema::ErasedApplicationSchemaDeclaration,
+    ) -> Result<
+        WorthQueryApplicationConditionalPackageContract,
+        WorthQueryOutputReadinessContractDenial,
+    >;
 
     fn install(
         configuration: Self::Configuration,
@@ -252,6 +210,7 @@ where
 
     pub(super) fn register<Binding>(
         &mut self,
+        installed: &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<Schema>,
         owner: &str,
         configuration: Binding::Configuration,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
@@ -259,6 +218,7 @@ where
         Binding: WorthQueryApplicationConditionalBinding<Schema>,
     {
         self.register_with_requirements::<Binding>(
+            installed,
             owner,
             configuration,
             Binding::REQUIRED_PRODUCERS
@@ -270,6 +230,7 @@ where
 
     pub(super) fn register_with_requirements<Binding>(
         &mut self,
+        installed: &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<Schema>,
         owner: &str,
         configuration: Binding::Configuration,
         required_producers: Vec<String>,
@@ -282,7 +243,7 @@ where
             .get(Binding::IDENTITY)
             .ok_or_else(|| denial(DenialKind::MissingConditionalBinding, Binding::IDENTITY))?;
         if declared.owner != owner
-            || declared.contract != Binding::package_contract()
+            || declared.contract != Binding::package_contract(installed.installed_declaration())?
             || declared.binding_type != TypeId::of::<Binding>()
             || declared.operation_type != TypeId::of::<Binding::Operation>()
             || declared.installed_type != TypeId::of::<Binding::Installed>()
@@ -293,6 +254,7 @@ where
                 Binding::IDENTITY,
             ));
         }
+        declared.contract.seal(installed)?;
         if self.configured.contains_key(Binding::IDENTITY) {
             return Err(denial(
                 DenialKind::DuplicateConditionalBinding,

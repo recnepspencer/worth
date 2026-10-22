@@ -7,6 +7,8 @@
 /// conditional bindings, and managed computation owners.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPrimaryGraphInstallationDenialKind {
+    /// Typed readiness declaration or installed field meaning was refused.
+    ReadinessContractRejected,
     /// A binding or input belongs to a different runtime.
     ForeignRuntime,
     /// The application's contributions differ from the installed contribution
@@ -202,6 +204,7 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
 pub struct WorthQueryPrimaryGraphInstallationDenial {
     kind: WorthQueryPrimaryGraphInstallationDenialKind,
     subject: String,
+    readiness: Option<super::application_contribution::WorthQueryOutputReadinessContractDenial>,
 }
 
 impl WorthQueryPrimaryGraphInstallationDenial {
@@ -212,6 +215,7 @@ impl WorthQueryPrimaryGraphInstallationDenial {
         Self {
             kind,
             subject: subject.into(),
+            readiness: None,
         }
     }
 
@@ -231,6 +235,25 @@ impl WorthQueryPrimaryGraphInstallationDenial {
 
     pub fn subject(&self) -> &str {
         &self.subject
+    }
+    pub fn readiness_denial(
+        &self,
+    ) -> Option<&super::application_contribution::WorthQueryOutputReadinessContractDenial> {
+        self.readiness.as_ref()
+    }
+}
+
+impl From<super::application_contribution::WorthQueryOutputReadinessContractDenial>
+    for WorthQueryPrimaryGraphInstallationDenial
+{
+    fn from(
+        cause: super::application_contribution::WorthQueryOutputReadinessContractDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryPrimaryGraphInstallationDenialKind::ReadinessContractRejected,
+            subject: cause.to_string(),
+            readiness: Some(cause),
+        }
     }
 }
 

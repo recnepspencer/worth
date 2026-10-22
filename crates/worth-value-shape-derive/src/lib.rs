@@ -2,6 +2,7 @@
 
 use proc_macro::TokenStream;
 
+mod external_payload;
 mod grammar;
 mod retained;
 mod seed;
@@ -11,17 +12,20 @@ mod shape;
 /// Derives `Serialize` and `CanonicalValue` from one supported wire grammar.
 ///
 /// Supports concrete named/unit/newtype values, guarded recursion, Vec/Option/
-/// Box and fixed pairs, external unit/newtype variants and internally tagged
-/// unit/named variants. Literal rename, snake_case enum renaming and strict
+/// Box, fixed arrays/pairs and checked platform indices, external unit/newtype/
+/// named variants and internally tagged unit/named variants. Named fields can
+/// select an explicit `#[worth_value(delegate = OwnerDelegate)]` admitted seed.
+/// Literal rename, snake_case enum renaming and strict
 /// unknown fields are supported; other Serde behavior fails at the declaration.
-#[proc_macro_derive(WorthValue, attributes(serde))]
+#[proc_macro_derive(WorthValue, attributes(serde, worth_value))]
 pub fn derive_worth_value(input: TokenStream) -> TokenStream {
     let result = syn::parse::<syn::DeriveInput>(input)
         .and_then(grammar::Value::parse)
         .map(|value| {
+            let payloads = external_payload::emit(&value);
             let serialize = serialize::emit(&value);
             let canonical = shape::emit(&value);
-            quote::quote! { #serialize #canonical }
+            quote::quote! { #payloads #serialize #canonical }
         });
     result.unwrap_or_else(syn::Error::into_compile_error).into()
 }

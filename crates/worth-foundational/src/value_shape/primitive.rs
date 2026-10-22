@@ -32,11 +32,7 @@ impl CanonicalValue for String {
     const WIRE_NULLABLE: bool = false;
     const SHAPE_BODY: ValueShapeBody = { ValueShapeBody::Primitive(ValuePrimitive::String) };
     fn validate_bounds(&self, bounds: ValueDecodeBounds) -> Result<(), D> {
-        if self.len() > bounds.maximum_string_bytes() {
-            Err(D::StringBytes)
-        } else {
-            Ok(())
-        }
+        bounds.check_string_bytes(self.len())
     }
     fn deserialize_bounded<'de, Decoder: serde::Deserializer<'de>>(
         decoder: Decoder,
@@ -50,6 +46,13 @@ impl CanonicalValue for String {
         admission: &mut ValueDecodeAdmission<'_>,
     ) -> Result<Self, Decoder::Error> {
         decode_string(decoder, bounds, Some(admission))
+    }
+    fn deserialize_reporting<'de, Decoder: serde::Deserializer<'de>>(
+        decoder: Decoder,
+        bounds: ValueDecodeBounds,
+        reporter: &mut ValueDecodeAdmission<'_>,
+    ) -> Result<Self, Decoder::Error> {
+        decode_string(decoder, bounds, Some(reporter))
     }
 }
 
@@ -65,23 +68,27 @@ fn decode_string<'de, Decoder: serde::Deserializer<'de>>(
             f.write_str("a bounded string")
         }
         fn visit_str<E: Error>(mut self, value: &str) -> Result<String, E> {
-            if value.len() > self.0.maximum_string_bytes() {
-                return Err(E::custom(D::StringBytes));
-            }
+            self.0
+                .check_string_bytes(value.len())
+                .map_err(|cause| super::value_decode_error::<E>(cause, self.1.as_deref_mut()))?;
             if let Some(admit) = self.1.as_mut() {
-                admit(value.len(), value.len()).map_err(E::custom)?;
+                admit.admit(value.len(), value.len()).map_err(E::custom)?;
             }
             let mut result = String::new();
-            result
-                .try_reserve_exact(value.len())
-                .map_err(|_| E::custom(D::Allocation))?;
+            result.try_reserve_exact(value.len()).map_err(|_| {
+                super::value_decode_error::<E>(D::Allocation, self.1.as_deref_mut())
+            })?;
             result.push_str(value);
             Ok(result)
         }
         fn visit_string<E: Error>(mut self, value: String) -> Result<String, E> {
-            value.validate_bounds(self.0).map_err(E::custom)?;
+            value
+                .validate_bounds(self.0)
+                .map_err(|cause| super::value_decode_error::<E>(cause, self.1.as_deref_mut()))?;
             if let Some(admit) = self.1.as_mut() {
-                admit(value.len(), value.capacity()).map_err(E::custom)?;
+                admit
+                    .admit(value.len(), value.capacity())
+                    .map_err(E::custom)?;
             }
             Ok(value)
         }

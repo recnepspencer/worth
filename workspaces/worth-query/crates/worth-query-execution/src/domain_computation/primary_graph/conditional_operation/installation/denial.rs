@@ -2,6 +2,9 @@
 /// refused.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
+    Readiness(
+        super::super::super::application_contribution::WorthQueryOutputReadinessContractDenial,
+    ),
     ReadExecution(
         Result<
             crate::domain_computation::WorthQueryProviderSessionDenialKind,
@@ -50,6 +53,19 @@ pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
     /// The installation changed; build a new runtime with fresh bindings instead
     /// of reinstalling.
     RebindRequired,
+}
+
+impl From<super::super::super::application_contribution::WorthQueryOutputReadinessContractDenial>
+    for WorthQueryConditionalRuntimeInstallationDenial
+{
+    fn from(
+        cause: super::super::super::application_contribution::WorthQueryOutputReadinessContractDenial,
+    ) -> Self {
+        Self::new(
+            WorthQueryConditionalRuntimeInstallationDenialKind::Readiness(cause.clone()),
+            cause.to_string(),
+        )
+    }
 }
 
 /// Refusal to install, reinstall, or admit a conditional runtime.

@@ -1,4 +1,7 @@
-use crate::grammar::{types::delegate, Field, Value, ValueKind};
+use crate::grammar::{
+    types::{delegate, field_delegate},
+    Field, Value, ValueKind, VariantPayload,
+};
 use proc_macro2::TokenStream;
 use quote::quote;
 
@@ -24,13 +27,14 @@ pub(crate) fn emit(value: &Value) -> TokenStream {
             fn validate_bounds(&self, bounds: ::worth_foundational::facade::ValueDecodeBounds) -> Result<(), ::worth_foundational::facade::ValueCodecDenial> { #validation }
             fn deserialize_bounded<'de, D: ::serde::Deserializer<'de>>(deserializer: D, bounds: ::worth_foundational::facade::ValueDecodeBounds) -> Result<Self, D::Error> { #decode }
             fn deserialize_admitted<'de, D: ::serde::Deserializer<'de>>(deserializer: D, bounds: ::worth_foundational::facade::ValueDecodeBounds, admission: &mut ::worth_foundational::facade::ValueDecodeAdmission<'_>) -> Result<Self, D::Error> { #admitted_decode }
+            fn deserialize_reporting<'de, D: ::serde::Deserializer<'de>>(deserializer: D, bounds: ::worth_foundational::facade::ValueDecodeBounds, admission: &mut ::worth_foundational::facade::ValueDecodeAdmission<'_>) -> Result<Self, D::Error> { #admitted_decode }
         }
     }
 }
 fn fields_shape(fields: &[Field]) -> TokenStream {
     let fields = fields.iter().map(|field| {
         let name = &field.wire_name;
-        let ty = delegate(&field.ty).expect("validated type");
+        let ty = field_delegate(field);
         quote!(::worth_foundational::facade::ValueFieldDefinition { name: #name, value: <#ty as ::worth_foundational::facade::ValueSeedDelegate>::EDGE })
     });
     quote!(&[#(#fields),*])
@@ -53,11 +57,15 @@ fn shape_body(value: &Value) -> TokenStream {
             let variants = variants.iter().map(|variant| {
                 let name = &variant.wire_name;
                 let payload = match &variant.payload {
-                    Some(ty) => {
+                    VariantPayload::Newtype(ty) => {
                         let ty = delegate(ty).expect("validated type");
                         quote!(Some(<#ty as #facade::ValueSeedDelegate>::EDGE))
                     }
-                    None => quote!(None),
+                    VariantPayload::Unit => quote!(None),
+                    VariantPayload::Struct(_) => {
+                        let helper = crate::external_payload::ident(&value.ident, &variant.ident);
+                        quote!(Some(#facade::ValueShapeEdge::value::<#helper>()))
+                    }
                 };
                 quote!(#facade::ValueVariantDefinition { name: #name, payload: #payload })
             });
@@ -77,7 +85,7 @@ fn validate_fields(fields: &[Field], bindings: bool) -> TokenStream {
     let statements = fields.iter().map(|field| {
         let member = &field.ident;
         let name = &field.wire_name;
-        let ty = delegate(&field.ty).expect("validated type");
+        let ty = field_delegate(field);
         let value = if bindings { quote!(#member) } else { quote!(&self.#member) };
         quote! {
             child_bounds.check_string_bytes(#name.len())?;
@@ -99,11 +107,20 @@ fn validation(value: &Value) -> TokenStream {
                 let member = &variant.ident;
                 let name = &variant.wire_name;
                 match &variant.payload {
-                    Some(ty) => { let ty = delegate(ty).expect("validated type"); quote!(Self::#member(payload) => {
+                    VariantPayload::Newtype(ty) => { let ty = delegate(ty).expect("validated type"); quote!(Self::#member(payload) => {
                         child_bounds.check_string_bytes(#name.len())?;
                         <#ty as ::worth_foundational::facade::ValueSeedDelegate>::validate(payload, child_bounds)?;
                     }) },
-                    None => quote!(Self::#member => child_bounds.check_string_bytes(#name.len())?),
+                    VariantPayload::Unit => quote!(Self::#member => child_bounds.check_string_bytes(#name.len())?),
+                    VariantPayload::Struct(fields) => {
+                        let members = fields.iter().map(|field| &field.ident);
+                        let validate = validate_fields(fields, true);
+                        quote!(Self::#member { #(#members),* } => {
+                            child_bounds.check_string_bytes(#name.len())?;
+                            let child_bounds = child_bounds.descend()?;
+                            #validate
+                        })
+                    },
                 }
             });
             quote!(match self { #(#arms),* })

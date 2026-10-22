@@ -58,8 +58,8 @@ impl ApplicationReadableScalarValueBinding for SwallowingBinding {
         _: &AspectValue,
         admission: &mut ValueDecodeAdmission<'_>,
     ) -> Result<u64, ApplicationValueDecodeDenial> {
-        let _ = admission(7, 17);
-        let _ = admission(1, 1);
+        let _ = admission.admit(7, 17);
+        let _ = admission.admit(1, 1);
         Ok(91)
     }
 }
@@ -80,7 +80,10 @@ fn erased_dispatch_vetoes_a_successful_owner_that_swallowed_admission_refusal() 
     });
     assert!(matches!(
         result,
-        Err(ApplicationValueDecodeDenial::CodecRejected { .. })
+        Err(ApplicationValueDecodeDenial::Canonical {
+            cause: ValueCodecDenial::Admission,
+            ..
+        })
     ));
     assert_eq!(calls, 2, "latched refusal cannot call the lender again");
 }

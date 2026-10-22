@@ -1,14 +1,10 @@
-//! A bounded JSON wire contract emitted with the value's shape and seed.
+//! Canonical JSON emitted with the value's shape and checked construction seed.
 use super::{
-    ValueCodecDenial as D, ValueDecodeBounds, ValueShape, ValueShapeBody, ValueShapeDefinition,
+    ValueCodecDenial as D, ValueDecodeAdmission, ValueDecodeBounds, ValueSeedDelegate, ValueShape,
+    ValueShapeBody, ValueShapeDefinition,
 };
 use serde::{de::DeserializeSeed, Serialize};
 use std::io::Write;
-
-/// Borrowed admission callback; it does not itself establish request authority.
-/// The native owner supplies that authority and retains granted reservations.
-/// Bytes are newly requested storage, not wire size or retained ownership.
-pub type ValueDecodeAdmission<'a> = dyn FnMut(usize, usize) -> Result<(), D> + 'a;
 
 /// Implementations must describe and emit the same complete wire grammar.
 /// Derive `WorthValue` for ordinary structs/enums. Opaque domain owners implement
@@ -30,6 +26,16 @@ pub trait CanonicalValue: Serialize + Sized + 'static {
         decoder: Decoder,
         bounds: ValueDecodeBounds,
     ) -> Result<Self, Decoder::Error>;
+
+    /// Standalone construction with typed failure reporting, without native
+    /// admission requirements. Opaque bounded-only owners retain their posture.
+    fn deserialize_reporting<'de, Decoder: serde::Deserializer<'de>>(
+        decoder: Decoder,
+        bounds: ValueDecodeBounds,
+        _reporter: &mut ValueDecodeAdmission<'_>,
+    ) -> Result<Self, Decoder::Error> {
+        Self::deserialize_bounded(decoder, bounds)
+    }
 
     /// Opaque owners must admit their variable work/storage, including custom
     /// diagnostics beyond the built-in JSON machinery's bounded diagnostics.
@@ -83,27 +89,14 @@ impl<'de, Value: CanonicalValue> DeserializeSeed<'de> for CanonicalValueSeed<'_,
 }
 
 /// O(grammar visits * active type depth + wire bytes + value nodes), with
-/// finite input/container/value-depth bounds and guarded static grammar edges.
-/// JSON escape scratch is bounded by the admitted input bytes; decoded strings
-/// and sequences are admitted before their owned storage grows.
+/// guarded static grammar edges and optional domain representation policies.
+/// Decoded owned strings and sequences use fallible reservations and the
+/// original admission callback; no speculative parser storage quote is needed.
 pub fn decode_canonical_value<Value: CanonicalValue>(
     raw: &str,
     bounds: ValueDecodeBounds,
 ) -> Result<Value, D> {
-    if raw.len() > bounds.maximum_wire_bytes() {
-        return Err(D::WireBytes);
-    }
-    ValueShapeDefinition::of::<Value>().inspect()?;
-    let mut decoder = serde_json::Deserializer::from_str(raw);
-    let value = CanonicalValueSeed::<Value>::new(bounds)
-        .deserialize(&mut decoder)
-        .map_err(|_| D::Malformed)?;
-    decoder.end().map_err(|_| D::Malformed)?;
-    value.validate_bounds(bounds)?;
-    if encode_canonical_value(&value, bounds)? != raw {
-        return Err(D::NonCanonical);
-    }
-    Ok(value)
+    super::admitted::decode_recording::<Value>(raw, bounds, &mut |_, _| Ok(()), false)
 }
 
 /// Validate structure first; the writer checks encoded bytes before reserving.
@@ -112,13 +105,17 @@ pub fn encode_canonical_value<Value: CanonicalValue>(
     bounds: ValueDecodeBounds,
 ) -> Result<String, D> {
     ValueShapeDefinition::of::<Value>().inspect()?;
-    value.validate_bounds(bounds)?;
+    super::ValueDelegate::<Value>::validate(value, bounds)?;
     let mut writer = BoundedJsonWriter {
         bytes: Vec::new(),
         maximum: bounds.maximum_wire_bytes(),
         denial: None,
     };
-    if serde_json::to_writer(&mut writer, value).is_err() {
+    let mut serializer = serde_json::Serializer::new(&mut writer);
+    if value
+        .serialize(serde_stacker::Serializer::new(&mut serializer))
+        .is_err()
+    {
         return Err(writer.denial.unwrap_or(D::Malformed));
     }
     if let Some(denial) = writer.denial {
@@ -129,7 +126,7 @@ pub fn encode_canonical_value<Value: CanonicalValue>(
 
 struct BoundedJsonWriter {
     bytes: Vec<u8>,
-    maximum: usize,
+    maximum: Option<usize>,
     denial: Option<D>,
 }
 impl Write for BoundedJsonWriter {
@@ -137,7 +134,10 @@ impl Write for BoundedJsonWriter {
         if let Some(denial) = self.denial {
             return Err(std::io::Error::other(denial));
         }
-        let denial = if bytes.len() > self.maximum.saturating_sub(self.bytes.len()) {
+        let denial = if self
+            .maximum
+            .is_some_and(|maximum| bytes.len() > maximum.saturating_sub(self.bytes.len()))
+        {
             Some(D::WireBytes)
         } else if self.reserve(bytes.len()).is_err() {
             Some(D::Allocation)
@@ -157,16 +157,20 @@ impl Write for BoundedJsonWriter {
 }
 
 impl BoundedJsonWriter {
-    fn reserve(&mut self, additional: usize) -> Result<(), std::collections::TryReserveError> {
-        let required = self.bytes.len() + additional;
+    fn reserve(&mut self, additional: usize) -> Result<(), D> {
+        let required = self
+            .bytes
+            .len()
+            .checked_add(additional)
+            .ok_or(D::Allocation)?;
         if required > self.bytes.capacity() {
-            let target = self
-                .bytes
-                .capacity()
-                .saturating_mul(2)
-                .max(required)
-                .min(self.maximum);
-            self.bytes.try_reserve_exact(target - self.bytes.len())?;
+            let mut target = self.bytes.capacity().saturating_mul(2).max(required);
+            if let Some(maximum) = self.maximum {
+                target = target.min(maximum);
+            }
+            self.bytes
+                .try_reserve_exact(target - self.bytes.len())
+                .map_err(|_| D::Allocation)?;
         }
         Ok(())
     }

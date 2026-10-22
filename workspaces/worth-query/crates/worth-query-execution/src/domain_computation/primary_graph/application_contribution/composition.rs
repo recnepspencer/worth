@@ -54,7 +54,9 @@ where
     >;
 
     #[doc(hidden)]
-    fn contracts() -> Result<
+    fn contracts(
+        declaration: &worth_query_declaration::facade::application_schema::ErasedApplicationSchemaDeclaration,
+    ) -> Result<
         WorthQueryApplicationContractCatalog<Schema>,
         WorthQueryPrimaryGraphInstallationDenial,
     >;
@@ -148,6 +150,7 @@ macro_rules! contribution_tuple {
                 contracts: WorthQueryApplicationContractCatalog<Schema>,
             ) -> Result<WorthQueryConfiguredApplicationContributions<Schema>, WorthQueryPrimaryGraphInstallationDenial> {
                 validate_inventory(installed_schema, vec![$($Contribution::IDENTITY,)+])?;
+                contracts.seal_readiness(installed_schema)?;
                 let (producers, conditionals) = contracts.into_pending();
                 let mut configured = WorthQueryConfiguredApplicationContributions {
                     factories: WorthQueryApplicationInvariantFactories::for_installed_schema(installed_schema),
@@ -172,11 +175,11 @@ macro_rules! contribution_tuple {
                 Ok(configured)
             }
 
-            fn contracts() -> Result<WorthQueryApplicationContractCatalog<Schema>, WorthQueryPrimaryGraphInstallationDenial> {
+            fn contracts(declaration: &worth_query_declaration::facade::application_schema::ErasedApplicationSchemaDeclaration) -> Result<WorthQueryApplicationContractCatalog<Schema>, WorthQueryPrimaryGraphInstallationDenial> {
                 let mut catalog = WorthQueryApplicationContractCatalog::default();
                 $(
                     let mut contribution = WorthQueryApplicationContributionContracts::for_contribution(
-                        $Contribution::IDENTITY.as_str(),
+                        $Contribution::IDENTITY.as_str(), declaration,
                     );
                     $Contribution::contracts(&mut contribution)?;
                     contribution.append_to(&mut catalog)?;

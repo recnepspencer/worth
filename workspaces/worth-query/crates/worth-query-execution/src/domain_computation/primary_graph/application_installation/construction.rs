@@ -50,7 +50,8 @@ where
         Schema::MAJOR,
         Schema::MINOR,
     ));
-    let contracts = Contributions::contracts().map_err(Denial::Contributions)?;
+    let contracts =
+        Contributions::contracts(declaration.erased()).map_err(Denial::Contributions)?;
     let package = contracts
         .compose_package(package.application_schema(declaration.clone()))
         .validate()
