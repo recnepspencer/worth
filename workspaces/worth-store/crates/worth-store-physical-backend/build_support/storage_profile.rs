@@ -1,4 +1,17 @@
 use std::path::Path;
+#[path = "compiler_cache.rs"]
+mod compiler_cache;
+
+/// These are observed at build time, not supplied as another environment input.
+pub fn observe_compiler_cache(inputs: &mut Vec<(&str, String)>) {
+    let program = inputs
+        .iter()
+        .find(|(key, _)| *key == "RUSTC_WRAPPER")
+        .map(|(_, value)| value.as_str())
+        .unwrap_or("");
+    let release = compiler_cache::observe(program);
+    inputs.push((compiler_cache::RELEASE_INPUT, release));
+}
 
 pub const PROFILE_INPUTS: &[&str] = &[
     "CARGO_ENCODED_RUSTFLAGS",
@@ -12,7 +25,8 @@ pub const PROFILE_INPUTS: &[&str] = &[
 
 /// Qualifies compiler inputs and resolved package metadata for storage mechanics,
 /// not media authority. The supported composition additionally assumes the
-/// audited pinned dependency sources are unmodified. Cargo.lock is not source
+/// audited pinned dependency sources, compiler and supported transparent cache
+/// are unmodified, and cache contents are trusted. Cargo.lock is not source
 /// byte attestation: registry replacement/vendor substitution can preserve its
 /// registry labels and is outside this supported composition.
 pub fn is_supported(compiler: &str, inputs: &[(&str, String)], lock: &str) -> bool {
@@ -28,7 +42,11 @@ pub fn is_supported(compiler: &str, inputs: &[(&str, String)], lock: &str) -> bo
         && value("CARGO_CFG_TARGET_OS") == "windows"
         && value("CARGO_CFG_TARGET_POINTER_WIDTH") == "64"
         && approved_flags(value("CARGO_ENCODED_RUSTFLAGS"))
-        && PROFILE_INPUTS[1..4]
+        && compiler_cache::is_supported(
+            value("RUSTC_WRAPPER"),
+            value(compiler_cache::RELEASE_INPUT),
+        )
+        && PROFILE_INPUTS[2..4]
             .iter()
             .all(|name| value(name).is_empty())
         && [
@@ -128,6 +146,27 @@ mod tests {
             .set_len(4 * 1024 * 1024 + 1)
             .unwrap();
         assert!(read_lock(&path).is_empty());
+    }
+
+    #[test]
+    fn observed_sccache_preserves_the_profile_without_admitting_nested_wrappers() {
+        let mut inputs = vec![
+            ("CARGO_CFG_TARGET_OS", "windows".into()),
+            ("CARGO_CFG_TARGET_POINTER_WIDTH", "64".into()),
+            ("TARGET", "x86_64-pc-windows-msvc".into()),
+            (
+                "RUSTC_WRAPPER",
+                "C:/Users/Esther/.cargo/bin/sccache.exe".into(),
+            ),
+            (compiler_cache::RELEASE_INPUT, "sccache 0.18.0".into()),
+        ];
+        const COMPILER: &str = "rustc 1.94.0 (4a4ef493e 2026-03-02)";
+        assert!(is_supported(COMPILER, &inputs, &lock()));
+        inputs.push(("RUSTC_WORKSPACE_WRAPPER", "sccache.exe".into()));
+        assert!(!is_supported(COMPILER, &inputs, &lock()));
+        inputs.pop();
+        inputs.last_mut().unwrap().1 = "sccache 0.17.0".into();
+        assert!(!is_supported(COMPILER, &inputs, &lock()));
     }
 
     #[test]

@@ -18,9 +18,25 @@ few conventions decide how much each build repeats.
   reused there, and sccache cannot cache incrementally built crates. Point
   sccache at a persistent backend and keep `CARGO_TARGET_DIR` identical across
   checkouts, because sccache keys on every `CARGO_*` variable. Building
-  `worth-store-physical-backend` through a `RUSTC_WRAPPER` falls outside its
-  supported storage profile (`build_support/storage_profile.rs`).
+  `worth-store-physical-backend` supports the observed transparent sccache 0.18.0
+  release as well as direct rustc. Its existing pinned compiler, target, flags
+  and dependency checks still apply; other wrappers and nested workspace
+  wrappers remain unsupported. This assumes the installed compiler/cache and
+  cache contents are trusted, not executable attestation.
 - **Warm iteration**: keep the incremental default.
+- **Automatic local cache**: put `rustc-wrapper = "<absolute path to sccache>"`
+  in the `[build]` table of your user Cargo configuration. Keep the persistent
+  cache outside Cargo's target directory; `cargo clean` should remove build
+  output, never the compiler cache. Configure its size in sccache's own config.
+  Do not disable this default with a blank `RUSTC_WRAPPER`; remove that override.
+  Set `debug = false` under `[profile.dev.package."*"]` and
+  `[profile.test.package."*"]` to omit dependency debug data while retaining
+  workspace debug settings. On this Windows workstation, WORTH checkouts share
+  `C:/worth-build-cache/target` and the separate 150 GiB persistent cache is
+  `C:/worth-build-cache/sccache`. sccache 0.18's base-directory normalization
+  does not normalize Rust's working directory or `CARGO_*` cache inputs; do not
+  rely on that setting to make different Rust builds equivalent. Preserve
+  matching compiler flags, features, dependency versions and environment.
 - **Shared target directory**: every lockfile resolves each dependency line
   to the same version (`scripts/ci/check_lockfile_alignment.py`), so one
   `CARGO_TARGET_DIR` reuses third-party crates across workspaces. First-party
