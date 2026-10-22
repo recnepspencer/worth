@@ -4,6 +4,9 @@ use worth_relational::facade::identity::{EntityId, KindId};
 
 use super::{WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationObservedFact};
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Clone, Copy)]
 pub(super) enum WorthQueryExpectedLifecycleRelation {
     Absent,
@@ -50,8 +53,14 @@ pub(super) fn lifecycle_facts_are_exact(
         (expected.review, expected.review_type),
         (expected.review, expected.review_status),
     ];
-    facts.len()
-        == 14 + usize::from(expected.resource_relation.is_some()) + expected.absent_fields.len()
+    let Some(presence_guards) = exact_lifecycle_presence_guards(facts, expected.absent_fields)
+    else {
+        return false;
+    };
+    facts.len().checked_sub(presence_guards)
+        == Some(
+            14 + usize::from(expected.resource_relation.is_some()) + expected.absent_fields.len(),
+        )
         && fields
             .into_iter()
             .all(|(entity, (locator, value))| exact_field(facts, entity, locator, value))
@@ -110,6 +119,54 @@ pub(super) fn lifecycle_facts_are_exact(
             WorthQueryApplicationAdjacencyDirection::Incoming,
             expected.reviewer,
         )
+}
+
+/// Projected optional writes retain an independent aspect-presence predicate.
+/// Keep it in the completed facts; only the exact absent lifecycle field may
+/// justify that guard, and an absent field already establishes a present aspect.
+fn exact_lifecycle_presence_guards(
+    facts: &(impl FactSequence + ?Sized),
+    absent_fields: &[(EntityId, &AspectFieldLocator)],
+) -> Option<usize> {
+    let mut guards = 0;
+    for fact in facts.iter() {
+        let WorthQueryApplicationObservedFact::AspectPresence {
+            entity_id,
+            kind,
+            aspect,
+            present,
+        } = fact
+        else {
+            continue;
+        };
+        if !present
+            || facts
+                .iter()
+                .filter(|fact| {
+                    matches!(fact,
+                        WorthQueryApplicationObservedFact::AspectPresence {
+                            entity_id: other, aspect: other_aspect, ..
+                        } if other == entity_id && other_aspect == aspect
+                    )
+                })
+                .count()
+                != 1
+            || !facts.iter().any(|fact| {
+                matches!(fact,
+                    WorthQueryApplicationObservedFact::AbsentField {
+                        entity_id: absent_entity, kind: absent_kind, locator,
+                    } if absent_entity == entity_id && absent_kind == kind
+                        && locator.aspect().aspect_key() == aspect
+                        && absent_fields.iter().any(|(expected_entity, expected_locator)|
+                            expected_entity == entity_id && *expected_locator == locator)
+                )
+            })
+        {
+            return None;
+        }
+        guards += 1;
+    }
+    Some(guards)
 }
 
 fn exact_absent_field(
