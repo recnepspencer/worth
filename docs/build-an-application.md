@@ -364,7 +364,8 @@ distinguishes grammar refusal from explicit policy refusal:
 
 <!-- illustrative -->
 ```rust,ignore
-// Illustrative: not compiled. The linked owner test compiles the complete binding.
+// Illustrative: not compiled.
+// The linked owner test compiles the complete binding.
 worth_query_decl::facade::worth_query_value_binding!(SpanBinding for Span {
     identity: "tests.span.v1",
     scalar: String,

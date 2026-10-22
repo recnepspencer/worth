@@ -28,7 +28,19 @@ macro_rules! worth_query_value_binding {
                 Some($crate::facade::application_schema::ApplicationCanonicalValueContract::of::<$Codec>(
                     <$Codec as $crate::facade::application_schema::CanonicalDocumentCodec>::BOUNDS))
             }
+            fn validate(value: &Self::Value) -> Result<(), $crate::facade::application_schema::ApplicationValueValidationDenial> {
+                // The domain owner seals the body/text pair; preserve its wire policy.
+                if <$Codec as $crate::facade::application_schema::CanonicalDocumentCodec>::BOUNDS
+                    .maximum_wire_bytes().is_some_and(|maximum|
+                        <$Codec as $crate::facade::application_schema::CanonicalDocumentCodec>::encoded(value).len() > maximum)
+                {
+                    return Err($crate::facade::application_schema::ApplicationValueValidationDenial::rejected(
+                        Self::IDENTITY, "native record exceeds its wire bound"));
+                }
+                Ok(())
+            }
             fn encode(value: &Self::Value) -> Result<$crate::facade::application_schema::ApplicationValue, $crate::facade::application_schema::ApplicationValueEncodeDenial> {
+                <Self as $crate::facade::application_schema::ApplicationScalarValueBinding>::validate(value)?;
                 $crate::facade::application_schema::encode_application_document::<$Codec>(value, Self::IDENTITY)
             }
         }

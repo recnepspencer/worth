@@ -1,4 +1,5 @@
 //! Canonical grammar admission and semantic domain admission remain independent.
+mod document;
 use super::*;
 use worth_foundational::facade::{AspectValue, WorthValue};
 
