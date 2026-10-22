@@ -35,7 +35,19 @@ fn journey(add_match: bool, leave_dirty: bool) {
         .demand(counted_producer::Demand)
         .start_in_program::<installation::Program, installation::DependentRoot>(&app)
         .unwrap();
-    assert_eq!(settle!(root, request).0, 1);
+    let upstream = loop {
+        let (fresh_scope, fresh_principal) =
+            installation::authentication_fixture::authenticate(&app);
+        let fresh = app.request(&fresh_principal, &fresh_scope);
+        match root.advance(&fresh).unwrap() {
+            WorthQueryApplicationOutputDemandProgress::Progressed => continue,
+            WorthQueryApplicationOutputDemandProgress::Settled(settlement) => break settlement,
+            WorthQueryApplicationOutputDemandProgress::Pending => {
+                panic!("the initial synchronous upstream must not leave external work pending")
+            }
+        }
+    };
+    assert_eq!(upstream.producer_contacts_in_this_demand(), 1);
     assert_eq!(settle!(consumer, request).0, 1);
     let read_value = |key: &str| {
         request
@@ -85,20 +97,54 @@ fn journey(add_match: bool, leave_dirty: bool) {
         )
         .unwrap();
     assert!(matches!(changed, worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed { .. }), "one real edit commits both changes");
-    if !leave_dirty {
+    let upstream = if leave_dirty {
+        upstream
+    } else {
         // The upstream's prepared input changes from 1 to 2, but ceil(y / 2) stays 1.
         let mut refreshed = request
             .demand(Demand(OUTPUT))
             .start_in_program::<installation::Program, installation::Root>(&app)
             .unwrap();
-        assert_eq!(settle!(refreshed, request).0, 1, "U really decides again");
+        let settlement = loop {
+            let (fresh_scope, fresh_principal) =
+                installation::authentication_fixture::authenticate(&app);
+            let fresh = app.request(&fresh_principal, &fresh_scope);
+            match refreshed.advance(&fresh).unwrap() {
+                WorthQueryApplicationOutputDemandProgress::Progressed => continue,
+                WorthQueryApplicationOutputDemandProgress::Settled(settlement) => break settlement,
+                WorthQueryApplicationOutputDemandProgress::Pending => {
+                    panic!("the synchronous upstream refresh must not leave external work pending")
+                }
+            }
+        };
+        assert_eq!(
+            settlement.producer_contacts_in_this_demand(),
+            1,
+            "U really decides again"
+        );
         assert_eq!(
             read_value(OUTPUT),
             length(1),
             "U republishes an equal value"
         );
+        settlement
+    };
+    let before_consumer = request.retain_current_read().unwrap();
+    let upstream_currentness = request
+        .at(&before_consumer)
+        .require_current_output_demand(&upstream);
+    if leave_dirty {
+        assert!(
+            matches!(
+                &upstream_currentness,
+                Err(worth_query_host::facade::application_entry::WorthQueryOutputCurrentnessDenial::Output(cause))
+                    if cause.kind() == primary_graph::WorthQueryOutputDemandDenialKind::Superseded
+            ),
+            "the original upstream still carries the edited source: {upstream_currentness:?}"
+        );
+    } else {
+        upstream_currentness.expect("the explicitly refreshed equal upstream is already current");
     }
-    dependent_publication::take_calls();
     // Native requested-output progression may refresh U and retry the caller
     // internally. A stage handoff keeps this original demand under fresh authority.
     let settlement = loop {
@@ -123,16 +169,15 @@ fn journey(add_match: bool, leave_dirty: bool) {
         .expect("the completed decision carries its current upstream and indexed membership");
     let calls = dependent_publication::take_calls();
     let contacts = settlement.producer_contacts_in_this_demand();
-    if add_match {
-        assert!(calls > 0 && contacts > 1,
-            "changed indexed membership reruns this original consumer: {calls} decisions, {contacts} lifetime contacts");
-    } else {
-        assert_eq!(
-            (calls, contacts),
-            (0, 1),
-            "unchanged indexed membership reuses the equal upstream without another decision"
-        );
-    }
+    // Required-output progression refreshes dirty U before deciding C. Equal U
+    // does not erase C's own indexed evidence: changed membership needs exactly
+    // one new decision; unchanged membership needs none, on either upstream path.
+    let decisions = usize::from(add_match);
+    assert_eq!(
+        (calls, contacts),
+        (decisions, 1 + decisions),
+        "only changed indexed membership contacts this original consumer; dirty upstream: {leave_dirty}"
+    );
     assert_eq!(
         read_value(DEPENDENT),
         length(if add_match { 2 } else { 1 }),

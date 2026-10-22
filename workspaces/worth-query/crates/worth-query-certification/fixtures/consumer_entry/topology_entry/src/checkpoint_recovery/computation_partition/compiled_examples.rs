@@ -6,7 +6,10 @@ use super::demand::{
 use super::*;
 use crate::{sensor_telemetry as telemetry, warehouse_inventory as inventory};
 use std::cell::RefCell;
-use worth_query_decl::facade::application_program::ApplicationRequiredFeatureRoles;
+use worth_query_decl::facade::application_program::{
+    ApplicationFeatureDefinition, ApplicationRequiredFeatureRoleKind,
+    ApplicationRequiredFeatureRoles,
+};
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
 // The five caller-supplied types use the existing computation fixture's declarations.
@@ -119,6 +122,17 @@ impl<E: Example> ApplicationProgramDefinition<S> for Program<E> {
             .finish_action()
             .finish();
         let example = E::declare();
+        // These generic computation snippets describe their artifact and compute
+        // owner. Compare the entire declaration, including any lifecycle roles,
+        // rather than assuming that every complete feature starts without roles.
+        let computation = ApplicationFeatureSpec::root::<S, F>()
+            .derived_artifact::<A>()
+            .managed_computation::<E::Computation>()
+            .finish();
+        assert_eq!(
+            example, computation,
+            "the complete computation snippet declaration"
+        );
         let installed = final_output.feature();
         let declared = example.feature();
         assert_eq!(
@@ -146,19 +160,49 @@ impl<E: Example> ApplicationProgramDefinition<S> for Program<E> {
                 declared.derived_collections(),
                 declared.managed_computations(),
             ),
-            "the host installs the example's complete declaration before adding its required roles"
+            "the host retains every computation declaration member"
         );
+        let lifecycle = native_lifecycle_declaration();
         assert_eq!(
             installed.required_roles(),
-            <crate::PlanarFinalFeatureRoles<S> as ApplicationRequiredFeatureRoles<S>>::roles()
-                .as_slice(),
-            "the native output owner's typed pair supplies the host's required roles"
+            lifecycle.feature().required_roles(),
+            "the host retains exactly the native output definition's authored roles"
         );
         demand_policy::feature_specs_with_final_output(
             required_chain::output_feature_spec(),
             final_output,
         )
     }
+}
+
+fn native_lifecycle_declaration() -> ApplicationFeatureSpec {
+    // The complete native definition already owns these roles. Its host
+    // projection must retain the typed pair, not append a second role roster.
+    let declared =
+        <crate::PlanarFinalFeatureDefinition<S> as ApplicationFeatureDefinition<S>>::feature_specs(
+        );
+    let expected = ApplicationFeatureSpec::root::<S, F>()
+        .provides::<crate::PlanarFinalBodyOutput>()
+        .required_pair::<crate::PlanarFinalFeatureRoles<S>>()
+        .finish();
+    assert_eq!(
+        declared.as_slice(),
+        std::slice::from_ref(&expected),
+        "the complete native definition retains exactly its output port and typed lifecycle pair"
+    );
+    let roles = <crate::PlanarFinalFeatureRoles<S> as ApplicationRequiredFeatureRoles<S>>::roles();
+    assert_eq!(
+        roles.each_ref().map(|role| role.kind()),
+        [
+            ApplicationRequiredFeatureRoleKind::Initial,
+            ApplicationRequiredFeatureRoleKind::Preserve
+        ],
+        "the authoritative pair supplies one Initial and one Preserve role"
+    );
+    declared
+        .into_iter()
+        .next()
+        .expect("the checked single native feature declaration")
 }
 
 fn first_run<E: Example>() -> Reduced {
