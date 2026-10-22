@@ -7,9 +7,7 @@ pub(super) fn materialize_decision<Schema, Operation, Input, Scope>(
     meaning: crate::domain_computation::primary_graph::workflow::WorkflowApprovalMeaning,
     basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     admitted_text: &crate::domain_computation::primary_graph::workflow::WorkflowApprovalFieldText,
-    evidence_currentness: std::sync::Arc<
-        [crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact],
-    >,
+    evidence_currentness: super::super::super::OutputCurrentnessFacts,
     approval_projection: publication::PreparedWorkflowApprovalProjection,
 ) -> Result<
     PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
@@ -46,7 +44,7 @@ where
             retain_output_demand_observation: false,
             retain_client_observation: false,
             producer_required_invariants: &[],
-            output_currentness_facts: Some(evidence_currentness.into()),
+            output_currentness_facts: Some(evidence_currentness),
         },
         program_revision,
         transition_identity,

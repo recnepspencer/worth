@@ -255,6 +255,11 @@ macro_rules! sibling_tree {
         let mut original = request.advanced().start_program_outputs::<$program, $root>(
             &application, PlanarOutputDemand::new("anchor-a"), Default::default(),
         ).unwrap();
+        assert!(matches!(original.advance(&application, &request).unwrap(),
+            WorthQueryApplicationProgramOutputProgress::Progressed));
+        assert!(original.settled_root_observation().is_some(),
+            "the root returns before independent sibling discovery");
+        assert!(take_all_decisions().is_empty());
         application.delay_next_output_readiness_delivery_for_test();
         let first = if $park_after_settlement {
             match original.advance(&application, &request).unwrap() {
@@ -263,6 +268,10 @@ macro_rules! sibling_tree {
             }
             // B is now complete and retained. Defer C's own native readiness:
             // revisiting B must not manufacture progress on this waiting pass.
+            application.delay_next_output_readiness_delivery_for_test();
+            assert!(matches!(original.advance(&application, &request).unwrap(),
+                WorthQueryApplicationProgramOutputProgress::Progressed),
+                "B's newly retained leaf finishes its effect-free record once");
             application.delay_next_output_readiness_delivery_for_test();
             match original.advance(&application, &request).unwrap() {
                 WorthQueryApplicationProgramOutputProgress::Pending => {},
@@ -279,7 +288,7 @@ macro_rules! sibling_tree {
             WorthQueryApplicationProgramOutputProgress::Pending => {
                 assert_eq!(take_all_decisions(), [("anchor-b".to_owned(), vec![6])],
                     "later B performed while C still lacked current B");
-                match original.advance(&application, &request).unwrap() {
+                match original.settle(&application, &request).unwrap() {
                     WorthQueryApplicationProgramOutputProgress::Settled(done) => done,
                     _ => panic!("the same original tree must complete once B's exact settlement is retained"),
                 }

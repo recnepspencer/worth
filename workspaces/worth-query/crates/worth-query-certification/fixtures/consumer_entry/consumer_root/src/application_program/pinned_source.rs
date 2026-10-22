@@ -1,4 +1,4 @@
-//! Isolated receipt-only action; the existing consumer/P0 canonical meaning is unchanged.
+//! Receipt-only action retaining its installation's required output roles.
 use super::source_completion::ConsumerSourceCompletion;
 use super::*;
 use worth_query_decl::facade::application_program::{
@@ -44,8 +44,7 @@ impl ApplicationProgramDefinition<ConsumerSchema> for PinnedSourceProgram {
                 .external_input::<external_input::NeutralExternalProvider>()
                 .finish_action()
                 .conditional_operation::<MutatePlanar>()
-                .conditional_operation::<PublishFinalPlanarOutput>()
-                .conditional_operation::<PreserveFinalPlanarOutput>()
+                .required_pair::<PlanarFinalFeatureRoles<ConsumerSchema, PlanarSourceFeature>>()
                 .conditional_operation::<PublishAlternatePlanarOutput>()
                 .action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, PinnedCompletion>()
                 .finish_action()

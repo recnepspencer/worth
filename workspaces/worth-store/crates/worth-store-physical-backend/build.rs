@@ -20,7 +20,7 @@ fn main() {
     println!("cargo:rerun-if-changed={}", lock_path.display());
     println!("cargo:rerun-if-changed=build_support");
     let lock = storage_profile::read_lock(lock_path);
-    let storage_inputs: Vec<_> = storage_profile::PROFILE_INPUTS
+    let mut storage_inputs: Vec<_> = storage_profile::PROFILE_INPUTS
         .iter()
         .map(|name| {
             println!("cargo:rerun-if-env-changed={name}");
@@ -40,6 +40,7 @@ fn main() {
             (*name, value)
         })
         .collect();
+    storage_profile::observe_compiler_cache(&mut storage_inputs);
     println!(
         "cargo:rustc-env=WORTH_STORE_MEDIA_PATH_PROFILE={}",
         if storage_profile::is_supported(compiler, &storage_inputs, &lock) {

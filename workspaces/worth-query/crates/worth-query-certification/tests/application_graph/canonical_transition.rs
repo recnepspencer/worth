@@ -173,7 +173,7 @@ fn derived_successor_wire_is_incompatible_while_authored_source_codec_is_unchang
     use worth_foundational::facade::{
         decode_canonical_value, encode_canonical_value, ValueDecodeBounds,
     };
-    let bounds = ValueDecodeBounds::new(8192, 512, 32, 12);
+    let bounds = ValueDecodeBounds::unrestricted();
     let v1 = output::calculate(&model::authored_value());
     let wire = encode_canonical_value(&v1, bounds).unwrap();
     assert!(decode_canonical_value::<output::DerivedV2>(&wire, bounds).is_err());

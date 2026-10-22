@@ -8,6 +8,7 @@ where
     left: Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>,
     right: Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>,
     complete: [bool; 2],
+    next_advance: usize,
     outputs: Vec<ProgramOutputRecord>,
     dependencies: [Option<WorthQueryRetainedQueryDependencies>; 2],
     basis: crate::application_entry::WorthQueryApplicationReadObservation,
@@ -70,6 +71,7 @@ where
                 controls,
             )?,
             complete: [false, false],
+            next_advance: 0,
             outputs: Vec::new(),
             dependencies: [None, None],
             basis: minimum_observation.retained_clone(),
@@ -105,14 +107,22 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<ProgramOutputContinuationProgress, WorthQueryRequiredOutputPreparationDenial> {
         let mut runnable = false;
-        for (index, branch) in [&mut self.left, &mut self.right].into_iter().enumerate() {
+        for index in (self.next_advance..2).chain(0..self.next_advance) {
             if self.complete[index] {
                 continue;
             }
+            let branch = if index == 0 {
+                &mut self.left
+            } else {
+                &mut self.right
+            };
             match branch.advance(phase, application, request)? {
                 ProgramOutputContinuationProgress::Pending => {}
                 ProgramOutputContinuationProgress::Progressed => {
-                    runnable = true;
+                    // Propagate the native boundary through tuple nesting before
+                    // another sibling can begin independent discovery/admission.
+                    self.next_advance = 1 - index;
+                    return Ok(ProgramOutputContinuationProgress::Progressed);
                 }
                 ProgramOutputContinuationProgress::Settled {
                     outputs,

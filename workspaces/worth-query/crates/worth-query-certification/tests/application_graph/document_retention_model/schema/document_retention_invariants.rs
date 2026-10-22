@@ -11,8 +11,6 @@
 //! `document-retention-v3` is authored here but deliberately never installed, so
 //! a program declaring it names a contract this host cannot support.
 
-use std::num::NonZeroU64;
-
 use worth_query_host::facade::declaration::application_schema::{
     ApplicationInvariantCostPosture, ApplicationInvariantDefinition,
     ApplicationInvariantEnforcement, ApplicationInvariantExecutionPoint, ApplicationInvariantGroup,
@@ -49,21 +47,14 @@ impl ApplicationInvariantMarkerIdentity<DocumentRetentionSchema> for DocumentRet
     const MINOR: u16 = 0;
 }
 
-/// Bounded Relational work for this shared host's largest bootstrap and
-/// workflow-publication candidates. Each installed rule retains its own
-/// algorithm control; candidate admission does not predict an aggregate
-/// allowance from their sum.
-const FIRST_RULE_WORK_UNITS: u64 = 256;
-const SECOND_RULE_WORK_UNITS: u64 = 256;
-
 pub(super) fn first_definition(
 ) -> ApplicationInvariantDefinition<DocumentRetentionSchema, DocumentRetentionV1> {
-    document_commit_boundary_definition(DocumentRetentionV1::reference(), FIRST_RULE_WORK_UNITS)
+    document_commit_boundary_definition(DocumentRetentionV1::reference())
 }
 
 pub(super) fn second_definition(
 ) -> ApplicationInvariantDefinition<DocumentRetentionSchema, DocumentRetentionV2> {
-    document_commit_boundary_definition(DocumentRetentionV2::reference(), SECOND_RULE_WORK_UNITS)
+    document_commit_boundary_definition(DocumentRetentionV2::reference())
 }
 
 fn document_commit_boundary_definition<Invariant>(
@@ -71,7 +62,6 @@ fn document_commit_boundary_definition<Invariant>(
         DocumentRetentionSchema,
         Invariant,
     >,
-    work_units: u64,
 ) -> ApplicationInvariantDefinition<DocumentRetentionSchema, Invariant>
 where
     Invariant: ApplicationInvariantMarkerIdentity<DocumentRetentionSchema>,
@@ -79,9 +69,7 @@ where
     ApplicationInvariantDefinition::new(
         reference,
         ApplicationInvariantExecutionPoint::CommitBoundary,
-        RelationalInvariantWorkBudget::new(Some(
-            NonZeroU64::new(work_units).expect("non-zero work budget"),
-        )),
+        RelationalInvariantWorkBudget::new(None),
         ApplicationInvariantOperationalContract::new(
             ApplicationInvariantEnforcement::BlockCommit,
             [ApplicationInvariantGroup::SchemaCompliance],

@@ -51,8 +51,6 @@ pub fn limits(work: u64) -> WorthQueryInMemoryApplicationLimits {
     .unwrap();
     WorthQueryInMemoryApplicationLimits::new(
         resources,
-        WorthQueryApplicationCandidateResourceProfile::policy(Some(1024), Some(1024 * 1024))
-            .unwrap(),
         WorthQueryApplicationQueryResourceProfile::new(
             std::num::NonZeroUsize::new(32).expect("concurrent graph work is non-zero"),
         ),

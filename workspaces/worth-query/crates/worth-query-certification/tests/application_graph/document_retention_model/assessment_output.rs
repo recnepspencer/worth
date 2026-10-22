@@ -325,6 +325,15 @@ impl WorthQueryApplicationProducerProvider<DocumentRetentionSchema, RetentionAss
         }
     }
 
+    fn domain_denial_reason(&self, denial: &RetentionAssessmentDenial) -> Option<&'static str> {
+        Some(match denial {
+            RetentionAssessmentDenial::SourceChanged => "The source retention changed.",
+            RetentionAssessmentDenial::NoRetentionPeriod => {
+                "A zero-day source has no assessable retention period."
+            }
+        })
+    }
+
     fn idempotency_key(&self, _: &DocumentRetentionRow, source_identity: &[u8; 32]) -> u64 {
         source_identity
             .chunks_exact(8)

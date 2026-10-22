@@ -50,6 +50,9 @@ fn cold_signed_path_write_refuses_a_direct_subject_conflict_without_a_lifecycle(
             WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
         )
         .unwrap_err(),
-        ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency
+        ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
+            operation: "GraphSign".into(),
+            dependency: ApplicationOperationDependencyLocus::Body,
+        }
     );
 }

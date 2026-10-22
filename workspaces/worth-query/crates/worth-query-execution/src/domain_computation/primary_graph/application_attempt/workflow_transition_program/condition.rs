@@ -91,7 +91,6 @@ where
             .map_err(|expression| {
                 WorthQueryApplicationAttemptDenial::condition_expression(&node_path, expression)
             })?;
-        let currentness_facts: std::sync::Arc<[_]> = currentness_facts.into();
         let outcome = if result {
             ApplicationWorkflowControlOutcome::ConditionSatisfied
         } else {
@@ -120,6 +119,14 @@ where
             &currentness_facts,
             &node_path,
         )?;
+        let currentness_facts = super::super::OutputCurrentnessFacts::admit_owned_program_facts(
+            currentness_facts,
+            super::super::retained_decision_facts::StorageControl::new(
+                execution.allocation_policy(),
+                Some(read_set.admission.publication_request()),
+            ),
+        )
+        .map_err(|cause| cause.into_attempt_denial(&node_path))?;
         let program = WorthQueryApplicationEffectProgram {
             read_set,
             effects,
@@ -129,7 +136,7 @@ where
             retain_output_demand_observation: false,
             retain_client_observation: false,
             producer_required_invariants: &[],
-            output_currentness_facts: Some(currentness_facts.into()),
+            output_currentness_facts: Some(currentness_facts),
         };
         Ok(PreparedWorkflowAdvance::Transition {
             program,

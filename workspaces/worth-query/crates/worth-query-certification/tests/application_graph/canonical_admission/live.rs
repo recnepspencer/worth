@@ -38,7 +38,6 @@ fn live_nested_decode_requires_original_funding_before_receipt_and_cause_handoff
     assert_eq!(update.result().counter, 0);
     assert_eq!(returned(), 1);
     assert_eq!(opaque::ignored_refusals(), 0);
-    assert!(update.receipt().result_buffer().unwrap().released());
     assert!(matches!(
         live.next(&request).unwrap(),
         WorthQueryApplicationLiveOutcome::Pending
@@ -178,7 +177,6 @@ fn live_late_original_cancellation_cannot_ack_and_a_fresh_live_request_succeeds(
     };
     assert_eq!(update.result().value, super::value());
     assert_eq!(returned(), 1);
-    assert!(update.receipt().result_buffer().unwrap().released());
     assert!(matches!(
         fresh.close(),
         WorthQueryApplicationLiveCloseOutcome::Completed(_)
@@ -194,7 +192,7 @@ fn open(host: &host::Host) -> Subscription<'_> {
         .query(query::ReadLive {
             identity: "root".to_owned(),
         })
-        .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1, Some(5_120)))
+        .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1))
         .expect("ordinary installed nested live query opens without projecting a value")
 }
 

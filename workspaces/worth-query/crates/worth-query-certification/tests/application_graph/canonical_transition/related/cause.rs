@@ -1,4 +1,4 @@
-//! A real finite retained effect selects the installed live root.
+//! A real retained effect selects the installed live root.
 use super::live_query::LiveQuery;
 use super::schema::*;
 use worth_query_host::facade::{
@@ -11,13 +11,6 @@ pub struct Changed {
     pub identity: String,
 }
 worth_query_structured_value_binding!(pub ChangedBinding for Changed { identity: "canonical-related.live-changed.v1" });
-impl ApplicationRetainedEffectBinding for ChangedBinding {
-    fn retained_bytes(value: &Changed) -> u64 {
-        u64::try_from(std::mem::size_of::<Changed>())
-            .unwrap()
-            .saturating_add(u64::try_from(value.identity.capacity()).unwrap())
-    }
-}
 worth_query_effect!(pub ValueChanged for CanonicalSchema, payload ChangedBinding);
 
 pub struct LiveCause;

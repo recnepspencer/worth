@@ -136,8 +136,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
             required_chain::output_feature_spec_for::<Schema>(),
             ApplicationFeatureSpec::root::<Schema, PlanarFinalOutputFeature>()
                 .provides::<PlanarFinalBodyOutput>()
-                .conditional_operation::<PublishFinalPlanarOutput>()
-                .conditional_operation::<PreserveFinalPlanarOutput>()
+                .required_pair::<PlanarFinalFeatureRoles<Schema>>()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, PlanarAlternateFinalOutputFeature>()
                 .provides::<PlanarAlternateFinalBodyOutput>()

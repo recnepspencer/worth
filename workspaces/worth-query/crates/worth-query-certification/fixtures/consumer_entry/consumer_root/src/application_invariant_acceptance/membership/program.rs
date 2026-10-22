@@ -169,8 +169,7 @@ impl ApplicationProgramDefinition<Schema> for MembershipProgram {
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, PlanarFinalOutputFeature>()
                 .provides::<PlanarFinalBodyOutput>()
-                .conditional_operation::<PublishFinalPlanarOutput>()
-                .conditional_operation::<PreserveFinalPlanarOutput>()
+                .required_pair::<PlanarFinalFeatureRoles<Schema>>()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, PlanarAlternateFinalOutputFeature>()
                 .provides::<PlanarAlternateFinalBodyOutput>()

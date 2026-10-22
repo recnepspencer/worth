@@ -157,13 +157,14 @@ pub(super) fn performed_source_settles_required_output(
         repeated_settlement.observation().selected_commit(),
         settled.observation().selected_commit()
     );
-    let WorthQueryApplicationProgramOutputProgress::Settled(original_settlement) = performed
-        .required_output_mut()
-        .advance(&world.application, &request)
-        .expect("the installed transitive outputs advance")
-    else {
-        panic!("one call settles the delivered root and every output under it")
-    };
+    let original_settlement = settle(|| {
+        super::super::settled(
+            performed
+                .required_output_mut()
+                .advance(&world.application, &request)
+                .expect("the original transitive outputs resume across stage boundaries"),
+        )
+    });
     assert_eq!(
         original_settlement.root_observation().selected_commit(),
         settled.observation().selected_commit()

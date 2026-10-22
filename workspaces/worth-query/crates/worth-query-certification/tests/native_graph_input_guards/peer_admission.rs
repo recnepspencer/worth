@@ -136,9 +136,15 @@ fn portable_independent_sites_require_exact_scope_keys_source_and_effect_closure
         assert!(changed, "{defect}");
         parts.members.sort();
         let expected = if defect == "missing-actor-read" {
-            ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency
+            ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency {
+                operation: "Reuse".into(),
+                dependency: ApplicationOperationDependencyLocus::Body,
+            }
         } else {
-            ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency
+            ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
+                operation: "Reuse".into(),
+                dependency: ApplicationOperationDependencyLocus::Body,
+            }
         };
         assert_eq!(
             validate_portable_application_schema_freshly(

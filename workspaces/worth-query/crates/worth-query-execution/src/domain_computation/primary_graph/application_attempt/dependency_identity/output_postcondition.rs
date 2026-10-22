@@ -22,6 +22,29 @@ pub(in crate::domain_computation::primary_graph) struct OutputCurrentnessFacts {
 }
 
 impl OutputCurrentnessFacts {
+    /// Query owns these newly assembled program facts before any effect. Move
+    /// them through completed-read construction, never relabel opaque storage.
+    /// No computation supplied postconditions: candidate rebase must resolve
+    /// every fact, without a carry or a normalized own-effect ordinal.
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn admit_owned_program_facts(
+        facts: Vec<WorthQueryApplicationObservedFact>,
+        control: super::super::retained_decision_facts::StorageControl<'_, '_>,
+    ) -> Result<Self, super::super::retained_decision_facts::StoreDenial> {
+        use crate::domain_computation::primary_graph::application_checkpoint::facts::NativeFactPayloadBuilder;
+        control.check_live()?;
+        let mut builder = NativeFactPayloadBuilder::allocate_completed_read(facts.len(), control)?;
+        for fact in facts {
+            control.check_live()?;
+            builder.push(fact)?;
+        }
+        control.check_live()?;
+        Ok(Self {
+            facts: builder.seal()?,
+            carry: None,
+            moved_by_own_effect: std::sync::Arc::from([]),
+        })
+    }
+
     pub(in crate::domain_computation::primary_graph) fn rebase_carry(
         &self,
     ) -> Option<
@@ -46,17 +69,6 @@ impl OutputCurrentnessFacts {
         &self,
     ) -> std::sync::Arc<[usize]> {
         std::sync::Arc::clone(&self.moved_by_own_effect)
-    }
-}
-
-/// Facts a program gathered itself, which no owner call read.
-impl From<std::sync::Arc<[WorthQueryApplicationObservedFact]>> for OutputCurrentnessFacts {
-    fn from(facts: std::sync::Arc<[WorthQueryApplicationObservedFact]>) -> Self {
-        Self {
-            facts: facts.into(),
-            carry: None,
-            moved_by_own_effect: std::sync::Arc::from([]),
-        }
     }
 }
 
@@ -239,3 +251,6 @@ fn replacement_field_value<'effect>(
         _ => None,
     })
 }
+
+#[cfg(test)]
+mod owned_program_facts_tests;

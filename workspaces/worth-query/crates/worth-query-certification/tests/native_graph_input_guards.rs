@@ -69,7 +69,7 @@ mod world;
 #[path = "application_graph/document_retention_model/host/world_resources.rs"]
 #[allow(
     dead_code,
-    reason = "Reuse the ordinary bounded World policy, not its separate scale profiles."
+    reason = "Reuse ordinary World resources; workflow document limits are exercised elsewhere."
 )]
 mod world_resources;
 

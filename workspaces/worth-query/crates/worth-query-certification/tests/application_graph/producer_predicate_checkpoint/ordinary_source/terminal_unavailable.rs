@@ -290,6 +290,10 @@ fn terminal_owner(host: &Host, recover_source: bool) -> Terminal {
                     denial.kind(),
                     WorthQueryOutputDemandDenialKind::ProducerDomainDenied
                 );
+                assert_eq!(
+                    denial.domain_reason(),
+                    Some("A zero-day source has no assessable retention period.")
+                );
                 assert_eq!(denial.recovery_posture(), worth_query_host::facade::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal);
                 return operation;
             }

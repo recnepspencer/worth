@@ -187,7 +187,14 @@ where
             &evidence_currentness,
             selected.node_path(),
         )?;
-        let evidence_currentness: std::sync::Arc<[_]> = std::sync::Arc::from(evidence_currentness);
+        let evidence_currentness = super::super::OutputCurrentnessFacts::admit_owned_program_facts(
+            evidence_currentness,
+            super::super::retained_decision_facts::StorageControl::new(
+                execution.allocation_policy(),
+                Some(self.admission.publication_request()),
+            ),
+        )
+        .map_err(|cause| cause.into_attempt_denial(selected.node_path()))?;
         let subject = self.admission.scope_entity_id();
         let admitted = admit_workflow_transition(
             self,
@@ -225,7 +232,7 @@ where
             retain_output_demand_observation: false,
             retain_client_observation: false,
             producer_required_invariants: &[],
-            output_currentness_facts: Some(evidence_currentness.into()),
+            output_currentness_facts: Some(evidence_currentness),
         };
         Ok(PreparedWorkflowAdvance::Transition {
             program,

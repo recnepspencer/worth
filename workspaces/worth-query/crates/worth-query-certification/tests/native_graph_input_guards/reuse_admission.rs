@@ -79,9 +79,15 @@ fn portable_reuse_requires_complete_installed_content_and_comparison_reads() {
         )
         .unwrap_err();
         let expected = if defect == "missing-read" {
-            ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency
+            ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency {
+                operation: "Reuse".into(),
+                dependency: ApplicationOperationDependencyLocus::Body,
+            }
         } else {
-            ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency
+            ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
+                operation: "Reuse".into(),
+                dependency: ApplicationOperationDependencyLocus::Body,
+            }
         };
         assert_eq!(error, expected, "{defect}");
     }

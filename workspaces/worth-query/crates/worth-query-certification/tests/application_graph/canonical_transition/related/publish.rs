@@ -46,13 +46,6 @@ impl ApplicationMutationBinding<CanonicalSchema> for PublishBinding {
     const IDENTITY: &'static str = "canonical-related.publish-binding.v1";
     const HANDLER_IDENTITY: &'static str = "canonical-related.publish-handler.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "canonical-related.publish-command.v1";
-    const CANDIDATES: worth_query_decl::facade::application_operation::ApplicationCandidatePolicy =
-        worth_query_decl::facade::application_operation::ApplicationCandidatePolicy::finite(
-            ApplicationCandidateRequirements::fixed_shape(
-                ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 0, 1),
-                ApplicationCandidateResourceCeiling::representation_bytes(1_024),
-            ),
-        );
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
@@ -104,11 +97,6 @@ impl OperationHandler<CanonicalSchema, PublishBinding> for Handler {
         _: &mut DecisionReader<'_, '_, '_, CanonicalSchema, PublishBinding>,
     ) -> HandlerResult<(), Denied> {
         HandlerResult::Completed(())
-    }
-    fn candidate_requirements(&self, _: &Changed, _: &()) -> ApplicationCandidateRequirements {
-        PublishBinding::CANDIDATES
-            .finite_requirements()
-            .expect("fixed candidate contract")
     }
     fn build_candidate(
         &self,

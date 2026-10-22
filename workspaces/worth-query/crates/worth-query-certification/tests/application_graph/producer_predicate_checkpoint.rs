@@ -1,5 +1,4 @@
 //! A real producer's handler predicate survives captured output readmission.
-use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationRequestExt,
     WorthQueryOutputCurrentnessDenial,
@@ -46,15 +45,9 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         let WorthQueryApplicationOutputDemandProgress::Settled(settled) =
             handle.settle(&request).unwrap()
         else {
-            panic!("the bounded producer must settle");
+            panic!("the installed producer must settle");
         };
         assert_eq!(settled.producer_contacts_in_this_demand(), 1);
-        assert_eq!(settled.checkpoint_readmission_work_units(), 0);
-        assert_eq!(settled.checkpoint_readmission_work_bound(), 0);
-        assert_eq!(
-            settled.checkpoint_readmission_charged_preparation_bytes(),
-            0
-        );
         assert!(settled.application_commit_receipt().is_some());
         let subject = settled
             .outputs_of::<RetentionAssessmentOutputs>()
@@ -152,18 +145,6 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         settled.application_commit_receipt().is_none(),
         "this authority came from the checkpoint"
     );
-    assert!(
-        settled.checkpoint_readmission_work_units() > 0,
-        "the public settlement must carry the real checkpoint comparison's charged work"
-    );
-    assert!(
-        settled.checkpoint_readmission_work_units() <= settled.checkpoint_readmission_work_bound(),
-        "accepted readmission work must remain within its owner-computed ceiling"
-    );
-    assert!(
-        settled.checkpoint_readmission_charged_preparation_bytes() > 0,
-        "the public settlement must carry the real readmission owner's admitted scratch"
-    );
     assert_eq!(
         settled
             .outputs_of::<RetentionAssessmentOutputs>()
@@ -177,16 +158,13 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         .with_host_advancement(|host_phase| request.retain_read(&host_phase).unwrap())
         .expect("installed host call opens");
     assert!(matches!(request.at(&unchanged)
-        .require_current_output_demand(&foreign_settlement, Some((NonZeroUsize::new(4096).unwrap()).get())),
+        .require_current_output_demand(&foreign_settlement),
         Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::ForeignSettlement));
     drop(foreign_settlement);
     request
         .at(&unchanged)
-        .require_current_output_demand(&settled, Some((NonZeroUsize::new(4096).unwrap()).get()))
+        .require_current_output_demand(&settled)
         .expect("receipt-free restored output has current native lineage");
-    assert!(matches!(request.at(&unchanged)
-        .require_current_output_demand(&settled, Some((NonZeroUsize::new(1).unwrap()).get())),
-        Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::WorkBudgetExceeded));
     drop(handle);
 
     assert_eq!(
@@ -197,7 +175,7 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         .with_host_advancement(|host_phase| request.retain_read(&host_phase).unwrap())
         .expect("installed host call opens");
     assert!(matches!(request.at(&current)
-        .require_current_output_demand(&settled, Some((NonZeroUsize::new(4096).unwrap()).get())),
+        .require_current_output_demand(&settled),
         Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::Superseded));
     drop(settled);
     let mut changed = request
@@ -210,27 +188,21 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         panic!("changed source must produce a fresh assessment");
     };
     assert_eq!(refreshed.producer_contacts_in_this_demand(), 1);
-    assert_eq!(refreshed.checkpoint_readmission_work_units(), 0);
-    assert_eq!(refreshed.checkpoint_readmission_work_bound(), 0);
-    assert_eq!(
-        refreshed.checkpoint_readmission_charged_preparation_bytes(),
-        0
-    );
     assert!(refreshed.application_commit_receipt().is_some());
     let current = runtime
         .with_host_advancement(|host_phase| request.retain_read(&host_phase).unwrap())
         .expect("installed host call opens");
     request
         .at(&current)
-        .require_current_output_demand(&refreshed, Some((NonZeroUsize::new(4096).unwrap()).get()))
+        .require_current_output_demand(&refreshed)
         .expect("fresh producer settlement is current");
 }
 
 fn assert_captured_document_predicate(bytes: &[u8], accepted_bytes: usize, subject: EntityId) {
     // Inspect only Query's accepted-output section. The native payload remains opaque.
-    // This independent current v11 wire expectation fails if capture or readmission drops
+    // This independent current v13 wire expectation fails if capture or readmission drops
     // the predicate while retaining the document's ordinary field observations.
-    assert_eq!(&bytes[40..42], &11_u16.to_be_bytes());
+    assert_eq!(&bytes[40..42], &13_u16.to_be_bytes());
     assert_eq!(DOCUMENT_IDENTITY, "document-1");
     let value = br#"{"String":{"Raw":"document-1"}}"#;
     let mut expected = Vec::new();

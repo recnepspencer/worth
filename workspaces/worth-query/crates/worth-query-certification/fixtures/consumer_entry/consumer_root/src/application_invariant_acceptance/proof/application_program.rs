@@ -48,6 +48,8 @@ mod settlement;
 mod source_inventory;
 #[cfg(test)]
 mod source_only_pinned;
+#[cfg(test)]
+mod stage_boundary;
 
 pub(super) fn performed_source_settles_required_output(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<

@@ -125,7 +125,16 @@ fn cold_retiring_replacement_cannot_drop_delete_unlink_or_exclusivity() {
                 WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
             )
             .unwrap_err(),
-            ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency,
+            ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
+                // Keep also requires the shared source bound and precedes Retire.
+                operation: if defect == "source-bound" {
+                    "Keep"
+                } else {
+                    "Retire"
+                }
+                .into(),
+                dependency: ApplicationOperationDependencyLocus::Body,
+            },
             "{defect}"
         );
     }
