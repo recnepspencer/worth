@@ -16,15 +16,15 @@
 //! Binding<S,I>: WorthQueryApplicationRequiredOutputSource<S,Connection<S,R>>,
 //! A: ApplicationAction<S,Binding<S,I>>,
 //! Delivery<S,I,A>: ApplicationFixedActionDelivery<S,Binding<S,I>,Root=R,Projection=ApplicationNoProjection> { owner.close_for_delivery(request) }
-//! fn deliver<S,I,P,R,A>(owner: &WorthQueryClosedFixedDelivery<S,I,P,R,A>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, common: &WorthQueryApplicationReadObservation, policy: WorthQueryOperationDeliveryPolicy)
+//! fn deliver<S,I,P,R,A>(owner: &WorthQueryClosedFixedDelivery<S,I,P,R,A>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, common: &WorthQueryApplicationReadObservation)
 //! where S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>, P: ApplicationProgramDefinition<S>,
 //! R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
 //! Connection<S,R>: WorthQueryApplicationRequiredOutputConnection<S>,
 //! Binding<S,I>: WorthQueryApplicationRequiredOutputSource<S,Connection<S,R>>,
 //! A: ApplicationAction<S,Binding<S,I>>,
 //! Delivery<S,I,A>: ApplicationFixedActionDelivery<S,Binding<S,I>,Root=R,Projection=ApplicationNoProjection> {
-//!     let _ = owner.deliver_current(request, policy);
-//!     let _: Result<(), WorthQueryOperationDeliveryDenial> = owner.deliver_current_at(&request.at(common), policy);
+//!     let _ = owner.deliver_current(request);
+//!     let _: Result<(), WorthQueryOperationDeliveryDenial> = owner.deliver_current_at(&request.at(common));
 //! }
 //! ```
 //!
@@ -123,14 +123,14 @@
 //! type Binding<S,I> = <I as ApplicationMutationIntent<S>>::Binding;
 //! type Connection<S,R> = <<R as ApplicationOutputGraphShape<S>>::RootConnection as ApplicationConnectionShape<S>>::Binding;
 //! type Delivery<S,I,A> = <A as ApplicationAction<S,Binding<S,I>>>::Delivery;
-//! fn bypass<S,I,P,R,A>(owner: &WorthQueryClosedFixedDelivery<S,I,P,R,A>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, policy: WorthQueryOperationDeliveryPolicy)
+//! fn bypass<S,I,P,R,A>(owner: &WorthQueryClosedFixedDelivery<S,I,P,R,A>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>)
 //! where S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>, P: ApplicationProgramDefinition<S>,
 //! R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
 //! Connection<S,R>: WorthQueryApplicationRequiredOutputConnection<S>,
 //! Binding<S,I>: WorthQueryApplicationRequiredOutputSource<S,Connection<S,R>>,
 //! A: ApplicationAction<S,Binding<S,I>>,
 //! Delivery<S,I,A>: ApplicationFixedQueryDelivery<S,Binding<S,I>,Root=R>
-//! { let _ = owner.deliver_current(request, policy); }
+//! { let _ = owner.deliver_current(request); }
 //! ```
 //!
 //! Nor can it bypass its selector at a caller-held common observation.
@@ -141,13 +141,13 @@
 //! type Binding<S,I> = <I as ApplicationMutationIntent<S>>::Binding;
 //! type Connection<S,R> = <<R as ApplicationOutputGraphShape<S>>::RootConnection as ApplicationConnectionShape<S>>::Binding;
 //! type Delivery<S,I,A> = <A as ApplicationAction<S,Binding<S,I>>>::Delivery;
-//! fn bypass_at<S,I,P,R,A>(owner: &WorthQueryClosedFixedDelivery<S,I,P,R,A>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, common: &WorthQueryApplicationReadObservation, policy: WorthQueryOperationDeliveryPolicy)
+//! fn bypass_at<S,I,P,R,A>(owner: &WorthQueryClosedFixedDelivery<S,I,P,R,A>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, common: &WorthQueryApplicationReadObservation)
 //! where S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>, P: ApplicationProgramDefinition<S>,
 //! R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
 //! Connection<S,R>: WorthQueryApplicationRequiredOutputConnection<S>,
 //! Binding<S,I>: WorthQueryApplicationRequiredOutputSource<S,Connection<S,R>>,
 //! A: ApplicationAction<S,Binding<S,I>>,
 //! Delivery<S,I,A>: ApplicationFixedQueryDelivery<S,Binding<S,I>,Root=R>
-//! { let _ = owner.deliver_current_at(&request.at(common), policy); }
+//! { let _ = owner.deliver_current_at(&request.at(common)); }
 //! ```
 //!

@@ -20,12 +20,12 @@
 //!     <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationRequiredOutputConnection<S> {
 //!     owner.retry_close(request)
 //! }
-//! fn deliver<S,P,R>(owner: &WorthQueryClosedProgramOutputDelivery<S,P,R>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, common: &WorthQueryApplicationReadObservation, policy: WorthQueryOperationDeliveryPolicy)
+//! fn deliver<S,P,R>(owner: &WorthQueryClosedProgramOutputDelivery<S,P,R>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, common: &WorthQueryApplicationReadObservation)
 //! where S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>,
 //!     R: ApplicationOutputGraphShape<S> + ApplicationFixedOutputRoot,
 //!     <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationRequiredOutputConnection<S> {
-//!     let _ = owner.deliver_current(request, policy);
-//!     let _: Result<(), WorthQueryOperationDeliveryDenial> = owner.deliver_current_at(&request.at(common), policy);
+//!     let _ = owner.deliver_current(request);
+//!     let _: Result<(), WorthQueryOperationDeliveryDenial> = owner.deliver_current_at(&request.at(common));
 //!     let _ = (owner.settlement().root_settlement(), owner.close_evidence());
 //! }
 //! ```
@@ -74,11 +74,11 @@
 //! use worth_query_host::facade::application_entry::*;
 //! use worth_query_decl::facade::{application_program::*, application_schema::ApplicationSchema};
 //! use worth_query_host::facade::primary_graph::WorthQueryApplicationRequiredOutputConnection;
-//! fn partial<S,P,R>(owner: WorthQueryProgramOutputDeliveryCloseRefusal<S,P,R>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>, policy: WorthQueryOperationDeliveryPolicy)
+//! fn partial<S,P,R>(owner: WorthQueryProgramOutputDeliveryCloseRefusal<S,P,R>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>)
 //! where S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>,
 //!     R: ApplicationOutputGraphShape<S> + ApplicationFixedOutputRoot,
 //!     <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationRequiredOutputConnection<S> {
-//!     let _ = owner.deliver_current(request, policy);
+//!     let _ = owner.deliver_current(request);
 //! }
 //! ```
 //!

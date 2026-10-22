@@ -843,7 +843,7 @@ installed Query path:
 let result = bank
     .query(queries::account_summary(account))
     .as_principal(&principal)
-    .controls(BankReadControls::current(request_scope, 32, 20_000)?)
+    .controls(BankReadControls::current(request_scope, 32)?)
     .execute()?;
 
 let [summary] = result.rows() else {

@@ -3,6 +3,7 @@
 //! The same original owner receives fresh requests; completion transfers evidence only after close.
 //!
 //! ```
+//! # #![recursion_limit = "256"]
 //! use worth_query_host::facade::{
 //!     application_entry::*, application_installation::WorthQueryProgramApplicationRuntime,
 //!     declaration::application_program::ApplicationProgramDefinition, domain::ApplicationSchema,
