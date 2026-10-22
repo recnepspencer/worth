@@ -49,11 +49,43 @@ few conventions decide how much each build repeats.
 - **Integration tests**: where a crate has a suite binary (`autotests =
   false`), add a scenario file to `tests/` and a `#[path]` module line to the
   suite instead of creating another test binary, each of which links the
-  whole dependency graph.
-  A file that constructs process-wide state, such as an execution authority
-  or a global allocator, gets its own target under `tests/isolated/`.
+  whole dependency graph. Nextest isolates runtime process state per test.
+  Keep an intentional target under `tests/isolated/` only where link/harness
+  isolation is required, such as conflicting global allocator definitions.
+- **Windows linking**: the target `linker` setting chooses Rust's bundled
+  `rust-lld`. Keep compiler safety/platform flags in `build.rustflags`; a
+  target rustflags table replaces that array rather than extending it.
 - **Build scripts** declare `cargo::rerun-if-changed`; without it Cargo
   reruns them after any edit in the package and rebuilds every dependent.
+
+### Nextest lanes and build reuse
+
+The root workspace requires cargo-nextest 0.9.140 or newer. Use
+`cargo inner -p <package> -E 'test(name_fragment)'` for focused library-owner
+tests. `--lib` avoids building integration targets. Use
+`cargo integration -p <package> --test <suite> -E 'test(name_fragment)'` for
+consumer journeys and compiler-fence suites. `cargo verify --workspace` selects
+all root-workspace tests for CI. Other-team workspaces retain their own lanes.
+
+The default profile reports slow tests at 10 seconds and fails them at 60
+seconds; integration/CI report at 60 seconds and fail at ten minutes. Fail-fast
+and retries are disabled. Treat a slow result as a performance finding. Inspect
+the workload and production owner; neither moving the test to another tier nor
+raising its timeout fixes a performance defect.
+
+Build the selected test artifacts once, then rerun them without compiling:
+
+```text
+cargo nextest archive -p <package> --lib --locked --archive-file C:/worth-build-cache/archives/owner-tests.tar.zst
+cargo nextest run --archive-file C:/worth-build-cache/archives/owner-tests.tar.zst --no-fail-fast -E 'test(name_fragment)'
+```
+
+Keep matching source and fixtures alongside the archive; it does not contain
+source. Rebuild after source, compiler, features or profile changes. Nextest
+does not run doctests: keep the affected owners' rustdoc compiler contracts in
+the integration/CI checks with `cargo test --doc --no-fail-fast -p <package>`.
+Cargo compiler jobs stay at the CPU default. Queue builds against the shared
+target rather than launching competing rebuilds for individual failures.
 
 ## Pull requests
 

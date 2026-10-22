@@ -23,6 +23,15 @@ rustflags = [
     "--cfg", "worth_ui_adapter=\"hardware\"",
 ]
 
+# Keep the compiler's safety/windowing flags above when choosing LLVM's linker.
+[target.x86_64-pc-windows-msvc]
+linker = "rust-lld"
+
+[alias]
+inner = "nextest run --lib --no-fail-fast --locked"
+integration = "nextest run --profile integration --no-fail-fast --locked"
+verify = "nextest run --profile ci --no-fail-fast --locked"
+
 # Trace output verbosity (force = false → your override wins):
 #   RUST_LOG=info   cargo test   → display_interesting() summary (default)
 #   RUST_LOG=debug  cargo test   → every decision, line by line
