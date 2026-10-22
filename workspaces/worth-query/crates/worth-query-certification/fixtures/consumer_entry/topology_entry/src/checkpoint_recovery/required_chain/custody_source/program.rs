@@ -92,8 +92,7 @@ impl ApplicationProgramDefinition<ValueSourceSchema> for ValueSourceProgram {
             super::super::output_feature_spec_for::<ValueSourceSchema>(),
             ApplicationFeatureSpec::root::<ValueSourceSchema, PlanarFinalOutputFeature>()
                 .provides::<PlanarFinalBodyOutput>()
-                .conditional_operation::<PublishFinalPlanarOutput>()
-                .conditional_operation::<PreserveFinalPlanarOutput>()
+                .required_pair::<PlanarFinalFeatureRoles<ValueSourceSchema>>()
                 .finish(),
             ApplicationFeatureSpec::root::<ValueSourceSchema, PlanarAlternateFinalOutputFeature>()
                 .provides::<PlanarAlternateFinalBodyOutput>()

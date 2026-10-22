@@ -1,5 +1,6 @@
 mod connections;
 mod feature_outputs;
+mod feature_roles;
 use super::super::semantic_encoding::{framed_fields, framed_parts};
 use super::super::{
     ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
@@ -157,6 +158,7 @@ fn append_features(
             ));
         }
         append_feature_outputs(facts, feature);
+        feature_roles::append_required_roles(facts, feature);
     }
 }
 

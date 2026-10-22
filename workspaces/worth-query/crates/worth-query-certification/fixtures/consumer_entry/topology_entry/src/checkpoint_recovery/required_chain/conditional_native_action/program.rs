@@ -30,8 +30,7 @@ impl<const MODE: u8> ApplicationProgramDefinition<JointSchema> for JointProgram<
             .native_action::<PlanarSourceAdjustmentBinding<JointSchema>>()
             .finish_action()
             .conditional_operation::<PublishChain>()
-            .conditional_operation::<PublishFinalPlanarOutput>()
-            .conditional_operation::<PreserveFinalPlanarOutput>()
+            .required_pair::<PlanarFinalFeatureRoles<JointSchema, PlanarSourceFeature>>()
             .conditional_operation::<PublishAlternatePlanarOutput>();
         let feature = match MODE {
             0 | 5 | 7 => feature

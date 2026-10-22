@@ -13,7 +13,10 @@ impl<Child: ValueSeedDelegate> ValueSeedDelegate for SequenceDelegate<Child> {
     const WIRE_NULLABLE: bool = false;
     const SHAPE_BODY: ValueShapeBody = { ValueShapeBody::Sequence(Child::EDGE) };
     fn validate(value: &Self::Value, bounds: ValueDecodeBounds) -> Result<(), D> {
-        if value.len() > bounds.maximum_sequence_length() {
+        if bounds
+            .maximum_sequence_length()
+            .is_some_and(|maximum| value.len() > maximum)
+        {
             return Err(D::SequenceLength);
         }
         let child = bounds.descend()?;
@@ -50,17 +53,26 @@ impl<Value: CanonicalValue> CanonicalValue for Vec<Value> {
     ) -> Result<Self, Decoder::Error> {
         decode_sequence::<ValueDelegate<Value>, Decoder>(decoder, bounds, Some(admission))
     }
+    fn deserialize_reporting<'de, Decoder: serde::Deserializer<'de>>(
+        decoder: Decoder,
+        bounds: ValueDecodeBounds,
+        reporter: &mut ValueDecodeAdmission<'_>,
+    ) -> Result<Self, Decoder::Error> {
+        decode_sequence::<ValueDelegate<Value>, Decoder>(decoder, bounds, Some(reporter))
+    }
 }
 
 fn decode_sequence<'de, Value: ValueSeedDelegate, Decoder: serde::Deserializer<'de>>(
     decoder: Decoder,
     bounds: ValueDecodeBounds,
-    admission: Option<&mut ValueDecodeAdmission<'_>>,
+    mut admission: Option<&mut ValueDecodeAdmission<'_>>,
 ) -> Result<Vec<Value::Value>, Decoder::Error> {
-    let child = bounds.descend().map_err(Decoder::Error::custom)?;
+    let child = bounds.descend().map_err(|cause| {
+        super::value_decode_error::<Decoder::Error>(cause, admission.as_deref_mut())
+    })?;
     struct Sequence<'a, 'b, Value>(
         ValueDecodeBounds,
-        usize,
+        Option<usize>,
         PhantomData<Value>,
         Option<&'a mut ValueDecodeAdmission<'b>>,
     );
@@ -75,9 +87,9 @@ fn decode_sequence<'de, Value: ValueSeedDelegate, Decoder: serde::Deserializer<'
         ) -> Result<Self::Value, Access::Error> {
             let mut values = Vec::new();
             loop {
-                if values.len() == self.1 {
+                if self.1 == Some(values.len()) {
                     // The rejecting seed detects an extra item before constructing it.
-                    access.next_element_seed(RejectAdditionalElement)?;
+                    access.next_element_seed(RejectAdditionalElement(self.3.as_deref_mut()))?;
                     return Ok(values);
                 }
                 let Some(value) = access.next_element_seed(DelegatedValueSeed::<Value>::new(
@@ -88,17 +100,25 @@ fn decode_sequence<'de, Value: ValueSeedDelegate, Decoder: serde::Deserializer<'
                     return Ok(values);
                 };
                 if values.len() == values.capacity() {
-                    let capacity = values.capacity().saturating_mul(2).max(4).min(self.1);
+                    let mut capacity = values.capacity().saturating_mul(2).max(4);
+                    if let Some(maximum) = self.1 {
+                        capacity = capacity.min(maximum);
+                    }
                     if let Some(admit) = self.3.as_deref_mut() {
                         let bytes = capacity
                             .checked_mul(std::mem::size_of::<Value::Value>())
                             .ok_or_else(|| Access::Error::custom(D::Admission))?;
                         // The previous allocation remains charged during growth.
-                        admit(1, bytes).map_err(Access::Error::custom)?;
+                        admit.admit(1, bytes).map_err(Access::Error::custom)?;
                     }
                     values
                         .try_reserve_exact(capacity - values.len())
-                        .map_err(|_| Access::Error::custom(D::Allocation))?;
+                        .map_err(|_| {
+                            super::value_decode_error::<Access::Error>(
+                                D::Allocation,
+                                self.3.as_deref_mut(),
+                            )
+                        })?;
                 }
                 values.push(value);
             }
@@ -112,14 +132,19 @@ fn decode_sequence<'de, Value: ValueSeedDelegate, Decoder: serde::Deserializer<'
     ))
 }
 
-pub(super) struct RejectAdditionalElement;
-impl<'de> DeserializeSeed<'de> for RejectAdditionalElement {
+pub(super) struct RejectAdditionalElement<'a, 'b>(
+    pub(super) Option<&'a mut ValueDecodeAdmission<'b>>,
+);
+impl<'de> DeserializeSeed<'de> for RejectAdditionalElement<'_, '_> {
     type Value = ();
     fn deserialize<Decoder: serde::Deserializer<'de>>(
         self,
         _: Decoder,
     ) -> Result<(), Decoder::Error> {
-        Err(Decoder::Error::custom(D::SequenceLength))
+        Err(super::value_decode_error::<Decoder::Error>(
+            D::SequenceLength,
+            self.0,
+        ))
     }
 }
 
@@ -168,15 +193,24 @@ impl<Value: CanonicalValue> CanonicalValue for Option<Value> {
     ) -> Result<Self, Decoder::Error> {
         decode_optional::<ValueDelegate<Value>, Decoder>(decoder, bounds, Some(admission))
     }
+    fn deserialize_reporting<'de, Decoder: serde::Deserializer<'de>>(
+        decoder: Decoder,
+        bounds: ValueDecodeBounds,
+        reporter: &mut ValueDecodeAdmission<'_>,
+    ) -> Result<Self, Decoder::Error> {
+        decode_optional::<ValueDelegate<Value>, Decoder>(decoder, bounds, Some(reporter))
+    }
 }
 
 fn decode_optional<'de, Value: ValueSeedDelegate, Decoder: serde::Deserializer<'de>>(
     decoder: Decoder,
     bounds: ValueDecodeBounds,
-    admission: Option<&mut ValueDecodeAdmission<'_>>,
+    mut admission: Option<&mut ValueDecodeAdmission<'_>>,
 ) -> Result<Option<Value::Value>, Decoder::Error> {
     require_nonnullable_optional_payload::<Value>();
-    let child = bounds.descend().map_err(Decoder::Error::custom)?;
+    let child = bounds.descend().map_err(|cause| {
+        super::value_decode_error::<Decoder::Error>(cause, admission.as_deref_mut())
+    })?;
     struct Optional<'a, 'b, Value>(
         ValueDecodeBounds,
         PhantomData<Value>,

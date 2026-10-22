@@ -1,13 +1,16 @@
 mod canonical;
 pub use canonical::{
     decode_application_canonical_value, decode_application_canonical_value_with_admission,
-    decode_canonical_value, decode_canonical_value_with_admission, encode_canonical_value,
-    ApplicationCanonicalValueContract, CanonicalValue, ValueCodecDenial, ValueDecodeAdmission,
+    decode_application_document, decode_canonical_value, decode_canonical_value_with_admission,
+    encode_application_document, encode_canonical_value, ApplicationCanonicalValueContract,
+    CanonicalDocumentCodec, CanonicalValue, ValueCodecDenial, ValueDecodeAdmission,
     ValueDecodeBounds, ValueShape,
 };
 mod admitted;
 #[cfg(test)]
 mod admitted_tests;
+#[cfg(test)]
+mod canonical_tests;
 mod denial;
 mod encoded_scalar;
 mod primitive;

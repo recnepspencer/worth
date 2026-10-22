@@ -1,6 +1,8 @@
 //! Canonical values retain nondefault meaning under finite representation bounds.
 #[path = "value_shape/admitted.rs"]
 mod admitted;
+#[path = "value_shape/boolean_grammar.rs"]
+mod boolean_grammar;
 #[path = "value_shape/compiler.rs"]
 mod compiler;
 #[path = "value_shape/recursive.rs"]

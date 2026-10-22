@@ -598,12 +598,10 @@ publish.
 
 - Schema: `worth_query_application_schema`, `worth_query_entity`,
   `worth_query_aspect`, `worth_query_field`, `worth_query_relation`.
-- Operations: `worth_query_operation` and the family that declares what it
-  touches: `worth_query_operation_reads`, `worth_query_operation_writes`,
-  `worth_query_operation_creates`, `worth_query_operation_deletes`,
-  `worth_query_operation_links`, `worth_query_operation_unlinks`,
-  `worth_query_operation_emits`, `worth_query_operation_requires`,
-  `worth_query_operation_expects_fact`, `worth_query_operation_expects_version`.
+- Operations: `worth_query_operation!(... access { ... })` declares a concrete
+  schema operation's reads, effects and expectations once. Install those same
+  facts with `schema.declared_operation::<Operation>(definition)`, retaining
+  explicit effect/aftermath policy. See [operation access](build-an-application.md#21-declare-operation-access-once).
 - Bindings: `worth_query_mutation_binding`, `worth_query_query_binding`.
 - Capabilities and policy: `worth_query_capability`, `worth_query_ability`,
   `worth_query_policy`, `worth_query_principal_binding`.
@@ -611,6 +609,10 @@ publish.
 - Features and programs: each `ApplicationFeature` owns actions through an
   `ApplicationFeatureSpec`. An `ApplicationProgramDefinition<Schema>` lists
   its contributions, features, output graph, and rules.
+  A required Initial/Preserve production pair uses one
+  `WorthQueryRequiredFeaturePair` and the feature's `required_pair` projection;
+  contribution contracts, setup and readiness associations consume that same
+  declaration. See [required roles](build-an-application.md#required-initial-and-preserve-output-roles).
   `ApplicationProgramAuthoring::<Schema, Program>::begin().validated_program()`
   returns a `ValidatedApplicationProgram`, whose `revision()` is the
   content-addressed `ApplicationProgramRevision`.

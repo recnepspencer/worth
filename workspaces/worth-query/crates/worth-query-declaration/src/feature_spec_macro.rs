@@ -124,6 +124,9 @@ macro_rules! worth_query_feature_spec {
             $builder.external_input::<$provider>(); $($rest)*
         )
     };
+    (@members $builder:expr; required_pair($roles:ty); $($rest:tt)*) => {
+        $crate::worth_query_feature_spec!(@members $builder.required_pair::<$roles>(); $($rest)*)
+    };
     (@members $builder:expr; conditional_operation($operation:ty); $($rest:tt)*) => {
         $crate::worth_query_feature_spec!(@members
             $builder.conditional_operation::<$operation>();

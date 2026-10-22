@@ -137,6 +137,10 @@ pub(super) fn catalog(contracts: Vec<Contract>) -> Catalog {
                     1 => TypeId::of::<PatchAccountDraftOperation>(),
                     _ => TypeId::of::<TouchAccountInput>(),
                 },
+                operation_type: match ordinal {
+                    1 => TypeId::of::<PatchAccountDraftOperation>(),
+                    _ => TypeId::of::<TouchAccountOperation>(),
+                },
                 installed_type: match ordinal {
                     0 => TypeId::of::<TouchAccountInput>(),
                     _ => TypeId::of::<PatchAccountDraftInput>(),

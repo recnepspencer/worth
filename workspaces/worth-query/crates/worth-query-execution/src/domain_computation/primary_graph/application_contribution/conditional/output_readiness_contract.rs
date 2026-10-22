@@ -3,6 +3,9 @@ use worth_query_declaration::facade::{
     domain_computation::WorthQueryCancellationSafePointFamily,
 };
 use worth_query_installation::facade as domain;
+pub(super) mod typed;
+use typed::FieldExpectation;
+pub use typed::{WorthQueryOutputReadinessContract, WorthQueryReadinessFieldUse};
 
 /// Domain facts needed to declare Query's standard derived-output readiness operation.
 pub struct WorthQueryOutputReadinessContractBuilder {
@@ -17,14 +20,26 @@ pub struct WorthQueryOutputReadinessContractBuilder {
     strategy: domain::WorthQueryExecutionStrategyName,
 
     lowering_family: String,
+    fields: Vec<FieldExpectation>,
+    delivery_fields: std::collections::BTreeSet<
+        worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+    >,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryOutputReadinessContractDenial {
     detail: String,
+    locus:
+        Option<worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus>,
 }
 
 impl WorthQueryOutputReadinessContractDenial {
+    pub fn field_locus(
+        &self,
+    ) -> Option<&worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus>
+    {
+        self.locus.as_ref()
+    }
     pub fn detail(&self) -> &str {
         &self.detail
     }
@@ -62,6 +77,8 @@ impl WorthQueryOutputReadinessContractBuilder {
             strategy,
 
             lowering_family: lowering_family.into(),
+            fields: Vec::new(),
+            delivery_fields: std::collections::BTreeSet::new(),
         }
     }
 
@@ -95,6 +112,11 @@ impl WorthQueryOutputReadinessContractBuilder {
         domain::WorthQueryDomainOperationDefinition<D, O, F>,
         WorthQueryOutputReadinessContractDenial,
     > {
+        if !self.fields.is_empty() {
+            return Err(denial(
+                "typed readiness fields must remain in build_typed's package contract",
+            ));
+        }
         if self.dependencies.is_empty() || self.readiness_dependencies.is_empty() {
             return Err(denial(
                 "output readiness requires delivery and readiness dependencies",
@@ -253,5 +275,6 @@ fn support_contract() -> domain::WorthQueryOperationSupportRequirements {
 fn denial(detail: impl Into<String>) -> WorthQueryOutputReadinessContractDenial {
     WorthQueryOutputReadinessContractDenial {
         detail: detail.into(),
+        locus: None,
     }
 }

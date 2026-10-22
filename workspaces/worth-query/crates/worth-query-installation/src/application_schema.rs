@@ -27,6 +27,8 @@ pub use invariant::{
     WorthQueryInstalledApplicationInvariantDescriptor,
 };
 pub use native_contract::{
+    declared_application_aspect_contract, WorthQueryApplicationSchemaContractCatalogDenial,
+    WorthQueryApplicationSchemaContractCatalogDenialKind,
     WorthQueryInstalledApplicationAspectContract, WorthQueryInstalledApplicationAspectLocus,
     WorthQueryInstalledApplicationSchemaContractCatalog,
     WorthQueryInstalledApplicationSchemaContractCatalogCounters,
@@ -45,7 +47,5 @@ pub(crate) use compilation::{
 pub(crate) use installed_principal_binding::AdmittedPrincipalBindingStop;
 pub(crate) use native_contract::{
     compile_native_contract_catalog, compile_portable_native_contract_records,
-    WorthQueryApplicationSchemaContractCatalogDenial,
-    WorthQueryApplicationSchemaContractCatalogDenialKind,
 };
 pub(crate) use value_binding::WorthQueryApplicationValueBindingInstallationDenialKind;

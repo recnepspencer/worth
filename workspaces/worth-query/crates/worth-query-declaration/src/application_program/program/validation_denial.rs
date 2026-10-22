@@ -3,6 +3,8 @@
 pub enum ApplicationProgramValidationDenialKind {
     InvalidIdentity,
     DuplicateFeature,
+    InvalidRequiredFeatureRole,
+    DuplicateRequiredFeatureRole,
     DuplicateAction,
     DuplicateConnection,
     DanglingFeature,

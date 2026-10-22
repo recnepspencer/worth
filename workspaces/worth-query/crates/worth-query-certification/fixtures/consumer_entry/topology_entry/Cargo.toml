@@ -22,3 +22,8 @@ sha2 = "0.10"
 worth-query-host = { workspace = true }
 worth-execution = { path = "../../../../../../../crates/worth-execution" }
 worth-relational = { path = "../../../../../../../crates/worth-relational" }
+
+[[example]]
+name = "required_feature"
+path = "examples/required_feature.rs"
+test = true

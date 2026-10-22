@@ -156,15 +156,7 @@ worth_query_application_contribution! {
                 .aspect(TemporalIntent::reference(), IntentFacts::reference())
                 .field(TemporalIntent::reference(), IntentRevisionField::reference())
                 // ... more fields, relations, a principal binding ...
-                .operation(
-                    AmendTemporal::reference()
-                        .definition()
-                        .no_external_effect()   // typestate: you must choose
-                        .no_aftermath()         // typestate: you must choose
-                        .finish(),
-                )
-                .operation_read_field(AmendTemporal::reference(), IntentRevisionField::reference())
-                .operation_write(AmendTemporal::reference(), IntentRevisionField::reference())
+                // ... operations use declared_operation with their typed access (§2.1) ...
                 .invariant(integrity::definition());
             super::application_entry::declare(schema)
         }
@@ -174,6 +166,10 @@ worth_query_application_contribution! {
 
 The host side of the same contribution registers what runs: handlers,
 invariants, and conditional nodes.
+For a required Initial/Preserve producer feature, use the single
+[required-role declaration](#required-initial-and-preserve-output-roles) and its
+`contracts.feature` / `setup.feature` projections. The temporal example below
+is a standalone conditional, not a paired output feature.
 
 <!-- illustrative -->
 ```rust,ignore
@@ -206,7 +202,8 @@ impl WorthQueryApplicationContribution<TemporalHostSchema> for TemporalHostContr
 }
 ```
 
-- `contracts` is optional and defaults to `Ok(())`.
+- `contracts` defaults to `Ok(())` for contributions without required runtime
+  contracts. A required pair must project its contracts with `contracts.feature`.
 - A contribution with nothing to configure uses `type Configuration = ();`.
   Bank has three such contributions and installs them with the configuration
   tuple `((), (), ())`.
@@ -215,7 +212,59 @@ impl WorthQueryApplicationContribution<TemporalHostSchema> for TemporalHostContr
 The schema and contribution APIs are covered in depth by the
 [`worth-query-host` README](../workspaces/worth-query/crates/worth-query-host/README.md)
 and the [`worth-query-decl` README](../workspaces/worth-query/crates/worth-query-decl/README.md).
-The rest of this guide is about what sits on top of the schema.
+### 2.1 Declare operation access once
+
+For a native handler on a concrete application schema, put its complete access set in
+`worth_query_operation!`'s `access` clause. It generates both the Rust
+capabilities and the installed schema projection. In this small example,
+`Schema`, `Input`, `Record`, `Value` and `Children` are already declared typed
+schema members:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+use worth_query_decl::facade::{application_schema::*, worth_query_operation};
+
+worth_query_operation!(pub Edit for Schema, input Input;
+    access {
+        read_entities: [Record];
+        read_fields: [Value];
+        read_relations: [Children];
+        writes: [Value];
+        expects_version: [Value];
+        links: [Children];
+        unlinks: [Children];
+    }
+);
+
+let schema = schema.declared_operation::<Edit>(
+    Edit::reference().definition().no_external_effect().no_aftermath().finish(),
+);
+```
+
+Use `read_entities`, `read_fields` and `read_relations` for decisions; `writes`,
+`creates`, `deletes`, `links`, `unlinks` and `emits` for effects; and
+`expects_version` / `expects_fact` for source preconditions. Empty or unused
+clauses can be omitted. Declare every actual access, including related members;
+the macro does not inspect handler bodies. Effect/aftermath policy and mutation
+binding installation remain explicit at their existing owners.
+
+Edit the access clause when adding a field or relation. Do not also author
+`worth_query_operation_reads!`/`writes!` lists or repeat the same members in
+`operation_read_field`/`operation_write` registration calls. Do not add a
+projection-work invoice to make this declaration install. Native admission still
+checks actual reads and effects; a Rust capability cannot widen that authority.
+
+This form currently targets concrete schemas. Schema-generic operation markers
+keep their existing typed declarations; the concrete `access` form does not
+claim to generate access for an arbitrary schema trait.
+For a [declarative operation body](../workspaces/worth-query/crates/worth-query/docs/authoring/scope-field-operation-bodies.md),
+the body already derives its installed footprint. Follow that authoring path
+without restating the body as a second installed access description.
+The [complete schema and access proof](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/declared_operation/tests.rs)
+checks both projections and schema validation without an invoice. The
+[`ApplicationDeclaredOperation` reference](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/declared_operation.rs)
+includes a passing capability example and an undeclared-member compile refusal.
 
 ---
 
@@ -258,14 +307,15 @@ tree sharing and retained reservations continue to own those responsibilities.
 See the [native resident-value tests](../crates/worth-execution/tests/charged_bytes_derive.rs)
 and the [Host facade consumer](../workspaces/worth-query/crates/worth-query-host/tests/charged_bytes_derive.rs).
 
-### Bounded canonical nested values
+### Canonical nested values and derived readiness
 
 A pure value owner can derive `worth_foundational::facade::WorthValue` to emit
-Serde serialization, portable wire shape, and a bounded deserialization seed
+Serde serialization, portable wire shape, and a checked deserialization seed
 from one definition. Do not also derive `Serialize` or `Deserialize`. Supported
-grammar includes concrete named/unit/newtype structs, external unit/newtype
+grammar includes concrete named/unit/newtype structs, external unit/newtype/named
 variants, internally tagged unit/named variants, 8–64 bit integers, booleans,
-strings, `Vec`, `Option`, `Box` and exact two-element tuple payloads. Literal
+strings, checked `usize` indices on a `u64` wire, fixed arrays, `Vec`, `Option`,
+`Box` and exact two-element tuple payloads. Literal
 `serde(rename = "...")`, enum `rename_all = "snake_case"`, and container
 `deny_unknown_fields` are supported. Other Serde behavior and containers fail
 compilation. An opaque domain owner supplies its own bounded `CanonicalValue`
@@ -275,7 +325,10 @@ Recursive types describe a finite grammar with lexical binders/references;
 they do not claim finite type nesting. `ValueShapeDefinition::inspect()` reports
 `ValueShapeDepth::Recursive` or an actual finite extent. Each recursion cycle
 must cross a structural level. Structs, enum envelopes, sequences and pairs
-descend the per-value depth bound; transparent newtypes and boxes do not.
+descend an explicit depth policy when one exists; transparent newtypes and boxes
+do not. Ordinary canonical bindings require no guessed byte, depth or collection
+ceilings. JSON serialization and deserialization use stack growth; recursive
+application-owned `Drop` and `Debug` remain the value owner's responsibility.
 Static grammar functions allocate no descriptor during decoding. Their closure
 inspection and all nested seeds use the same admission callback. The installed
 catalogue refuses an unadmitted child even when another variant is selected.
@@ -290,15 +343,46 @@ Nullable optional payloads, such as `Option<Option<T>>` or `Option<()>`, are
 refused because Serde's `null` would erase the distinction between absence and
 a present null payload. Use an externally tagged enum for that meaning.
 
-The entry uses `worth_query_value_binding!` with `scalar: String` and
-`canonical: ValueDecodeBounds::new(wire_bytes, string_bytes, sequence_length,
-depth)`. The sequence bound limits variable `Vec` lengths; fixed pairs require
-exactly two slots. These finite bounds are constant declaration meaning. Encoding checks
+The ordinary entry uses `worth_query_value_binding!` with `scalar: String`,
+`canonical,` and an optional `validate: domain_validator` returning
+`Result<(), &'static str>`. Domain validation runs on encode and decode. Fixed
+arrays and pairs retain their actual type cardinality. Encoding checks
 structure before emitting bytes; decoding uses generated seeds and requires the
 exact canonical JSON form. There are no omitted fields or permissive defaults.
 The installed field's `canonical_contract()` exposes its shape, bounds and wire
 protocol. Nested field, enum, rename and bound changes participate in portable
-schema identity; semantic aspect revisions remain explicit.
+schema identity; semantic aspect revisions remain explicit. An existing domain
+representation policy may use `canonical: DOMAIN_BOUNDS`; absent policies use
+`ValueDecodeBounds::unrestricted()`, without sentinel ceilings. Known codec
+failures retain their exact `ValueCodecDenial` in
+`Canonical { binding_identity, cause }`; native cancellation retains its original
+request's stop at the owning handoff.
+
+The [canonical binding example](../workspaces/worth-query/crates/worth-query-declaration/src/application_schema/value_binding/canonical_tests.rs)
+derives a nondefault `Span`, validates positive length in both directions and
+distinguishes grammar refusal from explicit policy refusal:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+// The linked owner test compiles the complete binding.
+worth_query_decl::facade::worth_query_value_binding!(SpanBinding for Span {
+    identity: "tests.span.v1",
+    scalar: String,
+    canonical,
+    validate: positive,
+});
+```
+
+A field whose concrete value belongs elsewhere can use
+`#[worth_value(delegate = DomainDelegate)]`. Its existing `ValueSeedDelegate`
+must describe the exact serialized wire and finish through the domain constructor.
+For an already sealed body/original-text document, use
+`native_envelope: DomainEnvelope` instead of repeating scalar bridge methods.
+The pure envelope implements `CanonicalDocumentCodec` with associated `Document`,
+domain-owned `BOUNDS`, original `encoded` borrow and strict `read`/`read_admitted`.
+The generated Entry bridge forwards those readers and copies original text
+fallibly. It never reconstructs a body/text pair or adds Query to the pure owner.
 
 Opaque implementations describe their wire using the `SHAPE_BODY` constant and
 sealed typed `ValueShapeEdge` links. A transparent delegate uses
@@ -335,11 +419,26 @@ reconstruction to the installed target producer. The
 uses nonempty authored source, incompatible V1/V2 output codecs, real producer
 publication, a source edit through Preserve, and current-format reopen.
 
-Producer readiness describes the record selected by the producer's output role.
-Its native carrier, field mask, codec meaning and semantic revision must match
-the installed output contract. The [created-output readiness example](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_transition/readiness.rs)
-derives that description from the same field-meaning emitter; it does not copy
-the authored input's contract or create migration authority.
+For derived readiness, `package_contract` receives the completed schema declaration
+and returns `Result<_, WorthQueryOutputReadinessContractDenial>`. Start
+`WorthQueryOutputReadinessContractBuilder::for_field(declaration,
+PrimaryField::reference::<Schema>(), ...)`, add typed `field_dependency` entries
+and call `build_typed`. Each resolves the complete declared aspect, including
+whole-aspect absence, required/optional siblings and codec digests. The exact
+concrete value binding and full aspect are checked against installed catalogs
+before configuration or initial-state effects.
+
+`Delivery`, `Eligibility` and `DeliveryAndEligibility` express distinct uses.
+All remain native watched inputs; eligibility selects evaluation triggers.
+Retain the generated contract during installation and use
+`contract.delivery_ordinal(installed, node, Field::reference())` for an explicitly
+declared delivery field. It selects the genuine canonical ordinal and refuses
+eligibility-only fields or a different node. Consume it with
+`into_package_contract(binding.portable().clone())`. Do not copy aspect rosters,
+masks, codec digests or insertion-order ordinals. The
+[typed readiness examples](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/conditional/output_readiness_contract/typed/tests.rs)
+exercise full optional aspects, nested wire changes, concrete binding mismatch
+and reordered delivery/eligibility inputs.
 
 The executable [nested-value model](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_value/model.rs)
 and [native checkpoint journey](../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/canonical_value.rs)
@@ -422,6 +521,55 @@ impl ApplicationFeature<BankSchema> for BankPaymentsFeature {
 
 `ApplicationFeature` also has `const MAJOR: u16 = 1` and `const MINOR: u16 = 0`,
 which you may override.
+
+### Required Initial and Preserve output roles
+
+Use one Host-side alias for a producer feature requiring both lifecycle roles.
+The ordinary Topology consumer binds its existing producers and readiness
+owners this way:
+
+<!-- compiled: final_output/feature.rs -->
+```rust
+pub type PlanarFinalFeatureRoles<Schema, Feature = PlanarFinalOutputFeature> =
+    WorthQueryRequiredFeaturePair<
+        Schema,
+        Feature,
+        PlanarFinalOutputProducer<Schema>,
+        PlanarFinalOutputReadiness<Schema>,
+        PlanarFinalPreserveProducer<Schema>,
+        PlanarFinalPreserveReadiness<Schema>,
+    >;
+```
+
+Attach `.required_pair::<PlanarFinalFeatureRoles<Schema>>()` to the feature's
+program spec, call `contracts.feature::<PlanarFinalFeatureRoles<Schema>>()?`,
+and pass its explicit two-role runtime to
+`setup.feature::<PlanarFinalFeatureRoles<Schema>>(runtime)?`. Each role is a
+`WorthQueryFeatureRoleRuntime::new(handler, provider, readiness_configuration)`;
+`WorthQueryFeatureRuntime::new(initial, preserve)` requires both values. Handlers
+remain distinct, stateful application owners. The carrier derives each
+readiness owner's exact required producer from the associated types; its
+native predicate and `bind_output_readiness` remain the readiness owner's work.
+Do not add separate Initial/Preserve `conditional_operation` markers,
+producer/conditional contract lists, handler/provider registration rosters or
+copied `REQUIRED_PRODUCERS` entries for that pair. The declaration supplies these
+mechanical associations; each runtime role still supplies its actual values.
+
+Program meaning retains both requirements independently of those callbacks.
+Omitting contracts and registration together is refused. Configured `None`
+roles, handlers, providers or readiness values preserve those requirements and
+return the original typed installation cause before initial state or output
+publication. Output-family `SUPPORTED` lists describe applicability; they do
+not declare mandatory installation roles.
+
+The runnable [required-feature example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/examples/required_feature.rs)
+uses the complete public schema/program/configuration/install path, publishes
+an Initial value of 3, edits authored source, and preserves the original entity
+with value 11. Run it from the repository root:
+
+```text
+cargo run --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml -p worth-query-topology-entry --example required_feature
+```
 
 ### 3.2 Attach actions to features
 
@@ -734,9 +882,10 @@ the default `prepare_decision` wraps it in an immediate plan.
 
 Partition reuse is distinct from clean reuse of an entire output and from
 input cutoff. It applies only to the runs of a producer. A producer is a
-`WorthQueryApplicationProducerBinding` declared with
-`contracts.producer::<Binding>()` and registered with `setup.producer`; its
-`Operation` is the mutation binding the producer runs. Installation decides
+`WorthQueryApplicationProducerBinding`; its `Operation` is the mutation binding
+the producer runs. For a required Initial/Preserve feature, the
+[required pair](#required-initial-and-preserve-output-roles) projects its
+contracts and registration. Installation decides
 retention once: it compares the owner's `Operation` type with the `Operation`
 of each declared producer's mutation binding. When a declared producer runs that
 operation, a run made under that producer leaves its partition state on the
@@ -1099,8 +1248,10 @@ edition changes may require a cold preparation before same-edition reuse.
 The selected producer role stays fixed and exactly-one; the fixture also
 publishes and preserves the two supporting members required by its native
 planar topology, including their original incarnations.
-Each producer has its own readiness binding with that exact singleton
-`REQUIRED_PRODUCERS` dependency, even when the operation and checked owner are shared.
+Each producer has its own readiness binding with its exact producer dependency,
+even when the operation and checked owner are shared. For a required pair, the
+feature contract derives that association; do not copy it into a readiness
+`REQUIRED_PRODUCERS` list. Other genuine conditional dependencies remain explicit.
 When their complete portable package contracts are identical, contribution
 composition emits that operation/node contract once; each binding still installs
 and validates its own route. Different meanings for the same operation remain a
@@ -3518,9 +3669,10 @@ binding:
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// workspaces/worth-query-bank-world/crates/bank-domain/src/schema/workflow/control.rs (abridged)
-worth_query_operation!(pub $operation for BankSchema, input ApprovePaymentInputBinding);
-worth_query_operation_reads!($operation => [PaymentIdentityField]);
+// The Bank control-binding shape, using current operation-access authoring:
+worth_query_operation!(pub $operation for BankSchema, input ApprovePaymentInputBinding;
+    access { read_fields: [PaymentIdentityField]; }
+);
 
 pub struct $binding;
 
@@ -3544,7 +3696,9 @@ impl ApplicationCapabilityRequest<BankSchema, $capability> for ApprovePayment {
 }
 ```
 
-The macro is invoked once for each control step, for example
+Install its access with `schema.declared_operation::<Operation>(definition)`
+and the existing explicit policy. Keep the workflow-control binding's native
+authorization rules. The macro is invoked once for each control step, for example
 `ApprovedBusinessPaymentAuthoringOperation`, `…AuthoringBinding`,
 `…AuthoringIntent`, and `ApprovedBusinessPaymentAuthoring`. The whole file is
 244 lines.

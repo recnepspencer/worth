@@ -1,3 +1,5 @@
+mod access;
+
 /// Declares a typed operation marker in an application schema, with the
 /// structured value binding of its input.
 ///
@@ -6,8 +8,25 @@
 /// trait. It generates a unit struct `Operation` that implements
 /// `ApplicationOperationMarkerIdentity`, with a `const fn reference()`
 /// returning its typed `ApplicationOperationRef`.
+///
+/// For a concrete schema, declare its complete reads, effects and expectations
+/// once with `input InputBinding; access { read_fields: [Field]; writes: [Field]; }`.
+/// The macro generates Rust capabilities and a schema projection. Install the projection through
+/// `ApplicationSchemaDeclarationBuilder::declared_operation`, supplying the
+/// completed operation definition with explicit effect/aftermath policy.
+/// The `access` form does not target the schema-generic marker variant.
 #[macro_export]
 macro_rules! worth_query_operation {
+    (
+        $vis:vis $Operation:ident for $Schema:ty,
+        input $InputBinding:path;
+        access { $($access:tt)* }
+    ) => {
+        $crate::worth_query_operation!($vis $Operation for $Schema, input $InputBinding);
+        $crate::__worth_query_operation_access!(
+            $Operation for $Schema, input $InputBinding; { $($access)* }
+        );
+    };
     (
         $vis:vis $Operation:ident for $Schema:ty,
         input $InputBinding:path

@@ -1,4 +1,7 @@
-use crate::grammar::{types::delegate, Field, Value, ValueKind, Variant};
+use crate::grammar::{
+    types::{delegate, field_delegate},
+    Field, Value, ValueKind, Variant, VariantPayload,
+};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
@@ -19,7 +22,7 @@ pub(crate) fn emit(value: &Value, admitted: bool) -> TokenStream {
             let names = fields.iter().map(|field| &field.wire_name);
             (
                 quote!(fn visit_map<M: ::serde::de::MapAccess<'de>>(mut self, mut map: M) -> Result<Self::Value, M::Error> {
-                    let child_bounds = self.bounds.descend().map_err(::serde::de::Error::custom)?;
+                    let child_bounds = self.bounds.descend().map_err(|cause| ::worth_foundational::facade::value_decode_error::<M::Error>(cause, self.admission.as_deref_mut()))?;
                     #body
                 }),
                 quote!(::serde::Deserializer::deserialize_struct(deserializer, #wire_name, &[#(#names),*], #visitor)),
@@ -62,7 +65,7 @@ pub(crate) fn emit(value: &Value, admitted: bool) -> TokenStream {
             });
             (
                 quote!(fn visit_map<M: ::serde::de::MapAccess<'de>>(mut self, mut map: M) -> Result<Self::Value, M::Error> {
-                    let child_bounds = self.bounds.descend().map_err(::serde::de::Error::custom)?;
+                    let child_bounds = self.bounds.descend().map_err(|cause| ::worth_foundational::facade::value_decode_error::<M::Error>(cause, self.admission.as_deref_mut()))?;
                     let key = ::serde::de::MapAccess::next_key_seed(&mut map,
                         ::worth_foundational::facade::CanonicalValueSeed::<::std::string::String>::with_optional_admission(child_bounds, self.admission.as_deref_mut()))?;
                     if key.as_deref() != Some(#tag) { return Err(::serde::de::Error::custom(::worth_foundational::facade::ValueCodecDenial::Malformed)); }
@@ -97,10 +100,7 @@ fn slots(fields: &[Field]) -> Vec<syn::Ident> {
 fn map_fields(fields: &[Field], construct: TokenStream) -> TokenStream {
     let slots = slots(fields);
     let types = fields.iter().map(|field| &field.ty).collect::<Vec<_>>();
-    let delegates = types
-        .iter()
-        .map(|ty| delegate(ty).expect("validated type"))
-        .collect::<Vec<_>>();
+    let delegates = fields.iter().map(field_delegate).collect::<Vec<_>>();
     let names = fields
         .iter()
         .map(|field| &field.wire_name)
@@ -127,13 +127,20 @@ fn external_visitor(ident: &syn::Ident, variants: &[Variant]) -> TokenStream {
         let member = &variant.ident;
         let name = &variant.wire_name;
         match &variant.payload {
-            Some(ty) => { let ty = delegate(ty).expect("validated type"); quote!(#name => ::serde::de::VariantAccess::newtype_variant_seed(variant,
+            VariantPayload::Newtype(ty) => { let ty = delegate(ty).expect("validated type"); quote!(#name => ::serde::de::VariantAccess::newtype_variant_seed(variant,
                 ::worth_foundational::facade::DelegatedValueSeed::<#ty>::new(child_bounds, self.admission.as_deref_mut())).map(#ident::#member)) },
-            None => quote!(#name => { ::serde::de::VariantAccess::unit_variant(variant)?; Ok(#ident::#member) }),
+            VariantPayload::Unit => quote!(#name => { ::serde::de::VariantAccess::unit_variant(variant)?; Ok(#ident::#member) }),
+            VariantPayload::Struct(fields) => {
+                let helper = crate::external_payload::ident(ident, member);
+                let members = fields.iter().map(|field| &field.ident).collect::<Vec<_>>();
+                quote!(#name => ::serde::de::VariantAccess::newtype_variant_seed(variant,
+                    ::worth_foundational::facade::CanonicalValueSeed::<#helper>::with_optional_admission(child_bounds, self.admission.as_deref_mut()))
+                    .map(|payload| #ident::#member { #(#members: payload.#members),* }))
+            },
         }
     });
     quote!(fn visit_enum<A: ::serde::de::EnumAccess<'de>>(mut self, access: A) -> Result<Self::Value, A::Error> {
-        let child_bounds = self.bounds.descend().map_err(::serde::de::Error::custom)?;
+        let child_bounds = self.bounds.descend().map_err(|cause| ::worth_foundational::facade::value_decode_error::<A::Error>(cause, self.admission.as_deref_mut()))?;
         let (name, variant) = ::serde::de::EnumAccess::variant_seed(access,
             ::worth_foundational::facade::CanonicalValueSeed::<::std::string::String>::with_optional_admission(child_bounds, self.admission.as_deref_mut()))?;
         match name.as_str() { #(#arms),*, _ => Err(::serde::de::Error::custom(::worth_foundational::facade::ValueCodecDenial::Malformed)) }

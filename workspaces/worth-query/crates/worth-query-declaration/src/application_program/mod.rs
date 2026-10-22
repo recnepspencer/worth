@@ -87,7 +87,9 @@ pub use feature::{
     ApplicationFeature, ApplicationFeatureDeclaration, ApplicationFeatureInputDeclaration,
     ApplicationFeatureInputLeaf, ApplicationFeatureInputList, ApplicationFeatureOutputDeclaration,
     ApplicationFeatureSpec, ApplicationFeatureSpecBuilder, ApplicationInputPort,
-    ApplicationOutputPort, ApplicationPortRef,
+    ApplicationOutputPort, ApplicationPortRef, ApplicationRequiredFeatureOutput,
+    ApplicationRequiredFeatureRoleDeclaration, ApplicationRequiredFeatureRoleKind,
+    ApplicationRequiredFeatureRoles,
 };
 pub use identity::ApplicationProgramIdentity;
 pub use instance::{ApplicationCompositionInstance, ApplicationRootComposition};

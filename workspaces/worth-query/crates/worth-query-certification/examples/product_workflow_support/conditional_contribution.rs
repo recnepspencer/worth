@@ -51,12 +51,19 @@ impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalCon
     const IDENTITY: &'static str = "worth.query.example.temporal-conditional.v1";
     const REQUIRED_PRODUCERS: &'static [&'static str] = &[];
 
-    fn package_contract() -> WorthQueryApplicationConditionalPackageContract {
-        WorthQueryApplicationConditionalPackageContract::new(
-            contract::operation_definition().into_portable(),
-            contract::conditional_binding().portable().clone(),
-            TemporalReadyNode::reference().node_identity(),
-        )
+    fn package_contract(
+        _declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
+    ) -> Result<
+        WorthQueryApplicationConditionalPackageContract,
+        worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractDenial,
+    > {
+        Ok({
+            WorthQueryApplicationConditionalPackageContract::new(
+                contract::operation_definition().into_portable(),
+                contract::conditional_binding().portable().clone(),
+                TemporalReadyNode::reference().node_identity(),
+            )
+        })
     }
 
     fn install(

@@ -1,12 +1,12 @@
-//! Finite representation limits. These are not request or allocation authority.
+//! Optional representation policies. These are not allocation authority.
 use serde::Serialize;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct ValueDecodeBounds {
-    maximum_wire_bytes: usize,
-    maximum_string_bytes: usize,
-    maximum_sequence_length: usize,
-    maximum_depth: usize,
+    maximum_wire_bytes: Option<usize>,
+    maximum_string_bytes: Option<usize>,
+    maximum_sequence_length: Option<usize>,
+    maximum_depth: Option<usize>,
 }
 
 impl ValueDecodeBounds {
@@ -15,30 +15,60 @@ impl ValueDecodeBounds {
         assert!(wire > 0 && wire < usize::MAX);
         assert!(string > 0 && string < usize::MAX);
         assert!(sequence > 0 && sequence < usize::MAX);
-        assert!(depth > 0 && depth < 128);
+        assert!(depth > 0 && depth < usize::MAX);
         Self {
-            maximum_wire_bytes: wire,
-            maximum_string_bytes: string,
-            maximum_sequence_length: sequence,
-            maximum_depth: depth,
+            maximum_wire_bytes: Some(wire),
+            maximum_string_bytes: Some(string),
+            maximum_sequence_length: Some(sequence),
+            maximum_depth: Some(depth),
         }
     }
 
-    pub const fn maximum_wire_bytes(self) -> usize {
+    /// No guessed representation ceiling; grammar and domain admission still apply.
+    pub const fn unrestricted() -> Self {
+        Self {
+            maximum_wire_bytes: None,
+            maximum_string_bytes: None,
+            maximum_sequence_length: None,
+            maximum_depth: None,
+        }
+    }
+
+    pub const fn maximum_wire_bytes(self) -> Option<usize> {
         self.maximum_wire_bytes
     }
-    pub const fn maximum_string_bytes(self) -> usize {
+    /// Intersect the caller policy with the domain's actual component policy.
+    pub fn with_string_limit(mut self, maximum: usize) -> Self {
+        assert!(maximum > 0 && maximum < usize::MAX);
+        self.maximum_string_bytes = Some(
+            self.maximum_string_bytes
+                .map_or(maximum, |old| old.min(maximum)),
+        );
+        self
+    }
+    pub fn with_sequence_limit(mut self, maximum: usize) -> Self {
+        assert!(maximum > 0 && maximum < usize::MAX);
+        self.maximum_sequence_length = Some(
+            self.maximum_sequence_length
+                .map_or(maximum, |old| old.min(maximum)),
+        );
+        self
+    }
+    pub const fn maximum_string_bytes(self) -> Option<usize> {
         self.maximum_string_bytes
     }
-    pub const fn maximum_sequence_length(self) -> usize {
+    pub const fn maximum_sequence_length(self) -> Option<usize> {
         self.maximum_sequence_length
     }
-    pub const fn maximum_depth(self) -> usize {
+    pub const fn maximum_depth(self) -> Option<usize> {
         self.maximum_depth
     }
 
     pub fn check_string_bytes(self, length: usize) -> Result<(), ValueCodecDenial> {
-        if length > self.maximum_string_bytes {
+        if self
+            .maximum_string_bytes
+            .is_some_and(|maximum| length > maximum)
+        {
             Err(ValueCodecDenial::StringBytes)
         } else {
             Ok(())
@@ -46,10 +76,9 @@ impl ValueDecodeBounds {
     }
 
     pub fn descend(mut self) -> Result<Self, ValueCodecDenial> {
-        self.maximum_depth = self
-            .maximum_depth
-            .checked_sub(1)
-            .ok_or(ValueCodecDenial::Depth)?;
+        if let Some(depth) = self.maximum_depth {
+            self.maximum_depth = Some(depth.checked_sub(1).ok_or(ValueCodecDenial::Depth)?);
+        }
         Ok(self)
     }
 }

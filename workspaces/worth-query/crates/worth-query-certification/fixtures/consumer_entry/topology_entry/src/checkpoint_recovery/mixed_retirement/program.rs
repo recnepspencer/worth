@@ -127,8 +127,7 @@ impl ApplicationProgramDefinition<MixedSchema> for MixedProgram {
             required_chain::output_feature_spec_for::<MixedSchema>(),
             ApplicationFeatureSpec::root::<MixedSchema, PlanarFinalOutputFeature>()
                 .provides::<PlanarFinalBodyOutput>()
-                .conditional_operation::<PublishFinalPlanarOutput>()
-                .conditional_operation::<PreserveFinalPlanarOutput>()
+                .required_pair::<PlanarFinalFeatureRoles<MixedSchema>>()
                 .finish(),
             ApplicationFeatureSpec::root::<MixedSchema, PlanarAlternateFinalOutputFeature>()
                 .provides::<PlanarAlternateFinalBodyOutput>()

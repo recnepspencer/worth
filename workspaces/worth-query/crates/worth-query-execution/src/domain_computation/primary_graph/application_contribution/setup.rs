@@ -1,4 +1,5 @@
 mod collection;
+mod feature;
 
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_query::{
@@ -66,8 +67,11 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
         Schema: 'static,
         Binding: WorthQueryApplicationConditionalBinding<Schema>,
     {
-        self.conditionals
-            .register::<Binding>(self.contribution.identity().as_str(), configuration)
+        self.conditionals.register::<Binding>(
+            self.installed_schema,
+            self.contribution.identity().as_str(),
+            configuration,
+        )
     }
 
     pub fn computation<Feature, Computation, Owner>(

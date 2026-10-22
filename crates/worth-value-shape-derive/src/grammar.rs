@@ -19,15 +19,22 @@ pub(crate) enum ValueKind {
         variants: Vec<TaggedVariant>,
     },
 }
+#[derive(Clone)]
 pub(crate) struct Field {
     pub ident: Ident,
     pub wire_name: String,
     pub ty: Type,
+    pub delegate: Option<Type>,
 }
 pub(crate) struct Variant {
     pub ident: Ident,
     pub wire_name: String,
-    pub payload: Option<Type>,
+    pub payload: VariantPayload,
+}
+pub(crate) enum VariantPayload {
+    Unit,
+    Newtype(Type),
+    Struct(Vec<Field>),
 }
 pub(crate) struct TaggedVariant {
     pub ident: Ident,
@@ -38,6 +45,7 @@ pub(crate) struct TaggedVariant {
 
 impl Value {
     pub(crate) fn parse(input: DeriveInput) -> syn::Result<Self> {
+        reject_delegate_attributes(&input.attrs)?;
         if !input.generics.params.is_empty() || input.generics.where_clause.is_some() {
             return Err(syn::Error::new_spanned(
                 input.generics,
@@ -72,6 +80,7 @@ impl Value {
                 }
                 if let Some(tag) = attributes.tag {
                     let variants = data.variants.into_iter().map(|variant| {
+                        reject_delegate_attributes(&variant.attrs)?;
                         if variant.discriminant.is_some() { return Err(syn::Error::new_spanned(variant, "WorthValue does not support explicit enum discriminants")); }
                         let name = Attributes::parse(&variant.attrs, false)?.name(&variant.ident, attributes.snake_case);
                         let (fields, unit) = match variant.fields {
@@ -86,16 +95,18 @@ impl Value {
                     ValueKind::TaggedEnum { tag, variants }
                 } else {
                     let variants = data.variants.into_iter().map(|variant| {
+                        reject_delegate_attributes(&variant.attrs)?;
                         if variant.discriminant.is_some() { return Err(syn::Error::new_spanned(variant, "WorthValue does not support explicit enum discriminants")); }
                         let payload = match variant.fields {
-                            Fields::Unit => None,
+                            Fields::Unit => VariantPayload::Unit,
                             Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
                                 let field = fields.unnamed.into_iter().next().expect("one variant field");
                                 reject_payload_attributes(&field.attrs)?;
                                 types::delegate(&field.ty)?;
-                                Some(field.ty)
+                                VariantPayload::Newtype(field.ty)
                             },
-                            fields => return Err(syn::Error::new_spanned(fields, "WorthValue supports external unit or newtype variants; use a named payload struct or an internally tagged enum")),
+                            Fields::Named(fields) => VariantPayload::Struct(named_fields(fields)?),
+                            fields => return Err(syn::Error::new_spanned(fields, "WorthValue supports external unit, newtype or named variants; tuple variants require a named payload struct")),
                         };
                         Ok(Variant { wire_name: Attributes::parse(&variant.attrs, false)?.name(&variant.ident, attributes.snake_case), ident: variant.ident, payload })
                     }).collect::<syn::Result<Vec<_>>>()?;
@@ -123,11 +134,15 @@ fn named_fields(fields: syn::FieldsNamed) -> syn::Result<Vec<Field>> {
         .into_iter()
         .map(|field| {
             let ident = field.ident.expect("named field");
-            types::delegate(&field.ty)?;
+            let delegate = field_delegate(&field.attrs)?;
+            if delegate.is_none() {
+                types::delegate(&field.ty)?;
+            }
             Ok(Field {
                 wire_name: Attributes::parse(&field.attrs, false)?.name(&ident, false),
                 ident,
                 ty: field.ty,
+                delegate,
             })
         })
         .collect::<syn::Result<Vec<_>>>()?;
@@ -135,8 +150,37 @@ fn named_fields(fields: syn::FieldsNamed) -> syn::Result<Vec<Field>> {
     Ok(fields)
 }
 fn reject_payload_attributes(attributes: &[Attribute]) -> syn::Result<()> {
+    reject_delegate_attributes(attributes)?;
     if let Some(attribute) = attributes.iter().find(|attr| attr.path().is_ident("serde")) {
         return Err(syn::Error::new_spanned(attribute, "WorthValue newtype payloads do not support Serde attributes; place wire declarations on a named payload type"));
+    }
+    Ok(())
+}
+fn field_delegate(attributes: &[Attribute]) -> syn::Result<Option<Type>> {
+    let mut delegate = None;
+    for attribute in attributes
+        .iter()
+        .filter(|attr| attr.path().is_ident("worth_value"))
+    {
+        attribute.parse_nested_meta(|meta| {
+            if !meta.path.is_ident("delegate") || delegate.is_some() {
+                return Err(meta.error("WorthValue fields accept one explicit `delegate = Type`"));
+            }
+            delegate = Some(meta.value()?.parse::<Type>()?);
+            Ok(())
+        })?;
+    }
+    Ok(delegate)
+}
+fn reject_delegate_attributes(attributes: &[Attribute]) -> syn::Result<()> {
+    if let Some(attribute) = attributes
+        .iter()
+        .find(|attr| attr.path().is_ident("worth_value"))
+    {
+        return Err(syn::Error::new_spanned(
+            attribute,
+            "WorthValue delegates belong on named fields",
+        ));
     }
     Ok(())
 }

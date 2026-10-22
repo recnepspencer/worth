@@ -1,6 +1,7 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
+mod feature;
 
 use worth_query_installation::facade::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryPortableDomainPackage;
@@ -15,20 +16,25 @@ use super::conditional::{
 use super::producer::{DeclaredProducerBinding, PendingProducerRegistry};
 use super::{WorthQueryApplicationConditionalBinding, WorthQueryApplicationProducerBinding};
 
-pub struct WorthQueryApplicationContributionContracts<Schema> {
+pub struct WorthQueryApplicationContributionContracts<'schema, Schema> {
+    declaration: &'schema worth_query_declaration::facade::application_schema::ErasedApplicationSchemaDeclaration,
     owner: String,
     producers: BTreeMap<String, DeclaredProducerBinding>,
     conditionals: BTreeMap<String, DeclaredConditionalBinding>,
     marker: PhantomData<fn() -> Schema>,
 }
 
-impl<Schema> WorthQueryApplicationContributionContracts<Schema>
+impl<'schema, Schema> WorthQueryApplicationContributionContracts<'schema, Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(super) fn for_contribution(owner: &str) -> Self {
+    pub(super) fn for_contribution(
+        owner: &str,
+        declaration: &'schema worth_query_declaration::facade::application_schema::ErasedApplicationSchemaDeclaration,
+    ) -> Self {
         Self {
             owner: owner.to_owned(),
+            declaration,
             producers: BTreeMap::new(),
             conditionals: BTreeMap::new(),
             marker: PhantomData,
@@ -37,6 +43,22 @@ where
 
     pub fn conditional<Binding>(
         &mut self,
+    ) -> Result<&mut Self, WorthQueryPrimaryGraphInstallationDenial>
+    where
+        Schema: 'static,
+        Binding: WorthQueryApplicationConditionalBinding<Schema>,
+    {
+        self.conditional_with_requirements::<Binding>(
+            Binding::REQUIRED_PRODUCERS
+                .iter()
+                .map(|identity| (*identity).to_owned())
+                .collect(),
+        )
+    }
+
+    fn conditional_with_requirements<Binding>(
+        &mut self,
+        required_producers: Vec<String>,
     ) -> Result<&mut Self, WorthQueryPrimaryGraphInstallationDenial>
     where
         Schema: 'static,
@@ -52,12 +74,10 @@ where
             Binding::IDENTITY.to_owned(),
             DeclaredConditionalBinding {
                 owner: self.owner.clone(),
-                contract: Binding::package_contract(),
-                required_producers: Binding::REQUIRED_PRODUCERS
-                    .iter()
-                    .map(|identity| (*identity).to_owned())
-                    .collect(),
+                contract: Binding::package_contract(self.declaration)?,
+                required_producers,
                 binding_type: TypeId::of::<Binding>(),
+                operation_type: TypeId::of::<Binding::Operation>(),
                 installed_type: TypeId::of::<Binding::Installed>(),
             },
         );
@@ -243,6 +263,16 @@ where
                         .map(|binding| binding.owner.as_str()),
                 )?;
             }
+        }
+        Ok(())
+    }
+
+    pub(super) fn seal_readiness(
+        &self,
+        installed: &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<Schema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        for binding in self.conditionals.values() {
+            binding.contract.seal(installed)?;
         }
         Ok(())
     }

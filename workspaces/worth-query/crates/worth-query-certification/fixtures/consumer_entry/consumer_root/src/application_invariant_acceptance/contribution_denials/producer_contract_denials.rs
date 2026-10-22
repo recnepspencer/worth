@@ -288,6 +288,7 @@ fn missing_required_invariant_is_denied_before_initial_state() {
 fn foreign_source_selector_is_denied_before_initial_state() {
     let counter = || Arc::new(AtomicUsize::new(0));
     let topology = TopologyConfiguration {
+        final_feature: worth_query_topology_entry::planar_final_feature_runtime(),
         setup_calls: counter(),
         invariant_calls: counter(),
         invariant_probe: counter(),

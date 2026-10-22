@@ -24,6 +24,71 @@ struct Element {
 }
 
 const BOUNDS: ValueDecodeBounds = ValueDecodeBounds::new(4096, 64, 8, 24);
+
+#[test]
+fn ordinary_recursive_wire_passes_retired_depth_and_preserves_deep_refusal() {
+    let mut value = Expression::Text {
+        value: "deep".into(),
+    };
+    let mut expected = String::new();
+    for _ in 0..512 {
+        value = Expression::Negate {
+            operand: Box::new(value),
+        };
+        expected.push_str(r#"{"kind":"negate","operand":"#);
+    }
+    expected.push_str(r#"{"kind":"text","value":"deep"}"#);
+    expected.push_str(&"}".repeat(512));
+    let unrestricted = ValueDecodeBounds::unrestricted();
+    assert_eq!(
+        encode_canonical_value(&value, unrestricted).unwrap(),
+        expected
+    );
+    let decoded = decode_canonical_value_with_admission::<Expression>(
+        &expected,
+        unrestricted,
+        &mut |_, _| Ok(()),
+    )
+    .unwrap();
+    assert_eq!(decoded, value);
+    let mut stopped = false;
+    let denied = decode_canonical_value_with_admission::<Expression>(
+        &expected,
+        unrestricted,
+        &mut |_, bytes| {
+            assert!(
+                !stopped,
+                "original callback is not re-entered after its refusal"
+            );
+            if bytes == 4 {
+                stopped = true;
+                return Err(D::Admission);
+            }
+            Ok(())
+        },
+    );
+    assert_eq!(denied, Err(D::Admission));
+    assert!(stopped, "refusal reached the actual deep string allocation");
+    // A complete deep first sibling is dropped on a later malformed member.
+    let partial = format!(
+        r#"{{"kind":"group","members":[{{"label":"first","value":{expected}}},{{"label":"bad","value":{{"kind":"unknown"}}}}]}}"#
+    );
+    assert_eq!(
+        decode_canonical_value_with_admission::<Expression>(
+            &partial,
+            unrestricted,
+            &mut |_, _| Ok(())
+        ),
+        Err(D::Malformed)
+    );
+    assert_eq!(
+        decode_canonical_value::<Expression>(
+            &expected,
+            ValueDecodeBounds::new(expected.len(), 64, 8, 24)
+        ),
+        Err(D::Depth)
+    );
+}
 const RAW: &str = r#"{"kind":"group","members":[{"label":"α","value":{"kind":"negate","operand":{"kind":"pairs","fields":[["left",{"kind":"text","value":"δ\n"}],["right",{"kind":"empty"}]]}}}]}"#;
 fn value() -> Expression {
     Expression::Group {
@@ -158,6 +223,20 @@ fn tag_field_order_and_pair_arity_are_real_wire_constraints() {
     assert_eq!(
         decode_canonical_value::<Expression>(r#" {"kind":"empty"}"#, BOUNDS),
         Err(D::NonCanonical)
+    );
+}
+
+#[test]
+fn pair_depth_refusal_keeps_its_cause_before_constructing_children() {
+    let raw = r#"{"kind":"pairs","fields":[["left",{"kind":"empty"}]]}"#;
+    let policy = ValueDecodeBounds::new(1024, 64, 8, 2);
+    assert_eq!(
+        decode_canonical_value::<Expression>(raw, policy),
+        Err(D::Depth)
+    );
+    assert_eq!(
+        decode_canonical_value_with_admission::<Expression>(raw, policy, &mut |_, _| Ok(())),
+        Err(D::Depth)
     );
 }
 

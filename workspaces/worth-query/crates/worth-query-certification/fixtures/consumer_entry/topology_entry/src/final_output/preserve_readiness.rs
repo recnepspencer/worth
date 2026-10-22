@@ -40,16 +40,20 @@ impl<Schema: TopologySchemaBinding>
     type Operation = PreserveFinalPlanarOutput;
 
     const IDENTITY: &'static str = "worth.query.certification.planar-final-preserve-readiness.v1";
-    const REQUIRED_PRODUCERS: &'static [&'static str] =
-        &["worth.query.certification.planar-final-preserve-producer.v1"];
 
     fn package_contract(
-    ) -> application_contribution::WorthQueryApplicationConditionalPackageContract {
-        application_contribution::WorthQueryApplicationConditionalPackageContract::new(
-            preserve_readiness_definition().into_portable(),
-            Self::conditional_binding().portable().clone(),
-            PlanarFinalPreserveReadyNode::reference().node_identity(),
-        )
+        _declaration: &worth_query_host::facade::declaration::application_schema::ErasedApplicationSchemaDeclaration,
+    ) -> Result<
+        application_contribution::WorthQueryApplicationConditionalPackageContract,
+        worth_query_host::facade::application_contribution::WorthQueryOutputReadinessContractDenial,
+    > {
+        Ok({
+            application_contribution::WorthQueryApplicationConditionalPackageContract::new(
+                preserve_readiness_definition().into_portable(),
+                Self::conditional_binding().portable().clone(),
+                PlanarFinalPreserveReadyNode::reference().node_identity(),
+            )
+        })
     }
 
     fn install(

@@ -18,6 +18,7 @@ use worth_query_host::facade::{
 };
 
 pub struct TopologyConfiguration {
+    pub final_feature: super::PlanarFinalFeatureRuntime,
     pub setup_calls: Arc<AtomicUsize>,
     pub invariant_calls: Arc<AtomicUsize>,
     pub invariant_probe: Arc<AtomicUsize>,
@@ -38,12 +39,9 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         super::checkpoint_recovery::required_chain::contracts(contracts)?;
         #[cfg(test)]
         super::checkpoint_recovery::mixed_retirement::contracts(contracts)?;
-        contracts.producer::<super::PlanarFinalOutputProducer<Schema>>()?;
-        contracts.producer::<super::PlanarFinalPreserveProducer<Schema>>()?;
+        contracts.feature::<super::PlanarFinalFeatureRoles<Schema>>()?;
         contracts.producer::<super::AlternatePlanarOutputProducer<Schema>>()?;
         contracts.conditional::<InitialPlanarReadiness<Schema>>()?;
-        contracts.conditional::<super::PlanarFinalOutputReadiness<Schema>>()?;
-        contracts.conditional::<super::PlanarFinalPreserveReadiness<Schema>>()?;
         contracts.conditional::<super::AlternatePlanarReadiness<Schema>>()?;
         Ok(())
     }
@@ -103,12 +101,6 @@ impl TopologyContribution {
         )?;
         setup.handler::<PlanarMutationBinding<Schema>, _>(handler)?;
         setup.handler::<super::PlanarEditBinding<Schema>, _>(PlanarHandler)?;
-        setup.handler::<super::FinalPlanarMutationBinding<Schema>, _>(
-            super::FinalPlanarMutationHandler,
-        )?;
-        setup.handler::<super::FinalPlanarPreserveBinding<Schema>, _>(
-            super::FinalPlanarPreserveHandler,
-        )?;
         setup.handler::<super::AlternatePlanarOutputBinding<Schema>, _>(
             super::AlternatePlanarOutputHandler,
         )?;
@@ -121,22 +113,30 @@ impl TopologyContribution {
         setup.handler::<super::PlanarInitialAdjustmentBinding<Schema>, _>(
             super::PlanarInitialAdjustmentHandler,
         )?;
-        let final_provider = super::PlanarFinalOutputProvider::default();
+        let final_feature = configuration.final_feature;
         #[cfg(test)]
-        let final_provider = if provider.has_uniform_decimal_key_width() {
-            final_provider.with_uniform_decimal_key_width()
-        } else {
-            final_provider
+        let final_feature = {
+            let mut configured = final_feature;
+            if provider.has_uniform_decimal_key_width() {
+                if let Some(role) = &mut configured.initial {
+                    role.provider = role
+                        .provider
+                        .map(|value| value.with_uniform_decimal_key_width());
+                }
+                if let Some(role) = &mut configured.preserve {
+                    role.provider = role
+                        .provider
+                        .map(|value| value.with_uniform_decimal_key_width());
+                }
+            }
+            configured
         };
         setup.producer::<InitialPlanarProducer<Schema>>(provider)?;
-        setup.producer::<super::PlanarFinalOutputProducer<Schema>>(final_provider)?;
-        setup.producer::<super::PlanarFinalPreserveProducer<Schema>>(final_provider)?;
+        setup.feature::<super::PlanarFinalFeatureRoles<Schema>>(final_feature)?;
         setup.producer::<super::AlternatePlanarOutputProducer<Schema>>(
             super::AlternatePlanarOutputProvider,
         )?;
         setup.conditional::<InitialPlanarReadiness<Schema>>(())?;
-        setup.conditional::<super::PlanarFinalOutputReadiness<Schema>>(())?;
-        setup.conditional::<super::PlanarFinalPreserveReadiness<Schema>>(())?;
         setup.conditional::<super::AlternatePlanarReadiness<Schema>>(())?;
         setup.handler::<super::VertexReplacementBinding<Schema>, _>(
             super::VertexReplacementHandler,

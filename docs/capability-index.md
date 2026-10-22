@@ -129,17 +129,27 @@ execution. This does not make Query roster, source validation, publication or
 collection membership processing sparse. See
 [persistent native runs](../crates/worth-execution/README.md#persistent-native-runs).
 
-For bounded nested persisted values, use the existing value-binding macro's
-`scalar: String, canonical: ValueDecodeBounds::new(...)` arm with Query-free
+For nested persisted values, use the existing value-binding macro's
+`scalar: String, canonical,` arm with Query-free
 `WorthValue` derivation. The installed value-binding catalog retains the derived
-shape and constant bounds. Guarded recursion uses finite bound references;
-`Box`, exact pair payloads and internally tagged unit/named variants use the
-same bounded seed path. Tag-first canonical objects never require an arbitrary
+shape and any explicit domain representation policy. Ordinary storage needs no
+guessed byte, depth or list ceilings. Fixed arrays, checked indices, `Box`, exact
+pairs and tagged named variants use the same checked seed path. Tag-first
+canonical objects never require an arbitrary
 object buffer. Complete closure admission rejects an unsupported opaque child,
 including an unselected variant. Pure schema owners need no Execution or Query
 dependency for these descriptions. Native canonical projection reads dispatch the exact
 installed codec under the original request's cumulative execution allowance; ignored
 admission failures veto completion. Opaque owners must supply admitted seeds.
+Use an explicit field `worth_value(delegate = ...)` for a real domain-owned
+constructor. For sealed original-text documents, `native_envelope: Envelope`
+delegates the pure owner's `CanonicalDocumentCodec` readers and exact failures.
+For derived readiness, use `WorthQueryOutputReadinessContractBuilder::for_field`
+and typed `field_dependency` entries, then `build_typed`. The generated contract
+is sealed against the actual installed field and complete aspect catalogs before
+configuration. Its `delivery_ordinal` distinguishes delivery selection from
+eligibility and uses the actual canonical node order. See
+[canonical values and derived readiness](build-an-application.md#canonical-nested-values-and-derived-readiness).
 Continuation and live delivery retain decode custody through their native final
 handoff. For cumulative reads of a retained invariant snapshot, use
 `snapshot.read_fields(&execution, |read| ...)`; its scoped `read.field(...)`
@@ -194,7 +204,7 @@ An existing continuation resumes
 through its original runtime and retained index generation, while a new target
 request reads only genuinely regenerated target output. See the
 [historical query lifecycle](build-an-application.md#44-checkpoint-program-transitions).
-See [bounded canonical nested values](build-an-application.md#bounded-canonical-nested-values)
+See [canonical nested values and derived readiness](build-an-application.md#canonical-nested-values-and-derived-readiness)
 for supported grammar, native checkpoint examples and the current package
 archive refusal. Representation limits do not grant request resources,
 currentness or codec-transition permission.
@@ -222,6 +232,7 @@ column names the substitute that this capability makes wrong.
 
 | I want to… | Use (facade path / call) | Guide | Never build |
 |---|---|---|---|
+| Declare a concrete operation's access once | `decl::worth_query_operation!(... input Input; access { ... })` generates Rust capabilities and the schema projection; `schema.declared_operation::<Operation>(definition)` installs it with explicit effect/aftermath policy. Declare the complete read/effect/precondition set. | [Operation access](build-an-application.md#21-declare-operation-access-once) | Duplicating capability macros and installed member lists; inferring access from handler bodies; using a projection-work invoice or compile capability as native authority |
 | Fence a locator to one live Server assembly | Use `WorthServer::instance_identity()`, retain session discovery's `server_instance`, and install `WorthServerInstanceSelectionPolicy::RequiredForProductCalls` where product calls must carry it. Guard and generated catalog share the policy; session IDs share the same instance identity. | [Server instance selection](../crates/worth-server/docs/connect-another-backend.md#fence-a-live-server-instance) | Clock/counter namespaces, silently rebinding an old locator after restart, a late adapter-only check, or treating the selector as Query authority or persistence |
 | Preserve product preflight/currentness refusals over HTTP | Server retains `WorthServerTransportDenial::product_operation_denial()` and projects `ProductOperationDenied` with `worth-server-product-surface-denial.v1` owner codes, basis facts and execution/recovery posture. | [Product-surface refusals](../crates/worth-server/docs/connect-another-backend.md#product-surface-refusals) | Parsing diagnostic text, reporting a stale basis as a missing route, inventing a completed product envelope, or retrying uncertain performed work |
 | Attach a native program to Server readiness without extracting its runtime | Transport entry uses `worth-server`'s `WorthServerProductOperationDeclaration::with_program_application(program.clone())` and returns a finished adapter registration. Readiness reuses the authentic installed allocation and grants no operation authority; native requests still authorize execution. | [Connect another backend](../crates/worth-server/docs/connect-another-backend.md) | Reinstalling a graph, copying readiness/basis state, exposing raw mutation access to the host, or falling back to unleased work in a checked packet |
@@ -249,6 +260,7 @@ column names the substitute that this capability makes wrong.
 | Return the scope, one selected outgoing subject or a created row from an authored body | `decl::application_schema`: `body.preserve_scope_output::<Binding, Role>()`, `body.preserve_related_output::<Binding, Role>(relation)` (Preserve/ExactlyOne), `creation.create_output::<Binding, Role>()`; read the real receipt's `outputs_of::<Contract>()?.entity::<Role>()?`. Related selection is tracked once and retained through publication; replay preserves original identity. | [Scope-bound operation bodies](../workspaces/worth-query/crates/worth-query/docs/authoring/scope-field-operation-bodies.md#stable-entry-points) | Caller-selected output IDs, post-commit pointer lookups as correspondence, dummy writes, or treating a preserved identity as current approval/workflow authority |
 | Supply original typed inputs for native workflow needs | `WorthQueryWorkflowOperationInputs::new(program_runtime)`, then `.with::<InstalledAction, _>(description)` for a binding-wide entry or `.with_at::<InstalledAction, _>(&qualified_input_node, description)` for an exact node, and `select(workflow, &required)`. Distinct qualified nodes may retain the same binding; ambiguous overlap is refused. Native needs select order and existing owners retain all custody. Source-completion actions only. Accept an opaque completion with `prepared_advance.accept_selected_operation(completed_selection)`; the occupied native owner retains fresh admission, exact receipt checks and cleanup on every refusal. This roster does not supply heterogeneous proposal target inputs: ordinary `OperationInput` edges still require the same portable type and exact source-proposal input identity. | [Workflow operation inputs](../workspaces/worth-query/crates/worth-query/docs/foundations/workflow-operation-inputs.md) | Host stage/name dispatch, recapturing transferred input/key, homogenizing unrelated input contracts, treating a finite pack as a durable or atomic whole-command runner |
 | Declare features and a program | `decl::application_program`: `ApplicationFeatureSpec::root::<S, F>()…finish()`, `impl ApplicationProgramDefinition`, `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` | [Build §3](build-an-application.md#3-declare-features-and-the-program) | [Consumer prohibition](#prohibition-declare-features-and-a-program) |
+| Require a producer feature's Initial and Preserve roles once | Host `WorthQueryRequiredFeaturePair<S, Feature, Initial, InitialReadiness, Preserve, PreserveReadiness>`; program `.required_pair::<Roles>()`, `contracts.feature::<Roles>()`, `setup.feature::<Roles>(WorthQueryFeatureRuntime::new(initial, preserve))`. Both explicit role values use `WorthQueryFeatureRoleRuntime::new(handler, provider, readiness_configuration)`. Exact readiness producer association is derived; native predicates and output binding stay with their owners. | [Required output roles](build-an-application.md#required-initial-and-preserve-output-roles), runnable `topology_entry/examples/required_feature.rs` | Inferring required roles from `SUPPORTED`, a second producer roster, erasing requirements by omitting callbacks, or replacing native currentness/access with configuration booleans |
 | Declare distinct captured workflow target inputs | `graph.captured_operation_input(&proposal, &target)` and the component equivalent declare exact control/guarded correspondence. `prepare_workflow_proposal_with_inputs(workflow, instance, &inputs)` publishes complete original target contracts through native proposal/replay/first-effect owners. Archive profile 8 carries the new edge; unchanged definitions keep profile 7. Recorded-actor admission and recovery retain the original proposal correspondence and require fresh grants. In-memory owning execution, not a durable whole-command runner. | [Workflow operation inputs](../workspaces/worth-query/crates/worth-query/docs/foundations/workflow-operation-inputs.md) | Homogenizing unrelated inputs, treating archive or roster data as authority, weakening final identity checks, or using a host registry to bypass missing native support |
 | Install the application graph | `host::application_installation::in_memory_program(..)`, or `in_memory_rostered_program(..)` with a `WorthQueryApplicationProgramRoster` | [Build §4](build-an-application.md#4-install-the-application-graph) | [Consumer prohibition](#prohibition-install-the-application-graph) |
 | Identify a rejected operation declaration dependency | `decl::application_schema::ApplicationSchemaDeclarationDenial` preserves `MissingOperationProgramDependency`, `MissingOperationDecisionReadDependency` and `MissingOperationMutationPreconditionDependency` with owned `operation` and `ApplicationOperationDependencyLocus`. Target loci carry the original typed field/relation/precondition; whole-body failures remain explicitly `Body`. | [Declaration failures](build-an-application.md#45-declaration-failures) | Reconstructing a field from a test selector, replacing the native cause with a generic installation string, or treating diagnostic data as authority |
@@ -676,9 +688,12 @@ without caller work or byte estimates. Slots carry no authentication or currentn
 Live declarations name cause/binding/effect/scope/target meaning without a resource
 contract. Request Live controls retain channel buffer capacity and materialized-record
 cardinality; their managed queue occupancy is released on delivery or normal close.
-`WorthQueryOutputReadinessContractBuilder::new` takes identity, node identity,
-native projection, canonical query, projection role, strategy and lowering family;
-readiness is synchronous, effect-free native execution with no work/byte quotation.
+For ordinary derived readiness, use the
+[typed field builder](build-an-application.md#canonical-nested-values-and-derived-readiness)
+against the completed declaration. The lower-level
+`WorthQueryOutputReadinessContractBuilder::new` accepts a native projection for
+families that own that projection directly. Readiness is synchronous, effect-free
+native execution with no work/byte quotation.
 
 
 ### Graph-read admission in the default Query workspace

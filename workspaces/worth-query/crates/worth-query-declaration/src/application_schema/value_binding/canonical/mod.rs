@@ -1,8 +1,10 @@
 //! Entry binding metadata for the Query-free canonical value contract.
+mod document;
+pub use document::{decode_application_document, encode_application_document};
 pub use worth_foundational::facade::{
     decode_canonical_value, decode_canonical_value_with_admission, encode_canonical_value,
-    CanonicalValue, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueShape,
-    ValueShapeDefinition,
+    CanonicalDocumentCodec, CanonicalValue, ValueCodecDenial, ValueDecodeAdmission,
+    ValueDecodeBounds, ValueShape, ValueShapeDefinition,
 };
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -51,8 +53,12 @@ pub fn decode_application_canonical_value<Value: CanonicalValue>(
     let InternedString::Raw(text) = text else {
         return Err(super::ApplicationValueDecodeDenial::CodecRejected { binding_identity });
     };
-    decode_canonical_value(text, bounds)
-        .map_err(|_| super::ApplicationValueDecodeDenial::CodecRejected { binding_identity })
+    decode_canonical_value(text, bounds).map_err(|cause| {
+        super::ApplicationValueDecodeDenial::Canonical {
+            binding_identity,
+            cause,
+        }
+    })
 }
 
 pub fn decode_application_canonical_value_with_admission<Value: CanonicalValue>(
@@ -72,6 +78,10 @@ pub fn decode_application_canonical_value_with_admission<Value: CanonicalValue>(
     let InternedString::Raw(text) = text else {
         return Err(super::ApplicationValueDecodeDenial::CodecRejected { binding_identity });
     };
-    decode_canonical_value_with_admission(text, bounds, admission)
-        .map_err(|_| super::ApplicationValueDecodeDenial::CodecRejected { binding_identity })
+    decode_canonical_value_with_admission(text, bounds, admission).map_err(|cause| {
+        super::ApplicationValueDecodeDenial::Canonical {
+            binding_identity,
+            cause,
+        }
+    })
 }

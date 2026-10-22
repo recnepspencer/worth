@@ -19,6 +19,7 @@ mod contribution;
 mod decision_read_authoring;
 mod declaration;
 mod declaration_denial;
+mod declared_operation;
 mod effect_authoring;
 mod effect_binding;
 mod effect_marker_identity;
@@ -138,6 +139,7 @@ pub use declaration::{
     ErasedApplicationSchemaDeclaration,
 };
 pub use declaration_denial::ApplicationSchemaDeclarationDenial;
+pub use declared_operation::ApplicationDeclaredOperation;
 pub use effect_authoring::{TypedEffectIntent, TypedEffectIntentBuilder};
 pub use effect_binding::{
     ApplicationExternalEffectBinding, ApplicationExternalEffectPayloadProjection,
@@ -234,9 +236,10 @@ pub use shape::{
 };
 pub use value_binding::{
     decode_application_canonical_value, decode_application_canonical_value_with_admission,
-    decode_canonical_value, decode_canonical_value_with_admission, encode_canonical_value,
-    ApplicationCanonicalValueContract, ApplicationEncodedScalarValue, ApplicationFieldBindingLocus,
-    ApplicationFieldBindingRecipe, ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
+    decode_application_document, decode_canonical_value, decode_canonical_value_with_admission,
+    encode_application_document, encode_canonical_value, ApplicationCanonicalValueContract,
+    ApplicationEncodedScalarValue, ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe,
+    ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
     ApplicationNativeInputAdmissionDenial, ApplicationNativeInputDecodeProfile,
     ApplicationNativeInputDecodeResources, ApplicationReadableScalarValueBinding,
     ApplicationScalarValueBinding, ApplicationSignedAggregateValueBinding,
@@ -245,8 +248,8 @@ pub use value_binding::{
     ApplicationValueEncodeDenial, ApplicationValueIdentityPosture, ApplicationValueIsIdentity,
     ApplicationValueIsNotIdentity, ApplicationValueSignedAggregateAvailable,
     ApplicationValueSignedAggregatePosture, ApplicationValueSignedAggregateUnavailable,
-    ApplicationValueValidationDenial, BoolApplicationValueBinding, CanonicalValue,
-    ErasedApplicationSignedAggregateDecode, ErasedApplicationValueAdmittedDecode,
+    ApplicationValueValidationDenial, BoolApplicationValueBinding, CanonicalDocumentCodec,
+    CanonicalValue, ErasedApplicationSignedAggregateDecode, ErasedApplicationValueAdmittedDecode,
     ErasedApplicationValueDecode, ErasedApplicationValueEncode, ErasedApplicationValueValidation,
     I64ApplicationValueBinding, InternedStringApplicationValueBinding,
     StringApplicationValueBinding, U64ApplicationValueBinding, ValueCodecDenial,

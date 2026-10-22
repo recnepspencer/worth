@@ -4,6 +4,8 @@ mod catalog;
 mod compilation;
 mod denial;
 mod locus;
+mod projection;
+pub use projection::declared_application_aspect_contract;
 
 pub use aspect_contract::WorthQueryInstalledApplicationAspectContract;
 pub use catalog::{
@@ -15,7 +17,7 @@ pub use locus::WorthQueryInstalledApplicationAspectLocus;
 pub(crate) use compilation::{
     compile_native_contract_catalog, compile_portable_native_contract_records,
 };
-pub(crate) use denial::{
+pub use denial::{
     WorthQueryApplicationSchemaContractCatalogDenial,
     WorthQueryApplicationSchemaContractCatalogDenialKind,
 };

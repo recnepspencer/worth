@@ -52,6 +52,7 @@ fn compiled_examples_match_consumer_documents() {
         examples,
         BTreeSet::from([
             "candidate_preparation.rs".to_owned(),
+            "final_output/feature.rs".to_owned(),
             "optional_aspects.rs".to_owned(),
             "composed_action.rs".to_owned(),
             "warehouse_inventory.rs".to_owned(),

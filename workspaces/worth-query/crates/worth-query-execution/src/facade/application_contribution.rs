@@ -1,4 +1,8 @@
 //! Contribution-owned application handler and invariant configuration.
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryFeatureConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
+    WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
+};
 
 pub use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase,
@@ -31,12 +35,13 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryManagedComputationExecution, WorthQueryManagedComputationInterruption,
     WorthQueryManagedComputationOwner, WorthQueryManagedComputationPrepared,
     WorthQueryManagedComputationResourceDenial, WorthQueryMemoryLimitLevel,
-    WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
-    WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
-    WorthQueryPreparedManagedComputation, WorthQueryPreparedPartitionedComputation,
-    WorthQueryProducerApplicability, WorthQueryProducerInputReuseContract,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily, WorthQueryReductionInputDenial,
+    WorthQueryOutputReadinessContract, WorthQueryOutputReadinessContractBuilder,
+    WorthQueryOutputReadinessContractDenial, WorthQueryPartitionedComputationDenial,
+    WorthQueryPartitionedComputationOwner, WorthQueryPreparedManagedComputation,
+    WorthQueryPreparedPartitionedComputation, WorthQueryProducerApplicability,
+    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
+    WorthQueryReadinessFieldUse, WorthQueryReductionInputDenial,
     WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
 /// What a partitioned owner's results and denials declare to execution, the

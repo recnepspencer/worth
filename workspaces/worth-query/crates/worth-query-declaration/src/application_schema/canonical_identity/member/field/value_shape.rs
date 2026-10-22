@@ -11,23 +11,34 @@ pub(super) fn append_contract(
 ) {
     basis.text(format!("{prefix}.codec.protocol"), contract.wire_protocol());
     let bounds = contract.bounds();
-    basis.usize(
+    bound(
+        basis,
         format!("{prefix}.codec.maximum-wire-bytes"),
         bounds.maximum_wire_bytes(),
     );
-    basis.usize(
+    bound(
+        basis,
         format!("{prefix}.codec.maximum-string-bytes"),
         bounds.maximum_string_bytes(),
     );
-    basis.usize(
+    bound(
+        basis,
         format!("{prefix}.codec.maximum-sequence-length"),
         bounds.maximum_sequence_length(),
     );
-    basis.usize(
+    bound(
+        basis,
         format!("{prefix}.codec.maximum-depth"),
         bounds.maximum_depth(),
     );
     append_shape(basis, &format!("{prefix}.codec.shape"), contract.shape());
+}
+
+fn bound(basis: &mut ApplicationSchemaCanonicalBasis, key: String, maximum: Option<usize>) {
+    match maximum {
+        Some(maximum) => basis.usize(key, maximum),
+        None => basis.text(key, "unrestricted"),
+    }
 }
 
 fn append_shape(basis: &mut ApplicationSchemaCanonicalBasis, prefix: &str, shape: &ValueShape) {

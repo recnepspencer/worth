@@ -50,7 +50,8 @@ where
         Schema::MAJOR,
         Schema::MINOR,
     ));
-    let contracts = Contributions::contracts().map_err(Denial::Contributions)?;
+    let contracts =
+        Contributions::contracts(declaration.erased()).map_err(Denial::Contributions)?;
     let package = contracts
         .compose_package(package.application_schema(declaration.clone()))
         .validate()
@@ -82,6 +83,11 @@ where
         Some(admit) => Some(admit(&installed)?),
         None => None,
     };
+    if let Some(support) = &admitted_program_support {
+        contracts
+            .validate_required_features(&support.features)
+            .map_err(Denial::Contributions)?;
+    }
     let configured = WorthQueryConfiguredApplicationContributions::<Schema>::configure::<
         Contributions,
     >(&installed, configuration, contracts)

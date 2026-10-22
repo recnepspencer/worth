@@ -51,12 +51,18 @@ impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
     const REQUIRED_PRODUCERS: &'static [&'static str] = &[PRODUCER];
 
     fn package_contract(
-    ) -> application_contribution::WorthQueryApplicationConditionalPackageContract {
-        application_contribution::WorthQueryApplicationConditionalPackageContract::new(
-            operation_definition().into_portable(),
-            Self::conditional_binding().portable().clone(),
-            RegionOutputReadyNode::reference().node_identity(),
-        )
+        _declaration: &worth_query_decl::facade::application_schema::ErasedApplicationSchemaDeclaration,
+    ) -> Result<
+        application_contribution::WorthQueryApplicationConditionalPackageContract,
+        application_contribution::WorthQueryOutputReadinessContractDenial,
+    > {
+        Ok({
+            application_contribution::WorthQueryApplicationConditionalPackageContract::new(
+                operation_definition().into_portable(),
+                Self::conditional_binding().portable().clone(),
+                RegionOutputReadyNode::reference().node_identity(),
+            )
+        })
     }
 
     fn install(

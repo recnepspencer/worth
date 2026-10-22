@@ -12,6 +12,7 @@ impl Default for HistoryConfiguration {
     fn default() -> Self {
         Self {
             topology: TopologyConfiguration {
+                final_feature: crate::planar_final_feature_runtime(),
                 setup_calls: Default::default(),
                 invariant_calls: Default::default(),
                 invariant_probe: Default::default(),
