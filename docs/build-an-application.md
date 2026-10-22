@@ -15,6 +15,24 @@ explain *why* the platform works the way it does
 ([How WORTH Works](how-it-works.md)). This one shows *which names you call, in
 which order*.
 
+For a new feature, use the complete feature definition below. It keeps the
+feature's schema members, actions, required lifecycle roles and runtime slots
+together; the SDK derives their projections. The lower-level builders later in
+this guide explain the underlying contracts and support specialized composition.
+
+| Your next task | Start here | What you supply |
+|---|---|---|
+| Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
+| Declare operation access | [Operation access](#21-declare-operation-access-once) | Reads, effects and preconditions in one declaration |
+| Compute from tracked inputs | [Managed computation](#36-declare-and-install-a-partitioned-managed-computation) | Tracked gathering, pure numerical data and original-owner completion |
+| Install or reopen an application | [Build identity](#application-build-identity), then [installation](#41-one-program) | One immutable identity from the build pipeline, configuration and installed resources |
+| Submit, recover and close an action | [Owning actions](#53-execute-through-the-program) | Original input, source and key; fresh authorized requests for progression |
+
+These are implemented SDK surfaces. They do not promise that a particular
+application has moved its kernels to workers or qualified a parallel default.
+Computation declaration, physical placement and measured speedup are separate
+facts.
+
 An application imports exactly two crates, `worth-query-decl` and
 `worth-query-host`. Their facades are made of modules, so import from the
 module that owns each name:
@@ -82,7 +100,7 @@ some declaration macros. `worth_query_mutation_binding!`,
 | Step | What you do | The call | Section |
 |---|---|---|---|
 | 1 | Declare the schema and its contributions | `worth_query_application!`, `worth_query_application_contribution!`, `impl WorthQueryApplicationContribution` | [§2](#2-declare-the-schema-and-its-contributions) |
-| 2 | Declare features and the program | `impl ApplicationFeature`, `ApplicationFeatureSpec::root::<S, F>()…finish()`, `impl ApplicationProgramDefinition` | [§3](#3-declare-features-and-the-program) |
+| 2 | Declare features and the program | `worth_query_application_contribution! { pub feature ... }`, its `ApplicationFeatureDefinition` projections, `impl ApplicationProgramDefinition` | [Complete definitions](#complete-feature-definitions), [§3](#3-declare-features-and-the-program) |
 | 3 | Validate the program | `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` | [§3.5](#35-validate) |
 | 4 | Install the application graph | `application_installation::in_memory_program(..)` or `in_memory_rostered_program(..)` | [§4](#4-install-the-application-graph) |
 | 5 | Run program-owned actions | `request.mutate(intent)…idempotency_owned(key)?.retain_operation::<Program, Action>(&runtime)`, then `operation.advance(&fresh_request)` | [§5](#5-run-the-program) |
@@ -134,6 +152,12 @@ Terms: [Glossary](glossary.md) — see **Program**, **Feature**,
 
 A schema is composed from contributions. Each contribution declares its own
 entities, fields, operations, queries, and invariants.
+
+For ordinary feature members, let the [complete definition](#complete-feature-definitions)
+supply those declarations and runtime projections. The contribution below shows
+the composition layer and a standalone conditional. It is useful for
+contribution-wide invariants and host setup; do not copy its separate handler
+registration into a feature whose definition already owns that handler.
 
 <!-- illustrative -->
 ```rust,ignore
@@ -483,6 +507,38 @@ impl ApplicationFeature<BankSchema> for BankPaymentsFeature {
 
 `ApplicationFeature` also has `const MAJOR: u16 = 1` and `const MINOR: u16 = 0`,
 which you may override.
+
+### Complete feature definitions
+
+Use `worth_query_host::facade::worth_query_application_contribution!` with its
+`pub feature` form for an ordinary installed feature. Keep genuine schema
+members in its `schema` clause, source actions in `action` members and paired
+production in `required_pair` members. A source-only feature uses actions
+without inventing an Initial/Preserve pair. The same definition provides:
+
+| Projection | Owner and use |
+|---|---|
+| Schema members and operation access | `ApplicationFeatureDefinition::declare_members` contributes the feature's declared members to its schema |
+| Authored program meaning | `ApplicationFeatureDefinition::feature_specs` supplies the feature specifications |
+| Delivery/output roots | `ApplicationFeatureDefinition::Outputs` supplies roots derived from the declared deliveries |
+| Required runtime contracts | `WorthQueryFeatureDefinition::contracts` projects requirements into contribution installation |
+| Runtime configuration | `WorthQueryFeatureDefinition::Configuration` and `configure` carry actual handlers and role runtimes into the existing setup owner |
+
+Compose definitions as typed tuples when appropriate. The application still
+chooses its contributions, feature membership, connections and domain
+configuration explicitly. Generation removes repeated mechanical registration;
+it does not infer business meaning, invent handlers, choose readiness predicates
+or authorize a request. Pure domain/numerical crates remain Query-free.
+
+The required-role example below is a complete feature definition with real
+Initial and Preserve producers. Its linked executable includes schema/program
+composition, configuration, installation, an authored edit and identity-preserving
+publication. For an action member, compare the consumer's
+[source-adjustment definition](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/source_adjustment/feature.rs),
+whose delivery names its actual dependent output tree.
+Use the lower-level `ApplicationFeatureSpec` builders for specialized composition
+and for understanding the generated meaning. Do not maintain a second manual
+operation/handler/producer/output roster beside a complete definition.
 
 ### Required Initial and Preserve output roles
 
@@ -4982,8 +5038,10 @@ but did not publish is recovered with
 **Do:**
 
 - Import only `worth_query_decl::facade` and `worth_query_host::facade`.
-- Build features with `ApplicationFeatureSpec::root::<S, F>()` (or `at`) and
-  the builder methods. Call `finish()`.
+- Start ordinary features with the [complete definition](#complete-feature-definitions)
+  and consume its schema, program, runtime and output projections. Use
+  `ApplicationFeatureSpec::root::<S, F>()` (or `at`) for specialized composition;
+  finish each builder and avoid duplicating a definition's generated members.
 - Validate programs with
   `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` and
   install with `application_installation::in_memory_program` or

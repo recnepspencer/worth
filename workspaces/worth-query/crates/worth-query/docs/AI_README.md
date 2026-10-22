@@ -266,17 +266,18 @@ Application usage:
 - `ApplicationQueryBinding<Schema>` is one installed contract: the input and
   its structured-value binding, the installed query, parameter and result
   bindings, exact principal mapping, scope resolution, stable binding identity,
-  a finite result ceiling and an optional deliberate work cap. Ordinary bindings
-  use `ApplicationQueryBindingLimits::results(n)`; the installed host supplies
-  the finite operational work safeguard. `ApplicationQueryIntent<Schema>` carries
+  a finite result ceiling. Ordinary bindings use
+  `ApplicationQueryBindingLimits::results(n)`; the installed query profile controls
+  simultaneous graph work, not a per-query work or byte invoice.
+  `ApplicationQueryIntent<Schema>` carries
   only the request values needed for parameters and scope.
 - Installation compiles that association once.
   `installed_schema.installed_query_binding::<Binding>()` exposes the installed
   query, principal binding, scope, identity, and limits together.
 - A borrowed request reads no World state. Each `execute()` selects the current
   World once and carries that occurrence through principal and scope
-  resolution, admission, execution, and publication. `.limits(results, work)`
-  may only narrow the resolved host/binding ceiling; widening is denied before
+  resolution, admission, execution, and publication. `.limit_results(NonZeroUsize)`
+  may only narrow the installed binding's result ceiling; widening is denied before
   provider or basis work. All modes, including retained reads and continuation,
   use the same resolution policy.
 - Result projectors receive only disclosure-admitted rows.
@@ -365,7 +366,7 @@ to `Compatible` to admit a new path.
 
 **Managed computations and derived collections.** A contribution declares each
 computation's input, output artifact, computation partition key, reuse, stopped
-outcome, execution posture, determinism contract, and ceilings, then installs
+outcome, execution posture and determinism contract, then installs
 one owner for that declaration. A `Deterministic` computation declares
 `ApplicationSingleComputationPartition` and installs its owner with
 `computation`; a `DeterministicPartitioned` one declares its own key and
@@ -382,6 +383,14 @@ declaration grants no mutable collection authority: product runtimes own
 incremental state, mark a row complete only from current contributor evidence
 observed through one retained request observation, and must reproduce the same
 rows on reconstruction.
+
+Ordinary handlers return the installed owner's `decision_plan`, which carries
+that same request through preparation, computation and completion. Use
+`checkpoint.poll()` for a control-only safe point; `advance(work)` deliberately
+charges request work. `HandlerFailure<Domain>` and `HandlerResult::from_result`
+preserve typed domain, execution and interruption causes. Computation declarations
+require no result-byte forecast or payload `ChargedBytes` implementation. See the
+[managed computation guide](../../../../../docs/build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
 
 Cold managed pair views distinguish independent preplanned reads from serial
 reads whose second scope is supplied by the first row. Independent plans use
@@ -544,23 +553,19 @@ serialization, through both ordinary and admitted producers. Preencoded handoffs
 carry that validated input rather than recreating or revalidating it. A binding's
 validator is not optional host guidance.
 
-- The three handler roles (`decide`, `candidate_requirements`,
-  `build_candidate`) are bounded. Query retains and completes the decision's
-  actual read dependencies, reserves the candidate's demand against the
-  installed ceiling before allocation, and lets `CandidateWriter` bind effects
-  without selecting a new runtime basis.
+- Handlers implement `decide` and `build_candidate`; computing handlers override
+  `prepare_decision` with their installed computation's `decision_plan`. Query
+  retains and completes the decision's actual read dependencies and lets
+  `CandidateWriter` bind effects without selecting a new runtime basis or
+  requiring candidate-size estimates.
 - An existing target with no scalar identity field crosses the phase boundary
   through `DecisionReader::mutation_target` on an entity observed through typed
   reads, then `CandidateWriter::projected_entity`. The installed projection
   authority mints the target with its runtime, schema binding, and exact
   operation admission. A target from another runtime, binding, or admission, or
   absent from this attempt's completed read set, is rejected.
-- Candidate cardinality and retained representation bytes are separate bounds.
-  `representation_bytes(n)` declares the retained candidate representation; host
-  capacity and exact closure checks remain enforced. Candidate validation has no
-  aggregate work quota or predicted descriptor-max allowance. Each installed
-  invariant retains its own algorithm controls and actual execution work evidence.
-  Relation integrity and installed invariants inspect
+- Candidate construction and validation require no authored representation-byte
+  or aggregate validator-work quote. Relation integrity and installed invariants inspect
   the actual candidate and its affected untouched neighbors before atomic
   publication. Domain prechecks or handler success cannot substitute for
   invariant receipts. Denied, cancelled, or invalid candidates do not publish.

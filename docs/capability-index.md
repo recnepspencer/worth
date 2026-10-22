@@ -59,6 +59,17 @@ Do all five steps, in order.
 
 ## Task index
 
+For a new installed feature, use the
+[complete feature definition](build-an-application.md#complete-feature-definitions)
+first: `host::worth_query_application_contribution! { pub feature ... }` projects
+schema members, action meaning, typed runtime configuration, required roles and
+delivery roots through the existing owners. Lower-level builders remain useful
+for specialized composition; maintaining duplicate feature rosters is unnecessary.
+For tracked numerical work, use the
+[managed/partitioned computation lifecycle](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
+For submission and recovery, retain the
+[original owning action](build-an-application.md#53-execute-through-the-program).
+
 Application installation and reopen require one
 `host::application_installation::ApplicationBuildIdentity`, embedded by the
 application build pipeline. Query binds it to every producer, including

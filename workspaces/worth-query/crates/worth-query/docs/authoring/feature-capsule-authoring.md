@@ -213,8 +213,15 @@ code still owns artifact payloads and numerical algorithms.
 `managed_computation(Computation)` associates a typed computation declaration
 with the feature that owns its result. The declaration identifies its input
 basis, output artifact, computation partition key, reuse, stopped outcome,
-execution posture, determinism contract, and ceilings. Installation then
-requires the matching runtime owner.
+execution posture and determinism contract. Installation requires the matching
+runtime owner; the computation declaration supplies no resource forecast.
+
+Ordinary handlers return that installed owner's `decision_plan`. It carries the
+original request through preparation, computation and completion; `checkpoint.poll`
+checks controls without charging work, while `HandlerFailure<Domain>` preserves
+typed failure causes. Follow the
+[managed computation guide](../../../../../../docs/build-an-application.md#36-declare-and-install-a-partitioned-managed-computation)
+for the complete call shape and compiled examples.
 
 A computation partition key is `Send + Sync` and serializable. Two keys are the
 same key exactly when their canonical encodings are equal: the encoding is the

@@ -495,14 +495,14 @@ show this construction. A borrowed request selects no World and caches no
 permission. Each execution performs selection, resolution, admission, and
 publication through the existing owners.
 
-Installed mutation handlers supply `decide`, `candidate_requirements`, and
-`build_candidate`. Query completes declared decision dependencies, reserves the
-candidate's finite cardinality and representation before allocation, and runs
-installed invariants against the actual candidate plus affected untouched
-neighbors under a separate work bound. Invalid candidates cannot publish.
+Installed mutation handlers supply `decide` and `build_candidate`. Computing
+handlers override `prepare_decision` with an installed owner's `decision_plan`.
+Query completes decision dependencies and runs installed invariants against the
+actual candidate plus affected untouched neighbors. Handlers do not forecast
+candidate bytes or validator work. Invalid candidates cannot publish.
 
 Handlers use tracked typed field and relation reads through `DecisionReader` and
-build the one reserved effect program through `CandidateWriter`'s create,
+build the attempt's effect program through `CandidateWriter`'s create,
 initialize, write, link, unlink, delete, emit, and output-role operations.
 Complete equality selections use `select_entities` with a finite candidate
 limit; empty selections remain dependencies and overflow denies publication.

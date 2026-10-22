@@ -177,10 +177,10 @@ fixture constants cannot satisfy this proof.
   child maximum. Framework currentness and provider algorithm work stay separate.
 - Candidate validation has no aggregate work quota or descriptor-max prediction.
   Installed invariants retain their own algorithm controls and actual execution
-  evidence. Exact closure remains checked before publication; effect shape,
-  representation-byte and real concurrent-capacity admission remain intact.
-- Local result-buffer and candidate-representation accounting is not a global
-  heap reservation. Provider demand estimates are not aggregate memory proof.
+  evidence. Handlers declare no candidate-representation estimate; exact scope,
+  relation integrity and invariant closure remain checked before publication.
+- Explicit local result-buffer accounting is not a global heap reservation.
+  Provider demand estimates are not aggregate memory proof.
   Managed reservations retain their consuming lifecycle.
 
 <!-- illustrative -->
@@ -193,8 +193,6 @@ const LIMITS: ApplicationQueryBindingLimits =
 // host has configured different limits from the standard profile.
 let controls = WorthQueryOutputDemandControls::default();
 
-// Candidate representation is authored; actual invariant closure is installed.
-let resources = ApplicationCandidateResourceCeiling::representation_bytes(4096);
 ```
 
 `WorthQueryInMemoryApplicationLimits::with_output_demand_resources(...)` installs

@@ -37,6 +37,12 @@ Then write it from [Build an Application](docs/build-an-application.md): the
 exact calls to declare features and a program, install the application graph,
 run it, author and run workflows, and adopt a new program on a branch.
 A Query application imports only `worth-query-decl` and `worth-query-host`.
+For a new feature, start with the [complete feature definition](docs/build-an-application.md#complete-feature-definitions):
+one typed declaration supplies schema members, actions, required producer roles,
+configuration and output roots. Use [managed computation](docs/build-an-application.md#36-declare-and-install-a-partitioned-managed-computation)
+for numerical work and the [owning action lifecycle](docs/build-an-application.md#53-execute-through-the-program)
+for delivery and recovery. Every application build also supplies its immutable
+[build identity](docs/build-an-application.md#application-build-identity).
 Before you conclude that the platform lacks something, look it up in the
 [Capability Index](docs/capability-index.md) and follow its procedure. Never
 build a second way to do something the platform already does.
