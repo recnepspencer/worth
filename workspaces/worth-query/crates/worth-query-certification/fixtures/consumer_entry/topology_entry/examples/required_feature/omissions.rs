@@ -4,19 +4,20 @@ use worth_query_decl::facade::application_operation::ApplicationMutationBinding;
 
 #[test]
 fn configured_omissions_preserve_required_meaning_and_release_pending_installation() {
-    for missing in 0..4 {
+    for missing in 0..5 {
         let mut configuration = setup::configuration();
         let (kind, subject) = match missing {
             0 => {
-                configuration.final_feature.initial = None;
+                configuration.topology.final_feature.initial = None;
                 (Kind::MissingProducerBinding, <PlanarFinalOutputProducer<ExampleSchema> as WorthQueryApplicationProducerBinding<ExampleSchema>>::IDENTITY)
             }
             1 => {
-                configuration.final_feature.preserve = None;
+                configuration.topology.final_feature.preserve = None;
                 (Kind::MissingProducerBinding, <PlanarFinalPreserveProducer<ExampleSchema> as WorthQueryApplicationProducerBinding<ExampleSchema>>::IDENTITY)
             }
             2 => {
                 configuration
+                    .topology
                     .final_feature
                     .initial
                     .as_mut()
@@ -29,8 +30,9 @@ fn configured_omissions_preserve_required_meaning_and_release_pending_installati
                     >>::IDENTITY,
                 )
             }
-            _ => {
+            3 => {
                 configuration
+                    .topology
                     .final_feature
                     .initial
                     .as_mut()
@@ -38,10 +40,19 @@ fn configured_omissions_preserve_required_meaning_and_release_pending_installati
                     .readiness = None;
                 (Kind::MissingConditionalBinding, <PlanarFinalOutputReadiness<ExampleSchema> as WorthQueryApplicationConditionalBinding<ExampleSchema>>::IDENTITY)
             }
+            _ => {
+                configuration.source.adjust = None;
+                (
+                    Kind::MissingMutationHandler,
+                    <PlanarSourceAdjustmentBinding<ExampleSchema> as ApplicationMutationBinding<
+                        ExampleSchema,
+                    >>::IDENTITY,
+                )
+            }
         };
-        let calls = Arc::clone(&configuration.setup_calls);
-        let invariant = Arc::clone(&configuration.invariant_calls);
-        let probe = Arc::clone(&configuration.invariant_probe);
+        let calls = Arc::clone(&configuration.topology.setup_calls);
+        let invariant = Arc::clone(&configuration.topology.invariant_calls);
+        let probe = Arc::clone(&configuration.topology.invariant_probe);
         let seeded = std::cell::Cell::new(false);
         let denial = match setup::install::<false>(configuration, || seeded.set(true)) {
             Err(installation::WorthQueryInMemoryApplicationDenial::Contributions(denial)) => denial,
@@ -73,7 +84,7 @@ fn configured_omissions_preserve_required_meaning_and_release_pending_installati
 #[test]
 fn omitting_both_contracts_and_registration_cannot_erase_program_requirement() {
     let configuration = setup::configuration();
-    let calls = Arc::clone(&configuration.setup_calls);
+    let calls = Arc::clone(&configuration.topology.setup_calls);
     let seeded = std::cell::Cell::new(false);
     let denial = match setup::install::<true>(configuration, || seeded.set(true)) {
         Err(installation::WorthQueryInMemoryApplicationDenial::Contributions(denial)) => denial,

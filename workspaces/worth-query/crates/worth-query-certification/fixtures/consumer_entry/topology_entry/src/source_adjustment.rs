@@ -3,7 +3,6 @@ use std::marker::PhantomData;
 use worth_query_consumer_values::{PlanarAdjustmentResult, PlanarMutationDenial, PositiveLength};
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
-    worth_query_operation_reads, worth_query_operation_writes,
     worth_query_structured_value_binding,
 };
 use worth_query_host::facade::primary_graph::{
@@ -31,10 +30,11 @@ worth_query_structured_value_binding!(pub PlanarSourceAdjustmentResultBinding fo
 worth_query_structured_value_binding!(pub PlanarSourceAdjustmentDenialBinding for PlanarMutationDenial {
     identity: "worth.query.certification.planar-source-adjustment-denial.v1"
 });
-worth_query_operation!(pub AdjustPlanarSource for Schema: TopologySchemaBinding, input PlanarSourceAdjustmentInputBinding);
-worth_query_operation_reads!(AdjustPlanarSource => [Body, BodyKey, PositionY]);
-worth_query_operation_writes!(AdjustPlanarSource => [PositionY]);
-worth_query_decl::facade::worth_query_operation_expects_fact!(AdjustPlanarSource => [BodyKey]);
+worth_query_operation!(pub AdjustPlanarSource for Schema: TopologySchemaBinding, input PlanarSourceAdjustmentInputBinding;
+    access { read_entities: [Body]; read_fields: [BodyKey, PositionY]; writes: [PositionY]; expects_fact: [BodyKey]; }
+);
+mod feature;
+pub use feature::{PlanarSourceFeatureDefinition, PlanarSourceFeatureRoot, PlanarSourceRuntime};
 
 pub struct PlanarSourceAdjustmentBinding<Schema>(PhantomData<fn() -> Schema>);
 
@@ -157,27 +157,6 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, PlanarSourceAdjustm
             Err(error) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)),
         }
     }
-}
-
-pub(crate) fn declare_planar_source_adjustment<Schema: TopologySchemaBinding>(
-    schema: ApplicationSchemaDeclarationBuilder<Schema>,
-) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    let operation = AdjustPlanarSource::reference::<Schema>();
-    schema
-        .operation(
-            operation
-                .definition()
-                .no_external_effect()
-                .no_aftermath()
-                .finish(),
-        )
-        .operation_projection_work_budget(operation, 16)
-        .operation_read_entity(operation, Body::reference())
-        .operation_read_field(operation, BodyKey::reference())
-        .operation_read_field(operation, PositionY::reference())
-        .operation_expected_fact(operation, BodyKey::reference())
-        .operation_write(operation, PositionY::reference())
-        .application_mutation_binding::<PlanarSourceAdjustmentBinding<Schema>>()
 }
 
 impl<Schema: TopologySchemaBinding>

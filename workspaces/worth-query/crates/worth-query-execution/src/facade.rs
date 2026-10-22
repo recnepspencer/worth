@@ -1,5 +1,13 @@
 //! Public contract for the internal execution authority.
 
+pub use crate::{__worth_query_complete_feature, worth_query_application_contribution};
+#[doc(hidden)]
+pub use worth_query_declaration::facade as declaration;
+#[doc(hidden)]
+pub use worth_query_declaration::worth_query_application_contribution as __worth_query_schema_contribution;
+#[doc(hidden)]
+pub use worth_query_declaration::worth_query_feature_spec;
+
 pub mod domain_computation {
     pub use super::primary_graph::*;
     pub use crate::domain_computation::artifact_owner::*;

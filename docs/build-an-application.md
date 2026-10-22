@@ -503,19 +503,53 @@ pub type PlanarFinalFeatureRoles<Schema, Feature = PlanarFinalOutputFeature> =
     >;
 ```
 
-Attach `.required_pair::<PlanarFinalFeatureRoles<Schema>>()` to the feature's
-program spec, call `contracts.feature::<PlanarFinalFeatureRoles<Schema>>()?`,
-and pass its explicit two-role runtime to
-`setup.feature::<PlanarFinalFeatureRoles<Schema>>(runtime)?`. Each role is a
-`WorthQueryFeatureRoleRuntime::new(handler, provider, readiness_configuration)`;
-`WorthQueryFeatureRuntime::new(initial, preserve)` requires both values. Handlers
-remain distinct, stateful application owners. The carrier derives each
-readiness owner's exact required producer from the associated types; its
-native predicate and `bind_output_readiness` remain the readiness owner's work.
-Do not add separate Initial/Preserve `conditional_operation` markers,
-producer/conditional contract lists, handler/provider registration rosters or
-copied `REQUIRED_PRODUCERS` entries for that pair. The declaration supplies these
-mechanical associations; each runtime role still supplies its actual values.
+Select a complete feature definition through the Host facade's existing
+`worth_query_application_contribution!` macro. The same typed members supply
+schema operations and access, feature declarations, runtime slots, contracts and
+output roots. The runnable consumer uses this definition:
+
+<!-- compiled: final_output/definition.rs -->
+```rust
+worth_query_host::facade::worth_query_application_contribution! {
+    pub feature PlanarFinalFeatureDefinition<Schema: TopologySchemaBinding>
+        for PlanarFinalOutputFeature => CompletePlanarFinalRuntime {
+        schema: |schema| { schema };
+        provides(crate::PlanarFinalBodyOutput);
+        required_pair lifecycle(
+            PlanarFinalFeatureRoles<Schema>, FinalPlanarMutationHandler, FinalPlanarPreserveHandler
+        ) {
+            initial_operation: PublishFinalPlanarOutput::reference::<Schema>().definition()
+                .no_external_effect().no_aftermath().finish();
+            preserve_operation: PreserveFinalPlanarOutput::reference::<Schema>().definition()
+                .no_external_effect().no_aftermath().finish();
+        };
+    }
+}
+```
+
+`ApplicationFeatureDefinition<Schema>` exposes `declare_members`, `feature_specs`
+and its actual typed `Outputs`. `WorthQueryFeatureDefinition<Schema>` supplies
+`Configuration`, `contracts` and `configure` through the existing installation
+owners. A tuple composes these definitions, so an application selects each family
+once. The `schema` clause owns genuine entities, fields and queries; action and
+role operations are generated from their members.
+
+An ordinary member uses `action name(Binding, Delivery, HandlerType)` with its
+explicit completed `operation:` definition and the normal action clauses.
+The generated runtime constructor accepts actual handler values in action order,
+then existing two-role runtimes in pair order. It never invents semantic configuration.
+Each role remains `WorthQueryFeatureRoleRuntime::new(handler, provider,
+readiness_configuration)` inside `WorthQueryFeatureRuntime::new(initial, preserve)`.
+Readiness predicates and `bind_output_readiness` remain with their existing owners.
+
+Declare operation access once with `worth_query_operation!(... for Schema:
+SchemaBinding, input Input; access { ... })`. Both Rust capabilities and schema
+access come from those categories. Where a sealed capability family already owns
+inherited access, the optional `inherited_access: |schema, operation| { ... }`
+continuation calls that existing owner. It does not redeclare inherited grants.
+Delivery roots come from each actual delivery mode. Identical concrete roots
+are visited once before flattening; distinct roots still undergo the normal
+duplicate-connection checks. There is no separate family output roster.
 
 Program meaning retains both requirements independently of those callbacks.
 Omitting contracts and registration together is refused. Configured `None`

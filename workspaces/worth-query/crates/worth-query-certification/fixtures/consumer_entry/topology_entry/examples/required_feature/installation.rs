@@ -10,19 +10,22 @@ use worth_query_host::facade::declaration::authentication::{
 };
 use worth_query_host::facade::{admission::authenticated_principal as authentication, runtime::*};
 
-pub fn configuration() -> TopologyConfiguration {
-    TopologyConfiguration {
-        final_feature: planar_final_feature_runtime(),
-        setup_calls: Arc::new(AtomicUsize::new(0)),
-        invariant_calls: Arc::new(AtomicUsize::new(0)),
-        invariant_probe: Arc::new(AtomicUsize::new(0)),
-        producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
-        producer_domain_denial: Arc::new(AtomicBool::new(false)),
+pub fn configuration() -> program::ExampleConfiguration {
+    program::ExampleConfiguration {
+        source: PlanarSourceRuntime::new(PlanarSourceAdjustmentHandler),
+        topology: TopologyConfiguration {
+            final_feature: planar_final_feature_runtime(),
+            setup_calls: Arc::new(AtomicUsize::new(0)),
+            invariant_calls: Arc::new(AtomicUsize::new(0)),
+            invariant_probe: Arc::new(AtomicUsize::new(0)),
+            producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
+            producer_domain_denial: Arc::new(AtomicBool::new(false)),
+        },
     }
 }
 
 pub fn install<const ERASE: bool>(
-    configuration: TopologyConfiguration,
+    configuration: program::ExampleConfiguration,
     seeded: impl FnOnce(),
 ) -> Result<
     installation::WorthQueryProgramApplicationRuntime<ExampleSchema, ExampleProgram<ERASE>>,

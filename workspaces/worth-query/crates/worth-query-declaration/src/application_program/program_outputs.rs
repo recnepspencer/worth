@@ -1,4 +1,8 @@
 use std::marker::PhantomData;
+mod feature;
+pub use feature::{
+    ApplicationActionOutput, ApplicationFeatureOutputMembers, ApplicationFeatureOutputs,
+};
 
 use crate::application_schema::ApplicationSchema;
 

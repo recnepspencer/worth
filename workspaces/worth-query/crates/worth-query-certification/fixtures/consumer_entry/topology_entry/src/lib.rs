@@ -78,9 +78,9 @@ worth_query_application_contribution! {
             let schema = alternate_output::declare_alternate_output(schema);
             let schema = vertex_replacement::declare_vertex_replacement(schema);
             let schema = prior_cycle_adjustment::declare_prior_cycle_adjustment(schema);
-            let schema = source_adjustment::declare_planar_source_adjustment(schema);
+            let schema = <PlanarSourceFeatureDefinition<Schema> as worth_query_decl::facade::application_program::ApplicationFeatureDefinition<Schema>>::declare_members(schema);
             let schema = initial_adjustment::declare_initial_adjustment(schema);
-            let schema = final_output::declare_final_output(schema);
+            let schema = <PlanarFinalFeatureDefinition<Schema> as worth_query_decl::facade::application_program::ApplicationFeatureDefinition<Schema>>::declare_members(schema);
             let schema = match Schema::PLANAR_EDIT_PROJECTION_WORK {
                 Some(work) => schema.operation_projection_work_budget(EditPlanar::reference::<Schema>(), work),
                 None => schema,

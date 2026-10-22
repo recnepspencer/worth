@@ -15,9 +15,12 @@ pub struct FinalPlanarPreserve {
 worth_query_structured_value_binding!(pub FinalPlanarPreserveInputBinding for FinalPlanarPreserve {
     identity: "worth.query.certification.final-planar-preserve-input.v1"
 });
-worth_query_operation!(pub PreserveFinalPlanarOutput for Schema: TopologySchemaBinding, input FinalPlanarPreserveInputBinding);
-worth_query_operation_reads!(PreserveFinalPlanarOutput => [Body, BodyKey, PositionY, Length, PlanarSuccessor]);
-worth_query_operation_writes!(PreserveFinalPlanarOutput => [PositionY, Length]);
+worth_query_operation!(pub PreserveFinalPlanarOutput for Schema: TopologySchemaBinding, input FinalPlanarPreserveInputBinding;
+    access {
+        read_entities: [Body]; read_fields: [BodyKey, PositionY, Length];
+        read_relations: [PlanarSuccessor]; writes: [PositionY, Length];
+    }
+);
 
 pub struct FinalPlanarPreserveOutputs;
 

@@ -15,7 +15,7 @@ impl ApplicationSchemaContribution<Schema> for Contribution {
         builder: ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> ApplicationSchemaDeclarationBuilder<Schema> {
         let builder = indexed_decision::declare_edit(facts::declare(builder));
-        let builder = crate::source_adjustment::declare_planar_source_adjustment(builder);
+        let builder = <crate::PlanarSourceFeatureDefinition<Schema> as worth_query_decl::facade::application_program::ApplicationFeatureDefinition<Schema>>::declare_members(builder);
         dependent_publication::declare(publication::declare(builder))
             .entity(Body::reference())
             .unit(Metre::reference())

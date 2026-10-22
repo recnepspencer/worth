@@ -4,7 +4,8 @@ mod conditional;
 mod contracts;
 mod feature;
 pub use feature::{
-    WorthQueryFeatureConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
+    WorthQueryFeatureConfiguration, WorthQueryFeatureDefinition,
+    WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
     WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
 };
 pub(in crate::domain_computation) mod execution_denial;

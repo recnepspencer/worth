@@ -9,7 +9,9 @@ pub use required_pair::{
     ApplicationRequiredFeatureRoleKind, ApplicationRequiredFeatureRoles,
 };
 
-pub use authoring::{ApplicationFeatureSpec, ApplicationFeatureSpecBuilder};
+pub use authoring::{
+    ApplicationFeatureDefinition, ApplicationFeatureSpec, ApplicationFeatureSpecBuilder,
+};
 
 /// One semantic feature participating in an application program.
 pub trait ApplicationFeature<Schema>: Sized + 'static
