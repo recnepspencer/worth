@@ -81,10 +81,9 @@ fn closed_delivery_uses_actual_selected_action_and_root_after_adoption() {
                 WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
             ));
         };
-        // Matching action meaning does not maintain arbitrary native index bases.
-        // Select the compatible program before the original source/effect creates
-        // its current basis; final delivery still compares the original declared
-        // action with this authentic, different selected program.
+        // The compatible selected program supplies the first native basis.
+        // Later delivery still compares the original declared action with
+        // this authentic, different selected program.
         adopt(unchanged_revision);
         let fixed = settle_fixed(&world, &request, input.clone());
         let tree = settle_tree(&world, &request);
@@ -140,13 +139,31 @@ fn closed_delivery_uses_actual_selected_action_and_root_after_adoption() {
             ))
         ));
         adopt(original_revision);
-        // Restoring the program restores action meaning, not the missing exact
-        // native indexed generation. Neither carrier may reconstruct or replay.
+        // Program-only adoption left the consumed source facts unchanged.
+        assert_eq!(
+            closed_fixed.read_current(&fresh).unwrap().rows()[0].value,
+            length(3)
+        );
+        assert_eq!(
+            closed_tree
+                .read_current(
+                    &fresh,
+                    PlanarOutputRead {
+                        body_key: "anchor-a".into()
+                    }
+                )
+                .unwrap()
+                .rows()[0]
+                .value,
+            length(3)
+        );
+        // A changed consumed fact stales both original settlements, with no
+        // reconstruction or producer replay during refused delivery.
+        edit_source(&world, &fresh, "anchor-a", 4, 0x9176_6284);
         assert!(matches!(
             closed_fixed.read_current(&fresh),
-            Err(WorthQueryOperationDeliveryDenial::Currentness(
-                WorthQueryOutputCurrentnessDenial::Output(cause)
-            )) if cause.kind() == WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
+            Err(WorthQueryOperationDeliveryDenial::Stale(cause))
+                if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded
         ));
         assert!(matches!(
             closed_tree.read_current(
@@ -157,7 +174,7 @@ fn closed_delivery_uses_actual_selected_action_and_root_after_adoption() {
             ),
             Err(WorthQueryOperationDeliveryDenial::Currentness(
                 WorthQueryOutputCurrentnessDenial::Output(cause)
-            )) if cause.kind() == WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
+            )) if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded
         ));
         assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
         assert_eq!(

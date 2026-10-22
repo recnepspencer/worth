@@ -24,13 +24,15 @@ fn a_queued_consumer_holds_at_its_accepted_caller_without_holding_an_independent
     let at = "two marked closures after an input edit";
     rings[2].a_y = 5;
     court.write_y(&rings[2].key("a"), 5, at);
-    rings[0].a_y = 3;
-    court.write_y(&rings[0].key("a"), 3, at);
     for y in [2, 3, 4, 5, 6, 2, 3, 4] {
         rings[1].a_y = y;
         court.write_y(&rings[1].key("a"), y, at);
     }
     settled!(court, a, at);
+    // Mark the independent root after A's pass, so B's advance is the first
+    // opportunity to progress it beside C's held closure.
+    rings[0].a_y = 3;
+    court.write_y(&rings[0].key("a"), 3, at);
     passes();
     assert!(application.queued_required_work_for_test() >= 2);
     let cost = settled!(court, b, at);

@@ -82,13 +82,21 @@ fn a_native_writer_marks_what_a_declared_operation_marks() {
     judge_untouched(&court, &mut rings, [1, 2], at);
 
     let at = "after a native write of a chain output";
+    let mut last = consumer!(court, rings[1].key("c"), at);
+    assert!(settled!(court, last, at).is_free());
     rings[1].b_length = 44;
     native_write!(application, scope, rings[1].key("b"), Length, 44);
-    let ([a, _, c, _], decisions) = court.demand_ring(&mut rings, 1, at);
+    // Let C initiate its own refresh before an unrelated caller may pump it.
+    let cost = settled!(court, last, at);
     assert_eq!(
-        (a.producer_contacts, c.producer_contacts, decisions > 0),
-        (0, 1, true),
-        "{at}: the root is untouched and the last consumer decides over the written output"
+        (cost.producer_contacts, judge_decisions(&mut rings, at)),
+        (1, 1),
+        "{at}: the last consumer decides over the written output in its own advance"
+    );
+    let (costs, decisions) = court.demand_ring(&mut rings, 1, at);
+    assert!(
+        costs.iter().all(Cost::is_free) && decisions == 0,
+        "{at}: the root is untouched and the refreshed chain is current: {costs:?}"
     );
     judge_untouched(&court, &mut rings, [0, 2], at);
     assert_eq!(

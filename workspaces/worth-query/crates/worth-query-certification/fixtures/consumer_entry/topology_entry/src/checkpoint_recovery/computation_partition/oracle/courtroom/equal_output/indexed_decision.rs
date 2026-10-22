@@ -99,40 +99,40 @@ fn journey(add_match: bool, leave_dirty: bool) {
         );
     }
     dependent_publication::take_calls();
-    // An equal upstream left Dirty stales nothing by itself: without a new
-    // match the consumer settles in its one advance below.
-    if leave_dirty && add_match {
-        let stopped = consumer.advance(&request);
-        assert!(
-            matches!(&stopped,
-            Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial))
-                if denial.kind() == WorthQueryOutputDemandDenialKind::PublicationStale
-                    && denial.recovery_posture() == primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable),
-            "publishing U while the decision reads it requires a fresh publication basis: {:?}",
-            stopped.as_ref().err()
-        );
+    // Native requested-output progression may refresh U and retry the caller
+    // internally. A stage handoff keeps this original demand under fresh authority.
+    let settlement = loop {
+        let (fresh_scope, fresh_principal) =
+            installation::authentication_fixture::authenticate(&app);
+        let fresh = app.request(&fresh_principal, &fresh_scope);
+        match consumer.advance(&fresh) {
+            Ok(WorthQueryApplicationOutputDemandProgress::Progressed) => continue,
+            Ok(WorthQueryApplicationOutputDemandProgress::Settled(settlement)) => break settlement,
+            Ok(WorthQueryApplicationOutputDemandProgress::Pending) => {
+                panic!("the synchronous native upstream must not leave external work pending")
+            }
+            Err(cause) => {
+                panic!("the indexed decision must complete on a current basis: {cause:?}")
+            }
+        }
+    };
+    let current = request.retain_current_read().unwrap();
+    request
+        .at(&current)
+        .require_current_output_demand(&settlement)
+        .expect("the completed decision carries its current upstream and indexed membership");
+    let calls = dependent_publication::take_calls();
+    let contacts = settlement.producer_contacts_in_this_demand();
+    if add_match {
+        assert!(calls > 0 && contacts > 1,
+            "changed indexed membership reruns this original consumer: {calls} decisions, {contacts} lifetime contacts");
+    } else {
         assert_eq!(
-            dependent_publication::take_calls(),
-            1,
-            "changed indexed membership contacts the decision while U is Dirty"
-        );
-        assert_eq!(
-            read_value(DEPENDENT),
-            length(1),
-            "the stale decision does not publish"
+            (calls, contacts),
+            (0, 1),
+            "unchanged indexed membership reuses the equal upstream without another decision"
         );
     }
-    let contacts = settle!(consumer, request).0;
-    assert_eq!(
-        dependent_publication::take_calls(),
-        usize::from(add_match),
-        "only changed decision membership contacts the consumer"
-    );
-    assert_eq!(
-        contacts,
-        1 + usize::from(add_match) * (1 + usize::from(leave_dirty)),
-        "the stale contact and the published one both follow the new match"
-    );
     assert_eq!(
         read_value(DEPENDENT),
         length(if add_match { 2 } else { 1 }),

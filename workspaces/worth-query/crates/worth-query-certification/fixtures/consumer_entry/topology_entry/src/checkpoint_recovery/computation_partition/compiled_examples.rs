@@ -6,6 +6,7 @@ use super::demand::{
 use super::*;
 use crate::{sensor_telemetry as telemetry, warehouse_inventory as inventory};
 use std::cell::RefCell;
+use worth_query_decl::facade::application_program::ApplicationRequiredFeatureRoles;
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
 // The five caller-supplied types use the existing computation fixture's declarations.
@@ -119,10 +120,22 @@ impl<E: Example> ApplicationProgramDefinition<S> for Program<E> {
             .native_action::<B>()
             .finish_action()
             .finish();
+        let example = E::declare();
         assert_eq!(
-            final_output.feature(),
-            E::declare().feature(),
-            "the host installs the example's artifact and computation declarations"
+            final_output.feature().derived_artifacts(),
+            example.feature().derived_artifacts(),
+            "the host installs the example's artifact declaration"
+        );
+        assert_eq!(
+            final_output.feature().managed_computations(),
+            example.feature().managed_computations(),
+            "the host installs the example's computation declaration"
+        );
+        assert_eq!(
+            final_output.feature().required_roles(),
+            <crate::PlanarFinalFeatureRoles<S> as ApplicationRequiredFeatureRoles<S>>::roles()
+                .as_slice(),
+            "the native output owner's typed pair supplies the host's required roles"
         );
         demand_policy::feature_specs_with_final_output(
             required_chain::output_feature_spec(),

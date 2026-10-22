@@ -134,25 +134,50 @@ fn closed_no_projection_compares_the_action_selected_at_the_caller_observation()
         ));
         drop((removed_at, changed_at));
         adopt(original_revision);
-        // Restoring the program restores action meaning, not the missing exact
-        // native indexed generation. Neither carrier may reconstruct or replay.
-        let unavailable = |denied: Result<(), WorthQueryOperationDeliveryDenial>| {
+        // Adoption changed selected meaning, not any consumed source fact.
+        // Restoring the original action permits the original closed settlement.
+        closed_fixed.deliver_current(&fresh).unwrap();
+        closed_tree.deliver_current(&fresh).unwrap();
+        let restored = fresh.retain_current_read().unwrap();
+        closed_fixed
+            .deliver_current_at(&fresh.at(&restored))
+            .unwrap();
+        closed_tree
+            .deliver_current_at(&fresh.at(&restored))
+            .unwrap();
+        // A real source edit refuses current delivery while the caller's older
+        // observation continues to validate the original native lineage.
+        edit_source(&world, &fresh, "anchor-a", 4, 0x9176_6283);
+        assert!(matches!(
+            closed_fixed.deliver_current(&fresh),
+            Err(WorthQueryOperationDeliveryDenial::Stale(cause))
+                if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded
+        ));
+        let superseded = |denied: Result<(), WorthQueryOperationDeliveryDenial>| {
             matches!(
                 denied,
                 Err(WorthQueryOperationDeliveryDenial::Currentness(
                     WorthQueryOutputCurrentnessDenial::Output(cause)
-                )) if cause.kind() == WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
+                )) if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded
             )
         };
-        assert!(unavailable(closed_fixed.deliver_current(&fresh).map(drop)));
-        assert!(unavailable(closed_tree.deliver_current(&fresh).map(drop)));
-        let restored = fresh.retain_current_read().unwrap();
-        assert!(unavailable(
-            closed_fixed.deliver_current_at(&fresh.at(&restored))
+        assert!(superseded(closed_tree.deliver_current(&fresh).map(drop)));
+        let edited = fresh.retain_current_read().unwrap();
+        assert!(matches!(
+            closed_fixed.deliver_current_at(&fresh.at(&edited)),
+            Err(WorthQueryOperationDeliveryDenial::Stale(cause))
+                if cause.kind() == WorthQueryOutputDemandDenialKind::Superseded
         ));
-        assert!(unavailable(
-            closed_tree.deliver_current_at(&fresh.at(&restored))
+        assert!(superseded(
+            closed_tree.deliver_current_at(&fresh.at(&edited))
         ));
+        closed_fixed
+            .deliver_current_at(&fresh.at(&restored))
+            .unwrap();
+        closed_tree
+            .deliver_current_at(&fresh.at(&restored))
+            .unwrap();
+        drop(edited);
         drop(restored);
         assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
         assert_eq!(

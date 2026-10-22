@@ -219,9 +219,9 @@ fn a_held_chain_follows_its_edit_after_unrelated_publications() {
     }
 }
 
-/// A demand joins a settled root and never advances. The root input is edited
-/// and unrelated publications follow, so the joined demand stops superseded:
-/// it named a source the commit replaced. That stop ends nothing its settled
+/// A demand starts after an actual source edit and never advances. Another
+/// input edit and unrelated publications supersede that unexecuted source.
+/// That stop ends nothing the root's settled
 /// holders keep. The held root and its consumer follow the output whichever
 /// demand advances first, and the joined demand then follows the refreshed root.
 #[test]
@@ -242,6 +242,10 @@ fn a_never_settled_stop_leaves_the_output_to_its_settled_holders() {
         settled!(court, a, at);
         settled!(court, b, at);
         judge_decisions(&mut rings, &at);
+        // Joining the unchanged Ready would already retain accepted output.
+        // This source change admits a genuinely unexecuted successor instead.
+        rings[2].far_y = 11;
+        court.write_y(&rings[2].key("source-c"), 11, &at);
         let mut joined = root!(court, rings[2].key("a"), at);
 
         let at = format!("unsettled first {unsettled_first}, after unrelated publications");

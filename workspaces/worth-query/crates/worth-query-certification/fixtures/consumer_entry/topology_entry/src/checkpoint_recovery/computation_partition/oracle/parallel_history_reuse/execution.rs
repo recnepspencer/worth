@@ -54,6 +54,7 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
         configuration: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, CheckpointSchema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+        super::super::collection::lifecycle::idle(setup)?;
         let installed = setup
             .partitioned_computation::<PlanarFinalOutputFeature, OracleTotals, _>(HistoryOwner {
                 steps: CARRIED_CEILING.get(),

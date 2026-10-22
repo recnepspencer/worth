@@ -131,6 +131,7 @@ impl<const FRESH: bool> WorthQueryApplicationContribution<CheckpointSchema>
         configuration: TopologyConfiguration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, CheckpointSchema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
+        super::super::collection::lifecycle::idle(setup)?;
         let installed =
             setup.partitioned_computation::<PlanarFinalOutputFeature, Totals, _>(WideOwner)?;
         setup.handler::<RegionOutputBinding<CheckpointSchema>, _>(
