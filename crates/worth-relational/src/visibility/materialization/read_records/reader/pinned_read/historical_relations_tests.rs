@@ -47,14 +47,14 @@ fn pinned_audit_frontier_retains_deleted_target_identity_without_reviving_live_v
         .pin_read_capability(&runtime.visibility_authority().snapshot(), &[], &execution)
         .unwrap();
     let old = before
-        .bounded_outgoing_relations_for_frontier(&execution, &frontier, KindId(2), 8)
+        .bounded_outgoing_relations_for_frontier(&execution, &frontier, KindId(2), Some(8))
         .unwrap()
         .into_records();
     assert_eq!(old.len(), 1);
     assert_eq!(old[0].relation_id, relation);
     assert_eq!(old[0].lifecycle, RecordLifecycleState::Live);
     assert!(after
-        .bounded_outgoing_relations_for_frontier(&execution, &frontier, KindId(2), 8)
+        .bounded_outgoing_relations_for_frontier(&execution, &frontier, KindId(2), Some(8))
         .unwrap()
         .into_records()
         .is_empty());
@@ -63,7 +63,7 @@ fn pinned_audit_frontier_retains_deleted_target_identity_without_reviving_live_v
             &execution,
             &frontier,
             KindId(2),
-            8,
+            Some(8),
         )
         .unwrap()
         .into_records();
@@ -80,6 +80,6 @@ fn pinned_audit_frontier_retains_deleted_target_identity_without_reviving_live_v
         retained[0].lifecycle,
         RecordLifecycleState::RetainedDanglingForAudit
     );
-    assert!(matches!(after.bounded_outgoing_relations_including_audit_for_frontier(&execution, &frontier, KindId(2), 1),
+    assert!(matches!(after.bounded_outgoing_relations_including_audit_for_frontier(&execution, &frontier, KindId(2), Some(1)),
         Err(crate::visibility::materialization::read_records::reader::BoundedFrontierReadStop::Limit(_))));
 }

@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use worth_execution::{ChargedBytes, PartitionItemId};
+use worth_execution::PartitionItemId;
 use worth_foundational::facade::PartitionIdentity;
 
 /// The items an input holds.
@@ -121,18 +121,4 @@ pub(super) struct GatheredComputationPartition<Key, Gathered> {
     pub(super) key: Arc<Key>,
     pub(super) items: Arc<[PartitionItemId]>,
     pub(super) gathered: Gathered,
-}
-
-/// The item list and what the owner gathered are what a partition retains
-/// beyond its inline value. A key's own heap storage is not visible here.
-/// A sum with no value is `u64::MAX`, which no declared capacity admits.
-impl<Key, Gathered: ChargedBytes> ChargedBytes for GatheredComputationPartition<Key, Gathered> {
-    fn additional_charged_bytes(&self) -> u64 {
-        self.items
-            .len()
-            .checked_mul(std::mem::size_of::<PartitionItemId>())
-            .and_then(|bytes| u64::try_from(bytes).ok())
-            .and_then(|items| items.checked_add(self.gathered.additional_charged_bytes()))
-            .unwrap_or(u64::MAX)
-    }
 }

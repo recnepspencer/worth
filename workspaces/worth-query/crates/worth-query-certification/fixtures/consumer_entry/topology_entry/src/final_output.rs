@@ -2,8 +2,7 @@ use std::marker::PhantomData;
 
 use worth_query_decl::facade::{
     application_operation::*, application_schema::*, worth_query_operation,
-    worth_query_operation_creates, worth_query_operation_links, worth_query_operation_reads,
-    worth_query_operation_writes, worth_query_structured_value_binding,
+    worth_query_structured_value_binding,
 };
 use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
@@ -31,11 +30,13 @@ pub struct FinalPlanarMutation {
 worth_query_structured_value_binding!(pub FinalPlanarMutationInputBinding for FinalPlanarMutation {
     identity: "worth.query.certification.final-planar-mutation-input.v1"
 });
-worth_query_operation!(pub PublishFinalPlanarOutput for Schema: TopologySchemaBinding, input FinalPlanarMutationInputBinding);
-worth_query_operation_reads!(PublishFinalPlanarOutput => [Body, BodyKey, Length]);
-worth_query_operation_writes!(PublishFinalPlanarOutput => [BodyKey, PositionX, PositionY, Length]);
-worth_query_operation_creates!(PublishFinalPlanarOutput => [Body]);
-worth_query_operation_links!(PublishFinalPlanarOutput => [PlanarSuccessor]);
+worth_query_operation!(pub PublishFinalPlanarOutput for Schema: TopologySchemaBinding, input FinalPlanarMutationInputBinding;
+    access {
+        read_entities: [Body]; read_fields: [BodyKey, Length];
+        writes: [BodyKey, PositionX, PositionY, Length];
+        creates: [Body]; links: [PlanarSuccessor];
+    }
+);
 
 pub struct FinalPlanarMutationBinding<Schema>(PhantomData<fn() -> Schema>);
 
@@ -245,7 +246,9 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = Schema::FINAL_INPUT_REUSE;
 }
 
+mod definition;
 mod feature;
+pub use definition::{CompletePlanarFinalRuntime, PlanarFinalFeatureDefinition};
 mod preservation;
 pub use feature::{
     planar_final_feature_runtime, PlanarFinalFeatureRoles, PlanarFinalFeatureRuntime,

@@ -1,6 +1,42 @@
 use super::*;
 
 #[test]
+fn physical_allocation_stop_keeps_its_kind_ahead_of_nested_failure() {
+    use worth_execution::ExecutionPhysicalAllocationDenialKind as Kind;
+    use worth_foundational::{
+        ExecutionPhysicalReport, ExecutionPosture, ExecutionReport, PartitionIdentity,
+    };
+    let identity = PartitionIdentity::new(3);
+    let report = ExecutionReport::new(
+        ExecutionPosture::Serial,
+        0,
+        0,
+        ExecutionPhysicalReport::default(),
+    );
+    for kind in [
+        Kind::Layout,
+        Kind::Allocator,
+        Kind::CapacityMismatch,
+        Kind::WriteBeyondReserved,
+        Kind::IncompleteSeal,
+    ] {
+        let error = SignalError::request_scan_failed(
+            SignalError::ExecutionPanicked,
+            Some((MapStop::Allocation(kind), Some(identity))),
+            identity,
+            super::super::SignalPublicationProgress::default(),
+            report,
+        );
+        let SignalError::ExecutionStopped(stop) = error else {
+            panic!("the physical scan stop must retain its execution witness");
+        };
+        assert_eq!(stop.reason(), &SignalExecutionStopReason::Allocation(kind));
+        assert_eq!(stop.exclusive_prefix_boundary(), Some(identity));
+        assert_eq!(stop.execution(), report);
+    }
+}
+
+#[test]
 fn checkpoint_door_keeps_every_cause_distinct() {
     for (stop, expected) in [
         (MapKernelStop::Cancelled, SignalCheckpointDenial::Cancelled),

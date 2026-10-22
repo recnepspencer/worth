@@ -11,10 +11,9 @@ pub(super) const BOOTSTRAP_RELATIONS: usize = 2 * region_output::LARGEST_SET;
 use serde::Serialize;
 use worth_query_decl::facade::application_program::{
     ApplicationComputationExecution, ApplicationComputationInput, ApplicationComputationPartition,
-    ApplicationComputationResourceCeiling, ApplicationComputationReuse,
-    ApplicationComputationStopped, ApplicationManagedComputation, ApplicationProgramRevision,
-    ApplicationProgramValidationDenialKind, ApplicationSingleComputationPartition,
-    DeterminismContract, EquivalenceContractId,
+    ApplicationComputationReuse, ApplicationComputationStopped, ApplicationManagedComputation,
+    ApplicationProgramRevision, ApplicationProgramValidationDenialKind,
+    ApplicationSingleComputationPartition, DeterminismContract, EquivalenceContractId,
 };
 use worth_query_decl::facade::application_schema::{
     ApplicationSchemaContribution, ApplicationSchemaContributionIdentity,
@@ -77,7 +76,7 @@ impl ApplicationComputationStopped for RegionStopped {
 // Every variant keeps one computation identity, so two programs differ only
 // in the declared member under test.
 macro_rules! region_totals {
-    ($computation:ident, $partition:ty, $execution:ident, bytes $bytes:expr $(, $determinism:expr)?) => {
+    ($computation:ident, $partition:ty, $execution:expr $(, $determinism:expr)?) => {
         struct $computation;
         impl ApplicationManagedComputation<CheckpointSchema, PlanarFinalOutputFeature>
             for $computation
@@ -88,52 +87,37 @@ macro_rules! region_totals {
             type Reuse = NoWarmStart;
             type Stopped = RegionStopped;
             const IDENTITY: &'static str = "checkpoint-region-totals";
-            const EXECUTION: ApplicationComputationExecution =
-                ApplicationComputationExecution::$execution;
+            const EXECUTION: ApplicationComputationExecution = $execution;
             $(const DETERMINISM: DeterminismContract = $determinism;)?
-            const RESOURCES: ApplicationComputationResourceCeiling =
-                ApplicationComputationResourceCeiling::new(4_096, $bytes);
         }
     };
-    ($computation:ident, $partition:ty, $execution:ident $(, $determinism:expr)?) => {
-        region_totals!($computation, $partition, $execution, bytes 8_192 $(, $determinism)?);
-    };
 }
-region_totals!(RegionTotals, RegionKey, DeterministicPartitioned);
-region_totals!(RenamedKeyTotals, RenamedRegionKey, DeterministicPartitioned);
+const PARTITIONED: ApplicationComputationExecution =
+    ApplicationComputationExecution::DeterministicPartitioned;
+region_totals!(RegionTotals, RegionKey, PARTITIONED);
+region_totals!(RenamedKeyTotals, RenamedRegionKey, PARTITIONED);
 region_totals!(
     EquivalentTotals,
     RegionKey,
-    DeterministicPartitioned,
+    PARTITIONED,
     DeterminismContract::ContractEquivalent(EquivalenceContractId::new(1))
 );
 region_totals!(
     SingleKeyPartitionedTotals,
     ApplicationSingleComputationPartition,
-    DeterministicPartitioned
+    PARTITIONED
 );
-region_totals!(KeyedSerialTotals, RegionKey, Deterministic);
+region_totals!(
+    KeyedSerialTotals,
+    RegionKey,
+    ApplicationComputationExecution::Deterministic
+);
 region_totals!(
     SerialTotals,
     ApplicationSingleComputationPartition,
-    Deterministic
+    ApplicationComputationExecution::Deterministic
 );
-region_totals!(
-    UnboundedBytesTotals,
-    RegionKey,
-    DeterministicPartitioned,
-    bytes usize::MAX
-);
-// An explicit caller-memory refusal, independently of arithmetic overflow.
-const PARTITION_MEMORY_POLICY_BYTES: u64 = 128 * 1024 * 1024;
-const OVER_POLICY_DECLARED_BYTES: usize = PARTITION_MEMORY_POLICY_BYTES as usize + 1;
-region_totals!(
-    OverPolicyBytesTotals,
-    RegionKey,
-    DeterministicPartitioned,
-    bytes OVER_POLICY_DECLARED_BYTES
-);
-region_totals!(ProbedTotals, probe::ProbeKey, DeterministicPartitioned);
+region_totals!(ProbedTotals, probe::ProbeKey, PARTITIONED);
 
 /// Which computation a region totals program declares, and which owner binding
 /// its contribution installs for it.

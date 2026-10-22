@@ -32,12 +32,9 @@ fn interruption_present_at_dispatch_has_equal_outcome_charge_and_commits() {
                 let plans = (0..3)
                     .map(|rank| {
                         OwnerPlan::new(
-                            vec![PreparedCompute::new(
-                                0,
-                                0,
-                                |_| panic!("interrupted dispatch cannot compute"),
-                                |_: &()| 0,
-                            )],
+                            vec![PreparedCompute::new(|_| {
+                                panic!("interrupted dispatch cannot compute")
+                            })],
                             move |_| Ok::<_, Denial>(rank),
                         )
                     })

@@ -208,6 +208,20 @@ pub struct WorthQueryPrimaryGraphInstallationDenial {
 }
 
 impl WorthQueryPrimaryGraphInstallationDenial {
+    /// A complete feature's typed handler slot was left unconfigured.
+    #[doc(hidden)]
+    pub fn missing_mutation_handler<Schema, Binding>() -> Self
+    where
+        Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
+            Schema,
+        >,
+    {
+        Self::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::MissingMutationHandler,
+            Binding::IDENTITY,
+        )
+    }
     pub(super) fn new(
         kind: WorthQueryPrimaryGraphInstallationDenialKind,
         subject: impl Into<String>,

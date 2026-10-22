@@ -15,6 +15,24 @@ explain *why* the platform works the way it does
 ([How WORTH Works](how-it-works.md)). This one shows *which names you call, in
 which order*.
 
+For a new feature, use the complete feature definition below. It keeps the
+feature's schema members, actions, required lifecycle roles and runtime slots
+together; the SDK derives their projections. The lower-level builders later in
+this guide explain the underlying contracts and support specialized composition.
+
+| Your next task | Start here | What you supply |
+|---|---|---|
+| Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
+| Declare operation access | [Operation access](#21-declare-operation-access-once) | Reads, effects and preconditions in one declaration |
+| Compute from tracked inputs | [Managed computation](#36-declare-and-install-a-partitioned-managed-computation) | Tracked gathering, pure numerical data and original-owner completion |
+| Install or reopen an application | [Build identity](#application-build-identity), then [installation](#41-one-program) | One immutable identity from the build pipeline, configuration and installed resources |
+| Submit, recover and close an action | [Owning actions](#53-execute-through-the-program) | Original input, source and key; fresh authorized requests for progression |
+
+These are implemented SDK surfaces. They do not promise that a particular
+application has moved its kernels to workers or qualified a parallel default.
+Computation declaration, physical placement and measured speedup are separate
+facts.
+
 An application imports exactly two crates, `worth-query-decl` and
 `worth-query-host`. Their facades are made of modules, so import from the
 module that owns each name:
@@ -82,7 +100,7 @@ some declaration macros. `worth_query_mutation_binding!`,
 | Step | What you do | The call | Section |
 |---|---|---|---|
 | 1 | Declare the schema and its contributions | `worth_query_application!`, `worth_query_application_contribution!`, `impl WorthQueryApplicationContribution` | [§2](#2-declare-the-schema-and-its-contributions) |
-| 2 | Declare features and the program | `impl ApplicationFeature`, `ApplicationFeatureSpec::root::<S, F>()…finish()`, `impl ApplicationProgramDefinition` | [§3](#3-declare-features-and-the-program) |
+| 2 | Declare features and the program | `worth_query_application_contribution! { pub feature ... }`, its `ApplicationFeatureDefinition` projections, `impl ApplicationProgramDefinition` | [Complete definitions](#complete-feature-definitions), [§3](#3-declare-features-and-the-program) |
 | 3 | Validate the program | `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` | [§3.5](#35-validate) |
 | 4 | Install the application graph | `application_installation::in_memory_program(..)` or `in_memory_rostered_program(..)` | [§4](#4-install-the-application-graph) |
 | 5 | Run program-owned actions | `request.mutate(intent)…idempotency_owned(key)?.retain_operation::<Program, Action>(&runtime)`, then `operation.advance(&fresh_request)` | [§5](#5-run-the-program) |
@@ -134,6 +152,12 @@ Terms: [Glossary](glossary.md) — see **Program**, **Feature**,
 
 A schema is composed from contributions. Each contribution declares its own
 entities, fields, operations, queries, and invariants.
+
+For ordinary feature members, let the [complete definition](#complete-feature-definitions)
+supply those declarations and runtime projections. The contribution below shows
+the composition layer and a standalone conditional. It is useful for
+contribution-wide invariants and host setup; do not copy its separate handler
+registration into a feature whose definition already owns that handler.
 
 <!-- illustrative -->
 ```rust,ignore
@@ -268,44 +292,6 @@ includes a passing capability example and an undeclared-member compile refusal.
 
 ---
 
-### Resident value accounting
-
-Managed computation values can derive the existing native `ChargedBytes`
-contract through Host:
-
-<!-- illustrative -->
-```rust,ignore
-// Illustrative: not compiled.
-use worth_query_host::facade::application_contribution::ChargedBytes;
-
-#[derive(ChargedBytes)]
-#[charged_bytes(crate = "worth_query_host::facade::application_contribution")]
-struct RetainedResult {
-    total: u64,
-    labels: Vec<String>,
-    resident_notes: Option<Box<Vec<String>>>,
-}
-```
-
-The derive supports concrete structs and enums. Every resident field must
-implement `ChargedBytes`; this includes fields omitted by Serde. `String` and
-`Vec` contribute their actual backing capacity and nested owned storage, while
-admission separately counts inline storage. Wire shape and encoded length do
-not determine resident size. Unsupported heap owners fail compilation: provide
-a named opaque/shared owner's native `ChargedBytes` implementation rather than
-skipping its field. Generic owners and unions require an explicit owner contract.
-
-Pure schema owners import the same trait and derive from
-`worth_foundational::facade` and select it with
-`#[charged_bytes(crate = "worth_foundational::facade")]`. They need no Execution
-dependency. Execution and Host re-export that single description contract;
-their runtime admission responsibilities stay with the runtime owners.
-
-This description does not allocate, reserve memory, infer kernel work bounds or
-deduplicate shared pointers. Existing map/reduction admission, bounded checkpoints,
-tree sharing and retained reservations continue to own those responsibilities.
-See the [native resident-value tests](../crates/worth-execution/tests/charged_bytes_derive.rs)
-and the [Host facade consumer](../workspaces/worth-query/crates/worth-query-host/tests/charged_bytes_derive.rs).
 
 ### Canonical nested values and derived readiness
 
@@ -522,6 +508,38 @@ impl ApplicationFeature<BankSchema> for BankPaymentsFeature {
 `ApplicationFeature` also has `const MAJOR: u16 = 1` and `const MINOR: u16 = 0`,
 which you may override.
 
+### Complete feature definitions
+
+Use `worth_query_host::facade::worth_query_application_contribution!` with its
+`pub feature` form for an ordinary installed feature. Keep genuine schema
+members in its `schema` clause, source actions in `action` members and paired
+production in `required_pair` members. A source-only feature uses actions
+without inventing an Initial/Preserve pair. The same definition provides:
+
+| Projection | Owner and use |
+|---|---|
+| Schema members and operation access | `ApplicationFeatureDefinition::declare_members` contributes the feature's declared members to its schema |
+| Authored program meaning | `ApplicationFeatureDefinition::feature_specs` supplies the feature specifications |
+| Delivery/output roots | `ApplicationFeatureDefinition::Outputs` supplies roots derived from the declared deliveries |
+| Required runtime contracts | `WorthQueryFeatureDefinition::contracts` projects requirements into contribution installation |
+| Runtime configuration | `WorthQueryFeatureDefinition::Configuration` and `configure` carry actual handlers and role runtimes into the existing setup owner |
+
+Compose definitions as typed tuples when appropriate. The application still
+chooses its contributions, feature membership, connections and domain
+configuration explicitly. Generation removes repeated mechanical registration;
+it does not infer business meaning, invent handlers, choose readiness predicates
+or authorize a request. Pure domain/numerical crates remain Query-free.
+
+The required-role example below is a complete feature definition with real
+Initial and Preserve producers. Its linked executable includes schema/program
+composition, configuration, installation, an authored edit and identity-preserving
+publication. For an action member, compare the consumer's
+[source-adjustment definition](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/source_adjustment/feature.rs),
+whose delivery names its actual dependent output tree.
+Use the lower-level `ApplicationFeatureSpec` builders for specialized composition
+and for understanding the generated meaning. Do not maintain a second manual
+operation/handler/producer/output roster beside a complete definition.
+
 ### Required Initial and Preserve output roles
 
 Use one Host-side alias for a producer feature requiring both lifecycle roles.
@@ -541,19 +559,53 @@ pub type PlanarFinalFeatureRoles<Schema, Feature = PlanarFinalOutputFeature> =
     >;
 ```
 
-Attach `.required_pair::<PlanarFinalFeatureRoles<Schema>>()` to the feature's
-program spec, call `contracts.feature::<PlanarFinalFeatureRoles<Schema>>()?`,
-and pass its explicit two-role runtime to
-`setup.feature::<PlanarFinalFeatureRoles<Schema>>(runtime)?`. Each role is a
-`WorthQueryFeatureRoleRuntime::new(handler, provider, readiness_configuration)`;
-`WorthQueryFeatureRuntime::new(initial, preserve)` requires both values. Handlers
-remain distinct, stateful application owners. The carrier derives each
-readiness owner's exact required producer from the associated types; its
-native predicate and `bind_output_readiness` remain the readiness owner's work.
-Do not add separate Initial/Preserve `conditional_operation` markers,
-producer/conditional contract lists, handler/provider registration rosters or
-copied `REQUIRED_PRODUCERS` entries for that pair. The declaration supplies these
-mechanical associations; each runtime role still supplies its actual values.
+Select a complete feature definition through the Host facade's existing
+`worth_query_application_contribution!` macro. The same typed members supply
+schema operations and access, feature declarations, runtime slots, contracts and
+output roots. The runnable consumer uses this definition:
+
+<!-- compiled: final_output/definition.rs -->
+```rust
+worth_query_host::facade::worth_query_application_contribution! {
+    pub feature PlanarFinalFeatureDefinition<Schema: TopologySchemaBinding>
+        for PlanarFinalOutputFeature => CompletePlanarFinalRuntime {
+        schema: |schema| { schema };
+        provides(crate::PlanarFinalBodyOutput);
+        required_pair lifecycle(
+            PlanarFinalFeatureRoles<Schema>, FinalPlanarMutationHandler, FinalPlanarPreserveHandler
+        ) {
+            initial_operation: PublishFinalPlanarOutput::reference::<Schema>().definition()
+                .no_external_effect().no_aftermath().finish();
+            preserve_operation: PreserveFinalPlanarOutput::reference::<Schema>().definition()
+                .no_external_effect().no_aftermath().finish();
+        };
+    }
+}
+```
+
+`ApplicationFeatureDefinition<Schema>` exposes `declare_members`, `feature_specs`
+and its actual typed `Outputs`. `WorthQueryFeatureDefinition<Schema>` supplies
+`Configuration`, `contracts` and `configure` through the existing installation
+owners. A tuple composes these definitions, so an application selects each family
+once. The `schema` clause owns genuine entities, fields and queries; action and
+role operations are generated from their members.
+
+An ordinary member uses `action name(Binding, Delivery, HandlerType)` with its
+explicit completed `operation:` definition and the normal action clauses.
+The generated runtime constructor accepts actual handler values in action order,
+then existing two-role runtimes in pair order. It never invents semantic configuration.
+Each role remains `WorthQueryFeatureRoleRuntime::new(handler, provider,
+readiness_configuration)` inside `WorthQueryFeatureRuntime::new(initial, preserve)`.
+Readiness predicates and `bind_output_readiness` remain with their existing owners.
+
+Declare operation access once with `worth_query_operation!(... for Schema:
+SchemaBinding, input Input; access { ... })`. Both Rust capabilities and schema
+access come from those categories. Where a sealed capability family already owns
+inherited access, the optional `inherited_access: |schema, operation| { ... }`
+continuation calls that existing owner. It does not redeclare inherited grants.
+Delivery roots come from each actual delivery mode. Identical concrete roots
+are visited once before flattening; distinct roots still undergo the normal
+duplicate-connection checks. There is no separate family output roster.
 
 Program meaning retains both requirements independently of those callbacks.
 Omitting contracts and registration together is refused. Configured `None`
@@ -849,7 +901,10 @@ pub(crate) fn validated_bank_application() -> Result<
 ### 3.6 Declare and install a partitioned managed computation
 
 A managed computation declares its input, output artifact, partition key,
-execution posture, determinism contract, and finite resource ceiling. Add it
+execution posture and determinism contract. Neither `Deterministic` nor
+`DeterministicPartitioned` requires a per-computation work or byte forecast.
+The original request still owns cancellation, deadlines, placement and native
+allocation controls. Add the computation
 with `managed_computation::<Computation>()` beside its `derived_artifact` in the
 feature specification. Install its owner with
 `setup.partitioned_computation::<Feature, Computation, _>(owner)` and retain the
@@ -869,16 +924,38 @@ reduced result back on the caller thread. Preparation precedes kernel dispatch; 
 follows successful computation and reduction.
 
 In the executable examples below, `run_inventory` and `run_peak` call
-`installed.prepare(reader, input)` and return
-`prepared.into_decision_plan(..)`. The plan carries compute inputs, not a live
-reader. Its completion closure handles the typed computation result and returns
-a `HandlerResult`. Use this shape when a producer's computation can run beside
+`installed.decision_plan(reader, input, complete)`. Query owns preparation,
+dispatch, reduction, owner completion and native failure conversion. The callback
+receives only the owner's completed value and returns a `HandlerResult`.
+The plan carries compute inputs, not a live reader. Use this entrance when a producer's computation can run beside
 another required producer: Query dispatches compute and invokes completion in
 canonical member order. Override `OperationHandler::prepare_decision` to return
 this plan. Keep graph reads in preparation and return the decision from
 completion; the ordinary candidate-building and commit steps follow on the
 owner. A handler that does not compute can keep its `decide` implementation:
 the default `prepare_decision` wraps it in an immediate plan.
+
+An installed single-kernel computation uses the same owner lifecycle through
+`installed.decision_plan(input, complete)`. Its owner declares `Prepared`,
+`Computed`, `Output` and `Stopped`, and implements `prepare`, `compute` and
+`complete`. `Prepared` and `Computed` are opaque domain data; the caller cannot
+construct a completed SDK value or bypass the owner's validation. A genuine
+domain outcome such as an unavailable engineering response belongs in the
+owner's output when it is a successful domain settlement.
+
+Use `checkpoint.poll()?` at a supported kernel safe point to check the original
+request without supplying a work invoice. The existing `advance(work)` is for
+owners that deliberately charge request work. A stop remains final even when a
+child ignores it and returns apparent success. Query checks before and after
+compute and at the owner handoff. A synchronous numerical kernel still has its
+own cancellation contract; polling before it does not make it preemptible.
+
+`HandlerFailure<Domain>` carries explicit `Domain`, `Execution` and `Interrupted`
+failures. `HandlerResult::from_result` and `into_result` convert that same typed
+topology; `map_domain` changes only the domain case. Native allocation, read,
+panic and nested-execution causes retain typed execution failures; cancellation
+and deadline remain interruptions. There is no blanket arbitrary-error-to-domain
+conversion. A genuinely infallible domain can use `Infallible`.
 
 Partition reuse is distinct from clean reuse of an entire output and from
 input cutoff. It applies only to the runs of a producer. A producer is a
@@ -904,7 +981,8 @@ these holds:
 - The installed owner differs, the installed producer edition differs, or the
   input value's canonical encoding differs. A reinstalled owner with the same
   types is a different installation.
-- Observing the kept facts could exceed the declared work the run has left.
+- Observing the kept facts could exceed an explicitly supplied request work
+  ceiling, or its checked observation bound cannot be represented.
 - The selected record holds no computation state. A run that stopped before it
   completed, whose charge could not be measured, or whose reservation was
   refused leaves none. A previous attempt that ran no partitioned computation
@@ -994,6 +1072,7 @@ host mutation.
 <!-- compiled: warehouse_inventory.rs -->
 ```rust
 use serde::Serialize;
+use std::convert::Infallible;
 use std::marker::PhantomData;
 use worth_query_host::facade::{
     application_contribution::*,
@@ -1012,11 +1091,6 @@ pub struct InventoryLine {
     id: u64,
     zone: u64,
     quantity: f64,
-}
-impl ChargedBytes for InventoryLine {
-    fn additional_charged_bytes(&self) -> u64 {
-        0
-    }
 }
 impl ApplicationComputationPartition for InventoryLine {
     const IDENTITY: &'static str = "inventory.line.v1";
@@ -1056,8 +1130,6 @@ where
     const IDENTITY: &'static str = "inventory.total.v1";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(100_000, 1_048_576);
     // DETERMINISM defaults to canonical bitwise equality.
 }
 
@@ -1075,7 +1147,7 @@ where
     type Gathered = Vec<f64>;
     type PartitionResult = f64;
     type Output = f64;
-    type Stopped = u32;
+    type Stopped = Infallible;
 
     fn partitions(
         &self,
@@ -1083,7 +1155,7 @@ where
         input: &Vec<InventoryLine>,
     ) -> Result<
         WorthQueryComputationPartitionPlan<InventoryLine>,
-        WorthQueryComputationInputDenial<u32>,
+        WorthQueryComputationInputDenial<Infallible>,
     > {
         Ok(WorthQueryComputationPartitionPlan::keyed(
             input.iter().cloned(),
@@ -1096,7 +1168,7 @@ where
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         _input: &Vec<InventoryLine>,
         item: &InventoryLine,
-    ) -> Result<Zone, WorthQueryComputationInputDenial<u32>> {
+    ) -> Result<Zone, WorthQueryComputationInputDenial<Infallible>> {
         Ok(Zone(item.zone))
     }
 
@@ -1105,7 +1177,7 @@ where
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         _input: &Vec<InventoryLine>,
         partition: WorthQueryComputationPartitionMembers<'_, Zone, InventoryLine>,
-    ) -> Result<Vec<f64>, WorthQueryComputationInputDenial<u32>> {
+    ) -> Result<Vec<f64>, WorthQueryComputationInputDenial<Infallible>> {
         Ok(partition.items().map(|(_, line)| line.quantity).collect())
     }
 
@@ -1113,7 +1185,7 @@ where
         &self,
         partition: WorthQueryComputationPartitionView<'_, Zone, Vec<f64>>,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
-    ) -> Result<f64, WorthQueryManagedComputationDenial<u32>> {
+    ) -> Result<f64, WorthQueryManagedComputationDenial<Infallible>> {
         let mut total = 0.0;
         for quantity in partition.gathered() {
             checkpoint.advance(1)?;
@@ -1126,7 +1198,7 @@ where
         WorthQueryDeterministicReducer::canonical(|| 0.0, |left, right| left + right)
     }
 
-    fn complete(&self, reduced: f64) -> Result<f64, u32> {
+    fn complete(&self, reduced: f64) -> Result<f64, Infallible> {
         Ok(reduced)
     }
 }
@@ -1167,10 +1239,7 @@ pub fn run_inventory<S, F, A, Op, B, Value: 'static, Domain: 'static>(
     >,
     reader: &mut DecisionReader<'_, '_, '_, S, B>,
     input: &Vec<InventoryLine>,
-    complete: impl FnOnce(
-            Result<(f64, u64), WorthQueryPartitionedComputationDenial<u32>>,
-        ) -> HandlerResult<Value, Domain>
-        + 'static,
+    complete: impl FnOnce(f64) -> HandlerResult<Value, Domain> + 'static,
 ) -> WorthQueryDecisionPlan<Value, Domain>
 where
     S: ApplicationSchema,
@@ -1179,15 +1248,7 @@ where
     Op: 'static,
     B: ApplicationMutationBinding<S, Operation = Op>,
 {
-    match installed.prepare(reader, input) {
-        Ok(prepared) => prepared.into_decision_plan(move |computed| {
-            complete(computed.and_then(|computed| {
-                let charged_work = computed.charged_work();
-                computed.complete().map(|value| (value, charged_work))
-            }))
-        }),
-        Err(denial) => WorthQueryDecisionPlan::immediate(complete(Err(denial))),
-    }
+    installed.decision_plan(reader, input, complete)
 }
 ```
 
@@ -1272,8 +1333,7 @@ declaration to the feature; the feature's operations, ports, and artifacts are
 declared on the same builder. Program validation refuses a computation whose
 output artifact its feature does not declare
 (`MissingManagedComputationArtifact`), whose partition key does not fit its
-execution posture (`MismatchedManagedComputationPartition`), whose resource
-ceiling has a zero (`InvalidManagedComputationResources`), or whose identity
+execution posture (`MismatchedManagedComputationPartition`), or whose identity
 repeats within the feature (`DuplicateManagedComputation`). Installation
 refuses, with a `WorthQueryPrimaryGraphInstallationDenial`, an owner installed
 through the call for the other execution posture, a computation whose
@@ -1297,9 +1357,11 @@ planning and reduction also contribute charged work; `charged_work()` reports
 the computation's total. Handle the typed denial before authoring a candidate
 from the result. Computing and completing a value do not commit it.
 
-`prepare`, `compute`, and `complete` each fail with a
+For specialized lower-level execution and diagnostics, `prepare`, `compute`, and `complete` each fail with a
 `WorthQueryPartitionedComputationDenial<Stopped>`, where `Stopped` is the
-owner's own stop type. A denied run has no result. Handle every variant:
+owner's own stop type. A denied run has no result. Ordinary handlers use
+`decision_plan` to propagate these causes rather than writing a dispatcher.
+The lower-level denial topology is:
 
 | Denial | What it reports |
 |---|---|
@@ -1310,9 +1372,10 @@ owner's own stop type. A denied run has no result. Handle every variant:
 | `DuplicateItem { item }` | The plan named one item identity twice; the least such identity is reported. |
 | `InputNotEncodable(..)`, `ItemNotEncodable { item, denial }` | The input value or an item refused canonical encoding, so a retained run has no digest for it. |
 | `KeyNotEncodable { item, denial }` | An item's partition key refused canonical encoding. |
-| `Resource(..)` | A `WorthQueryManagedComputationResourceDenial`: planning, deriving partition identities, or reducing did not fit the declared work or bytes, or the request's execution refused it. |
+| `Resource(..)` | A `WorthQueryManagedComputationResourceDenial`: the original request refused execution or allocation, or checked size/work arithmetic overflowed. There is no caller-supplied result-byte quote. |
 | `Interrupted(..)` | `Cancelled` or `DeadlineExceeded`: the request was canceled or ran out of time outside any one partition. |
 | `NestedPatternStopped` | A pattern started inside a partition's kernel stopped, outside any one partition. |
+| `PreparationPanicked` | Input preparation or canonical identity encoding panicked before partition execution. |
 | `ReducerPanicked` | The reducer panicked. |
 | `ReducedEncodingInvalid` | A reduced value's canonical bits disagree with the length it declares. |
 | `ReductionInputInvalid(..)` | The reduction refused the identities or values it was given. The platform builds both from one canonical list, so no run is expected to produce it; match it for exhaustiveness. |
@@ -1332,6 +1395,7 @@ so the reducer needs no floating-point care.
 <!-- compiled: sensor_telemetry.rs -->
 ```rust
 use serde::Serialize;
+use std::convert::Infallible;
 use std::marker::PhantomData;
 use worth_query_host::facade::{
     application_contribution::*,
@@ -1350,11 +1414,6 @@ pub struct Reading {
     id: u64,
     station: u32,
     millivolts: u64,
-}
-impl ChargedBytes for Reading {
-    fn additional_charged_bytes(&self) -> u64 {
-        0
-    }
 }
 impl ApplicationComputationPartition for Reading {
     const IDENTITY: &'static str = "telemetry.reading.v1";
@@ -1394,8 +1453,6 @@ where
     const IDENTITY: &'static str = "telemetry.peak.v1";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(100_000, 1_048_576);
 }
 
 pub struct PeakOwner<Op>(PhantomData<fn() -> Op>);
@@ -1411,14 +1468,16 @@ where
     type Gathered = Vec<u64>;
     type PartitionResult = u64;
     type Output = u64;
-    type Stopped = u32;
+    type Stopped = Infallible;
 
     fn partitions(
         &self,
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         input: &Vec<Reading>,
-    ) -> Result<WorthQueryComputationPartitionPlan<Reading>, WorthQueryComputationInputDenial<u32>>
-    {
+    ) -> Result<
+        WorthQueryComputationPartitionPlan<Reading>,
+        WorthQueryComputationInputDenial<Infallible>,
+    > {
         Ok(WorthQueryComputationPartitionPlan::keyed(
             input.iter().cloned(),
             |reading| PartitionItemId(reading.id),
@@ -1430,7 +1489,7 @@ where
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         _input: &Vec<Reading>,
         item: &Reading,
-    ) -> Result<Station, WorthQueryComputationInputDenial<u32>> {
+    ) -> Result<Station, WorthQueryComputationInputDenial<Infallible>> {
         Ok(Station(item.station))
     }
 
@@ -1439,7 +1498,7 @@ where
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         _input: &Vec<Reading>,
         partition: WorthQueryComputationPartitionMembers<'_, Station, Reading>,
-    ) -> Result<Vec<u64>, WorthQueryComputationInputDenial<u32>> {
+    ) -> Result<Vec<u64>, WorthQueryComputationInputDenial<Infallible>> {
         Ok(partition
             .items()
             .map(|(_, reading)| reading.millivolts)
@@ -1450,7 +1509,7 @@ where
         &self,
         partition: WorthQueryComputationPartitionView<'_, Station, Vec<u64>>,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
-    ) -> Result<u64, WorthQueryManagedComputationDenial<u32>> {
+    ) -> Result<u64, WorthQueryManagedComputationDenial<Infallible>> {
         let mut peak = 0_u64;
         for millivolts in partition.gathered() {
             checkpoint.advance(1)?;
@@ -1463,7 +1522,7 @@ where
         WorthQueryDeterministicReducer::canonical(|| 0, |left, right| (*left).max(*right))
     }
 
-    fn complete(&self, reduced: u64) -> Result<u64, u32> {
+    fn complete(&self, reduced: u64) -> Result<u64, Infallible> {
         Ok(reduced)
     }
 }
@@ -1499,10 +1558,7 @@ pub fn run_peak<S, F, A, Op, B, Value: 'static, Domain: 'static>(
     installed: &WorthQueryInstalledPartitionedComputation<S, F, PeakReading<A>, PeakOwner<Op>>,
     reader: &mut DecisionReader<'_, '_, '_, S, B>,
     input: &Vec<Reading>,
-    complete: impl FnOnce(
-            Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>,
-        ) -> HandlerResult<Value, Domain>
-        + 'static,
+    complete: impl FnOnce(u64) -> HandlerResult<Value, Domain> + 'static,
 ) -> WorthQueryDecisionPlan<Value, Domain>
 where
     S: ApplicationSchema,
@@ -1511,15 +1567,7 @@ where
     Op: 'static,
     B: ApplicationMutationBinding<S, Operation = Op>,
 {
-    match installed.prepare(reader, input) {
-        Ok(prepared) => prepared.into_decision_plan(move |computed| {
-            complete(computed.and_then(|computed| {
-                let charged_work = computed.charged_work();
-                computed.complete().map(|value| (value, charged_work))
-            }))
-        }),
-        Err(denial) => WorthQueryDecisionPlan::immediate(complete(Err(denial))),
-    }
+    installed.decision_plan(reader, input, complete)
 }
 ```
 
@@ -4990,8 +5038,10 @@ but did not publish is recovered with
 **Do:**
 
 - Import only `worth_query_decl::facade` and `worth_query_host::facade`.
-- Build features with `ApplicationFeatureSpec::root::<S, F>()` (or `at`) and
-  the builder methods. Call `finish()`.
+- Start ordinary features with the [complete definition](#complete-feature-definitions)
+  and consume its schema, program, runtime and output projections. Use
+  `ApplicationFeatureSpec::root::<S, F>()` (or `at`) for specialized composition;
+  finish each builder and avoid duplicating a definition's generated members.
 - Validate programs with
   `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` and
   install with `application_installation::in_memory_program` or

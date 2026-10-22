@@ -13,8 +13,6 @@ impl<const WORK: usize> ApplicationManagedComputation<CheckpointSchema, PlanarFi
     const IDENTITY: &'static str = "checkpoint-region-output-totals";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(WORK, TOTALS_RETAINED_BYTES);
 }
 
 pub(super) static COMBINES: AtomicUsize = AtomicUsize::new(0);

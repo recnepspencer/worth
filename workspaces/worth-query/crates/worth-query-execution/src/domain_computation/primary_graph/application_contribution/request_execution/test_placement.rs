@@ -9,14 +9,18 @@
 //! test requests keep memory accounting without imposing a fixture cap.
 
 use super::test_authority::query_test_execution_authority_for_test;
+mod native_certification;
 pub use super::test_authority::test_execution_workers_for_test;
+pub(super) use native_certification::certify_native;
 use std::cell::Cell;
 use std::num::NonZeroUsize;
 
 use worth_execution::{
-    compare_canonical_values, CanonicalBits, ChargedBytes, ExecutionMap, ExecutionResourceLease,
-    MapKernelContext, MapKernelFailure, ReduceCertificationFailure, ReductionTree,
+    compare_canonical_values, CanonicalBits, ExecutionMap, ExecutionResourceLease,
+    MapKernelContext, MapKernelFailure, ReduceCertificationFailure,
 };
+#[cfg(test)]
+use worth_execution::{ChargedBytes, ReductionTree};
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionReport, ExecutionRequestPolicy,
 };
@@ -145,6 +149,7 @@ pub(super) fn certifying() -> Option<u64> {
 /// ceiling, and must agree with each other and with the run on the result's
 /// bits and the charged work. A disagreement panics.
 #[allow(clippy::too_many_arguments)]
+#[cfg(test)]
 pub(super) fn certify<T, K, R, E, Kernel, Combine>(
     map: &ExecutionMap<T, K>,
     lease: &ExecutionResourceLease<'_>,
@@ -241,6 +246,11 @@ fn certification_failure<E>(
         ReductionRunStop, WorkCeilingDenial,
     };
     match failure {
+        ReduceCertificationFailure::Retention(worth_execution::RetainedMapDenial::Request(
+            WorkCeilingDenial::Stopped(
+                stop @ (MapKernelStop::Cancelled | MapKernelStop::DeadlineElapsed),
+            ),
+        )) => WorkCeilingDenial::Stopped(stop),
         ReduceCertificationFailure::Run(ReduceInputDenial::MapStopped {
             reason:
                 MapStop::Failure {
@@ -275,7 +285,7 @@ fn certification_failure<E>(
         ReduceCertificationFailure::Mismatch(mismatch) => {
             panic!("the perturbed run of seed {seed} differs from the oracle: {mismatch:?}")
         }
-        ReduceCertificationFailure::Run(_) => {
+        ReduceCertificationFailure::Run(_) | ReduceCertificationFailure::Retention(_) => {
             if lease.is_cancelled() {
                 WorkCeilingDenial::Stopped(MapKernelStop::Cancelled)
             } else if lease.deadline_elapsed() {

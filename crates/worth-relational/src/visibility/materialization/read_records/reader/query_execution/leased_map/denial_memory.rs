@@ -34,6 +34,7 @@ impl ChargedBytes for QueryReadExecutionStop {
 fn stop_bytes<E: ChargedBytes>(stop: &MapStop<E>) -> u64 {
     match stop {
         MapStop::Admission(denial) => inline(denial),
+        MapStop::Allocation(kind) => inline(kind),
         MapStop::WorkExhausted { identity } => inline(identity),
         MapStop::Failure { identity, cause } => {
             let fixed = inline(identity);

@@ -450,6 +450,7 @@ exports = [
     "ExternalEffectPostureKind",
     "ExternalRailTransportFault",
     "HandlerExecutionDenial",
+    "HandlerFailure",
     "HandlerInterruption",
     "HandlerResult",
     "LineageEventKind",

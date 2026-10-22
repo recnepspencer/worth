@@ -25,7 +25,6 @@ pub enum ApplicationProgramValidationDenialKind {
     DuplicateManagedComputation,
     MissingManagedComputationArtifact,
     MismatchedManagedComputationPartition,
-    InvalidManagedComputationResources,
     DuplicateDerivedCollection,
     MissingCollectionComputation,
     AmbiguousCollectionComputation,

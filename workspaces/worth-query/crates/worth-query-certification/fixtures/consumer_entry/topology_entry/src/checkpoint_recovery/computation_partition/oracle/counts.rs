@@ -140,10 +140,6 @@ fn retained_fact_comparison_is_dirty_bounded_as_one_native_population_grows() {
                 examined.computation_prepared_partition_visits == 1,
                 "{size}: only the changed gather enters actual preparation: {examined:?}"
             );
-            assert!(
-                examined.computation_retained_size_visits == 0,
-                "{size}: immutable item and call bounds are carried: {examined:?}"
-            );
             assert_eq!(
                 examined.computation_call_build_visits, 0,
                 "{size}: ordinary preparation builds no hidden full call index: {examined:?}"

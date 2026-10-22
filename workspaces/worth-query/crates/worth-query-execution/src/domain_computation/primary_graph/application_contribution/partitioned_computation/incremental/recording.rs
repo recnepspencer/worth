@@ -6,12 +6,9 @@ use crate::domain_computation::primary_graph::{
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use worth_execution::{ChargedBytes, PartitionItemId, ReductionTree};
+use worth_execution::{NativeReductionTree, PartitionItemId};
 use worth_foundational::facade::{ExecutionReport, PartitionIdentity};
 
-mod transport;
-
-use super::super::super::request_execution::QueryMemoryReservation;
 use super::super::items::{ItemDigests, Items};
 use super::super::routing::ComputationPartitionRouting;
 use super::observed::observe;
@@ -28,8 +25,8 @@ pub(in super::super) struct FullRecording<Key, Item> {
     basis: RetainedBasisToken,
     membership: Option<(RetainedCall, Items<Item>, ItemDigests)>,
     item_keys: BTreeMap<PartitionItemId, RetainedCall>,
-    routing: Option<(ComputationPartitionRouting, QueryMemoryReservation)>,
-    partitions: BTreeMap<PartitionIdentity, (Arc<Key>, u64, ComputationCallCharge)>,
+    routing: Option<ComputationPartitionRouting>,
+    partitions: BTreeMap<PartitionIdentity, (Arc<Key>, ComputationCallCharge)>,
     measured: bool,
 }
 
@@ -90,25 +87,19 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
 
     /// The routing every item was routed into, and the request memory that
     /// holds it until the record that keeps it is charged.
-    pub(in super::super) fn routing(
-        &mut self,
-        routing: ComputationPartitionRouting,
-        memory: QueryMemoryReservation,
-    ) {
-        self.routing = Some((routing, memory));
+    pub(in super::super) fn routing(&mut self, routing: ComputationPartitionRouting) {
+        self.routing = Some(routing);
     }
 
     pub(in super::super) fn partition(
         &mut self,
         identity: PartitionIdentity,
         key: &Arc<Key>,
-        key_bytes: u64,
         charge: Option<ComputationCallCharge>,
     ) {
         match charge {
             Some(charge) => {
-                self.partitions
-                    .insert(identity, (Arc::clone(key), key_bytes, charge));
+                self.partitions.insert(identity, (Arc::clone(key), charge));
             }
             None => self.measured = false,
         }
@@ -116,12 +107,10 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
 
     /// The completed run keeps native kernel cost receipts and its reduced tree.
     /// A context-dependent or nested kernel leaves no reusable receipt.
-    /// `tree_memory` holds the tree until it is charged.
     pub(in super::super) fn complete<Reduced, Stopped>(
         self,
         results: Option<worth_execution::ExecutionRetainedRun<Reduced>>,
-        tree: ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
-        tree_memory: QueryMemoryReservation,
+        tree: NativeReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
         execution: &super::super::super::request_execution::QueryRequestExecution<'_>,
         cause: WorthQueryPartitionedComputationFullCause,
         report: ExecutionReport,
@@ -130,8 +119,8 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
         super::super::WorthQueryPartitionedComputationDenial<Stopped>,
     >
     where
-        Item: Send + Sync + ChargedBytes + 'static,
-        Reduced: Send + Sync + ChargedBytes + 'static,
+        Item: Send + Sync + 'static,
+        Reduced: Send + Sync + 'static,
     {
         observe(
             WorthQueryPartitionedComputationRunForTest::Full(cause),
@@ -176,24 +165,22 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
                 .chain(
                     self.partitions
                         .iter()
-                        .map(|(id, (_, _, charge))| (ComputationRead::Partition(*id), charge, 0)),
+                        .map(|(id, (_, charge))| (ComputationRead::Partition(*id), charge, 0)),
                 )
             },
             execution,
         )
         .map_err(super::super::WorthQueryPartitionedComputationDenial::from_call_sequence)?;
-        let item_bytes = super::item_bounds::items(&membership.1);
         let policy = execution
             .allocation_policy()
             .map_err(super::super::WorthQueryPartitionedComputationDenial::Resource)?;
         let item_keys = super::item_bounds::retain_calls(&self.item_keys, policy)
             .map_err(super::super::WorthQueryPartitionedComputationDenial::from_ordered)?;
-        let item_call_bytes = Some(item_keys.retained_bytes());
         let partitions = Some(
             super::partition_metadata::PartitionMetadata::from_recorded(self.partitions, policy)
                 .map_err(super::super::WorthQueryPartitionedComputationDenial::from_ordered)?,
         );
-        let (routing, routing_memory) = self.routing.unzip();
+        let routing = self.routing;
         let typed = match (self.membership, routing, partitions) {
             (Some((membership, items, digests)), Some(routing), Some(partitions))
                 if self.measured =>
@@ -203,8 +190,6 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
                     digests,
                     membership,
                     item_keys,
-                    item_bytes,
-                    item_call_bytes,
                     call_sequence: Arc::clone(&call_sequence),
                     routing: Arc::new(routing),
                     partitions,
@@ -218,16 +203,15 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
                 ))
             }
         };
-        let typed_bytes = typed.charged_bytes();
         Ok(CompletedComputationRetention::Produced(
             CompletedComputationRun {
                 basis: self.basis.0,
                 typed: Arc::new(typed),
-                typed_bytes,
                 call_sequence,
                 carried: None,
-                tree_memory,
-                routing_memory,
+                attribution_memory: execution
+                    .reserve(0)
+                    .map_err(super::super::WorthQueryPartitionedComputationDenial::Resource)?,
             },
         ))
     }

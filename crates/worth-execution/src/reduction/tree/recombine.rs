@@ -1,5 +1,4 @@
 use std::{
-    mem::size_of,
     panic::{catch_unwind, AssertUnwindSafe},
     sync::Arc,
 };
@@ -8,7 +7,10 @@ use worth_foundational::PartitionIdentity;
 
 use crate::{oracle::CanonicalBits, report::ChargedBytes};
 
-use super::{node_bytes, Link, Node, ReductionMetrics, ReductionRunFailure, ReductionRunStop};
+use super::{
+    value_storage::{BoundedValues, ValueStorage},
+    Link, Node, ReductionMetrics, ReductionRunFailure, ReductionRunStop,
+};
 
 /// One node policy; both reduction values and native settled slots use the
 /// same Cartesian insertion, path copying, deletion and merge machinery.
@@ -32,9 +34,10 @@ pub(super) trait NodeEngine<T, E> {
     ) -> Result<Arc<Node<T>>, ReductionRunStop<E>>;
 }
 
-impl<T, F, H, E> NodeEngine<T, E> for Engine<'_, T, F, H>
+impl<T, F, H, E, Storage> NodeEngine<T, E> for Engine<'_, T, F, H, Storage>
 where
-    T: Clone + ChargedBytes + CanonicalBits,
+    T: Clone + CanonicalBits,
+    Storage: ValueStorage<T>,
     F: Fn(&T, &T) -> T,
     H: FnMut() -> Result<(), E>,
 {
@@ -64,10 +67,10 @@ where
     }
 }
 
-pub(super) struct Engine<'a, T, F, H> {
+pub(super) struct Engine<'a, T, F, H, Storage = BoundedValues> {
     identity: &'a T,
     combine: &'a F,
-    max_value_bytes: u64,
+    storage: Storage,
     before_combine: H,
     metrics: ReductionMetrics,
 }
@@ -84,10 +87,32 @@ where
         max_value_bytes: u64,
         before_combine: H,
     ) -> Self {
+        Self::with_storage(
+            identity,
+            combine,
+            BoundedValues(max_value_bytes),
+            before_combine,
+        )
+    }
+}
+
+impl<'a, T, F, H, E, Storage> Engine<'a, T, F, H, Storage>
+where
+    T: Clone + CanonicalBits,
+    F: Fn(&T, &T) -> T,
+    H: FnMut() -> Result<(), E>,
+    Storage: ValueStorage<T>,
+{
+    pub(super) fn with_storage(
+        identity: &'a T,
+        combine: &'a F,
+        storage: Storage,
+        before_combine: H,
+    ) -> Self {
         Self {
             identity,
             combine,
-            max_value_bytes,
+            storage,
             before_combine,
             metrics: ReductionMetrics::default(),
         }
@@ -95,6 +120,13 @@ where
 
     pub(super) fn metrics(&self) -> ReductionMetrics {
         self.metrics
+    }
+
+    pub(super) fn buffer<U>(
+        &self,
+        length: usize,
+    ) -> Result<(Vec<U>, Option<crate::ExecutionMemoryReservation>), ReductionRunStop<E>> {
+        self.storage.buffer(length)
     }
 
     pub(super) fn visit(&mut self) -> Result<(), ReductionRunStop<E>> {
@@ -118,20 +150,11 @@ where
     }
 
     pub(super) fn validate(&self, value: &T) -> Result<(), ReductionRunStop<E>> {
-        let inline =
-            u64::try_from(size_of::<T>()).map_err(|_| ReductionRunStop::ResultCapacityExceeded)?;
-        let bytes = inline
-            .checked_add(value.additional_charged_bytes())
-            .ok_or(ReductionRunStop::ResultCapacityExceeded)?;
-        if bytes > self.max_value_bytes {
-            return Err(ReductionRunStop::ResultCapacityExceeded);
-        }
-        canonical_bytes(value, self.max_value_bytes).map(|_| ())
+        self.storage.validate(value)
     }
 
     pub(super) fn same(&self, left: &T, right: &T) -> Result<bool, ReductionRunStop<E>> {
-        Ok(canonical_bytes(left, self.max_value_bytes)?
-            == canonical_bytes(right, self.max_value_bytes)?)
+        Ok(self.storage.canonical(left)? == self.storage.canonical(right)?)
     }
 
     fn call(&mut self, left: &T, right: &T) -> Result<T, ReductionRunStop<E>> {
@@ -160,7 +183,7 @@ where
         self.metrics
             .record_node()
             .map_err(|_| ReductionRunStop::work_counter_overflow())?;
-        make_node(identity, value, aggregate, left, right)
+        make_node(&self.storage, identity, value, aggregate, left, right)
     }
 
     pub(super) fn carry(
@@ -170,19 +193,26 @@ where
         left: Link<T>,
         right: Link<T>,
     ) -> Result<Arc<Node<T>>, ReductionRunStop<E>> {
-        make_node(old.identity, value, old.aggregate.clone(), left, right)
+        make_node(
+            &self.storage,
+            old.identity,
+            value,
+            old.aggregate.clone(),
+            left,
+            right,
+        )
     }
 }
 
-fn make_node<T: ChargedBytes, E>(
+fn make_node<T, E>(
+    storage: &impl ValueStorage<T>,
     identity: PartitionIdentity,
     value: T,
     aggregate: T,
     left: Link<T>,
     right: Link<T>,
 ) -> Result<Arc<Node<T>>, ReductionRunStop<E>> {
-    let retained_bytes = node_bytes(&value, &aggregate, &left, &right)
-        .ok_or(ReductionRunStop::ResultCapacityExceeded)?;
+    let (retained_bytes, memory) = storage.node(&value, &aggregate, &left, &right)?;
     let full_subtree_span = left
         .as_ref()
         .map_or(0, |node| node.full_subtree_span)
@@ -197,41 +227,6 @@ fn make_node<T: ChargedBytes, E>(
         right,
         retained_bytes,
         full_subtree_span,
-        _memory: None,
+        _memory: memory,
     }))
-}
-
-fn canonical_bytes<T: CanonicalBits, E>(
-    value: &T,
-    max_bytes: u64,
-) -> Result<Vec<u8>, ReductionRunStop<E>> {
-    let length = value.canonical_len().ok_or(ReductionRunStop::Denial(
-        super::super::ReductionDenial::InvalidCanonicalEncoding,
-    ))?;
-    if u64::try_from(length)
-        .ok()
-        .is_none_or(|bytes| bytes > max_bytes)
-    {
-        return Err(ReductionRunStop::ResultCapacityExceeded);
-    }
-    let mut bytes = Vec::new();
-    bytes
-        .try_reserve_exact(length)
-        .map_err(|_| ReductionRunStop::ResultCapacityExceeded)?;
-    let mut valid = true;
-    let complete = value.visit_canonical_bits(&mut |chunk| {
-        if chunk.len() > length.saturating_sub(bytes.len()) {
-            valid = false;
-            return false;
-        }
-        bytes.extend_from_slice(chunk);
-        true
-    });
-    if valid && complete && bytes.len() == length {
-        Ok(bytes)
-    } else {
-        Err(ReductionRunStop::Denial(
-            super::super::ReductionDenial::InvalidCanonicalEncoding,
-        ))
-    }
 }

@@ -33,6 +33,19 @@ use super::{
 /// fn accepts_read<T: OperationReads<Read>>() {}
 /// accepts_read::<Unlisted>();
 /// ```
+///
+/// Generic schemas enforce the same unlisted-member boundary:
+/// ```compile_fail,E0277
+/// use worth_query_declaration::facade::application_schema::*;
+/// use worth_query_declaration::{worth_query_entity, worth_query_operation, worth_query_structured_value_binding};
+/// trait Bound: ApplicationSchema {}
+/// worth_query_entity!(Listed for S: Bound);
+/// worth_query_entity!(Unlisted for S: Bound);
+/// worth_query_structured_value_binding!(Input for () { identity: "generic.access.input" });
+/// worth_query_operation!(Read for S: Bound, input Input; access { read_entities: [Listed]; });
+/// fn require<T: OperationReads<Read>>() {}
+/// require::<Unlisted>();
+/// ```
 pub trait ApplicationDeclaredOperation<Schema>: ApplicationOperationMarkerIdentity<Schema> {
     fn declare_access(
         schema: ApplicationSchemaDeclarationBuilder<Schema>,

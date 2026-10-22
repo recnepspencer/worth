@@ -6,6 +6,7 @@ impl<T: ChargedBytes, K> ChargedBytes for ExecutionMap<T, K> {
             batch,
             _read_sets: _,
             _write_sets: _,
+            _payload: _,
         } = self;
         // The batch's access declaration is the owner's retained access-set charge.
         batch.owned_storage_bytes()

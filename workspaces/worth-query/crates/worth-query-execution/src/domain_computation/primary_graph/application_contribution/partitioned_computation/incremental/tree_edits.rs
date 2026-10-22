@@ -1,84 +1,57 @@
-//! Ongoing retained-path edits consume their accumulated work on every exit.
-use super::super::super::request_execution::{QueryMemoryReservation, QueryRequestExecution};
+//! Native retained-path edits consume accumulated work on every exit.
+use super::super::super::request_execution::QueryRequestExecution;
 use super::super::WorthQueryPartitionedComputationDenial as Denial;
 use super::tree_attempt::{EditDisposition, TreeAttempt};
-use super::tree_report::WorthQueryPartitionedTreeRebuildCause as Cause;
 use std::collections::BTreeMap;
 use worth_execution::{
-    ChargedBytes, MapKernelStop, ReductionEditMemoryBoundError, ReductionInsertMemoryBoundError,
-    ReductionRunFailure, ReductionTree,
+    ExecutionResourceLease, MapKernelStop, NativeReductionTree, ReductionRunFailure,
 };
 use worth_foundational::facade::PartitionIdentity;
 
-type Tree<Reduced> = ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>;
+type Tree<Reduced> = NativeReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>;
+
 pub(super) fn apply<Reduced, Stopped>(
     mut attempt: TreeAttempt<Tree<Reduced>, ReductionRunFailure<MapKernelStop>>,
     removed: &worth_proof::CanonicalUniqueVec<PartitionIdentity>,
     results: &BTreeMap<PartitionIdentity, Reduced>,
-    declared_bytes: u64,
-    mut held: u64,
     execution: &QueryRequestExecution<'_>,
-    memory: &mut QueryMemoryReservation,
+    lease: &ExecutionResourceLease<'_>,
 ) -> TreeAttempt<EditDisposition<Tree<Reduced>>, Denial<Stopped>>
 where
-    Reduced: Clone + ChargedBytes + worth_execution::CanonicalBits,
+    Reduced: Clone + worth_execution::CanonicalBits,
 {
-    // `None` deletes the partition; a result puts it.
-    let mut edits = removed
-        .as_slice()
-        .iter()
-        .map(|identity| (*identity, None))
-        .collect::<BTreeMap<_, _>>();
-    edits.extend(
-        results
-            .iter()
-            .map(|(identity, value)| (*identity, Some(value))),
-    );
-    for (identity, edit) in edits {
-        let tree = attempt.outcome().as_ref().expect("prior edits completed");
-        let (path, present) = match edit {
-            None => (
-                tree.checked_delete_memory_bound(identity, declared_bytes),
-                false,
-            ),
-            Some(_) => match tree.checked_insert_memory_bound(identity, declared_bytes) {
-                Err(ReductionInsertMemoryBoundError::AlreadyPresent(_)) => (
-                    tree.checked_update_memory_bound(identity, declared_bytes),
-                    true,
-                ),
-                Ok(bound) => (Ok(bound), false),
-                Err(ReductionInsertMemoryBoundError::Overflow) => {
-                    (Err(ReductionEditMemoryBoundError::Overflow), false)
+    // Merge the two canonical streams without allocating another edit map.
+    // A supplied result takes precedence over removal, as in the original map.
+    let mut removals = removed.as_slice().iter().copied().peekable();
+    let mut changes = results.iter().peekable();
+    loop {
+        let edit = match (removals.peek().copied(), changes.peek().copied()) {
+            (None, None) => break,
+            (Some(id), Some((&next, value))) if id >= next => {
+                changes.next();
+                if id == next {
+                    removals.next();
                 }
-            },
-        };
-        let bound = match path {
-            Ok(path) => path.checked_add(edit.map_or(0, ChargedBytes::additional_charged_bytes)),
-            Err(ReductionEditMemoryBoundError::Overflow) => None,
-            Err(ReductionEditMemoryBoundError::UnknownIdentity(_)) => {
-                return attempt.map_result(|_| Ok(EditDisposition::Rebuild(Cause::EditDenied)));
+                (next, Some(value))
+            }
+            (Some(id), _) => {
+                removals.next();
+                (id, None)
+            }
+            (None, Some((&id, value))) => {
+                changes.next();
+                (id, Some(value))
             }
         };
-        let Some(next_hold) = bound.and_then(|bound| held.checked_add(bound)) else {
-            return attempt
-                .map_result(|_| Ok(EditDisposition::Rebuild(Cause::EditCapacityOverflow)));
-        };
-        held = next_hold;
-        // An edit that finds no room falls to the rebuild, which refuses as
-        // a full run's build refuses.
-        if memory.resize(held).is_err() {
-            return attempt.map_result(|_| Ok(EditDisposition::Rebuild(Cause::EditMemory)));
-        }
+        let (identity, value) = edit;
         attempt = attempt.and_then(|mut tree| {
             let checkpoint = || execution.checkpoint();
-            let outcome = match edit {
-                None => tree.delete_checked(identity, declared_bytes, checkpoint),
-                Some(value) if present => {
-                    tree.update_checked(identity, value.clone(), declared_bytes, checkpoint)
+            let outcome = match value {
+                None => tree.delete_native(identity, Some(lease), checkpoint),
+                Some(value) if tree.leaf(identity).is_some() => {
+                    tree.update_native(identity, value.clone(), Some(lease), checkpoint)
                 }
-                Some(value) => {
-                    tree.insert_checked(identity, value.clone(), declared_bytes, checkpoint)
-                }
+                Some(value) => tree.insert_native(identity, value.clone(), Some(lease), checkpoint),
             };
             TreeAttempt::native(outcome.map(|metrics| (tree, metrics)))
         });

@@ -51,7 +51,7 @@ impl OperationHandler<CheckpointSchema, PlanarMutationBinding<CheckpointSchema>>
             result => return WorthQueryDecisionPlan::immediate(result),
         }
         match self.0.prepare(&input.scope_key) {
-            Ok(prepared) => prepared.into_decision_plan(512, |computed| {
+            Ok(prepared) => prepared.into_decision_plan(|computed| {
                 match computed.and_then(|computed| computed.complete()) {
                     Ok(value) => {
                         let _declared_units = value.units;

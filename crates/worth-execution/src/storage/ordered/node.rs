@@ -39,6 +39,23 @@ impl<K: Clone + ChargedBytes, V: Clone + ChargedBytes> Entry<K, V> {
             .checked_add(key.additional_charged_bytes())
             .and_then(|n| n.checked_add(value.additional_charged_bytes()))
             .ok_or(Denial::CapacityOverflow)?;
+        Self::cloned_with_bytes(key, value, policy, bytes)
+    }
+}
+impl<K: Clone, V: Clone> Entry<K, V> {
+    pub(super) fn cloned_native(
+        key: &K,
+        value: &V,
+        policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<Arc<Self>, Denial> {
+        Self::cloned_with_bytes(key, value, policy, arc_bytes::<Self>()?)
+    }
+    fn cloned_with_bytes(
+        key: &K,
+        value: &V,
+        policy: ExecutionAllocationPolicy<'_, '_>,
+        bytes: u64,
+    ) -> Result<Arc<Self>, Denial> {
         let memory = policy.reserve_memory(bytes)?;
         let entry = Self {
             key: key.clone(),

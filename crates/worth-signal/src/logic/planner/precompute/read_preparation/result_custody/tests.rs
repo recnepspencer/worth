@@ -5,6 +5,13 @@ use worth_execution::{
     CancellationToken, ExecutionRequest, MemoryLimitDenial, SerialMemoryBudget, SerialRequest,
 };
 
+#[test]
+fn physical_allocation_stop_never_reads_a_domain_result_slot() {
+    let kind = worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator;
+    let restored = restore_stop(MapStop::Allocation(kind), &[], 0);
+    assert!(matches!(restored, MapStop::Allocation(actual) if actual == kind));
+}
+
 fn output() -> PreparedEvaluation {
     let mut prepared =
         PreparedEvaluation::from_result(NodeEvaluationResult::from_version(AspectVersion::zero()));

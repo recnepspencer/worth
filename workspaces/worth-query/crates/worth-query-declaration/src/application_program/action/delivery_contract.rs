@@ -6,6 +6,31 @@ use crate::{
 };
 use std::{any::TypeId, marker::PhantomData};
 
+/// The actual typed roots selected by an existing delivery posture.
+pub trait ApplicationActionOutputRoots<S: ApplicationSchema> {
+    type Roots: super::super::ApplicationProgramOutputRootsShape<S>;
+}
+impl<S: ApplicationSchema, R, Q> ApplicationActionOutputRoots<S>
+    for ApplicationFixedDeliveryMode<R, Q>
+where
+    R: super::super::ApplicationProgramOutputRootsShape<S>,
+{
+    type Roots = R;
+}
+impl<S: ApplicationSchema, R, Q> ApplicationActionOutputRoots<S>
+    for ApplicationDiscoveredDeliveryMode<R, Q>
+where
+    R: super::super::ApplicationProgramOutputRootsShape<S>,
+{
+    type Roots = R;
+}
+impl<S: ApplicationSchema> ApplicationActionOutputRoots<S> for ApplicationSourceCompletion {
+    type Roots = super::super::ApplicationNoOutputGraph;
+}
+impl<S: ApplicationSchema> ApplicationActionOutputRoots<S> for ApplicationRetainedCommit {
+    type Roots = super::super::ApplicationNoOutputGraph;
+}
+
 /// Declares stable delivery meaning and the concrete implementation installed for an action.
 pub trait ApplicationActionDelivery<S: ApplicationSchema, B: ApplicationMutationBinding<S>>:
     Sized + 'static

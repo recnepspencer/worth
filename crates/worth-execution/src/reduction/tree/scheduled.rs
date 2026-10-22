@@ -11,9 +11,14 @@ use crate::{
 };
 
 use super::{
-    super::plan::ReductionDenial, construction::SubtreeSpec, staged::FrontierCharge,
+    super::plan::ReductionDenial,
+    construction::SubtreeSpec,
+    staged::FrontierCharge,
+    value_storage::{BoundedValues, NativeValues},
     ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionRunStop, ReductionTree,
 };
+mod storage;
+use storage::ScheduledValues;
 
 pub(crate) enum ScheduledReductionError {
     Admission(LeaseDenial),
@@ -38,89 +43,115 @@ where
         max_value_bytes: u64,
         context: &mut KernelContext<'_, '_>,
     ) -> Result<(Self, ReductionMetrics), ScheduledReductionError> {
+        Self::build_scheduled_with_storage(
+            lease,
+            backend,
+            plan,
+            values,
+            identity,
+            combine,
+            BoundedValues(max_value_bytes),
+            context,
+        )
+    }
+}
+
+impl<T, F> ReductionTree<T, F>
+where
+    T: Send + Sync + Clone + CanonicalBits,
+    F: Fn(&T, &T) -> T + Sync,
+{
+    pub(crate) fn build_scheduled_native(
+        lease: &ExecutionResourceLease<'_>,
+        backend: BackendKind,
+        plan: ReductionPlan,
+        values: Vec<T>,
+        identity: T,
+        combine: F,
+        context: &mut KernelContext<'_, '_>,
+    ) -> Result<(super::NativeReductionTree<T, F>, ReductionMetrics), ScheduledReductionError> {
+        Self::build_scheduled_with_storage(
+            lease,
+            backend,
+            plan,
+            values,
+            identity,
+            combine,
+            NativeValues { lease: Some(lease) },
+            context,
+        )
+        .map(|(tree, metrics)| (super::NativeReductionTree::from_raw(tree), metrics))
+    }
+
+    fn build_scheduled_with_storage<Storage: ScheduledValues<T>>(
+        lease: &ExecutionResourceLease<'_>,
+        backend: BackendKind,
+        plan: ReductionPlan,
+        values: Vec<T>,
+        identity: T,
+        combine: F,
+        storage: Storage,
+        context: &mut KernelContext<'_, '_>,
+    ) -> Result<(Self, ReductionMetrics), ScheduledReductionError> {
         let (mut shape, shape_metrics) =
-            Self::prepare_shape_checked(plan, values, &identity, &combine, max_value_bytes, || {
+            Self::prepare_shape_with_storage(plan, values, &identity, &combine, storage, || {
                 context.checkpoint(1)
             })
             .map_err(ScheduledReductionError::Reduction)?;
-        let frontier = shape.frontier(lease.policy().budget().max_workers().get());
-        let task_scratch = max_value_bytes.checked_mul(6).ok_or_else(|| {
-            ScheduledReductionError::Admission(LeaseDenial::charged_bytes_overflow())
-        })?;
-        let entries = frontier
-            .tasks
-            .iter()
-            .copied()
-            .map(|spec| {
-                let capacity = Self::checked_subtree_result_bound(spec.len(), max_value_bytes)
-                    .ok_or_else(|| {
-                        ScheduledReductionError::Admission(LeaseDenial::charged_bytes_overflow())
-                    })?;
-                Ok((
-                    spec.identity,
-                    ScheduledTask {
-                        spec,
-                        completed: OnceLock::new(),
-                    },
-                    task_scratch,
-                    capacity,
-                ))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        let batch = AdmittedBatch::try_admit(entries, 0).map_err(|denial| match denial {
-            BatchDenial::Identities => ScheduledReductionError::Reduction(ReductionRunFailure {
-                reason: ReductionRunStop::Denial(ReductionDenial::IdentitiesNotCanonical),
-                metrics: ReductionMetrics::default(),
-            }),
-            BatchDenial::MemoryOverflow => {
-                ScheduledReductionError::Admission(LeaseDenial::charged_bytes_overflow())
-            }
-        })?;
+        let frontier = shape
+            .frontier(lease.policy().budget().max_workers().get(), storage)
+            .map_err(|reason| {
+                ScheduledReductionError::Reduction(ReductionRunFailure {
+                    reason,
+                    metrics: shape_metrics,
+                })
+            })?;
+        let batch = storage.batch::<F>(&frontier.tasks)?;
         // Suppress the backend's task-order parent charge. Canonical tree
         // settlement below charges only the accepted operation prefix.
-        let outcomes = run_checked_batch_with_charge(
-            Some(lease),
-            &batch,
-            backend,
-            &|task, child_context| {
-                let before = child_context.cost();
-                let evaluated = Self::evaluate_subtree_checked(
-                    &shape,
-                    task.spec,
-                    &identity,
-                    &combine,
-                    max_value_bytes,
-                    || child_context.checkpoint(1),
-                );
-                // A request stop replaces a task's result in the backend. Keep
-                // its checked metrics on the admitted input before that boundary.
-                let metrics = match &evaluated {
-                    Ok(result) => result.metrics,
-                    Err(failure) => failure.metrics,
-                };
-                task.completed
-                    .set(metrics)
-                    .expect("a canonical subtree is evaluated once");
-                let result = evaluated.map_err(KernelFailure::Domain)?;
-                child_context
-                    .apply_structural_span(
-                        before,
-                        result.metrics.charged_work,
-                        result.metrics.charged_span,
-                    )
-                    .map_err(|failure| {
-                        KernelFailure::Domain(ReductionRunFailure::structural_span_failure(
-                            failure,
-                            result.metrics,
-                        ))
-                    })?;
-                Ok(result)
-            },
-            false,
-        );
+        let outcomes = storage.run(lease, &batch, backend, &|task, child_context| {
+            let before = child_context.cost();
+            let evaluated = Self::evaluate_subtree_with_storage(
+                &shape,
+                task.spec,
+                &identity,
+                &combine,
+                storage,
+                || child_context.checkpoint(1),
+            );
+            // A request stop replaces a task's result in the backend. Keep
+            // its checked metrics on the admitted input before that boundary.
+            let metrics = match &evaluated {
+                Ok(result) => result.metrics,
+                Err(failure) => failure.metrics,
+            };
+            task.completed
+                .set(metrics)
+                .expect("a canonical subtree is evaluated once");
+            let result = evaluated.map_err(KernelFailure::Domain)?;
+            child_context
+                .apply_structural_span(
+                    before,
+                    result.metrics.charged_work,
+                    result.metrics.charged_span,
+                )
+                .map_err(|failure| {
+                    KernelFailure::Domain(ReductionRunFailure::structural_span_failure(
+                        failure,
+                        result.metrics,
+                    ))
+                })?;
+            Ok(result)
+        });
 
         (|| {
             let failed = match outcomes.stop {
+                Some(BatchStop::Allocation(cause)) => {
+                    return Err(ScheduledReductionError::Reduction(ReductionRunFailure {
+                        reason: ReductionRunStop::Denial(ReductionDenial::Allocation(cause)),
+                        metrics: shape_metrics,
+                    }));
+                }
                 Some(BatchStop::Admission(denial)) => {
                     return Err(ScheduledReductionError::Admission(denial));
                 }
@@ -156,7 +187,7 @@ where
             };
             let before_evaluation = context.cost();
             let mut accepted_task_work = 0_u64;
-            let settled = Self::settle_frontier_checked(
+            let settled = Self::settle_frontier_with_storage(
                 shape,
                 identity,
                 combine,
@@ -164,7 +195,7 @@ where
                 frontier,
                 outcomes.values,
                 failed,
-                max_value_bytes,
+                storage,
                 |charge| match charge {
                     FrontierCharge::Node => context.checkpoint_frontier(1),
                     FrontierCharge::CompletedNode
@@ -236,7 +267,7 @@ fn task_failure(
 
 /// Inline task state survives replacement of the worker result by a request stop.
 /// Its full size, including the metric cell, is reserved by batch admission.
-struct ScheduledTask {
+pub(super) struct ScheduledTask {
     spec: SubtreeSpec,
     completed: OnceLock<ReductionMetrics>,
 }

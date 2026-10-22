@@ -1,6 +1,7 @@
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationRequiredOutputConnection,
 };
+mod feature;
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationDemandOutputGraph, ApplicationDiscoveredOutputGraph,
     ApplicationOutputGraph, ApplicationOutputGraphShape, ApplicationProgramOutputRootsShape,

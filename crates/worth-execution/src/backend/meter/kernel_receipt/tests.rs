@@ -100,6 +100,47 @@ fn context_questions_and_handled_nested_failures_do_not_issue_a_receipt() {
 }
 
 #[test]
+fn control_polls_keep_a_native_receipt_and_fresh_carry_keeps_request_controls() {
+    let _lock = TEST_LOCK.lock().unwrap();
+    let lease = authority().request_lease(request(1, 2_000, 100)).unwrap();
+    let storage = ExecutionKernelReceiptStorage::new(lease.reserve_memory(0).unwrap()).unwrap();
+    let captured = run_scope(Some(&lease), 0, 512, |context| {
+        let (value, captured) = context.record_kernel(&storage, |context| {
+            context.poll()?;
+            context.checkpoint(2)?;
+            context.poll()?;
+            Ok::<_, KernelFailure<()>>(73_u64)
+        });
+        assert_eq!(value.unwrap(), 73);
+        Ok::<_, KernelFailure<()>>(captured.expect("successful control guards remain replayable"))
+    })
+    .result
+    .unwrap();
+    let carried = run_scope(Some(&lease), 0, 0, |context| {
+        context.carry_kernel(&captured)?;
+        Ok::<_, KernelFailure<()>>(73_u64)
+    });
+    assert_eq!(carried.result.unwrap(), 73);
+    assert_eq!(carried.report.charged_work(), 2);
+
+    let cancellation = crate::CancellationSource::new();
+    let mut requested = request(1, 2_000, 100);
+    requested.cancellation = cancellation.token();
+    let fresh = authority().request_lease(requested).unwrap();
+    let cancelled = run_scope(Some(&fresh), 0, 0, |context| {
+        cancellation.cancel();
+        assert_eq!(context.carry_kernel(&captured), Err(KernelStop::Cancelled));
+        Ok::<_, KernelFailure<()>>(73_u64)
+    });
+    assert!(matches!(
+        cancelled.result,
+        Err(crate::backend::ScopeStop::Failure(KernelFailure::Stop(
+            KernelStop::Cancelled
+        )))
+    ));
+}
+
+#[test]
 fn swallowed_cancellation_never_issues_a_receipt_and_stops_real_carry() {
     let _lock = TEST_LOCK.lock().unwrap();
     let lease = authority().request_lease(request(1, 2_000, 100)).unwrap();

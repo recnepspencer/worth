@@ -18,6 +18,20 @@ pub(super) fn assert_both(
 }
 
 #[test]
+fn physical_map_allocation_failure_keeps_its_existing_domain_cause() {
+    assert_both(
+        || PacketExecutionStop::Execution {
+            boundary: None,
+            reason: MapStop::Allocation(
+                worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator,
+            ),
+        },
+        Cause::AllocationFailed,
+        None,
+    );
+}
+
+#[test]
 fn every_lease_cause_survives_both_domain_doors() {
     let cases = [
         (

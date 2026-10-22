@@ -183,19 +183,13 @@ where
                         let compute = || {
                             prepared.compute(WorthQueryManagedComputationExecution::new(execution))
                         };
-                        let computed = if let Some(ceiling) = ceiling {
-                            let (computed, report) = execution
-                                .execution_request()
-                                .unwrap()
-                                .run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| {
-                                    compute()
-                                })
-                                .unwrap();
-                            bill = Some(report);
-                            computed
-                        } else {
-                            compute()
-                        }?;
+                        let (computed, report) = execution
+                            .execution_request()
+                            .unwrap()
+                            .run(worth_execution::ExecutionWorkCeiling::new(ceiling), |_| compute())
+                            .unwrap();
+                        bill = Some(report);
+                        let computed = computed?;
 let charged = computed.charged_work();
 
 
@@ -259,14 +253,7 @@ let charged = computed.charged_work();
             gathered.sort_unstable();
             observed = Some(Attempt {
                 outcome,
-                bill: bill.unwrap_or_else(|| {
-                    ExecutionReport::new(
-                        worth_foundational::ExecutionPosture::Serial,
-                        0,
-                        0,
-                        Default::default(),
-                    )
-                }),
+                bill,
                 work,
                 runs: runs(),
                 tree_runs: tree_runs(),

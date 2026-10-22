@@ -145,28 +145,6 @@ pub(super) fn placed<T>(placement: Placement, test: impl FnOnce() -> T) -> T {
 /// its denial.
 type Compared = Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>;
 
-/// Installs the caller's explicit memory policy at serial placement. Both
-/// thread-local controls restore their original values on normal exit or unwind.
-pub(super) fn serial_with_memory_policy<T>(bytes: u64, test: impl FnOnce() -> T) -> T {
-    use worth_query_host::facade::primary_graph::bound_advancement_requests_on_this_thread_for_test as bound;
-    struct Restore(Option<worth_foundational::ExecutionBudget>);
-    impl Drop for Restore {
-        fn drop(&mut self) {
-            bound(self.0);
-        }
-    }
-    placed(Placement::Serial, || {
-        let _restore = Restore(bound(Some(worth_foundational::ExecutionBudget::new(
-            NonZeroUsize::MIN,
-            Some(bytes),
-            super::super::support::observation::CHECKPOINT_EXECUTION_POLICY
-                .budget()
-                .work_ceiling(),
-        ))));
-        test()
-    })
-}
-
 /// Demands each of `demands` from `sets` under every placement, and requires
 /// each placement's outcomes to be the serial ones. A completed total says
 /// its serial backing or worker-limit fallback, so a placement that never

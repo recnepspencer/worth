@@ -36,11 +36,11 @@ mod program_tests;
 
 pub use action::{
     ApplicationAction, ApplicationActionDelivery, ApplicationActionDeliveryMode,
-    ApplicationActionSpecBuilder, ApplicationDiscoveredActionDelivery,
-    ApplicationDiscoveredBatchDelivery, ApplicationDiscoveredDeliveryMode,
-    ApplicationDiscoveredQueryDelivery, ApplicationFixedDeliveryMode,
-    ApplicationOutputActionDeliveryDeclaration, ApplicationRetainedCommit,
-    ApplicationSourceCompletion,
+    ApplicationActionOutputRoots, ApplicationActionSpecBuilder,
+    ApplicationDiscoveredActionDelivery, ApplicationDiscoveredBatchDelivery,
+    ApplicationDiscoveredDeliveryMode, ApplicationDiscoveredQueryDelivery,
+    ApplicationFixedDeliveryMode, ApplicationOutputActionDeliveryDeclaration,
+    ApplicationRetainedCommit, ApplicationSourceCompletion,
 };
 pub use action::{
     ApplicationActionCorrespondenceDeclaration, ApplicationActionDeclaration,
@@ -84,12 +84,12 @@ pub use evolution::{
 };
 pub use external_input::{ApplicationExternalInputProvider, ApplicationExternalInputResolution};
 pub use feature::{
-    ApplicationFeature, ApplicationFeatureDeclaration, ApplicationFeatureInputDeclaration,
-    ApplicationFeatureInputLeaf, ApplicationFeatureInputList, ApplicationFeatureOutputDeclaration,
-    ApplicationFeatureSpec, ApplicationFeatureSpecBuilder, ApplicationInputPort,
-    ApplicationOutputPort, ApplicationPortRef, ApplicationRequiredFeatureOutput,
-    ApplicationRequiredFeatureRoleDeclaration, ApplicationRequiredFeatureRoleKind,
-    ApplicationRequiredFeatureRoles,
+    ApplicationFeature, ApplicationFeatureDeclaration, ApplicationFeatureDefinition,
+    ApplicationFeatureInputDeclaration, ApplicationFeatureInputLeaf, ApplicationFeatureInputList,
+    ApplicationFeatureOutputDeclaration, ApplicationFeatureSpec, ApplicationFeatureSpecBuilder,
+    ApplicationInputPort, ApplicationOutputPort, ApplicationPortRef,
+    ApplicationRequiredFeatureOutput, ApplicationRequiredFeatureRoleDeclaration,
+    ApplicationRequiredFeatureRoleKind, ApplicationRequiredFeatureRoles,
 };
 pub use identity::ApplicationProgramIdentity;
 pub use instance::{ApplicationCompositionInstance, ApplicationRootComposition};
@@ -98,8 +98,7 @@ pub use locality::{
 };
 pub use managed_computation::{
     ApplicationComputationExecution, ApplicationComputationInput, ApplicationComputationPartition,
-    ApplicationComputationResourceCeiling, ApplicationComputationReuse,
-    ApplicationComputationStopped, ApplicationManagedComputation,
+    ApplicationComputationReuse, ApplicationComputationStopped, ApplicationManagedComputation,
     ApplicationManagedComputationDeclaration, ApplicationSingleComputationPartition,
 };
 pub use manifest::ApplicationProgramManifest;
@@ -116,6 +115,7 @@ pub use program::{
     ApplicationProgramValidationDenialKind, ValidatedApplicationProgram,
 };
 pub use program_outputs::{
+    ApplicationActionOutput, ApplicationFeatureOutputMembers, ApplicationFeatureOutputs,
     ApplicationProgramOutputRootsShape, ApplicationProgramOutputs, ApplicationProgramOutputsShape,
 };
 pub use rule::{

@@ -13,27 +13,22 @@ fn certified_wave_really_overlaps_computing_members() {
         .map(|units| {
             let state = state.clone();
             PreparedMember {
-                requests: vec![PreparedCompute::new(
-                    0,
-                    0,
-                    move |member| {
-                        let (mut held, wake) = (state.0.lock().unwrap(), &state.1);
-                        held.0 += 1;
-                        held.1 += 1;
-                        held.2 = held.2.max(held.1);
-                        wake.notify_all();
-                        let (mut held, guard) = wake
-                            .wait_timeout_while(held, HANG_GUARD, |s| s.0 < 2)
-                            .unwrap();
-                        held.3 |= guard.timed_out() && held.0 < 2;
-                        drop(held);
-                        let (_, mut charge) = member.into_parts();
-                        charge.as_mut().unwrap()(units).unwrap();
-                        state.0.lock().unwrap().1 -= 1;
-                        units
-                    },
-                    |_| 0,
-                )],
+                requests: vec![PreparedCompute::new(move |member| {
+                    let (mut held, wake) = (state.0.lock().unwrap(), &state.1);
+                    held.0 += 1;
+                    held.1 += 1;
+                    held.2 = held.2.max(held.1);
+                    wake.notify_all();
+                    let (mut held, guard) = wake
+                        .wait_timeout_while(held, HANG_GUARD, |s| s.0 < 2)
+                        .unwrap();
+                    held.3 |= guard.timed_out() && held.0 < 2;
+                    drop(held);
+                    let (_, mut charge) = member.into_parts();
+                    charge.as_mut().unwrap()(units).unwrap();
+                    state.0.lock().unwrap().1 -= 1;
+                    units
+                })],
             }
         })
         .collect();

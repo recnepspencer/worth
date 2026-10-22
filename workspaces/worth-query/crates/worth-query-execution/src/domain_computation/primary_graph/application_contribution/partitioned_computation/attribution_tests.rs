@@ -9,10 +9,9 @@ use worth_foundational::facade::PartitionIdentity;
 use worth_query_declaration::facade::application_program::{
     ApplicationArtifactDependency, ApplicationArtifactRetention, ApplicationArtifactSuccession,
     ApplicationComputationExecution, ApplicationComputationInput, ApplicationComputationPartition,
-    ApplicationComputationResourceCeiling, ApplicationComputationReuse,
-    ApplicationComputationStopped, ApplicationDerivedArtifact, ApplicationFeature,
-    ApplicationFeatureInputLeaf, ApplicationLocalityGranule, ApplicationLocalityScope,
-    ApplicationManagedComputation, ApplicationOutputPort,
+    ApplicationComputationReuse, ApplicationComputationStopped, ApplicationDerivedArtifact,
+    ApplicationFeature, ApplicationFeatureInputLeaf, ApplicationLocalityGranule,
+    ApplicationLocalityScope, ApplicationManagedComputation, ApplicationOutputPort,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationStructuredValueBinding, ApplicationValueValidationDenial,
@@ -98,11 +97,6 @@ pub(super) struct Number(pub(super) u64);
 impl ApplicationComputationPartition for Number {
     const IDENTITY: &'static str = "worth.query.tests.attribution-number.v1";
 }
-impl worth_execution::ChargedBytes for Number {
-    fn additional_charged_bytes(&self) -> u64 {
-        0
-    }
-}
 /// Odd and even items are the two partitions.
 #[derive(Serialize)]
 pub(super) struct Parity(pub(super) u64);
@@ -119,8 +113,6 @@ impl ApplicationManagedComputation<Schema, Feature> for Computation {
     const IDENTITY: &'static str = "worth.query.tests.attribution-computation.v1";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(4096, 4096);
 }
 
 /// Which owner call reads the account's status. Every `gather` reads its

@@ -11,6 +11,7 @@ mod access;
 mod borrowed;
 mod declarations;
 mod keyless;
+mod native_payload;
 mod owned;
 mod prepared;
 mod retained;
@@ -85,11 +86,18 @@ pub enum MapDenial {
 
 /// A map whose dispatched values carry checked identity and access declarations.
 /// The checked write-set family is retained with the exact admitted batch.
-pub struct ExecutionMap<T, K> {
+pub struct ExecutionMap<T, K, Payload = MeteredPayload> {
     batch: AdmittedBatch<T>,
     _read_sets: Vec<Vec<K>>,
     _write_sets: DisjointKeySetFamily<PartitionIdentity, K>,
+    _payload: std::marker::PhantomData<Payload>,
 }
+
+/// A map whose payload storage follows its admitted declarations or measurement.
+pub enum MeteredPayload {}
+
+/// A map admitted without a payload-size declaration or measurement contract.
+pub enum NativePayload {}
 
 pub enum MapOutcome<R, E> {
     Complete {
@@ -260,11 +268,12 @@ impl<T, K: Ord + ChargedBytes> ExecutionMap<T, K> {
             batch,
             _read_sets: read_sets,
             _write_sets: write_sets,
+            _payload: std::marker::PhantomData,
         })
     }
 }
 
-impl<T, K> ExecutionMap<T, K> {
+impl<T, K, Payload> ExecutionMap<T, K, Payload> {
     pub fn partition_count(&self) -> usize {
         self.batch.identities().len()
     }

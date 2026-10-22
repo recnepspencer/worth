@@ -2,8 +2,6 @@ use std::{cmp::Ordering, sync::Arc};
 
 use worth_foundational::PartitionIdentity;
 
-use crate::report::ChargedBytes;
-
 use super::{
     super::plan::{priority, ReductionDenial},
     recombine::NodeEngine,
@@ -74,7 +72,7 @@ fn merge_depth<T>(left: &Link<T>, right: &Link<T>) -> usize {
     }
 }
 
-pub(super) fn insert<T: Clone + ChargedBytes, E>(
+pub(super) fn insert<T: Clone, E>(
     root: &Link<T>,
     partition: PartitionIdentity,
     value: T,
@@ -98,7 +96,7 @@ pub(super) fn update<T, E>(
     engine: &mut impl NodeEngine<T, E>,
 ) -> Result<Updated<T>, ReductionRunStop<E>>
 where
-    T: Clone + ChargedBytes,
+    T: Clone,
 {
     engine.inspect();
     let node = root
@@ -168,7 +166,7 @@ where
     })
 }
 
-pub(super) fn delete<T: Clone + ChargedBytes, E>(
+pub(super) fn delete<T: Clone, E>(
     root: &Link<T>,
     partition: PartitionIdentity,
     engine: &mut impl NodeEngine<T, E>,

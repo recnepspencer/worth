@@ -8,12 +8,10 @@ pub(super) struct Retained {
     /// Each item key call's declared work.
     pub(super) item_keys: Vec<(PartitionItemId, u64)>,
     pub(super) routing: Vec<(PartitionIdentity, Vec<PartitionItemId>)>,
-    /// Each partition's key, key length and kernel work.
-    pub(super) partitions: Vec<(PartitionIdentity, u64, u64, u64)>,
+    /// Each partition's key and native kernel work.
+    pub(super) partitions: Vec<(PartitionIdentity, u64, u64)>,
     pub(super) leaves: Vec<(PartitionIdentity, Option<u64>)>,
     pub(super) result: u64,
-    pub(super) tree_bytes: u64,
-    pub(super) charged_bytes: Option<u64>,
     pub(super) facts: Vec<(
         WorthQueryApplicationFactKey,
         WorthQueryApplicationObservedFact,
@@ -52,7 +50,6 @@ pub(super) fn retained(sealed: &SealedComputationRun) -> Retained {
                 (
                     *identity,
                     key,
-                    partition.key_bytes,
                     typed.native_run.result(*identity).unwrap().charged_work(),
                 )
             })
@@ -63,8 +60,6 @@ pub(super) fn retained(sealed: &SealedComputationRun) -> Retained {
             .map(|identity| (*identity, typed.tree.leaf(*identity).copied()))
             .collect(),
         result: *typed.tree.result(),
-        tree_bytes: typed.tree.additional_charged_bytes(),
-        charged_bytes: typed.charged_bytes(),
         facts: sealed
             .state
             .facts

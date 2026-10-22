@@ -11,12 +11,12 @@ use crate::domain_computation::primary_graph::{
     application_contribution::request_execution::QueryRequestExecution,
     invariant_projection::CallVisit,
 };
-use worth_execution::{ChargedBytes, ExecutionOrderedMap};
+use worth_execution::ExecutionOrderedMap;
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationPartition, ApplicationFeature, ApplicationManagedComputation,
 };
 use worth_query_installation::facade::ApplicationSchema;
-impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition + ChargedBytes, R>
+impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition, R>
     IncrementalRun<K, I, R>
 {
     pub(super) fn prepare_rekeys<S, F, C, O>(
@@ -25,8 +25,7 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition + Ch
         reader: &mut Reader<'_, '_, S, O::Operation>,
         execution: &QueryRequestExecution<'_>,
         input: &InputValue<S, F, C>,
-        mut remaining: RemainingWork,
-        declared: u64,
+        mut remaining: PreparationWork,
     ) -> Result<Option<PreparedIncremental<K, I, R, O::Gathered>>, Denial<S, F, C, O>>
     where
         S: ApplicationSchema,
@@ -58,9 +57,7 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition + Ch
         let Some(prefix) = sequence.summary(0..sequence.prefix()) else {
             return Ok(None);
         };
-        if prefix.declared > remaining.remaining()
-            || !reader.can_carry_call_range(&COMPARATOR, &prefix)
-        {
+        if !reader.can_carry_call_range(&COMPARATOR, &prefix) {
             return Ok(None);
         }
         let allocation = execution.allocation_policy().map_err(D::Resource)?;
@@ -78,7 +75,6 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition + Ch
         let mut routing = (*retained.routing).clone();
         let mut item_keys = (*retained.item_keys).clone();
         let mut affected = self.marked.clone();
-        let mut key_memory = execution.reserve(0).map_err(D::Resource)?;
         let mut fresh_keys = std::collections::BTreeMap::new();
         let mut rekeyed = ExecutionOrderedMap::default();
         let mut unsupported = false;
@@ -88,16 +84,15 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition + Ch
         > {
             match visit {
                 CallVisit::Range(range, summary) => {
-                    if summary.declared > remaining.remaining() {
-                        return Ok(false);
-                    }
                     if reader
                         .carry_call_range(&COMPARATOR, &sequence, range, summary, execution)
                         .map_err(D::Resource)?
                     {
-                        remaining
-                            .spend(Some(summary.declared))
-                            .map_err(D::Resource)?;
+                        super::super::preparation_work::charge_preparation(
+                            execution,
+                            &mut remaining,
+                            Some(summary.declared),
+                        )?;
                         Ok(true)
                     } else {
                         Ok(false)
@@ -117,14 +112,8 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition + Ch
                     let key = key?;
                     let before = remaining;
                     let previous = routing.partition_of(item);
-                    let (next, key_bytes) = match route_item(
-                        item,
-                        &key,
-                        &mut routing,
-                        execution,
-                        &mut remaining,
-                        declared,
-                    ) {
+                    let next = match route_item(item, &key, &mut routing, execution, &mut remaining)
+                    {
                         Err(D::PartitionIdentityCollision { .. }) => {
                             unsupported = true;
                             return Ok(true);
@@ -139,13 +128,7 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition + Ch
                         unsupported = true;
                     }
                     if retained.routing.digest(next).is_none() && !fresh_keys.contains_key(&next) {
-                        // The existing typed-key retention contract uses the
-                        // checked canonical length. Only a new key allocation
-                        // needs this hold, never a shared old group's key.
-                        let bytes = key_bytes.checked_add((size_of::<K>() + 2 * size_of::<usize>()) as u64)
-                            .ok_or(D::Resource(super::super::super::WorthQueryManagedComputationResourceDenial::CapacityOverflow))?;
-                        key_memory.grow(bytes).map_err(D::Resource)?;
-                        fresh_keys.insert(next, (Arc::new(key), key_bytes));
+                        fresh_keys.insert(next, Arc::new(key));
                     }
                     let Some((charge, declared_units)) = charge.zip(remaining.spent_since(before))
                     else {
@@ -201,7 +184,6 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition + Ch
         let routing = Arc::new(routing);
         let mut prepared = PreparedIncremental::new(
             remaining,
-            declared,
             self.basis.clone(),
             self.prior.clone(),
             self.validated_at.clone(),
@@ -209,11 +191,8 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition + Ch
                 items: Arc::clone(&retained.items),
                 digests: Arc::clone(&retained.digests),
                 membership: Some(retained.membership.clone()),
-                item_call_bytes: Some(item_keys.retained_bytes()),
-                item_bytes: retained.item_bytes,
                 item_keys: Arc::clone(&item_keys),
                 routing: Arc::clone(&routing),
-                routing_memory: None,
                 carried_membership: true,
                 carried_items: CarriedItems::All(item_keys),
             },
@@ -230,11 +209,10 @@ impl<K: ApplicationComputationPartition, I: ApplicationComputationPartition + Ch
             &transition,
             &affected,
             fresh_keys,
-            declared,
             &mut prepared,
         )?;
         prepared.transition(transition);
-        prepared.rekeyed(rekeyed, key_memory);
+        prepared.rekeyed(rekeyed);
         prepared.ranges(
             reader
                 .close_call_ranges(&COMPARATOR, execution)

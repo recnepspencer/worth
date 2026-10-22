@@ -4,13 +4,11 @@ use super::{
     evaluation,
     input::InputMode,
     meter::{KernelContext, KernelFailure, NestedStopOwner, RunLimits},
+    payload_storage::PayloadStorage,
     port::{BackendKind, BatchOutcome, BatchStop, TaskOutcome},
     settlement, PreparedBatchResources,
 };
-use crate::{
-    authority::{ExecutionMemoryReservation, ExecutionResourceLease, LeaseDenial},
-    report::ChargedBytes,
-};
+use crate::authority::{ExecutionMemoryReservation, ExecutionResourceLease, LeaseDenial};
 use std::sync::Mutex;
 use worth_foundational::{
     ExecutionFallbackCause, ExecutionPhysicalReport, ExecutionPosture, ExecutionReport,
@@ -27,11 +25,12 @@ pub(super) fn run_batch<I, R, E, F>(
     taken: Option<ExecutionMemoryReservation>,
     records: Option<&settlement::records::SettlementRecords>,
     retained: Option<&mut settlement::RetainedSettlement<'_, R>>,
+    payload: PayloadStorage<I::Payload, R, E>,
 ) -> BatchOutcome<R, E>
 where
     I: InputMode,
-    R: ChargedBytes + Send,
-    E: ChargedBytes + Send,
+    R: Send,
+    E: Send,
     F: Fn(I::Item, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
 {
     let mut custody = RunCustody::new(inputs, taken, prepared);
@@ -102,7 +101,7 @@ where
         .inputs
         .as_ref()
         .expect("inputs precede accounting")
-        .memory_bytes::<R, E>(batch)
+        .memory_bytes::<R, E>(batch, payload.input_measure())
         .and_then(|bytes| {
             // Retained settlement may enter one native carried-slot context
             // after all changed workers join, including an empty frontier.
@@ -166,22 +165,31 @@ where
     };
     // The reservation remains alive through settlement and result-vector
     // allocation; the returned values leave the lease at this boundary.
-    let outcomes: Vec<Mutex<Option<TaskOutcome<R, E>>>> =
-        (0..batch.len()).map(|_| Mutex::new(None)).collect();
-    let result_memory = Mutex::new(Vec::with_capacity(if batch.measures_results() {
+    let mut outcomes: Vec<Mutex<Option<TaskOutcome<R, E>>>> = Vec::new();
+    let mut values = Vec::<R>::new();
+    if outcomes.try_reserve_exact(batch.len()).is_err()
+        || values.try_reserve_exact(batch.len()).is_err()
+    {
+        let outcome = allocation_refused();
+        return custody.finish(outcome, batch, charge_parent);
+    }
+    outcomes.extend((0..batch.len()).map(|_| Mutex::new(None)));
+    let measures_results = payload.result_measure().is_some() && batch.measures_results();
+    let result_memory = Mutex::new(Vec::with_capacity(if measures_results {
         batch.len()
     } else {
         0
     }));
     let execute = |(index, input)| {
-        let (outcome, receipt, result_heap) = evaluation::evaluate(
+        let (outcome, receipt, result_heap) = evaluation::evaluate_with_storage(
             input,
             lease,
             &limits,
             batch.result_capacity(index),
-            batch.measures_results().then_some(&result_memory),
+            measures_results.then_some(&result_memory),
             records.map(|records| records.storage()),
             kernel,
+            &payload,
         );
         if let Some(records) = records {
             records.record(index, &outcome, receipt, result_heap);
@@ -239,8 +247,30 @@ where
         fallback,
         retained,
         lease,
+        values,
     );
     custody.finish(outcome, batch, charge_parent)
+}
+
+fn allocation_refused<R, E>() -> BatchOutcome<R, E> {
+    BatchOutcome {
+        values: Vec::new(),
+        stop: Some(BatchStop::Allocation(
+            crate::ExecutionPhysicalAllocationDenialKind::Allocator,
+        )),
+        stop_owner: Some(NestedStopOwner::Computation(
+            super::NestedComputationStop::Allocation(
+                crate::ExecutionPhysicalAllocationDenialKind::Allocator,
+            ),
+        )),
+        prefix_boundary: None,
+        report: ExecutionReport::new(
+            ExecutionPosture::Serial,
+            0,
+            0,
+            ExecutionPhysicalReport::default(),
+        ),
+    }
 }
 
 fn denied<R, E>(denial: LeaseDenial) -> BatchOutcome<R, E> {
@@ -256,5 +286,35 @@ fn denied<R, E>(denial: LeaseDenial) -> BatchOutcome<R, E> {
             ExecutionPhysicalReport::default(),
         )
         .with_fallback(ExecutionFallbackCause::Capacity),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::backend::{
+        input::OwnedInputs, meter::NestedComputationStop, run_scope, AdmittedBatch,
+    };
+
+    #[test]
+    fn physical_allocation_refusal_keeps_original_nested_cause_through_custody() {
+        let kind = crate::ExecutionPhysicalAllocationDenialKind::Allocator;
+        let outer = run_scope(None, 0, 0, |context| {
+            let batch = AdmittedBatch::<()>::try_admit(Vec::new(), 0).unwrap();
+            let mut custody = RunCustody::new(OwnedInputs(Vec::<()>::new()), None, None);
+            let refused = custody.finish(allocation_refused::<(), ()>(), batch.declaration(), true);
+            assert_eq!(refused.stop, Some(BatchStop::Allocation(kind)));
+            assert_eq!(
+                context.poll(),
+                Err(super::super::meter::KernelStop::NestedStopped)
+            );
+            assert_eq!(
+                context.take_nested_computation_stop(),
+                Some(NestedComputationStop::Allocation(kind))
+            );
+            assert_eq!(context.poll(), Ok(()));
+            Ok::<(), KernelFailure<()>>(())
+        });
+        assert!(outer.result.is_ok());
     }
 }

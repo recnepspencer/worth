@@ -43,6 +43,10 @@ impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {
         use worth_execution::RetainedRunDenial as Denial;
         match denial {
             Denial::Native(cause) => Self::from_retained_map(cause),
+            Denial::NativeMap(kind) => Self::Resource(Resource::NativeAllocationRefused {
+                kind,
+                requested_payload_bytes: None,
+            }),
             Denial::Map(cause) => Self::from_map_overflow(cause),
             Denial::RequiresKeyless => {
                 Self::ReductionInputInvalid(ReductionInput::RetainedRunRequiresKeyless)

@@ -1,4 +1,7 @@
 //! Native owning workflow operations, separate from unrelated body portfolios.
+// The concrete runtime's Send/Sync proof traverses im's nested B-tree chunks.
+#![recursion_limit = "256"]
+
 #[path = "application_graph/source_only/capability.rs"]
 mod capability;
 #[path = "application_graph/document_retention_model.rs"]

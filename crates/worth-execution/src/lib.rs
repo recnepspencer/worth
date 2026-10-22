@@ -48,16 +48,17 @@ pub use pattern::{
     ExecutionRetainedPrefix, ExecutionRetainedRun, ExecutionRounds, ExecutionScan,
     ExecutionWorkCeiling, ForkChild, ForkJoinDenial, ForkJoinOutcome, InterfaceSolution,
     InteriorResult, KeylessPartition, MapDenial, MapKernelContext, MapKernelFailure, MapKernelStop,
-    MapMemoryOverflow, MapOutcome, MapPartition, MapStop, OracleMismatch, PreparedExecutionMap,
+    MapMemoryOverflow, MapOutcome, MapPartition, MapStop, MeteredPayload, NativePayload,
+    NativeRetainedReduceOutcome, NativeRetainedReduction, OracleMismatch, PreparedExecutionMap,
     ReduceCertificationFailure, ReduceInputDenial, RetainedMapDenial, RetainedMapInput,
     RetainedReduceDenial, RetainedReduceOutcome, RetainedReduction, RetainedRunDenial,
     RetainedRunMetrics, RetainedRunOutcome, RoundsDenial, RoundsOutcome, ScanDenial, ScanOutcome,
     WorkCeilingDenial,
 };
 pub use reduction::{
-    ReductionDenial, ReductionEditMemoryBoundError, ReductionInsertMemoryBoundError,
-    ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionRunStop,
-    ReductionShapeCostDenial, ReductionTree,
+    NativeReductionTree, ReductionDenial, ReductionEditMemoryBoundError,
+    ReductionInsertMemoryBoundError, ReductionMetrics, ReductionPlan, ReductionRunFailure,
+    ReductionRunStop, ReductionShapeCostDenial, ReductionTree,
 };
 pub use report::ChargedBytes;
 

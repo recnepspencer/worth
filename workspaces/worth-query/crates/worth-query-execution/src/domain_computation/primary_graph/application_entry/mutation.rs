@@ -7,6 +7,7 @@ pub use decision_plan::WorthQueryDecisionPlan;
 mod completed_candidate;
 mod execution;
 mod execution_report;
+mod failure;
 pub use completed_candidate::WorthQueryCompletedMutationCandidate;
 pub(in crate::domain_computation::primary_graph) use execution::build_handler_candidate;
 pub use execution::MutationHandlerExecutionDenial;
@@ -14,6 +15,7 @@ pub use execution_report::{
     WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,
     WorthQueryMutationHandlerWork,
 };
+pub use failure::HandlerFailure;
 
 /// Execution failure reported by handler-owned decision or candidate work.
 #[derive(Debug)]

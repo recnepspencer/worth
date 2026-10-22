@@ -6,7 +6,15 @@ place to associate typed actions, ports, derived truth, managed computation,
 requirements, correspondence, and external input. It does not install handlers,
 publish results, or create a second registry.
 
-The compact form and the builder form produce the same canonical spec. An
+For a complete installed feature, use the Host facade's named
+`worth_query_application_contribution!` feature form documented in
+[Build an Application](../../../../../../docs/build-an-application.md#required-initial-and-preserve-output-roles).
+Its single member body retains typed bindings, delivery roots, handlers and
+required roles before producing this canonical spec. It generates schema access,
+runtime slots, contracts and output projections through the existing owners.
+Select a tuple of definitions once; supply real runtime values explicitly.
+
+The lower-level compact form and builder form produce the same canonical spec. An
 ordinary action begins with `.action::<Binding, Delivery>()`; its real delivery
 selects source completion, retained commit, fixed output or discovered output.
 Attach the applicable metadata, then call `.finish_action()` to append one
@@ -63,13 +71,13 @@ remains a builder capability.
 
 ## Required Initial and Preserve production
 
-For a feature that needs both lifecycle roles, declare one Host-side
+For a feature that needs both lifecycle roles, retain one Host-side
 `WorthQueryRequiredFeaturePair<Schema, Feature, Initial, InitialReadiness,
-Preserve, PreserveReadiness>`. Its pure declaration projection supplies
-`required_pair(Roles<Schema>);` in the capsule macro, or
-`.required_pair::<Roles<Schema>>()` on the builder. The same alias supplies
-`contracts.feature::<Roles<Schema>>()?` and `setup.feature::<Roles<Schema>>(runtime)?`.
-Runtime construction uses `WorthQueryFeatureRuntime::new(initial, preserve)`;
+Preserve, PreserveReadiness>`. Put it in the named definition's
+`required_pair name(Roles<Schema>, InitialHandler, PreserveHandler)` member with
+the two explicit operation definitions. The generated schema, feature,
+contract and setup projections consume that same pair. Runtime construction
+uses `WorthQueryFeatureRuntime::new(initial, preserve)`;
 each value is `WorthQueryFeatureRoleRuntime::new(handler, provider, readiness)`.
 The role's operation/provider/family/output types come from its producer.
 
@@ -205,8 +213,15 @@ code still owns artifact payloads and numerical algorithms.
 `managed_computation(Computation)` associates a typed computation declaration
 with the feature that owns its result. The declaration identifies its input
 basis, output artifact, computation partition key, reuse, stopped outcome,
-execution posture, determinism contract, and ceilings. Installation then
-requires the matching runtime owner.
+execution posture and determinism contract. Installation requires the matching
+runtime owner; the computation declaration supplies no resource forecast.
+
+Ordinary handlers return that installed owner's `decision_plan`. It carries the
+original request through preparation, computation and completion; `checkpoint.poll`
+checks controls without charging work, while `HandlerFailure<Domain>` preserves
+typed failure causes. Follow the
+[managed computation guide](../../../../../../docs/build-an-application.md#36-declare-and-install-a-partitioned-managed-computation)
+for the complete call shape and compiled examples.
 
 A computation partition key is `Send + Sync` and serializable. Two keys are the
 same key exactly when their canonical encodings are equal: the encoding is the

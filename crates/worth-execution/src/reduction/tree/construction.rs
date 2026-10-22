@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, sync::Arc};
+use std::sync::Arc;
 
 use worth_foundational::PartitionIdentity;
 
@@ -21,11 +21,13 @@ pub(crate) struct Shape<T> {
     root: Option<usize>,
     split_order: Vec<SubtreeSpec>,
     split_flags: Vec<bool>,
+    _memory: [Option<crate::ExecutionMemoryReservation>; 3],
 }
 
 pub(crate) struct FrontierPlan {
     pub(crate) tasks: Vec<SubtreeSpec>,
     pub(crate) events: Vec<FrontierEvent>,
+    _memory: [Option<crate::ExecutionMemoryReservation>; 2],
 }
 
 #[derive(Clone, Copy)]
@@ -76,6 +78,20 @@ pub(super) struct Built<T> {
 }
 
 impl<T> Shape<T> {
+    #[cfg(test)]
+    pub(crate) fn checked_frontier<E>(
+        &mut self,
+        target_tasks: usize,
+        max_value_bytes: u64,
+    ) -> Result<FrontierPlan, ReductionRunStop<E>>
+    where
+        T: CanonicalBits + ChargedBytes,
+    {
+        self.frontier(
+            target_tasks,
+            super::value_storage::BoundedValues(max_value_bytes),
+        )
+    }
     pub(crate) fn len(&self) -> usize {
         self.nodes.len()
     }
@@ -105,12 +121,17 @@ impl<T> Shape<T> {
 
     /// The split decisions were all checkpointed in `build`, so width only
     /// selects a prefix of an already metered, deterministic BFS plan.
-    pub(crate) fn frontier(&mut self, target_tasks: usize) -> FrontierPlan {
+    pub(super) fn frontier<E, Storage: super::value_storage::ValueStorage<T>>(
+        &mut self,
+        target_tasks: usize,
+        storage: Storage,
+    ) -> Result<FrontierPlan, ReductionRunStop<E>> {
         let Some(root) = self.full_spec() else {
-            return FrontierPlan {
+            return Ok(FrontierPlan {
                 tasks: Vec::new(),
                 events: Vec::new(),
-            };
+                _memory: [None, None],
+            });
         };
         let mut count = 1_usize;
         for &spec in &self.split_order {
@@ -120,10 +141,10 @@ impl<T> Shape<T> {
             self.split_flags[spec.root] = true;
             count += self.children_of(spec).into_iter().flatten().count() - 1;
         }
-        let mut tasks = Vec::with_capacity(count);
-        let capacity = self.nodes.len().saturating_mul(2);
-        let mut events = Vec::with_capacity(capacity);
-        let mut pending = Vec::with_capacity(capacity);
+        let (mut tasks, tasks_memory) = storage.buffer(count)?;
+        let capacity = traversal_capacity(self.nodes.len())?;
+        let (mut events, events_memory) = storage.buffer(capacity)?;
+        let (mut pending, _pending_memory) = storage.buffer(capacity)?;
         pending.push((root, false));
         while let Some((spec, ready)) = pending.pop() {
             if ready {
@@ -145,7 +166,11 @@ impl<T> Shape<T> {
                 events.push(FrontierEvent::Task(spec));
             }
         }
-        FrontierPlan { tasks, events }
+        Ok(FrontierPlan {
+            tasks,
+            events,
+            _memory: [tasks_memory, events_memory],
+        })
     }
 
     pub(crate) fn full_spec(&self) -> Option<SubtreeSpec> {
@@ -160,21 +185,25 @@ impl<T> Shape<T> {
     /// Metrics for the first admitted checkpoints of this subtree's fixed
     /// enter/left/right/finish/two-combine traversal. Used only when the
     /// enclosing ceiling stops before a speculative task can be accepted.
-    pub(crate) fn prefix_metrics(
+    pub(super) fn prefix_metrics<E, Storage: super::value_storage::ValueStorage<T>>(
         &self,
         spec: SubtreeSpec,
         accepted_work: u64,
-    ) -> Option<ReductionMetrics> {
+        storage: Storage,
+    ) -> Result<Option<ReductionMetrics>, ReductionRunStop<E>> {
         let mut remaining = accepted_work;
         let mut metrics = ReductionMetrics::default();
-        let mut traversal = Vec::with_capacity(spec.len.saturating_mul(2));
+        let capacity = traversal_capacity(spec.len)?;
+        let (mut traversal, _memory) = storage.buffer(capacity)?;
         traversal.push((spec.root, false));
         while let Some((index, ready)) = traversal.pop() {
             if remaining == 0 {
                 break;
             }
             let node = &self.nodes[index];
-            metrics.record_visit().ok()?;
+            metrics
+                .record_visit()
+                .map_err(|_| ReductionRunStop::work_counter_overflow())?;
             remaining -= 1;
             if !ready {
                 traversal.push((index, true));
@@ -188,29 +217,34 @@ impl<T> Shape<T> {
             }
             for _ in 0..2 {
                 if remaining == 0 {
-                    return Some(metrics);
+                    return Ok(Some(metrics));
                 }
-                metrics.record_combine().ok()?;
+                metrics
+                    .record_combine()
+                    .map_err(|_| ReductionRunStop::work_counter_overflow())?;
                 remaining -= 1;
             }
-            metrics.record_node().ok()?;
+            metrics
+                .record_node()
+                .map_err(|_| ReductionRunStop::work_counter_overflow())?;
         }
-        (remaining == 0).then_some(metrics)
+        Ok((remaining == 0).then_some(metrics))
     }
 }
 
-impl<T: Clone + ChargedBytes + CanonicalBits> Shape<T> {
-    pub(super) fn build<F, H, E>(
+impl<T: Clone + CanonicalBits> Shape<T> {
+    pub(super) fn build<F, H, E, Storage>(
         identities: &[PartitionIdentity],
         values: Vec<T>,
-        engine: &mut Engine<'_, T, F, H>,
+        engine: &mut Engine<'_, T, F, H, Storage>,
     ) -> Result<Self, ReductionRunStop<E>>
     where
         F: Fn(&T, &T) -> T,
         H: FnMut() -> Result<(), E>,
+        Storage: super::value_storage::ValueStorage<T>,
     {
-        let mut nodes = Vec::with_capacity(values.len());
-        let mut split_flags = Vec::with_capacity(values.len());
+        let (mut nodes, nodes_memory) = engine.buffer(values.len())?;
+        let (mut split_flags, flags_memory) = engine.buffer(values.len())?;
         for (identity, value) in identities.iter().copied().zip(values) {
             engine.visit()?;
             nodes.push(ShapeNode {
@@ -221,7 +255,7 @@ impl<T: Clone + ChargedBytes + CanonicalBits> Shape<T> {
             });
             split_flags.push(false);
         }
-        let mut stack: Vec<usize> = Vec::with_capacity(nodes.len());
+        let (mut stack, _stack_memory): (Vec<usize>, _) = engine.buffer(nodes.len())?;
         for index in 0..nodes.len() {
             engine.visit()?;
             let mut popped = None;
@@ -239,23 +273,27 @@ impl<T: Clone + ChargedBytes + CanonicalBits> Shape<T> {
             stack.push(index);
         }
         let root = stack.first().copied();
+        let (split_order, order_memory) = engine.buffer(identities.len())?;
         let mut shape = Self {
             nodes,
             root,
-            split_order: Vec::with_capacity(identities.len()),
+            split_order,
             split_flags,
+            _memory: [nodes_memory, flags_memory, order_memory],
         };
         if let Some(root) = shape.full_spec() {
-            let mut queue = VecDeque::with_capacity(shape.nodes.len());
-            queue.push_back(root);
-            while let Some(spec) = queue.pop_front() {
+            let (mut queue, _queue_memory) = engine.buffer(shape.nodes.len())?;
+            queue.push(root);
+            let mut cursor = 0;
+            while let Some(&spec) = queue.get(cursor) {
+                cursor += 1;
                 engine.visit()?;
                 let children = shape.children_of(spec);
                 if children.iter().any(Option::is_some) {
                     shape.split_order.push(spec);
                 }
                 for child in children.into_iter().flatten() {
-                    queue.push_back(child);
+                    queue.push(child);
                 }
             }
         }
@@ -264,18 +302,20 @@ impl<T: Clone + ChargedBytes + CanonicalBits> Shape<T> {
 
     /// Each shape node has an entry and completion visit; child aggregates are joined in the
     /// fixed left/value/right order. The traversal stack avoids depth limits.
-    pub(super) fn evaluate<F, H, E>(
+    pub(super) fn evaluate<F, H, E, Storage>(
         &self,
         spec: SubtreeSpec,
-        engine: &mut Engine<'_, T, F, H>,
+        engine: &mut Engine<'_, T, F, H, Storage>,
     ) -> Result<(Link<T>, u64), ReductionRunStop<E>>
     where
         F: Fn(&T, &T) -> T,
         H: FnMut() -> Result<(), E>,
+        Storage: super::value_storage::ValueStorage<T>,
     {
-        let mut built: Vec<Option<Built<T>>> =
-            std::iter::repeat_with(|| None).take(spec.len).collect();
-        let mut traversal = Vec::with_capacity(spec.len.saturating_mul(2));
+        let (mut built, _built_memory): (Vec<Option<Built<T>>>, _) = engine.buffer(spec.len)?;
+        built.resize_with(spec.len, || None);
+        let capacity = traversal_capacity(spec.len)?;
+        let (mut traversal, _traversal_memory) = engine.buffer(capacity)?;
         traversal.push((spec.root, false));
         while let Some((index, ready)) = traversal.pop() {
             let node = &self.nodes[index];
@@ -314,4 +354,10 @@ impl<T: Clone + ChargedBytes + CanonicalBits> Shape<T> {
             .expect("root evaluated");
         Ok((Some(built.root), built.span))
     }
+}
+
+fn traversal_capacity<E>(count: usize) -> Result<usize, ReductionRunStop<E>> {
+    count.checked_mul(2).ok_or(ReductionRunStop::Denial(
+        super::ReductionDenial::Allocation(crate::ExecutionPhysicalAllocationDenialKind::Layout),
+    ))
 }

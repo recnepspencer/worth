@@ -177,12 +177,8 @@ impl<Value: 'static, Denial: 'static> WorthQueryDecisionPlan<Value, Denial> {
             }]);
         assert_eq!(settled.len(), 1, "one ordinary decision is one member");
         match settled.pop().unwrap() {
-            Ok(computed) => computed.finish(|slots| completion.finish(slots)),
-            Err(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Interrupted(
-                crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption::Cancelled)) => HandlerResult::Cancelled,
-            Err(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Interrupted(
-                crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption::DeadlineExceeded)) => HandlerResult::DeadlineExceeded,
-            Err(denial) => HandlerResult::ExecutionDenied(super::HandlerExecutionDenial::new(denial)),
+            Ok(computed) => computed.finish(|slots| completion.finish(slots, execution)),
+            Err(cause) => execution_failure(cause),
         }
     }
 
@@ -203,7 +199,31 @@ impl<Value, Denial> DecisionCompletion<Value, Denial> {
     pub(in crate::domain_computation::primary_graph) fn finish(
         self,
         slots: Vec<ComputedSlot>,
+        execution: &QueryRequestExecution<'_>,
     ) -> HandlerResult<Value, Denial> {
-        (self.complete)(slots)
+        match execution.decision_stage(|context| {
+            context.poll()?;
+            let result = (self.complete)(slots);
+            context.poll()?;
+            Ok::<_, worth_execution::MapKernelStop>(result)
+        }) {
+            Ok(Ok(result)) => result,
+            Ok(Err(cause)) => execution_failure(
+                crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_checkpoint_stop(cause)),
+            Err(cause) => execution_failure(cause),
+        }
+    }
+}
+
+fn execution_failure<Value, Denial>(
+    cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+) -> HandlerResult<Value, Denial> {
+    use crate::domain_computation::primary_graph::{
+        WorthQueryAdvancementDenial as Failure, WorthQueryManagedComputationInterruption as Stop,
+    };
+    match cause {
+        Failure::Interrupted(Stop::Cancelled) => HandlerResult::Cancelled,
+        Failure::Interrupted(Stop::DeadlineExceeded) => HandlerResult::DeadlineExceeded,
+        cause => HandlerResult::ExecutionDenied(super::HandlerExecutionDenial::new(cause)),
     }
 }

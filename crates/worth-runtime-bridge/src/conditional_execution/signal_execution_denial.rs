@@ -32,7 +32,7 @@ pub(super) fn kind(error: &SignalError) -> Kind {
             return match stop.reason() {
                 Stop::WorkExhausted { .. } => Kind::ExecutionDenied(Execution::WorkCeiling),
                 Stop::Admission(cause) => kind(&SignalError::ExecutionAdmissionDenied(*cause)),
-                Stop::PreparationMemoryExhausted { .. } => {
+                Stop::PreparationMemoryExhausted { .. } | Stop::Allocation(_) => {
                     Kind::SignalExecution(super::BridgeSignalDenial::Error(error.clone()))
                 }
                 Stop::Failure { cause, .. } => match cause {
@@ -98,6 +98,41 @@ mod footprint_tests {
             assert_eq!(
                 kind(&error),
                 Kind::SignalExecution(super::super::BridgeSignalDenial::Error(error.clone()))
+            );
+        }
+    }
+
+    #[test]
+    fn physical_allocation_keeps_the_original_signal_witness() {
+        use worth_execution::ExecutionPhysicalAllocationDenialKind as Kind;
+        use worth_foundational::{
+            ExecutionPhysicalReport, ExecutionPosture, ExecutionReport, PartitionIdentity,
+        };
+        use worth_signal::facade::{
+            SignalExecutionStop, SignalExecutionStopReason, SignalPublicationProgress,
+        };
+        let identity = PartitionIdentity::new(3);
+        for cause in [
+            Kind::Layout,
+            Kind::Allocator,
+            Kind::CapacityMismatch,
+            Kind::WriteBeyondReserved,
+            Kind::IncompleteSeal,
+        ] {
+            let original = SignalError::execution_stopped(SignalExecutionStop::new(
+                SignalExecutionStopReason::Allocation(cause),
+                Some(identity),
+                SignalPublicationProgress::default(),
+                ExecutionReport::new(
+                    ExecutionPosture::Serial,
+                    0,
+                    0,
+                    ExecutionPhysicalReport::default(),
+                ),
+            ));
+            assert_eq!(
+                kind(&original),
+                super::Kind::SignalExecution(super::super::BridgeSignalDenial::Error(original))
             );
         }
     }

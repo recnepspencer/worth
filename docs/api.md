@@ -141,7 +141,7 @@ let request = application.request(&external_principal, &request_scope);
 // A read. Every execute() is a fresh attempt against the current product branch.
 let published = request
     .query(SomeQuery::new(input))
-    .limits(maximum_results, maximum_work)   // optional; may only narrow
+    .limit_results(maximum_results)          // optional NonZeroUsize; may only narrow
     .execute()?;                             // Result<Published result, Query denial>
 let rows = published.rows();
 let sources = published.observed_sources();

@@ -54,8 +54,6 @@ impl ApplicationManagedComputation<Schema, Feature> for Computation {
     const IDENTITY: &'static str = "matrix-computation";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(8192, 16384);
 }
 pub struct Owner(pub Arc<Control>);
 type Reader<'a, 'b, 'c> = WorthQueryComputationReader<'a, 'b, 'c, Schema, Apply>;

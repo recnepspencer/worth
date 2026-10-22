@@ -3,7 +3,7 @@ use super::retained::RetainedPartitions;
 use super::WorthQueryPartitionedComputationFullCause as Cause;
 use crate::domain_computation::primary_graph::application_contribution::RetainedComputation;
 use std::sync::Arc;
-use worth_execution::{CanonicalBits, ChargedBytes};
+use worth_execution::CanonicalBits;
 use worth_query_declaration::facade::application_operation::application_computation_item_digest;
 use worth_query_declaration::facade::application_program::ApplicationComputationPartition;
 
@@ -83,8 +83,8 @@ impl WorthQueryPublishedComputationStateForTest {
     /// Execution exposes leaves, root and size, but no full tree encoding.
     pub fn same_fields_for_test<
         Key: 'static,
-        Item: ApplicationComputationPartition + ChargedBytes + 'static,
-        Reduced: Clone + ChargedBytes + CanonicalBits + 'static,
+        Item: ApplicationComputationPartition + 'static,
+        Reduced: Clone + CanonicalBits + 'static,
     >(
         &self,
         other: &Self,
@@ -146,7 +146,6 @@ impl WorthQueryPublishedComputationStateForTest {
             && a.partitions.iter().all(|(identity, partition)| {
                 b.partitions.get(identity).is_some_and(|next| {
                     same_key(&partition.key, &next.key)
-                        && partition.key_bytes == next.key_bytes
                         && a.native_run
                             .result(*identity)
                             .zip(b.native_run.result(*identity))
@@ -158,8 +157,6 @@ impl WorthQueryPublishedComputationStateForTest {
                 })
             })
             && bits(a.tree.result()) == bits(b.tree.result())
-            && a.tree.additional_charged_bytes() == b.tree.additional_charged_bytes()
-            && a.charged_bytes() == b.charged_bytes()
             && left.facts.facts().eq(right.facts.facts())
     }
 }
@@ -171,7 +168,7 @@ impl WorthQueryPublishedComputationStateForTest {
     pub fn tree_node_sharing_with_for_test<
         Key: 'static,
         Item: 'static,
-        Reduced: Clone + ChargedBytes + CanonicalBits + 'static,
+        Reduced: Clone + CanonicalBits + 'static,
     >(
         &self,
         other: &Self,

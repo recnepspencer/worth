@@ -4,7 +4,7 @@ use std::sync::OnceLock;
 use super::super::{
     admission::BatchDeclaration,
     port::TaskOutcome,
-    retained_result::{result_bytes, ResultStorageDenial},
+    retained_result::{result_bytes, result_layout_bytes, ResultStorageDenial},
     task_result::TaskResult,
     ExecutionKernelReceipt, ExecutionKernelReceiptStorage,
 };
@@ -33,6 +33,11 @@ pub(crate) struct SettlementRecords {
     _scratch: ExecutionMemoryReservation,
 }
 
+enum PayloadStorage {
+    Declared,
+    Native,
+}
+
 impl SettlementRecords {
     pub(crate) fn admit<R>(
         batch: &BatchDeclaration,
@@ -44,7 +49,23 @@ impl SettlementRecords {
     pub(crate) fn admit_with<R>(
         batch: &BatchDeclaration,
         lease: Option<&ExecutionResourceLease<'_>>,
+        new_result: impl FnMut(usize) -> bool,
+    ) -> Result<Self, ResultStorageDenial> {
+        Self::admit_storage::<R>(batch, lease, new_result, PayloadStorage::Declared)
+    }
+
+    pub(crate) fn admit_native<R>(
+        batch: &BatchDeclaration,
+        lease: Option<&ExecutionResourceLease<'_>>,
+    ) -> Result<Self, ResultStorageDenial> {
+        Self::admit_storage::<R>(batch, lease, |_| true, PayloadStorage::Native)
+    }
+
+    fn admit_storage<R>(
+        batch: &BatchDeclaration,
+        lease: Option<&ExecutionResourceLease<'_>>,
         mut new_result: impl FnMut(usize) -> bool,
+        payload_storage: PayloadStorage,
     ) -> Result<Self, ResultStorageDenial> {
         // Current captures and the returned handle vector coexist while
         // native values move into their separately funded cells.
@@ -67,14 +88,16 @@ impl SettlementRecords {
         )
         .map_err(ResultStorageDenial::Allocation)?;
         for index in 0..batch.len() {
-            let capacity =
-                batch
-                    .result_capacity(index)
-                    .ok_or(ResultStorageDenial::RequiresExecution(
-                        batch.identities()[index],
-                    ))?;
-            let bytes =
-                result_bytes::<R>(capacity).ok_or_else(LeaseDenial::charged_bytes_overflow)?;
+            let bytes = match payload_storage {
+                PayloadStorage::Declared => {
+                    let capacity = batch.result_capacity(index).ok_or(
+                        ResultStorageDenial::RequiresExecution(batch.identities()[index]),
+                    )?;
+                    result_bytes::<R>(capacity)
+                }
+                PayloadStorage::Native => result_layout_bytes::<R>(),
+            }
+            .ok_or_else(LeaseDenial::charged_bytes_overflow)?;
             slots
                 .push(SettlementSlot {
                     evaluated: OnceLock::new(),

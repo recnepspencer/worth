@@ -1,5 +1,6 @@
 //! The same typed facts grant capabilities and populate the ordinary schema.
 use crate::application_schema::*;
+mod generic;
 
 crate::worth_query_application_schema! {
     schema Schema {
@@ -10,16 +11,19 @@ crate::worth_query_application_schema! {
                 .entity(Record::reference())
                 .aspect(Record::reference(), Facts::reference())
                 .field(Record::reference(), Value::reference())
+                .field(Record::reference(), generic::InheritedValue::reference())
                 .relation(Children::reference(), Record::reference(), Record::reference())
                 .declared_operation::<Edit>(Edit::reference().definition()
+                    .no_external_effect().no_aftermath().finish())
+                .declared_operation::<generic::GenericEdit>(generic::GenericEdit::reference::<Schema>().definition()
                     .no_external_effect().no_aftermath().finish())
         }
     }
 }
-crate::worth_query_entity!(Record for Schema);
-crate::worth_query_aspect!(Facts for Schema, Record;
+crate::worth_query_entity!(Record for S: generic::Bound);
+crate::worth_query_aspect!(Facts for S: generic::Bound, Record;
     identity = AspectIdentity(0x9161_5f01), revision = AspectContractRevision(1),);
-crate::worth_query_field!(Value for Schema, Record, Facts:
+crate::worth_query_field!(Value for S: generic::Bound, Record, Facts:
     u64 => U64ApplicationValueBinding, read_write, equality);
 crate::worth_query_relation!(Children in Schema, Record => Record;
     integrity = same_context_unbounded_retain_dangling);

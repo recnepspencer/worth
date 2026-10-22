@@ -24,6 +24,7 @@ pub struct RetainedRunMetrics {
 pub enum RetainedRunDenial {
     Native(RetainedMapDenial),
     Map(super::MapMemoryOverflow),
+    NativeMap(crate::ExecutionPhysicalAllocationDenialKind),
     RequiresKeyless,
     UnknownRemoval(PartitionIdentity),
     ChangedAndRemoved(PartitionIdentity),

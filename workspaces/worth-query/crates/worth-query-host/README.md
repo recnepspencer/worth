@@ -49,13 +49,27 @@ it, rejects a proposal so the retry asks for a revision, approves and applies th
 revised effect, then publishes a second revision; a start from the superseded
 revision is refused naming the current one.
 
-`WorthQueryApplicationContributionContracts` and
-`WorthQueryApplicationContributionSetup` resolve installed bindings internally.
-For a feature requiring Initial and Preserve production, declare one
+For an ordinary installed feature, start with the Host facade's
+[complete feature definition](../../../../docs/build-an-application.md#complete-feature-definitions):
+`worth_query_application_contribution! { pub feature Definition<S: Bound> for Feature => Runtime { ... } }`.
+Its typed `action` and `required_pair` members project schema access, feature
+specs, output roots, contracts and runtime slots through the existing owners.
+Supply actual handler/provider/readiness values to the generated runtime;
+`WorthQueryFeatureDefinition::contracts` and `configure` install that same
+definition. The runnable
+[required-feature example](../worth-query-certification/fixtures/consumer_entry/topology_entry/examples/required_feature.rs)
+uses both an ordinary action and a required production pair.
+
+The lower-level `WorthQueryApplicationContributionContracts` and
+`WorthQueryApplicationContributionSetup` remain available for specialized
+composition and resolve installed bindings internally. A required Initial and
+Preserve member uses one
 `WorthQueryRequiredFeaturePair<Schema, Feature, Initial, InitialReadiness,
-Preserve, PreserveReadiness>`. Use that same alias in the feature's
-`.required_pair::<Roles>()`, `contracts.feature::<Roles>()?` and
-`setup.feature::<Roles>(runtime)?`. Construct the two role values with
+Preserve, PreserveReadiness>` alias. The complete definition projects that alias
+through the existing feature-spec, contract and setup owners. When using those
+owners directly, use the same alias in `.required_pair::<Roles>()`,
+`contracts.feature::<Roles>()?` and `setup.feature::<Roles>(runtime)?`.
+Construct the two role values with
 `WorthQueryFeatureRoleRuntime::new(handler, provider, readiness_configuration)`
 and combine them with `WorthQueryFeatureRuntime::new(initial, preserve)`.
 The producers' associated types supply operation, provider, family and output
@@ -82,13 +96,12 @@ state, and returns a typed graph installation result. Successful program
 construction returns `WorthQueryProgramApplicationRuntime<Schema, Program>`.
 
 `WorthQueryInMemoryApplicationLimits::new` accepts World resources, an application
-candidate profile, an application query profile, and a conditional evaluation
-budget. Candidate cardinality and retained representation bytes remain distinct
-bounds; `WorthQueryApplicationCandidateResourceProfile::policy(Some(items), Some(bytes))` configures those existing capacities. Installed handlers implement `decide`,
-`candidate_requirements`, and `build_candidate`: decision reads retain facts,
-reservation precedes candidate allocation, and the candidate is checked with its
-affected untouched neighbors before atomic publication. A request does not retain
-admission or a selected World between executions.
+query profile and a conditional evaluation budget. Installed handlers implement
+`decide` and `build_candidate`; computing handlers override `prepare_decision`
+and return the installed computation's `decision_plan`. Decision reads retain
+facts, and `CandidateWriter` stages the actual changes for invariant validation
+and atomic publication. Handlers supply no candidate-size or validator-work quote.
+A request does not retain admission or a selected World between executions.
 
 ## Owning fixed and source-only actions
 
@@ -290,13 +303,11 @@ refresh across selected-program and program-output modes. The caller retains
 its own advance authority; unfinished execution still requires the successor
 mode and installed producer edition to match.
 
-For ordinary candidate declarations, use
-`ApplicationCandidateResourceCeiling::representation_bytes(bytes)` and the mutation
-binding macro's `resources retained_representation_bytes bytes`. Effect cardinality,
-bytes, actual closure checks, and host capacity remain enforced. There is no
-aggregate candidate-validator-work quota or predicted descriptor-max allowance.
-Each installed invariant retains its own algorithm controls and actual execution
-work evidence.
+Ordinary mutation bindings carry scope, source and output meaning; they do not
+ask authors for candidate-size estimates. `CandidateWriter` checks each actual
+change against the declared operation, and publication validates the candidate
+and affected untouched neighbors. Native request controls, allocation failure,
+currentness and invariant checks still apply.
 
 `application.discovery()` exposes declaration-derived `mutations()`, `queries()`,
 `query_requests()`, and `fields()`. These describe portable input/result and typed
@@ -668,25 +679,24 @@ Reusing the request therefore observes later lawful publications rather than
 retaining an earlier selection.
 
 Ordinary query bindings declare result cardinality, not engine cost arithmetic.
-The installed `WorthQueryApplicationQueryResourceProfile` supplies a finite work
-guard; `.with_maximum_work(...)` configures that host safeguard. A binding's
-explicit work cap can only restrict it. Work is still metered and traversal
-checks cancellation/deadline internally. The guard is not a performance promise
-or aggregate-memory measurement.
+The installed `WorthQueryApplicationQueryResourceProfile` controls simultaneous
+graph work through `with_maximum_concurrent_graph_work(NonZeroUsize)`.
+It supplies no per-query work or byte estimate. Native execution still observes
+the request's cancellation and deadline.
 
-Callers can request narrower resolved ceilings before execution:
+Callers can narrow result cardinality before execution, using a `NonZeroUsize`:
 
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
 let published = request
     .query(AccountActivityRequest::new(account_id))
-    .limits(maximum_results, maximum_work)
+    .limit_results(maximum_results)
     .execute()?;
 ```
 
-Widening either resolved ceiling returns a typed `Limit` denial before World
-selection or provider work. Other denial kinds preserve the failed boundary:
+Exceeding the installed binding's result ceiling returns a typed `Limit` denial
+before World selection or provider work. Other denial kinds preserve the failed boundary:
 binding installation, product selection, principal resolution, scope
 resolution, admission, or execution.
 

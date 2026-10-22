@@ -59,6 +59,17 @@ Do all five steps, in order.
 
 ## Task index
 
+For a new installed feature, use the
+[complete feature definition](build-an-application.md#complete-feature-definitions)
+first: `host::worth_query_application_contribution! { pub feature ... }` projects
+schema members, action meaning, typed runtime configuration, required roles and
+delivery roots through the existing owners. Lower-level builders remain useful
+for specialized composition; maintaining duplicate feature rosters is unnecessary.
+For tracked numerical work, use the
+[managed/partitioned computation lifecycle](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
+For submission and recovery, retain the
+[original owning action](build-an-application.md#53-execute-through-the-program).
+
 Application installation and reopen require one
 `host::application_installation::ApplicationBuildIdentity`, embedded by the
 application build pipeline. Query binds it to every producer, including
@@ -209,12 +220,10 @@ for supported grammar, native checkpoint examples and the current package
 archive refusal. Representation limits do not grant request resources,
 currentness or codec-transition permission.
 
-Managed computation values derive resident accounting with Host's existing
-`application_contribution::ChargedBytes` trait and derive. Every resident field
-counts, independently of Serde visibility; named opaque/shared owners retain
-their native contracts. Pure schema owners use the same trait and derive from
-`worth_foundational::facade` without an Execution dependency. See
-[resident value accounting](build-an-application.md#resident-value-accounting).
+Managed and partitioned computation values need no resident-size trait,
+retained-byte implementation or result forecast. The installed SDK lifecycle
+owns native storage and original-request propagation. See
+[managed computation](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
 
 `WorthQueryInvariantEntityIdentity` has its own native resident contract for the
 shared entity-key allocation. Clones preserve that backing and its original
@@ -260,7 +269,7 @@ column names the substitute that this capability makes wrong.
 | Return the scope, one selected outgoing subject or a created row from an authored body | `decl::application_schema`: `body.preserve_scope_output::<Binding, Role>()`, `body.preserve_related_output::<Binding, Role>(relation)` (Preserve/ExactlyOne), `creation.create_output::<Binding, Role>()`; read the real receipt's `outputs_of::<Contract>()?.entity::<Role>()?`. Related selection is tracked once and retained through publication; replay preserves original identity. | [Scope-bound operation bodies](../workspaces/worth-query/crates/worth-query/docs/authoring/scope-field-operation-bodies.md#stable-entry-points) | Caller-selected output IDs, post-commit pointer lookups as correspondence, dummy writes, or treating a preserved identity as current approval/workflow authority |
 | Supply original typed inputs for native workflow needs | `WorthQueryWorkflowOperationInputs::new(program_runtime)`, then `.with::<InstalledAction, _>(description)` for a binding-wide entry or `.with_at::<InstalledAction, _>(&qualified_input_node, description)` for an exact node, and `select(workflow, &required)`. Distinct qualified nodes may retain the same binding; ambiguous overlap is refused. Native needs select order and existing owners retain all custody. Source-completion actions only. Accept an opaque completion with `prepared_advance.accept_selected_operation(completed_selection)`; the occupied native owner retains fresh admission, exact receipt checks and cleanup on every refusal. This roster does not supply heterogeneous proposal target inputs: ordinary `OperationInput` edges still require the same portable type and exact source-proposal input identity. | [Workflow operation inputs](../workspaces/worth-query/crates/worth-query/docs/foundations/workflow-operation-inputs.md) | Host stage/name dispatch, recapturing transferred input/key, homogenizing unrelated input contracts, treating a finite pack as a durable or atomic whole-command runner |
 | Declare features and a program | `decl::application_program`: `ApplicationFeatureSpec::root::<S, F>()…finish()`, `impl ApplicationProgramDefinition`, `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` | [Build §3](build-an-application.md#3-declare-features-and-the-program) | [Consumer prohibition](#prohibition-declare-features-and-a-program) |
-| Require a producer feature's Initial and Preserve roles once | Host `WorthQueryRequiredFeaturePair<S, Feature, Initial, InitialReadiness, Preserve, PreserveReadiness>`; program `.required_pair::<Roles>()`, `contracts.feature::<Roles>()`, `setup.feature::<Roles>(WorthQueryFeatureRuntime::new(initial, preserve))`. Both explicit role values use `WorthQueryFeatureRoleRuntime::new(handler, provider, readiness_configuration)`. Exact readiness producer association is derived; native predicates and output binding stay with their owners. | [Required output roles](build-an-application.md#required-initial-and-preserve-output-roles), runnable `topology_entry/examples/required_feature.rs` | Inferring required roles from `SUPPORTED`, a second producer roster, erasing requirements by omitting callbacks, or replacing native currentness/access with configuration booleans |
+| Select complete feature schema, runtime, contracts, spec and output projections once | Host `worth_query_application_contribution! { pub feature Definition<S: Binding> for Feature => Runtime { ... } }`; typed `action name(Binding, Delivery, HandlerType)` and `required_pair name(Roles, InitialHandler, PreserveHandler)` members drive every projection. `ApplicationFeatureDefinition` composes specs/schema/actual roots; `WorthQueryFeatureDefinition` composes explicit configuration and existing installation. The existing required pair and role runtimes preserve native lifecycle ownership. Repeated identical delivery roots deduplicate before flattening; distinct-root connection conflicts still refuse. | [Complete feature definitions and required roles](build-an-application.md#required-initial-and-preserve-output-roles), runnable `topology_entry/examples/required_feature.rs` | Separate family schema/handler/contract/output rosters, semantic configuration inferred from Default, recovering types from erased specs, inferring required roles from `SUPPORTED`, or erasing requirements by omitting callbacks |
 | Declare distinct captured workflow target inputs | `graph.captured_operation_input(&proposal, &target)` and the component equivalent declare exact control/guarded correspondence. `prepare_workflow_proposal_with_inputs(workflow, instance, &inputs)` publishes complete original target contracts through native proposal/replay/first-effect owners. Archive profile 8 carries the new edge; unchanged definitions keep profile 7. Recorded-actor admission and recovery retain the original proposal correspondence and require fresh grants. In-memory owning execution, not a durable whole-command runner. | [Workflow operation inputs](../workspaces/worth-query/crates/worth-query/docs/foundations/workflow-operation-inputs.md) | Homogenizing unrelated inputs, treating archive or roster data as authority, weakening final identity checks, or using a host registry to bypass missing native support |
 | Install the application graph | `host::application_installation::in_memory_program(..)`, or `in_memory_rostered_program(..)` with a `WorthQueryApplicationProgramRoster` | [Build §4](build-an-application.md#4-install-the-application-graph) | [Consumer prohibition](#prohibition-install-the-application-graph) |
 | Identify a rejected operation declaration dependency | `decl::application_schema::ApplicationSchemaDeclarationDenial` preserves `MissingOperationProgramDependency`, `MissingOperationDecisionReadDependency` and `MissingOperationMutationPreconditionDependency` with owned `operation` and `ApplicationOperationDependencyLocus`. Target loci carry the original typed field/relation/precondition; whole-body failures remain explicitly `Body`. | [Declaration failures](build-an-application.md#45-declaration-failures) | Reconstructing a field from a test selector, replacing the native cause with a generic installation string, or treating diagnostic data as authority |
@@ -322,6 +331,16 @@ column names the substitute that this capability makes wrong.
 | Produce derived or computed outputs | Feature spec `provides::<Port>()`, `derived_artifact`, `managed_computation`; demand with `request.demand(demand).controls(controls).start()`. The handle or retained continuation owns actual failed producer cleanup; `release_managed_cleanup(&fresh_request)` on the handle releases it without output settlement. Diagnostic denial clones carry no cleanup authority | [Build §3.4](build-an-application.md#34-ports-connections-and-the-output-graph), [Build §3.6](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation) | [Consumer prohibition](#prohibition-produce-derived-or-computed-outputs) |
 | Produce from authentic sources and declare artifact lifecycle | `WorthQueryApplicationProducerProvider` supplies semantic identity, operation input and idempotency from the original source. `ApplicationDerivedArtifact` declares output/locality, retention, succession, required posture, producer, dependencies, reuse and stopped outcome. The installed mutation path enforces source/currentness and publication contracts. | [Producer source and publication](build-an-application.md#producer-source-and-publication) | Fabricating source or current output; replaying a producer for work already reused; treating lifecycle metadata as mutation authority |
 | Undo or redo a change | **Provisional.** `host::provisional_aftermath` exists, but undo and redo are experiments; Milestone 9.18 owns any accepted contract | [Front door: current limits](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md#current-limits) | [Consumer prohibition](#prohibition-undo-or-redo-a-change) |
+
+For managed or partitioned handler computation, use the installed
+`decision_plan` entrance described in [Build §3.6](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
+It owns prepare/compute/complete and propagates the original typed failures.
+Use `checkpoint.poll()` without a work invoice, and
+`HandlerResult::from_result`/`into_result` with `HandlerFailure<Domain>` rather
+than a private lifecycle dispatcher. Managed and partitioned computation require
+no prepared/result byte forecast, per-computation work ceiling or `ChargedBytes`
+implementation. Native allocation, original-request controls and canonical
+retention remain with their existing runtime owners.
 
 Action metadata retains its existing capability scope: locality/change and
 delivery belong to the exact occurrence; correspondence lookup is binding-type

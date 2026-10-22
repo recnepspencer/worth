@@ -1,5 +1,18 @@
 # WORTH Query Workspace
 
+For application code, start with [Build an Application](../../docs/build-an-application.md)
+and the [Capability Index](../../docs/capability-index.md). Ordinary installed
+features use a [complete typed definition](../../docs/build-an-application.md#complete-feature-definitions)
+to project schema members, feature specs, runtime configuration, contracts and
+delivery roots from one member body. Applications import only `worth-query-decl`
+and `worth-query-host`.
+
+For numerical or domain computation inside a handler, use the installed owner's
+[`decision_plan`](../../docs/build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
+Query carries the original request through preparation, computation and completion;
+the owner supplies its domain algorithm. Build and reopen installations also require
+the embedded [application build identity](../../docs/build-an-application.md#application-build-identity).
+
 Ordinary fixed, discovered, source-only and bound workflow actions use the [owning entry](crates/worth-query/docs/foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions).
 Each advance accepts fresh authority and delegates one admitted native phase.
 Provider managed runs remain the resource/execution owners; application ownership

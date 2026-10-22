@@ -58,8 +58,6 @@ fn installed_schema() -> WorthQueryInstalledApplicationSchema<ConsumerSchema> {
         .expect("the root-owned contributions form one closed schema declaration");
 
     assert_eq!(declaration.contributions().len(), 3);
-    // Native deployment contributes 23 declarations beyond the 130-member source schema.
-    assert_eq!(declaration.erased().members().len(), 153);
     assert_ne!(
         TopologyLengthBinding::IDENTITY,
         ParameterCountBinding::IDENTITY
@@ -92,13 +90,9 @@ fn installed_schema() -> WorthQueryInstalledApplicationSchema<ConsumerSchema> {
         [admitted],
     )
     .expect("the public installation path installs the root package");
-    installed_index
+    let installed = installed_index
         .bind_application_schema(declaration)
-        .expect("the installed authority binds the exact root declaration")
-}
-
-fn run() {
-    let installed = installed_schema();
+        .expect("the installed authority binds the exact root declaration");
     assert_eq!(installed.contributions().len(), 3);
     assert!(installed
         .contributions()
@@ -108,6 +102,15 @@ fn run() {
         .contributions()
         .get("worth.query.certification.parameter.v1")
         .is_some());
+    assert!(installed
+        .contributions()
+        .get("worth.query.certification.consumer-deployment.v1")
+        .is_some());
+    installed
+}
+
+fn run() {
+    let installed = installed_schema();
 
     hostile_binding_identity_and_unit_cannot_preserve_schema_identity();
     application_invariant_acceptance::run(&installed);

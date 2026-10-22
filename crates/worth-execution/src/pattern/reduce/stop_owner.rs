@@ -32,6 +32,8 @@ fn reduction_owner(
         }
         ReductionRunStop::WorkCounterOverflow => Owner::Request,
         ReductionRunStop::Denial(denial) => match denial {
+            ReductionDenial::Admission(_) => Owner::Request,
+            ReductionDenial::Allocation(kind) => Owner::Computation(Cause::Allocation(*kind)),
             ReductionDenial::WorkCounterOverflow => Owner::Request,
             ReductionDenial::ReducerPanic => Owner::Computation(Cause::Panic),
             ReductionDenial::ResultCapacityExceeded => {
@@ -44,5 +46,27 @@ fn reduction_owner(
             | ReductionDenial::IdentityAlreadyPresent(_)
             | ReductionDenial::InvalidCanonicalEncoding => Owner::Computation(Cause::DomainFailure),
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn physical_reduction_allocation_keeps_its_original_nested_kind() {
+        let kind = crate::ExecutionPhysicalAllocationDenialKind::Allocator;
+        let outer = crate::backend::run_scope(None, 0, 0, |context| {
+            record_reduction(
+                context,
+                &ReductionRunStop::Denial(ReductionDenial::Allocation(kind)),
+            );
+            assert_eq!(
+                context.take_nested_computation_stop(),
+                Some(Cause::Allocation(kind))
+            );
+            Ok::<(), KernelFailure<()>>(())
+        });
+        assert!(outer.result.is_ok());
     }
 }

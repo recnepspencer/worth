@@ -19,7 +19,6 @@ use super::*;
 /// input's digest.
 pub(super) const TOTALS_WORK: usize = WORK_PER_ENTRY * LARGEST_SET + WORK_BESIDE_ENTRIES;
 /// The bytes the totals keep.
-pub(super) const TOTALS_RETAINED_BYTES: usize = 8_192;
 
 /// The region output, as the final output feature's artifact in place of
 /// the final output.
@@ -111,6 +110,4 @@ impl<const WORK: usize> ApplicationManagedComputation<CheckpointSchema, PlanarFi
     const IDENTITY: &'static str = "checkpoint-unretained-oracle-totals";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(WORK, TOTALS_RETAINED_BYTES);
 }

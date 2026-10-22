@@ -297,6 +297,34 @@ fn every_scope_stop_keeps_its_specific_typed_cause() {
 }
 
 #[test]
+fn physical_map_allocation_keeps_its_kind_and_canonical_stage() {
+    use super::super::super::stop_conversion;
+    use worth_execution::{ExecutionPhysicalAllocationDenialKind as Physical, MapStop};
+    for cause in [
+        Physical::Layout,
+        Physical::Allocator,
+        Physical::CapacityMismatch,
+        Physical::WriteBeyondReserved,
+        Physical::IncompleteSeal,
+    ] {
+        for stage_identity in [None, Some("middle".to_owned())] {
+            let WorkflowFrontierFailure::Denied(actual) =
+                stop_conversion::map(MapStop::Allocation(cause), stage_identity.clone())
+            else {
+                panic!("physical allocation must retain its typed denial");
+            };
+            assert_eq!(
+                actual,
+                Denial::ComputationAllocation {
+                    stage_identity,
+                    cause
+                },
+            );
+        }
+    }
+}
+
+#[test]
 fn already_elapsed_deadline_and_cancelled_entry_do_not_compute() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);

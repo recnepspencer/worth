@@ -135,6 +135,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<u64, WorthQueryManagedComputationDenial<u32>> {
         self.calls.lock().unwrap()[3] += 1;
+        checkpoint.poll()?;
         if self.nested.load(std::sync::atomic::Ordering::Relaxed) {
             let map = worth_execution::ExecutionMap::<_, u64>::from_keyless_partitions(
                 std::collections::BTreeMap::from([
@@ -229,7 +230,7 @@ fn edition() -> InstalledProducerEdition {
 /// parities it gathered, and the run seal kept, or the seal's refusal.
 struct Attempt {
     outcome: Outcome,
-    bill: ExecutionReport,
+    bill: Option<ExecutionReport>,
     /// The work the projection's reader charged.
     work: crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWork,
     runs: Vec<(Run, Option<ExecutionReport>)>,
@@ -357,7 +358,6 @@ mod interruption;
 mod kernel_receipt;
 mod request_memory;
 mod reroute;
-mod tree_memory;
 mod tree_work;
 mod unobservable;
 mod wide;
@@ -371,7 +371,6 @@ pub(super) fn sealed_run_for_lineage_test() -> SealedComputationRun {
 }
 
 mod comparison_read_stop;
-mod transport_memory;
 
 mod call_sequence_memory;
 #[path = "tests/metadata_memory.rs"]

@@ -22,7 +22,7 @@ pub enum WorthQueryComputationPartitionStop<Stopped> {
     Read(WorthQueryComputationReadDenial),
     /// The owner's kernel panicked.
     Panicked,
-    /// The partition did not fit the computation's declared work or bytes,
+    /// The partition did not fit the computation's request execution policy,
     /// or the request's execution refused it.
     Resource(WorthQueryManagedComputationResourceDenial),
     Interrupted(WorthQueryManagedComputationInterruption),
@@ -67,13 +67,15 @@ pub enum WorthQueryPartitionedComputationDenial<Stopped> {
         denial: ApplicationValueEncodeDenial,
     },
     /// Deriving partition identities or reducing did not fit the computation's
-    /// declared work or bytes.
+    /// request execution policy.
     Resource(WorthQueryManagedComputationResourceDenial),
     /// The request was cancelled or ran out of time outside any one partition.
     Interrupted(WorthQueryManagedComputationInterruption),
     /// A pattern the run started inside a partition's kernel stopped, outside
     /// any one partition.
     NestedPatternStopped,
+    /// Preparing or encoding the input panicked before any partition ran.
+    PreparationPanicked,
     /// The reducer panicked.
     ReducerPanicked,
     /// A reduced value's canonical bits disagree with the length it declares.

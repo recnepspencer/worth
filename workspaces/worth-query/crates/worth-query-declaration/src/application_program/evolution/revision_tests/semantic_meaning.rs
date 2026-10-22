@@ -2,12 +2,12 @@ use super::{description_of, BoundedExport, BoundedFeature, RevisionSchema, SHARE
 use crate::application_program::{
     ApplicationArtifactDependency, ApplicationArtifactRetention, ApplicationArtifactSuccession,
     ApplicationComputationExecution, ApplicationComputationInput, ApplicationComputationPartition,
-    ApplicationComputationResourceCeiling, ApplicationComputationReuse,
-    ApplicationComputationStopped, ApplicationDerivedArtifact, ApplicationFeature,
-    ApplicationFeatureSpec, ApplicationLocalityGranule, ApplicationLocalityScope,
-    ApplicationManagedComputation, ApplicationNoOutputGraph, ApplicationProgramDefinition,
-    ApplicationProgramOutputs, ApplicationRuleLeaf, ApplicationSemanticChangeKind,
-    ApplicationSemanticDiff, ApplicationSemanticFamily, DeterminismContract, EquivalenceContractId,
+    ApplicationComputationReuse, ApplicationComputationStopped, ApplicationDerivedArtifact,
+    ApplicationFeature, ApplicationFeatureSpec, ApplicationLocalityGranule,
+    ApplicationLocalityScope, ApplicationManagedComputation, ApplicationNoOutputGraph,
+    ApplicationProgramDefinition, ApplicationProgramOutputs, ApplicationRuleLeaf,
+    ApplicationSemanticChangeKind, ApplicationSemanticDiff, ApplicationSemanticFamily,
+    DeterminismContract, EquivalenceContractId,
 };
 
 struct MeaningLocality;
@@ -82,8 +82,6 @@ macro_rules! computation {
             const EXECUTION: ApplicationComputationExecution =
                 ApplicationComputationExecution::DeterministicPartitioned;
             $(const DETERMINISM: DeterminismContract = $determinism;)?
-            const RESOURCES: ApplicationComputationResourceCeiling =
-                ApplicationComputationResourceCeiling::new(16, 8_192);
         }
     };
 }

@@ -11,7 +11,7 @@ use std::any::Any;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use worth_execution::{ChargedBytes, PartitionItemId, ReductionTree};
+use worth_execution::{NativeReductionTree, PartitionItemId};
 
 use super::super::super::request_execution::QueryMemoryReservation;
 use super::super::items::{ItemDigests, Items};
@@ -55,7 +55,7 @@ pub enum WorthQueryPartitionedComputationFullCause {
     OtherInstallation,
     /// The installed producer edition differs.
     OtherEdition,
-    /// The observation bound exceeds the run's declared work.
+    /// The observation bound exceeds the request's work policy.
     ObservationOverBudget,
     /// A prior was already consumed by an earlier invocation in this handler.
     NoPriorHanded,
@@ -187,23 +187,13 @@ impl<Key> Clone for RetainedPartition<Key> {
     fn clone(&self) -> Self {
         Self {
             key: Arc::clone(&self.key),
-            key_bytes: self.key_bytes,
             gather: self.gather.clone(),
         }
     }
 }
-impl<Key> worth_execution::ChargedBytes for RetainedPartition<Key> {
-    fn additional_charged_bytes(&self) -> u64 {
-        self.key_bytes
-            .saturating_add(self.gather.additional_bytes().unwrap_or(u64::MAX))
-    }
-}
-
 /// One partition of a run.
 pub(super) struct RetainedPartition<Key> {
     pub(super) key: Arc<Key>,
-    /// The key's canonical encoding length: what retaining it is charged.
-    pub(super) key_bytes: u64,
     pub(super) gather: ComputationCallCharge,
 }
 
@@ -216,8 +206,6 @@ pub(super) struct RetainedPartitions<Key, Item, Reduced> {
     /// The membership's call, and the declared work its items' digests spent.
     pub(super) membership: RetainedCall,
     pub(super) item_keys: Arc<worth_execution::ExecutionOrderedMap<PartitionItemId, RetainedCall>>,
-    pub(super) item_bytes: Option<u64>,
-    pub(super) item_call_bytes: Option<u64>,
     pub(super) call_sequence: Arc<
         crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence,
     >,
@@ -226,28 +214,7 @@ pub(super) struct RetainedPartitions<Key, Item, Reduced> {
     pub(super) routing: Arc<ComputationPartitionRouting>,
     pub(super) partitions: super::partition_metadata::PartitionMetadata<Key>,
     pub(super) native_run: worth_execution::ExecutionRetainedRun<Reduced>,
-    pub(super) tree: ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
-}
-
-impl<Key, Item, Reduced> RetainedPartitions<Key, Item, Reduced>
-where
-    Item: ChargedBytes,
-    Reduced: ChargedBytes,
-{
-    /// What the state holds: every item and its digest, every call's charge
-    /// and reach, the routing as the partitioner charges it, every
-    /// partition's key at its canonical encoding length, and the reduction
-    /// tree as execution charges it. `None` when the sum overflows.
-    pub(super) fn charged_bytes(&self) -> Option<u64> {
-        self.item_bytes?
-            .checked_add(self.item_call_bytes?)?
-            .checked_add(self.call_sequence.bytes())?
-            .checked_add(self.partitions.bytes()?)?
-            .checked_add(self.native_run.additional_charged_bytes())?
-            .checked_add(self.membership.charge.additional_bytes()?)?
-            .checked_add(self.routing.charged_bytes()?)?
-            .checked_add(self.tree.additional_charged_bytes())
-    }
+    pub(super) tree: NativeReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
 }
 
 pub(super) use super::typed_prior::TypedPrior;
@@ -278,14 +245,7 @@ pub(in crate::domain_computation) struct SealedComputationRun {
     pub(in crate::domain_computation::primary_graph) cloned_from: Option<Arc<RetainedComputation>>,
     /// The request memory the state's tree and routing hold until the
     /// lineage charges the state.
-    pub(in crate::domain_computation::primary_graph) tree_memory: RunTreeMemory,
-}
-
-/// Request memory a run's tree and its new routing hold from their build
-/// until the record that keeps them is charged.
-pub(in crate::domain_computation) struct RunTreeMemory {
-    pub(super) _held: QueryMemoryReservation,
-    pub(super) _routing: Option<QueryMemoryReservation>,
+    pub(in crate::domain_computation::primary_graph) attribution_memory: QueryMemoryReservation,
 }
 
 /// The owner calls a run carried from `prior` without making them.
@@ -341,15 +301,11 @@ impl CarriedCalls {
 pub(in crate::domain_computation::primary_graph) struct CompletedComputationRun {
     pub(super) basis: RetainedBasis,
     pub(super) typed: Arc<dyn Any + Send + Sync>,
-    /// The typed state's bytes, `None` when the sum overflows.
-    pub(super) typed_bytes: Option<u64>,
+    /// The canonical shape and receipts of the actual owner calls.
     pub(super) call_sequence: Arc<
         crate::domain_computation::primary_graph::invariant_projection::ComputationCallSequence,
     >,
     pub(super) carried: Option<CarriedCalls>,
-    /// The request memory the run's tree holds.
-    pub(super) tree_memory: QueryMemoryReservation,
-    /// The request memory a routing the run built holds, `None` when it
-    /// built none.
-    pub(super) routing_memory: Option<QueryMemoryReservation>,
+    /// Actual fact-index allocation, grown by sealing before index creation.
+    pub(super) attribution_memory: QueryMemoryReservation,
 }

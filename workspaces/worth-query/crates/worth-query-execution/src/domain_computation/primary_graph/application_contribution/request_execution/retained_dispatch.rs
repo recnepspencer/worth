@@ -1,53 +1,62 @@
 //! Current member requests lend fresh native result execution authority.
 use super::*;
 use worth_execution::{
-    ExecutionRequest, RetainedMapDenial, RetainedReduceDenial, RetainedReduction,
+    ExecutionRequest, NativeRetainedReduction, RetainedMapDenial, RetainedReduceDenial,
 };
+
+impl QueryRequestExecution<'_> {
+    /// Lends the original request's allocation owner to native retained nodes.
+    pub(in crate::domain_computation::primary_graph) fn with_native_lease<R>(
+        &self,
+        use_lease: impl FnOnce(&ExecutionResourceLease<'_>) -> R,
+    ) -> Result<R, Resource> {
+        match &self.form {
+            Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
+                .as_ref()
+                .map(use_lease)
+                .map_err(|denial| lease_denial(*denial)),
+        }
+    }
+}
 
 impl QueryDispatch<'_> {
     pub(in super::super) fn advance_retained<T, R, E, F>(
         &self,
-        ceiling: u64,
+        ceiling: Option<u64>,
         prior: &worth_execution::ExecutionRetainedRun<R>,
-        changes: std::collections::BTreeMap<
-            worth_foundational::facade::PartitionIdentity,
-            worth_execution::KeylessPartition<T>,
-        >,
+        changes: std::collections::BTreeMap<worth_foundational::facade::PartitionIdentity, T>,
         removed: worth_proof::CanonicalUniqueVec<worth_foundational::facade::PartitionIdentity>,
         kernel: F,
     ) -> Result<worth_execution::RetainedRunOutcome<R, E>, worth_execution::RetainedRunDenial>
     where
-        T: ChargedBytes + Sync,
-        R: ChargedBytes + Send + Sync,
-        E: ChargedBytes + Send,
+        T: Sync,
+        R: Send + Sync,
+        E: Send,
         F: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
     {
         let DispatchForm::Leased(lease) = &self.form;
-        prior.advance(
+        prior.advance_native(
             ExecutionRequest::leased(lease),
-            ExecutionWorkCeiling::new(Some(ceiling)),
+            ExecutionWorkCeiling::new(ceiling),
             changes,
             removed,
             kernel,
         )
     }
 
-    pub(in super::super) fn reduce_retained<T, K, R, E, Kernel, Diagnostic, Combine>(
+    pub(in super::super) fn reduce_retained<T, R, E, Kernel, Diagnostic, Combine>(
         &self,
-        ceiling: u64,
-        map: &ExecutionMap<T, K>,
-        inputs: QueryMemoryReservation,
-        tree: &mut QueryMemoryReservation,
+        ceiling: Option<u64>,
+        map: &ExecutionMap<T, (), worth_execution::NativePayload>,
         (kernel, diagnostic): (Kernel, Diagnostic),
         identity: R,
         combine: Combine,
-        max_value_bytes: u64,
         cause: super::super::partitioned_computation::WorthQueryPartitionedComputationFullCause,
-    ) -> Result<RetainedReduction<R, Combine>, RetainedReduceDenial<E>>
+    ) -> Result<NativeRetainedReduction<R, Combine>, RetainedReduceDenial<E>>
     where
-        T: Sync + ChargedBytes,
-        R: Send + Sync + ChargedBytes + Clone + CanonicalBits,
-        E: Send + ChargedBytes,
+        T: Sync,
+        R: Send + Sync + Clone + CanonicalBits,
+        E: Send,
         Kernel:
             Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Clone + Sync,
         Diagnostic:
@@ -58,34 +67,24 @@ impl QueryDispatch<'_> {
             .certified_seed
             .map(|seed| (seed, diagnostic, identity.clone(), combine.clone()));
         let DispatchForm::Leased(lease) = &self.form;
-        let outcome = map.run_reduce_retained_holding(
+        let outcome = map.run_reduce_retained_native(
             ExecutionRequest::leased(lease),
-            ExecutionWorkCeiling::new(Some(ceiling)),
-            inputs.held,
-            tree.held.as_mut(),
+            ExecutionWorkCeiling::new(ceiling),
             kernel,
             identity,
             combine,
-            max_value_bytes,
-            0,
         );
         super::super::partitioned_computation::observe_retained_full_tree(cause, &outcome);
-        tree.bytes = match (&tree.held, &outcome.result) {
-            (Some(held), _) => held.bytes(),
-            (None, Ok(result)) => kept_tree_bytes(&result.tree).unwrap_or(u64::MAX),
-            (None, Err(_)) => 0,
-        };
         if let (Some((seed, kernel, identity, combine)), Ok(result)) =
             (certification, &outcome.result)
         {
-            test_placement::certify(
+            test_placement::certify_native(
                 map,
                 lease,
                 seed,
                 kernel,
                 identity,
                 combine,
-                max_value_bytes,
                 (&result.tree, &result.report),
             )
             .map_err(|cause| RetainedReduceDenial::Retention(RetainedMapDenial::Request(cause)))?;

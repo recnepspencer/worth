@@ -5,8 +5,7 @@ use worth_query_admission::facade::authenticated_principal::{
 use worth_query_declaration::facade::{
     application_program::{
         ApplicationArtifactDependency, ApplicationArtifactRetention, ApplicationArtifactSuccession,
-        ApplicationComputationExecution, ApplicationComputationInput,
-        ApplicationComputationResourceCeiling, ApplicationComputationReuse,
+        ApplicationComputationExecution, ApplicationComputationInput, ApplicationComputationReuse,
         ApplicationComputationStopped, ApplicationDerivedArtifact, ApplicationFeature,
         ApplicationFeatureInputLeaf, ApplicationLocalityGranule, ApplicationLocalityScope,
         ApplicationManagedComputation, ApplicationOutputPort,
@@ -32,6 +31,9 @@ impl ApplicationSchema for Schema {
         unreachable!("the execution phase proof needs no schema installation")
     }
 }
+
+#[path = "computation/decision_plan_tests.rs"]
+mod decision_plan_tests;
 struct Feature;
 impl ApplicationFeature<Schema> for Feature {
     type Inputs = ApplicationFeatureInputLeaf;
@@ -102,156 +104,4 @@ impl ApplicationManagedComputation<Schema, Feature> for Computation {
     const IDENTITY: &'static str = "worth.query.tests.managed-computation.v1";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::Deterministic;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(4, 64);
-}
-struct Prepared(u64);
-impl WorthQueryManagedComputationPrepared for Prepared {
-    fn retained_bytes(&self) -> usize {
-        self.0 as usize
-    }
-}
-struct Owner;
-impl WorthQueryManagedComputationOwner<Schema, Feature, Computation> for Owner {
-    type Prepared = Prepared;
-    type Computed = u64;
-    type Output = u64;
-    type Stopped = ();
-    fn prepare(&self, input: &u64) -> Result<Prepared, ()> {
-        Ok(Prepared(*input))
-    }
-    fn compute(
-        &self,
-        prepared: &Prepared,
-        checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
-    ) -> Result<u64, WorthQueryManagedComputationDenial<()>> {
-        checkpoint
-            .advance(prepared.0 as usize)
-            .map_err(WorthQueryManagedComputationDenial::from)?;
-        Ok(prepared.0 * 2)
-    }
-    fn complete(&self, _: Prepared, computed: u64) -> Result<u64, ()> {
-        Ok(computed)
-    }
-}
-
-#[test]
-fn installed_owner_enforces_prepare_compute_complete_and_work_ceiling() {
-    let cancellation = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
-        cancellation.token(),
-    );
-    let installed =
-        WorthQueryInstalledManagedComputation::<Schema, Feature, Computation, Owner>::new(Owner);
-    let output = installed
-        .prepare(&2)
-        .expect("preparation fits")
-        .compute(WorthQueryManagedComputationExecution::new(
-            &QueryRequestExecution::open(
-            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
-                crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
-                    std::num::NonZeroUsize::MIN, None,
-                ),
-            ), &request),
-        ))
-        .expect("computation fits")
-        .complete()
-        .expect("completion succeeds");
-    assert_eq!(output, 4);
-    let denial = match installed.prepare(&5).expect("preparation fits").compute(
-        WorthQueryManagedComputationExecution::new(&QueryRequestExecution::open(
-            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
-                crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
-                    std::num::NonZeroUsize::MIN, None,
-                ),
-            ),
-            &request,
-        )),
-    ) {
-        Err(denial) => denial,
-        Ok(_) => panic!("work above the declared ceiling must be denied"),
-    };
-    assert_eq!(
-        denial,
-        WorthQueryManagedComputationDenial::Resource(
-            WorthQueryManagedComputationResourceDenial::WorkExhausted
-        )
-    );
-}
-
-#[test]
-fn installed_owner_enforces_retention_and_real_request_interruption() {
-    crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
-        let installed =
-            WorthQueryInstalledManagedComputation::<Schema, Feature, Computation, Owner>::new(
-                Owner,
-            );
-
-        let denial = match installed.prepare(&65) {
-            Err(denial) => denial,
-            Ok(_) => panic!("retention above the declared computation ceiling is denied"),
-        };
-        assert_eq!(
-            denial,
-            WorthQueryManagedComputationDenial::Resource(
-                WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted
-            )
-        );
-
-        let cancellation = WorthQueryCancellationSource::new();
-        let cancelled = WorthQueryRequestScope::new(
-            Some(Instant::now() + Duration::from_secs(60)),
-            cancellation.token(),
-        );
-        cancellation.cancel();
-        let denial =
-        match installed
-            .prepare(&1)
-            .unwrap()
-            .compute(WorthQueryManagedComputationExecution::new(
-                &QueryRequestExecution::open(
-            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
-                crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
-                    std::num::NonZeroUsize::MIN, None,
-                ),
-            ), &cancelled),
-            )) {
-            Err(denial) => denial,
-            Ok(_) => panic!("cancelled execution is denied at its checkpoint"),
-        };
-        assert_eq!(
-            denial,
-            WorthQueryManagedComputationDenial::Interrupted(
-                WorthQueryManagedComputationInterruption::Cancelled
-            )
-        );
-
-        let deadline_source = WorthQueryCancellationSource::new();
-        let expired = WorthQueryRequestScope::new(
-            Some(Instant::now() - Duration::from_secs(1)),
-            deadline_source.token(),
-        );
-        let denial =
-        match installed
-            .prepare(&1)
-            .unwrap()
-            .compute(WorthQueryManagedComputationExecution::new(
-                &QueryRequestExecution::open(
-            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
-                crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
-                    std::num::NonZeroUsize::MIN, None,
-                ),
-            ), &expired),
-            )) {
-            Err(denial) => denial,
-            Ok(_) => panic!("expired execution is denied at its checkpoint"),
-        };
-        assert_eq!(
-            denial,
-            WorthQueryManagedComputationDenial::Interrupted(
-                WorthQueryManagedComputationInterruption::DeadlineExceeded
-            )
-        );
-    });
 }

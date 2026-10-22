@@ -134,17 +134,18 @@ fn a_cancelled_subtree_keeps_its_completed_combines_and_charge() {
 #[test]
 fn a_cancelled_canonical_prefix_agrees_at_every_frontier_width() {
     let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
+    let physical = cancellation_authority();
     let mut oracle = None;
     // Canonical task order constructs the interruption; frontier widths still
     // select different Node/Task event streams. Scheduling is not the oracle.
     for backing in [0, 1, 2, 3, 4, 5] {
         let cancellation = crate::CancellationSource::new();
-        let mut policy = request(if backing >= 3 { backing - 1 } else { 1 }, 2_000, 100);
+        let mut policy = cancellation_request(if backing >= 3 { backing - 1 } else { 1 });
         policy.cancellation = cancellation.token();
         let lease = match backing {
             0 => None,
             1 => Some(crate::ExecutionResourceLease::serial(policy).unwrap()),
-            2..=5 => Some(authority().request_lease(policy).unwrap()),
+            2..=5 => Some(physical.request_lease(policy).unwrap()),
             _ => unreachable!(),
         };
         let mut measured = None;
@@ -217,17 +218,18 @@ fn a_cancelled_canonical_prefix_agrees_at_every_frontier_width() {
 #[test]
 fn a_stop_after_the_last_combine_waits_for_the_next_checkpoint_at_every_width() {
     let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
+    let physical = cancellation_authority();
     let mut oracle = None;
     // Canonical task order constructs the interruption; frontier widths still
     // select different Node/Task event streams. Scheduling is not the oracle.
     for backing in [0, 1, 2, 3, 4, 5] {
         let cancellation = crate::CancellationSource::new();
-        let mut policy = request(if backing >= 3 { backing - 1 } else { 1 }, 2_000, 100);
+        let mut policy = cancellation_request(if backing >= 3 { backing - 1 } else { 1 });
         policy.cancellation = cancellation.token();
         let lease = match backing {
             0 => None,
             1 => Some(crate::ExecutionResourceLease::serial(policy).unwrap()),
-            2..=5 => Some(authority().request_lease(policy).unwrap()),
+            2..=5 => Some(physical.request_lease(policy).unwrap()),
             _ => unreachable!(),
         };
         let mut measured = None;
@@ -311,5 +313,31 @@ fn a_stop_after_the_last_combine_waits_for_the_next_checkpoint_at_every_width() 
         } else {
             oracle = Some(observed);
         }
+    }
+}
+
+// Each cancellation fixture runs in its own process because the physical
+// authority is process-unique. No memory forecast gates its numerical oracle.
+fn cancellation_authority() -> crate::ExecutionAuthority {
+    crate::ExecutionAuthority::try_construct(crate::ExecutionAuthorityConfig {
+        max_workers: std::num::NonZeroUsize::new(4).unwrap(),
+        charged_memory_bytes: None,
+    })
+    .unwrap()
+}
+
+fn cancellation_request(workers: usize) -> crate::LeaseRequest {
+    crate::LeaseRequest {
+        policy: worth_foundational::ExecutionRequestPolicy::new(
+            worth_foundational::ExecutionPosture::Automatic,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(
+                std::num::NonZeroUsize::new(workers).unwrap(),
+                None,
+                Some(100),
+            ),
+        ),
+        cancellation: crate::CancellationToken::new(),
+        deadline: None,
     }
 }

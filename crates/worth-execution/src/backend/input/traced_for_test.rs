@@ -5,10 +5,15 @@ pub(in crate::backend) struct TracedOwnedInputsForTest<'a, T> {
     pub values: OwnedInputs<T>,
     pub order: &'a Mutex<Vec<usize>>,
 }
-impl<T: Send + ChargedBytes> InputMode for TracedOwnedInputsForTest<'_, T> {
+impl<T: Send> InputMode for TracedOwnedInputsForTest<'_, T> {
     type Item = T;
-    fn memory_bytes<R, E>(&self, declaration: &BatchDeclaration) -> Option<u64> {
-        self.values.memory_bytes::<R, E>(declaration)
+    type Payload = T;
+    fn memory_bytes<R, E>(
+        &self,
+        declaration: &BatchDeclaration,
+        measure: Option<fn(&T) -> u64>,
+    ) -> Option<u64> {
+        self.values.memory_bytes::<R, E>(declaration, measure)
     }
     fn dispatch(
         &mut self,

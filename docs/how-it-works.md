@@ -742,8 +742,9 @@ Admission resolves the request against the installed binding, in a fixed order:
 A request does not keep admission, or a selected world, between executions.
 Every `execute()` is admitted afresh.
 
-**Queries** narrow their limits with `.limits(max_results, max_work)`. Limits
-only narrow: an attempt to widen them is a typed `Limit` denial.
+**Queries** narrow result cardinality with `.limit_results(max_results)`, where
+`max_results` is a `NonZeroUsize`. A value above the installed binding ceiling
+returns a typed `Limit` denial. This control is not a query-work estimate.
 
 **Mutations** declare what they were based on, which is a typestate step:
 
@@ -801,8 +802,8 @@ sources a later mutation can pass to `expect_source`.
 **Mutations** run the handler. A handler implements `OperationHandler`:
 
 The current contract includes the default `prepare_decision`. A handler with
-no compute step implements `decide`, `candidate_requirements`, and
-`build_candidate`; the default preparation wraps its decision in an immediate
+no compute step implements `decide` and `build_candidate`; the default
+preparation wraps its decision in an immediate
 plan. A computing handler overrides preparation, as the
 [compiled build-guide handler](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation)
 does.
@@ -831,12 +832,6 @@ where
         WorthQueryDecisionPlan::immediate(self.decide(input, reader))
     }
 
-    fn candidate_requirements(
-        &self,
-        input: &Binding::Input,
-        decision: &Binding::Decision,
-    ) -> ApplicationCandidateRequirements;
-
     fn build_candidate(
         &self,
         input: &Binding::Input,
@@ -849,12 +844,11 @@ where
 1. **Decide.** `prepare_decision` reads through `DecisionReader` and returns a
    `WorthQueryDecisionPlan`. Its default calls `decide` and returns an immediate
    decision, so a noncomputing handler needs no change. A computing handler
-   overrides it to prepare inert inputs for Query to dispatch, with decision completion
-   on the owner. It may deny with a domain denial, such as "the order is already
-   approved".
-2. **Reserve.** The handler states its resource requirements. The runtime
-   reserves them against the installed ceiling *before* any allocation.
-3. **Build.** The handler writes the candidate through `CandidateWriter`.
+   overrides it with the installed computation's `decision_plan`, which owns
+   preparation, compute dispatch and completion under the original request.
+   It may deny with a domain denial, such as "the order is already approved".
+2. **Build.** The handler writes the actual candidate through `CandidateWriter`
+   without forecasting candidate bytes or validator work.
    Nothing outside the writer can change the candidate.
 
 `HandlerResult` distinguishes `Completed`, `DomainDenied`, `ExecutionDenied`,
@@ -1081,23 +1075,21 @@ A pin does not make reads concurrent: reads of one installed source still run
 one at a time. Commit validation still compares
 the selected basis and the attempt's consumed facts before any effect.
 
-Admission checks capacity before dispatching kernels. A memory refusal means
-the run could not reserve its declared bytes within the applicable limit; it
-is not a domain result. A managed computation reports memory refusals as
-policy, process, or declared-capacity limits; ancestor refusals are policy
-refusals at this application boundary. Work exhaustion, cancellation, deadline,
-kernel panic, domain failure, and result capacity remain distinguishable. A
-busy worker pool can admit inline execution without creating another worker.
+Admission checks the original request before dispatching kernels. Ordinary
+installed managed computations use native allocation owners without an
+author-supplied result-byte ceiling or `ChargedBytes` estimate. Actual request
+memory refusals and allocator failures remain typed execution failures, distinct
+from domain outcomes, cancellation, deadline and kernel panic. A busy worker
+pool can admit inline execution without creating another worker.
 Native read, index, and commit execution preserve these causes through their
 Query denial. A stopped read is not an empty result, an absent fact, or an
 authorization decision. Match the typed cause at the call that stopped.
 
-Reduction reserves its checked construction or edit memory quote before work.
-The quote covers tree nodes and the temporary canonical construction and join
-buffers; scheduled construction also includes its admitted task-metric cells.
-Caller-owned inputs and captured reducer storage are accounted separately.
-An owner's result-byte ceiling is not a ceiling for framework checkpoint
-metadata. Arithmetic overflow refuses the quote rather than under-reserving.
+The native canonical reducer owns its actual tree and temporary-storage
+allocations, preserves retained custody and checks encoding sizes. Explicit
+bounded lower-level Execution APIs still accept their own payload capacities;
+those contracts are separate from the ordinary installed computation path.
+Neither path turns allocation admission into permission to publish.
 
 **Determinism.** For the same admitted inputs and declared computation, without
 an interruption arriving during compute and with sufficient memory, results,

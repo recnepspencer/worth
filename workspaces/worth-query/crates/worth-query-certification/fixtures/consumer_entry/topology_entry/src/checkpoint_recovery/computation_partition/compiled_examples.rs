@@ -45,8 +45,7 @@ impl Example for Warehouse {
                 &installed,
                 reader,
                 &inventory::sample_input(),
-                |result| {
-                    let (total, _) = result.expect("the warehouse example completes");
+                |total| {
                     RESULTS.with(|results| results.borrow_mut().push(Reduced::Inventory(total)));
                     worth_query_host::facade::primary_graph::HandlerResult::Completed(())
                 },
@@ -68,8 +67,7 @@ impl Example for Telemetry {
                 &installed,
                 reader,
                 &telemetry::sample_input(),
-                |result| {
-                    let (peak, _) = result.expect("the telemetry example completes");
+                |peak| {
                     RESULTS.with(|results| results.borrow_mut().push(Reduced::Telemetry(peak)));
                     worth_query_host::facade::primary_graph::HandlerResult::Completed(())
                 },
@@ -121,18 +119,37 @@ impl<E: Example> ApplicationProgramDefinition<S> for Program<E> {
             .finish_action()
             .finish();
         let example = E::declare();
+        let installed = final_output.feature();
+        let declared = example.feature();
         assert_eq!(
-            final_output.feature().derived_artifacts(),
-            example.feature().derived_artifacts(),
-            "the host installs the example's artifact declaration"
+            (
+                installed.composition_instance(),
+                installed.identity(),
+                installed.feature_type(),
+                installed.major(),
+                installed.minor(),
+                installed.inputs(),
+                installed.outputs(),
+                installed.derived_artifacts(),
+                installed.derived_collections(),
+                installed.managed_computations(),
+            ),
+            (
+                declared.composition_instance(),
+                declared.identity(),
+                declared.feature_type(),
+                declared.major(),
+                declared.minor(),
+                declared.inputs(),
+                declared.outputs(),
+                declared.derived_artifacts(),
+                declared.derived_collections(),
+                declared.managed_computations(),
+            ),
+            "the host installs the example's complete declaration before adding its required roles"
         );
         assert_eq!(
-            final_output.feature().managed_computations(),
-            example.feature().managed_computations(),
-            "the host installs the example's computation declaration"
-        );
-        assert_eq!(
-            final_output.feature().required_roles(),
+            installed.required_roles(),
             <crate::PlanarFinalFeatureRoles<S> as ApplicationRequiredFeatureRoles<S>>::roles()
                 .as_slice(),
             "the native output owner's typed pair supplies the host's required roles"

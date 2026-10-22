@@ -58,7 +58,7 @@ mod parallel_history_reuse;
 mod program;
 mod worker_axis;
 
-use program::{OracleRoot, RegionArtifact, RegionConnection, TOTALS_RETAINED_BYTES, TOTALS_WORK};
+use program::{OracleRoot, RegionArtifact, RegionConnection, TOTALS_WORK};
 
 /// What one entry may cost the computation: its digest, its key's encoding
 /// and routing, its kernel and its share of the combines.

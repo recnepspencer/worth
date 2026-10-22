@@ -78,8 +78,15 @@ fn a_public_nested_map_cost_cannot_be_retained_as_owner_steps() {
     );
 
     assert_eq!(
-        nested.bill.charged_span(),
-        plain.bill.charged_span() + 3,
+        nested
+            .bill
+            .expect("the original compute stage ran")
+            .charged_span(),
+        plain
+            .bill
+            .expect("the original compute stage ran")
+            .charged_span()
+            + 3,
         "nested independent branches add their critical path to the calling branch"
     );
     assert!(
@@ -109,7 +116,14 @@ fn carrying_every_partition_has_the_full_bill_and_the_same_one_unit_short_stop()
         Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
         u64::MAX,
     );
-    let full_cost = (full.bill.charged_work(), full.bill.charged_span());
+    let full_cost = (
+        full.bill
+            .expect("the original compute stage ran")
+            .charged_work(),
+        full.bill
+            .expect("the original compute stage ran")
+            .charged_span(),
+    );
 
     let carried = billed(Some(prior_of(full, false)), u64::MAX);
 
@@ -130,8 +144,14 @@ fn carrying_every_partition_has_the_full_bill_and_the_same_one_unit_short_stop()
         "one unit below the full bill must refuse"
     );
     assert_eq!(
-        retained.bill.charged_span(),
-        unretained.bill.charged_span(),
+        retained
+            .bill
+            .expect("the original compute stage ran")
+            .charged_span(),
+        unretained
+            .bill
+            .expect("the original compute stage ran")
+            .charged_span(),
         "the one-unit-short stop preserves span"
     );
 }

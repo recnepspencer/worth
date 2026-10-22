@@ -1,7 +1,6 @@
 //! Ordinary fixed membership carries measured call ranges, not a full roster.
 use super::super::super::request_execution::QueryRequestExecution;
 use super::super::compute::Denial;
-use super::super::gather_memory::GatheredMemory;
 use super::super::{
     InputValue, WorthQueryComputationPartitionMembers, WorthQueryComputationReader,
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
@@ -10,21 +9,16 @@ use super::next_tree::NextPartitioning;
 use super::retained::CarriedItems;
 use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::CallVisit;
-use worth_execution::ChargedBytes;
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationPartition, ApplicationFeature, ApplicationManagedComputation,
 };
 use worth_query_installation::facade::ApplicationSchema;
-impl<
-        Key: ApplicationComputationPartition,
-        Item: ApplicationComputationPartition + ChargedBytes,
-        Reduced,
-    > IncrementalRun<Key, Item, Reduced>
+impl<Key: ApplicationComputationPartition, Item: ApplicationComputationPartition, Reduced>
+    IncrementalRun<Key, Item, Reduced>
 {
     pub(super) fn can_prepare_ranges<Schema, Operation>(
         &self,
         reader: &Reader<'_, '_, Schema, Operation>,
-        remaining: RemainingWork,
     ) -> bool {
         if self.membership_moved || !self.moved_items.is_empty() || self.validated_at.is_none() {
             return false;
@@ -50,10 +44,7 @@ impl<
         retained
             .call_sequence
             .summary(0..retained.call_sequence.prefix())
-            .is_some_and(|summary| {
-                summary.declared <= remaining.remaining()
-                    && reader.can_carry_call_range(&COMPARATOR, &summary)
-            })
+            .is_some_and(|summary| reader.can_carry_call_range(&COMPARATOR, &summary))
     }
     pub(super) fn prepare_ranges<Schema, Feature, Computation, Owner>(
         self,
@@ -61,8 +52,7 @@ impl<
         reader: &mut Reader<'_, '_, Schema, Owner::Operation>,
         execution: &QueryRequestExecution<'_>,
         input: &InputValue<Schema, Feature, Computation>,
-        mut remaining: RemainingWork,
-        declared_bytes: u64,
+        mut remaining: PreparationWork,
     ) -> Result<
         PreparedIncremental<Key, Item, Reduced, Owner::Gathered>,
         Denial<Schema, Feature, Computation, Owner>,
@@ -117,22 +107,22 @@ impl<
                 execution
             )
             .map_err(resource)?);
-        remaining.spend(Some(prefix.declared)).map_err(resource)?;
+        super::super::preparation_work::charge_preparation(
+            execution,
+            &mut remaining,
+            Some(prefix.declared),
+        )?;
         let next = NextPartitioning {
             items: Arc::clone(&retained.items),
             digests: Arc::clone(&retained.digests),
             membership: Some(retained.membership.clone()),
             item_keys: Arc::clone(&retained.item_keys),
-            item_bytes: retained.item_bytes,
-            item_call_bytes: retained.item_call_bytes,
             routing: Arc::clone(&retained.routing),
-            routing_memory: None,
             carried_membership: true,
             carried_items: CarriedItems::All(Arc::clone(&retained.item_keys)),
         };
         let mut prepared = PreparedIncremental::new(
             remaining,
-            declared_bytes,
             self.basis,
             self.prior,
             self.validated_at,
@@ -148,11 +138,10 @@ impl<
                     super::super::super::super::fact_verification_observation::computation_prepared_partition();
                     let partition=retained.partitions.get(&id).expect("the sealed shape names an actual partition");
                     let members=retained.routing.members(id).collect::<Arc<[_]>>();
-                    let mut memory=GatheredMemory::new(execution,declared_bytes)?;
-                    memory.before_gather(execution)?;
+                    execution.checkpoint().map_err(WorthQueryPartitionedComputationDenial::from_kernel_stop)?;
                     let (gathered,charge)=reader.measured(read,|reader|owner.gather(&mut WorthQueryComputationReader::lend(reader),input,WorthQueryComputationPartitionMembers::new(id,&partition.key,&members,&retained.items)));
                     let gathered=gathered.map_err(|denial|WorthQueryPartitionedComputationDenial::gathering(id,denial))?;
-                    prepared.gathered(id,Arc::clone(&partition.key),partition.key_bytes,members,gathered,charge,memory)?;
+                    prepared.gathered(id,Arc::clone(&partition.key),members,gathered,charge)?;
                     Ok(true)
                 }
             }

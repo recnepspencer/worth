@@ -69,8 +69,8 @@ pub use crate::domain_computation::primary_graph::output_lineage::{
     WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
 };
 pub use crate::domain_computation::primary_graph::{
-    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
-    MutationHandlerExecutionDenial, OperationHandler, VerificationCapacityStop,
+    CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerFailure, HandlerInterruption,
+    HandlerResult, MutationHandlerExecutionDenial, OperationHandler, VerificationCapacityStop,
     WorthQueryAdmittedApplicationCapabilityAccess,
     WorthQueryAdmittedApplicationConditionalDefinition, WorthQueryAdmittedApplicationOperation,
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,

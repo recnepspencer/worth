@@ -15,12 +15,13 @@ pub use fork_join::{ExecutionForkJoin, ForkChild, ForkJoinDenial, ForkJoinOutcom
 pub use map::{
     ExecutionMap, ExecutionRetainedPrefix, ExecutionRetainedRun, KeylessPartition, MapDenial,
     MapKernelContext, MapKernelFailure, MapKernelStop, MapMemoryOverflow, MapOutcome, MapPartition,
-    MapStop, OracleMismatch, PreparedExecutionMap, RetainedMapDenial, RetainedMapInput,
-    RetainedRunDenial, RetainedRunMetrics, RetainedRunOutcome,
+    MapStop, MeteredPayload, NativePayload, OracleMismatch, PreparedExecutionMap,
+    RetainedMapDenial, RetainedMapInput, RetainedRunDenial, RetainedRunMetrics, RetainedRunOutcome,
 };
 pub use reduce::{
-    ExecutionReduce, ReduceCertificationFailure, ReduceInputDenial, RetainedReduceDenial,
-    RetainedReduceOutcome, RetainedReduction,
+    ExecutionReduce, NativeRetainedReduceOutcome, NativeRetainedReduction,
+    ReduceCertificationFailure, ReduceInputDenial, RetainedReduceDenial, RetainedReduceOutcome,
+    RetainedReduction,
 };
 pub use rounds::{ExecutionRounds, RoundsDenial, RoundsOutcome};
 pub use scan::{ExecutionScan, ScanDenial, ScanOutcome};

@@ -7,7 +7,9 @@ use super::{
     RetainedRunOutcome,
 };
 use crate::{
-    backend::run_retained_sparse_batch, ChargedBytes, ExecutionRequest, ExecutionWorkCeiling,
+    backend::{run_retained_native_sparse_batch, run_retained_sparse_batch, BatchOutcome},
+    ChargedBytes, ExecutionRequest, ExecutionResourceLease, ExecutionRetainedResult,
+    ExecutionWorkCeiling,
 };
 use std::collections::BTreeMap;
 use worth_foundational::PartitionIdentity;
@@ -32,6 +34,80 @@ impl<R: ChargedBytes + Send + Sync> ExecutionRetainedRun<R> {
         E: ChargedBytes + Send,
         F: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
     {
+        self.advance_with(
+            request,
+            ceiling,
+            changes,
+            removed,
+            |lease, changes, tree, metrics| {
+                let map = ExecutionMap::<T, ()>::from_keyless_partitions(changes)
+                    .map_err(RetainedRunDenial::Map)?;
+                run_retained_sparse_batch(
+                    lease,
+                    &map.batch,
+                    backend_for(lease),
+                    tree,
+                    metrics,
+                    &kernel,
+                )
+                .map_err(|cause| RetainedRunDenial::Native(RetainedMapDenial::storage(cause)))
+            },
+        )
+    }
+}
+
+impl<R: Send + Sync> ExecutionRetainedRun<R> {
+    /// Advance the existing native run using changed values with no payload
+    /// invoices. Retained cells keep their original grants and exact receipts.
+    /// This receives new inputs, never reinterprets a declared partition batch.
+    pub fn advance_native<T, E, F>(
+        &self,
+        request: ExecutionRequest<'_, '_>,
+        ceiling: ExecutionWorkCeiling,
+        changes: BTreeMap<PartitionIdentity, T>,
+        removed: CanonicalUniqueVec<PartitionIdentity>,
+        kernel: F,
+    ) -> Result<RetainedRunOutcome<R, E>, RetainedRunDenial>
+    where
+        T: Sync,
+        E: Send,
+        F: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
+    {
+        self.advance_with(
+            request,
+            ceiling,
+            changes,
+            removed,
+            |lease, changes, tree, metrics| {
+                let map = ExecutionMap::<T, ()>::from_native_partitions(changes)
+                    .map_err(RetainedRunDenial::NativeMap)?;
+                run_retained_native_sparse_batch(
+                    lease,
+                    &map.batch,
+                    backend_for(lease),
+                    tree,
+                    metrics,
+                    &kernel,
+                )
+                .map_err(|cause| RetainedRunDenial::Native(RetainedMapDenial::storage(cause)))
+            },
+        )
+    }
+
+    fn advance_with<C, E>(
+        &self,
+        request: ExecutionRequest<'_, '_>,
+        ceiling: ExecutionWorkCeiling,
+        changes: BTreeMap<PartitionIdentity, C>,
+        removed: CanonicalUniqueVec<PartitionIdentity>,
+        dispatch: impl FnOnce(
+            Option<&ExecutionResourceLease<'_>>,
+            BTreeMap<PartitionIdentity, C>,
+            &crate::reduction::RunTree<R>,
+            &mut RetainedRunMetrics,
+        )
+            -> Result<BatchOutcome<ExecutionRetainedResult<R>, E>, RetainedRunDenial>,
+    ) -> Result<RetainedRunOutcome<R, E>, RetainedRunDenial> {
         let result = request
             .run(ceiling, |lease| {
                 // Re-admit cached incoming backing under the fresh request;
@@ -66,17 +142,7 @@ impl<R: ChargedBytes + Send + Sync> ExecutionRetainedRun<R> {
                         RetainedMapDenial::RequiresExecution(id),
                     ));
                 }
-                let map = ExecutionMap::<T, ()>::from_keyless_partitions(changes)
-                    .map_err(RetainedRunDenial::Map)?;
-                let outcome = run_retained_sparse_batch(
-                    lease,
-                    &map.batch,
-                    backend_for(lease),
-                    &tree,
-                    &mut metrics,
-                    &kernel,
-                )
-                .map_err(|cause| RetainedRunDenial::Native(RetainedMapDenial::storage(cause)))?;
+                let outcome = dispatch(lease, changes, &tree, &mut metrics)?;
                 finish_native_outcome(tree, outcome, lease, metrics)
                     .map_err(RetainedRunDenial::from)
             })

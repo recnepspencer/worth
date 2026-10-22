@@ -39,7 +39,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
         super::checkpoint_recovery::required_chain::contracts(contracts)?;
         #[cfg(test)]
         super::checkpoint_recovery::mixed_retirement::contracts(contracts)?;
-        contracts.feature::<super::PlanarFinalFeatureRoles<Schema>>()?;
+        <super::PlanarFinalFeatureDefinition<Schema> as worth_query_host::facade::application_contribution::WorthQueryFeatureDefinition<Schema>>::contracts(contracts)?;
         contracts.producer::<super::AlternatePlanarOutputProducer<Schema>>()?;
         contracts.conditional::<InitialPlanarReadiness<Schema>>()?;
         contracts.conditional::<super::AlternatePlanarReadiness<Schema>>()?;
@@ -70,11 +70,46 @@ impl TopologyContribution {
         Self::configure_topology_with_provider(configuration, setup, provider, PlanarHandler)
     }
 
+    /// Supplies the complete source feature's actual configuration at the normal setup boundary.
+    pub fn configure_with_source<Schema: TopologySchemaBinding>(
+        configuration: TopologyConfiguration,
+        source: super::PlanarSourceRuntime<Schema>,
+        setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        let provider = super::InitialPlanarProvider::new(
+            Arc::clone(&configuration.producer_authorization_denials),
+            Arc::clone(&configuration.producer_domain_denial),
+        );
+        Self::configure_features(configuration, setup, provider, PlanarHandler, source)
+    }
+
     pub(crate) fn configure_topology_with_provider<Schema: TopologySchemaBinding, Handler>(
         configuration: TopologyConfiguration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
         provider: super::InitialPlanarProvider,
         handler: Handler,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
+    where
+        Handler: worth_query_host::facade::primary_graph::OperationHandler<
+            Schema,
+            PlanarMutationBinding<Schema>,
+        >,
+    {
+        Self::configure_features(
+            configuration,
+            setup,
+            provider,
+            handler,
+            super::PlanarSourceRuntime::new(super::PlanarSourceAdjustmentHandler),
+        )
+    }
+
+    fn configure_features<Schema: TopologySchemaBinding, Handler>(
+        configuration: TopologyConfiguration,
+        setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
+        provider: super::InitialPlanarProvider,
+        handler: Handler,
+        source: super::PlanarSourceRuntime<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
     where
         Handler: worth_query_host::facade::primary_graph::OperationHandler<
@@ -107,9 +142,7 @@ impl TopologyContribution {
         setup.handler::<super::PriorCycleAdjustmentBinding<Schema>, _>(
             super::PriorCycleAdjustmentHandler,
         )?;
-        setup.handler::<super::PlanarSourceAdjustmentBinding<Schema>, _>(
-            super::PlanarSourceAdjustmentHandler,
-        )?;
+        <super::PlanarSourceFeatureDefinition<Schema> as worth_query_host::facade::application_contribution::WorthQueryFeatureDefinition<Schema>>::configure(source, setup)?;
         setup.handler::<super::PlanarInitialAdjustmentBinding<Schema>, _>(
             super::PlanarInitialAdjustmentHandler,
         )?;
@@ -132,7 +165,7 @@ impl TopologyContribution {
             configured
         };
         setup.producer::<InitialPlanarProducer<Schema>>(provider)?;
-        setup.feature::<super::PlanarFinalFeatureRoles<Schema>>(final_feature)?;
+        <super::PlanarFinalFeatureDefinition<Schema> as worth_query_host::facade::application_contribution::WorthQueryFeatureDefinition<Schema>>::configure(super::CompletePlanarFinalRuntime::new(final_feature), setup)?;
         setup.producer::<super::AlternatePlanarOutputProducer<Schema>>(
             super::AlternatePlanarOutputProvider,
         )?;

@@ -45,6 +45,7 @@ pub(in crate::http::server) fn commit_denial(
         | Denial::SigningLifecycleForgery
         | Denial::SigningLifecycleUnavailable
         | Denial::SigningLifecycleEvidenceCapacity { .. }
+        | Denial::SigningLifecycleSubjectCapacity { .. }
         | Denial::SigningLifecycleRepresentationCapacity
         | Denial::SigningLifecycleObservation { .. } => operator_denial(),
         Denial::ExecutionResource { denial, .. } => execution_resource(denial),

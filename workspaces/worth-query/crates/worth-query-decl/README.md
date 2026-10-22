@@ -23,19 +23,18 @@ publish a result. Application hosts perform those transitions through
 Pure reusable schema-meaning crates remain Query-agnostic. Query declaration
 integration belongs in the application entry band.
 
-## Ordinary Resource Declarations
+## Query Result Controls
 
 Declare query result cardinality with `ApplicationQueryBindingLimits::results(n)`
-or the query-binding macro's `limits results n`. The installed host owns the
-finite work safeguard. `bounded(n, work)` (macro `limits results n, work w`)
-adds a deliberate cap; ordinary code does not count internal traversal work.
+or the query-binding macro's `limits results n`. This is a semantic result limit,
+not a traversal-work estimate. The Host query profile controls simultaneous graph
+work; ordinary query declarations supply no work or byte invoice.
 
-For candidate resources, `ApplicationCandidateResourceCeiling::representation_bytes(n)`
-bounds the retained candidate representation. The mutation-binding macro uses
-`resources retained_representation_bytes n`. Effect cardinalities and byte limits
-remain enforced. Installed invariants validate the actual candidate under their
-own algorithm controls; no aggregate validator-work allowance is declared or
-predicted. These declarations grant no runtime capacity or authority.
+Mutation bindings declare typed input, source expectations, scope, operation and
+outputs. They do not declare candidate byte estimates or validator-work quotes.
+Handlers build the actual candidate through the Host's `CandidateWriter`;
+installed invariants check it before atomic publication. These declarations grant
+no runtime capacity or authority.
 
 ## Application Program Meaning
 
@@ -43,7 +42,15 @@ predicted. These declarations grant no runtime capacity or authority.
 sections 3 and 6 show features, the program, and workflow authoring with real
 code.
 
-A program is built from features. Begin each ordinary feature action with
+A program is built from features. For ordinary installed features, use the Host
+facade's [complete feature definition](../../../../docs/build-an-application.md#complete-feature-definitions).
+One typed member body supplies actions, delivery roots, handler slots and required
+Initial/Preserve roles. `ApplicationFeatureDefinition` projects that body into
+schema members, canonical feature specs and program outputs; Host adds contracts
+and explicit runtime configuration. Select the definitions once instead of
+maintaining independent declaration and registration lists.
+
+For specialized declaration authoring, begin an action with
 `.action::<Binding, Delivery>()` on `ApplicationFeatureSpec::root` or `at`.
 Compose the paired `.locality_and_change::<Scope, Shape>()`, binding-scoped
 `.correspondence::<C>()`, operation-scoped `.evaluated_requirement::<Rule>()`

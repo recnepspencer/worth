@@ -105,7 +105,7 @@ impl<T> TreeAttempt<T, ReductionRunFailure<worth_execution::MapKernelStop>> {
         self.map_result(|outcome| match outcome {
             Ok(tree) => Ok(EditDisposition::Completed(tree)),
             Err(failure) => match super::tree_report::rebuild_cause(failure.reason) {
-                Err(stop) => Err(Denial::from_kernel_stop(stop)),
+                Err(stop) => Err(Denial::from_reduction_reason(stop)),
                 Ok(cause) => Ok(EditDisposition::Rebuild(cause)),
             },
         })

@@ -17,6 +17,7 @@ use super::{ExecutionMap, ReduceInputDenial};
 /// canonical result and charged cost disagreed.
 #[derive(Debug)]
 pub enum ReduceCertificationFailure<E> {
+    Retention(crate::RetainedMapDenial),
     Run(ReduceInputDenial<E>),
     Mismatch(OracleMismatch),
 }

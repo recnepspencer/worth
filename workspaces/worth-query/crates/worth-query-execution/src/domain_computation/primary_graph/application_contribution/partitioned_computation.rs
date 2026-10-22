@@ -5,8 +5,8 @@
 //! results. It reads the input through the reader of the handler that runs
 //! the computation, so Query knows which fact each owner call read. Query
 //! derives each partition's identity from its key, runs the partitions
-//! through `worth-execution`'s map under the computation's declared work
-//! ceiling and reduces them over the canonical tree.
+//! through `worth-execution`'s native map under the original request's
+//! execution policy and reduces them over the canonical tree.
 //!
 //! When a producer runs the computation, the run leaves its state on the
 //! record its attempt published, and the producer's next run under the same
@@ -23,13 +23,12 @@ pub(super) use incremental::observe_retained_full_tree;
 pub(super) use incremental::{observe_full_tree, FullTreeMapWork};
 mod certification_reuse;
 mod denial;
-mod gather_memory;
 mod incremental;
 mod installed;
 mod items;
 mod plan;
+mod preparation_work;
 mod reader;
-mod remaining_work;
 mod routing;
 
 pub use compute::{
@@ -67,7 +66,7 @@ pub use reader::{
     WorthQueryComputationInputDenial, WorthQueryComputationReadDenial, WorthQueryComputationReader,
 };
 
-use worth_execution::{CanonicalBits, ChargedBytes};
+use worth_execution::CanonicalBits;
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationInput, ApplicationComputationPartition, ApplicationFeature,
     ApplicationManagedComputation,
@@ -117,14 +116,14 @@ where
     /// items for the next run, charged at their bytes, and knows each by the
     /// digest of its canonical encoding, as a partition key is known: an item
     /// whose digest changed is a new item to the next run.
-    type Item: ApplicationComputationPartition + ChargedBytes;
+    type Item: ApplicationComputationPartition;
     /// One partition's data, gathered on the owner thread for its kernel.
-    type Gathered: Send + Sync + ChargedBytes;
+    type Gathered: Send + Sync;
     /// One partition's result, and the reduced result of them all. Its
     /// canonical bits are what "the same result" means.
-    type PartitionResult: Clone + Send + Sync + ChargedBytes + CanonicalBits + 'static;
+    type PartitionResult: Clone + Send + Sync + CanonicalBits + 'static;
     type Output;
-    type Stopped: Send + ChargedBytes + 'static;
+    type Stopped: Send + 'static;
 
     /// Names the items the input holds. What it reads is a membership fact:
     /// a change to it changes which items there are.

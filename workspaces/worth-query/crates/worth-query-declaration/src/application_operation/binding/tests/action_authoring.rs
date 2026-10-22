@@ -3,6 +3,7 @@ use super::*;
 use crate::application_program::*;
 
 mod duplicates;
+mod feature_outputs;
 mod world;
 use world::*;
 

@@ -26,7 +26,25 @@ impl<Initial, Preserve> WorthQueryFeatureRuntime<Initial, Preserve> {
             preserve: Some(preserve),
         }
     }
+    /// Preflight the existing pair before its containing feature registers members.
+    pub fn validate_for<S, C>(&self) -> Result<(), Denial>
+    where
+        S: ApplicationSchema,
+        C: WorthQueryRequiredFeatureContract<S>,
+        Self: WorthQueryFeatureConfiguration<S, C>,
+    {
+        sealed::Install::<S, C>::validate(self)
+    }
 }
+
+pub type WorthQueryFeaturePairConfiguration<S, C, IH, PH> = WorthQueryFeatureRuntime<
+    WorthQueryFeatureRoleRuntime<IH,
+        <<C as WorthQueryRequiredFeatureContract<S>>::InitialProducer as Producer<S>>::Provider,
+        <<C as WorthQueryRequiredFeatureContract<S>>::InitialReadiness as Conditional<S>>::Configuration>,
+    WorthQueryFeatureRoleRuntime<PH,
+        <<C as WorthQueryRequiredFeatureContract<S>>::PreserveProducer as Producer<S>>::Provider,
+        <<C as WorthQueryRequiredFeatureContract<S>>::PreserveReadiness as Conditional<S>>::Configuration>,
+>;
 
 /// Optional configuration values are checked before any registration in this feature.
 pub struct WorthQueryFeatureRoleRuntime<Handler, Provider, Readiness> {
@@ -76,6 +94,7 @@ mod sealed {
     pub trait Install<S: ApplicationSchema, C: WorthQueryRequiredFeatureContract<S>>:
         Sized
     {
+        fn validate(&self) -> Result<(), Denial>;
         fn install(
             self,
             setup: &mut WorthQueryApplicationContributionSetup<'_, S>,
@@ -105,41 +124,77 @@ mod sealed {
         ProducerSourceValue<S, C::PreserveProducer>:
             WorthQueryApplicationProjection<S, ProducerSourceQuery<S, C::PreserveProducer>>,
     {
+        fn validate(&self) -> Result<(), Denial> {
+            super::super::contract::validate_pair::<S, C>()?;
+            let initial = self.initial.as_ref().ok_or_else(|| {
+                missing(Kind::MissingProducerBinding, C::InitialProducer::IDENTITY)
+            })?;
+            let preserve = self.preserve.as_ref().ok_or_else(|| {
+                missing(Kind::MissingProducerBinding, C::PreserveProducer::IDENTITY)
+            })?;
+            for (present, kind, identity) in [
+                (
+                    initial.handler.is_some(),
+                    Kind::MissingMutationHandler,
+                    C::InitialMutation::IDENTITY,
+                ),
+                (
+                    initial.provider.is_some(),
+                    Kind::MissingProducerProvider,
+                    C::InitialProducer::IDENTITY,
+                ),
+                (
+                    initial.readiness.is_some(),
+                    Kind::MissingConditionalBinding,
+                    C::InitialReadiness::IDENTITY,
+                ),
+                (
+                    preserve.handler.is_some(),
+                    Kind::MissingMutationHandler,
+                    C::PreserveMutation::IDENTITY,
+                ),
+                (
+                    preserve.provider.is_some(),
+                    Kind::MissingProducerProvider,
+                    C::PreserveProducer::IDENTITY,
+                ),
+                (
+                    preserve.readiness.is_some(),
+                    Kind::MissingConditionalBinding,
+                    C::PreserveReadiness::IDENTITY,
+                ),
+            ] {
+                if !present {
+                    return Err(missing(kind, identity));
+                }
+            }
+            Ok(())
+        }
         fn install(
             self,
             setup: &mut WorthQueryApplicationContributionSetup<'_, S>,
         ) -> Result<(), Denial> {
-            super::super::contract::validate_pair::<S, C>()?;
-            let initial = self.initial.ok_or_else(|| {
-                missing(Kind::MissingProducerBinding, C::InitialProducer::IDENTITY)
-            })?;
-            let preserve = self.preserve.ok_or_else(|| {
-                missing(Kind::MissingProducerBinding, C::PreserveProducer::IDENTITY)
-            })?;
-            let ih = initial.handler.ok_or_else(|| {
-                missing(Kind::MissingMutationHandler, C::InitialMutation::IDENTITY)
-            })?;
-            let ip = initial.provider.ok_or_else(|| {
-                missing(Kind::MissingProducerProvider, C::InitialProducer::IDENTITY)
-            })?;
-            let ir = initial.readiness.ok_or_else(|| {
-                missing(
-                    Kind::MissingConditionalBinding,
-                    C::InitialReadiness::IDENTITY,
-                )
-            })?;
-            let ph = preserve.handler.ok_or_else(|| {
-                missing(Kind::MissingMutationHandler, C::PreserveMutation::IDENTITY)
-            })?;
-            let pp = preserve.provider.ok_or_else(|| {
-                missing(Kind::MissingProducerProvider, C::PreserveProducer::IDENTITY)
-            })?;
-            let pr = preserve.readiness.ok_or_else(|| {
-                missing(
-                    Kind::MissingConditionalBinding,
-                    C::PreserveReadiness::IDENTITY,
-                )
-            })?;
+            <Self as Install<S, C>>::validate(&self)?;
+            let initial = self.initial.expect("pair preflight retained Initial");
+            let preserve = self.preserve.expect("pair preflight retained Preserve");
+            let ih = initial
+                .handler
+                .expect("pair preflight retained Initial handler");
+            let ip = initial
+                .provider
+                .expect("pair preflight retained Initial provider");
+            let ir = initial
+                .readiness
+                .expect("pair preflight retained Initial readiness");
+            let ph = preserve
+                .handler
+                .expect("pair preflight retained Preserve handler");
+            let pp = preserve
+                .provider
+                .expect("pair preflight retained Preserve provider");
+            let pr = preserve
+                .readiness
+                .expect("pair preflight retained Preserve readiness");
             setup.handler::<C::InitialMutation, _>(ih)?;
             setup.handler::<C::PreserveMutation, _>(ph)?;
             setup.producer::<C::InitialProducer>(ip)?;

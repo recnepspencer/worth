@@ -91,11 +91,11 @@ pub enum BankApplicationOneShotDenialKind {
     CardinalityMismatch,
     TraversalUnavailable,
     ProjectionUnavailable,
+    ExpressionContextUnavailable,
+    ExpressionContextIncomplete,
     Projection(BankApplicationProjectionDenialKind),
     ResultBufferLimitExceeded,
     WorkLimitExceeded,
-    ExpressionContextUnavailable,
-    ExpressionContextIncomplete,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -207,11 +207,11 @@ pub(super) const fn one_shot(kind: QueryOneShot) -> BankApplicationOneShotDenial
         QueryOneShot::CardinalityMismatch => Bank::CardinalityMismatch,
         QueryOneShot::TraversalUnavailable => Bank::TraversalUnavailable,
         QueryOneShot::ProjectionUnavailable => Bank::ProjectionUnavailable,
+        QueryOneShot::ExpressionContextUnavailable => Bank::ExpressionContextUnavailable,
+        QueryOneShot::ExpressionContextIncomplete => Bank::ExpressionContextIncomplete,
         QueryOneShot::Projection(kind) => Bank::Projection(projection(kind)),
         QueryOneShot::ResultBufferLimitExceeded => Bank::ResultBufferLimitExceeded,
         QueryOneShot::WorkLimitExceeded => Bank::WorkLimitExceeded,
-        QueryOneShot::ExpressionContextUnavailable => Bank::ExpressionContextUnavailable,
-        QueryOneShot::ExpressionContextIncomplete => Bank::ExpressionContextIncomplete,
     }
 }
 

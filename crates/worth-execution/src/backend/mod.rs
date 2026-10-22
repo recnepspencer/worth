@@ -8,6 +8,7 @@ mod owner_context;
 pub use owner_context::ExecutionOwnerContext;
 mod ordered;
 mod panic_boundary;
+mod payload_storage;
 mod perturbation;
 mod port;
 mod prepared;
@@ -17,7 +18,8 @@ mod scope;
 mod settlement;
 pub use retained_result::ExecutionRetainedResult;
 pub(crate) use retained_result::{
-    run_retained_batch, run_retained_inputs_batch, run_retained_sparse_batch, ResultStorageDenial,
+    run_retained_batch, run_retained_inputs_batch, run_retained_native_batch,
+    run_retained_native_sparse_batch, run_retained_sparse_batch, ResultStorageDenial,
 };
 mod thread_capability;
 pub(crate) use thread_capability::HAS_OS_THREADS;
@@ -53,7 +55,8 @@ pub(crate) use port::{
 };
 pub(crate) use prepared::{prepare_batch_resources, PreparedBatchResources};
 pub(crate) use scope::{
-    run_scope, run_scope_holding, run_scope_measured, run_scope_within, ScopeHold,
+    run_scope, run_scope_holding, run_scope_measured, run_scope_native_within, run_scope_within,
+    ScopeHold,
 };
 pub use scope::{ScopeOutcome, ScopeStop};
 
@@ -75,4 +78,6 @@ pub(crate) use meter::{request_refusal, request_stop};
 mod scope_refusal;
 pub(crate) use scope_refusal::{run_admitting_scope, ScopeKernelFailure};
 
+pub(crate) use port::run_native_batch_with_charge;
 pub(crate) use port::run_owned_batch_perturbed_for_test;
+pub(crate) use port::{run_owned_native_batch, run_owned_native_batch_perturbed_for_test};

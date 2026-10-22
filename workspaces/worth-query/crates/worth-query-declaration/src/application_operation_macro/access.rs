@@ -3,6 +3,27 @@
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __worth_query_operation_access {
+    (@generic $Operation:ident for $Schema:ident: $Binding:path;
+        { $($kind:ident: [$($Member:ty),* $(,)?];)* }
+        $(; inherited_access: |$schema:ident, $operation:ident| $inherited:block)?
+    ) => {
+        $($crate::__worth_query_operation_access!(@capabilities $kind $Operation [$($Member),*]);)*
+        impl<$Schema: $Binding> $crate::facade::application_schema::ApplicationDeclaredOperation<$Schema>
+            for $Operation
+        {
+            fn declare_access(
+                schema: $crate::facade::application_schema::ApplicationSchemaDeclarationBuilder<$Schema>,
+            ) -> $crate::facade::application_schema::ApplicationSchemaDeclarationBuilder<$Schema> {
+                let operation = Self::reference::<$Schema>();
+                $(let schema = $crate::__worth_query_operation_access!(
+                    @register $kind schema operation [$($Member),*]
+                );)*
+                let _ = operation;
+                $(let schema = { let $schema = schema; let $operation = operation; $inherited };)?
+                schema
+            }
+        }
+    };
     ($Operation:ident for $Schema:ty, input $InputBinding:path;
         { $($kind:ident: [$($Member:ty),* $(,)?];)* }
     ) => {

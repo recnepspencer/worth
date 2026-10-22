@@ -122,6 +122,7 @@ pub(super) fn kernel_failure<Stopped>(
         WorthQueryManagedComputationDenial::Owner(stopped) => {
             MapKernelFailure::Domain(PartitionRefusal::Owner(stopped))
         }
+        WorthQueryManagedComputationDenial::Panicked => MapKernelFailure::Panic,
         WorthQueryManagedComputationDenial::Interrupted(interruption) => {
             MapKernelFailure::Stop(interruption_stop(interruption))
         }
@@ -208,12 +209,20 @@ impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {
                 cause: WorthQueryComputationPartitionStop::from_kernel_failure(cause),
             },
             MapStop::Admission(denial) => Self::Resource(lease_denial(denial)),
+            MapStop::Allocation(kind) => Self::Resource(Resource::NativeAllocationRefused {
+                kind,
+                requested_payload_bytes: None,
+            }),
         }
     }
 
     /// Why the reduction over the canonical tree stopped.
     pub(super) fn from_reduction(failure: ReductionRunFailure<MapKernelStop>) -> Self {
-        match failure.reason {
+        Self::from_reduction_reason(failure.reason)
+    }
+
+    pub(in super::super) fn from_reduction_reason(reason: ReductionRunStop<MapKernelStop>) -> Self {
+        match reason {
             ReductionRunStop::Hook(stop) => Self::from_kernel_stop(stop),
             ReductionRunStop::Panic => Self::ReducerPanicked,
             ReductionRunStop::ResultCapacityExceeded => {
@@ -227,6 +236,13 @@ impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {
     pub(super) fn from_reduction_denial(cause: ReductionDenial) -> Self {
         match cause {
             ReductionDenial::ReducerPanic => Self::ReducerPanicked,
+            ReductionDenial::Admission(cause) => Self::Resource(lease_denial(cause)),
+            ReductionDenial::Allocation(kind) => {
+                Self::Resource(Resource::NativeAllocationRefused {
+                    kind,
+                    requested_payload_bytes: None,
+                })
+            }
             ReductionDenial::ResultCapacityExceeded => {
                 Self::Resource(Resource::ResultCapacityExceeded)
             }
@@ -278,8 +294,10 @@ impl<Stopped> WorthQueryComputationPartitionStop<Stopped> {
 #[cfg(test)]
 mod tests;
 
+mod handler;
 mod publication;
 mod retained_result;
+pub(in crate::domain_computation::primary_graph) use handler::managed_advancement_denial;
 pub(in crate::domain_computation::primary_graph) use publication::publication_execution_kind;
 
 /// Native lifecycle owners keep the original admitted request's exact stop cause.

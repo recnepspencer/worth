@@ -160,32 +160,27 @@ impl ApplicationProgramManifest {
                 ));
             }
             for computation in feature.managed_computations() {
-                let resources = computation.resources();
-                records.push(framed_record(
-                    "computation",
-                    [
-                        ("owner", owner.to_owned()),
-                        ("feature", feature.identity().to_owned()),
-                        ("identity", computation.identity().to_owned()),
-                        ("input", computation.input().to_owned()),
-                        ("output", computation.output_artifact().to_owned()),
-                        ("partition", computation.partition().to_owned()),
-                        ("reuse", computation.reuse().to_owned()),
-                        ("stopped", computation.stopped().to_owned()),
-                        (
-                            "execution",
-                            computation.execution().canonical_token().to_owned(),
+                let fields = [
+                    ("owner", owner.to_owned()),
+                    ("feature", feature.identity().to_owned()),
+                    ("identity", computation.identity().to_owned()),
+                    ("input", computation.input().to_owned()),
+                    ("output", computation.output_artifact().to_owned()),
+                    ("partition", computation.partition().to_owned()),
+                    ("reuse", computation.reuse().to_owned()),
+                    ("stopped", computation.stopped().to_owned()),
+                    (
+                        "execution",
+                        computation.execution().canonical_token().to_owned(),
+                    ),
+                    (
+                        "determinism",
+                        super::managed_computation::determinism_canonical_token(
+                            computation.determinism(),
                         ),
-                        (
-                            "determinism",
-                            super::managed_computation::determinism_canonical_token(
-                                computation.determinism(),
-                            ),
-                        ),
-                        ("work", resources.maximum_work().to_string()),
-                        ("bytes", resources.maximum_retained_bytes().to_string()),
-                    ],
-                ));
+                    ),
+                ];
+                records.push(framed_record("computation", fields));
             }
         }
         for action in actions {

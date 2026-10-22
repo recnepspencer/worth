@@ -4,7 +4,6 @@
 
 use std::collections::BTreeMap;
 
-use worth_execution::ChargedBytes;
 use worth_foundational::facade::PartitionIdentity;
 
 use super::super::retained::RetainedPartitions;
@@ -319,9 +318,6 @@ fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
         .complete::<u64, u64>(
             None,
             typed.tree.clone(),
-            execution
-                .reserve(typed.tree.additional_charged_bytes())
-                .unwrap(),
             &execution,
             Cause::FirstRun,
             report,

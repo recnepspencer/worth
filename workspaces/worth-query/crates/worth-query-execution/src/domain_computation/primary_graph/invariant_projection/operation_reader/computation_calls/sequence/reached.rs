@@ -13,7 +13,7 @@ impl ChargedBytes for ReachedEntity {
 #[derive(Clone, Default)]
 struct Calls(ExecutionOrderedMap<ComputationRead, ()>);
 // A cloned handle owns no new nested allocation. Its original node grants
-// travel with the root; the enclosing retention descriptor counts those nodes.
+// travel with the root.
 impl ChargedBytes for Calls {
     fn additional_charged_bytes(&self) -> u64 {
         0
@@ -22,13 +22,17 @@ impl ChargedBytes for Calls {
 #[derive(Clone, Default)]
 pub(super) struct ReachedCalls {
     entries: ExecutionOrderedMap<ReachedEntity, Calls>,
-    call_bytes: u64,
 }
 impl ReachedCalls {
+    #[cfg(test)]
     pub(super) fn bytes(&self) -> u64 {
         self.entries
-            .retained_bytes()
-            .saturating_add(self.call_bytes)
+            .values()
+            .fold(self.entries.retained_bytes(), |bytes, calls| {
+                bytes
+                    .checked_add(calls.0.retained_bytes())
+                    .expect("actual test backing sizes fit")
+            })
     }
     pub(super) fn contains_in(
         &self,
@@ -53,13 +57,7 @@ impl ReachedCalls {
     ) -> Result<(), ExecutionOrderedMapDenial> {
         let key = ReachedEntity(entity);
         let mut value = self.entries.get(&key).cloned().unwrap_or_default();
-        let old = value.0.retained_bytes();
         value.0.insert_cloned_in(&read, &(), policy)?;
-        self.call_bytes = self
-            .call_bytes
-            .checked_sub(old)
-            .and_then(|v| v.checked_add(value.0.retained_bytes()))
-            .ok_or(ExecutionOrderedMapDenial::CapacityOverflow)?;
         self.entries.insert_cloned_in(&key, &value, policy)
     }
     pub(super) fn remove(
@@ -70,13 +68,7 @@ impl ReachedCalls {
     ) -> Result<(), ExecutionOrderedMapDenial> {
         let key = ReachedEntity(entity);
         let mut value = self.entries.get(&key).expect("recorded call reach").clone();
-        let old = value.0.retained_bytes();
         value.0.remove_in(&read, policy)?;
-        self.call_bytes = self
-            .call_bytes
-            .checked_sub(old)
-            .and_then(|v| v.checked_add(value.0.retained_bytes()))
-            .ok_or(ExecutionOrderedMapDenial::CapacityOverflow)?;
         if value.0.is_empty() {
             self.entries.remove_in(&key, policy).map(|_| ())
         } else {

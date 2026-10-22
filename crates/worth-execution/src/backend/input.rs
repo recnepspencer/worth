@@ -1,12 +1,17 @@
 use std::{panic::AssertUnwindSafe, vec::IntoIter};
 
 use super::{admission::BatchDeclaration, native, panic_boundary::contain, perturbation};
-use crate::{authority::ExecutionResourceLease, report::ChargedBytes};
+use crate::authority::ExecutionResourceLease;
 
 /// Only input acquisition differs; identity, admission and settlement do not.
 pub(super) trait InputMode {
     type Item: Send;
-    fn memory_bytes<R, E>(&self, declaration: &BatchDeclaration) -> Option<u64>;
+    type Payload;
+    fn memory_bytes<R, E>(
+        &self,
+        declaration: &BatchDeclaration,
+        measure: Option<fn(&Self::Payload) -> u64>,
+    ) -> Option<u64>;
     fn dispatch(
         &mut self,
         lease: Option<&ExecutionResourceLease<'_>>,
@@ -21,10 +26,15 @@ pub(super) trait InputMode {
 pub(super) struct BorrowedInputs<'a, T>(pub(super) &'a [T]);
 pub(super) struct OwnedInputs<T>(pub(super) Vec<T>);
 
-impl<'a, T: Sync + ChargedBytes> InputMode for BorrowedInputs<'a, T> {
+impl<'a, T: Sync> InputMode for BorrowedInputs<'a, T> {
     type Item = &'a T;
-    fn memory_bytes<R, E>(&self, declaration: &BatchDeclaration) -> Option<u64> {
-        declaration.execution_memory_bytes::<T, R, E>(self.0)
+    type Payload = T;
+    fn memory_bytes<R, E>(
+        &self,
+        declaration: &BatchDeclaration,
+        measure: Option<fn(&T) -> u64>,
+    ) -> Option<u64> {
+        declaration.memory_bytes_with::<T, R, E>(self.0, measure)
     }
     fn dispatch(
         &mut self,
@@ -52,10 +62,15 @@ impl<'a, T: Sync + ChargedBytes> InputMode for BorrowedInputs<'a, T> {
     }
 }
 
-impl<T: Send + ChargedBytes> InputMode for OwnedInputs<T> {
+impl<T: Send> InputMode for OwnedInputs<T> {
     type Item = T;
-    fn memory_bytes<R, E>(&self, declaration: &BatchDeclaration) -> Option<u64> {
-        declaration.execution_memory_bytes::<T, R, E>(&self.0)
+    type Payload = T;
+    fn memory_bytes<R, E>(
+        &self,
+        declaration: &BatchDeclaration,
+        measure: Option<fn(&T) -> u64>,
+    ) -> Option<u64> {
+        declaration.memory_bytes_with::<T, R, E>(&self.0, measure)
     }
     fn dispatch(
         &mut self,

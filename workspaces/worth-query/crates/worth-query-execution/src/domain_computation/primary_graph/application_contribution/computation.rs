@@ -6,12 +6,6 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-/// Prepared values and the transported owner are the handler author's own data.
-/// An author-held runtime handle used from compute follows the worker reentry rule.
-pub trait WorthQueryManagedComputationPrepared: Send + 'static {
-    fn retained_bytes(&self) -> usize;
-}
-
 pub trait WorthQueryManagedComputationOwner<Schema, Feature, Computation>:
     Send + Sync + 'static
 where
@@ -19,7 +13,7 @@ where
     Feature: ApplicationFeature<Schema>,
     Computation: ApplicationManagedComputation<Schema, Feature>,
 {
-    type Prepared: WorthQueryManagedComputationPrepared;
+    type Prepared: Send + 'static;
     type Computed: Send + 'static;
     type Output;
     type Stopped: Send + 'static;
@@ -51,7 +45,6 @@ mod preparation_loans;
 pub(in crate::domain_computation::primary_graph) mod prepared_request;
 pub(in crate::domain_computation::primary_graph) mod wave_dispatch;
 
-use checkpoint::CheckpointWork;
 pub use checkpoint::{
     WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationExecution,
 };
@@ -103,11 +96,6 @@ where
             .owner
             .prepare(input)
             .map_err(WorthQueryManagedComputationDenial::Owner)?;
-        if prepared.retained_bytes() > Computation::RESOURCES.maximum_retained_bytes() {
-            return Err(WorthQueryManagedComputationDenial::Resource(
-                WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted,
-            ));
-        }
         Ok(WorthQueryPreparedManagedComputation {
             installed: self.clone(),
             prepared,
@@ -145,7 +133,15 @@ where
         WorthQueryCompletedManagedComputation<Schema, Feature, Computation, Owner>,
         WorthQueryManagedComputationDenial<Owner::Stopped>,
     > {
-        self.compute_with_charge(execution, None)
+        execution
+            .request
+            .decision_stage(|context| {
+                let context = std::cell::RefCell::new(context);
+                let mut charge = |units| context.borrow_mut().checkpoint(units);
+                let mut poll = || context.borrow_mut().poll();
+                self.compute_with_charge(&mut charge, &mut poll)
+            })
+            .map_err(super::execution_denial::managed_advancement_denial)?
     }
 
     fn compute_for_member(
@@ -155,34 +151,33 @@ where
         WorthQueryCompletedManagedComputation<Schema, Feature, Computation, Owner>,
         WorthQueryManagedComputationDenial<Owner::Stopped>,
     > {
-        member.compute(|execution, charge, _transport| self.compute_with_charge(execution, charge))
+        member.compute(|_execution, charge, poll, _transport| {
+            self.compute_with_charge(charge.expect("member dispatch lends its charge"), poll)
+        })
     }
 
-    fn compute_with_charge<'a>(
+    fn compute_with_charge(
         self,
-        execution: WorthQueryManagedComputationExecution<'a>,
-        mut charge: Option<&'a mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+        poll: &mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
     ) -> Result<
         WorthQueryCompletedManagedComputation<Schema, Feature, Computation, Owner>,
         WorthQueryManagedComputationDenial<Owner::Stopped>,
     > {
-        let mut delegated = |units| match &mut charge {
-            Some(charge) => charge(units),
-            None => Ok(()),
-        };
         let mut checkpoint = WorthQueryManagedComputationCheckpoint {
-            work: CheckpointWork::Declared {
-                remaining: Computation::RESOURCES.maximum_work(),
-                charge: Some(&mut delegated),
-            },
-            execution: &execution,
+            charge,
+            poll,
+            refused: None,
             #[cfg(test)]
             native: None,
         };
+        checkpoint.poll()?;
         let computed = self
             .installed
             .owner
-            .compute(&self.prepared, &mut checkpoint)?;
+            .compute(&self.prepared, &mut checkpoint);
+        checkpoint.poll()?;
+        let computed = computed?;
         Ok(WorthQueryCompletedManagedComputation {
             installed: self.installed,
             prepared: self.prepared,

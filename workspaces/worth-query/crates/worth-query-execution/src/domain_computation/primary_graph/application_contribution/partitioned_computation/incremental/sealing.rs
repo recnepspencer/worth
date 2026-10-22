@@ -18,7 +18,7 @@ impl CompletedComputationRetention {
         use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
         match self {
             Self::Produced(run) => {
-                run.tree_memory
+                run.attribution_memory
                     .grow(bytes.ok_or(Resource::CapacityOverflow)?)?;
                 Ok(None)
             }
@@ -103,10 +103,7 @@ impl CompletedComputationRun {
                 checked_calls,
             },
             cloned_from: self.carried.map(|carried| carried.prior),
-            tree_memory: RunTreeMemory {
-                _held: self.tree_memory,
-                _routing: self.routing_memory,
-            },
+            attribution_memory: self.attribution_memory,
         }))
     }
 }

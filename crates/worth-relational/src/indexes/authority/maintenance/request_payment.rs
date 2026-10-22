@@ -88,6 +88,7 @@ pub(super) fn run<T>(
                 },
                 ScanOutcome::Stopped { reason, .. } => Err(Denial::Execution(match reason {
                     MapStop::Admission(denial) => execution::denial::lease_denial(denial),
+                    MapStop::Allocation(_) => Cause::AllocationFailed,
                     MapStop::WorkExhausted { .. } => Cause::WorkExhausted,
                     MapStop::Failure { cause, .. } => match cause {
                         MapKernelFailure::Stop(stop) => {

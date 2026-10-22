@@ -201,13 +201,6 @@ fn validate_feature(
                 format!("{}.{}", feature.identity(), computation.output_artifact()),
             ));
         }
-        let resources = computation.resources();
-        if resources.maximum_work() == 0 || resources.maximum_retained_bytes() == 0 {
-            return Err(denial(
-                ApplicationProgramValidationDenialKind::InvalidManagedComputationResources,
-                computation.identity(),
-            ));
-        }
     }
     let mut collection_ids = BTreeSet::new();
     let mut collection_computations = BTreeSet::new();
@@ -238,9 +231,10 @@ fn validate_feature(
                     collection.identity(),
                 )
             })?;
-        if computation.execution()
-            != super::super::ApplicationComputationExecution::DeterministicPartitioned
-        {
+        if !matches!(
+            computation.execution(),
+            super::super::ApplicationComputationExecution::DeterministicPartitioned
+        ) {
             return Err(denial(
                 ApplicationProgramValidationDenialKind::CollectionComputationNotPartitioned,
                 collection.identity(),

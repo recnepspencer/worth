@@ -1,5 +1,6 @@
 // compiled-example: begin
 use serde::Serialize;
+use std::convert::Infallible;
 use std::marker::PhantomData;
 use worth_query_host::facade::{
     application_contribution::*,
@@ -18,11 +19,6 @@ pub struct Reading {
     id: u64,
     station: u32,
     millivolts: u64,
-}
-impl ChargedBytes for Reading {
-    fn additional_charged_bytes(&self) -> u64 {
-        0
-    }
 }
 impl ApplicationComputationPartition for Reading {
     const IDENTITY: &'static str = "telemetry.reading.v1";
@@ -62,8 +58,6 @@ where
     const IDENTITY: &'static str = "telemetry.peak.v1";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(100_000, 1_048_576);
 }
 
 pub struct PeakOwner<Op>(PhantomData<fn() -> Op>);
@@ -79,14 +73,16 @@ where
     type Gathered = Vec<u64>;
     type PartitionResult = u64;
     type Output = u64;
-    type Stopped = u32;
+    type Stopped = Infallible;
 
     fn partitions(
         &self,
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         input: &Vec<Reading>,
-    ) -> Result<WorthQueryComputationPartitionPlan<Reading>, WorthQueryComputationInputDenial<u32>>
-    {
+    ) -> Result<
+        WorthQueryComputationPartitionPlan<Reading>,
+        WorthQueryComputationInputDenial<Infallible>,
+    > {
         Ok(WorthQueryComputationPartitionPlan::keyed(
             input.iter().cloned(),
             |reading| PartitionItemId(reading.id),
@@ -98,7 +94,7 @@ where
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         _input: &Vec<Reading>,
         item: &Reading,
-    ) -> Result<Station, WorthQueryComputationInputDenial<u32>> {
+    ) -> Result<Station, WorthQueryComputationInputDenial<Infallible>> {
         Ok(Station(item.station))
     }
 
@@ -107,7 +103,7 @@ where
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         _input: &Vec<Reading>,
         partition: WorthQueryComputationPartitionMembers<'_, Station, Reading>,
-    ) -> Result<Vec<u64>, WorthQueryComputationInputDenial<u32>> {
+    ) -> Result<Vec<u64>, WorthQueryComputationInputDenial<Infallible>> {
         Ok(partition
             .items()
             .map(|(_, reading)| reading.millivolts)
@@ -118,7 +114,7 @@ where
         &self,
         partition: WorthQueryComputationPartitionView<'_, Station, Vec<u64>>,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
-    ) -> Result<u64, WorthQueryManagedComputationDenial<u32>> {
+    ) -> Result<u64, WorthQueryManagedComputationDenial<Infallible>> {
         let mut peak = 0_u64;
         for millivolts in partition.gathered() {
             checkpoint.advance(1)?;
@@ -131,7 +127,7 @@ where
         WorthQueryDeterministicReducer::canonical(|| 0, |left, right| (*left).max(*right))
     }
 
-    fn complete(&self, reduced: u64) -> Result<u64, u32> {
+    fn complete(&self, reduced: u64) -> Result<u64, Infallible> {
         Ok(reduced)
     }
 }
@@ -167,10 +163,7 @@ pub fn run_peak<S, F, A, Op, B, Value: 'static, Domain: 'static>(
     installed: &WorthQueryInstalledPartitionedComputation<S, F, PeakReading<A>, PeakOwner<Op>>,
     reader: &mut DecisionReader<'_, '_, '_, S, B>,
     input: &Vec<Reading>,
-    complete: impl FnOnce(
-            Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>,
-        ) -> HandlerResult<Value, Domain>
-        + 'static,
+    complete: impl FnOnce(u64) -> HandlerResult<Value, Domain> + 'static,
 ) -> WorthQueryDecisionPlan<Value, Domain>
 where
     S: ApplicationSchema,
@@ -179,15 +172,7 @@ where
     Op: 'static,
     B: ApplicationMutationBinding<S, Operation = Op>,
 {
-    match installed.prepare(reader, input) {
-        Ok(prepared) => prepared.into_decision_plan(move |computed| {
-            complete(computed.and_then(|computed| {
-                let charged_work = computed.charged_work();
-                computed.complete().map(|value| (value, charged_work))
-            }))
-        }),
-        Err(denial) => WorthQueryDecisionPlan::immediate(complete(Err(denial))),
-    }
+    installed.decision_plan(reader, input, complete)
 }
 // compiled-example: end
 

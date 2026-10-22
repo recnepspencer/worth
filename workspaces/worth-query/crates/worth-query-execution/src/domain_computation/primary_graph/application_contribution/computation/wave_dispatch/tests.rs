@@ -41,16 +41,11 @@ fn run(
 }
 fn charged(rank: u64, units: u64, fails: bool) -> PreparedMember {
     PreparedMember {
-        requests: vec![PreparedCompute::new(
-            0,
-            0,
-            move |member| {
-                let (_, mut charge) = member.into_parts();
-                charge.as_mut().unwrap()(units).unwrap();
-                (rank, fails)
-            },
-            |_| 0,
-        )],
+        requests: vec![PreparedCompute::new(move |member| {
+            let (_, mut charge) = member.into_parts();
+            charge.as_mut().unwrap()(units).unwrap();
+            (rank, fails)
+        })],
     }
 }
 #[test]
@@ -115,12 +110,7 @@ fn a_panicking_compute_drops_its_suffix_and_clears_worker_custody() {
     let after = Arc::new(Mutex::new(false));
     let probe = after.clone();
     let panics = PreparedMember {
-        requests: vec![PreparedCompute::new::<()>(
-            0,
-            0,
-            |_| panic!("declared failure"),
-            |_| 0,
-        )],
+        requests: vec![PreparedCompute::new::<()>(|_| panic!("declared failure"))],
     };
     let (settled, _) = run(
         Some(2),
@@ -134,14 +124,9 @@ fn a_panicking_compute_drops_its_suffix_and_clears_worker_custody() {
     let (settled, _) = run(
         Some(2),
         vec![PreparedMember {
-            requests: vec![PreparedCompute::new(
-                0,
-                0,
-                move |_| {
-                    *probe.lock().unwrap() = true;
-                },
-                |_| 0,
-            )],
+            requests: vec![PreparedCompute::new(move |_| {
+                *probe.lock().unwrap() = true;
+            })],
         }],
     );
     assert_eq!(settled.len(), 1);
@@ -159,31 +144,26 @@ fn a_later_member_finishes_first_even_when_a_canonical_member_fails() {
                 .map(|rank| {
                     let schedule = schedule.clone();
                     PreparedMember {
-                        requests: vec![PreparedCompute::new(
-                            0,
-                            0,
-                            move |member| {
-                                if rank == 0 {
-                                    let (state, wake) = &*schedule;
-                                    let (mut state, waited) = wake
-                                        .wait_timeout_while(
-                                            state.lock().unwrap(),
-                                            Duration::from_secs(60),
-                                            |state| !state.0.contains(&3),
-                                        )
-                                        .unwrap();
-                                    // Failure watchdog only; a passing schedule wakes immediately.
-                                    state.1 |= waited.timed_out() && !state.0.contains(&3);
-                                }
-                                let (_, mut charge) = member.into_parts();
-                                charge.as_mut().unwrap()(rank as u64 + 1).unwrap();
+                        requests: vec![PreparedCompute::new(move |member| {
+                            if rank == 0 {
                                 let (state, wake) = &*schedule;
-                                state.lock().unwrap().0.push(rank);
-                                wake.notify_all();
-                                (rank, failure == Some(rank))
-                            },
-                            |_| 0,
-                        )],
+                                let (mut state, waited) = wake
+                                    .wait_timeout_while(
+                                        state.lock().unwrap(),
+                                        Duration::from_secs(60),
+                                        |state| !state.0.contains(&3),
+                                    )
+                                    .unwrap();
+                                // Failure watchdog only; a passing schedule wakes immediately.
+                                state.1 |= waited.timed_out() && !state.0.contains(&3);
+                            }
+                            let (_, mut charge) = member.into_parts();
+                            charge.as_mut().unwrap()(rank as u64 + 1).unwrap();
+                            let (state, wake) = &*schedule;
+                            state.lock().unwrap().0.push(rank);
+                            wake.notify_all();
+                            (rank, failure == Some(rank))
+                        })],
                     }
                 })
                 .collect();

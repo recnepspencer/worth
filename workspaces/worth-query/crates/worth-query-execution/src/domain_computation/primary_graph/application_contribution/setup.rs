@@ -114,10 +114,14 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
             >,
         Owner: super::WorthQueryPartitionedComputationOwner<Schema, Feature, Computation>,
     {
+        if Computation::EXECUTION != worth_query_declaration::facade::application_program::ApplicationComputationExecution::DeterministicPartitioned {
+            return Err(WorthQueryPrimaryGraphInstallationDenial::new(
+                WorthQueryPrimaryGraphInstallationDenialKind::ManagedComputationOwnerBindingMismatch,
+                Computation::IDENTITY,
+            ));
+        }
         self.handlers
-            .record_computation_owner::<Feature, Computation>(
-                worth_query_declaration::facade::application_program::ApplicationComputationExecution::DeterministicPartitioned,
-            )?;
+            .record_computation_owner::<Feature, Computation>(Computation::EXECUTION)?;
         let retention = if self.producers.retain_computation_of::<Owner::Operation>() {
             super::ComputationRetention::ProducerOperation
         } else {

@@ -51,7 +51,10 @@ fn compiled_examples_match_consumer_documents() {
     assert_eq!(
         examples,
         BTreeSet::from([
+            "checkpoint_recovery/computation_partition/oracle/collection/lifecycle/binding.rs"
+                .to_owned(),
             "final_output/feature.rs".to_owned(),
+            "final_output/definition.rs".to_owned(),
             "optional_aspects.rs".to_owned(),
             "composed_action.rs".to_owned(),
             "warehouse_inventory.rs".to_owned(),
@@ -65,8 +68,6 @@ fn compiled_examples_match_consumer_documents() {
             "observable_history.rs".to_owned(),
             "sensor_telemetry.rs".to_owned(),
             "checkpoint_recovery/computation_partition/demand.rs".to_owned(),
-            "checkpoint_recovery/computation_partition/oracle/collection/lifecycle/binding.rs"
-                .to_owned(),
             "checkpoint_recovery/required_chain/concurrent_waves/application.rs".to_owned(),
         ]),
         "all configured compiled examples must retain their pinned source bindings"

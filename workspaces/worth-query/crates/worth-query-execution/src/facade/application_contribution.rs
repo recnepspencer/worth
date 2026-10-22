@@ -1,6 +1,7 @@
 //! Contribution-owned application handler and invariant configuration.
 pub use crate::domain_computation::primary_graph::{
-    WorthQueryFeatureConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
+    WorthQueryFeatureConfiguration, WorthQueryFeatureDefinition,
+    WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
     WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
 };
 
@@ -33,15 +34,14 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryInstalledPartitionedComputation, WorthQueryManagedComputationCheckpoint,
     WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationDenial,
     WorthQueryManagedComputationExecution, WorthQueryManagedComputationInterruption,
-    WorthQueryManagedComputationOwner, WorthQueryManagedComputationPrepared,
-    WorthQueryManagedComputationResourceDenial, WorthQueryMemoryLimitLevel,
-    WorthQueryOutputReadinessContract, WorthQueryOutputReadinessContractBuilder,
-    WorthQueryOutputReadinessContractDenial, WorthQueryPartitionedComputationDenial,
-    WorthQueryPartitionedComputationOwner, WorthQueryPreparedManagedComputation,
-    WorthQueryPreparedPartitionedComputation, WorthQueryProducerApplicability,
-    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
-    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
-    WorthQueryReadinessFieldUse, WorthQueryReductionInputDenial,
+    WorthQueryManagedComputationOwner, WorthQueryManagedComputationResourceDenial,
+    WorthQueryMemoryLimitLevel, WorthQueryOutputReadinessContract,
+    WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
+    WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
+    WorthQueryPreparedManagedComputation, WorthQueryPreparedPartitionedComputation,
+    WorthQueryProducerApplicability, WorthQueryProducerInputReuseContract,
+    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerOutputFamily, WorthQueryReadinessFieldUse, WorthQueryReductionInputDenial,
     WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
 /// What a partitioned owner's results and denials declare to execution, the

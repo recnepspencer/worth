@@ -36,8 +36,6 @@ fn nested_partition_workers_keep_the_member_reentry_refusal() {
     let exceeded = watchdog.clone();
     let member = PreparedMember {
         requests: vec![PreparedCompute::new(
-            0,
-            4096,
             move |member| {
                 let (managed, _) = member.into_parts();
                 let map = worth_execution::ExecutionMap::<_, u64>::from_keyless_partitions(
@@ -94,7 +92,6 @@ fn nested_partition_workers_keep_the_member_reentry_refusal() {
                     .unwrap();
                 matches!(result, worth_execution::MapOutcome::Complete { .. })
             },
-            |_| 0,
         )],
     };
     let (settled, _) = root

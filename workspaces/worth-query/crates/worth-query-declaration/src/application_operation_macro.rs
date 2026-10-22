@@ -1,5 +1,4 @@
 mod access;
-
 /// Declares a typed operation marker in an application schema, with the
 /// structured value binding of its input.
 ///
@@ -14,9 +13,20 @@ mod access;
 /// The macro generates Rust capabilities and a schema projection. Install the projection through
 /// `ApplicationSchemaDeclarationBuilder::declared_operation`, supplying the
 /// completed operation definition with explicit effect/aftermath policy.
-/// The `access` form does not target the schema-generic marker variant.
+/// Schema-generic operations use the same access categories. An inherited
+/// projection may append access owned by an existing sealed capability family.
 #[macro_export]
 macro_rules! worth_query_operation {
+    ($vis:vis $Operation:ident for $Schema:ident: $Binding:path,
+        input $InputBinding:path; access { $($access:tt)* }
+        $(; inherited_access: |$schema:ident, $operation:ident| $inherited:block $(;)?)?
+    ) => {
+        $crate::worth_query_operation!($vis $Operation for $Schema: $Binding, input $InputBinding);
+        $crate::__worth_query_operation_access!(@generic
+            $Operation for $Schema: $Binding; { $($access)* }
+            $(; inherited_access: |$schema, $operation| $inherited)?
+        );
+    };
     (
         $vis:vis $Operation:ident for $Schema:ty,
         input $InputBinding:path;
@@ -52,29 +62,29 @@ macro_rules! worth_query_operation {
         }
     };
     (
-        $vis:vis $Operation:ident for Schema: $BindingTrait:path,
+        $vis:vis $Operation:ident for $Schema:ident: $BindingTrait:path,
         input $InputBinding:path
     ) => {
         #[derive(Clone, Copy, Debug, Eq, PartialEq)]
         $vis struct $Operation;
 
-        impl<Schema> $crate::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>
+        impl<$Schema> $crate::facade::application_schema::ApplicationOperationMarkerIdentity<$Schema>
             for $Operation
         where
-            Schema: $BindingTrait,
+            $Schema: $BindingTrait,
         {
             type InputBinding = $InputBinding;
             const IDENTIFIER: &'static str = stringify!($Operation);
         }
 
         impl $Operation {
-            pub const fn reference<Schema>() -> $crate::facade::application_schema::ApplicationOperationRef<
-                Schema,
+            pub const fn reference<$Schema>() -> $crate::facade::application_schema::ApplicationOperationRef<
+                $Schema,
                 Self,
                 <$InputBinding as $crate::facade::application_schema::ApplicationStructuredValueBinding>::Value,
             >
             where
-                Schema: $BindingTrait,
+                $Schema: $BindingTrait,
             {
                 $crate::facade::application_schema::ApplicationOperationRef::from_declaration()
             }

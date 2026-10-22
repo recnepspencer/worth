@@ -17,7 +17,7 @@ use super::{
 
 /// Completion order is discarded here. Only the canonical identity prefix
 /// decides published values, charged work, span, and the reported failure.
-pub(crate) fn settle<R, E: crate::ChargedBytes>(
+pub(crate) fn settle<R, E>(
     batch: &BatchDeclaration,
     outcomes: Vec<Mutex<Option<TaskOutcome<R, E>>>>,
     limits: &RunLimits,
@@ -29,8 +29,9 @@ pub(crate) fn settle<R, E: crate::ChargedBytes>(
     fallback: Option<ExecutionFallbackCause>,
     mut retained: Option<&mut RetainedSettlement<'_, R>>,
     lease: Option<&crate::ExecutionResourceLease<'_>>,
+    values: Vec<R>,
 ) -> BatchOutcome<R, E> {
-    let mut prefix = prefix::Prefix::new(batch.len());
+    let mut prefix = prefix::Prefix::with_values(values);
     for (index, slot) in outcomes.into_iter().enumerate() {
         if let Some(retained) = retained.as_mut() {
             retained.before(Some(batch.identities()[index]), &mut prefix, lease, limits);

@@ -4,7 +4,8 @@ mod conditional;
 mod contracts;
 mod feature;
 pub use feature::{
-    WorthQueryFeatureConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
+    WorthQueryFeatureConfiguration, WorthQueryFeatureDefinition,
+    WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
     WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
 };
 pub(in crate::domain_computation) mod execution_denial;
@@ -27,8 +28,8 @@ pub use computation::{
     WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationCheckpointDenial,
     WorthQueryManagedComputationDenial, WorthQueryManagedComputationExecution,
     WorthQueryManagedComputationInterruption, WorthQueryManagedComputationOwner,
-    WorthQueryManagedComputationPrepared, WorthQueryManagedComputationResourceDenial,
-    WorthQueryMemberExecution, WorthQueryMemoryLimitLevel, WorthQueryPreparedManagedComputation,
+    WorthQueryManagedComputationResourceDenial, WorthQueryMemberExecution,
+    WorthQueryMemoryLimitLevel, WorthQueryPreparedManagedComputation,
 };
 pub use conditional::{
     WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,

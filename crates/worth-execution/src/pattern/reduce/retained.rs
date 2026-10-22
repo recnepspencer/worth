@@ -5,21 +5,25 @@ use crate::{
     RetainedRunMetrics, RetainedRunOutcome,
 };
 
-pub struct RetainedReduction<R, F> {
-    pub tree: ReductionTree<R, F>,
+pub struct RetainedReduction<R, F, Tree = ReductionTree<R, F>> {
+    pub tree: Tree,
     /// Actual successful keyless map custody. Access-key maps and context
     /// fallbacks still produce their reduction; only keyless maps issue a run.
     pub run: Option<ExecutionRetainedRun<R>>,
     pub report: ExecutionReport,
     pub metrics: ReductionMetrics,
+    pub(super) _reducer: std::marker::PhantomData<fn() -> F>,
 }
 /// The map's already settled report remains available on a later tree refusal.
 /// Observers do not need to ask a live kernel context about its remaining work.
-pub struct RetainedReduceOutcome<R, F, E> {
-    pub result: Result<RetainedReduction<R, F>, RetainedReduceDenial<E>>,
+pub struct RetainedReduceOutcome<R, F, E, Tree = ReductionTree<R, F>> {
+    pub result: Result<RetainedReduction<R, F, Tree>, RetainedReduceDenial<E>>,
     pub mapped_report: Option<ExecutionReport>,
     pub reduction_metrics: Option<ReductionMetrics>,
 }
+pub type NativeRetainedReduction<R, F> = RetainedReduction<R, F, crate::NativeReductionTree<R, F>>;
+pub type NativeRetainedReduceOutcome<R, F, E> =
+    RetainedReduceOutcome<R, F, E, crate::NativeReductionTree<R, F>>;
 #[derive(Debug)]
 pub enum RetainedReduceDenial<E> {
     Retention(RetainedMapDenial),
@@ -202,6 +206,7 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
                 run: capture.run,
                 report,
                 metrics,
+                _reducer: std::marker::PhantomData,
             })
         })();
         // Clear only the target this completed native run actually took over.

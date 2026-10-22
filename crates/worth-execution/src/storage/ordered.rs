@@ -21,9 +21,9 @@ impl From<ExecutionAllocationDenial> for ExecutionOrderedMapDenial {
 /// replacement copies only an AVL path. This confers no source, session,
 /// currentness or successful-result authority.
 ///
-/// Inserted key/value clones must own no more heap than their `ChargedBytes`
-/// bound. The bound admits their copies before cloning; shared child/entry
-/// cells keep their own grants rather than funding an entire new root.
+/// Metered insertion admits the key/value heap bounds before cloning. Native
+/// insertion funds framework cells while payloads retain their normal Rust
+/// allocation ownership. Shared cells retain their original grants.
 pub struct ExecutionOrderedMap<K, V> {
     root: Link<K, V>,
 }
@@ -46,7 +46,7 @@ impl<K, V> ExecutionOrderedMap<K, V> {
     pub fn is_empty(&self) -> bool {
         self.root.is_none()
     }
-    /// Complete reachable retention descriptor, never a new-allocation quote.
+    /// Reachable cells and admitted payload bounds, never a new-allocation quote.
     pub fn retained_bytes(&self) -> u64 {
         self.root.as_ref().map_or(0, |n| n.bytes)
     }
@@ -151,6 +151,23 @@ impl<K: Ord + Clone + ChargedBytes, V: Clone + ChargedBytes> ExecutionOrderedMap
     ) -> Result<(), ExecutionOrderedMapDenial> {
         policy.check_live()?;
         let entry = Entry::cloned(key, value, policy)?;
+        let root = edit::insert(&self.root, entry, policy)?;
+        policy.check_live()?;
+        self.root = Some(root);
+        Ok(())
+    }
+}
+impl<K: Ord + Clone, V: Clone> ExecutionOrderedMap<K, V> {
+    /// Fund actual framework cells without a payload heap forecast. Refused
+    /// allocation policy or cancellation publishes no partial root.
+    pub fn insert_cloned_native_in(
+        &mut self,
+        key: &K,
+        value: &V,
+        policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<(), ExecutionOrderedMapDenial> {
+        policy.check_live()?;
+        let entry = Entry::cloned_native(key, value, policy)?;
         let root = edit::insert(&self.root, entry, policy)?;
         policy.check_live()?;
         self.root = Some(root);

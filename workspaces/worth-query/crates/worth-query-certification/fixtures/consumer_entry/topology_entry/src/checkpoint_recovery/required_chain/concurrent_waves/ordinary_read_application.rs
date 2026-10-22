@@ -92,7 +92,7 @@ impl OperationHandler<CheckpointSchema, PlanarMutationBinding<CheckpointSchema>>
         let pending = self.1.clone();
         let key = input.scope_key.clone();
         match self.0.prepare(&key) {
-            Ok(prepared) => prepared.into_decision_plan(512, move |computed| {
+            Ok(prepared) => prepared.into_decision_plan(move |computed| {
                 match computed.and_then(|computed| computed.complete()) {
                     Ok(_) => {
                         pending.lock().unwrap().insert(key, next);

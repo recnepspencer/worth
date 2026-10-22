@@ -32,48 +32,42 @@ fn cancellation_during_compute_has_a_witness_and_a_safe_canonical_prefix() {
                     let schedule = schedule.clone();
                     let cancellation = cancellation.clone();
                     PreparedMember {
-                        requests: vec![PreparedCompute::new(
-                            0,
-                            0,
-                            move |member| {
-                                let (state, wake) = &*schedule;
-                                if rank == selected {
-                                    let (mut held, waited) = wake
-                                        .wait_timeout_while(
-                                            state.lock().unwrap(),
-                                            Duration::from_secs(60),
-                                            |held| !held.completed[..rank].iter().all(|done| *done),
-                                        )
-                                        .unwrap();
-                                    held.watchdog |= waited.timed_out()
-                                        && !held.completed[..rank].iter().all(|done| *done);
-                                    held.reached =
-                                        !held.watchdog && member.interruption().is_none();
-                                    drop(held);
-                                    cancellation.cancel();
-                                    let mut state = state.lock().unwrap();
-                                    state.fired = true;
-                                    wake.notify_all();
-                                } else if rank > selected {
-                                    let (mut state, waited) = wake
-                                        .wait_timeout_while(
-                                            state.lock().unwrap(),
-                                            Duration::from_secs(60),
-                                            |state| !state.fired,
-                                        )
-                                        .unwrap();
-                                    state.watchdog |= waited.timed_out() && !state.fired;
-                                }
-                                let (_, mut charge) = member.into_parts();
-                                let result = charge.as_mut().unwrap()(units).map(|()| rank);
-                                if result.is_ok() {
-                                    state.lock().unwrap().completed[rank] = true;
-                                    wake.notify_all();
-                                }
-                                result
-                            },
-                            |_| 0,
-                        )],
+                        requests: vec![PreparedCompute::new(move |member| {
+                            let (state, wake) = &*schedule;
+                            if rank == selected {
+                                let (mut held, waited) = wake
+                                    .wait_timeout_while(
+                                        state.lock().unwrap(),
+                                        Duration::from_secs(60),
+                                        |held| !held.completed[..rank].iter().all(|done| *done),
+                                    )
+                                    .unwrap();
+                                held.watchdog |= waited.timed_out()
+                                    && !held.completed[..rank].iter().all(|done| *done);
+                                held.reached = !held.watchdog && member.interruption().is_none();
+                                drop(held);
+                                cancellation.cancel();
+                                let mut state = state.lock().unwrap();
+                                state.fired = true;
+                                wake.notify_all();
+                            } else if rank > selected {
+                                let (mut state, waited) = wake
+                                    .wait_timeout_while(
+                                        state.lock().unwrap(),
+                                        Duration::from_secs(60),
+                                        |state| !state.fired,
+                                    )
+                                    .unwrap();
+                                state.watchdog |= waited.timed_out() && !state.fired;
+                            }
+                            let (_, mut charge) = member.into_parts();
+                            let result = charge.as_mut().unwrap()(units).map(|()| rank);
+                            if result.is_ok() {
+                                state.lock().unwrap().completed[rank] = true;
+                                wake.notify_all();
+                            }
+                            result
+                        })],
                     }
                 })
                 .collect();

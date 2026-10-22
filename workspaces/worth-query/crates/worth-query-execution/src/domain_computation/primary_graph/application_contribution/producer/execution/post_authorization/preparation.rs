@@ -208,7 +208,8 @@ where
             let completed = completed_handler(
                 Binding::IDENTITY,
                 completion
-                    .finish(runtime, &identities, slots)
+                    .finish(runtime, &identities, slots, phase.execution_for(&runtime.product_runtime)
+                        .map_err(|cause| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "producer completion phase"))?)
                     .into_outcome()
                     .map_err(|error| execution_failed(Binding::IDENTITY, error))?,
                 |denial| provider.domain_denial_reason(denial),
