@@ -42,6 +42,11 @@ pub enum WorthQueryWorkflowAdvanceDenialKind {
     DomainEvidence(super::WorthQueryDomainEvidenceAdmissionDenialKind),
     /// The caller's computation request or declared storage was refused.
     ComputationAdmission(worth_execution::LeaseDenial),
+    /// Framework allocation was physically refused at this member (or entry).
+    ComputationAllocation {
+        stage_identity: Option<String>,
+        cause: worth_execution::ExecutionPhysicalAllocationDenialKind,
+    },
     /// A canonical member exhausted its checkpoint work or counter.
     ComputationWorkExhausted {
         stage_identity: Option<String>,

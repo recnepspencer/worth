@@ -29,7 +29,7 @@ impl TreeTarget {
         execution: &super::super::super::request_execution::QueryRequestExecution<'_>,
     ) -> Result<Self, super::super::WorthQueryPartitionedComputationDenial<Stopped>>
     where
-        Reduced: Clone + worth_execution::ChargedBytes + worth_execution::CanonicalBits,
+        Reduced: Clone + worth_execution::CanonicalBits,
     {
         use super::super::WorthQueryPartitionedComputationDenial as D;
         let work = if identities_unchanged {

@@ -24,14 +24,9 @@ fn a_present_interruption_dispatches_no_member_at_any_matrix_width() {
                 .map(|_| {
                     let entered = entered.clone();
                     PreparedMember {
-                        requests: vec![PreparedCompute::new(
-                            0,
-                            0,
-                            move |_| {
-                                entered.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                            },
-                            |_| 0,
-                        )],
+                        requests: vec![PreparedCompute::new(move |_| {
+                            entered.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        })],
                     }
                 })
                 .collect();

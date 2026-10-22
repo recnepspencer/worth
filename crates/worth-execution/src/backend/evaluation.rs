@@ -1,12 +1,16 @@
 use super::{
     meter::{KernelContext, KernelFailure, RunLimits},
     panic_boundary::contain,
+    payload_storage::PayloadStorage,
     port::TaskOutcome,
 };
-use crate::{authority::ExecutionResourceLease, report::ChargedBytes};
+use crate::authority::ExecutionResourceLease;
+#[cfg(test)]
+use crate::report::ChargedBytes;
 use std::panic::AssertUnwindSafe;
 
 /// Both input modes cross the same checkpoint, panic, capacity, and cost boundary.
+#[cfg(test)]
 pub(super) fn evaluate<I, R, E, F>(
     input: I,
     lease: Option<&ExecutionResourceLease<'_>>,
@@ -23,6 +27,35 @@ pub(super) fn evaluate<I, R, E, F>(
 where
     R: ChargedBytes,
     E: ChargedBytes,
+    F: Fn(I, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>>,
+{
+    evaluate_with_storage(
+        input,
+        lease,
+        limits,
+        result_capacity,
+        result_memory,
+        capture,
+        kernel,
+        &PayloadStorage::<(), R, E>::metered(),
+    )
+}
+
+pub(super) fn evaluate_with_storage<I, T, R, E, F>(
+    input: I,
+    lease: Option<&ExecutionResourceLease<'_>>,
+    limits: &RunLimits,
+    result_capacity: Option<u64>,
+    result_memory: Option<&std::sync::Mutex<Vec<crate::ExecutionMemoryReservation>>>,
+    capture: Option<&super::ExecutionKernelReceiptStorage>,
+    kernel: &F,
+    payload: &PayloadStorage<T, R, E>,
+) -> (
+    TaskOutcome<R, E>,
+    Option<super::ExecutionKernelReceipt>,
+    Option<u64>,
+)
+where
     F: Fn(I, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>>,
 {
     let newly_active_worker = lease.is_some_and(|value| !value.is_current_worker_in_lineage());
@@ -70,28 +103,32 @@ where
     let mut allocation_denial = None;
     let result = match result {
         Ok(value) => {
-            let heap = value.additional_charged_bytes();
-            if result_capacity.is_some_and(|maximum| heap > maximum) {
+            let heap = payload.result_measure().map(|measure| measure(&value));
+            if heap.is_some_and(|heap| result_capacity.is_some_and(|maximum| heap > maximum)) {
                 Err(KernelFailure::ResultCapacityExceeded)
             } else {
-                result_heap = Some(heap);
+                result_heap = heap;
                 Ok(value)
             }
         }
         Err(KernelFailure::Domain(error))
-            if result_capacity
-                .is_some_and(|maximum| error.additional_charged_bytes() > maximum) =>
+            if payload.error_measure().is_some_and(|measure| {
+                result_capacity.is_some_and(|maximum| measure(&error) > maximum)
+            }) =>
         {
             Err(KernelFailure::ResultCapacityExceeded)
         }
         other => other,
     };
-    let result = if result_capacity.is_none()
+    let result = if payload.result_measure().is_some()
+        && result_capacity.is_none()
         && (lease.is_some() || limits.serial_memory().is_some())
     {
         let heap = match &result {
-            Ok(value) => Some(value.additional_charged_bytes()),
-            Err(KernelFailure::Domain(error)) => Some(error.additional_charged_bytes()),
+            Ok(value) => payload.result_measure().map(|measure| measure(value)),
+            Err(KernelFailure::Domain(error)) => {
+                payload.error_measure().map(|measure| measure(error))
+            }
             Err(_) => None,
         };
         match heap.map(|heap| crate::ExecutionMemoryReservation::reserve_in_scope(lease, heap)) {

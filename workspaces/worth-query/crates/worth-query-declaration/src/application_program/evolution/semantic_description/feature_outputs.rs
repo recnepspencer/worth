@@ -100,14 +100,5 @@ pub(super) fn append_feature_outputs(
                 ),
             ]),
         ));
-        let resources = computation.resources();
-        facts.push(fact(
-            ApplicationSemanticFamily::Resources,
-            subject,
-            framed_fields([
-                ("work", resources.maximum_work().to_string()),
-                ("bytes", resources.maximum_retained_bytes().to_string()),
-            ]),
-        ));
     }
 }

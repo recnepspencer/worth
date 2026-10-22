@@ -3,7 +3,6 @@
 mod completion;
 mod decision_plan;
 pub(super) mod kernel_observation;
-mod transport;
 
 use worth_execution::{ExecutionMap, MapKernelContext};
 use worth_query_declaration::facade::application_program::{
@@ -17,7 +16,6 @@ use super::super::{
     WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationExecution,
     WorthQueryManagedComputationResourceDenial,
 };
-use super::gather_memory::GatheredMemory;
 use super::incremental::{
     observe_unretained, CompletedComputationRetention, ComputationDeposit, ComputedIncremental,
     FullRecording, PreparedIncremental, PriorAbsence, Suppression,
@@ -40,15 +38,6 @@ pub(super) type Gathered<Schema, Feature, Computation, Owner> = GatheredComputat
     <Owner as WorthQueryPartitionedComputationOwner<Schema, Feature, Computation>>::Gathered,
 >;
 
-/// A declared amount as execution units, refused as `refused` when it does
-/// not fit.
-pub(super) fn units(
-    declared: usize,
-    refused: WorthQueryManagedComputationResourceDenial,
-) -> Result<u64, WorthQueryManagedComputationResourceDenial> {
-    u64::try_from(declared).map_err(|_| refused)
-}
-
 pub struct WorthQueryPreparedPartitionedComputation<Schema, Feature, Computation, Owner>
 where
     Schema: ApplicationSchema,
@@ -58,7 +47,7 @@ where
 {
     pub(super) installed:
         WorthQueryInstalledPartitionedComputation<Schema, Feature, Computation, Owner>,
-    /// The declared work the input digest and the item keys spent.
+    /// The canonical work spent encoding the input and item keys.
     pub(super) prepared_work: u64,
     pub(super) run: PreparedRun<Schema, Feature, Computation, Owner>,
     /// Where the completed run is left for seal, when a producer runs it.
@@ -76,11 +65,12 @@ where
     Owner: WorthQueryPartitionedComputationOwner<Schema, Feature, Computation>,
 {
     Full {
-        map: ExecutionMap<Gathered<Schema, Feature, Computation, Owner>, u64>,
-        /// The request memory the gathered partitions hold until the map's
-        /// admission takes it over.
-        memory: GatheredMemory,
-        remaining_work: u64,
+        map: ExecutionMap<
+            Gathered<Schema, Feature, Computation, Owner>,
+            (),
+            worth_execution::NativePayload,
+        >,
+        compute_ceiling: Option<u64>,
         recording: Result<FullRecording<Computation::Partition, Owner::Item>, Suppression>,
         cause: WorthQueryPartitionedComputationFullCause,
     },
@@ -107,9 +97,9 @@ where
     pub fn with_compute_ceiling_for_test(mut self, ceiling: u64) -> Self {
         crate::domain_computation::execution_observation::owned_control_scope::current_id();
         match &mut self.run {
-            PreparedRun::Full { remaining_work, .. } => {
-                *remaining_work = (*remaining_work).min(ceiling)
-            }
+            PreparedRun::Full {
+                compute_ceiling, ..
+            } => *compute_ceiling = Some(compute_ceiling.map_or(ceiling, |old| old.min(ceiling))),
             PreparedRun::Incremental(prepared) => prepared.restrict_compute_ceiling(ceiling),
         }
         self
@@ -128,8 +118,7 @@ where
     }
 
     /// Computes every partition through the execution map and reduces the
-    /// results over the canonical tree, inside what `prepare` left of the
-    /// computation's declared work.
+    /// results over the canonical tree under the original request's policy.
     ///
     /// The run is placed by the request's execution: on a child of the
     /// request's lease, or serially within the request's policy. Either way
@@ -162,30 +151,30 @@ where
         let owner = &*self.installed.owner;
         let execution = &execution;
         let reducer = owner.reducer();
-        let declared_bytes = units(
-            Computation::RESOURCES.maximum_retained_bytes(),
-            WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted,
-        )
-        .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
         let compute_kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
                               context: &mut MapKernelContext<'_, '_>,
                               #[cfg(test)] native: Option<
             &worth_execution::ExecutionResourceLease<'_>,
         >| {
             let (computed, refused) = {
+                let context = std::cell::RefCell::new(&mut *context);
                 let mut charge = |work| {
-                    context.checkpoint(work)?;
+                    context.borrow_mut().checkpoint(work)?;
                     Ok(())
                 };
+                let mut poll = || context.borrow_mut().poll();
                 let checkpoint =
-                    WorthQueryManagedComputationCheckpoint::for_partition(&mut charge, execution);
+                    WorthQueryManagedComputationCheckpoint::for_partition(&mut charge, &mut poll);
                 #[cfg(test)]
                 let checkpoint = checkpoint.with_native_lease_for_test(native);
                 let mut checkpoint = checkpoint;
-                let computed = owner.compute_partition(
-                    WorthQueryComputationPartitionView::new(partition),
-                    &mut checkpoint,
-                );
+                let computed = checkpoint.poll().map_err(Into::into).and_then(|()| {
+                    owner.compute_partition(
+                        WorthQueryComputationPartitionView::new(partition),
+                        &mut checkpoint,
+                    )
+                });
+                let _ = checkpoint.poll();
                 (computed, checkpoint.refused())
             };
             match refused {
@@ -216,14 +205,13 @@ where
             };
         let exhausted = || {
             WorthQueryPartitionedComputationDenial::Resource(
-                WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                WorthQueryManagedComputationResourceDenial::WorkCounterOverflow,
             )
         };
         let (reduced, computed_work, completed) = match self.run {
             PreparedRun::Full {
                 map,
-                memory,
-                remaining_work,
+                compute_ceiling,
                 recording,
                 cause,
             } => {
@@ -236,23 +224,14 @@ where
                               context: &mut MapKernelContext<'_, '_>| {
                     compute_kernel(partition, context, Some(dispatch.native_lease_for_test()))
                 };
-                // The map's admission takes over the gathered partitions' hold,
-                // and the tree is handed to `tree_memory` as the run ends.
-                let mut tree_memory = execution
-                    .request
-                    .reserve(0)
-                    .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
                 let (tree, report, metrics, partition_results) = transport.call(|| {
                     let reduced = dispatch
                         .reduce_retained(
-                            remaining_work,
+                            compute_ceiling,
                             &map,
-                            memory.into_held(),
-                            &mut tree_memory,
                             (kernel, diagnostic_kernel),
                             (reducer.identity)(),
                             reducer.combine,
-                            declared_bytes,
                             cause,
                         )
                         .map_err(WorthQueryPartitionedComputationDenial::from_retained_reduce)?;
@@ -275,7 +254,6 @@ where
                     Ok(recording) => recording.complete(
                         partition_results,
                         tree,
-                        tree_memory,
                         execution.request,
                         cause,
                         report,

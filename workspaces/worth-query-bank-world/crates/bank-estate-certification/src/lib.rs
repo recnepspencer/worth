@@ -4,6 +4,8 @@
     "../../../../worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md"
 )]
 #![forbid(unsafe_code)]
+// The external native command proves Send through the persistent graph types.
+#![recursion_limit = "256"]
 
 mod capability_command_outcome;
 mod estate_commands;

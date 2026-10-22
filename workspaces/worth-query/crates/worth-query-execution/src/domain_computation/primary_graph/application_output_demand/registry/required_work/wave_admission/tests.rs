@@ -37,7 +37,7 @@ fn selected() -> std::sync::Arc<PositionedRelationalSnapshot> {
         .expect("the wave-admission proof owns its request")
 }
 fn compute_plan() -> OwnerPlan<'static, (), ()> {
-    OwnerPlan::new(vec![PreparedCompute::new(0, 0, |_| (), |_| 0)], |slots| {
+    OwnerPlan::new(vec![PreparedCompute::new(|_| ())], |slots| {
         assert_eq!(slots.len(), 1);
         Ok(())
     })

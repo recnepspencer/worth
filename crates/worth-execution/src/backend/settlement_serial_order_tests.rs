@@ -22,9 +22,14 @@ struct LaterHandedOffFirst<'a> {
 
 impl InputMode for LaterHandedOffFirst<'_> {
     type Item = u64;
+    type Payload = u64;
 
-    fn memory_bytes<R, E>(&self, declaration: &BatchDeclaration) -> Option<u64> {
-        declaration.execution_memory_bytes::<u64, R, E>(self.values)
+    fn memory_bytes<R, E>(
+        &self,
+        declaration: &BatchDeclaration,
+        measure: Option<fn(&u64) -> u64>,
+    ) -> Option<u64> {
+        declaration.memory_bytes_with::<u64, R, E>(self.values, measure)
     }
 
     fn dispatch(
@@ -76,6 +81,7 @@ fn serial_handoff<E: ChargedBytes + Send>(
         None,
         None,
         None,
+        super::payload_storage::PayloadStorage::<u64, u64, E>::metered(),
     );
     drop(serial);
     assert_eq!(

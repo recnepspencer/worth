@@ -9,22 +9,14 @@ pub(super) struct PartitionMetadata<Key> {
 }
 impl<Key> PartitionMetadata<Key> {
     pub(super) fn from_recorded(
-        entries:BTreeMap<PartitionIdentity,(Arc<Key>,u64,crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge)>,
+        entries:BTreeMap<PartitionIdentity,(Arc<Key>,crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge)>,
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, ExecutionOrderedMapDenial> {
         let mut result = Self {
             entries: Default::default(),
         };
-        for (id, (key, key_bytes, gather)) in entries {
-            result.put(
-                id,
-                RetainedPartition {
-                    key,
-                    key_bytes,
-                    gather,
-                },
-                policy,
-            )?;
+        for (id, (key, gather)) in entries {
+            result.put(id, RetainedPartition { key, gather }, policy)?;
         }
         Ok(result)
     }
@@ -39,7 +31,7 @@ impl<Key> PartitionMetadata<Key> {
         value: RetainedPartition<Key>,
         policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), ExecutionOrderedMapDenial> {
-        self.entries.insert_cloned_in(&id, &value, policy)
+        self.entries.insert_cloned_native_in(&id, &value, policy)
     }
     pub(super) fn remove(
         &mut self,
@@ -66,6 +58,7 @@ impl<Key> PartitionMetadata<Key> {
     pub(super) fn keys(&self) -> impl Iterator<Item = &PartitionIdentity> {
         self.entries.keys()
     }
+    #[cfg(test)]
     pub(super) fn bytes(&self) -> Option<u64> {
         Some(self.entries.retained_bytes())
     }

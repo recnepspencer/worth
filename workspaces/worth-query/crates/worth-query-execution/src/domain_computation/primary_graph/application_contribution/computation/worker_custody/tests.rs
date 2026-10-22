@@ -43,26 +43,21 @@ fn author_held_application_and_product_handles_receive_nested_opening() {
             .map(|_| {
                 let application = application.clone();
                 PreparedMember {
-                    requests: vec![PreparedCompute::new(
-                        0,
-                        0,
-                        move |_| {
-                            assert!(active(), "the dispatch owns the worker marker");
-                            // A bounded number of calls is the watchdog: every call must
-                            // return its refusal, and no recursive advance can start.
-                            for _ in 0..2 {
-                                assert_eq!(
-                                    application.with_host_advancement(|_| ()),
-                                    Err(WorthQueryAdvancementDenial::NestedOpening)
-                                );
-                                assert_eq!(
-                                    application.product_runtime().with_advancement(|_| ()),
-                                    Err(WorthQueryAdvancementDenial::NestedOpening)
-                                );
-                            }
-                        },
-                        |_| 0,
-                    )],
+                    requests: vec![PreparedCompute::new(move |_| {
+                        assert!(active(), "the dispatch owns the worker marker");
+                        // A bounded number of calls is the watchdog: every call must
+                        // return its refusal, and no recursive advance can start.
+                        for _ in 0..2 {
+                            assert_eq!(
+                                application.with_host_advancement(|_| ()),
+                                Err(WorthQueryAdvancementDenial::NestedOpening)
+                            );
+                            assert_eq!(
+                                application.product_runtime().with_advancement(|_| ()),
+                                Err(WorthQueryAdvancementDenial::NestedOpening)
+                            );
+                        }
+                    })],
                 }
             })
             .collect();

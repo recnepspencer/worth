@@ -1,6 +1,16 @@
 use super::{KernelContext, KernelMeter, KernelStop, NestedStopOwner};
 
 impl KernelContext<'_, '_> {
+    /// Observe the original request and nested-stop state without charging work
+    /// or appending a zero-work checkpoint to a retained kernel receipt.
+    pub fn poll(&mut self) -> Result<(), KernelStop> {
+        crate::authority::consult_observation::reached();
+        // A successful control guard supplies no kernel input. A failed guard
+        // latches the original stop and already prevents receipt issuance.
+        // Value-bearing context queries retain their own invalidation paths.
+        self.poll_inner(false)
+    }
+
     /// Account work completed by a domain-local checked meter after it stops.
     /// This does not authorize new work or clear the original stop; it keeps
     /// cancellation/deadline reports faithful to work already performed.
@@ -103,6 +113,29 @@ impl KernelContext<'_, '_> {
                 })
             });
         }
+        self.poll_inner(settling_frontier)?;
+        let mut meter = self.meter.borrow_mut();
+        let result = (|| {
+            let next = meter
+                .work
+                .checked_add(units)
+                .ok_or(KernelStop::WorkCounterOverflow)?;
+            if meter.limits.ceiling.is_some_and(|ceiling| next > ceiling) {
+                return Err(KernelStop::WorkCeiling);
+            }
+            let span = meter
+                .span
+                .checked_add(units)
+                .ok_or(KernelStop::WorkCounterOverflow)?;
+            meter.work = next;
+            meter.span = span;
+            Ok(())
+        })();
+        drop(meter);
+        self.latch_checkpoint_result(result)
+    }
+
+    fn poll_inner(&mut self, settling_frontier: bool) -> Result<(), KernelStop> {
         let mut meter = self.meter.borrow_mut();
         if let Some(stop) = meter.checkpoint_stop {
             crate::authority::consult_observation::stopped(Some((
@@ -122,22 +155,18 @@ impl KernelContext<'_, '_> {
             if owner.is_some() && !(settling_frontier && owner == Some(NestedStopOwner::Request)) {
                 return Err(KernelStop::NestedStopped);
             }
-            let next = meter
-                .work
-                .checked_add(units)
-                .ok_or(KernelStop::WorkCounterOverflow)?;
-            if meter.limits.ceiling.is_some_and(|ceiling| next > ceiling) {
-                return Err(KernelStop::WorkCeiling);
-            }
-            let span = meter
-                .span
-                .checked_add(units)
-                .ok_or(KernelStop::WorkCounterOverflow)?;
-            meter.work = next;
-            meter.span = span;
             Ok(())
         })();
+        drop(meter);
+        self.latch_checkpoint_result(result)
+    }
+
+    fn latch_checkpoint_result(
+        &mut self,
+        result: Result<(), KernelStop>,
+    ) -> Result<(), KernelStop> {
         if let Err(stop) = result {
+            let mut meter = self.meter.borrow_mut();
             crate::authority::consult_observation::stopped(Some((
                 std::rc::Rc::as_ptr(&self.meter) as usize,
                 false,

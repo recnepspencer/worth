@@ -12,11 +12,17 @@ fn unchanged_facts_carry_every_partition_to_the_same_outcome() {
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
     let charged = first.work;
+    *installed.owner.calls.lock().unwrap() = [0; 4];
 
     let next = attempt(&world, &installed, Some(prior_of(first, false)));
     assert_eq!(next.work, charged, "comparator reads add no charge");
     assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
     assert!(next.gathered.is_empty(), "no partition is gathered again");
+    assert_eq!(
+        *installed.owner.calls.lock().unwrap(),
+        [0; 4],
+        "the second retained attempt invokes neither membership, key, gather nor kernel owners"
+    );
     // The total and the charged work are a full run's.
     assert_eq!(next.outcome.unwrap(), outcome);
     assert!(next.sealed.unwrap().is_some(), "it retains its state");
@@ -112,7 +118,7 @@ fn growing_past_the_ceiling_is_denied_as_a_full_run_is_denied() {
     for status in [0, 1] {
         let world = installed_authorization_world(true);
         let installed = installed(StatusRead::Gather(status), sum);
-        assert_eq!(Computation::RESOURCES.maximum_work(), WORK_CEILING);
+
         *installed.owner.work.lock().unwrap() = [KERNEL_WORK, KERNEL_WORK];
         let (declared, full_tree_work) = declared_cost(&world);
         let first = first_run(&world, &installed);
@@ -140,9 +146,22 @@ fn growing_past_the_ceiling_is_denied_as_a_full_run_is_denied() {
         let grown = WORK_CEILING + KERNEL_WORK + usize::try_from(full_tree_work).unwrap() + 1
             - usize::try_from(declared).unwrap();
         installed.owner.work.lock().unwrap()[usize::from(status == 0)] = grown;
-
-        let next = attempt(&world, &installed, Some(prior_of(first, true)));
-        let full = attempt(&world, &installed, None);
+        let preparation = declared - 2 * KERNEL_WORK as u64 - full_tree_work;
+        let compute_ceiling = WORK_CEILING as u64 - preparation;
+        let request = live_scope();
+        let policy = crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::MIN, None);
+        let billed = |prior| {
+            projected_attempt::attempt_billed(
+                &world,
+                &installed,
+                prior,
+                &request,
+                RuntimeWorldExecutionPlacement::Serial(policy),
+                Some(compute_ceiling),
+            )
+        };
+        let next = billed(Some(prior_of(first, true)));
+        let full = billed(None);
         assert!(next.outcome.is_err(), "the grown run passes the ceiling");
         assert_eq!(
             next.outcome, full.outcome,

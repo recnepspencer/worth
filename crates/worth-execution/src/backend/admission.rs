@@ -35,6 +35,22 @@ pub enum BatchDenial {
 }
 
 impl<T> AdmittedBatch<T> {
+    pub(crate) fn admit_native(
+        identities: CanonicalUniqueVec<PartitionIdentity>,
+        values: Vec<T>,
+    ) -> Self {
+        debug_assert_eq!(identities.as_slice().len(), values.len());
+        Self {
+            declaration: BatchDeclaration {
+                identities,
+                max_result_bytes: None,
+                kernel_scratch_bytes: 0,
+                declared_result_bytes: 0,
+                access_memory_bytes: 0,
+            },
+            values,
+        }
+    }
     pub(crate) fn retained_result_bytes<R>(&self) -> Option<u64> {
         let slots = self.len().checked_mul(size_of::<R>())?;
         u64::try_from(slots)
@@ -195,9 +211,20 @@ impl BatchDeclaration {
         &self,
         values: &[T],
     ) -> Option<u64> {
-        let input_heap = values.iter().try_fold(0_u64, |sum, item| {
-            sum.checked_add(item.additional_charged_bytes())
-        })?;
+        self.memory_bytes_with::<T, R, E>(values, Some(T::additional_charged_bytes))
+    }
+
+    pub(super) fn memory_bytes_with<T, R, E>(
+        &self,
+        values: &[T],
+        measure: Option<fn(&T) -> u64>,
+    ) -> Option<u64> {
+        let input_heap = match measure {
+            Some(measure) => values
+                .iter()
+                .try_fold(0_u64, |sum, item| sum.checked_add(measure(item)))?,
+            None => 0,
+        };
         execution_memory_requirement::<T, R, E>(
             self.len(),
             input_heap,

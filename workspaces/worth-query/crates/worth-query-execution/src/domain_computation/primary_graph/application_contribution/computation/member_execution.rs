@@ -25,16 +25,19 @@ pub struct WorthQueryMemberExecution<'member> {
     execution: &'member QueryRequestExecution<'member>,
     take: &'member mut dyn FnMut() -> Option<worth_execution::NestedComputationStop>,
     charge: Option<&'member mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
+    poll: &'member mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
 }
 impl<'member> WorthQueryMemberExecution<'member> {
     pub(in crate::domain_computation::primary_graph) fn for_kernel(
         execution: &'member MemberRequestExecution<'member>,
         charge: &'member mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+        poll: &'member mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
         take: &'member mut dyn FnMut() -> Option<worth_execution::NestedComputationStop>,
     ) -> Self {
         Self {
             execution: execution.request(),
             charge: Some(charge),
+            poll,
             take,
         }
     }
@@ -46,17 +49,20 @@ impl<'member> WorthQueryMemberExecution<'member> {
         run: impl FnOnce(
             WorthQueryManagedComputationExecution<'member>,
             Option<&'member mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
+            &'member mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
             &mut NestedFailureTransport<'member>,
         ) -> Result<T, E>,
     ) -> Result<T, E> {
         let Self {
             execution,
             charge,
+            poll,
             take,
         } = self;
         run(
             WorthQueryManagedComputationExecution::new(execution),
             charge,
+            poll,
             &mut NestedFailureTransport::new(take),
         )
     }

@@ -4,10 +4,16 @@ use worth_execution::ExecutionOrderedMap;
 pub(in crate::domain_computation::primary_graph) struct CallShape {
     pub(super) order: ExecutionOrderedMap<ComputationRead, ()>,
     pub(super) prefix: usize,
-    pub(super) bytes: u64,
     pub(super) _memory: QueryMemoryReservation,
 }
 impl CallShape {
+    #[cfg(test)]
+    pub(super) fn bytes(&self) -> u64 {
+        self._memory
+            .bytes()
+            .checked_add(self.order.retained_bytes())
+            .expect("actual test backing sizes fit")
+    }
     pub(in crate::domain_computation::primary_graph) fn calls(
         &self,
     ) -> impl Iterator<Item = ComputationRead> + '_ {
@@ -92,14 +98,9 @@ impl CallShape {
         execution: &QueryRequestExecution<'_>,
     ) -> Result<Arc<Self>, Resource> {
         let memory = execution.reserve((size_of::<Self>() + 2 * size_of::<usize>()) as u64)?;
-        let bytes = memory
-            .bytes()
-            .checked_add(ordinals.retained_bytes())
-            .ok_or(Resource::CapacityOverflow)?;
         Ok(Arc::new(Self {
             order: ordinals,
             prefix,
-            bytes,
             _memory: memory,
         }))
     }

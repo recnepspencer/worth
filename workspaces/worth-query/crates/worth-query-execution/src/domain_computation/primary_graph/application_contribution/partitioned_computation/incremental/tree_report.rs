@@ -105,10 +105,13 @@ pub(super) struct ReportedTree<Tree, Stopped> {
 
 pub(super) fn rebuild_cause<E>(
     reason: ReductionRunStop<E>,
-) -> Result<WorthQueryPartitionedTreeRebuildCause, E> {
+) -> Result<WorthQueryPartitionedTreeRebuildCause, ReductionRunStop<E>> {
     use WorthQueryPartitionedTreeRebuildCause as Cause;
     match reason {
-        ReductionRunStop::Hook(stop) => Err(stop),
+        cause @ (ReductionRunStop::Hook(_)
+        | ReductionRunStop::Denial(
+            ReductionDenial::Allocation(_) | ReductionDenial::Admission(_),
+        )) => Err(cause),
         ReductionRunStop::Panic | ReductionRunStop::Denial(ReductionDenial::ReducerPanic) => {
             Ok(Cause::ReducerPanicked)
         }

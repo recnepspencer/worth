@@ -5,6 +5,57 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 #[test]
+fn native_cells_keep_original_custody_and_refuse_before_payload_clone() {
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    };
+    struct Payload {
+        value: Vec<u8>,
+        copies: Arc<AtomicUsize>,
+    }
+    impl Clone for Payload {
+        fn clone(&self) -> Self {
+            self.copies.fetch_add(1, Ordering::Relaxed);
+            Self {
+                value: self.value.clone(),
+                copies: Arc::clone(&self.copies),
+            }
+        }
+    }
+    let lease = lease(8192);
+    let policy = ExecutionAllocationPolicy::Execution(&lease);
+    let copies = Arc::new(AtomicUsize::new(0));
+    let payload = Payload {
+        value: vec![7; 16384],
+        copies: Arc::clone(&copies),
+    };
+    let mut map = ExecutionOrderedMap::default();
+    map.insert_cloned_native_in(&1u64, &payload, policy)
+        .unwrap();
+    let original = map.clone();
+    let held = lease.charged_memory_bytes();
+    let filled = lease
+        .reserve_memory(lease.available_memory_bytes().unwrap())
+        .unwrap();
+    copies.store(0, Ordering::Relaxed);
+    assert!(map.insert_cloned_native_in(&2, &payload, policy).is_err());
+    assert_eq!(copies.load(Ordering::Relaxed), 0);
+    assert!(Arc::ptr_eq(
+        map.root.as_ref().unwrap(),
+        original.root.as_ref().unwrap()
+    ));
+    assert_eq!(map.get(&1).unwrap().value.len(), 16384);
+    drop(filled);
+    assert_eq!(lease.charged_memory_bytes(), held);
+    map.remove_in(&1, policy).unwrap();
+    assert!(map.is_empty());
+    assert_eq!(original.len(), 1);
+    assert_eq!(lease.charged_memory_bytes(), held);
+    drop(original);
+    assert_eq!(lease.charged_memory_bytes(), 0);
+}
+#[test]
 fn ranks_follow_native_edits_without_changing_historical_order_or_funding() {
     let lease = lease(2_000_000);
     let policy = ExecutionAllocationPolicy::Execution(&lease);

@@ -44,8 +44,7 @@ impl Example for Warehouse {
                 &installed,
                 reader,
                 &inventory::sample_input(),
-                |result| {
-                    let (total, _) = result.expect("the warehouse example completes");
+                |total| {
                     RESULTS.with(|results| results.borrow_mut().push(Reduced::Inventory(total)));
                     worth_query_host::facade::primary_graph::HandlerResult::Completed(())
                 },
@@ -67,8 +66,7 @@ impl Example for Telemetry {
                 &installed,
                 reader,
                 &telemetry::sample_input(),
-                |result| {
-                    let (peak, _) = result.expect("the telemetry example completes");
+                |peak| {
                     RESULTS.with(|results| results.borrow_mut().push(Reduced::Telemetry(peak)));
                     worth_query_host::facade::primary_graph::HandlerResult::Completed(())
                 },
@@ -119,10 +117,44 @@ impl<E: Example> ApplicationProgramDefinition<S> for Program<E> {
             .native_action::<B>()
             .finish_action()
             .finish();
+        let example = E::declare();
+        let installed = final_output.feature();
+        let declared = example.feature();
         assert_eq!(
-            final_output.feature(),
-            E::declare().feature(),
-            "the host installs the example's artifact and computation declarations"
+            (
+                installed.composition_instance(),
+                installed.identity(),
+                installed.feature_type(),
+                installed.major(),
+                installed.minor(),
+                installed.inputs(),
+                installed.outputs(),
+                installed.derived_artifacts(),
+                installed.derived_collections(),
+                installed.managed_computations(),
+            ),
+            (
+                declared.composition_instance(),
+                declared.identity(),
+                declared.feature_type(),
+                declared.major(),
+                declared.minor(),
+                declared.inputs(),
+                declared.outputs(),
+                declared.derived_artifacts(),
+                declared.derived_collections(),
+                declared.managed_computations(),
+            ),
+            "the host installs the example's complete declaration before adding its required roles"
+        );
+        assert!(declared.required_roles().is_empty());
+        assert_eq!(
+            installed.required_roles(),
+            demand_policy::final_output_feature::<A>()
+                .finish()
+                .feature()
+                .required_roles(),
+            "the host adds exactly its existing initial and preserve roles"
         );
         demand_policy::feature_specs_with_final_output(
             required_chain::output_feature_spec(),

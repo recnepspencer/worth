@@ -268,44 +268,6 @@ includes a passing capability example and an undeclared-member compile refusal.
 
 ---
 
-### Resident value accounting
-
-Managed computation values can derive the existing native `ChargedBytes`
-contract through Host:
-
-<!-- illustrative -->
-```rust,ignore
-// Illustrative: not compiled.
-use worth_query_host::facade::application_contribution::ChargedBytes;
-
-#[derive(ChargedBytes)]
-#[charged_bytes(crate = "worth_query_host::facade::application_contribution")]
-struct RetainedResult {
-    total: u64,
-    labels: Vec<String>,
-    resident_notes: Option<Box<Vec<String>>>,
-}
-```
-
-The derive supports concrete structs and enums. Every resident field must
-implement `ChargedBytes`; this includes fields omitted by Serde. `String` and
-`Vec` contribute their actual backing capacity and nested owned storage, while
-admission separately counts inline storage. Wire shape and encoded length do
-not determine resident size. Unsupported heap owners fail compilation: provide
-a named opaque/shared owner's native `ChargedBytes` implementation rather than
-skipping its field. Generic owners and unions require an explicit owner contract.
-
-Pure schema owners import the same trait and derive from
-`worth_foundational::facade` and select it with
-`#[charged_bytes(crate = "worth_foundational::facade")]`. They need no Execution
-dependency. Execution and Host re-export that single description contract;
-their runtime admission responsibilities stay with the runtime owners.
-
-This description does not allocate, reserve memory, infer kernel work bounds or
-deduplicate shared pointers. Existing map/reduction admission, bounded checkpoints,
-tree sharing and retained reservations continue to own those responsibilities.
-See the [native resident-value tests](../crates/worth-execution/tests/charged_bytes_derive.rs)
-and the [Host facade consumer](../workspaces/worth-query/crates/worth-query-host/tests/charged_bytes_derive.rs).
 
 ### Canonical nested values and derived readiness
 
@@ -849,7 +811,10 @@ pub(crate) fn validated_bank_application() -> Result<
 ### 3.6 Declare and install a partitioned managed computation
 
 A managed computation declares its input, output artifact, partition key,
-execution posture, determinism contract, and finite resource ceiling. Add it
+execution posture and determinism contract. Neither `Deterministic` nor
+`DeterministicPartitioned` requires a per-computation work or byte forecast.
+The original request still owns cancellation, deadlines, placement and native
+allocation controls. Add the computation
 with `managed_computation::<Computation>()` beside its `derived_artifact` in the
 feature specification. Install its owner with
 `setup.partitioned_computation::<Feature, Computation, _>(owner)` and retain the
@@ -869,16 +834,38 @@ reduced result back on the caller thread. Preparation precedes kernel dispatch; 
 follows successful computation and reduction.
 
 In the executable examples below, `run_inventory` and `run_peak` call
-`installed.prepare(reader, input)` and return
-`prepared.into_decision_plan(..)`. The plan carries compute inputs, not a live
-reader. Its completion closure handles the typed computation result and returns
-a `HandlerResult`. Use this shape when a producer's computation can run beside
+`installed.decision_plan(reader, input, complete)`. Query owns preparation,
+dispatch, reduction, owner completion and native failure conversion. The callback
+receives only the owner's completed value and returns a `HandlerResult`.
+The plan carries compute inputs, not a live reader. Use this entrance when a producer's computation can run beside
 another required producer: Query dispatches compute and invokes completion in
 canonical member order. Override `OperationHandler::prepare_decision` to return
 this plan. Keep graph reads in preparation and return the decision from
 completion; the ordinary candidate-building and commit steps follow on the
 owner. A handler that does not compute can keep its `decide` implementation:
 the default `prepare_decision` wraps it in an immediate plan.
+
+An installed single-kernel computation uses the same owner lifecycle through
+`installed.decision_plan(input, complete)`. Its owner declares `Prepared`,
+`Computed`, `Output` and `Stopped`, and implements `prepare`, `compute` and
+`complete`. `Prepared` and `Computed` are opaque domain data; the caller cannot
+construct a completed SDK value or bypass the owner's validation. A genuine
+domain outcome such as an unavailable engineering response belongs in the
+owner's output when it is a successful domain settlement.
+
+Use `checkpoint.poll()?` at a supported kernel safe point to check the original
+request without supplying a work invoice. The existing `advance(work)` is for
+owners that deliberately charge request work. A stop remains final even when a
+child ignores it and returns apparent success. Query checks before and after
+compute and at the owner handoff. A synchronous numerical kernel still has its
+own cancellation contract; polling before it does not make it preemptible.
+
+`HandlerFailure<Domain>` carries explicit `Domain`, `Execution` and `Interrupted`
+failures. `HandlerResult::from_result` and `into_result` convert that same typed
+topology; `map_domain` changes only the domain case. Native allocation, read,
+panic and nested-execution causes retain typed execution failures; cancellation
+and deadline remain interruptions. There is no blanket arbitrary-error-to-domain
+conversion. A genuinely infallible domain can use `Infallible`.
 
 Partition reuse is distinct from clean reuse of an entire output and from
 input cutoff. It applies only to the runs of a producer. A producer is a
@@ -904,7 +891,8 @@ these holds:
 - The installed owner differs, the installed producer edition differs, or the
   input value's canonical encoding differs. A reinstalled owner with the same
   types is a different installation.
-- Observing the kept facts could exceed the declared work the run has left.
+- Observing the kept facts could exceed an explicitly supplied request work
+  ceiling, or its checked observation bound cannot be represented.
 - The selected record holds no computation state. A run that stopped before it
   completed, whose charge could not be measured, or whose reservation was
   refused leaves none. A previous attempt that ran no partitioned computation
@@ -994,6 +982,7 @@ host mutation.
 <!-- compiled: warehouse_inventory.rs -->
 ```rust
 use serde::Serialize;
+use std::convert::Infallible;
 use std::marker::PhantomData;
 use worth_query_host::facade::{
     application_contribution::*,
@@ -1012,11 +1001,6 @@ pub struct InventoryLine {
     id: u64,
     zone: u64,
     quantity: f64,
-}
-impl ChargedBytes for InventoryLine {
-    fn additional_charged_bytes(&self) -> u64 {
-        0
-    }
 }
 impl ApplicationComputationPartition for InventoryLine {
     const IDENTITY: &'static str = "inventory.line.v1";
@@ -1056,8 +1040,6 @@ where
     const IDENTITY: &'static str = "inventory.total.v1";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(100_000, 1_048_576);
     // DETERMINISM defaults to canonical bitwise equality.
 }
 
@@ -1075,7 +1057,7 @@ where
     type Gathered = Vec<f64>;
     type PartitionResult = f64;
     type Output = f64;
-    type Stopped = u32;
+    type Stopped = Infallible;
 
     fn partitions(
         &self,
@@ -1083,7 +1065,7 @@ where
         input: &Vec<InventoryLine>,
     ) -> Result<
         WorthQueryComputationPartitionPlan<InventoryLine>,
-        WorthQueryComputationInputDenial<u32>,
+        WorthQueryComputationInputDenial<Infallible>,
     > {
         Ok(WorthQueryComputationPartitionPlan::keyed(
             input.iter().cloned(),
@@ -1096,7 +1078,7 @@ where
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         _input: &Vec<InventoryLine>,
         item: &InventoryLine,
-    ) -> Result<Zone, WorthQueryComputationInputDenial<u32>> {
+    ) -> Result<Zone, WorthQueryComputationInputDenial<Infallible>> {
         Ok(Zone(item.zone))
     }
 
@@ -1105,7 +1087,7 @@ where
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         _input: &Vec<InventoryLine>,
         partition: WorthQueryComputationPartitionMembers<'_, Zone, InventoryLine>,
-    ) -> Result<Vec<f64>, WorthQueryComputationInputDenial<u32>> {
+    ) -> Result<Vec<f64>, WorthQueryComputationInputDenial<Infallible>> {
         Ok(partition.items().map(|(_, line)| line.quantity).collect())
     }
 
@@ -1113,7 +1095,7 @@ where
         &self,
         partition: WorthQueryComputationPartitionView<'_, Zone, Vec<f64>>,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
-    ) -> Result<f64, WorthQueryManagedComputationDenial<u32>> {
+    ) -> Result<f64, WorthQueryManagedComputationDenial<Infallible>> {
         let mut total = 0.0;
         for quantity in partition.gathered() {
             checkpoint.advance(1)?;
@@ -1126,7 +1108,7 @@ where
         WorthQueryDeterministicReducer::canonical(|| 0.0, |left, right| left + right)
     }
 
-    fn complete(&self, reduced: f64) -> Result<f64, u32> {
+    fn complete(&self, reduced: f64) -> Result<f64, Infallible> {
         Ok(reduced)
     }
 }
@@ -1167,10 +1149,7 @@ pub fn run_inventory<S, F, A, Op, B, Value: 'static, Domain: 'static>(
     >,
     reader: &mut DecisionReader<'_, '_, '_, S, B>,
     input: &Vec<InventoryLine>,
-    complete: impl FnOnce(
-            Result<(f64, u64), WorthQueryPartitionedComputationDenial<u32>>,
-        ) -> HandlerResult<Value, Domain>
-        + 'static,
+    complete: impl FnOnce(f64) -> HandlerResult<Value, Domain> + 'static,
 ) -> WorthQueryDecisionPlan<Value, Domain>
 where
     S: ApplicationSchema,
@@ -1179,15 +1158,7 @@ where
     Op: 'static,
     B: ApplicationMutationBinding<S, Operation = Op>,
 {
-    match installed.prepare(reader, input) {
-        Ok(prepared) => prepared.into_decision_plan(move |computed| {
-            complete(computed.and_then(|computed| {
-                let charged_work = computed.charged_work();
-                computed.complete().map(|value| (value, charged_work))
-            }))
-        }),
-        Err(denial) => WorthQueryDecisionPlan::immediate(complete(Err(denial))),
-    }
+    installed.decision_plan(reader, input, complete)
 }
 ```
 
@@ -1272,8 +1243,7 @@ declaration to the feature; the feature's operations, ports, and artifacts are
 declared on the same builder. Program validation refuses a computation whose
 output artifact its feature does not declare
 (`MissingManagedComputationArtifact`), whose partition key does not fit its
-execution posture (`MismatchedManagedComputationPartition`), whose resource
-ceiling has a zero (`InvalidManagedComputationResources`), or whose identity
+execution posture (`MismatchedManagedComputationPartition`), or whose identity
 repeats within the feature (`DuplicateManagedComputation`). Installation
 refuses, with a `WorthQueryPrimaryGraphInstallationDenial`, an owner installed
 through the call for the other execution posture, a computation whose
@@ -1297,9 +1267,11 @@ planning and reduction also contribute charged work; `charged_work()` reports
 the computation's total. Handle the typed denial before authoring a candidate
 from the result. Computing and completing a value do not commit it.
 
-`prepare`, `compute`, and `complete` each fail with a
+For specialized lower-level execution and diagnostics, `prepare`, `compute`, and `complete` each fail with a
 `WorthQueryPartitionedComputationDenial<Stopped>`, where `Stopped` is the
-owner's own stop type. A denied run has no result. Handle every variant:
+owner's own stop type. A denied run has no result. Ordinary handlers use
+`decision_plan` to propagate these causes rather than writing a dispatcher.
+The lower-level denial topology is:
 
 | Denial | What it reports |
 |---|---|
@@ -1310,9 +1282,10 @@ owner's own stop type. A denied run has no result. Handle every variant:
 | `DuplicateItem { item }` | The plan named one item identity twice; the least such identity is reported. |
 | `InputNotEncodable(..)`, `ItemNotEncodable { item, denial }` | The input value or an item refused canonical encoding, so a retained run has no digest for it. |
 | `KeyNotEncodable { item, denial }` | An item's partition key refused canonical encoding. |
-| `Resource(..)` | A `WorthQueryManagedComputationResourceDenial`: planning, deriving partition identities, or reducing did not fit the declared work or bytes, or the request's execution refused it. |
+| `Resource(..)` | A `WorthQueryManagedComputationResourceDenial`: the original request refused execution or allocation, or checked size/work arithmetic overflowed. There is no caller-supplied result-byte quote. |
 | `Interrupted(..)` | `Cancelled` or `DeadlineExceeded`: the request was canceled or ran out of time outside any one partition. |
 | `NestedPatternStopped` | A pattern started inside a partition's kernel stopped, outside any one partition. |
+| `PreparationPanicked` | Input preparation or canonical identity encoding panicked before partition execution. |
 | `ReducerPanicked` | The reducer panicked. |
 | `ReducedEncodingInvalid` | A reduced value's canonical bits disagree with the length it declares. |
 | `ReductionInputInvalid(..)` | The reduction refused the identities or values it was given. The platform builds both from one canonical list, so no run is expected to produce it; match it for exhaustiveness. |
@@ -1332,6 +1305,7 @@ so the reducer needs no floating-point care.
 <!-- compiled: sensor_telemetry.rs -->
 ```rust
 use serde::Serialize;
+use std::convert::Infallible;
 use std::marker::PhantomData;
 use worth_query_host::facade::{
     application_contribution::*,
@@ -1350,11 +1324,6 @@ pub struct Reading {
     id: u64,
     station: u32,
     millivolts: u64,
-}
-impl ChargedBytes for Reading {
-    fn additional_charged_bytes(&self) -> u64 {
-        0
-    }
 }
 impl ApplicationComputationPartition for Reading {
     const IDENTITY: &'static str = "telemetry.reading.v1";
@@ -1394,8 +1363,6 @@ where
     const IDENTITY: &'static str = "telemetry.peak.v1";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(100_000, 1_048_576);
 }
 
 pub struct PeakOwner<Op>(PhantomData<fn() -> Op>);
@@ -1411,14 +1378,16 @@ where
     type Gathered = Vec<u64>;
     type PartitionResult = u64;
     type Output = u64;
-    type Stopped = u32;
+    type Stopped = Infallible;
 
     fn partitions(
         &self,
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         input: &Vec<Reading>,
-    ) -> Result<WorthQueryComputationPartitionPlan<Reading>, WorthQueryComputationInputDenial<u32>>
-    {
+    ) -> Result<
+        WorthQueryComputationPartitionPlan<Reading>,
+        WorthQueryComputationInputDenial<Infallible>,
+    > {
         Ok(WorthQueryComputationPartitionPlan::keyed(
             input.iter().cloned(),
             |reading| PartitionItemId(reading.id),
@@ -1430,7 +1399,7 @@ where
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         _input: &Vec<Reading>,
         item: &Reading,
-    ) -> Result<Station, WorthQueryComputationInputDenial<u32>> {
+    ) -> Result<Station, WorthQueryComputationInputDenial<Infallible>> {
         Ok(Station(item.station))
     }
 
@@ -1439,7 +1408,7 @@ where
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         _input: &Vec<Reading>,
         partition: WorthQueryComputationPartitionMembers<'_, Station, Reading>,
-    ) -> Result<Vec<u64>, WorthQueryComputationInputDenial<u32>> {
+    ) -> Result<Vec<u64>, WorthQueryComputationInputDenial<Infallible>> {
         Ok(partition
             .items()
             .map(|(_, reading)| reading.millivolts)
@@ -1450,7 +1419,7 @@ where
         &self,
         partition: WorthQueryComputationPartitionView<'_, Station, Vec<u64>>,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
-    ) -> Result<u64, WorthQueryManagedComputationDenial<u32>> {
+    ) -> Result<u64, WorthQueryManagedComputationDenial<Infallible>> {
         let mut peak = 0_u64;
         for millivolts in partition.gathered() {
             checkpoint.advance(1)?;
@@ -1463,7 +1432,7 @@ where
         WorthQueryDeterministicReducer::canonical(|| 0, |left, right| (*left).max(*right))
     }
 
-    fn complete(&self, reduced: u64) -> Result<u64, u32> {
+    fn complete(&self, reduced: u64) -> Result<u64, Infallible> {
         Ok(reduced)
     }
 }
@@ -1499,10 +1468,7 @@ pub fn run_peak<S, F, A, Op, B, Value: 'static, Domain: 'static>(
     installed: &WorthQueryInstalledPartitionedComputation<S, F, PeakReading<A>, PeakOwner<Op>>,
     reader: &mut DecisionReader<'_, '_, '_, S, B>,
     input: &Vec<Reading>,
-    complete: impl FnOnce(
-            Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>,
-        ) -> HandlerResult<Value, Domain>
-        + 'static,
+    complete: impl FnOnce(u64) -> HandlerResult<Value, Domain> + 'static,
 ) -> WorthQueryDecisionPlan<Value, Domain>
 where
     S: ApplicationSchema,
@@ -1511,15 +1477,7 @@ where
     Op: 'static,
     B: ApplicationMutationBinding<S, Operation = Op>,
 {
-    match installed.prepare(reader, input) {
-        Ok(prepared) => prepared.into_decision_plan(move |computed| {
-            complete(computed.and_then(|computed| {
-                let charged_work = computed.charged_work();
-                computed.complete().map(|value| (value, charged_work))
-            }))
-        }),
-        Err(denial) => WorthQueryDecisionPlan::immediate(complete(Err(denial))),
-    }
+    installed.decision_plan(reader, input, complete)
 }
 ```
 

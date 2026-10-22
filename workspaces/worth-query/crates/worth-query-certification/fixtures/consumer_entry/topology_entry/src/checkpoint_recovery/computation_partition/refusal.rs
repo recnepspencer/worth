@@ -5,8 +5,7 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
     WorthQueryComputationPartitionView, WorthQueryDeterministicReducer,
     WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationDenial,
-    WorthQueryManagedComputationOwner, WorthQueryManagedComputationPrepared,
-    WorthQueryPartitionedComputationOwner,
+    WorthQueryManagedComputationOwner, WorthQueryPartitionedComputationOwner,
 };
 use worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationDenial;
 use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind;
@@ -21,11 +20,6 @@ use super::*;
 /// binding a declaration admits, and never run.
 struct WholeInputOwner;
 struct WholeInput;
-impl WorthQueryManagedComputationPrepared for WholeInput {
-    fn retained_bytes(&self) -> usize {
-        0
-    }
-}
 impl<Computation>
     WorthQueryManagedComputationOwner<CheckpointSchema, PlanarFinalOutputFeature, Computation>
     for WholeInputOwner

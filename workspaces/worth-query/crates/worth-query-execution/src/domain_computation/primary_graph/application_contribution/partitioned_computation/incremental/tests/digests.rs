@@ -3,10 +3,8 @@ use super::super::super::attribution_tests::{Artifact, Reuse, Stopped};
 use super::*;
 use serde::{Serialize, Serializer};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use worth_execution::ChargedBytes;
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationExecution, ApplicationComputationInput, ApplicationComputationPartition,
-    ApplicationComputationResourceCeiling,
 };
 
 static INPUTS: AtomicUsize = AtomicUsize::new(0);
@@ -33,11 +31,6 @@ impl Serialize for Item {
 impl ApplicationComputationPartition for Item {
     const IDENTITY: &'static str = "courtroom-counted-item";
 }
-impl ChargedBytes for Item {
-    fn additional_charged_bytes(&self) -> u64 {
-        0
-    }
-}
 struct Digests;
 impl ApplicationManagedComputation<Schema, Feature> for Digests {
     type Input = CountedInput;
@@ -48,8 +41,6 @@ impl ApplicationManagedComputation<Schema, Feature> for Digests {
     const IDENTITY: &'static str = "courtroom-digest-computation";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(1 << 20, 4096);
 }
 struct DigestOwner;
 impl WorthQueryPartitionedComputationOwner<Schema, Feature, Digests> for DigestOwner {

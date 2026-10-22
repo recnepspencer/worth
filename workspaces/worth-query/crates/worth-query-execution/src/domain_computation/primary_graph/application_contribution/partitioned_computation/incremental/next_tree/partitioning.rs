@@ -4,10 +4,7 @@ use super::*;
 pub(in super::super) struct Recomputed<Key, Gathered> {
     pub(in super::super) value: GatheredComputationPartition<Key, Gathered>,
     pub(in super::super) key: Arc<Key>,
-    pub(in super::super) key_bytes: u64,
     pub(in super::super) gather: Option<ComputationCallCharge>,
-    /// The request memory keeps gathered data held while the wave borrows it.
-    pub(in super::super) memory: GatheredMemory,
 }
 
 /// The run's items, keys and routes, carried or made again.
@@ -19,11 +16,7 @@ pub(in super::super) struct NextPartitioning<Item> {
     pub(in super::super) membership: Option<RetainedCall>,
     pub(in super::super) item_keys:
         Arc<worth_execution::ExecutionOrderedMap<PartitionItemId, RetainedCall>>,
-    pub(in super::super) item_bytes: Option<u64>,
-    pub(in super::super) item_call_bytes: Option<u64>,
     pub(in super::super) routing: Arc<ComputationPartitionRouting>,
-    /// The request memory a routing the run built holds.
-    pub(in super::super) routing_memory: Option<QueryMemoryReservation>,
     pub(in super::super) carried_membership: bool,
     pub(in super::super) carried_items: super::super::retained::CarriedItems,
 }

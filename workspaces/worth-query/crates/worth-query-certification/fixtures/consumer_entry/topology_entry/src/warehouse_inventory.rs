@@ -1,5 +1,6 @@
 // compiled-example: begin
 use serde::Serialize;
+use std::convert::Infallible;
 use std::marker::PhantomData;
 use worth_query_host::facade::{
     application_contribution::*,
@@ -18,11 +19,6 @@ pub struct InventoryLine {
     id: u64,
     zone: u64,
     quantity: f64,
-}
-impl ChargedBytes for InventoryLine {
-    fn additional_charged_bytes(&self) -> u64 {
-        0
-    }
 }
 impl ApplicationComputationPartition for InventoryLine {
     const IDENTITY: &'static str = "inventory.line.v1";
@@ -62,8 +58,6 @@ where
     const IDENTITY: &'static str = "inventory.total.v1";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(100_000, 1_048_576);
     // DETERMINISM defaults to canonical bitwise equality.
 }
 
@@ -81,7 +75,7 @@ where
     type Gathered = Vec<f64>;
     type PartitionResult = f64;
     type Output = f64;
-    type Stopped = u32;
+    type Stopped = Infallible;
 
     fn partitions(
         &self,
@@ -89,7 +83,7 @@ where
         input: &Vec<InventoryLine>,
     ) -> Result<
         WorthQueryComputationPartitionPlan<InventoryLine>,
-        WorthQueryComputationInputDenial<u32>,
+        WorthQueryComputationInputDenial<Infallible>,
     > {
         Ok(WorthQueryComputationPartitionPlan::keyed(
             input.iter().cloned(),
@@ -102,7 +96,7 @@ where
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         _input: &Vec<InventoryLine>,
         item: &InventoryLine,
-    ) -> Result<Zone, WorthQueryComputationInputDenial<u32>> {
+    ) -> Result<Zone, WorthQueryComputationInputDenial<Infallible>> {
         Ok(Zone(item.zone))
     }
 
@@ -111,7 +105,7 @@ where
         _reader: &mut WorthQueryComputationReader<'_, '_, '_, S, Op>,
         _input: &Vec<InventoryLine>,
         partition: WorthQueryComputationPartitionMembers<'_, Zone, InventoryLine>,
-    ) -> Result<Vec<f64>, WorthQueryComputationInputDenial<u32>> {
+    ) -> Result<Vec<f64>, WorthQueryComputationInputDenial<Infallible>> {
         Ok(partition.items().map(|(_, line)| line.quantity).collect())
     }
 
@@ -119,7 +113,7 @@ where
         &self,
         partition: WorthQueryComputationPartitionView<'_, Zone, Vec<f64>>,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
-    ) -> Result<f64, WorthQueryManagedComputationDenial<u32>> {
+    ) -> Result<f64, WorthQueryManagedComputationDenial<Infallible>> {
         let mut total = 0.0;
         for quantity in partition.gathered() {
             checkpoint.advance(1)?;
@@ -132,7 +126,7 @@ where
         WorthQueryDeterministicReducer::canonical(|| 0.0, |left, right| left + right)
     }
 
-    fn complete(&self, reduced: f64) -> Result<f64, u32> {
+    fn complete(&self, reduced: f64) -> Result<f64, Infallible> {
         Ok(reduced)
     }
 }
@@ -173,10 +167,7 @@ pub fn run_inventory<S, F, A, Op, B, Value: 'static, Domain: 'static>(
     >,
     reader: &mut DecisionReader<'_, '_, '_, S, B>,
     input: &Vec<InventoryLine>,
-    complete: impl FnOnce(
-            Result<(f64, u64), WorthQueryPartitionedComputationDenial<u32>>,
-        ) -> HandlerResult<Value, Domain>
-        + 'static,
+    complete: impl FnOnce(f64) -> HandlerResult<Value, Domain> + 'static,
 ) -> WorthQueryDecisionPlan<Value, Domain>
 where
     S: ApplicationSchema,
@@ -185,15 +176,7 @@ where
     Op: 'static,
     B: ApplicationMutationBinding<S, Operation = Op>,
 {
-    match installed.prepare(reader, input) {
-        Ok(prepared) => prepared.into_decision_plan(move |computed| {
-            complete(computed.and_then(|computed| {
-                let charged_work = computed.charged_work();
-                computed.complete().map(|value| (value, charged_work))
-            }))
-        }),
-        Err(denial) => WorthQueryDecisionPlan::immediate(complete(Err(denial))),
-    }
+    installed.decision_plan(reader, input, complete)
 }
 // compiled-example: end
 

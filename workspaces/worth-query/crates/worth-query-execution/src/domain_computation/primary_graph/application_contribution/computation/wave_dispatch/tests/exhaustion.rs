@@ -22,15 +22,10 @@ fn request_exhaustion_reports_the_declared_prefix_at_every_width() {
                 .into_iter()
                 .enumerate()
                 .map(|(rank, units)| PreparedMember {
-                    requests: vec![PreparedCompute::new(
-                        0,
-                        0,
-                        move |member| {
-                            let (_, mut charge) = member.into_parts();
-                            charge.as_mut().unwrap()(units).map(|()| rank)
-                        },
-                        |_| 0,
-                    )],
+                    requests: vec![PreparedCompute::new(move |member| {
+                        let (_, mut charge) = member.into_parts();
+                        charge.as_mut().unwrap()(units).map(|()| rank)
+                    })],
                 })
                 .collect();
             let admitted = CHARGES[..prefix].iter().sum::<u64>();

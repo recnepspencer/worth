@@ -242,6 +242,7 @@ fn restore_stop(reason: MapStop<()>, slots: &[OutputSlot], offset: usize) -> Map
         }
         MapStop::WorkExhausted { identity } => MapStop::WorkExhausted { identity },
         MapStop::Admission(denial) => MapStop::Admission(denial),
+        MapStop::Allocation(kind) => MapStop::Allocation(kind),
     }
 }
 

@@ -40,29 +40,6 @@ pub(super) fn determinism_canonical_token(determinism: DeterminismContract) -> S
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct ApplicationComputationResourceCeiling {
-    maximum_work: usize,
-    maximum_retained_bytes: usize,
-}
-
-impl ApplicationComputationResourceCeiling {
-    pub const fn new(maximum_work: usize, maximum_retained_bytes: usize) -> Self {
-        Self {
-            maximum_work,
-            maximum_retained_bytes,
-        }
-    }
-
-    pub const fn maximum_work(self) -> usize {
-        self.maximum_work
-    }
-
-    pub const fn maximum_retained_bytes(self) -> usize {
-        self.maximum_retained_bytes
-    }
-}
-
 /// What a computation reads its input through.
 ///
 /// The input value has a canonical encoding: the prefix-free canonical
@@ -124,7 +101,6 @@ where
     const IDENTITY: &'static str;
     const EXECUTION: ApplicationComputationExecution;
     const DETERMINISM: DeterminismContract = DeterminismContract::CanonicalBitwise;
-    const RESOURCES: ApplicationComputationResourceCeiling;
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -141,7 +117,6 @@ pub struct ApplicationManagedComputationDeclaration {
     stopped: &'static str,
     execution: ApplicationComputationExecution,
     determinism: DeterminismContract,
-    resources: ApplicationComputationResourceCeiling,
 }
 
 impl ApplicationManagedComputationDeclaration {
@@ -164,7 +139,6 @@ impl ApplicationManagedComputationDeclaration {
             stopped: Computation::Stopped::IDENTITY,
             execution: Computation::EXECUTION,
             determinism: Computation::DETERMINISM,
-            resources: Computation::RESOURCES,
         }
     }
 
@@ -209,8 +183,5 @@ impl ApplicationManagedComputationDeclaration {
             ApplicationComputationExecution::Deterministic => single,
             ApplicationComputationExecution::DeterministicPartitioned => !single,
         }
-    }
-    pub const fn resources(&self) -> ApplicationComputationResourceCeiling {
-        self.resources
     }
 }

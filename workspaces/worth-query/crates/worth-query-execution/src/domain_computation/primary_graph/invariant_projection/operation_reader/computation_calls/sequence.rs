@@ -86,6 +86,7 @@ pub(in crate::domain_computation::primary_graph) struct ComputationCallSequence 
     reached: ReachedCalls,
     pairs: usize,
     payload: u64,
+    #[cfg(test)]
     bytes: u64,
     _memory: QueryMemoryReservation,
 }
@@ -96,12 +97,8 @@ impl ComputationCallSequence {
     pub(in crate::domain_computation::primary_graph) fn prefix(&self) -> usize {
         self.shape.prefix
     }
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn bytes(&self) -> u64 {
-        self.bytes
-    }
-    /// Already funded backing travelling with this immutable value. This is
-    /// transport custody only; retention still charges the complete capacity.
-    pub(in crate::domain_computation::primary_graph) fn funded_bytes(&self) -> u64 {
         self.bytes
     }
     pub(in crate::domain_computation::primary_graph) fn summary(

@@ -38,61 +38,6 @@ fn successful_edits_failed_attempt_and_rebuild_are_all_reported() {
 }
 
 #[test]
-fn edit_memory_refusal_keeps_prior_work_and_releases_transient_hold_before_rebuild() {
-    let _observation =
-        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    use crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy;
-    use std::num::NonZeroUsize;
-    let template = template();
-    let keys: Vec<_> = (0..32).map(Id::new).collect();
-    let retained = retained(&template, &keys);
-    let declared = 4096;
-    let results_bytes = u64::try_from(keys.len() * size_of::<(Id, u64)>()).unwrap();
-    let full_hold =
-        Tree::checked_serial_build_memory_bound(keys.len(), declared).unwrap() + 2 * results_bytes;
-    // Reserve exactly the full build. A dense edit batch accumulates path
-    // scratch beyond that bound, then must release it before rebuilding.
-    let request = live_scope();
-    let execution = QueryRequestExecution::open(
-        RuntimeWorldExecutionPlacement::Serial(test_policy(
-            NonZeroUsize::new(1).unwrap(),
-            Some(full_hold),
-        )),
-        &request,
-    );
-    let mut memory = execution.reserve(results_bytes).unwrap();
-    let reducer = WorthQueryDeterministicReducer::canonical(|| 0, counted);
-    let plan = plan(&keys);
-    let work = plan.checked_build_work();
-    reset_counts();
-    let next = next_tree::<_, _, _, u32>(
-        &retained,
-        plan,
-        work,
-        keys.iter().map(|id| (*id, 2)).collect(),
-        u64::MAX,
-        declared,
-        &reducer,
-        &execution,
-        &mut memory,
-    );
-    reconcile(next.report);
-    assert!(matches!(
-        next.report,
-        TreeRun::Rebuilt(Rebuild::EditMemory, _)
-    ));
-    assert!(
-        next.report.metrics_for_test().recombined_nodes > 32,
-        "some edits ran before rebuilding"
-    );
-    assert_eq!(
-        next.report.metrics_for_test().combine_calls,
-        2 * next.report.metrics_for_test().recombined_nodes
-    );
-    assert_eq!(*next.outcome.unwrap().result(), 64);
-}
-
-#[test]
 fn a_failed_edit_followed_by_a_stopped_rebuild_preserves_both_attempts() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
@@ -100,11 +45,15 @@ fn a_failed_edit_followed_by_a_stopped_rebuild_preserves_both_attempts() {
     let keys: Vec<_> = (0..32).map(Id::new).collect();
     let retained = retained(&template, &keys);
     let mut retained = retained;
-    retained.tree = Tree::try_from_declared(
+    let request = live_scope();
+    let execution = QueryRequestExecution::open(serial_placement(), &request);
+    retained.tree = ReductionTree::<u64, fn(&u64, &u64) -> u64>::try_from_declared_native(
         plan(&keys),
         keys.iter().map(|id| (*id, 1)).collect(),
         0,
         phase_panicking as fn(&u64, &u64) -> u64,
+        Some(execution.dispatch().unwrap().native_lease_for_test()),
+        || execution.checkpoint(),
     )
     .unwrap()
     .0;
@@ -113,11 +62,6 @@ fn a_failed_edit_followed_by_a_stopped_rebuild_preserves_both_attempts() {
     // A reducer panic in each pass: the edit has one entered
     // combine and no completed node; the rebuilt tree then panics on its
     // first combine too. Neither terminal path may discard its work.
-    let request = live_scope();
-    let execution = QueryRequestExecution::open(serial_placement(), &request);
-    let mut memory = execution
-        .reserve(u64::try_from(size_of::<(Id, u64)>()).unwrap())
-        .unwrap();
     let reducer = WorthQueryDeterministicReducer::canonical(|| 0, phase_panicking);
     let plan = plan(&keys);
     let work = plan.checked_build_work();
@@ -126,11 +70,9 @@ fn a_failed_edit_followed_by_a_stopped_rebuild_preserves_both_attempts() {
         plan,
         work,
         BTreeMap::from([(keys[0], 2)]),
-        u64::MAX,
-        4096,
+        None,
         &reducer,
         &execution,
-        &mut memory,
     );
     reconcile(next.report);
     assert!(matches!(

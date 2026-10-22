@@ -1,6 +1,6 @@
 //! Merge changed groups with borrowed canonical ranges, without a flat roster.
 use super::super::super::routing::ComputationPartitionRouting;
-use super::super::super::{gather_memory::GatheredMemory, WorthQueryComputationPartitionMembers};
+use super::super::super::WorthQueryComputationPartitionMembers;
 use super::super::retained::RetainedPartitions;
 use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::{
@@ -19,8 +19,7 @@ pub(super) fn prepare<S, F, C, O, K, I, R>(
     routing: &ComputationPartitionRouting,
     transition: &CallShapeTransition,
     affected: &BTreeSet<PartitionIdentity>,
-    mut fresh_keys: BTreeMap<PartitionIdentity, (Arc<K>, u64)>,
-    declared: u64,
+    mut fresh_keys: BTreeMap<PartitionIdentity, Arc<K>>,
     prepared: &mut PreparedIncremental<K, I, R, O::Gathered>,
 ) -> Result<(), Denial<S, F, C, O>>
 where
@@ -28,7 +27,7 @@ where
     F: ApplicationFeature<S>,
     C: ApplicationManagedComputation<S, F, Partition = K>,
     K: ApplicationComputationPartition,
-    I: ApplicationComputationPartition + ChargedBytes,
+    I: ApplicationComputationPartition,
     O: WorthQueryPartitionedComputationOwner<S, F, C, Item = I, PartitionResult = R>,
 {
     let mut cursor = sequence.prefix();
@@ -46,7 +45,6 @@ where
             routing,
             transition,
             cursor..next,
-            declared,
             prepared,
             &mut fresh_keys,
         )?;
@@ -59,7 +57,6 @@ where
                 retained,
                 routing,
                 *id,
-                declared,
                 prepared,
                 &mut fresh_keys,
             )?;
@@ -76,7 +73,6 @@ where
         routing,
         transition,
         cursor..sequence.shape().len(),
-        declared,
         prepared,
         &mut fresh_keys,
     )
@@ -91,16 +87,15 @@ fn carry_or_gather<S, F, C, O, K, I, R>(
     routing: &ComputationPartitionRouting,
     transition: &CallShapeTransition,
     source: std::ops::Range<usize>,
-    declared: u64,
     prepared: &mut PreparedIncremental<K, I, R, O::Gathered>,
-    fresh_keys: &mut BTreeMap<PartitionIdentity, (Arc<K>, u64)>,
+    fresh_keys: &mut BTreeMap<PartitionIdentity, Arc<K>>,
 ) -> Result<(), Denial<S, F, C, O>>
 where
     S: ApplicationSchema,
     F: ApplicationFeature<S>,
     C: ApplicationManagedComputation<S, F, Partition = K>,
     K: ApplicationComputationPartition,
-    I: ApplicationComputationPartition + ChargedBytes,
+    I: ApplicationComputationPartition,
     O: WorthQueryPartitionedComputationOwner<S, F, C, Item = I, PartitionResult = R>,
 {
     sequence.visit(source, &BTreeSet::new(), &mut |visit| match visit {
@@ -126,8 +121,7 @@ where
         }
         CallVisit::Leaf(_, ComputationRead::Partition(id), _, _) => {
             gather(
-                owner, reader, execution, input, retained, routing, id, declared, prepared,
-                fresh_keys,
+                owner, reader, execution, input, retained, routing, id, prepared, fresh_keys,
             )?;
             Ok(true)
         }
@@ -142,28 +136,26 @@ fn gather<S, F, C, O, K, I, R>(
     retained: &RetainedPartitions<K, I, R>,
     routing: &ComputationPartitionRouting,
     id: PartitionIdentity,
-    declared: u64,
     prepared: &mut PreparedIncremental<K, I, R, O::Gathered>,
-    fresh_keys: &mut BTreeMap<PartitionIdentity, (Arc<K>, u64)>,
+    fresh_keys: &mut BTreeMap<PartitionIdentity, Arc<K>>,
 ) -> Result<(), Denial<S, F, C, O>>
 where
     S: ApplicationSchema,
     F: ApplicationFeature<S>,
     C: ApplicationManagedComputation<S, F, Partition = K>,
     K: ApplicationComputationPartition,
-    I: ApplicationComputationPartition + ChargedBytes,
+    I: ApplicationComputationPartition,
     O: WorthQueryPartitionedComputationOwner<S, F, C, Item = I, PartitionResult = R>,
 {
     super::super::super::super::super::fact_verification_observation::computation_prepared_partition();
-    let (key, key_bytes) = match retained.partitions.get(&id) {
-        Some(prior) => (Arc::clone(&prior.key), prior.key_bytes),
+    let key = match retained.partitions.get(&id) {
+        Some(prior) => Arc::clone(&prior.key),
         None => fresh_keys
             .remove(&id)
             .expect("new routed group has a freshly read key"),
     };
-    let mut memory = GatheredMemory::new(execution, declared)?;
-    memory.before_members(execution, routing.members(id).count())?;
     let members = routing.members(id).collect::<Arc<[_]>>();
+    execution.checkpoint().map_err(D::from_kernel_stop)?;
     let (gathered, charge) = reader.measured(ComputationRead::Partition(id), |reader| {
         owner.gather(
             &mut WorthQueryComputationReader::lend(reader),
@@ -172,5 +164,5 @@ where
         )
     });
     let gathered = gathered.map_err(|reason| D::gathering(id, reason))?;
-    prepared.gathered(id, key, key_bytes, members, gathered, charge, memory)
+    prepared.gathered(id, key, members, gathered, charge)
 }

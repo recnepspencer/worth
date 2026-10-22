@@ -127,11 +127,12 @@ where
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
         slots: Vec<crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot>,
+        execution: &QueryRequestExecution<'_>,
     ) -> Report<Schema, Binding> {
         (self.complete)(
             runtime,
             identities,
-            self.decision.finish(slots),
+            self.decision.finish(slots, execution),
             self.projection,
         )
     }

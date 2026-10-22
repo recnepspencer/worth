@@ -8,15 +8,15 @@ use std::sync::Arc;
 use worth_execution::PartitionItemId;
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_declaration::facade::application_operation::{
-    application_computation_item_digest, application_computation_partition_identity,
-    ApplicationComputationPartitionIdentityDenial,
+    application_computation_input_digest, application_computation_item_digest,
+    application_computation_partition_identity,
 };
-use worth_query_declaration::facade::application_program::ApplicationComputationPartition;
+use worth_query_declaration::facade::application_program::{
+    ApplicationComputationInput, ApplicationComputationPartition,
+};
 
 use super::super::request_execution::QueryRequestExecution;
-use super::super::WorthQueryManagedComputationResourceDenial;
-use super::installed::encoding_resource_denial;
-use super::remaining_work::{EncodingMeter, RemainingWork};
+use super::preparation_work::{charge_preparation, encode_identity, PreparationWork};
 use super::routing::ComputationPartitionRouting;
 use super::WorthQueryPartitionedComputationDenial;
 
@@ -39,15 +39,15 @@ pub(super) fn planned_items<Item, Stopped>(
     Ok(Arc::new(entries.into_iter().collect()))
 }
 
-/// Every item's digest, in ascending item identity order, spending each
-/// encoding's work from the declared work. Only a producer's run digests its
+/// Every item's digest, in ascending item identity order, admitting each
+/// encoding through the original request. Only a producer's run digests its
 /// items: a full run and an incremental one each digest every item once per
 /// run of the membership, and a run that carries the membership spends what
 /// its digests spent.
 pub(super) fn item_digests<Item, Stopped>(
     items: &BTreeMap<PartitionItemId, Item>,
-    remaining_work: &mut RemainingWork,
-    declared_bytes: u64,
+    execution: &QueryRequestExecution<'_>,
+    work: &mut PreparationWork,
 ) -> Result<ItemDigests, WorthQueryPartitionedComputationDenial<Stopped>>
 where
     Item: ApplicationComputationPartition,
@@ -55,47 +55,42 @@ where
     items
         .iter()
         .map(|(item, value)| {
-            let mut meter = EncodingMeter::new(remaining_work, declared_bytes);
-            application_computation_item_digest(value, &mut |charge| meter.admit(charge))
-                .map(|digest| (*item, digest))
-                .map_err(|denial| match denial {
-                    ApplicationComputationPartitionIdentityDenial::Key(denial) => {
-                        WorthQueryPartitionedComputationDenial::ItemNotEncodable {
-                            item: *item,
-                            denial,
-                        }
-                    }
-                    denial => encoding_resource_denial(denial),
-                })
+            encode_identity(
+                execution,
+                work,
+                |meter| {
+                    application_computation_item_digest(value, &mut |charge| meter.admit(charge))
+                },
+                |denial| WorthQueryPartitionedComputationDenial::ItemNotEncodable {
+                    item: *item,
+                    denial,
+                },
+            )
+            .map(|digest| (*item, digest))
         })
         .collect::<Result<BTreeMap<_, _>, _>>()
         .map(Arc::new)
 }
 
 /// Derives `item`'s partition from its `key` and routes it, spending the
-/// key's encoding and the route from the declared work. New routing cells
-/// hold their native grants. Returns the partition and the key's canonical
-/// encoding length.
+/// key's encoding through the original request. New routing cells
+/// hold their native grants. Returns the native canonical partition identity.
 pub(super) fn route_item<Key, Stopped>(
     item: PartitionItemId,
     key: &Key,
     routing: &mut ComputationPartitionRouting,
     execution: &QueryRequestExecution<'_>,
-    remaining_work: &mut RemainingWork,
-    declared_bytes: u64,
-) -> Result<(PartitionIdentity, u64), WorthQueryPartitionedComputationDenial<Stopped>>
+    work: &mut PreparationWork,
+) -> Result<PartitionIdentity, WorthQueryPartitionedComputationDenial<Stopped>>
 where
     Key: ApplicationComputationPartition,
 {
-    let mut meter = EncodingMeter::new(remaining_work, declared_bytes);
-    let derived =
-        application_computation_partition_identity(key, &mut |charge| meter.admit(charge))
-            .map_err(|denial| match denial {
-                ApplicationComputationPartitionIdentityDenial::Key(denial) => {
-                    WorthQueryPartitionedComputationDenial::KeyNotEncodable { item, denial }
-                }
-                denial => encoding_resource_denial(denial),
-            })?;
+    let derived = encode_identity(
+        execution,
+        work,
+        |meter| application_computation_partition_identity(key, &mut |charge| meter.admit(charge)),
+        |denial| WorthQueryPartitionedComputationDenial::KeyNotEncodable { item, denial },
+    )?;
     let (partition, routed) = routing.route_in(
         item,
         *derived.digest(),
@@ -103,13 +98,27 @@ where
             .allocation_policy()
             .map_err(WorthQueryPartitionedComputationDenial::Resource)?,
     )?;
-    remaining_work
-        .spend(routed.units())
-        .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
-    let key_bytes = u64::try_from(derived.work().encoded_bytes()).map_err(|_| {
-        WorthQueryPartitionedComputationDenial::Resource(
-            WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted,
-        )
-    })?;
-    Ok((partition, key_bytes))
+    charge_preparation(execution, work, routed.units())?;
+    Ok(partition)
+}
+
+/// The producer input's digest has the same original-request encoding boundary.
+pub(super) fn input_digest<Input, Stopped>(
+    input: &Input::Value,
+    execution: &QueryRequestExecution<'_>,
+    work: &mut PreparationWork,
+) -> Result<[u8; 32], WorthQueryPartitionedComputationDenial<Stopped>>
+where
+    Input: ApplicationComputationInput,
+{
+    encode_identity(
+        execution,
+        work,
+        |meter| {
+            application_computation_input_digest::<Input, _, _>(input, &mut |charge| {
+                meter.admit(charge)
+            })
+        },
+        WorthQueryPartitionedComputationDenial::InputNotEncodable,
+    )
 }

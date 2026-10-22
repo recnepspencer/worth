@@ -24,7 +24,7 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
             );
             let plans = (0_usize..3).map(|rank| {
                 let application = application.clone();
-                OwnerPlan::new(vec![PreparedCompute::new(0, 0, move |_| {
+                OwnerPlan::new(vec![PreparedCompute::new( move |_| {
                     if rank == 1 {
                         if product {
                             application.product_runtime().with_advancement(|_| rank)
@@ -32,7 +32,7 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
                             application.with_host_advancement(|_| rank)
                         }
                     } else { Ok(rank) }
-                }, |_| 0)], |mut slots| {
+                })], |mut slots| {
                     assert!(!crate::domain_computation::primary_graph::application_contribution::computation::worker_custody::active(), "completion stays on the owner");
                     slots.pop().unwrap().into_value::<Result<usize, WorthQueryAdvancementDenial>>()
                 })

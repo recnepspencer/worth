@@ -20,7 +20,11 @@ fn a_tree_stop_keeps_no_kernel_completion_receipt_with_reuse_either_way() {
         placement,
         None,
     );
-    let ceiling = first.bill.charged_work() - 1;
+    let ceiling = first
+        .bill
+        .expect("the original compute stage ran")
+        .charged_work()
+        - 1;
 
     // All kernels fit; the ceiling omits the tree's last accepted unit.
 
@@ -56,8 +60,14 @@ fn a_tree_stop_keeps_no_kernel_completion_receipt_with_reuse_either_way() {
         );
         stops.push((
             stopped.outcome,
-            stopped.bill.charged_work(),
-            stopped.bill.charged_span(),
+            stopped
+                .bill
+                .expect("the original compute stage ran")
+                .charged_work(),
+            stopped
+                .bill
+                .expect("the original compute stage ran")
+                .charged_span(),
         ));
     }
     assert_eq!(stops[0], stops[1], "tree-stop kind and bill agree by value");

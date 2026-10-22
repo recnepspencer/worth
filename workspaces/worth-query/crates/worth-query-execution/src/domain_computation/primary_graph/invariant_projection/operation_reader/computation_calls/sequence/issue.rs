@@ -88,9 +88,10 @@ impl ComputationCallSequence {
         drop(entries);
         drop(memory);
         let memory = execution.reserve((size_of::<Self>() + 2 * size_of::<usize>()) as u64)?;
+        #[cfg(test)]
         let bytes = memory
             .bytes()
-            .checked_add(shape.bytes)
+            .checked_add(shape.bytes())
             .and_then(|v| v.checked_add(root.as_ref().map_or(0, |n| n.bytes)))
             .and_then(|v| v.checked_add(reached.bytes()))
             .ok_or(Resource::CapacityOverflow)?;
@@ -100,6 +101,7 @@ impl ComputationCallSequence {
             reached,
             pairs,
             payload,
+            #[cfg(test)]
             bytes,
             _memory: memory,
         }))

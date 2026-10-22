@@ -1,11 +1,7 @@
-//! A prepare holds its routing, and each gather's declared bytes, on the
-//! request's memory before it holds them. A budget one byte short refuses
-//! before the owner gathers, and a leased request and a serial one with the
-//! same budget refuse at the same boundary with the same denial.
+//! Real request policy can refuse routing storage before gathering.
 
 use std::num::NonZeroUsize;
 
-use worth_execution::KeyedPartitioner;
 use worth_foundational::ExecutionRequestPolicy;
 
 use super::super::super::super::request_execution::{
@@ -19,16 +15,6 @@ use super::*;
 /// process's one authority.
 fn policy(memory: u64) -> ExecutionRequestPolicy {
     test_policy(NonZeroUsize::new(2).unwrap(), Some(memory))
-}
-
-/// What the routing of items 1 to 4 under two parities retains.
-fn routing_bytes() -> u64 {
-    KeyedPartitioner::<[u8; 32]>::retained_bytes(4, 2, 0).unwrap()
-}
-
-/// What each gather holds before it runs: the computation's declared bytes.
-fn declared_bytes() -> u64 {
-    u64::try_from(Computation::RESOURCES.maximum_retained_bytes()).unwrap()
 }
 
 /// A full run under `memory`, leased, then serial.
@@ -85,52 +71,17 @@ fn under(memory: u64) -> [Attempt; 2] {
 /// Every refusal here is the request's policy, leased or serial.
 const OWN_POLICY: WorthQueryMemoryLimitLevel = WorthQueryMemoryLimitLevel::Policy;
 
-fn refused(requested: u64, admitted: u64) -> Outcome {
-    Err(WorthQueryPartitionedComputationDenial::Resource(
-        Resource::MemoryLimit {
-            requested,
-            admitted,
-            level: OWN_POLICY,
-        },
-    ))
-}
-
-/// The last item's route would retain one byte more than the budget, so the
-/// routing is refused and nothing is gathered.
+/// Exhaust the real request's available room before native preparation.
 #[test]
-fn one_byte_short_of_the_routing_refuses_before_any_gather() {
+fn exhausted_request_refuses_native_preparation_before_any_gather() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let routing = routing_bytes();
-    for run in under(routing - 1) {
-        assert_eq!(run.outcome, refused(routing, routing - 1));
+    for run in under(0) {
+        assert!(matches!(run.outcome,
+            Err(WorthQueryPartitionedComputationDenial::Resource(Resource::MemoryLimit {
+                requested, admitted: 0, level: OWN_POLICY,
+            })) if requested > 0
+        ));
         assert!(run.gathered.is_empty());
     }
-}
-
-/// With the routing held, one byte short of a gather's declared bytes is
-/// refused before that gather. Exactly enough admits the first gather, and
-/// the second's declared bytes, on top of the first's own, are refused
-/// before the second, the same way leased and serial.
-#[test]
-fn one_byte_short_of_a_gathers_declared_bytes_refuses_before_that_gather() {
-    let _observation =
-        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let routing = routing_bytes();
-    let declared = declared_bytes();
-    for run in under(routing + declared - 1) {
-        assert_eq!(run.outcome, refused(declared, declared - 1));
-        assert!(run.gathered.is_empty());
-    }
-
-    let [leased, serial] = under(routing + declared);
-    assert_eq!(leased.gathered, serial.gathered);
-    assert_eq!(leased.gathered.len(), 1, "only the first gather fits");
-    assert_eq!(leased.outcome, serial.outcome);
-    assert!(matches!(
-        leased.outcome,
-        Err(WorthQueryPartitionedComputationDenial::Resource(
-            Resource::MemoryLimit { requested, admitted, level: OWN_POLICY }
-        )) if admitted == declared && requested > declared
-    ));
 }

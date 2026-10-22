@@ -47,19 +47,14 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
             let dropped = Arc::clone(&dropped);
             let completion = Rc::clone(&completed);
             plans.push(OwnerPlan::new(
-                vec![PreparedCompute::new(
-                    0,
-                    0,
-                    move |member| {
-                        assert_eq!(member.interruption(), None);
-                        computed.lock().unwrap().push(rank);
-                        ResultValue {
-                            rank: Cell::new(rank),
-                            dropped,
-                        }
-                    },
-                    |_| 0,
-                )],
+                vec![PreparedCompute::new(move |member| {
+                    assert_eq!(member.interruption(), None);
+                    computed.lock().unwrap().push(rank);
+                    ResultValue {
+                        rank: Cell::new(rank),
+                        dropped,
+                    }
+                })],
                 move |mut slots| {
                     assert_eq!(slots.len(), 1);
                     let result = slots.pop().unwrap().into_value::<ResultValue>();

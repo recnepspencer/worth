@@ -21,11 +21,13 @@ use super::{ExecutionMap, MapOutcome, MapStop};
 
 mod certify;
 mod entry;
+mod native;
 mod retained;
 mod serial;
 mod stage;
 mod stop_owner;
 pub use certify::ReduceCertificationFailure;
+pub use retained::{NativeRetainedReduceOutcome, NativeRetainedReduction};
 pub use retained::{RetainedReduceDenial, RetainedReduceOutcome, RetainedReduction};
 
 pub type ExecutionReduce<T, F> = ReductionTree<T, F>;

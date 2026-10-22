@@ -14,8 +14,6 @@ use worth_query_host::facade::application_contribution::{
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 use worth_query_host::facade::primary_graph::partitioned_computation_runs_on_this_thread_for_test as runs_on_this_thread;
 
-pub(super) mod calls;
-
 use super::demand::{RegionTotalsDemand, RegionTotalsHandler, TotalRegions};
 use super::facts::{self, Entry, EntryData, InputDenial, Reader, RegionFault, Set, Sets};
 use super::*;
@@ -47,7 +45,6 @@ where
         reader: &mut Reader<'_, '_, '_>,
         set: &Set,
     ) -> Result<WorthQueryComputationPartitionPlan<Entry>, InputDenial> {
-        calls::record(0);
         Ok(facts::entries(reader, set)?)
     }
 
@@ -57,7 +54,6 @@ where
         _: &Set,
         entry: &Entry,
     ) -> Result<RegionKey, InputDenial> {
-        calls::record(1);
         Ok(RegionKey(facts::region(reader, entry)?))
     }
 
@@ -67,7 +63,6 @@ where
         _: &Set,
         partition: WorthQueryComputationPartitionMembers<'_, RegionKey, Entry>,
     ) -> Result<Vec<EntryData>, InputDenial> {
-        calls::record(2);
         Ok(facts::gathered(reader, partition.items())?)
     }
 
@@ -76,7 +71,6 @@ where
         partition: WorthQueryComputationPartitionView<'_, RegionKey, Vec<EntryData>>,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<f64, WorthQueryManagedComputationDenial<u32>> {
-        calls::record(3);
         total_region(partition.key().0, partition.gathered(), checkpoint)
     }
 
@@ -118,26 +112,6 @@ impl RegionTotalsBinding for PartitionedOwner {
 
     fn install(setup: &mut Setup<'_>) -> Installed {
         running::<RegionTotals, _>(setup, RegionTotalsOwner)
-    }
-}
-
-/// The same owner under a computation whose declared bytes are the largest
-/// a declaration can name.
-pub(super) struct UnboundedBytesOwner;
-impl RegionTotalsBinding for UnboundedBytesOwner {
-    type Computation = UnboundedBytesTotals;
-
-    fn install(setup: &mut Setup<'_>) -> Installed {
-        running::<UnboundedBytesTotals, _>(setup, RegionTotalsOwner)
-    }
-}
-
-pub(super) struct OverPolicyBytesOwner;
-impl RegionTotalsBinding for OverPolicyBytesOwner {
-    type Computation = OverPolicyBytesTotals;
-
-    fn install(setup: &mut Setup<'_>) -> Installed {
-        running::<OverPolicyBytesTotals, _>(setup, RegionTotalsOwner)
     }
 }
 

@@ -135,7 +135,8 @@ impl SignalError {
             } => error,
             reason @ (MapStop::Failure { .. }
             | MapStop::WorkExhausted { .. }
-            | MapStop::Admission(_)) => Self::execution_stopped(super::SignalExecutionStop::new(
+            | MapStop::Admission(_)
+            | MapStop::Allocation(_)) => Self::execution_stopped(super::SignalExecutionStop::new(
                 reason.into(),
                 boundary,
                 progress,
@@ -200,6 +201,7 @@ impl From<MapStop<SignalError>> for SignalExecutionStopReason {
             },
             MapStop::WorkExhausted { identity } => Self::WorkExhausted { identity },
             MapStop::Admission(denial) => Self::Admission(denial.into()),
+            MapStop::Allocation(kind) => Self::Allocation(kind),
         }
     }
 }
@@ -255,7 +257,8 @@ impl SignalError {
                     ..
                 }
                 | MapStop::WorkExhausted { .. }
-                | MapStop::Admission(_),
+                | MapStop::Admission(_)
+                | MapStop::Allocation(_),
                 _,
             )) => false,
         };

@@ -1,12 +1,15 @@
-use std::collections::BTreeMap;
-
 use worth_foundational::PartitionIdentity;
 
-use crate::{oracle::CanonicalBits, report::ChargedBytes};
+use crate::oracle::CanonicalBits;
+#[cfg(test)]
+use crate::report::ChargedBytes;
 
+#[cfg(test)]
+use super::value_storage::BoundedValues;
 use super::{
     construction::{FrontierEvent, FrontierPlan, Shape, SubtreeResult, SubtreeSpec},
     recombine::Engine,
+    value_storage::ValueStorage,
     ReductionDenial, ReductionMetrics, ReductionRunFailure, ReductionRunStop, ReductionTree,
 };
 
@@ -17,6 +20,7 @@ pub(crate) enum FrontierCharge {
     TaskUnit,
 }
 
+#[cfg(test)]
 impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<T, F> {
     pub(crate) fn prepare_shape_checked<E>(
         plan: super::ReductionPlan,
@@ -26,19 +30,14 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
         max_value_bytes: u64,
         before_work: impl FnMut() -> Result<(), E>,
     ) -> Result<(Shape<T>, ReductionMetrics), ReductionRunFailure<E>> {
-        if plan.identities().len() != values.len() {
-            return Err(ReductionRunFailure {
-                reason: ReductionRunStop::Denial(ReductionDenial::ValueCountMismatch),
-                metrics: ReductionMetrics::default(),
-            });
-        }
-        let mut engine = Engine::new(identity, combine, max_value_bytes, before_work);
-        engine
-            .validate(identity)
-            .map_err(|reason| engine.failure(reason))?;
-        let shape = Shape::build(plan.identities(), values, &mut engine)
-            .map_err(|reason| engine.failure(reason))?;
-        Ok((shape, engine.metrics()))
+        Self::prepare_shape_with_storage(
+            plan,
+            values,
+            identity,
+            combine,
+            BoundedValues(max_value_bytes),
+            before_work,
+        )
     }
 
     pub(crate) fn evaluate_subtree_checked<E>(
@@ -49,7 +48,74 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
         max_value_bytes: u64,
         before_work: impl FnMut() -> Result<(), E>,
     ) -> Result<SubtreeResult<T>, ReductionRunFailure<E>> {
-        let mut engine = Engine::new(identity, combine, max_value_bytes, before_work);
+        Self::evaluate_subtree_with_storage(
+            shape,
+            spec,
+            identity,
+            combine,
+            BoundedValues(max_value_bytes),
+            before_work,
+        )
+    }
+
+    pub(crate) fn settle_frontier_checked<E>(
+        shape: Shape<T>,
+        identity: T,
+        combine: F,
+        shape_metrics: ReductionMetrics,
+        frontier: FrontierPlan,
+        children: Vec<SubtreeResult<T>>,
+        failed: Option<(PartitionIdentity, ReductionRunFailure<E>, u64)>,
+        max_value_bytes: u64,
+        charge: impl FnMut(FrontierCharge) -> Result<(), E>,
+    ) -> Result<(Self, ReductionMetrics), ReductionRunFailure<E>> {
+        Self::settle_frontier_with_storage(
+            shape,
+            identity,
+            combine,
+            shape_metrics,
+            frontier,
+            children,
+            failed,
+            BoundedValues(max_value_bytes),
+            charge,
+        )
+    }
+}
+
+impl<T: Clone + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<T, F> {
+    pub(super) fn prepare_shape_with_storage<E, Storage: ValueStorage<T>>(
+        plan: super::ReductionPlan,
+        values: Vec<T>,
+        identity: &T,
+        combine: &F,
+        storage: Storage,
+        before_work: impl FnMut() -> Result<(), E>,
+    ) -> Result<(Shape<T>, ReductionMetrics), ReductionRunFailure<E>> {
+        if plan.identities().len() != values.len() {
+            return Err(ReductionRunFailure {
+                reason: ReductionRunStop::Denial(ReductionDenial::ValueCountMismatch),
+                metrics: ReductionMetrics::default(),
+            });
+        }
+        let mut engine = Engine::with_storage(identity, combine, storage, before_work);
+        engine
+            .validate(identity)
+            .map_err(|reason| engine.failure(reason))?;
+        let shape = Shape::build(plan.identities(), values, &mut engine)
+            .map_err(|reason| engine.failure(reason))?;
+        Ok((shape, engine.metrics()))
+    }
+
+    pub(super) fn evaluate_subtree_with_storage<E, Storage: ValueStorage<T>>(
+        shape: &Shape<T>,
+        spec: SubtreeSpec,
+        identity: &T,
+        combine: &F,
+        storage: Storage,
+        before_work: impl FnMut() -> Result<(), E>,
+    ) -> Result<SubtreeResult<T>, ReductionRunFailure<E>> {
+        let mut engine = Engine::with_storage(identity, combine, storage, before_work);
         let (root, span) = shape
             .evaluate(spec, &mut engine)
             .map_err(|reason| engine.failure(reason))?;
@@ -63,7 +129,7 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
     /// Resolve speculative frontier results in the same enter/left/right/
     /// finish order as the serial oracle. A task error is observed only when
     /// its subtree is reached, after every earlier canonical join.
-    pub(crate) fn settle_frontier_checked<E>(
+    pub(super) fn settle_frontier_with_storage<E, Storage: ValueStorage<T>>(
         shape: Shape<T>,
         identity: T,
         combine: F,
@@ -71,16 +137,22 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
         frontier: FrontierPlan,
         children: Vec<SubtreeResult<T>>,
         mut failed: Option<(PartitionIdentity, ReductionRunFailure<E>, u64)>,
-        max_value_bytes: u64,
+        storage: Storage,
         mut charge: impl FnMut(FrontierCharge) -> Result<(), E>,
     ) -> Result<(Self, ReductionMetrics), ReductionRunFailure<E>> {
         let len = shape.len();
         if children.len() > frontier.tasks.len() {
             return Err(denied(shape_metrics));
         }
-        let mut built = BTreeMap::new();
+        let (mut built, _built_memory) = storage
+            .buffer::<Option<SubtreeResult<T>>, E>(len)
+            .map_err(|reason| ReductionRunFailure {
+                reason,
+                metrics: shape_metrics,
+            })?;
+        built.resize_with(len, || None);
         for (spec, child) in frontier.tasks.iter().copied().zip(children) {
-            built.insert(spec.index(), child);
+            built[spec.index()] = Some(child);
         }
         // A started canonical task implies its preceding DFS entries were
         // reached. These visits belong to the already-performed prefix, not
@@ -89,7 +161,8 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
         let first = frontier.tasks.first();
         let entered_prefix = first.is_some_and(|spec| {
             built
-                .get(&spec.index())
+                .get(spec.index())
+                .and_then(Option::as_ref)
                 .is_some_and(|child| child.metrics.charged_work != 0)
                 || failed
                     .as_ref()
@@ -99,7 +172,7 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
         for event in frontier.events {
             match event {
                 FrontierEvent::Enter(_spec) => {
-                    let mut engine = Engine::new(&identity, &combine, max_value_bytes, || {
+                    let mut engine = Engine::with_storage(&identity, &combine, storage, || {
                         charge(if entered_prefix {
                             FrontierCharge::CompletedNode
                         } else {
@@ -112,18 +185,19 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
                     metrics = add(metrics, engine.metrics())?;
                 }
                 FrontierEvent::Task(spec) => {
-                    if let Some(child) = built.get(&spec.index()) {
+                    if let Some(child) = built[spec.index()].as_ref() {
                         charge_task(
                             &shape,
                             spec,
                             child.metrics.charged_work,
                             &mut metrics,
                             &mut charge,
+                            storage,
                         )?;
                         metrics = add(metrics, child.metrics)?;
                     } else if failed.as_ref().is_some_and(|item| item.0 == spec.identity) {
                         let (_, failure, target) = failed.take().expect("checked task failure");
-                        charge_task(&shape, spec, target, &mut metrics, &mut charge)?;
+                        charge_task(&shape, spec, target, &mut metrics, &mut charge, storage)?;
                         metrics = add(metrics, failure.metrics)?;
                         return Err(ReductionRunFailure {
                             reason: failure.reason,
@@ -135,8 +209,8 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
                 }
                 FrontierEvent::Finish(spec) => {
                     let [left_spec, right_spec] = shape.children_of(spec);
-                    let left = left_spec.and_then(|child| built.remove(&child.index()));
-                    let right = right_spec.and_then(|child| built.remove(&child.index()));
+                    let left = left_spec.and_then(|child| built[child.index()].take());
+                    let right = right_spec.and_then(|child| built[child.index()].take());
                     if left_spec.is_some() != left.is_some()
                         || right_spec.is_some() != right.is_some()
                     {
@@ -147,7 +221,7 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
                         .map_or(0, |child| child.metrics.charged_span)
                         .max(right.as_ref().map_or(0, |child| child.metrics.charged_span));
                     let (partition, value) = shape.node_value(spec);
-                    let mut engine = Engine::new(&identity, &combine, max_value_bytes, || {
+                    let mut engine = Engine::with_storage(&identity, &combine, storage, || {
                         // A started later task fixes the canonical stop position.
                         // Its interruption cannot overtake earlier deferred joins.
                         charge(if joins_before_stop {
@@ -177,18 +251,15 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
                     }
                     subtree.charged_span =
                         child_span.checked_add(4).ok_or_else(|| overflow(metrics))?;
-                    built.insert(
-                        spec.index(),
-                        SubtreeResult {
-                            root: Some(root),
-                            metrics: subtree,
-                        },
-                    );
+                    built[spec.index()] = Some(SubtreeResult {
+                        root: Some(root),
+                        metrics: subtree,
+                    });
                 }
             }
         }
         let root = if let Some(spec) = shape.full_spec() {
-            let root = built.remove(&spec.index()).ok_or_else(|| denied(metrics))?;
+            let root = built[spec.index()].take().ok_or_else(|| denied(metrics))?;
             metrics.charged_span = shape_metrics
                 .charged_span
                 .checked_add(root.metrics.charged_span)
@@ -197,7 +268,7 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
         } else {
             None
         };
-        if !built.is_empty() || failed.is_some() {
+        if built.iter().any(Option::is_some) || failed.is_some() {
             return Err(denied(metrics));
         }
         Ok((
@@ -212,18 +283,23 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
     }
 }
 
-fn charge_task<T, E>(
+fn charge_task<T, E, Storage: ValueStorage<T>>(
     shape: &Shape<T>,
     spec: SubtreeSpec,
     target: u64,
     metrics: &mut ReductionMetrics,
     charge: &mut impl FnMut(FrontierCharge) -> Result<(), E>,
+    storage: Storage,
 ) -> Result<(), ReductionRunFailure<E>> {
     let mut accepted = 0_u64;
     for _ in 0..target {
         if let Err(stop) = charge(FrontierCharge::TaskUnit) {
             let partial = shape
-                .prefix_metrics(spec, accepted)
+                .prefix_metrics(spec, accepted, storage)
+                .map_err(|reason| ReductionRunFailure {
+                    reason,
+                    metrics: *metrics,
+                })?
                 .ok_or_else(|| overflow(*metrics))?;
             *metrics = add(*metrics, partial)?;
             return Err(ReductionRunFailure {

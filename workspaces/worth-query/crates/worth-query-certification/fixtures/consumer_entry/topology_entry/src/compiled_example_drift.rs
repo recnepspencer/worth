@@ -51,7 +51,8 @@ fn compiled_examples_match_consumer_documents() {
     assert_eq!(
         examples,
         BTreeSet::from([
-            "candidate_preparation.rs".to_owned(),
+            "checkpoint_recovery/computation_partition/oracle/collection/lifecycle/binding.rs"
+                .to_owned(),
             "final_output/feature.rs".to_owned(),
             "optional_aspects.rs".to_owned(),
             "composed_action.rs".to_owned(),

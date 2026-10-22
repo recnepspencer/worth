@@ -33,6 +33,7 @@ mod observed;
 pub use observed::full_partitioned_computation_preparations_on_this_thread_for_test;
 pub(super) use observed::observe_full_preparation;
 mod prepare;
+use super::preparation_work::PreparationWork;
 mod prior_absence;
 mod published_state;
 pub(in crate::domain_computation) use published_state::observe_discarded;
@@ -84,7 +85,6 @@ pub(in crate::domain_computation) use retained::{
 };
 
 use self::retained::{RetainedBasis, TypedPrior};
-use super::remaining_work::RemainingWork;
 use crate::domain_computation::primary_graph::application_attempt::{
     ComputationRead, FactMovement, Movement, WorthQueryApplicationFactKey,
 };
@@ -145,20 +145,18 @@ pub(super) struct IncrementalRun<Key, Item, Reduced> {
 
 /// Compares the state the producer handed the reader with this attempt's
 /// facts. `installation` names the installed owner, `input_digest` is the
-/// input value's digest, already charged, and `remaining_work` is what the
-/// digest left of the declared work.
+/// input value's digest, already admitted by the original request.
 ///
 /// Comparing a retained fact is charged to no one, because a full run would
 /// not compare it, and charging it would make whether a later call passes
-/// depend on reuse. The declared work bounds it instead: a state whose facts'
-/// summed worst-case observation passes what that work still admits, or has
-/// a fact nothing bounds, is not compared, and runs in full.
+/// depend on reuse. The original request's policy bounds it instead: a state
+/// whose worst-case observation exceeds that policy, or whose facts have no
+/// finite observation bound, runs in full.
 pub(super) fn begin<Key, Item, Reduced, Schema, Operation>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     reader: &mut Reader<'_, '_, Schema, Operation>,
     installation: &ComputationInstallation,
     input_digest: [u8; 32],
-    remaining_work: RemainingWork,
 ) -> Result<
     Begun<Key, Item, Reduced>,
     crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
@@ -201,11 +199,11 @@ where
     if let Some(cause) = basis.drift(&retained.basis) {
         return full(basis, cause);
     }
-    if retained
-        .facts
-        .observation_work_bound()
-        .is_none_or(|work| work > remaining_work.remaining())
-    {
+    if retained.facts.observation_work_bound().is_none_or(|work| {
+        execution
+            .work_ceiling()
+            .is_some_and(|ceiling| work > ceiling)
+    }) {
         return full(
             basis,
             WorthQueryPartitionedComputationFullCause::ObservationOverBudget,

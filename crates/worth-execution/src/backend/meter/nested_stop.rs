@@ -39,6 +39,8 @@ pub enum NestedComputationStop {
     Panic,
     /// A child value or domain error exceeded its declared heap capacity.
     ResultCapacityExceeded,
+    /// The child's real framework or result allocation failed at its owner.
+    Allocation(crate::ExecutionPhysicalAllocationDenialKind),
     /// A strictly narrower computation declaration refused work.
     /// A request ceiling, including a tie with it, cannot be taken.
     WorkCeiling,

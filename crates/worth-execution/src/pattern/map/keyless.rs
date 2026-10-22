@@ -42,6 +42,7 @@ impl<T, K: Ord + ChargedBytes> ExecutionMap<T, K> {
             batch,
             _read_sets: read_sets,
             _write_sets: write_sets,
+            _payload: std::marker::PhantomData,
         })
     }
 
@@ -78,6 +79,7 @@ impl<T, K: Ord + ChargedBytes> ExecutionMap<T, K> {
             batch,
             _read_sets: read_sets,
             _write_sets: write_sets,
+            _payload: std::marker::PhantomData,
         })
     }
 }

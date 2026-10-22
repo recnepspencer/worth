@@ -3,6 +3,7 @@ use worth_proof::CanonicalUniqueVec;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReductionDenial {
+    Admission(crate::LeaseDenial),
     IdentitiesNotCanonical,
     ValueCountMismatch,
     CoverageMismatch,
@@ -11,6 +12,7 @@ pub enum ReductionDenial {
     InvalidCanonicalEncoding,
     ReducerPanic,
     ResultCapacityExceeded,
+    Allocation(crate::ExecutionPhysicalAllocationDenialKind),
     WorkCounterOverflow,
 }
 

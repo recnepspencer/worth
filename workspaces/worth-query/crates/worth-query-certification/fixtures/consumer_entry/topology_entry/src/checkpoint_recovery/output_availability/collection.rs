@@ -32,8 +32,6 @@ impl ApplicationManagedComputation<Schema, program::QuantityFeature> for Totals 
         ApplicationComputationExecution::DeterministicPartitioned;
     // This bounds one pure gathered/reduced snapshot, not the producer's
     // native source/query custody. Each fixture population has one member.
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(1_000_000, 16 * 1024);
 }
 pub(super) struct Contributors;
 impl ApplicationCollectionContributor for Contributors {

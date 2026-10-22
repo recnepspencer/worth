@@ -153,6 +153,8 @@ fn execution(kind: BankApplicationOneShotDenialKind) -> BankHttpDenial {
         | Execution::BasisReleaseFailed
         | Execution::PredicateIndexUnavailable
         | Execution::TraversalUnavailable
+        | Execution::ExpressionContextUnavailable
+        | Execution::ExpressionContextIncomplete
         | Execution::ProjectionUnavailable => unavailable(),
         Execution::CardinalityMismatch => internal_denied(),
     }

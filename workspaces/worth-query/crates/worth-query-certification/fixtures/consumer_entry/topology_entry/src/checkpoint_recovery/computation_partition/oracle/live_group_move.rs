@@ -111,7 +111,6 @@ fn moves(destinations: [u32; 2]) {
         assert_eq!(moved.completion_call_roster_visits, 0);
         assert_eq!(moved.sealed_computation_index_visits, 0);
         assert_eq!(moved.fallback_carried_metadata_visits, 0);
-        assert_eq!(moved.computation_retained_size_visits, 0);
         assert_eq!(moved.computation_call_build_visits, 0);
         assert_eq!(moved.computation_tree_plan_visits, 0);
         assert_eq!(

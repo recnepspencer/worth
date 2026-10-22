@@ -6,6 +6,22 @@ use crate::{
     ExecutionRetainedResult, ExecutionWorkCeiling, LeaseDenial, WorkCeilingDenial,
 };
 
+impl<T: Sync, K> ExecutionMap<T, K, super::NativePayload> {
+    pub(in crate::pattern) fn run_retained_native_with_backend<R, E, F>(
+        &self,
+        lease: Option<&crate::ExecutionResourceLease<'_>>,
+        backend: crate::backend::BackendKind,
+        kernel: &F,
+    ) -> Result<crate::backend::BatchOutcome<ExecutionRetainedResult<R>, E>, ResultStorageDenial>
+    where
+        R: Send + Sync,
+        E: Send,
+        F: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Sync,
+    {
+        crate::backend::run_retained_native_batch(lease, &self.batch, backend, kernel)
+    }
+}
+
 #[derive(Debug)]
 pub enum RetainedMapDenial {
     Request(WorkCeilingDenial),

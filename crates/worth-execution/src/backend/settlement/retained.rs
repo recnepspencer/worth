@@ -10,7 +10,7 @@ use super::{
 };
 use crate::{
     reduction::{RunRange, RunTree},
-    ChargedBytes, ExecutionResourceLease, RetainedRunMetrics,
+    ExecutionResourceLease, RetainedRunMetrics,
 };
 use worth_foundational::PartitionIdentity;
 
@@ -27,7 +27,7 @@ impl<'a, R> RetainedSettlement<'a, R> {
             after: None,
         }
     }
-    pub(super) fn before<E: ChargedBytes>(
+    pub(super) fn before<E>(
         &mut self,
         before: Option<PartitionIdentity>,
         prefix: &mut Prefix<R, E>,
@@ -105,7 +105,7 @@ impl<'a, R> RetainedSettlement<'a, R> {
                         }
                     }
                     self.metrics.carried_slot_visits += 1;
-                    let (outcome, _, _) = evaluation::evaluate(
+                    let (outcome, _, _) = evaluation::evaluate_with_storage(
                         slot,
                         lease,
                         limits,
@@ -118,6 +118,7 @@ impl<'a, R> RetainedSettlement<'a, R> {
                                 .map(|_| ())
                                 .map_err(KernelFailure::<E>::Stop)
                         },
+                        &super::super::payload_storage::PayloadStorage::<(), (), E>::Native,
                     );
                     if prefix.accept(id, outcome, limits).is_some() {
                         self.metrics.carried_slots += 1;

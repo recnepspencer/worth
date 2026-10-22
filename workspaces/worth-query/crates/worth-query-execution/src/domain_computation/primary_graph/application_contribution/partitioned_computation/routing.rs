@@ -144,10 +144,4 @@ impl ComputationPartitionRouting {
             .into_iter()
             .flat_map(|members| members.iter().copied())
     }
-
-    /// What the routing holds, as the partitioner charges it, or `None` when
-    /// the count overflows.
-    pub(super) fn charged_bytes(&self) -> Option<u64> {
-        self.partitioner.charged_bytes()
-    }
 }

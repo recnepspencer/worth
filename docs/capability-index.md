@@ -209,12 +209,10 @@ for supported grammar, native checkpoint examples and the current package
 archive refusal. Representation limits do not grant request resources,
 currentness or codec-transition permission.
 
-Managed computation values derive resident accounting with Host's existing
-`application_contribution::ChargedBytes` trait and derive. Every resident field
-counts, independently of Serde visibility; named opaque/shared owners retain
-their native contracts. Pure schema owners use the same trait and derive from
-`worth_foundational::facade` without an Execution dependency. See
-[resident value accounting](build-an-application.md#resident-value-accounting).
+Managed and partitioned computation values need no resident-size trait,
+retained-byte implementation or result forecast. The installed SDK lifecycle
+owns native storage and original-request propagation. See
+[managed computation](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
 
 `WorthQueryInvariantEntityIdentity` has its own native resident contract for the
 shared entity-key allocation. Clones preserve that backing and its original
@@ -322,6 +320,16 @@ column names the substitute that this capability makes wrong.
 | Produce derived or computed outputs | Feature spec `provides::<Port>()`, `derived_artifact`, `managed_computation`; demand with `request.demand(demand).controls(controls).start()`. The handle or retained continuation owns actual failed producer cleanup; `release_managed_cleanup(&fresh_request)` on the handle releases it without output settlement. Diagnostic denial clones carry no cleanup authority | [Build §3.4](build-an-application.md#34-ports-connections-and-the-output-graph), [Build §3.6](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation) | [Consumer prohibition](#prohibition-produce-derived-or-computed-outputs) |
 | Produce from authentic sources and declare artifact lifecycle | `WorthQueryApplicationProducerProvider` supplies semantic identity, operation input and idempotency from the original source. `ApplicationDerivedArtifact` declares output/locality, retention, succession, required posture, producer, dependencies, reuse and stopped outcome. The installed mutation path enforces source/currentness and publication contracts. | [Producer source and publication](build-an-application.md#producer-source-and-publication) | Fabricating source or current output; replaying a producer for work already reused; treating lifecycle metadata as mutation authority |
 | Undo or redo a change | **Provisional.** `host::provisional_aftermath` exists, but undo and redo are experiments; Milestone 9.18 owns any accepted contract | [Front door: current limits](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md#current-limits) | [Consumer prohibition](#prohibition-undo-or-redo-a-change) |
+
+For managed or partitioned handler computation, use the installed
+`decision_plan` entrance described in [Build §3.6](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
+It owns prepare/compute/complete and propagates the original typed failures.
+Use `checkpoint.poll()` without a work invoice, and
+`HandlerResult::from_result`/`into_result` with `HandlerFailure<Domain>` rather
+than a private lifecycle dispatcher. Managed and partitioned computation require
+no prepared/result byte forecast, per-computation work ceiling or `ChargedBytes`
+implementation. Native allocation, original-request controls and canonical
+retention remain with their existing runtime owners.
 
 Action metadata retains its existing capability scope: locality/change and
 delivery belong to the exact occurrence; correspondence lookup is binding-type

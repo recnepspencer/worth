@@ -154,20 +154,15 @@ fn member_host_refusals_do_not_add_thread_dependent_observations() {
         root.run_advancement(None, None, |_| {
             let members = (0..2)
                 .map(|_| PreparedMember {
-                    requests: vec![PreparedCompute::new(
-                        0,
-                        0,
-                        |_| {
-                            with_bootstrap_advancement(
-                                super::super::super::test_placement::test_policy(
-                                    NonZeroUsize::MIN,
-                                    None,
-                                ),
-                                |_| (),
-                            )
-                        },
-                        |_| 0,
-                    )],
+                    requests: vec![PreparedCompute::new(|_| {
+                        with_bootstrap_advancement(
+                            super::super::super::test_placement::test_policy(
+                                NonZeroUsize::MIN,
+                                None,
+                            ),
+                            |_| (),
+                        )
+                    })],
                 })
                 .collect();
             let computed = dispatch(&root, members);

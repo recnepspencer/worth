@@ -6,7 +6,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use worth_execution::{ChargedBytes, PartitionItemId};
+use worth_execution::PartitionItemId;
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationPartition, ApplicationFeature, ApplicationManagedComputation,
 };
@@ -14,10 +14,9 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::super::request_execution::QueryRequestExecution;
 use super::super::compute::Denial;
-use super::super::gather_memory::GatheredMemory;
 use super::super::items::{item_digests, planned_items, route_item};
 use super::super::plan::PlanShape;
-use super::super::remaining_work::RemainingWork;
+use super::super::preparation_work::{charge_preparation, PreparationWork};
 use super::super::{
     InputValue, WorthQueryComputationPartitionMembers, WorthQueryComputationReader,
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
@@ -30,7 +29,7 @@ use crate::domain_computation::primary_graph::application_attempt::ComputationRe
 impl<Key, Item, Reduced> IncrementalRun<Key, Item, Reduced>
 where
     Key: ApplicationComputationPartition,
-    Item: ApplicationComputationPartition + ChargedBytes,
+    Item: ApplicationComputationPartition,
 {
     /// Carries or makes again the membership, then every item's key and
     /// every partition's gathering in ascending identity order over this
@@ -45,10 +44,9 @@ where
     /// charges nothing.
     ///
     /// A carried call charges what it charged, where a full run makes it,
-    /// and its facts and reached entities enter the attempt as its reads. A
-    /// call the remaining work would not pass is made instead, and fails as
-    /// a full run fails. `remaining_work` is what the input's digest left of
-    /// the declared work.
+    /// and its facts and reached entities enter the attempt as its reads.
+    /// A call whose reader receipt cannot be carried runs again. Canonical
+    /// work is admitted by the original request at the same call position.
     ///
     /// `None` where an item routed again meets another key digest in its
     /// partition identity. Where that collision falls among the items
@@ -61,8 +59,7 @@ where
         reader: &mut Reader<'_, '_, Schema, Owner::Operation>,
         execution: &QueryRequestExecution<'_>,
         input: &InputValue<Schema, Feature, Computation>,
-        mut remaining_work: RemainingWork,
-        declared_bytes: u64,
+        mut preparation_work: PreparationWork,
     ) -> Result<
         Option<PreparedIncremental<Key, Item, Reduced, Owner::Gathered>>,
         Denial<Schema, Feature, Computation, Owner>,
@@ -79,26 +76,14 @@ where
             PartitionResult = Reduced,
         >,
     {
-        if let Some(prepared) = self.prepare_rekeys(
-            owner,
-            reader,
-            execution,
-            input,
-            remaining_work,
-            declared_bytes,
-        )? {
+        if let Some(prepared) =
+            self.prepare_rekeys(owner, reader, execution, input, preparation_work)?
+        {
             return Ok(Some(prepared));
         }
-        if self.can_prepare_ranges(reader, remaining_work) {
+        if self.can_prepare_ranges(reader) {
             return self
-                .prepare_ranges(
-                    owner,
-                    reader,
-                    execution,
-                    input,
-                    remaining_work,
-                    declared_bytes,
-                )
+                .prepare_ranges(owner, reader, execution, input, preparation_work)
                 .map(Some);
         }
         let resource = WorthQueryPartitionedComputationDenial::Resource;
@@ -120,9 +105,11 @@ where
                 self.calls.keys(ComputationRead::Membership),
                 ComputationRead::Membership,
             );
-            remaining_work
-                .spend(Some(retained.membership.declared_units))
-                .map_err(resource)?;
+            charge_preparation(
+                execution,
+                &mut preparation_work,
+                Some(retained.membership.declared_units),
+            )?;
             let membership = Some(retained.membership.clone());
             (
                 Arc::clone(&retained.items),
@@ -135,11 +122,11 @@ where
             });
             let PlanShape::Keyed(entries) = plan?.shape;
             let items = planned_items(entries)?;
-            let before = remaining_work;
-            let digests = item_digests(&items, &mut remaining_work, declared_bytes)?;
+            let before = preparation_work;
+            let digests = item_digests(&items, execution, &mut preparation_work)?;
             let membership =
                 charge
-                    .zip(remaining_work.spent_since(before))
+                    .zip(preparation_work.spent_since(before))
                     .map(|(charge, declared_units)| RetainedCall {
                         charge,
                         declared_units,
@@ -151,7 +138,6 @@ where
         let changed = |item: &PartitionItemId| retained.digests.get(item) != digests.get(item);
         let rekeyed = |item: &PartitionItemId| changed(item) || self.moved_items.contains(item);
         let mut copy = None;
-        let routing_memory = execution.reserve(0).map_err(resource)?;
         let allocation_policy = execution.allocation_policy().map_err(resource)?;
         // The routing is copied, without the items routed again, before the
         // first route changes it: a run that routes nothing again shares it.
@@ -176,9 +162,7 @@ where
                 .filter(|call| reader.carry(&COMPARATOR, &call.charge));
             if let Some(call) = carried {
                 enter(reader, self.calls.keys(read), read);
-                remaining_work
-                    .spend(Some(call.declared_units))
-                    .map_err(resource)?;
+                charge_preparation(execution, &mut preparation_work, Some(call.declared_units))?;
                 carried_items.insert(*item);
                 item_keys.insert(*item, call.clone());
                 continue;
@@ -187,20 +171,13 @@ where
                 owner.partition_key(&mut WorthQueryComputationReader::lend(reader), input, value)
             });
             let key = key?;
-            let before = remaining_work;
+            let before = preparation_work;
             let routing = match &mut copy {
                 Some(routing) => routing,
                 None => copy.insert(copied()?),
             };
-            let routed = route_item(
-                *item,
-                &key,
-                routing,
-                execution,
-                &mut remaining_work,
-                declared_bytes,
-            );
-            let (partition, key_bytes) = match routed {
+            let routed = route_item(*item, &key, routing, execution, &mut preparation_work);
+            let partition = match routed {
                 Err(WorthQueryPartitionedComputationDenial::PartitionIdentityCollision {
                     ..
                 }) => {
@@ -209,7 +186,7 @@ where
                 }
                 routed => routed?,
             };
-            match charge.zip(remaining_work.spent_since(before)) {
+            match charge.zip(preparation_work.spent_since(before)) {
                 Some((charge, declared_units)) => {
                     item_keys.insert(
                         *item,
@@ -226,9 +203,7 @@ where
                 moved.extend(left);
                 moved.insert(partition);
             }
-            fresh_keys
-                .entry(partition)
-                .or_insert_with(|| (Arc::new(key), key_bytes));
+            fresh_keys.entry(partition).or_insert_with(|| Arc::new(key));
         }
         let mut removed = false;
         for item in retained
@@ -242,9 +217,9 @@ where
         if removed && copy.is_none() {
             copy = Some(copied()?);
         }
-        let (routing, routing_memory) = match copy {
-            Some(copy) => (Arc::new(copy), Some(routing_memory)),
-            None => (Arc::clone(&retained.routing), None),
+        let routing = match copy {
+            Some(copy) => Arc::new(copy),
+            None => Arc::clone(&retained.routing),
         };
         let removed_partitions = worth_proof::CanonicalUniqueVec::try_from_sorted_unique(
             moved
@@ -259,8 +234,7 @@ where
         let item_calls = super::item_bounds::retain_calls(&item_keys, allocation_policy)
             .map_err(WorthQueryPartitionedComputationDenial::from_ordered)?;
         let mut prepared = PreparedIncremental::new(
-            remaining_work,
-            declared_bytes,
+            preparation_work,
             self.basis,
             self.prior,
             self.validated_at,
@@ -268,11 +242,8 @@ where
                 items: Arc::clone(&items),
                 digests,
                 membership: membership.filter(|_| measured),
-                item_bytes: super::item_bounds::items(&items),
-                item_call_bytes: Some(item_calls.retained_bytes()),
                 item_keys: item_calls,
                 routing: Arc::clone(&routing),
-                routing_memory,
                 carried_membership,
                 carried_items: super::retained::CarriedItems::Selected(carried_items),
             },
@@ -298,15 +269,16 @@ where
             // A partition with the same full digest keeps its key. Any other
             // partition holds
             // only items routed again, and takes its least item's key.
-            let (key, key_bytes) = match prior {
-                Some(prior) => (Arc::clone(&prior.key), prior.key_bytes),
+            let key = match prior {
+                Some(prior) => Arc::clone(&prior.key),
                 None => fresh_keys
                     .remove(&identity)
                     .expect("a partition no retained run held has an item routed again"),
             };
             let members = routing.members(identity).collect::<Arc<[_]>>();
-            let mut memory = GatheredMemory::new(execution, declared_bytes)?;
-            memory.before_gather(execution)?;
+            execution
+                .checkpoint()
+                .map_err(WorthQueryPartitionedComputationDenial::from_kernel_stop)?;
             let (gathered, charge) = reader.measured(read, |reader| {
                 owner.gather(
                     &mut WorthQueryComputationReader::lend(reader),
@@ -317,7 +289,7 @@ where
             let gathered = gathered.map_err(|denial| {
                 WorthQueryPartitionedComputationDenial::gathering(identity, denial)
             })?;
-            prepared.gathered(identity, key, key_bytes, members, gathered, charge, memory)?;
+            prepared.gathered(identity, key, members, gathered, charge)?;
         }
         Ok(Some(prepared))
     }

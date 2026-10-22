@@ -25,7 +25,9 @@ impl From<LeaseDenial> for ResultStorageDenial {
     }
 }
 
-/// A value accepted by native canonical settlement, with its own backing.
+/// A value accepted by native canonical settlement, with its own framework cell
+/// and capture backing. Declared storage also admits the payload's heap bytes;
+/// native storage preserves the payload's ordinary allocation ownership.
 /// This grants neither input equality nor permission to skip an application
 /// call. Only its owning runtime can qualify those prerequisites.
 ///
@@ -109,12 +111,16 @@ impl<R> ChargedBytes for ExecutionRetainedResult<R> {
 }
 
 pub(super) fn result_bytes<R>(heap: u64) -> Option<u64> {
+    result_layout_bytes::<R>()?.checked_add(heap)
+}
+
+pub(super) fn result_layout_bytes<R>() -> Option<u64> {
     let layout = std::alloc::Layout::new::<[usize; 2]>()
         .extend(std::alloc::Layout::new::<SettledValue<R>>())
         .ok()?
         .0
         .pad_to_align();
-    u64::try_from(layout.size()).ok()?.checked_add(heap)
+    u64::try_from(layout.size()).ok()
 }
 
 pub(crate) fn run_retained_batch<T, R, E, F>(
@@ -246,13 +252,22 @@ fn fresh<R: ChargedBytes>(
             .expect("validated native capacity"),
         )
         .expect("shrinking an accepted result's grant");
+    store(value, identity, evaluated, Some(memory))
+}
+
+fn store<R>(
+    value: R,
+    identity: PartitionIdentity,
+    evaluated: super::settlement::records::EvaluatedTask,
+    memory: Option<ExecutionMemoryReservation>,
+) -> ExecutionRetainedResult<R> {
     ExecutionRetainedResult(Arc::new(SettledValue {
         value,
         identity,
         work: evaluated.work,
         span: evaluated.span,
         receipt: evaluated.receipt,
-        memory,
+        memory: memory.expect("fresh result admitted before evaluation"),
     }))
 }
 
@@ -293,7 +308,9 @@ fn finish<V, R, E>(
 
 #[cfg(test)]
 mod interruption_tests;
+mod native_payload;
 #[cfg(test)]
 mod reuse_tests;
 #[cfg(test)]
 mod tests;
+pub(crate) use native_payload::{run_retained_native_batch, run_retained_native_sparse_batch};

@@ -3,11 +3,10 @@ use super::*;
 impl<Key, Item, Reduced, Gathered> PreparedIncremental<Key, Item, Reduced, Gathered>
 where
     Key: Send + Sync + 'static,
-    Gathered: Send + Sync + worth_execution::ChargedBytes,
+    Gathered: Send + Sync,
 {
     pub(in super::super) fn new(
-        remaining_work: RemainingWork,
-        declared_bytes: u64,
+        preparation_work: PreparationWork,
         basis: RetainedBasis,
         prior: TypedPrior<Key, Item, Reduced>,
         validated_at: Option<worth_relational::facade::snapshots::SnapshotHandle>,
@@ -15,8 +14,8 @@ where
         removed: CanonicalUniqueVec<PartitionIdentity>,
     ) -> Self {
         Self {
-            remaining_work,
-            declared_bytes,
+            preparation_work,
+            compute_ceiling: None,
             partitions: BTreeMap::new(),
             next,
             removed,
@@ -26,7 +25,6 @@ where
             ranges: None,
             rekeyed: Default::default(),
             transition: None,
-            key_memory: None,
         }
     }
     pub(in super::super) fn transition(
@@ -40,10 +38,8 @@ where
     pub(in super::super) fn rekeyed(
         &mut self,
         calls: worth_execution::ExecutionOrderedMap<worth_execution::PartitionItemId, ()>,
-        memory: QueryMemoryReservation,
     ) {
         self.rekeyed = calls;
-        self.key_memory = Some(memory);
     }
     pub(in super::super) fn ranges(
         &mut self,
@@ -54,8 +50,8 @@ where
         self.ranges = Some(ranges);
     }
 
-    pub(in super::super::super) const fn remaining_work(&self) -> RemainingWork {
-        self.remaining_work
+    pub(in super::super::super) const fn preparation_work(&self) -> PreparationWork {
+        self.preparation_work
     }
 
     /// Readies one marked partition's kernel.
@@ -63,11 +59,9 @@ where
         &mut self,
         identity: PartitionIdentity,
         key: Arc<Key>,
-        key_bytes: u64,
         members: Arc<[PartitionItemId]>,
         gathered: Gathered,
         gather: Option<ComputationCallCharge>,
-        mut memory: GatheredMemory,
     ) -> Result<(), WorthQueryPartitionedComputationDenial<Stopped>> {
         let value = GatheredComputationPartition {
             identity,
@@ -75,17 +69,8 @@ where
             items: members,
             gathered,
         };
-        memory.after_gather(&value)?;
-        self.partitions.insert(
-            identity,
-            Recomputed {
-                value,
-                key,
-                key_bytes,
-                gather,
-                memory,
-            },
-        );
+        self.partitions
+            .insert(identity, Recomputed { value, key, gather });
         Ok(())
     }
 }

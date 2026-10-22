@@ -15,9 +15,13 @@ pub(super) struct Prefix<R, E> {
     pub(super) owner: Option<NestedStopOwner>,
 }
 impl<R, E> Prefix<R, E> {
+    #[cfg(test)]
     pub(super) fn new(capacity: usize) -> Self {
+        Self::with_values(Vec::with_capacity(capacity))
+    }
+    pub(super) fn with_values(values: Vec<R>) -> Self {
         Self {
-            values: Vec::with_capacity(capacity),
+            values,
             work: 0,
             span: 0,
             discarded: 0,

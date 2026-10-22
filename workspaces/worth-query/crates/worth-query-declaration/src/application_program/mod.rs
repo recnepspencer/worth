@@ -98,8 +98,7 @@ pub use locality::{
 };
 pub use managed_computation::{
     ApplicationComputationExecution, ApplicationComputationInput, ApplicationComputationPartition,
-    ApplicationComputationResourceCeiling, ApplicationComputationReuse,
-    ApplicationComputationStopped, ApplicationManagedComputation,
+    ApplicationComputationReuse, ApplicationComputationStopped, ApplicationManagedComputation,
     ApplicationManagedComputationDeclaration, ApplicationSingleComputationPartition,
 };
 pub use manifest::ApplicationProgramManifest;

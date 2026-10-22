@@ -1,13 +1,8 @@
 //! Only freshly gathered inputs enter native retained-run advancement.
 use super::*;
 use crate::domain_computation::primary_graph::fact_verification_observation as observed;
-use worth_execution::{ChargedBytes, ExecutionRetainedRun, RetainedRunOutcome};
+use worth_execution::{ExecutionRetainedRun, RetainedRunOutcome};
 struct BorrowedGather<'a, Key, Gathered>(&'a GatheredComputationPartition<Key, Gathered>);
-impl<Key, Gathered> ChargedBytes for BorrowedGather<'_, Key, Gathered> {
-    fn additional_charged_bytes(&self) -> u64 {
-        0
-    } // Existing gather custody owns the referent.
-}
 pub(super) struct SettledPartitions<Reduced> {
     pub native_run: ExecutionRetainedRun<Reduced>,
     pub work: u64,
@@ -18,8 +13,7 @@ pub(super) fn run<Key, Gathered, Reduced, Stopped>(
     prior: &ExecutionRetainedRun<Reduced>,
     removed: CanonicalUniqueVec<PartitionIdentity>,
     execution: &QueryRequestExecution<'_>,
-    ceiling: u64,
-    declared_bytes: u64,
+    ceiling: Option<u64>,
     kernel: &(impl Fn(
         &GatheredComputationPartition<Key, Gathered>,
         &mut MapKernelContext<'_, '_>,
@@ -32,22 +26,15 @@ pub(super) fn run<Key, Gathered, Reduced, Stopped>(
 >
 where
     Key: Send + Sync,
-    Gathered: Send + Sync + ChargedBytes,
-    Reduced: Send + Sync + ChargedBytes,
-    Stopped: Send + ChargedBytes,
+    Gathered: Send + Sync,
+    Reduced: Send + Sync,
+    Stopped: Send,
 {
     let changes = partitions
         .iter()
         .map(|(identity, partition)| {
             observed::computation_dispatch_plan();
-            (
-                *identity,
-                KeylessPartition {
-                    value: BorrowedGather(&partition.value),
-                    kernel_scratch_bytes: 0,
-                    max_result_bytes: declared_bytes,
-                },
-            )
+            (*identity, BorrowedGather(&partition.value))
         })
         .collect();
     transport.call(|| {

@@ -298,7 +298,7 @@ fn staged_child_completion_order_preserves_canonical_bits_and_metrics() {
             Ok::<_, ()>(())
         })
         .unwrap();
-    let frontier = shape.frontier(4);
+    let frontier = shape.checked_frontier::<()>(4, 8).unwrap();
     let mut children = frontier.tasks.clone();
     assert_eq!(children.len(), 4);
     children.reverse();

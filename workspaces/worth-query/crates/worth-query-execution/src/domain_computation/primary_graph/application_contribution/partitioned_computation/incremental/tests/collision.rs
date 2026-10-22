@@ -118,20 +118,32 @@ fn replacing_a_sole_member_key_with_a_prefix_collision_matches_a_fresh_run() {
     let partition = typed.partitions.get(&identity).unwrap();
     let replacement = super::super::retained::RetainedPartition {
         key: Arc::new(Parity(42)),
-        key_bytes: partition.key_bytes,
         gather: partition.gather.clone(),
     };
+    let request = live_scope();
+    let execution = QueryRequestExecution::open(
+        RuntimeWorldExecutionPlacement::Serial(
+            crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
+                std::num::NonZeroUsize::MIN, None,
+            ),
+        ),
+        &request,
+    );
     typed
         .partitions
         .put(
             identity,
             replacement,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            execution.allocation_policy().unwrap(),
         )
         .unwrap();
-    typed
-        .tree
-        .update_checked(identity, 62, u64::MAX, || Ok::<(), ()>(()))
+    execution
+        .with_native_lease(|lease| {
+            typed
+                .tree
+                .update_native(identity, 62, Some(lease), || execution.checkpoint())
+        })
+        .unwrap()
         .unwrap();
     let mut routing = ComputationPartitionRouting::default();
     routing

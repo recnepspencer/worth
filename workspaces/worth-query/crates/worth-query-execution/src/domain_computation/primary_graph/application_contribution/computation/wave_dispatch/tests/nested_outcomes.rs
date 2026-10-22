@@ -10,52 +10,42 @@ fn an_unrelated_error_cannot_take_an_earlier_requests_stop() {
         let count = later_runs.clone();
         let member = PreparedMember {
             requests: vec![
-                PreparedCompute::new(
-                    0,
-                    0,
-                    |member| {
-                        member.compute(|managed, _charge, _transport| {
-                            let map = ExecutionMap::<_, u64>::from_keyless_partitions(
-                                [(
-                                    PartitionIdentity::new(1),
-                                    worth_execution::KeylessPartition {
-                                        value: 1_u64,
-                                        kernel_scratch_bytes: 0,
-                                        max_result_bytes: 0,
-                                    },
-                                )]
-                                .into_iter()
-                                .collect(),
-                            )
+                PreparedCompute::new(|member| {
+                    member.compute(|managed, _charge, _poll, _transport| {
+                        let map = ExecutionMap::<_, u64>::from_keyless_partitions(
+                            [(
+                                PartitionIdentity::new(1),
+                                worth_execution::KeylessPartition {
+                                    value: 1_u64,
+                                    kernel_scratch_bytes: 0,
+                                    max_result_bytes: 0,
+                                },
+                            )]
+                            .into_iter()
+                            .collect(),
+                        )
+                        .unwrap();
+                        let held = managed.request.reserve(0).unwrap();
+                        let nested = managed
+                            .request
+                            .dispatch()
+                            .unwrap()
+                            .map(10, &map, held, |_, context| {
+                                context.checkpoint(2)?;
+                                Err::<u64, _>(MapKernelFailure::Domain(()))
+                            })
                             .unwrap();
-                            let held = managed.request.reserve(0).unwrap();
-                            let nested = managed
-                                .request
-                                .dispatch()
-                                .unwrap()
-                                .map(10, &map, held, |_, context| {
-                                    context.checkpoint(2)?;
-                                    Err::<u64, _>(MapKernelFailure::Domain(()))
-                                })
-                                .unwrap();
-                            assert!(matches!(nested, MapOutcome::Stopped { .. }));
-                            // This request deliberately ignores its own cause.
-                            Ok::<_, ()>(())
-                        })
-                    },
-                    |_| 0,
-                ),
-                PreparedCompute::new(
-                    0,
-                    0,
-                    move |member| {
-                        member.compute(|_, _, _transport| {
-                            count.fetch_add(1, Ordering::SeqCst);
-                            Err::<(), _>("unrelated failure")
-                        })
-                    },
-                    |_| 0,
-                ),
+                        assert!(matches!(nested, MapOutcome::Stopped { .. }));
+                        // This request deliberately ignores its own cause.
+                        Ok::<_, ()>(())
+                    })
+                }),
+                PreparedCompute::new(move |member| {
+                    member.compute(|_, _, _, _transport| {
+                        count.fetch_add(1, Ordering::SeqCst);
+                        Err::<(), _>("unrelated failure")
+                    })
+                }),
             ],
         };
         let (settled, report) = run(width, vec![member, charged(2, 1, false)]);
@@ -77,44 +67,39 @@ fn an_unrelated_error_cannot_take_an_earlier_requests_stop() {
 fn taken_partition_denials_leave_siblings_for_owner_completion() {
     for width in [None, Some(1), Some(2), Some(4)] {
         let failed = PreparedMember {
-            requests: vec![PreparedCompute::new(
-                0,
-                0,
-                |member| {
-                    member.compute(|managed, _charge, transport| {
-                        let map = ExecutionMap::<_, u64>::from_keyless_partitions(
-                            vec![(
-                                PartitionIdentity::new(1),
-                                worth_execution::KeylessPartition {
-                                    value: 1_u64,
-                                    kernel_scratch_bytes: 0,
-                                    max_result_bytes: 0,
-                                },
-                            )]
-                            .into_iter()
-                            .collect(),
-                        )
-                        .unwrap();
-                        let held = managed.request.reserve(0).unwrap();
-                        let dispatch = managed.request.dispatch().unwrap();
-                        transport
-                            .call(|| {
-                                let outcome = dispatch
-                                    .map(10, &map, held, |_, context| {
-                                        context.checkpoint(2)?;
-                                        Err::<u64, _>(MapKernelFailure::Domain(()))
-                                    })
-                                    .unwrap();
-                                match outcome {
-                                    MapOutcome::Complete { .. } => Ok::<u64, MapStop<()>>(1),
-                                    MapOutcome::Stopped { reason, .. } => Err(reason),
-                                }
-                            })
-                            .map_err(MemberComputeFailure::into_failure)
-                    })
-                },
-                |_| 0,
-            )],
+            requests: vec![PreparedCompute::new(|member| {
+                member.compute(|managed, _charge, _poll, transport| {
+                    let map = ExecutionMap::<_, u64>::from_keyless_partitions(
+                        vec![(
+                            PartitionIdentity::new(1),
+                            worth_execution::KeylessPartition {
+                                value: 1_u64,
+                                kernel_scratch_bytes: 0,
+                                max_result_bytes: 0,
+                            },
+                        )]
+                        .into_iter()
+                        .collect(),
+                    )
+                    .unwrap();
+                    let held = managed.request.reserve(0).unwrap();
+                    let dispatch = managed.request.dispatch().unwrap();
+                    transport
+                        .call(|| {
+                            let outcome = dispatch
+                                .map(10, &map, held, |_, context| {
+                                    context.checkpoint(2)?;
+                                    Err::<u64, _>(MapKernelFailure::Domain(()))
+                                })
+                                .unwrap();
+                            match outcome {
+                                MapOutcome::Complete { .. } => Ok::<u64, MapStop<()>>(1),
+                                MapOutcome::Stopped { reason, .. } => Err(reason),
+                            }
+                        })
+                        .map_err(MemberComputeFailure::into_failure)
+                })
+            })],
         };
         let (members, report) = run(width, vec![failed, charged(2, 1, false)]);
         assert_eq!(

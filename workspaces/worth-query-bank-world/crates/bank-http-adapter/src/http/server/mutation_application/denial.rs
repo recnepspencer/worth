@@ -41,6 +41,7 @@ pub(in crate::http::server) fn request_mutation_denial(
         // admission resolved the key against another runtime.
         Denial::Identity
         | Denial::WorkflowControl
+        | Denial::WorkflowCapturedInput
         | Denial::InputNotAdmitted
         | Denial::SignedCreation
         | Denial::HandlerNotInstalled
@@ -145,6 +146,7 @@ mod tests {
         );
         for kind in [
             Denial::WorkflowControl,
+            Denial::WorkflowCapturedInput,
             Denial::InputNotAdmitted,
             Denial::HandlerNotInstalled,
             Denial::Identity,

@@ -14,16 +14,17 @@ mod full_cost;
 mod shape_cost;
 pub use shape_cost::ReductionShapeCostDenial;
 mod memory;
+mod native;
+pub use native::NativeReductionTree;
 mod recombine;
 mod retained_run;
 mod scheduled;
 mod staged;
 mod structural_span;
+mod value_storage;
 pub(crate) use retained_run::{RunRange, RunTree};
 
-use construction::Shape;
 use edit::{contains, delete, insert, update};
-use memory::node_bytes;
 pub use memory::{ReductionEditMemoryBoundError, ReductionInsertMemoryBoundError};
 use recombine::Engine;
 pub(crate) use scheduled::ScheduledReductionError;
@@ -192,41 +193,14 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
         max_value_bytes: u64,
         before_combine: impl FnMut() -> Result<(), E>,
     ) -> Result<(Self, ReductionMetrics), ReductionRunFailure<E>> {
-        if plan.identities().len() != values.len() {
-            return Err(failure(ReductionRunStop::Denial(
-                ReductionDenial::ValueCountMismatch,
-            )));
-        }
-        let mut tree = Self {
-            root: None,
+        Self::from_plan_with_storage(
+            plan,
+            values,
             identity,
             combine,
-            len: values.len(),
-        };
-        let mut engine = Engine::new(
-            &tree.identity,
-            &tree.combine,
-            max_value_bytes,
+            value_storage::BoundedValues(max_value_bytes),
             before_combine,
-        );
-        engine
-            .validate(&tree.identity)
-            .map_err(|reason| engine.failure(reason))?;
-        let shape = Shape::build(plan.identities(), values, &mut engine)
-            .map_err(|reason| engine.failure(reason))?;
-        let shape_span = engine.metrics().charged_span;
-        if let Some(spec) = shape.full_spec() {
-            let (candidate, dependency_span) = shape
-                .evaluate(spec, &mut engine)
-                .map_err(|reason| engine.failure(reason))?;
-            tree.root = candidate;
-            let span = shape_span
-                .checked_add(dependency_span)
-                .ok_or_else(|| engine.failure(ReductionRunStop::work_counter_overflow()))?;
-            engine.set_full_span(span);
-        }
-        let metrics = engine.metrics();
-        Ok((tree, metrics))
+        )
     }
 
     /// Structural/unmetered construction. Use `try_from_declared_checked` for
@@ -269,23 +243,6 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
             max_value_bytes,
             before_combine,
         )
-    }
-
-    pub fn result(&self) -> &T {
-        self.root
-            .as_ref()
-            .map_or(&self.identity, |node| &node.aggregate)
-    }
-
-    pub fn partition_count(&self) -> usize {
-        self.len
-    }
-
-    /// The value `partition` holds, or `None` when the tree has no such
-    /// partition. A caller that compares it with a recomputed value can leave
-    /// the tree alone when the two are the same bits.
-    pub fn leaf(&self, partition: PartitionIdentity) -> Option<&T> {
-        edit::leaf(&self.root, partition)
     }
 
     /// The value ceiling includes inline storage, owned allocations, and

@@ -111,11 +111,11 @@ impl WorthQueryApplicationOutputLineage {
         let SealedComputationRun {
             state,
             cloned_from,
-            tree_memory,
+            attribution_memory,
         } = sealed;
         let recorded = RecordedComputation::Retained(Arc::new(state));
         drop(cloned_from);
-        drop(tree_memory);
+        drop(attribution_memory);
         recorded
     }
 }

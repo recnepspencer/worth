@@ -4,11 +4,11 @@ use crate::application_program::{
     ApplicationCollectionContributor, ApplicationCollectionGrouping,
     ApplicationCollectionIncompletePosture, ApplicationCollectionLineage,
     ApplicationCollectionMeasures, ApplicationComputationExecution, ApplicationComputationInput,
-    ApplicationComputationPartition, ApplicationComputationResourceCeiling,
-    ApplicationComputationReuse, ApplicationComputationStopped, ApplicationDerivedArtifact,
-    ApplicationDerivedCollection, ApplicationLocalityGranule, ApplicationLocalityScope,
-    ApplicationManagedComputation, ApplicationProgramValidationDenialKind,
-    ApplicationSingleComputationPartition, DeterminismContract,
+    ApplicationComputationPartition, ApplicationComputationReuse, ApplicationComputationStopped,
+    ApplicationDerivedArtifact, ApplicationDerivedCollection, ApplicationLocalityGranule,
+    ApplicationLocalityScope, ApplicationManagedComputation,
+    ApplicationProgramValidationDenialKind, ApplicationSingleComputationPartition,
+    DeterminismContract,
 };
 
 struct Locality;
@@ -52,7 +52,7 @@ impl ApplicationComputationStopped for Stopped {
     const IDENTITY: &'static str = "worth.query.tests.computation-stopped.v1";
 }
 macro_rules! computation {
-    ($computation:ident, $partition:ty, $execution:ident) => {
+    ($computation:ident, $partition:ty, $execution:expr) => {
         struct $computation;
         impl ApplicationManagedComputation<TestSchema, FlatFeature> for $computation {
             type Input = InputMeaning;
@@ -61,24 +61,27 @@ macro_rules! computation {
             type Reuse = Reuse;
             type Stopped = Stopped;
             const IDENTITY: &'static str = "worth.query.tests.managed-computation.v1";
-            const EXECUTION: ApplicationComputationExecution =
-                ApplicationComputationExecution::$execution;
-            const RESOURCES: ApplicationComputationResourceCeiling =
-                ApplicationComputationResourceCeiling::new(16, 8_192);
+            const EXECUTION: ApplicationComputationExecution = $execution;
         }
     };
 }
-computation!(Computation, Partition, DeterministicPartitioned);
+const PARTITIONED: ApplicationComputationExecution =
+    ApplicationComputationExecution::DeterministicPartitioned;
+computation!(Computation, Partition, PARTITIONED);
 computation!(
     SerialComputation,
     ApplicationSingleComputationPartition,
-    Deterministic
+    ApplicationComputationExecution::Deterministic
 );
-computation!(KeyedSerialComputation, Partition, Deterministic);
+computation!(
+    KeyedSerialComputation,
+    Partition,
+    ApplicationComputationExecution::Deterministic
+);
 computation!(
     SinglePartitionedComputation,
     ApplicationSingleComputationPartition,
-    DeterministicPartitioned
+    PARTITIONED
 );
 
 struct Contributor;
@@ -164,11 +167,7 @@ fn computation_references_its_attached_artifact_without_copying_lifecycle_policy
     let computation = &program.features()[0].managed_computations()[0];
     assert_eq!(computation.identity(), Computation::IDENTITY);
     assert_eq!(computation.output_artifact(), Artifact::IDENTITY);
-    assert_eq!(computation.resources(), Computation::RESOURCES);
-    assert_eq!(
-        computation.execution(),
-        ApplicationComputationExecution::DeterministicPartitioned
-    );
+    assert_eq!(computation.execution(), PARTITIONED);
     assert_eq!(
         computation.determinism(),
         DeterminismContract::CanonicalBitwise,
@@ -208,6 +207,13 @@ where
 fn execution_posture_decides_which_computation_partition_may_be_declared() {
     assert_eq!(denial_of::<Computation>(), None);
     assert_eq!(denial_of::<SerialComputation>(), None);
+    let serial = ApplicationProgramAuthoring::<TestSchema, ProgramOf<SerialComputation>>::begin()
+        .validated_program()
+        .expect("single-kernel execution needs no resource forecast");
+    assert_eq!(
+        serial.features()[0].managed_computations()[0].execution(),
+        ApplicationComputationExecution::Deterministic
+    );
     for (case, denial) in [
         (
             "a deterministic computation with its own key",

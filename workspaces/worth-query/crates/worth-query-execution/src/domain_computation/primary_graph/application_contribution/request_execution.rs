@@ -7,12 +7,14 @@
 //! bounded one-worker lease from an inline ledger with no worker pool.
 
 use worth_execution::{
-    CanonicalBits, ChargedBytes, ExecutionMap, ExecutionMemoryReservation, ExecutionResourceLease,
+    CanonicalBits, ExecutionMap, ExecutionMemoryReservation, ExecutionResourceLease,
     ExecutionWorkCeiling, LeaseDenial, LeaseRequest, MapKernelContext, MapKernelFailure,
-    MapKernelStop, ReductionTree, WorkCeilingDenial,
+    MapKernelStop, WorkCeilingDenial,
 };
 #[cfg(test)]
-use worth_execution::{MapOutcome, ReduceInputDenial, ReductionMetrics};
+use worth_execution::{
+    ChargedBytes, MapOutcome, ReduceInputDenial, ReductionMetrics, ReductionTree,
+};
 use worth_foundational::{ExecutionReport, ExecutionRequestPolicy};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
@@ -229,6 +231,7 @@ impl QueryMemoryReservation {
 
 /// What a completed tree keeps once its run ends, as execution counts it
 /// for a reducer with no declared storage: its nodes and the tree itself.
+#[cfg(test)]
 pub(super) fn kept_tree_bytes<R: ChargedBytes, Combine>(
     tree: &ReductionTree<R, Combine>,
 ) -> Option<u64> {

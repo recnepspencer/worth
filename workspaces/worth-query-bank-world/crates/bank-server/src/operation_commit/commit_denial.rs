@@ -51,6 +51,9 @@ pub enum BankCommitDenialKind {
     SigningLifecycleEvidenceCapacity {
         maximum_evidence: usize,
     },
+    SigningLifecycleSubjectCapacity {
+        maximum_subjects: usize,
+    },
     SigningLifecycleRepresentationCapacity,
     SigningLifecycleObservation {
         kind: WorthQueryApplicationAttemptDenialKind,
@@ -153,6 +156,9 @@ pub(crate) const fn denial_kind(
         Query::SigningLifecycleUnavailable => BankCommitDenialKind::SigningLifecycleUnavailable,
         Query::SigningLifecycleEvidenceCapacity { maximum_evidence } => {
             BankCommitDenialKind::SigningLifecycleEvidenceCapacity { maximum_evidence }
+        }
+        Query::SigningLifecycleSubjectCapacity { maximum_subjects } => {
+            BankCommitDenialKind::SigningLifecycleSubjectCapacity { maximum_subjects }
         }
         Query::SigningLifecycleRepresentationCapacity => {
             BankCommitDenialKind::SigningLifecycleRepresentationCapacity

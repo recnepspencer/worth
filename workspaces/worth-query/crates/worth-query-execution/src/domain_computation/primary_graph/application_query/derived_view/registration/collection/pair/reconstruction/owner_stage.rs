@@ -41,6 +41,7 @@ pub(in super::super) fn run<T>(
                 // or exhausted work observed by the native stage.
                 Some(Ok(_)) | None => Err(match reason {
                     MapStop::Admission(cause) => reconstruction_denial::lease(cause),
+                    MapStop::Allocation(_) => Denial::AllocationUnavailable,
                     MapStop::WorkExhausted { .. } => Denial::WorkExhausted { root: None },
                     MapStop::Failure { cause, .. } => reconstruction_denial::owner(cause),
                 }),

@@ -30,6 +30,7 @@ impl<S: ChargedBytes> ChargedBytes for WorthQueryPartitionedComputationDenial<S>
             | Self::Resource(_)
             | Self::Interrupted(_)
             | Self::NestedPatternStopped
+            | Self::PreparationPanicked
             | Self::ReducerPanicked
             | Self::ReducedEncodingInvalid
             | Self::RetainedResultUnqualified { .. }

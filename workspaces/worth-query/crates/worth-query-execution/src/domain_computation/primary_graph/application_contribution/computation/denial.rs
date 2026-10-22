@@ -83,10 +83,22 @@ pub enum WorthQueryManagedComputationCheckpointDenial {
 #[derive(Debug, Eq, PartialEq)]
 pub enum WorthQueryManagedComputationDenial<Stopped> {
     Owner(Stopped),
+    Panicked,
     Resource(WorthQueryManagedComputationResourceDenial),
     Interrupted(WorthQueryManagedComputationInterruption),
     /// A pattern the computation ran stopped; its run reports why.
     NestedPatternStopped,
+}
+
+impl<Stopped: std::fmt::Debug> std::fmt::Display for WorthQueryManagedComputationDenial<Stopped> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "managed computation stopped: {self:?}")
+    }
+}
+
+impl<Stopped: std::fmt::Debug + 'static> std::error::Error
+    for WorthQueryManagedComputationDenial<Stopped>
+{
 }
 
 impl<Stopped> From<WorthQueryManagedComputationCheckpointDenial>

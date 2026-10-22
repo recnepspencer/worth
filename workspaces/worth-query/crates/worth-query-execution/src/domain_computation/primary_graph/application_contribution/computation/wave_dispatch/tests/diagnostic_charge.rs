@@ -11,24 +11,21 @@ fn reducing_member(
     rendezvous: Option<Arc<(Mutex<usize>, std::sync::Condvar)>>,
 ) -> PreparedMember {
     PreparedMember {
-        requests: vec![PreparedCompute::new(
-            0,
-            0,
-            move |member| {
-                if let Some(rendezvous) = &rendezvous {
-                    let mut entered = rendezvous.0.lock().unwrap();
-                    *entered += 1;
-                    rendezvous.1.notify_all();
-                    let (entered, _) = rendezvous
-                        .1
-                        .wait_timeout_while(entered, Duration::from_secs(60), |n| *n < 2)
-                        .unwrap();
-                    assert_eq!(
-                        *entered, 2,
-                        "diagnostic member rendezvous hang guard expired: second slot unavailable"
-                    );
-                }
-                member.compute(|managed, _, _| {
+        requests: vec![PreparedCompute::new(move |member| {
+            if let Some(rendezvous) = &rendezvous {
+                let mut entered = rendezvous.0.lock().unwrap();
+                *entered += 1;
+                rendezvous.1.notify_all();
+                let (entered, _) = rendezvous
+                    .1
+                    .wait_timeout_while(entered, Duration::from_secs(60), |n| *n < 2)
+                    .unwrap();
+                assert_eq!(
+                    *entered, 2,
+                    "diagnostic member rendezvous hang guard expired: second slot unavailable"
+                );
+            }
+            member.compute(|managed, _, _, _| {
                 let invocations = std::sync::atomic::AtomicUsize::new(0);
                 let map = ExecutionMap::<_, u64>::from_keyless_partitions(
                     [3_u64, 7].into_iter().enumerate().map(|(rank, value)| (
@@ -52,9 +49,7 @@ fn reducing_member(
                 ).unwrap().unwrap();
                 Ok::<_, ()>((*tree.result(), report.charged_work(), report.charged_span()))
             })
-            },
-            |_| 0,
-        )],
+        })],
     }
 }
 

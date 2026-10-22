@@ -1,16 +1,37 @@
 //! A decomposition handoff retains the request ownership of its refusal.
 use super::*;
 use crate::backend::{run_scope, KernelFailure, KernelStop, ScopeStop};
-use crate::tests::{authority, request, TEST_LOCK};
+use crate::tests::TEST_LOCK;
 
 #[test]
 fn a_refused_decomposition_handoff_cannot_be_taken() {
     let _serial = TEST_LOCK.lock().unwrap();
+    // This fixture tests a refused handoff, not incidental framework size. Its
+    // physical authority lives in a fresh test process, like the allocation
+    // owner fixtures; the shared process-ceiling fixtures remain independent.
+    let physical = crate::ExecutionAuthority::try_construct(crate::ExecutionAuthorityConfig {
+        max_workers: std::num::NonZeroUsize::new(4).unwrap(),
+        charged_memory_bytes: None,
+    })
+    .unwrap();
+    let lifecycle_request = |workers| crate::LeaseRequest {
+        policy: worth_foundational::ExecutionRequestPolicy::new(
+            worth_foundational::ExecutionPosture::Automatic,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(
+                std::num::NonZeroUsize::new(workers).unwrap(),
+                None,
+                Some(100),
+            ),
+        ),
+        deadline: None,
+        cancellation: crate::CancellationToken::new(),
+    };
     for width in [0_usize, 1, 2, 4] {
-        let parent = authority()
-            .request_lease(request(width.max(1), 2_000, 100))
+        let parent = physical
+            .request_lease(lifecycle_request(width.max(1)))
             .unwrap();
-        let child = parent.child(request(1, 2_000, 100)).unwrap();
+        let child = parent.child(lifecycle_request(1)).unwrap();
         let backend = if width == 0 {
             BackendKind::Serial
         } else {

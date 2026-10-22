@@ -87,6 +87,7 @@ pub enum SignalExecutionStopReason {
         identity: PartitionIdentity,
     },
     Admission(SignalLeaseDenial),
+    Allocation(worth_execution::ExecutionPhysicalAllocationDenialKind),
     PreparationMemoryExhausted {
         identity: PartitionIdentity,
         required: Option<u64>,

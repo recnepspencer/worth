@@ -52,6 +52,12 @@ pub(super) fn map(
 ) -> WorkflowFrontierFailure {
     match cause {
         MapStop::Admission(cause) => admission(cause),
+        MapStop::Allocation(cause) => {
+            WorkflowFrontierFailure::Denied(Denial::ComputationAllocation {
+                stage_identity,
+                cause,
+            })
+        }
         MapStop::WorkExhausted { .. } => checkpoint(MapKernelStop::WorkCeiling, stage_identity),
         MapStop::Failure { cause, .. } => match cause {
             MapKernelFailure::Stop(cause) => checkpoint(cause, stage_identity),

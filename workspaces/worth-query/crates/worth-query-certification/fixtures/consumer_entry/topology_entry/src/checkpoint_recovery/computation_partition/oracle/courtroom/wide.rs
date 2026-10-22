@@ -18,8 +18,6 @@ impl ApplicationManagedComputation<CheckpointSchema, PlanarFinalOutputFeature> f
     const IDENTITY: &'static str = "courtroom-wide-totals";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(WORK, 8);
 }
 
 #[derive(Clone, serde::Serialize)]

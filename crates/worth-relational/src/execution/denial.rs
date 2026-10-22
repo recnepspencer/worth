@@ -103,6 +103,7 @@ pub(crate) fn map_stop<E, R>(
 ) -> R {
     match stop {
         MapStop::Admission(denial) => native(lease_denial(*denial)),
+        MapStop::Allocation(_) => native(Cause::AllocationFailed),
         MapStop::WorkExhausted { .. } => native(Cause::WorkExhausted),
         MapStop::Failure { cause, .. } => map_kernel_failure(cause, native, domain),
     }

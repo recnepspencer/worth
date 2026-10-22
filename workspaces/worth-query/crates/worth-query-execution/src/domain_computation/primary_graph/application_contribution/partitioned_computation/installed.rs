@@ -4,27 +4,23 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use worth_execution::{ExecutionMap, KeylessPartition};
-use worth_query_declaration::facade::application_operation::{
-    application_computation_input_digest, ApplicationComputationPartitionIdentityDenial,
-    ApplicationMutationBinding,
-};
+use worth_execution::ExecutionMap;
+use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_program::{
-    ApplicationComputationInput, ApplicationFeature, ApplicationManagedComputation,
+    ApplicationFeature, ApplicationManagedComputation,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::request_execution::QueryRequestExecution;
 use super::super::WorthQueryManagedComputationResourceDenial;
-use super::compute::{units, Denial, PreparedRun, WorthQueryPreparedPartitionedComputation};
-use super::gather_memory::GatheredMemory;
+use super::compute::{Denial, PreparedRun, WorthQueryPreparedPartitionedComputation};
 use super::incremental::{
     self, Begun, ComputationInstallation, FullRecording, Suppression,
     WorthQueryPartitionedComputationFullCause,
 };
-use super::items::{item_digests, planned_items, route_item};
+use super::items::{input_digest, item_digests, planned_items, route_item};
 use super::plan::{GatheredComputationPartition, PlanShape};
-use super::remaining_work::{EncodingMeter, RemainingWork};
+use super::preparation_work::PreparationWork;
 use super::routing::ComputationPartitionRouting;
 use super::{
     InputValue, WorthQueryComputationPartitionMembers, WorthQueryComputationReader,
@@ -107,8 +103,8 @@ where
     /// through the handler's `reader`: names the items, digests each one when
     /// a producer runs the computation, derives every item's partition
     /// identity from its key, routes it and gathers each partition. Digests,
-    /// key derivation and routing are charged against the computation's
-    /// declared work. The owner's reads are the operation's decision reads.
+    /// key derivation and routing advance the original request's execution.
+    /// The owner's reads are the operation's decision reads.
     ///
     /// The items are met in item identity order and the partitions in
     /// partition identity order, so everything planning decides, a denial
@@ -148,42 +144,22 @@ where
             .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
         let owner = &*self.owner;
         reader.begin_computation_reads();
-        let mut remaining_work = RemainingWork::declared(
-            units(
-                Computation::RESOURCES.maximum_work(),
-                WorthQueryManagedComputationResourceDenial::WorkExhausted,
-            )
-            .map_err(WorthQueryPartitionedComputationDenial::Resource)?,
-        );
-        let declared_bytes = units(
-            Computation::RESOURCES.maximum_retained_bytes(),
-            WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted,
-        )
-        .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+        let mut preparation_work = PreparationWork::new();
         let begun = match self.retention {
             ComputationRetention::Unretained => Begun::Full {
                 basis: Err(Suppression::Policy),
                 cause: WorthQueryPartitionedComputationFullCause::Unretained,
             },
             ComputationRetention::ProducerOperation => {
-                let input_digest = input_digest::<Computation::Input, _>(
-                    input,
-                    &mut remaining_work,
-                    declared_bytes,
-                )?;
+                let input_digest =
+                    input_digest::<Computation::Input, _>(input, execution, &mut preparation_work)?;
                 incremental::begin::<
                     Computation::Partition,
                     Owner::Item,
                     Owner::PartitionResult,
                     _,
                     _,
-                >(
-                    &request,
-                    reader,
-                    &self.installation,
-                    input_digest,
-                    remaining_work,
-                )
+                >(&request, reader, &self.installation, input_digest)
                 .map_err(|denial| {
                     WorthQueryPartitionedComputationDenial::Read(
                         super::reader::WorthQueryComputationReadDenial::RetainedFact(denial.kind()),
@@ -194,18 +170,11 @@ where
         let deposit = reader.computation_deposit();
         let (basis, cause) = match begun {
             Begun::Incremental(run) => {
-                let prepared = run.prepare(
-                    owner,
-                    reader,
-                    execution,
-                    input,
-                    remaining_work,
-                    declared_bytes,
-                )?;
+                let prepared = run.prepare(owner, reader, execution, input, preparation_work)?;
                 if let Some(prepared) = prepared {
                     return Ok(WorthQueryPreparedPartitionedComputation {
                         installed: self.clone(),
-                        prepared_work: prepared.remaining_work().spent(),
+                        prepared_work: prepared.preparation_work().spent(),
                         run: PreparedRun::Incremental(prepared),
                         deposit,
                         kernel_observation_for_test: None,
@@ -229,46 +198,38 @@ where
         let PlanShape::Keyed(entries) = plan?.shape;
         let items = planned_items(entries)?;
         if self.retention == ComputationRetention::ProducerOperation {
-            let before = remaining_work;
-            let digests = item_digests(&items, &mut remaining_work, declared_bytes)?;
+            let before = preparation_work;
+            let digests = item_digests(&items, execution, &mut preparation_work)?;
             if let Ok(recording) = &mut recording {
                 recording.membership(
-                    membership.zip(remaining_work.spent_since(before)),
+                    membership.zip(preparation_work.spent_since(before)),
                     &items,
                     digests,
                 );
             }
         }
         let mut routing = ComputationPartitionRouting::default();
-        let routing_memory = execution
-            .reserve(0)
-            .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
         let mut keys = BTreeMap::new();
         for (item, value) in items.iter() {
             let (key, charge) = reader.measured(ComputationRead::ItemKey(*item), |reader| {
                 owner.partition_key(&mut WorthQueryComputationReader::lend(reader), input, value)
             });
             let key = key?;
-            let before = remaining_work;
-            let (partition, key_bytes) = route_item(
-                *item,
-                &key,
-                &mut routing,
-                execution,
-                &mut remaining_work,
-                declared_bytes,
-            )?;
+            let before = preparation_work;
+            let partition =
+                route_item(*item, &key, &mut routing, execution, &mut preparation_work)?;
             if let Ok(recording) = &mut recording {
-                recording.item(*item, charge.zip(remaining_work.spent_since(before)));
+                recording.item(*item, charge.zip(preparation_work.spent_since(before)));
             }
-            keys.entry(partition).or_insert((key, key_bytes));
+            keys.entry(partition).or_insert(key);
         }
-        let mut memory = GatheredMemory::new(execution, declared_bytes)?;
         let mut partitions = BTreeMap::new();
-        for (identity, (key, key_bytes)) in keys {
+        for (identity, key) in keys {
             let key = Arc::new(key);
             let members = routing.members(identity).collect::<Arc<[_]>>();
-            memory.before_gather(execution)?;
+            execution
+                .checkpoint()
+                .map_err(WorthQueryPartitionedComputationDenial::from_kernel_stop)?;
             let (gathered, charge) =
                 reader.measured(ComputationRead::Partition(identity), |reader| {
                     owner.gather(
@@ -283,7 +244,7 @@ where
                 WorthQueryPartitionedComputationDenial::gathering(identity, denial)
             })?;
             if let Ok(recording) = &mut recording {
-                recording.partition(identity, &key, key_bytes, charge);
+                recording.partition(identity, &key, charge);
             }
             let value = GatheredComputationPartition {
                 identity,
@@ -291,73 +252,30 @@ where
                 items: members,
                 gathered,
             };
-            memory.after_gather(&value)?;
-            partitions.insert(
-                identity,
-                KeylessPartition {
-                    value,
-                    kernel_scratch_bytes: 0,
-                    max_result_bytes: declared_bytes,
-                },
-            );
+            partitions.insert(identity, value);
         }
         if let Ok(recording) = &mut recording {
-            recording.routing(routing, routing_memory);
+            recording.routing(routing);
         }
-        let map = ExecutionMap::from_keyless_partitions(partitions)
-            .map_err(WorthQueryPartitionedComputationDenial::from_map_overflow)?;
+        let map = ExecutionMap::<_, ()>::from_native_partitions(partitions).map_err(|kind| {
+            WorthQueryPartitionedComputationDenial::Resource(
+                WorthQueryManagedComputationResourceDenial::NativeAllocationRefused {
+                    kind,
+                    requested_payload_bytes: None,
+                },
+            )
+        })?;
         Ok(WorthQueryPreparedPartitionedComputation {
             installed: self.clone(),
-            prepared_work: remaining_work.spent(),
+            prepared_work: preparation_work.spent(),
             run: PreparedRun::Full {
                 map,
-                memory,
-                remaining_work: remaining_work.remaining(),
+                compute_ceiling: None,
                 recording,
                 cause,
             },
             deposit,
             kernel_observation_for_test: None,
         })
-    }
-}
-
-/// The digest of a producer run's input. One meter admits the whole
-/// encoding, so its scratch growths are summed as a partition key's are.
-pub(super) fn input_digest<Input, Stopped>(
-    input: &Input::Value,
-    remaining_work: &mut RemainingWork,
-    declared_bytes: u64,
-) -> Result<[u8; 32], WorthQueryPartitionedComputationDenial<Stopped>>
-where
-    Input: ApplicationComputationInput,
-{
-    let mut meter = EncodingMeter::new(remaining_work, declared_bytes);
-    application_computation_input_digest::<Input, _, _>(input, &mut |charge| meter.admit(charge))
-        .map_err(|denial| match denial {
-            ApplicationComputationPartitionIdentityDenial::Key(denial) => {
-                WorthQueryPartitionedComputationDenial::InputNotEncodable(denial)
-            }
-            denial => encoding_resource_denial(denial),
-        })
-}
-
-/// An encoding refused for its resources, not its value.
-pub(super) fn encoding_resource_denial<Stopped>(
-    denial: ApplicationComputationPartitionIdentityDenial<
-        WorthQueryManagedComputationResourceDenial,
-    >,
-) -> WorthQueryPartitionedComputationDenial<Stopped> {
-    match denial {
-        ApplicationComputationPartitionIdentityDenial::Admission(denial) => {
-            WorthQueryPartitionedComputationDenial::Resource(denial)
-        }
-        ApplicationComputationPartitionIdentityDenial::Key(_)
-        | ApplicationComputationPartitionIdentityDenial::CapacityOverflow
-        | ApplicationComputationPartitionIdentityDenial::Allocation => {
-            WorthQueryPartitionedComputationDenial::Resource(
-                WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted,
-            )
-        }
     }
 }

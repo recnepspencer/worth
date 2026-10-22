@@ -16,7 +16,7 @@ impl QueryRequestExecution<'_> {
         ExecutionWorkCeiling::new(self.declared_work)
             .run_with_checkpoint(Some(lease), None, |context| {
                 let value = stage(context);
-                context.checkpoint(0)?;
+                context.poll()?;
                 Ok(value)
             })
             .map_err(advancement_denial)

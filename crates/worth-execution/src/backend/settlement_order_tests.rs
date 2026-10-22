@@ -17,9 +17,14 @@ struct LaterHandedOffFirst<'a>(&'a [u64]);
 
 impl InputMode for LaterHandedOffFirst<'_> {
     type Item = u64;
+    type Payload = u64;
 
-    fn memory_bytes<R, E>(&self, declaration: &BatchDeclaration) -> Option<u64> {
-        declaration.execution_memory_bytes::<u64, R, E>(self.0)
+    fn memory_bytes<R, E>(
+        &self,
+        declaration: &BatchDeclaration,
+        measure: Option<fn(&u64) -> u64>,
+    ) -> Option<u64> {
+        declaration.memory_bytes_with::<u64, R, E>(self.0, measure)
     }
 
     fn dispatch(
@@ -74,6 +79,7 @@ fn least_key_failure_wins_after_larger_key_is_handed_to_settlement() {
         None,
         None,
         None,
+        super::payload_storage::PayloadStorage::<u64, u64, &'static str>::metered(),
     );
     drop(_serial);
     assert_eq!(
@@ -107,6 +113,7 @@ fn success_values_publish_in_key_order_after_larger_key_is_handed_off() {
         None,
         None,
         None,
+        super::payload_storage::PayloadStorage::<u64, u64, ()>::metered(),
     );
     drop(_serial);
     assert_eq!(outcome.stop, None);

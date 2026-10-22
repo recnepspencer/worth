@@ -4,7 +4,7 @@
 use std::cell::Cell;
 use std::collections::BTreeMap;
 
-use worth_execution::{ReductionPlan, ReductionTree};
+use worth_execution::{NativeReductionTree, ReductionPlan, ReductionTree};
 use worth_foundational::facade::PartitionIdentity as Id;
 
 use super::super::retained::RetainedPartitions;
@@ -52,7 +52,7 @@ type Retained = RetainedPartitions<
     <Owner as WorthQueryPartitionedComputationOwner<Schema, Feature, Computation>>::Item,
     u64,
 >;
-type Tree = ReductionTree<u64, fn(&u64, &u64) -> u64>;
+type Tree = NativeReductionTree<u64, fn(&u64, &u64) -> u64>;
 
 fn template() -> SealedComputationRun {
     let world = installed_authorization_world(true);
@@ -67,11 +67,15 @@ fn template() -> SealedComputationRun {
 /// retained from a real admitted run; local identities carry no authority.
 fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
     let template = source.state.typed.downcast_ref::<Retained>().unwrap();
-    let (tree, _) = Tree::try_from_declared(
+    let request = live_scope();
+    let execution = QueryRequestExecution::open(serial_placement(), &request);
+    let (tree, _) = ReductionTree::<u64, fn(&u64, &u64) -> u64>::try_from_declared_native(
         plan(keys),
         keys.iter().map(|id| (*id, 1)).collect(),
         0,
         counted as fn(&u64, &u64) -> u64,
+        Some(execution.dispatch().unwrap().native_lease_for_test()),
+        || execution.checkpoint(),
     )
     .unwrap();
     let partition = template.partitions.values().next().unwrap();
@@ -81,19 +85,8 @@ fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
         worth_execution::CancellationToken::new(),
         None,
     );
-    let map = worth_execution::ExecutionMap::<_, u64>::from_keyless_partitions(
-        keys.iter()
-            .map(|id| {
-                (
-                    *id,
-                    worth_execution::KeylessPartition {
-                        value: (),
-                        kernel_scratch_bytes: 0,
-                        max_result_bytes: 0,
-                    },
-                )
-            })
-            .collect(),
+    let map = worth_execution::ExecutionMap::from_native_partitions(
+        keys.iter().map(|id| (*id, ())).collect(),
     )
     .unwrap();
     let worth_execution::RetainedRunOutcome::Complete {
@@ -111,20 +104,9 @@ fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
     else {
         panic!("actual native scalar slots")
     };
-    let request = live_scope();
-    let execution = QueryRequestExecution::open(serial_placement(), &request);
     let partitions = super::super::partition_metadata::PartitionMetadata::from_recorded(
         keys.iter()
-            .map(|id| {
-                (
-                    *id,
-                    (
-                        Arc::clone(&partition.key),
-                        partition.key_bytes,
-                        partition.gather.clone(),
-                    ),
-                )
-            })
+            .map(|id| (*id, (Arc::clone(&partition.key), partition.gather.clone())))
             .collect(),
         execution.allocation_policy().unwrap(),
     )
@@ -134,8 +116,6 @@ fn retained(source: &SealedComputationRun, keys: &[Id]) -> Retained {
         digests: template.digests.clone(),
         membership: template.membership.clone(),
         item_keys: Arc::clone(&template.item_keys),
-        item_bytes: template.item_bytes,
-        item_call_bytes: template.item_call_bytes,
         call_sequence: Arc::clone(&template.call_sequence),
         routing: Arc::clone(&template.routing),
         partitions,
@@ -148,8 +128,7 @@ fn plan(keys: &[Id]) -> ReductionPlan {
     ReductionPlan::try_from_sorted_unique(keys.to_vec()).unwrap()
 }
 
-// Use the execution test lane's governed serial policy. Its 64 GiB room
-// admits the declared path-copy holds of the fixed mean-law workload.
+// Use the execution test lane's serial policy without a payload forecast.
 fn serial_placement() -> RuntimeWorldExecutionPlacement<'static> {
     use super::super::super::super::request_execution::test_policy;
     RuntimeWorldExecutionPlacement::Serial(test_policy(std::num::NonZeroUsize::MIN, None))
@@ -163,9 +142,6 @@ fn run(
 ) -> super::super::tree_report::ReportedTree<Tree, u32> {
     let request = live_scope();
     let execution = QueryRequestExecution::open(serial_placement(), &request);
-    let results_bytes = u64::try_from(results.len() * size_of::<(Id, u64)>()).unwrap();
-    let mut memory = execution.reserve(results_bytes).unwrap();
-    let declared = 4096;
     let reducer = WorthQueryDeterministicReducer::canonical(|| 0, counted);
     let plan = plan(keys);
     let work = plan.checked_build_work();
@@ -174,11 +150,9 @@ fn run(
         plan,
         work,
         results,
-        remaining,
-        declared,
+        Some(remaining),
         &reducer,
         &execution,
-        &mut memory,
     )
 }
 

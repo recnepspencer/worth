@@ -8,18 +8,12 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use serde::Serialize;
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationExecution, ApplicationComputationPartition,
-    ApplicationComputationResourceCeiling,
 };
 
 use super::super::super::attribution_tests::{Artifact, Reuse, Stopped};
 use super::*;
 
 const PARTITIONS: u64 = 10_000;
-#[cfg(target_pointer_width = "64")]
-const DECLARED_WORK: usize = 1 << 32;
-#[cfg(target_pointer_width = "32")]
-const DECLARED_WORK: usize = usize::MAX;
-
 /// Every item is its own partition.
 #[derive(Serialize)]
 struct Slot(u64);
@@ -37,8 +31,6 @@ impl ApplicationManagedComputation<Schema, Feature> for Wide {
     const IDENTITY: &'static str = "worth.query.tests.wide-computation.v1";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(DECLARED_WORK, 4096);
 }
 
 /// Counts every owner call. Only the gather of slot 1 reads a fact.

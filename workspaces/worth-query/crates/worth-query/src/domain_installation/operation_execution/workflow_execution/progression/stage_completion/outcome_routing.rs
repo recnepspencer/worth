@@ -51,6 +51,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             | Kind::TerminalContract
             | Kind::DomainEvidence(_)
             | Kind::ComputationAdmission(_)
+            | Kind::ComputationAllocation { .. }
             | Kind::ComputationWorkExhausted { .. }
             | Kind::ComputationCancelled { .. }
             | Kind::ComputationDeadline { .. }

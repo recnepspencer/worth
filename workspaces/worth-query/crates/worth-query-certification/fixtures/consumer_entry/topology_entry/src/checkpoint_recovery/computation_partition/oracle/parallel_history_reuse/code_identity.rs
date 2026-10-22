@@ -15,9 +15,4 @@ impl ApplicationManagedComputation<CheckpointSchema, PlanarFinalOutputFeature>
             CheckpointSchema,
             PlanarFinalOutputFeature,
         >>::EXECUTION;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        <OracleTotals as ApplicationManagedComputation<
-            CheckpointSchema,
-            PlanarFinalOutputFeature,
-        >>::RESOURCES;
 }

@@ -101,17 +101,10 @@ impl ApplicationManagedComputation<CheckpointSchema, PlanarOutputFeature> for Co
     const IDENTITY: &'static str = "wave-computation";
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::Deterministic;
-    const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(128, 512);
 }
 pub(super) struct Prepared {
     rank: usize,
     schedule: Option<Arc<Schedule>>,
-}
-impl WorthQueryManagedComputationPrepared for Prepared {
-    fn retained_bytes(&self) -> usize {
-        std::mem::size_of::<Self>()
-    }
 }
 pub(super) struct Owner;
 impl WorthQueryManagedComputationOwner<CheckpointSchema, PlanarOutputFeature, Computation>

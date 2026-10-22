@@ -9,8 +9,13 @@ use super::{
     admission::AdmittedBatch,
     input::{BorrowedInputs, OwnedInputs},
     meter::{KernelContext, KernelFailure, NestedStopOwner},
+    payload_storage::PayloadStorage,
     run::run_batch,
     PreparedBatchResources,
+};
+mod native_payload;
+pub(crate) use native_payload::{
+    run_native_batch_with_charge, run_owned_native_batch, run_owned_native_batch_perturbed_for_test,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -37,6 +42,7 @@ pub enum BatchStop<E> {
         identity: PartitionIdentity,
     },
     Admission(LeaseDenial),
+    Allocation(crate::ExecutionPhysicalAllocationDenialKind),
 }
 
 pub(crate) struct BatchOutcome<R, E> {
@@ -105,6 +111,7 @@ where
         inputs,
         Some(records),
         retained,
+        PayloadStorage::<T, R, E>::metered(),
     )
 }
 
@@ -177,6 +184,7 @@ where
         taken,
         None,
         None,
+        PayloadStorage::<T, R, E>::metered(),
     )
 }
 
@@ -205,6 +213,7 @@ where
         taken,
         None,
         None,
+        PayloadStorage::<T, R, E>::metered(),
     )
 }
 
@@ -238,6 +247,7 @@ where
         None,
         None,
         None,
+        PayloadStorage::<T, R, E>::metered(),
     );
     (outcome, order.into_inner().unwrap())
 }

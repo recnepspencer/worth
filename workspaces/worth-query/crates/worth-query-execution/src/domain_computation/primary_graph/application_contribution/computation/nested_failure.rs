@@ -50,6 +50,7 @@ impl<E> MemberComputeFailure<E> {
             Self::Own(failure) => failure,
             Self::Nested(TakenNestedFailure { cause, failure }) => match cause {
                 NestedComputationStop::DomainFailure
+                | NestedComputationStop::Allocation(_)
                 | NestedComputationStop::Panic
                 | NestedComputationStop::ResultCapacityExceeded
                 | NestedComputationStop::WorkCeiling => failure,

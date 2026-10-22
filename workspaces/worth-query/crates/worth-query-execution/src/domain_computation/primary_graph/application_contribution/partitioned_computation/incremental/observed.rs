@@ -98,9 +98,9 @@ pub(in super::super::super) fn observe_full_tree<Tree, E>(
 
 /// Already-settled native evidence; observing work never interrogates the
 /// kernel context or changes whether its actual result may be carried.
-pub(in super::super::super) fn observe_retained_full_tree<R, F, E>(
+pub(in super::super::super) fn observe_retained_full_tree<R, F, E, Tree>(
     cause: super::retained::WorthQueryPartitionedComputationFullCause,
-    outcome: &worth_execution::RetainedReduceOutcome<R, F, E>,
+    outcome: &worth_execution::RetainedReduceOutcome<R, F, E, Tree>,
 ) {
     if !crate::domain_computation::execution_observation::is_installed() {
         return;

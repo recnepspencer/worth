@@ -62,6 +62,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn map(
         |identity: worth_foundational::PartitionIdentity| roots[(identity.value() - 1) as usize];
     match stop {
         MapStop::Admission(cause) => lease(cause),
+        MapStop::Allocation(_) => Denial::AllocationUnavailable,
         MapStop::WorkExhausted { identity } => Denial::WorkExhausted {
             root: Some(root_at(identity)),
         },
