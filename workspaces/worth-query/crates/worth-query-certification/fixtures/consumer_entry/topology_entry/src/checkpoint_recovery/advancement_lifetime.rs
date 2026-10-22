@@ -78,6 +78,11 @@ fn a_leased_output_demand_shares_one_request_with_signal_and_native_reads() {
     );
     assert!(matches!(
         outcome,
+        WorthQueryApplicationProgramOutputProgress::Progressed
+    ));
+    assert!(output.settled_root_observation().is_some());
+    assert!(matches!(
+        output.settle(&application, &request).unwrap(),
         WorthQueryApplicationProgramOutputProgress::Settled(_)
     ));
 }

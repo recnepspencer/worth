@@ -291,11 +291,13 @@ where
                     // Keep the actual required interest until every descendant
                     // has sealed its consumed-output claims. A native receipt
                     // alone does not keep its registry settlement posting live.
+                    // Return custody before independent discovery needs fresh
+                    // admission after potentially long native producer work.
+                    return Ok(WorthQueryApplicationProgramOutputProgress::Progressed);
                 }
             }
         }
-        // A settled root starts its dependents in the same call. A start
-        // that is refused keeps the authority for the next call.
+        // A refused start keeps the original settled authority for retry.
         if let Some(authority) = self.pending_root_authority.as_ref() {
             let settlement = self
                 .root_settlement

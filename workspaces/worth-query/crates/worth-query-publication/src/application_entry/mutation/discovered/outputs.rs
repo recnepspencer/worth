@@ -72,8 +72,8 @@ where
     work: ProgramOutputTraversalWork,
 }
 
-/// Drives a mutation's discovered program outputs to settlement. `advance` takes every
-/// discovered root as far as one call can.
+/// Drives a mutation's discovered program outputs, returning original custody
+/// between native settlement and independent dependent discovery.
 pub struct WorthQueryDiscoveredProgramOutputHandle<Schema, Program, Root>
 where
     Schema: ApplicationSchema,
@@ -287,7 +287,11 @@ where
             &mut self.superseded,
         )?;
         while let Some(root) = self.roots.get_mut(self.next_root) {
-            if let Some(handle) = &mut root.handle {
+            if root.settlement.is_none() {
+                let handle = root
+                    .handle
+                    .as_mut()
+                    .expect("an unsettled root retains its admitted demand");
                 match handle.advance(phase, application, request) {
                     Err(crate::application_entry::WorthQueryApplicationOutputDemandDenial::Superseded) => {
                         self.superseded.push(root.demand.clone());
@@ -310,12 +314,13 @@ where
                     }) => {
                         root.settlement = Some(settlement);
                         root.pending_authority = Some(std::sync::Arc::new(authority));
-                        root.handle = None;
+                        // Keep the original posting interest across the public
+                        // handoff and every descendant's consumed-output claim.
+                        return Ok(WorthQueryDiscoveredProgramOutputProgress::Progressed);
                     }
                 }
             }
-            // A settled root starts its dependents in the same call. A start
-            // that is refused keeps the authority for the next call.
+            // A refused start keeps the original settled authority for retry.
             if let Some(authority) = root.pending_authority.as_ref() {
                 let settlement = root
                     .settlement

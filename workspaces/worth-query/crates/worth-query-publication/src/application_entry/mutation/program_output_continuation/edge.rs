@@ -39,6 +39,7 @@ where
     >,
     dependencies: Option<WorthQueryRetainedQueryDependencies>,
     next_admission: usize,
+    next_advance: usize,
     outputs: Vec<ProgramOutputRecord>,
     work: ProgramOutputTraversalWork,
     controls: WorthQueryOutputDemandControls,
@@ -125,6 +126,7 @@ where
             discovery_source: None,
             dependencies: None,
             next_admission: 0,
+            next_advance: 0,
             outputs: Vec::new(),
             work: ProgramOutputTraversalWork::default(),
             controls,
@@ -229,17 +231,27 @@ where
             self.next_admission += 1;
         }
         let mut runnable = false;
-        for node in nodes.iter_mut() {
+        for index in (self.next_advance..nodes.len()).chain(0..self.next_advance) {
+            // A native handoff returns to the caller. Resume with the next
+            // sibling so an unfinished predecessor does not monopolize progress.
+            let next = if index + 1 == nodes.len() { 0 } else { index + 1 };
+            let node = &mut nodes[index];
             if let Some(handle) = &mut node.handle {
                 match handle.advance(phase, application, request).map_err(WorthQueryRequiredOutputPreparationDenial::Demand)? {
                     WorthQueryApplicationProgramDemandProgress::Pending => continue,
-                    WorthQueryApplicationProgramDemandProgress::Progressed => { runnable = true; continue; },
+                    WorthQueryApplicationProgramDemandProgress::Progressed => {
+                        self.next_advance = next;
+                        return Ok(ProgramOutputContinuationProgress::Progressed);
+                    },
                     WorthQueryApplicationProgramDemandProgress::Settled { settlement, authority } => {
                         node.settled = Some((settlement, Arc::new(authority)));
                         // Descendants and later siblings can still consume this
                         // exact posting. Retain its real admitted interest.
                         node._retained_handle = node.handle.take();
-                        runnable = true;
+                        self.next_advance = next;
+                        // Keep settlement and posting custody before starting
+                        // another independent discovery/admission stage.
+                        return Ok(ProgramOutputContinuationProgress::Progressed);
                     }
                 }
             }
@@ -254,7 +266,10 @@ where
                 let Some(continuation) = &mut node.continuation else { continue; };
                 match continuation.advance(phase, application, request)? {
                     ProgramOutputContinuationProgress::Pending => {},
-                    ProgramOutputContinuationProgress::Progressed => { runnable = true; },
+                    ProgramOutputContinuationProgress::Progressed => {
+                        self.next_advance = next;
+                        return Ok(ProgramOutputContinuationProgress::Progressed);
+                    },
                     ProgramOutputContinuationProgress::Settled { outputs, work, dependencies } => {
                         node.dependencies = dependencies;
                         self.outputs.extend(outputs);
