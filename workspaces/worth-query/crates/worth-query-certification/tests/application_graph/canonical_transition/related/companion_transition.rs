@@ -189,11 +189,7 @@ fn companion_historical_rows_survive_real_transition_production_preserve_and_reo
         .query(page_query::ReadPage {
             identity: "derived-report".into(),
         })
-        .resume(
-            token.unwrap(),
-            std::num::NonZeroUsize::MIN,
-            Some(std::num::NonZeroUsize::new(65_536).unwrap()),
-        )
+        .resume(token.unwrap(), std::num::NonZeroUsize::MIN)
         .unwrap();
     journey::assert_old(&second, "derived-right");
     assert_eq!(second.receipt().ordered_index_generation(), generation);

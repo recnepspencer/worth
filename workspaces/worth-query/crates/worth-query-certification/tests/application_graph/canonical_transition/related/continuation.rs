@@ -84,11 +84,7 @@ fn actual_related_v1_token_keeps_old_values_while_v2_produces_edits_and_reopens(
         .query(page_query::ReadPage {
             identity: "derived-report".into(),
         })
-        .resume(
-            token,
-            NonZeroUsize::MIN,
-            Some(NonZeroUsize::new(65_536).unwrap()),
-        )
+        .resume(token, NonZeroUsize::MIN)
         .unwrap();
     journey::assert_old(&second, "derived-right");
     assert_eq!(

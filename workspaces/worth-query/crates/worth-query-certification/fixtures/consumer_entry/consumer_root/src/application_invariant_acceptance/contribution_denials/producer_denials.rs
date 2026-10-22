@@ -272,7 +272,8 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        declare_planar_producers(contracts)?.producer::<AmbiguousProducer<Schema>>()?;
+        declare_planar_producers(contracts)?;
+        contracts.producer::<AmbiguousProducer<Schema>>()?;
         Ok(())
     }
 
@@ -287,15 +288,13 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
 
 fn declare_planar_producers<Schema: TopologySchemaBinding>(
     contracts: &mut WorthQueryApplicationContributionContracts<Schema>,
-) -> Result<
-    &mut WorthQueryApplicationContributionContracts<Schema>,
-    WorthQueryPrimaryGraphInstallationDenial,
-> {
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     contracts
         .producer::<InitialPlanarProducer<Schema>>()?
         .producer::<worth_query_topology_entry::AlternatePlanarOutputProducer<Schema>>()?
         .producer::<worth_query_topology_entry::PlanarFinalOutputProducer<Schema>>()?
-        .producer::<worth_query_topology_entry::PlanarFinalPreserveProducer<Schema>>()
+        .producer::<worth_query_topology_entry::PlanarFinalPreserveProducer<Schema>>()?;
+    Ok(())
 }
 
 fn install_topology_behavior<Schema: TopologySchemaBinding>(

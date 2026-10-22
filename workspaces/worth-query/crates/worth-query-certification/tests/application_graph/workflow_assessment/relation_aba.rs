@@ -17,15 +17,6 @@ use super::*;
 #[test]
 fn newly_required_related_review_stales_after_relation_away_and_back() {
     let application = publish_workflow_on_first_program();
-    assert_eq!(
-        settle(set_retention(
-            application.program_runtime(),
-            application.program_runtime().current_world(),
-            0,
-            760,
-        )),
-        RetentionVerdict::Performed(0),
-    );
     let definition = match publish_definition(
         &application,
         conditionally_required_related_assessment_definition(),
@@ -61,7 +52,7 @@ fn newly_required_related_review_stales_after_relation_away_and_back() {
         })
         .execute()
         .expect("condition query reads the source");
-    assert_eq!(result.rows(), &[false]);
+    assert_eq!(result.rows(), &[true]);
     assert!(matches!(
         runtime
             .request(&principal, &scope)

@@ -92,7 +92,10 @@ fn portable_path_guard_reconstructs_scope_and_refuses_missing_or_changed_corresp
                 WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
             )
             .unwrap_err(),
-            ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency,
+            ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency {
+                operation: "Save".into(),
+                dependency: ApplicationOperationDependencyLocus::Body,
+            },
             "{defect}"
         );
     }

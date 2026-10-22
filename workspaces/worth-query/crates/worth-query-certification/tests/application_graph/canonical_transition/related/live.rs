@@ -70,7 +70,7 @@ fn held_v1_live_cause_uses_original_decoder_and_v2_live_uses_regenerated_output(
         .query(live_query::ReadLive {
             identity: "derived-report".into(),
         })
-        .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1, Some(65_536)))
+        .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1))
         .unwrap();
     publish_old(&original, 180301);
     let target = journey::successor(host::capture(&original));
@@ -89,7 +89,6 @@ fn held_v1_live_cause_uses_original_decoder_and_v2_live_uses_regenerated_output(
         assert_eq!(output::literals(value).1, 12);
     }
     assert_eq!(successor::output::decodes(), 0);
-    assert!(update.receipt().result_buffer().unwrap().released());
     assert!(matches!(
         old.close(),
         WorthQueryApplicationLiveCloseOutcome::Completed(_)

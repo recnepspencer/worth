@@ -41,7 +41,7 @@ use operation::{observed, Reads};
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
 const FUNDED_WORK: u64 = 8_000_000;
-// Both values satisfy the same finite representation contract. This host policy
+// Both values satisfy the same canonical grammar. This host policy
 // funds either decode independently, but cannot fund both in one original request.
 const ONE_VALUE_WORK: u64 = 26_000;
 

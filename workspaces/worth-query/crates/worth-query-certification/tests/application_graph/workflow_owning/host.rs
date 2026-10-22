@@ -178,19 +178,24 @@ impl Host {
         WorthQueryWorkflowAssessmentDemandSettlement<model::schema::DocumentRetentionQuery>,
     ) {
         let mut owner = self.retain_assessment(instance.clone(), key);
-        let scope = model::operator_identity::request_scope();
-        let actor = model::operator_identity::authenticate_operator(
-            self.workflow.runtime().installed_schema(),
-            &scope,
-        );
-        let request = self
-            .workflow
-            .runtime()
-            .request(&actor, &scope)
-            .on_branch(instance.branch());
-        let settlement = match owner.advance(&request).unwrap() {
-            WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => settled,
-            _ => panic!("actual producer settles"),
+        let settlement = loop {
+            let scope = model::operator_identity::request_scope();
+            let actor = model::operator_identity::authenticate_operator(
+                self.workflow.runtime().installed_schema(),
+                &scope,
+            );
+            let request = self
+                .workflow
+                .runtime()
+                .request(&actor, &scope)
+                .on_branch(instance.branch());
+            match owner.advance(&request).unwrap() {
+                WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => break settled,
+                WorthQueryWorkflowAssessmentDemandProgress::Progressed => continue,
+                WorthQueryWorkflowAssessmentDemandProgress::Pending => {
+                    panic!("the synchronous assessment is waiting for external progress")
+                }
+            }
         };
         (owner, settlement)
     }

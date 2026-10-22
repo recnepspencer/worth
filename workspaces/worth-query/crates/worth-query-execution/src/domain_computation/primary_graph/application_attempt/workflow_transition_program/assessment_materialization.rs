@@ -239,6 +239,14 @@ where
             &currentness,
             selected.node_path(),
         )?;
+        let currentness = super::super::OutputCurrentnessFacts::admit_owned_program_facts(
+            currentness,
+            super::super::retained_decision_facts::StorageControl::new(
+                execution.allocation_policy(),
+                Some(self.admission.publication_request()),
+            ),
+        )
+        .map_err(|cause| cause.into_attempt_denial(selected.node_path()))?;
         let admitted = admit_workflow_transition(
             self,
             selected,
@@ -272,7 +280,7 @@ where
             retain_output_demand_observation: false,
             retain_client_observation: false,
             producer_required_invariants: &[],
-            output_currentness_facts: Some(std::sync::Arc::<[_]>::from(currentness).into()),
+            output_currentness_facts: Some(currentness),
         };
         Ok(PreparedWorkflowAdvance::Transition {
             program,

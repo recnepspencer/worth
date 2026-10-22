@@ -34,7 +34,7 @@ pub fn calculate(source: &NestedValue) -> DerivedV1 {
 }
 worth_query_value_binding! { pub DerivedBinding for DerivedV1 {
     identity: "canonical-transition.derived.codec.v1", scalar: String,
-    canonical: worth_foundational::facade::ValueDecodeBounds::new(8192, 512, 32, 12),
+    canonical,
 }}
 pub struct DerivedOutputs;
 pub struct CreatedOutput;

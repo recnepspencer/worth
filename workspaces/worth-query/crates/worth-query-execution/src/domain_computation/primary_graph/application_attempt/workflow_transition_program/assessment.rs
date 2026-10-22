@@ -162,7 +162,8 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
     check_request_live(read_set.admission.publication_request(), subject)?;
     ensure_current(execution, read_set, currentness_facts, subject)?;
     let mut merged = std::collections::BTreeMap::new();
-    // Full canonical workflow merge, retaining original bodies by position.
+    // Completion's original prefix owns the installed projection ordinals.
+    // Index dependencies for conflict checks without rearranging that prefix.
     for (ordinal, fact) in read_set.facts.iter().enumerate() {
         let locator = fact.dependency_key();
         match merged.entry(locator) {
@@ -197,48 +198,21 @@ pub(super) fn bind_currentness_facts<Schema, Operation, Input, Scope>(
             }
         }
     }
-    // New evidence is an explicit full workflow owner; original Fact bodies
-    // are never recopied merely to put them in canonical locator order.
-    let policy = worth_execution::ExecutionAllocationPolicy::SystemAllocation;
-    let request = read_set.admission.publication_request();
-    let check = || {
-        read_set
-            .admission
-            .validate_current_authority()
-            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)
-    };
-    let tail = super::super::read_set::admit_completed_facts(
-        appended.len(),
+    // The completed-read owner retains original backing and replaces facts
+    // with their matching effect routes only after admission succeeds.
+    read_set
+        .admission
+        .validate_current_authority()
+        .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
+    read_set.append_completed_facts(
         appended.into_iter().map(|ordinal| {
             currentness_facts
                 .get(ordinal)
                 .expect("indexed currentness fact")
                 .clone()
         }),
-        policy,
-        request,
-        subject,
-        check,
-    )?;
-    let control = super::super::retained_decision_facts::StorageControl::new(policy, Some(request));
-    let mut joined = super::super::read_set::admit_completed_facts(
-        0,
-        std::iter::empty(),
-        policy,
-        request,
-        subject,
-        check,
-    )?;
-    for (additional, ordinal) in merged.into_values() {
-        check()?;
-        let backing = if additional { &tail } else { &read_set.facts };
-        joined = joined
-            .append_completed(backing.slice(ordinal..ordinal + 1), control)
-            .map_err(|cause| cause.into_attempt_denial(subject))?;
-    }
-    check()?;
-    read_set.facts = joined;
-    Ok(())
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
 }
 
 /// Denies unless every currentness fact still holds in the read set's

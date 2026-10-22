@@ -43,7 +43,7 @@ impl CanonicalValue for DerivedValue {
     ) -> Result<Self, D::Error> {
         DECODES.set(DECODES.get() + 1);
         Wire::deserialize_admitted(decoder, bounds, &mut |work, bytes| {
-            if admission(work, bytes).is_err() {
+            if admission.admit(work, bytes).is_err() {
                 IGNORED.set(IGNORED.get() + 1);
             }
             Ok(())
@@ -72,7 +72,7 @@ pub fn literals(value: &DerivedValue) -> (&str, i64, &[String]) {
 }
 pub const HANDLER_IDENTITY: &str = "canonical-related.produce.handler.v2";
 pub const PROVIDER_IDENTITY: &str = "canonical-related.provider.v2";
-worth_query_value_binding! { pub DerivedBinding for DerivedValue { identity:"canonical-related.derived.codec.v2",scalar:String,canonical:ValueDecodeBounds::new(8192,512,32,12), } }
+worth_query_value_binding! { pub DerivedBinding for DerivedValue { identity:"canonical-related.derived.codec.v2",scalar:String,canonical, } }
 #[path = "../output/roles.rs"]
 #[expect(
     clippy::duplicate_mod,

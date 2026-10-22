@@ -134,8 +134,15 @@ fn computed_path_write_readmission_refuses_weakened_target_correspondence() {
                 "duplicate" => ApplicationSchemaDeclarationDenial::DuplicateMember,
                 "unit" => ApplicationSchemaDeclarationDenial::MissingUnit,
                 "write" | "optional" | "readonly" =>
-                    ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency,
-                _ => ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency,
+                    ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
+                        // Shared field changes first invalidate Alias in canonical body order.
+                        operation: if defect == "write" { "Bump" } else { "Alias" }.into(),
+                        dependency: ApplicationOperationDependencyLocus::Body,
+                    },
+                _ => ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency {
+                    operation: "Bump".into(),
+                    dependency: ApplicationOperationDependencyLocus::Body,
+                },
             },
             "{defect}"
         );

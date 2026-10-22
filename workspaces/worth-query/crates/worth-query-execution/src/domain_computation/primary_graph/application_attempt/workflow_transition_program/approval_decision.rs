@@ -349,8 +349,15 @@ where
             &inputs.evidence,
             &inputs.currentness,
         );
-        let evidence_currentness = std::sync::Arc::from(inputs.currentness);
-        let signing_basis = std::sync::Arc::clone(&evidence_currentness);
+        let evidence_currentness = super::super::OutputCurrentnessFacts::admit_owned_program_facts(
+            inputs.currentness,
+            super::super::retained_decision_facts::StorageControl::new(
+                execution.allocation_policy(),
+                Some(self.admission.publication_request()),
+            ),
+        )
+        .map_err(|cause| cause.into_attempt_denial(required.node_path()))?;
+        let signing_basis = evidence_currentness.facts().clone();
         let admitted = admit_workflow_transition(
             self,
             selected,

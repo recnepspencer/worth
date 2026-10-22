@@ -63,10 +63,7 @@ pub(super) fn page(host: &host::Host) -> Page {
         .query(page_query::ReadPage {
             identity: "derived-report".into(),
         })
-        .page(
-            std::num::NonZeroUsize::MIN,
-            Some(std::num::NonZeroUsize::new(65_536).unwrap()),
-        )
+        .page(std::num::NonZeroUsize::MIN)
         .unwrap()
 }
 pub(super) fn assert_old(page: &Page, child: &str) {
@@ -94,10 +91,7 @@ pub(super) fn assert_target_pages(host: &successor::host::Host, edited: bool) {
         .query(successor::page_query::ReadPage {
             identity: "derived-report".into(),
         })
-        .page(
-            std::num::NonZeroUsize::MIN,
-            Some(std::num::NonZeroUsize::new(65_536).unwrap()),
-        )
+        .page(std::num::NonZeroUsize::MIN)
         .unwrap();
     let generation = first
         .receipt()
@@ -135,11 +129,7 @@ pub(super) fn assert_target_pages(host: &successor::host::Host, edited: bool) {
         .query(successor::page_query::ReadPage {
             identity: "derived-report".into(),
         })
-        .resume(
-            token,
-            std::num::NonZeroUsize::MIN,
-            Some(std::num::NonZeroUsize::new(65_536).unwrap()),
-        )
+        .resume(token, std::num::NonZeroUsize::MIN)
         .unwrap();
     assert_eq!(
         second.receipt().ordered_index_generation(),
@@ -168,11 +158,7 @@ pub(super) fn assert_original_current(host: &host::Host) {
         .query(page_query::ReadPage {
             identity: "derived-report".into(),
         })
-        .resume(
-            token,
-            std::num::NonZeroUsize::MIN,
-            Some(std::num::NonZeroUsize::new(65_536).unwrap()),
-        )
+        .resume(token, std::num::NonZeroUsize::MIN)
         .unwrap();
     assert_eq!(second.rows()[0].children[0].0, "derived-right");
     assert_eq!(output::literals(&second.rows()[0].children[0].1).1, 37);

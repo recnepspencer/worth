@@ -13,12 +13,14 @@ mod schema;
 use binding::NestedBinding;
 use model::*;
 use worth_foundational::facade::{
-    AspectValue, ValueDecodeBounds, ValueFieldShape, ValuePrimitive, ValueShape, ValueVariantShape,
+    AspectValue, ValueCodecDenial, ValueDecodeBounds, ValueFieldShape, ValuePrimitive, ValueShape,
+    ValueVariantShape,
 };
 use worth_query_host::facade::{
     application_installation::WorthQueryCheckpointCapturePolicy,
     declaration::application_schema::{
         ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
+        ApplicationValueDecodeDenial,
     },
 };
 
@@ -58,21 +60,27 @@ fn nondefault_nested_value_uses_derived_binding_catalog_and_native_checkpoint() 
 }
 
 #[test]
-fn oversized_nested_payloads_cannot_cross_the_binding_or_source_seed() {
-    let mut long_string = authored_value();
-    long_string.children[1].tag.0 = "x".repeat(257);
-    let mut long_sequence = authored_value();
-    long_sequence.children = vec![long_sequence.children[0].clone(); 17];
-    for invalid in [long_string, long_sequence] {
-        assert!(
-            NestedBinding::encode(&invalid).is_err(),
-            "entry binding must enforce nested bounds"
-        );
-        assert!(
-            host::install(invalid).is_err(),
-            "native typed seed must preserve encoding refusal"
-        );
-    }
+fn ordinary_nested_storage_accepts_values_beyond_former_representation_ceilings() {
+    let mut authored = authored_value();
+    authored.children[0].tag.0 = "λ".repeat(257);
+    authored.children = vec![authored.children[0].clone(); 17];
+    let encoded = NestedBinding::encode(&authored).unwrap();
+    assert_eq!(NestedBinding::decode(&encoded).unwrap(), authored);
+    let application = host::install(authored.clone())
+        .expect("ordinary canonical storage requires no guessed representation limits");
+    assert_eq!(host::read(&application), authored);
+}
+
+#[test]
+fn unrestricted_binding_still_refuses_a_field_outside_its_declared_grammar() {
+    let malformed = AUTHORED_WIRE.replacen("\"title\":", "\"unexpected\":", 1);
+    assert!(matches!(
+        NestedBinding::decode(&AspectValue::String(malformed.into())),
+        Err(ApplicationValueDecodeDenial::Canonical {
+            cause: ValueCodecDenial::Malformed,
+            ..
+        })
+    ));
 }
 
 fn assert_installed_contract(application: &host::Host) {
@@ -85,7 +93,7 @@ fn assert_installed_contract(application: &host::Host) {
         .canonical_contract()
         .expect("generated canonical contract installs");
     assert_eq!(contract.wire_protocol(), "worth.canonical-json.v1");
-    assert_eq!(contract.bounds(), ValueDecodeBounds::new(8192, 256, 16, 12));
+    assert_eq!(contract.bounds(), ValueDecodeBounds::unrestricted());
     assert_eq!(contract.shape(), &expected_shape());
     assert_eq!(
         installed.encode(&authored_value()).unwrap(),

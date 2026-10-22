@@ -90,9 +90,15 @@ fn cold_reference_input_rejects_mandatory_relation_missing_contract_and_forged_i
         )
         .unwrap_err();
         let expected = if defect == "read" {
-            ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency
+            ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency {
+                operation: "ReplaceReference".into(),
+                dependency: ApplicationOperationDependencyLocus::Body,
+            }
         } else {
-            ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency
+            ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
+                operation: "ReplaceReference".into(),
+                dependency: ApplicationOperationDependencyLocus::Body,
+            }
         };
         assert_eq!(denied, expected, "{defect}");
     }
@@ -156,6 +162,9 @@ fn cold_signing_cannot_retarget_its_own_certified_subject_path() {
             WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
         )
         .unwrap_err(),
-        ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency
+        ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
+            operation: "SignReference".into(),
+            dependency: ApplicationOperationDependencyLocus::Body,
+        }
     );
 }

@@ -101,6 +101,8 @@ pub fn early_assessment_definition() -> ValidatedWorkflowDefinition<ReviewedDocu
 
 /// The Related review is authored in advance but becomes required only when
 /// the installed Resource→Related review relation exists at the join.
+/// Positive retention takes the unsatisfied branch of `!retained`, leaving
+/// both primary reviews assessable before that independent relation insertion.
 pub fn conditionally_required_related_assessment_definition(
 ) -> ValidatedWorkflowDefinition<ReviewedDocumentWorkflow> {
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedDocumentWorkflow>::new(
@@ -113,8 +115,8 @@ pub fn conditionally_required_related_assessment_definition(
         .unwrap();
     let condition = builder
         .condition(
-            "positive-retention",
-            "retained",
+            "no-retention",
+            "!retained",
             ApplicationWorkflowConditionOperands::new()
                 .query::<DocumentRetentionConditionQuery>("retained"),
         )

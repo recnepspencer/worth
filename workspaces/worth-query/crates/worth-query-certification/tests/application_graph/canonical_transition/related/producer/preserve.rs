@@ -36,13 +36,6 @@ impl ApplicationMutationBinding<CanonicalSchema> for Binding {
     const IDENTITY: &'static str = "canonical-transition.preserve.binding.v1";
     const HANDLER_IDENTITY: &'static str = super::super::output::PRESERVE_HANDLER_IDENTITY;
     const IDEMPOTENCY_IDENTITY: &'static str = "canonical-transition.preserve.command.v1";
-    const CANDIDATES: worth_query_decl::facade::application_operation::ApplicationCandidatePolicy =
-        worth_query_decl::facade::application_operation::ApplicationCandidatePolicy::finite(
-            ApplicationCandidateRequirements::fixed_shape(
-                ApplicationCandidateCardinalityCeiling::fixed(0, 0, 0, 0, 6, 0),
-                ApplicationCandidateResourceCeiling::representation_bytes(65_536),
-            ),
-        );
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
     }
@@ -118,11 +111,6 @@ impl OperationHandler<CanonicalSchema, Binding> for Handler {
         }
         HandlerResult::Completed(Decision { source, targets })
     }
-    fn candidate_requirements(&self, _: &Input, _: &Decision) -> ApplicationCandidateRequirements {
-        Binding::CANDIDATES
-            .finite_requirements()
-            .expect("fixed candidate contract")
-    }
     fn build_candidate(
         &self,
         _: &Input,
@@ -167,7 +155,6 @@ impl WorthQueryApplicationProducerBinding<CanonicalSchema> for Producer {
     const IDENTITY: &'static str = "canonical-transition.preserve.producer.v1";
     const APPLICABILITY: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement] = &[];
-    const RESOURCE_POLICY: &'static str = "bounded-native";
     const REUSE_POLICY: &'static str = "exact-source";
 }
 impl WorthQueryApplicationProducerProvider<CanonicalSchema, Producer> for Provider {
@@ -179,14 +166,5 @@ impl WorthQueryApplicationProducerProvider<CanonicalSchema, Producer> for Provid
     }
     fn idempotency_key(&self, _: &NestedValue, identity: &[u8; 32]) -> u64 {
         u64::from_le_bytes(identity[..8].try_into().unwrap())
-    }
-    fn demand_resources(
-        &self,
-        _: &NestedValue,
-    ) -> Result<
-        WorthQueryProducerDemandResources,
-        worth_query_host::facade::application_contribution::WorthQueryProducerResourceQuoteDenial,
-    > {
-        Ok(WorthQueryProducerDemandResources::new(Some(4096), 65_536))
     }
 }

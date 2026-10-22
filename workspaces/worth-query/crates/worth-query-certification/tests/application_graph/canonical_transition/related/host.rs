@@ -194,10 +194,7 @@ pub fn edit_source(
     let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
         panic!("the source edit must retain its required-output custody");
     };
-    let controls = WorthQueryOutputDemandControls::new(
-        std::num::NonZeroUsize::new(4096).unwrap(),
-        std::num::NonZeroUsize::new(65_536).unwrap(),
-    );
+    let controls = WorthQueryOutputDemandControls::host_policy();
     let mut started = performed
         .start_required_outputs(host, &request, controls)
         .unwrap_or_else(|failure| {

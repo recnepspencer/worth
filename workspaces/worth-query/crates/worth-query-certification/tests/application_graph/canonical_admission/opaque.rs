@@ -42,7 +42,7 @@ impl CanonicalValue for SwallowingValue {
         // Every cost originates in the real supported nested decoder. No made-up
         // stop, callback error, or budget arithmetic supplies the negative case.
         NestedValue::deserialize_admitted(decoder, bounds, &mut |work, bytes| {
-            if admission(work, bytes).is_err() {
+            if admission.admit(work, bytes).is_err() {
                 IGNORED_REFUSALS.set(IGNORED_REFUSALS.get() + 1);
             }
             Ok(())

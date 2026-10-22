@@ -45,10 +45,7 @@ fn actual_v2_three_role_retirement_unlinks_only_observed_edges_and_reopens_curre
         .query(successor::page_query::ReadPage {
             identity: "derived-report".into()
         })
-        .page(
-            std::num::NonZeroUsize::MIN,
-            Some(std::num::NonZeroUsize::new(65_536).unwrap())
-        )
+        .page(std::num::NonZeroUsize::MIN)
         .is_err());
     assert_eq!(successor::output::literals(&owned).1, 1012);
     assert_eq!(successor::host::read(&target), model::authored_value());

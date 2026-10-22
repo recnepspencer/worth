@@ -116,7 +116,10 @@ fn transported_children_cannot_change_parent_topology_or_drop_contracts() {
                 WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
             )
             .unwrap_err(),
-            ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency,
+            ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
+                operation: "Create".into(),
+                dependency: ApplicationOperationDependencyLocus::Body,
+            },
             "{defect}"
         );
     }

@@ -146,22 +146,26 @@ pub fn settle_assessment_for(
         .expect("the installed assessment output demand must start");
     drop(principal);
     drop(scope);
-    let fresh_scope = request_scope();
-    let fresh_principal = authenticate_operator(runtime.installed_schema(), &fresh_scope);
-    let request = runtime
-        .request(&fresh_principal, &fresh_scope)
-        .on_branch(branch);
-    let settlement = match handle
-        .advance(&request)
-        .expect("the installed assessment producer must advance")
-    {
-        WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => settled,
-        WorthQueryWorkflowAssessmentDemandProgress::Pending => {
-            panic!("the bounded assessment producer did not settle within its declared work")
+    loop {
+        let fresh_scope = request_scope();
+        let fresh_principal = authenticate_operator(runtime.installed_schema(), &fresh_scope);
+        let request = runtime
+            .request(&fresh_principal, &fresh_scope)
+            .on_branch(branch);
+        match handle
+            .advance(&request)
+            .expect("the installed assessment producer must advance")
+        {
+            WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => {
+                handle.close(&request).unwrap_or_else(|_| {
+                    panic!("fresh native observer close retains failed cleanup on refusal")
+                });
+                return settled;
+            }
+            WorthQueryWorkflowAssessmentDemandProgress::Progressed => continue,
+            WorthQueryWorkflowAssessmentDemandProgress::Pending => {
+                panic!("the synchronous assessment is waiting for external progress")
+            }
         }
-    };
-    handle.close(&request).unwrap_or_else(|_| {
-        panic!("fresh native observer close retains failed cleanup on refusal")
-    });
-    settlement
+    }
 }

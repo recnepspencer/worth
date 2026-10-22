@@ -264,7 +264,10 @@ pub(super) fn source_rebase_preparation_stop(
             allocation,
         ));
     }
-    Stop::PreEffectDenied(failure(
-        "source rebase preparation refused before publication",
+    Stop::PreEffectDenied(WorthQueryProviderSessionFailure::new(
+        crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+        WorthQueryProviderSessionProtocolStage::Commit,
+        format!("source rebase preparation refused before publication: {cause:?}"),
+        crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
     ))
 }

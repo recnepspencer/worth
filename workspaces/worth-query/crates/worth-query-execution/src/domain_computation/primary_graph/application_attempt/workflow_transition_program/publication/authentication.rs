@@ -6,7 +6,6 @@ use worth_relational::facade::identity::EntityId;
 
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 use crate::domain_computation::primary_graph::workflow::instance::PreparedWorkflowProgressUpdate;
-use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact;
 use worth_query_admission::facade::{
     authenticated_principal::{WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope},
     authentication_event::{
@@ -68,7 +67,7 @@ impl<Schema> PreparedWorkflowApprovalAuthentication<Schema> {
     >(
         owner: WorthQueryAuthenticationEventSigningOwner<Schema>,
         intent: WorthQueryAuthenticationEventIntent,
-        basis: Arc<[WorthQueryApplicationObservedFact]>,
+        basis: FactPayload,
         prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
     ) -> Result<Self, WorthQueryAuthenticationEventDenial> {
         let PreparedWorkflowAdvance::Transition {
@@ -101,7 +100,7 @@ impl<Schema> PreparedWorkflowApprovalAuthentication<Schema> {
             mode: ApprovalAuthenticationMode::Standalone,
             owner,
             intent,
-            basis: basis.into(),
+            basis,
             descriptor: ApprovalDescriptor {
                 principal: Arc::clone(principal),
                 program_revision: *program_revision,

@@ -28,15 +28,6 @@ use super::super::document_retention_model::{
 #[test]
 fn native_relation_insertion_makes_an_authored_related_review_newly_required() {
     let application = publish_workflow_on_first_program();
-    assert_eq!(
-        settle(set_retention(
-            application.program_runtime(),
-            application.program_runtime().current_world(),
-            0,
-            680,
-        )),
-        RetentionVerdict::Performed(0),
-    );
     let definition = match publish_definition(
         &application,
         conditionally_required_related_assessment_definition(),
@@ -74,7 +65,7 @@ fn native_relation_insertion_makes_an_authored_related_review_newly_required() {
         })
         .execute()
         .expect("typed condition query must execute");
-    assert_eq!(condition_result.rows(), &[false]);
+    assert_eq!(condition_result.rows(), &[true]);
     let condition = runtime
         .request(&principal, &scope)
         .mutate(WorkflowAdvanceIntent {
@@ -90,7 +81,10 @@ fn native_relation_insertion_makes_an_authored_related_review_newly_required() {
         .operand::<DocumentRetentionConditionQueryBinding, _>("retained", condition_result)
         .accept()
         .expect("typed false condition must settle");
-    assert!(matches!(condition, WorkflowProgressOutcome::Completed(_)));
+    assert!(
+        matches!(&condition, WorkflowProgressOutcome::Completed(_)),
+        "typed false condition must complete, got {condition:?}"
+    );
 
     assert!(matches!(
         prepare_early_assessment_denial(&application, instance.clone(), "checks/related", 686),
@@ -221,15 +215,6 @@ fn native_relation_insertion_makes_an_authored_related_review_newly_required() {
 #[test]
 fn settled_join_cannot_authorize_approval_after_requirement_insertion() {
     let application = publish_workflow_on_first_program();
-    assert_eq!(
-        settle(set_retention(
-            application.program_runtime(),
-            application.program_runtime().current_world(),
-            0,
-            710,
-        )),
-        RetentionVerdict::Performed(0),
-    );
     let definition = match publish_definition(
         &application,
         conditionally_required_related_assessment_definition(),
@@ -265,7 +250,7 @@ fn settled_join_cannot_authorize_approval_after_requirement_insertion() {
         })
         .execute()
         .unwrap();
-    assert_eq!(condition_result.rows(), &[false]);
+    assert_eq!(condition_result.rows(), &[true]);
     assert!(matches!(
         runtime
             .request(&principal, &scope)

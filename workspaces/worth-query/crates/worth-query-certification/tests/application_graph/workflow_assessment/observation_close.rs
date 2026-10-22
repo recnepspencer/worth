@@ -126,10 +126,13 @@ fn settle(
     WorthQueryWorkflowAssessmentDemandSettlement<DocumentRetentionQuery>,
     WorthQueryApplicationOutputDemandDenial,
 > {
-    match progress(application, instance, observer)? {
-        WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => Ok(settled),
-        WorthQueryWorkflowAssessmentDemandProgress::Pending => {
-            panic!("the bounded assessment producer did not settle within its declared work")
+    loop {
+        match progress(application, instance, observer)? {
+            WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => return Ok(settled),
+            WorthQueryWorkflowAssessmentDemandProgress::Progressed => continue,
+            WorthQueryWorkflowAssessmentDemandProgress::Pending => {
+                panic!("the synchronous assessment is waiting for external progress")
+            }
         }
     }
 }
@@ -141,16 +144,20 @@ fn in_flight(
     instance: &PublishedWorkflowInstanceRef,
     observer: &mut Observer<'_>,
 ) {
-    application
-        .runtime()
-        .delay_next_output_readiness_delivery_for_test();
-    assert!(
-        matches!(
-            progress(application, instance, observer),
-            Ok(WorthQueryWorkflowAssessmentDemandProgress::Pending)
-        ),
-        "an undelivered readiness leaves the run in flight",
-    );
+    loop {
+        application
+            .runtime()
+            .delay_next_output_readiness_delivery_for_test();
+        match progress(application, instance, observer)
+            .expect("the original observer advances to its deferred native delivery")
+        {
+            WorthQueryWorkflowAssessmentDemandProgress::Pending => return,
+            WorthQueryWorkflowAssessmentDemandProgress::Progressed => continue,
+            WorthQueryWorkflowAssessmentDemandProgress::Settled(_) => {
+                panic!("an undelivered readiness must leave the run in flight")
+            }
+        }
+    }
 }
 
 fn closed<Value>(outcome: Result<Value, WorthQueryApplicationOutputDemandDenial>) {
