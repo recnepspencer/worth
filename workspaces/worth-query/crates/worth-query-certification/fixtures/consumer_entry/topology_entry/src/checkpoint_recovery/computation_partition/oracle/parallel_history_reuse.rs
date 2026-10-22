@@ -236,7 +236,7 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
     // A freshly seeded world has no prior edit/publication history. Its whole
     // advancement bill is a different input; only its declared computation
     // charge is compared below. The worker matrix separately pins each native
-    // branch's whole advancement across posture and reuse choices.
+    // branch's whole advancement across worker postures at each fixed reuse choice.
     println!(
         "HISTORY_BILLS:edited_work={}:edited_span={}:new_installation_work={}:new_installation_span={}:declared={declared_work}",
         retained_total.0, retained_total.1, fresh_total.0, fresh_total.1

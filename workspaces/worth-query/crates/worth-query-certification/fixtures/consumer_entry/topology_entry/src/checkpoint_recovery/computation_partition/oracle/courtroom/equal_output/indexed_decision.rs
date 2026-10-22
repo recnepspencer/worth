@@ -66,6 +66,11 @@ fn journey(add_match: bool, leave_dirty: bool) {
         "only anchor-c initially matches y = 10"
     );
     dependent_publication::take_calls();
+    assert_eq!(
+        dependent_publication::take_indexed_selections(),
+        [1],
+        "the first consumer decision sees only the seeded indexed member"
+    );
     let source = request
         .query(PlanarRead {
             body_key: "anchor-b".to_owned(),
@@ -169,14 +174,19 @@ fn journey(add_match: bool, leave_dirty: bool) {
         .expect("the completed decision carries its current upstream and indexed membership");
     let calls = dependent_publication::take_calls();
     let contacts = settlement.producer_contacts_in_this_demand();
-    // Required-output progression refreshes dirty U before deciding C. Equal U
-    // does not erase C's own indexed evidence: changed membership needs exactly
-    // one new decision; unchanged membership needs none, on either upstream path.
-    let decisions = usize::from(add_match);
+    // Changed indexed evidence enters C. If U is dirty, current_output stops
+    // that entry before indexed selection; the native owner refreshes U and
+    // resumes C with the same demand. Only the resumed entry completes a decision.
+    let entries = usize::from(add_match) * (1 + usize::from(leave_dirty));
     assert_eq!(
         (calls, contacts),
-        (decisions, 1 + decisions),
+        (entries, 1 + entries),
         "only changed indexed membership contacts this original consumer; dirty upstream: {leave_dirty}"
+    );
+    assert_eq!(
+        dependent_publication::take_indexed_selections(),
+        if add_match { vec![2] } else { vec![] },
+        "exactly one indexed decision completes after U is current; reuse makes no decision"
     );
     assert_eq!(
         read_value(DEPENDENT),

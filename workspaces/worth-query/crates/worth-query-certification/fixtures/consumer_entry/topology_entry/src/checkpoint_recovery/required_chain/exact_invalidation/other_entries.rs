@@ -84,14 +84,41 @@ fn a_native_writer_marks_what_a_declared_operation_marks() {
     let at = "after a native write of a chain output";
     let mut last = consumer!(court, rings[1].key("c"), at);
     assert!(settled!(court, last, at).is_free());
+    assert_eq!(
+        judge_decisions(&mut rings, at),
+        0,
+        "warming the held consumer does not decide"
+    );
     rings[1].b_length = 44;
     native_write!(application, scope, rings[1].key("b"), Length, 44);
+    assert_eq!(
+        (
+            court.length(&rings[1].key("b")),
+            court.length(&rings[1].key("c"))
+        ),
+        (44, rings[1].c_length),
+        "the native writer changes B, not C"
+    );
+    assert!(
+        super::super::binding::decisions_snapshot().is_empty(),
+        "the native write itself invokes no chain handler"
+    );
     // Let C initiate its own refresh before an unrelated caller may pump it.
     let cost = settled!(court, last, at);
+    // B's own Length is its source and prepared value. Its native overwrite
+    // requires B's new owned publication before C can consume current B.
+    assert_eq!(
+        super::super::binding::decisions_snapshot(),
+        vec![
+            (rings[1].key("b"), vec![rings[1].root_output()]),
+            (rings[1].key("c"), vec![44]),
+        ],
+        "the upstream renews its authority before the original consumer reads the native value"
+    );
     assert_eq!(
         (cost.producer_contacts, judge_decisions(&mut rings, at)),
-        (1, 1),
-        "{at}: the last consumer decides over the written output in its own advance"
+        (1, 2),
+        "{at}: C owns one new contact; the decision capture also includes its required B refresh"
     );
     let (costs, decisions) = court.demand_ring(&mut rings, 1, at);
     assert!(

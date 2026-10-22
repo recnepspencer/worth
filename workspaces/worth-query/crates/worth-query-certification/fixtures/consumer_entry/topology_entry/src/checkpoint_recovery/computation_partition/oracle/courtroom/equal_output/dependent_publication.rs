@@ -85,6 +85,16 @@ static CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::n
 pub(super) fn take_calls() -> usize {
     CALLS.swap(0, std::sync::atomic::Ordering::SeqCst)
 }
+// Handler entry includes a native requested-output stop. Keep completed indexed
+// selections separately so that such a stop cannot masquerade as a decision.
+static INDEXED_SELECTIONS: std::sync::Mutex<Vec<usize>> = std::sync::Mutex::new(Vec::new());
+pub(super) fn take_indexed_selections() -> Vec<usize> {
+    std::mem::take(
+        &mut *INDEXED_SELECTIONS
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner),
+    )
+}
 pub(super) struct Handler {
     pub(super) witnesses: usize,
     pub(super) indexed_selection: bool,
@@ -107,6 +117,10 @@ impl OperationHandler<Schema, Binding> for Handler {
             };
             if self.indexed_selection {
                 let matches = reader.select_entities(PositionY::reference(), length(10), 8)?;
+                INDEXED_SELECTIONS
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .push(matches.len());
                 return Ok(Some(length(matches.len() as u64)));
             }
             if self.witnesses == 0 {

@@ -28,6 +28,7 @@ fn every_seeded_reuse_input_crosses_prior_and_current_worker_counts() {
     }
     let mut count = 0;
     let mut anchors = std::collections::BTreeMap::new();
+    let mut comparison_anchors = std::collections::BTreeMap::new();
     let mut red = Vec::new();
     for change in 0..CHANGES.len() {
         for prior in [1, 2, 5] {
@@ -40,13 +41,27 @@ fn every_seeded_reuse_input_crosses_prior_and_current_worker_counts() {
                         red.push(format!("change {change} prior {prior} current {current} reuse {reuse}: {stdout}{}",String::from_utf8_lossy(&output.stderr)));
                     } else {
                         let total = history_bills(&stdout);
-                        if let Some(expected) = anchors.get(&change) {
+                        // The comparison history has no retained prior (or is
+                        // explicitly reuse-off), so this half is mode-independent.
+                        let comparison = (total.2, total.3);
+                        if let Some(expected) = comparison_anchors.get(&change) {
+                            if &comparison != expected {
+                                red.push(format!("comparison history: change {change} prior {prior} current {current} reuse {reuse}: {expected:?} versus {comparison:?}"));
+                            }
+                        } else {
+                            comparison_anchors.insert(change, comparison);
+                        }
+                        // Whole advancement includes native preparation and
+                        // publication work. Compare widths at fixed reuse mode;
+                        // case_at separately requires identical computation charges.
+                        let history = (change, reuse);
+                        if let Some(expected) = anchors.get(&history) {
                             if &total != expected {
                                 red.push(format!("charge by posture: change {change} prior {prior} current {current} reuse {reuse}: {expected:?} versus {total:?}"));
                             }
                         } else {
-                            println!("REUSE_ANCHOR:{change}:{total:?}");
-                            anchors.insert(change, total);
+                            println!("REUSE_ANCHOR:{change}:reuse={reuse}:{total:?}");
+                            anchors.insert(history, total);
                         }
                     }
                 }
@@ -63,7 +78,7 @@ fn every_seeded_reuse_input_crosses_prior_and_current_worker_counts() {
     }
     assert!(
         red.is_empty(),
-        "every reuse law and charge is unchanged across prior/current posture"
+        "every reuse law and whole-history charge is unchanged across prior/current worker widths at fixed reuse mode"
     );
 }
 
