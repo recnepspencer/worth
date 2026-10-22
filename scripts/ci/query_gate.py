@@ -77,7 +77,11 @@ GROUPS = {
     "root": ROOT_TESTS,
     "query": ["--manifest-path", QUERY, "--workspace", "--lib", "--tests"],
     "bank": ["--manifest-path", BANK, "--workspace", "--lib", "--bins", "--tests"],
-    "fixture": ["--manifest-path", FIXTURE, *packages(*FIXTURE_PACKAGES), "--lib", "--bins"],
+    # Rust 1.94 repeatedly ICEs in this external schema host's incremental
+    # evaluate_obligation cache. Keep the workaround in its build owner;
+    # ordinary Query and Bank builds retain their incremental settings.
+    "fixture": ["--manifest-path", FIXTURE, *packages(*FIXTURE_PACKAGES),
+                "--lib", "--bins", "--config", "build.incremental=false"],
     "ui": ["--manifest-path", UI, "-p", "worth-ui-query-binding", "--lib"],
 }
 
