@@ -127,13 +127,17 @@ pub(super) fn reach_approval_limit(
             &key("approved-payment:assessment:payment:settle"),
         )
         .expect("the payment assessment demand starts");
-    let payment_assessment = match actor
-        .advance_payment_assessment(&mut payment_demand)
-        .expect("the payment assessment advances")
-    {
-        WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => settled,
-        WorthQueryWorkflowAssessmentDemandProgress::Pending => {
-            panic!("the fixture's payment assessment must settle within admitted work")
+    let payment_assessment = loop {
+        // The actor builds and freshly validates a request for this same demand.
+        match actor
+            .advance_payment_assessment(&mut payment_demand)
+            .expect("the payment assessment advances")
+        {
+            WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => break settled,
+            WorthQueryWorkflowAssessmentDemandProgress::Progressed => continue,
+            WorthQueryWorkflowAssessmentDemandProgress::Pending => {
+                panic!("the synchronous payment assessment is waiting for external progress")
+            }
         }
     };
     require_completed(
@@ -166,13 +170,17 @@ pub(super) fn reach_approval_limit(
             &key("approved-payment:assessment:independent:settle"),
         )
         .expect("the independent assessment demand starts");
-    let independent_assessment = match actor
-        .advance_payment_assessment(&mut independent_demand)
-        .expect("the independent assessment advances")
-    {
-        WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => settled,
-        WorthQueryWorkflowAssessmentDemandProgress::Pending => {
-            panic!("the fixture's independent assessment must settle within admitted work")
+    let independent_assessment = loop {
+        // The actor builds and freshly validates a request for this same demand.
+        match actor
+            .advance_payment_assessment(&mut independent_demand)
+            .expect("the independent assessment advances")
+        {
+            WorthQueryWorkflowAssessmentDemandProgress::Settled(settled) => break settled,
+            WorthQueryWorkflowAssessmentDemandProgress::Progressed => continue,
+            WorthQueryWorkflowAssessmentDemandProgress::Pending => {
+                panic!("the synchronous independent assessment is waiting for external progress")
+            }
         }
     };
     require_completed(

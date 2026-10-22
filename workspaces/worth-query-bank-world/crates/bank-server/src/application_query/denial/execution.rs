@@ -94,6 +94,8 @@ pub enum BankApplicationOneShotDenialKind {
     Projection(BankApplicationProjectionDenialKind),
     ResultBufferLimitExceeded,
     WorkLimitExceeded,
+    ExpressionContextUnavailable,
+    ExpressionContextIncomplete,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -208,6 +210,8 @@ pub(super) const fn one_shot(kind: QueryOneShot) -> BankApplicationOneShotDenial
         QueryOneShot::Projection(kind) => Bank::Projection(projection(kind)),
         QueryOneShot::ResultBufferLimitExceeded => Bank::ResultBufferLimitExceeded,
         QueryOneShot::WorkLimitExceeded => Bank::WorkLimitExceeded,
+        QueryOneShot::ExpressionContextUnavailable => Bank::ExpressionContextUnavailable,
+        QueryOneShot::ExpressionContextIncomplete => Bank::ExpressionContextIncomplete,
     }
 }
 

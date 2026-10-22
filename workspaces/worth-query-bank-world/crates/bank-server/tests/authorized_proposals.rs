@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 mod support;
 
 mod authorized_proposals {

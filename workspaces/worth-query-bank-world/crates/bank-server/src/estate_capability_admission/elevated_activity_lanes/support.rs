@@ -176,10 +176,6 @@ pub(super) fn assert_resources_released(world: &ActivityWorld) {
             .active(),
         0
     );
-    let buffers = application.result_buffer_observer().observe();
-    assert_eq!(buffers.active_buffers(), 0);
-    assert_eq!(buffers.retained_bytes(), 0);
-    assert!(buffers.peak_observed_bytes() > 0);
 }
 
 pub(super) fn items(

@@ -3,6 +3,8 @@
 //! Settling never blocks. Each round spends at most the policy's attempts,
 //! and another round runs only when the demand was notified during the last
 //! one; a quiet demand reports `Pending` so the caller can settle it again.
+//! A completed stage returns `Progressed` immediately. The caller may renew its
+//! actor authority before advancing the same retained demand again.
 
 use std::num::NonZeroUsize;
 
@@ -156,6 +158,7 @@ impl<'runtime> BankApprovedPaymentWorkflow<'runtime, '_, '_> {
             if matches!(
                 progress,
                 WorthQueryWorkflowAssessmentDemandProgress::Settled(_)
+                    | WorthQueryWorkflowAssessmentDemandProgress::Progressed
             ) || notifications.generation() == observed
             {
                 return Ok(progress);

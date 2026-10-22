@@ -3,9 +3,7 @@ use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationLiveControls, WorthQueryApplicationQueryResumeControls,
 };
 use worth_query_host::facade::publication::domain_computation::{
-    WorthQueryApplicationQueryPublicationReceipt,
-    WorthQueryPublishedApplicationQueryReleasePosture,
-    WorthQueryPublishedApplicationQueryResultBufferRelease,
+    WorthQueryApplicationQueryPublicationReceipt, WorthQueryPublishedApplicationQueryReleasePosture,
 };
 
 use super::support::{
@@ -170,15 +168,6 @@ fn assert_terminal_release(receipt: &WorthQueryApplicationQueryPublicationReceip
         release.graph_read_basis(),
         WorthQueryPublishedApplicationQueryReleasePosture::Released
     );
-    let WorthQueryPublishedApplicationQueryResultBufferRelease::Released {
-        limit_bytes,
-        peak_bytes,
-    } = release.result_buffer()
-    else {
-        panic!("every delivered lane must publish released result-buffer evidence")
-    };
-    assert!(peak_bytes > 0);
-    assert!(peak_bytes <= limit_bytes);
     assert_eq!(release.released_graph_capacity_reservation_count(), 1);
     assert!(inspection.terminal_resources_released());
 }

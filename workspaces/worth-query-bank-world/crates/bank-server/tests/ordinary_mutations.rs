@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 #[path = "ordinary_mutations/authorization_time.rs"]
 mod authorization_time;

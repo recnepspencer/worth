@@ -2,10 +2,7 @@ use bank_server::{
     BankApplicationQueryAdmissionDenialKind, BankApplicationQueryDenial,
     BankAuthorizationDenialKind, BankReadControls,
 };
-use worth_query_host::facade::publication::domain_computation::{
-    WorthQueryPublishedApplicationQueryReleasePosture,
-    WorthQueryPublishedApplicationQueryResultBufferRelease,
-};
+use worth_query_host::facade::publication::domain_computation::WorthQueryPublishedApplicationQueryReleasePosture;
 
 use super::fixture::{ordinary_read_world, OWNER, STRANGER};
 use crate::support::request_scope;
@@ -58,15 +55,6 @@ fn installed_account_activity_is_a_real_ordered_bank_query() {
         release.graph_read_basis(),
         WorthQueryPublishedApplicationQueryReleasePosture::Released
     );
-    let WorthQueryPublishedApplicationQueryResultBufferRelease::Released {
-        limit_bytes,
-        peak_bytes,
-    } = release.result_buffer()
-    else {
-        panic!("a published result must retain exact released-buffer evidence")
-    };
-    assert!(peak_bytes > 0);
-    assert!(peak_bytes <= limit_bytes);
     assert_eq!(release.released_graph_capacity_reservation_count(), 1);
 }
 

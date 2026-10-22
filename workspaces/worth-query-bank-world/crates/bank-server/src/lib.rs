@@ -3,6 +3,7 @@
 //! Transport and Authentik protocol details belong to downstream adapters.
 
 #![forbid(unsafe_code)]
+#![cfg_attr(test, recursion_limit = "256")]
 
 mod application_definition;
 mod application_query;

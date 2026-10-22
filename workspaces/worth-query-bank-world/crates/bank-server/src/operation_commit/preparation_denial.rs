@@ -63,11 +63,19 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowLineageUnavailable,
     WorkflowDefinitionCompilationUnavailable,
     WorkflowDefinitionMissingOperationInput,
+    CapturedOperationInputsNotSupported,
     WorkflowDefinitionSuperseded,
     WorkflowDefinitionRetired,
     WorkflowInstanceAffinityMismatch,
     WorkflowInstanceAuthorityMismatch,
+    WorkflowInstanceNotCompleted,
+    WorkflowInstanceAlreadySucceeded,
+    WorkflowPredecessorOutputUnavailable,
+    WorkflowPredecessorOutputMismatch,
     WorkflowInstanceIntentIdentityUnavailable,
+    WorkflowInstanceOriginalIntentNotFound,
+    WorkflowInstanceOriginalIntentAmbiguous,
+    WorkflowInstanceOriginalIntentUnavailable,
     WorkflowInstanceCapacityUnavailable,
     WorkflowLineageCapacityUnavailable,
     WorkflowInstanceCancelled,
@@ -88,6 +96,7 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowTransitionIdentityUnavailable,
     WorkflowConditionExpressionDenied,
     OperationBodyRequirementExpressionDenied,
+    OperationBodyValueExpressionDenied,
     WorkflowAssessmentEvidenceIncomplete,
     WorkflowAssessmentEvidenceMismatch,
     WorkflowApprovalPrincipalStale,
@@ -250,6 +259,9 @@ const fn application_attempt_kind(
         Query::WorkflowDefinitionMissingOperationInput => {
             BankApplicationAttemptDenialKind::WorkflowDefinitionMissingOperationInput
         }
+        Query::CapturedOperationInputsNotSupported => {
+            BankApplicationAttemptDenialKind::CapturedOperationInputsNotSupported
+        }
         Query::WorkflowDefinitionSuperseded => {
             BankApplicationAttemptDenialKind::WorkflowDefinitionSuperseded
         }
@@ -262,8 +274,29 @@ const fn application_attempt_kind(
         Query::WorkflowInstanceAuthorityMismatch => {
             BankApplicationAttemptDenialKind::WorkflowInstanceAuthorityMismatch
         }
+        Query::WorkflowInstanceNotCompleted => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceNotCompleted
+        }
+        Query::WorkflowInstanceAlreadySucceeded => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceAlreadySucceeded
+        }
+        Query::WorkflowPredecessorOutputUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowPredecessorOutputUnavailable
+        }
+        Query::WorkflowPredecessorOutputMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowPredecessorOutputMismatch
+        }
         Query::WorkflowInstanceIntentIdentityUnavailable => {
             BankApplicationAttemptDenialKind::WorkflowInstanceIntentIdentityUnavailable
+        }
+        Query::WorkflowInstanceOriginalIntentNotFound => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceOriginalIntentNotFound
+        }
+        Query::WorkflowInstanceOriginalIntentAmbiguous => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceOriginalIntentAmbiguous
+        }
+        Query::WorkflowInstanceOriginalIntentUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceOriginalIntentUnavailable
         }
         Query::WorkflowInstanceCapacityUnavailable => {
             BankApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable
@@ -324,6 +357,9 @@ const fn application_attempt_kind(
         }
         Query::OperationBodyRequirementExpressionDenied => {
             BankApplicationAttemptDenialKind::OperationBodyRequirementExpressionDenied
+        }
+        Query::OperationBodyValueExpressionDenied => {
+            BankApplicationAttemptDenialKind::OperationBodyValueExpressionDenied
         }
         Query::WorkflowAssessmentEvidenceIncomplete => {
             BankApplicationAttemptDenialKind::WorkflowAssessmentEvidenceIncomplete

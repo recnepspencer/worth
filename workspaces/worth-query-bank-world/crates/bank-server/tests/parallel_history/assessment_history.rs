@@ -194,15 +194,22 @@ fn assessment_history_settles_at_each_request_width() {
         super::deadline::assessment(width, || stopped.advance_payment_assessment(&mut demand));
         return;
     }
-    let assessment = match judged!(
-        "settle",
-        workflow.advance_payment_assessment(&mut demand).unwrap()
-    ) {
-        BankApprovedPaymentAssessmentProgress::Settled(settled) => settled,
-        BankApprovedPaymentAssessmentProgress::Pending => {
-            panic!("one source settles in the declared round")
+    let assessment = judged!("settle", {
+        loop {
+            let fresh_scope = crate::support::request_scope();
+            let actor = fixture
+                .world
+                .runtime
+                .approved_business_payment(&approver, &fresh_scope);
+            match actor.advance_payment_assessment(&mut demand).unwrap() {
+                BankApprovedPaymentAssessmentProgress::Settled(settled) => break settled,
+                BankApprovedPaymentAssessmentProgress::Progressed => continue,
+                BankApprovedPaymentAssessmentProgress::Pending => {
+                    panic!("the synchronous history assessment awaits external progress")
+                }
+            }
         }
-    };
+    });
     assert!(
         matches!(
             judged!(

@@ -88,17 +88,21 @@ impl Trace {
         observations();
         let result = action();
         let records = observations();
-        // Prepared workflow writes have preparation + execution scopes;
-        // each settlement call performs exactly one demand advancement.
-        assert_eq!(
-            records.len(),
-            if ["settle", "retry"].contains(&name) {
-                1
-            } else {
-                2
-            },
-            "the public phase's admitted scopes are observed exactly"
-        );
+        // Settlement may cross real Progressed boundaries. Judge all of its
+        // admitted scopes together; exactly one commit/publication pair still
+        // belongs to the original producer. A settled repeat admits one scope.
+        if name == "settle" {
+            assert!(
+                !records.is_empty(),
+                "settlement admits its actual advancement scopes"
+            );
+        } else {
+            assert_eq!(
+                records.len(),
+                if name == "retry" { 1 } else { 2 },
+                "the public phase's admitted scopes are observed exactly"
+            );
+        }
         let expected_events =
             if ["definition", "start", "propose", "settle", "accept"].contains(&name) {
                 2

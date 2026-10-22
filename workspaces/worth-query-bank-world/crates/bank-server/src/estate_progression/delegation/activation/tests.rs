@@ -316,7 +316,7 @@ fn materialize_generic(
     .map_err(BankEstateProgressionDenial::from_projection)?;
     let (result, projection, _) = projected.into_parts();
     result.map_err(BankEstateProgressionDenial::CapabilityDelegationProjection)?;
-    let reads = crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
+    crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
         runtime
             .application_runtime()
             .begin_projected_application_read_attempt(
@@ -324,14 +324,11 @@ fn materialize_generic(
                 admission,
                 projection,
                 ExecutionAllocationPolicy::SystemAllocation,
+            )?
+            .complete_projected_dependencies(
+                phase,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
-    })
-    .map_err(BankEstateProgressionDenial::from_attempt)?;
-    crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
-        reads.complete_projected_dependencies(
-            phase,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
     })?
     .begin_effect_program()
     .finish()

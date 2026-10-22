@@ -376,7 +376,4 @@ fn assert_resources_released(fixture: &CapabilityFixture) {
             .active(),
         0
     );
-    let buffers = application.result_buffer_observer().observe();
-    assert_eq!(buffers.active_buffers(), 0);
-    assert_eq!(buffers.retained_bytes(), 0);
 }

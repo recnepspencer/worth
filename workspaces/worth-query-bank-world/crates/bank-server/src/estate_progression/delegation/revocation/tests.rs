@@ -180,8 +180,8 @@ fn generic_empty_program(
     .unwrap();
     let (result, projection, _) = projected.into_parts();
     result.unwrap();
-    let reads = crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
-        runtime
+    crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
+        let reads = runtime
             .application_runtime()
             .begin_projected_application_read_attempt(
                 phase,
@@ -189,13 +189,10 @@ fn generic_empty_program(
                 projection,
                 ExecutionAllocationPolicy::SystemAllocation,
             )
-    })
-    .unwrap();
-    crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
-        reads.resolve_entity(phase, CapabilityGrantIdentityField::reference(), grant)
-    })
-    .unwrap();
-    crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
+            .unwrap();
+        reads
+            .resolve_entity(phase, CapabilityGrantIdentityField::reference(), grant)
+            .unwrap();
         reads.complete_projected_dependencies(
             phase,
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

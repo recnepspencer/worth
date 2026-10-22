@@ -2,6 +2,7 @@ use std::num::NonZeroUsize;
 
 use bank_domain::schema::ApprovePayment;
 use bank_server::{
+    BankApprovedPaymentAssessment, BankApprovedPaymentAssessmentDemand,
     BankApprovedPaymentAssessmentProgress, BankApprovedPaymentWorkflow,
     BankPaymentAssessmentSettlement,
 };
@@ -17,7 +18,7 @@ use super::support::request_scope;
 use super::{authentication, journey};
 
 #[test]
-fn one_source_reading_settles_and_a_later_call_answers_the_same_demand() {
+fn progressed_stages_settle_and_a_later_call_answers_the_same_demand() {
     let fixture = world();
     let approver = fixture.authenticate(APPROVER);
     let scope = request_scope();
@@ -35,20 +36,17 @@ fn one_source_reading_settles_and_a_later_call_answers_the_same_demand() {
             &key("assessment:settle"),
         )
         .expect("the payment assessment demand starts");
-    assert!(
-        matches!(
-            workflow.advance_payment_assessment(&mut demand),
-            Ok(BankApprovedPaymentAssessmentProgress::Settled(_))
-        ),
-        "one round of one source reading settles the assessment"
-    );
-    let assessment = match workflow.advance_payment_assessment(&mut demand) {
-        Ok(BankApprovedPaymentAssessmentProgress::Settled(settled)) => settled,
-        Ok(BankApprovedPaymentAssessmentProgress::Pending) => {
-            panic!("a settled demand answers its settlement again")
+    let assessment = settle(&fixture, &mut demand);
+    let repeated = match advance(&fixture, &mut demand) {
+        BankApprovedPaymentAssessmentProgress::Settled(repeated) => repeated,
+        BankApprovedPaymentAssessmentProgress::Progressed => {
+            panic!("a settled demand cannot restart native progress");
         }
-        Err(denial) => panic!("a settled demand answers its settlement again: {denial}"),
+        BankApprovedPaymentAssessmentProgress::Pending => {
+            panic!("a settled demand cannot become an external wait");
+        }
     };
+    assert_eq!(repeated.required(), assessment.required());
     require_completed(
         workflow
             .accept_assessment(instance, authority, &assessment, &key("assessment:accept"))
@@ -80,20 +78,16 @@ fn an_undelivered_readiness_reports_pending_and_a_later_call_resumes_the_same_de
         .world
         .runtime
         .delay_next_output_readiness_delivery_for_test();
-    assert!(
-        matches!(
-            workflow.advance_payment_assessment(&mut demand),
-            Ok(BankApprovedPaymentAssessmentProgress::Pending)
-        ),
-        "a readiness delivery that has not arrived is a wait outside the call"
-    );
-    let assessment = match workflow.advance_payment_assessment(&mut demand) {
-        Ok(BankApprovedPaymentAssessmentProgress::Settled(settled)) => settled,
-        Ok(BankApprovedPaymentAssessmentProgress::Pending) => {
-            panic!("the delivered readiness settles the resumed demand")
+    loop {
+        match advance(&fixture, &mut demand) {
+            BankApprovedPaymentAssessmentProgress::Progressed => continue,
+            BankApprovedPaymentAssessmentProgress::Pending => break,
+            BankApprovedPaymentAssessmentProgress::Settled(_) => {
+                panic!("the delayed readiness must expose its actual Pending hold");
+            }
         }
-        Err(denial) => panic!("the resumed demand must keep advancing: {denial}"),
-    };
+    }
+    let assessment = settle(&fixture, &mut demand);
     require_completed(
         workflow
             .accept_assessment(instance, authority, &assessment, &key("assessment:accept"))
@@ -103,7 +97,7 @@ fn an_undelivered_readiness_reports_pending_and_a_later_call_resumes_the_same_de
 }
 
 #[test]
-fn notified_rounds_carry_one_call_to_settlement() {
+fn notified_rounds_preserve_stage_yields_until_settlement() {
     let fixture = world();
     let approver = fixture.authenticate(APPROVER);
     let scope = request_scope();
@@ -125,13 +119,8 @@ fn notified_rounds_carry_one_call_to_settlement() {
         .world
         .runtime
         .delay_next_output_readiness_delivery_for_test();
-    assert!(
-        matches!(
-            workflow.advance_payment_assessment(&mut demand),
-            Ok(BankApprovedPaymentAssessmentProgress::Settled(_))
-        ),
-        "the round the delivery interrupts notifies the demand, so the next round runs"
-    );
+    let settled = settle(&fixture, &mut demand);
+    assert_eq!(settled.required().node_path(), "review/payment");
 }
 
 fn world() -> OrdinaryReadFixture {
@@ -179,4 +168,33 @@ fn policy(attempts: usize, rounds: usize) -> BankPaymentAssessmentSettlement {
         NonZeroUsize::new(attempts).unwrap(),
         NonZeroUsize::new(rounds).unwrap(),
     )
+}
+
+fn advance(
+    fixture: &OrdinaryReadFixture,
+    demand: &mut BankApprovedPaymentAssessmentDemand,
+) -> BankApprovedPaymentAssessmentProgress {
+    let principal = fixture.authenticate(APPROVER);
+    let scope = request_scope();
+    fixture
+        .world
+        .runtime
+        .approved_business_payment(&principal, &scope)
+        .advance_payment_assessment(demand)
+        .expect("fresh actor authority advances the original assessment demand")
+}
+
+fn settle(
+    fixture: &OrdinaryReadFixture,
+    demand: &mut BankApprovedPaymentAssessmentDemand,
+) -> BankApprovedPaymentAssessment {
+    loop {
+        match advance(fixture, demand) {
+            BankApprovedPaymentAssessmentProgress::Settled(settled) => return settled,
+            BankApprovedPaymentAssessmentProgress::Progressed => continue,
+            BankApprovedPaymentAssessmentProgress::Pending => {
+                panic!("the synchronous assessment is waiting for external progress");
+            }
+        }
+    }
 }
