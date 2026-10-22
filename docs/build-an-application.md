@@ -362,7 +362,9 @@ The [canonical binding example](../workspaces/worth-query/crates/worth-query-dec
 derives a nondefault `Span`, validates positive length in both directions and
 distinguishes grammar refusal from explicit policy refusal:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The linked owner test compiles the complete binding.
 worth_query_decl::worth_query_value_binding!(SpanBinding for Span {
     identity: "tests.span.v1",
     scalar: String,
