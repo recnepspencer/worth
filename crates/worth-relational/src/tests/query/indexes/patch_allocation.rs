@@ -9,6 +9,21 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 
+fn memory_lease(memory: u64) -> worth_execution::ExecutionResourceLease<'static> {
+    test_execution_authority()
+        .request_lease(LeaseRequest {
+            policy: ExecutionRequestPolicy::new(
+                ExecutionPosture::Automatic,
+                DeterminismContract::CanonicalBitwise,
+                // This proof isolates memory admission; work has its own funded court.
+                ExecutionBudget::new(NonZeroUsize::MIN, Some(memory), None),
+            ),
+            deadline: None,
+            cancellation: CancellationToken::new(),
+        })
+        .unwrap()
+}
+
 #[test]
 fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
     const ROWS: usize = 2_000;
@@ -68,21 +83,15 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
         ),
         PATCH_BYTES
     );
-    // The singleton scan also holds 320 framework bytes on this lease.
-    const FRAMEWORK_BYTES: u64 = 320;
-    for memory in [PATCH_BYTES + FRAMEWORK_BYTES - 1, MEMORY] {
-        let lease = test_execution_authority()
-            .request_lease(LeaseRequest {
-                policy: ExecutionRequestPolicy::new(
-                    ExecutionPosture::Automatic,
-                    DeterminismContract::CanonicalBitwise,
-                    // This proof isolates memory admission; work has its own funded court.
-                    ExecutionBudget::new(NonZeroUsize::MIN, Some(memory), None),
-                ),
-                deadline: None,
-                cancellation: CancellationToken::new(),
-            })
-            .unwrap();
+    // The singleton scan also holds its own context bytes on this lease shape.
+    // They are Execution's private layout, so they are measured, never restated.
+    let framework_bytes = {
+        let probe = memory_lease(MEMORY);
+        MEMORY - crate::indexes::pass_memory_room(&ExecutionRequest::leased(&probe), MEMORY + 1)
+    };
+    let edge = PATCH_BYTES + framework_bytes - 1;
+    for memory in [edge, MEMORY] {
+        let lease = memory_lease(memory);
         let execution = ExecutionRequest::leased(&lease);
         let mut transaction = test_owner_begin_transaction_for_main(&runtime);
         let mut edits = WorkerIntentBatch::new("two-row-patch");
@@ -108,14 +117,14 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
             },
             &execution,
         );
-        if memory == PATCH_BYTES + FRAMEWORK_BYTES - 1 {
+        if memory == edge {
             let denied = work.unwrap_err();
             assert_eq!(
                 denied.kind,
                 crate::indexes::data::DerivedIndexMaintenanceDenialKind::Execution(
                     crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
-                        requested: 91_988,
-                        admitted: 91_987,
+                        requested: PATCH_BYTES,
+                        admitted: PATCH_BYTES - 1,
                         ancestor: 0,
                     }
                 )

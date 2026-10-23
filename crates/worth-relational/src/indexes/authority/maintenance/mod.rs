@@ -23,7 +23,7 @@ mod reads;
 mod record_metadata;
 mod request_payment;
 #[cfg(test)]
-pub(crate) use request_payment::last_allocation_bytes;
+pub(crate) use request_payment::{last_allocation_bytes, pass_memory_room};
 mod work;
 
 use super::{IndexAuthority, IndexGenerationPublicationBasis};

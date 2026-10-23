@@ -126,3 +126,28 @@ thread_local! {
 pub(crate) fn last_allocation_bytes() -> u64 {
     LAST_ALLOCATION_BYTES.with(std::cell::Cell::get)
 }
+
+/// The memory one maintenance pass on `execution` may reserve for its own
+/// additions: the request's limit less what the pass's execution context
+/// already holds. Measured, not restated, by asking for `beyond_limit` bytes,
+/// which must exceed the request's memory limit.
+#[cfg(test)]
+pub(crate) fn pass_memory_room(execution: &ExecutionRequest<'_, '_>, beyond_limit: u64) -> u64 {
+    let budget = DerivedIndexMaintenanceBudget {
+        maximum_work_units: None,
+        maximum_cold_record_slots: None,
+        maximum_derived_rows: None,
+    };
+    let denial = run(execution, budget, |work| work.prepare(0, beyond_limit))
+        .expect_err("the probe asks for more than the request's memory limit");
+    let Denial::Execution(Cause::PolicyMemoryExhausted {
+        requested,
+        admitted,
+        ancestor: 0,
+    }) = denial.kind
+    else {
+        panic!("the probe must meet the request's own memory limit: {denial:?}");
+    };
+    assert_eq!(requested, beyond_limit);
+    admitted
+}

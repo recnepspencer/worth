@@ -91,7 +91,7 @@ impl<'runtime> IndexAuthority<'runtime> {
 }
 
 #[cfg(test)]
-pub(crate) use maintenance::last_allocation_bytes;
+pub(crate) use maintenance::{last_allocation_bytes, pass_memory_room};
 
 #[cfg(test)]
 pub(crate) use maintenance::two_row_patch_bytes;

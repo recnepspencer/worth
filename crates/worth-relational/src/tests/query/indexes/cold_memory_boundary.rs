@@ -8,7 +8,6 @@ use crate::storage::data::AuthoritativeFieldComparisonKey as Key;
 use std::{mem::size_of, sync::Arc};
 use worth_execution::ExecutionRequest;
 const MEMORY: u64 = 64 * 1024 * 1024;
-const FRAMEWORK: u64 = 312;
 fn height(mut n: usize) -> usize {
     let mut h = 1;
     while n > 64 {
@@ -37,7 +36,14 @@ fn row_bytes() -> usize {
         + 4 * size_of::<usize>()
         + Key::required_encoded_capacity_bytes(&string_aspect_value("row00000")).unwrap() as usize
 }
-fn reconstruct(n: usize, expected: Option<(u64, bool)>) -> u64 {
+fn reconstruction_host() -> worth_execution::SerialRequest {
+    worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(Some(MEMORY)),
+        worth_execution::CancellationToken::new(),
+        None,
+    )
+}
+fn reconstruct(n: usize, expected: Option<(u64, bool)>, room: u64) -> u64 {
     let host = crate::test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let runtime = runtime_with_index_field_aspects();
@@ -83,13 +89,9 @@ fn reconstruct(n: usize, expected: Option<(u64, bool)>) -> u64 {
     let advanced = test_owner_begin_transaction_for_main(&runtime)
         .commit(&execution, &runtime)
         .unwrap();
-    let reconstruction_host = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(Some(MEMORY)),
-        worth_execution::CancellationToken::new(),
-        None,
-    );
+    let memory_host = reconstruction_host();
     let result = runtime.index_authority().reconstruct_for_commit(
-        &ExecutionRequest::serial(&reconstruction_host),
+        &ExecutionRequest::serial(&memory_host),
         DerivedIndexBuildRequest {
             source_commit_id: committed.commit.commit_id,
             branch_id: BranchId("main".into()),
@@ -115,7 +117,8 @@ fn reconstruct(n: usize, expected: Option<(u64, bool)>) -> u64 {
             else {
                 panic!("the first unaffordable memory reservation must refuse: {denied:?}");
             };
-            assert_eq!(admitted, MEMORY - FRAMEWORK);
+            // The real reconstruction meets the room the empty probe measured.
+            assert_eq!(admitted, room);
             assert_eq!(ancestor, 0);
             // The reservation order may change without moving the independently
             // derived largest affordable shape or permitting partial publication.
@@ -146,29 +149,36 @@ fn reconstruct(n: usize, expected: Option<(u64, bool)>) -> u64 {
 fn retained_commit_cold_reconstruction_fits_its_largest_serial_shape() {
     // The single-row run supplies only fixed schema/publication scaffolding;
     // all population growth is independently derived from named allocation prices.
-    let first = reconstruct(1, None);
+    // The serial singleton context's own bytes are Execution's private layout;
+    // the pass's room is measured on the same request shape, never restated.
+    let room = crate::indexes::pass_memory_room(
+        &ExecutionRequest::serial(&reconstruction_host()),
+        MEMORY + 1,
+    );
+    assert!(room < MEMORY);
+    let first = reconstruct(1, None, room);
     let quote = |n: usize| {
         first + (nodes(n) - nodes(1)) as u64 * node() as u64 + (n - 1) as u64 * row_bytes() as u64
     };
-    reconstruct(64, Some((quote(64), true)));
+    reconstruct(64, Some((quote(64), true)), room);
     let mut low: usize = 1;
     let mut high = 100_000;
     while low < high {
         let mid = (low + high).div_ceil(2);
-        if quote(mid) <= MEMORY - FRAMEWORK {
+        if quote(mid) <= room {
             low = mid
         } else {
             high = mid - 1
         }
     }
-    assert!(quote(low) <= MEMORY - FRAMEWORK && quote(low + 1) > MEMORY - FRAMEWORK);
+    assert!(quote(low) <= room && quote(low + 1) > room);
     eprintln!(
-        "cold public rows={low}, fixed={first}, per_row={}, node={}, bytes={}, next={}",
+        "cold public rows={low}, room={room}, fixed={first}, per_row={}, node={}, bytes={}, next={}",
         row_bytes(),
         node(),
         quote(low),
         quote(low + 1)
     );
-    reconstruct(low, Some((quote(low), true)));
-    reconstruct(low + 1, Some((quote(low + 1), false)));
+    reconstruct(low, Some((quote(low), true)), room);
+    reconstruct(low + 1, Some((quote(low + 1), false)), room);
 }

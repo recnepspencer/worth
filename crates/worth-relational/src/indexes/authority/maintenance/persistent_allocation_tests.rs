@@ -11,8 +11,6 @@ use crate::indexes::data::{
 use std::{collections::BTreeMap, mem::size_of, sync::Arc};
 use worth_execution::ExecutionRequest;
 const MEMORY: u64 = 64 * 1024 * 1024;
-// One serial singleton context: fixed worker/activity cells and partition meter.
-const FRAMEWORK: u64 = 312;
 fn height(mut n: usize) -> usize {
     let mut h = 1;
     while n > 64 {
@@ -40,31 +38,39 @@ fn edits(n: usize, insert: bool) -> BTreeMap<u64, Vec<PendingEdit<u64>>> {
         .map(|k| (k, vec![PendingEdit { row: k, insert }]))
         .collect()
 }
+fn serial_host() -> worth_execution::SerialRequest {
+    worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(Some(MEMORY)),
+        worth_execution::CancellationToken::new(),
+        None,
+    )
+}
 #[test]
 fn cold_reconstruction_meets_the_derived_serial_memory_edge() {
+    // The serial singleton context's own bytes are Execution's private layout;
+    // the pass's room is measured on the same request shape, never restated.
+    let room =
+        request_payment::pass_memory_room(&ExecutionRequest::serial(&serial_host()), MEMORY + 1);
+    assert!(room < MEMORY);
     let mut low = 0;
     let mut high = (MEMORY / 48) as usize;
     while low < high {
         let mid = (low + high).div_ceil(2);
-        if full_bytes(mid) <= MEMORY - FRAMEWORK {
+        if full_bytes(mid) <= room {
             low = mid
         } else {
             high = mid - 1
         }
     }
     let rows = low;
-    assert!(full_bytes(rows) <= MEMORY - FRAMEWORK && full_bytes(rows + 1) > MEMORY - FRAMEWORK);
+    assert!(full_bytes(rows) <= room && full_bytes(rows + 1) > room);
     eprintln!(
-        "cold u64 map rows={rows}, bytes={}, next={}",
+        "cold u64 map rows={rows}, room={room}, bytes={}, next={}",
         full_bytes(rows),
         full_bytes(rows + 1)
     );
     for n in [rows, rows + 1] {
-        let host = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(Some(MEMORY)),
-            worth_execution::CancellationToken::new(),
-            None,
-        );
+        let host = serial_host();
         let execution = ExecutionRequest::serial(&host);
         let mut offered = edits(n, true);
         let result = request_payment::run(&execution, budget(), |work| {
@@ -83,15 +89,20 @@ fn cold_reconstruction_meets_the_derived_serial_memory_edge() {
         if n == rows {
             assert_eq!(result.unwrap().0.value.len(), rows);
         } else {
-            assert!(matches!(
-                result.unwrap_err().kind,
-                Denial::Execution(
-                    crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
-                        ancestor: 0,
-                        ..
-                    }
-                )
-            ));
+            let denied = result.unwrap_err();
+            let Denial::Execution(
+                crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                    requested,
+                    admitted,
+                    ancestor: 0,
+                },
+            ) = denied.kind
+            else {
+                panic!("the first unaffordable reservation must refuse: {denied:?}");
+            };
+            // The real pass meets the same room the empty probe measured.
+            assert_eq!(admitted, room);
+            assert!(requested > admitted && requested <= full_bytes(rows + 1));
         }
     }
 }
