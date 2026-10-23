@@ -1,30 +1,39 @@
 use super::*;
 
+/// Preflight work and preparation-byte counters belong to the companion owner
+/// (Query) since ee07da2b0e removed Relational's preflight quota bookkeeping;
+/// Relational's contract is that the owner's counter-overflow stop survives
+/// verbatim as a deferral before any companion effect or native head movement.
 #[derive(Debug, Clone, Copy)]
 enum OverflowMeter {
     Work,
     PreparationBytes,
 }
 
+impl OverflowMeter {
+    const fn stop(self) -> CompanionPreflightStop {
+        match self {
+            Self::Work => CompanionPreflightStop::WorkCounterOverflow,
+            Self::PreparationBytes => CompanionPreflightStop::PreparationMemoryCounterOverflow,
+        }
+    }
+}
+
 #[derive(Debug)]
-struct OverflowCompanion(OverflowMeter);
+struct OverflowCompanion {
+    meter: OverflowMeter,
+    prepared: Arc<AtomicUsize>,
+}
 
 impl RelationalPublicationCompanion for OverflowCompanion {
     fn prepare(
         &self,
         context: &mut PublicationCompanionPreflight<'_>,
     ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
-        match self.0 {
-            OverflowMeter::Work => {
-                context.checkpoint()?;
-                context.checkpoint()?;
-            }
-            OverflowMeter::PreparationBytes => {
-                context.checkpoint()?;
-                context.checkpoint()?;
-            }
-        }
-        panic!("an overflowing preflight charge must stop before a companion effect exists");
+        // The live preflight admits the owner's work before its counter overflows.
+        context.checkpoint()?;
+        self.prepared.fetch_add(1, Ordering::SeqCst);
+        Err(self.meter.stop())
     }
 }
 
@@ -35,13 +44,17 @@ fn preflight_counter_overflow_denies_without_moving_the_native_head() {
 
     for meter in [OverflowMeter::Work, OverflowMeter::PreparationBytes] {
         let runtime = runtime_with_test_schema();
+        let prepared = Arc::new(AtomicUsize::new(0));
         let before = test_owner_main_basis(&runtime).expect("main branch has owner basis");
         let pending = runtime
             .publication_companion_port()
             .begin_required_registration()
             .expect("required registration starts");
         let _registration = pending
-            .activate(Arc::new(OverflowCompanion(meter)))
+            .activate(Arc::new(OverflowCompanion {
+                meter,
+                prepared: Arc::clone(&prepared),
+            }))
             .expect("overflow fixture is active");
         let mut transaction = test_owner_begin_transaction_for_main(&runtime);
         transaction
@@ -56,12 +69,12 @@ fn preflight_counter_overflow_denies_without_moving_the_native_head() {
         let outcome = runtime
             .publication_port()
             .compare_and_publish(execution, candidate);
-        let expected = match meter {
-            OverflowMeter::Work => CompanionPreflightStop::WorkCounterOverflow,
-            OverflowMeter::PreparationBytes => {
-                CompanionPreflightStop::PreparationMemoryCounterOverflow
-            }
-        };
+        let expected = meter.stop();
+        assert_eq!(
+            prepared.load(Ordering::SeqCst),
+            1,
+            "the companion owner must run its preflight exactly once"
+        );
         assert!(matches!(
             outcome,
             RelationalPublicationOutcome::Deferred(
