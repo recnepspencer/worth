@@ -138,3 +138,15 @@ fn leased_execution_is_typed_at_the_effect_boundary() {
         } if partition_identity == source
     ));
 }
+
+#[test]
+fn accounting_unavailable_uses_the_effect_allocation_resource_lane() {
+    let class = worth_execution::ExecutionAllocationDenialClass::Request(
+        worth_execution::WorkCeilingDenial::Stopped(
+            worth_execution::MapKernelStop::AccountingUnavailable,
+        ),
+    );
+    // The allocation owner cannot currently emit this class. Exercise the
+    // exhaustive classification here without fabricating an owner denial.
+    assert_eq!(allocation_control_stop(class), None);
+}

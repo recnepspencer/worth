@@ -229,24 +229,7 @@ pub(super) fn publication_failure(
 fn allocation_failure(
     denial: &worth_execution::ExecutionAllocationDenial,
 ) -> RelationalEffectExecutionFailure {
-    use worth_execution::{
-        ExecutionAllocationDenialClass as Class, MapKernelStop as Stop,
-        WorkCeilingDenial as Request,
-    };
-    let control = match denial.classify() {
-        Class::Request(Request::Stopped(Stop::Cancelled)) => {
-            Some(super::EffectExecutionControlStopKind::Cancelled)
-        }
-        Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => {
-            Some(super::EffectExecutionControlStopKind::TimedOut)
-        }
-        Class::Request(Request::Admission(_))
-        | Class::Request(Request::Stopped(
-            Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped,
-        ))
-        | Class::Request(Request::Panicked)
-        | Class::Physical(_) => None,
-    };
+    let control = allocation_control_stop(denial.classify());
     if let Some(kind) = control {
         RelationalEffectExecutionFailure::ControlStopped {
             kind,
@@ -260,6 +243,32 @@ fn allocation_failure(
             },
             message: denial.to_string(),
         }
+    }
+}
+
+fn allocation_control_stop(
+    class: worth_execution::ExecutionAllocationDenialClass,
+) -> Option<super::EffectExecutionControlStopKind> {
+    use worth_execution::{
+        ExecutionAllocationDenialClass as Class, MapKernelStop as Stop,
+        WorkCeilingDenial as Request,
+    };
+    match class {
+        Class::Request(Request::Stopped(Stop::Cancelled)) => {
+            Some(super::EffectExecutionControlStopKind::Cancelled)
+        }
+        Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => {
+            Some(super::EffectExecutionControlStopKind::TimedOut)
+        }
+        Class::Request(Request::Admission(_))
+        | Class::Request(Request::Stopped(
+            Stop::WorkCounterOverflow
+            | Stop::AccountingUnavailable
+            | Stop::WorkCeiling
+            | Stop::NestedStopped,
+        ))
+        | Class::Request(Request::Panicked)
+        | Class::Physical(_) => None,
     }
 }
 

@@ -26,7 +26,9 @@ fn checkpoint(cause: MapKernelStop, stage_identity: Option<String>) -> WorkflowF
         MapKernelStop::DeadlineElapsed => {
             WorkflowFrontierFailure::Denied(Denial::ComputationDeadline { stage_identity })
         }
-        MapKernelStop::WorkCounterOverflow | MapKernelStop::WorkCeiling => {
+        MapKernelStop::WorkCounterOverflow
+        | MapKernelStop::AccountingUnavailable
+        | MapKernelStop::WorkCeiling => {
             WorkflowFrontierFailure::Denied(Denial::ComputationWorkExhausted {
                 stage_identity,
                 cause,
@@ -35,6 +37,39 @@ fn checkpoint(cause: MapKernelStop, stage_identity: Option<String>) -> WorkflowF
         MapKernelStop::NestedStopped => {
             WorkflowFrontierFailure::Denied(Denial::ComputationNestedStopped { stage_identity })
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn worker_only_accounting_stop_keeps_the_workflow_resource_cause() {
+        use worth_execution::{
+            CancellationToken, ExecutionRequest, ExecutionResourceLease, LeaseRequest,
+        };
+        use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequestPolicy};
+        let lease = ExecutionResourceLease::serial(LeaseRequest {
+            policy: ExecutionRequestPolicy::for_workers(
+                ExecutionPosture::Serial,
+                DeterminismContract::CanonicalBitwise,
+                std::num::NonZeroUsize::MIN,
+            ),
+            cancellation: CancellationToken::new(),
+            deadline: None,
+        })
+        .unwrap();
+        let stop = ExecutionRequest::leased(&lease)
+            .run_native_with_checkpoint(|context| context.checkpoint(1))
+            .unwrap_err();
+        assert!(matches!(
+            scope(stop),
+            WorkflowFrontierFailure::Denied(Denial::ComputationWorkExhausted {
+                stage_identity: None,
+                cause: MapKernelStop::AccountingUnavailable,
+            })
+        ));
     }
 }
 pub(super) fn scope(cause: WorkCeilingDenial) -> WorkflowFrontierFailure {

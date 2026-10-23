@@ -167,28 +167,39 @@ pub(super) fn commit(
 fn allocation_kind(
     denial: &worth_execution::ExecutionAllocationDenial,
 ) -> WorthQueryWorkspaceErrorKind {
+    allocation_control_stop(denial.classify()).unwrap_or(
+        WorthQueryWorkspaceErrorKind::TransactionAllocationDenied {
+            kind: denial.kind(),
+            requested_payload_bytes: denial.requested_payload_bytes(),
+        },
+    )
+}
+fn allocation_control_stop(
+    class: worth_execution::ExecutionAllocationDenialClass,
+) -> Option<WorthQueryWorkspaceErrorKind> {
     use worth_execution::{
         ExecutionAllocationDenialClass as Class, MapKernelStop as Stop,
         WorkCeilingDenial as Request,
     };
-    match denial.classify() {
-        Class::Request(Request::Stopped(Stop::Cancelled)) => {
-            control_kind(worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled)
-        }
-        Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => {
-            control_kind(worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut)
-        }
+    match class {
+        Class::Request(Request::Stopped(Stop::Cancelled)) => Some(control_kind(
+            worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled,
+        )),
+        Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => Some(control_kind(
+            worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut,
+        )),
         Class::Request(Request::Admission(_))
         | Class::Request(Request::Stopped(
-            Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped,
+            Stop::WorkCounterOverflow
+            | Stop::AccountingUnavailable
+            | Stop::WorkCeiling
+            | Stop::NestedStopped,
         ))
         | Class::Request(Request::Panicked)
-        | Class::Physical(_) => WorthQueryWorkspaceErrorKind::TransactionAllocationDenied {
-            kind: denial.kind(),
-            requested_payload_bytes: denial.requested_payload_bytes(),
-        },
+        | Class::Physical(_) => None,
     }
 }
+
 fn control_kind(
     stop: worth_relational::facade::mvcc::RelationalOperationInterruption,
 ) -> WorthQueryWorkspaceErrorKind {
@@ -204,6 +215,18 @@ fn control_kind(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn accounting_unavailable_uses_the_workspace_allocation_resource_lane() {
+        let class = worth_execution::ExecutionAllocationDenialClass::Request(
+            worth_execution::WorkCeilingDenial::Stopped(
+                worth_execution::MapKernelStop::AccountingUnavailable,
+            ),
+        );
+        // The allocation owner cannot currently emit this class. Exercise the
+        // exhaustive classification here without fabricating an owner denial.
+        assert_eq!(allocation_control_stop(class), None);
+    }
+
     #[test]
     fn leased_execution_is_typed_at_the_workspace_boundary() {
         let host_request = crate::test_execution_policy::serial_request();
