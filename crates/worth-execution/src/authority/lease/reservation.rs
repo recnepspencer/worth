@@ -8,6 +8,9 @@ use std::sync::Arc;
 
 use super::{room, ExecutionResourceLease, LeaseDenial, ReservedMemory, ResourceReservation};
 
+#[cfg(test)]
+mod tests;
+
 /// What a reservation does when the workers it claims are taken.
 pub(in crate::authority) trait OnBusy {
     type Refusal: From<LeaseDenial>;
@@ -119,10 +122,9 @@ impl ExecutionResourceLease<'_> {
         if let Some(bytes) = memory_bytes {
             ledger.charged_memory_bytes += bytes;
         }
-        for node in lineage
-            .iter()
-            .filter(|node| memory_bytes.is_some() || worker_nodes.contains(&node.id))
-        {
+        for node in lineage.iter().filter(|node| {
+            memory_bytes.is_some_and(|bytes| bytes != 0) || worker_nodes.contains(&node.id)
+        }) {
             let usage = ledger.nodes.entry(node.id).or_default();
             if worker_nodes.contains(&node.id) {
                 usage.active_workers += worker_count_per_node;
@@ -134,7 +136,13 @@ impl ExecutionResourceLease<'_> {
         Ok(ResourceReservation {
             authority: Arc::clone(&self.authority),
             memory: memory_bytes.map(|bytes| ReservedMemory {
-                lineage: lineage.iter().map(|node| node.id).collect(),
+                // A zero-byte claim owns no ledger node. Another reservation may
+                // remove an otherwise idle node before this claim is dropped.
+                lineage: if bytes == 0 {
+                    Vec::new()
+                } else {
+                    lineage.iter().map(|node| node.id).collect()
+                },
                 bytes,
             }),
             worker_lineage: worker_nodes,
