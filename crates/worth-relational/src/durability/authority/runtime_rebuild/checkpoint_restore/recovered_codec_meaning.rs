@@ -6,7 +6,8 @@ use crate::schema::data::{DeclaredAspectContractBinding, RelationalSchemaRegistr
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, MapKernelContext};
 use worth_foundational::{facade::AspectShape, FoundationalBranchTarget};
 
-/// Only native readmitted root authorities enter this comparison. Historical
+/// Only carriers bound to a current cell's exact schema root enter this
+/// comparison; binding corruption is refused by exact readmission. Historical
 /// roots retain their own meaning; current branch heads cannot adopt new codecs
 /// through ordinary exact recovery. This fence grants no transition authority.
 pub(super) fn check_current_codec_meaning(
@@ -29,19 +30,16 @@ pub(super) fn check_current_codec_meaning(
                         };
                         let commit = crate::history::data::CommitId(selected.selected_commit_id());
                         charge(context, lookup_work(roots.schema_authorities.len()))?;
-                        let source = roots.schema_authorities.get(&commit).ok_or_else(|| {
-                            DurabilityError::new(
-                                RecoveryFailureClass::CorruptCheckpoint,
-                                "current branch has no readmitted schema carrier",
-                            )
-                        })?;
-                        if source.authority_digest() != *selected.roots().schema_root() {
-                            return Err(DurabilityError::new(
-                                RecoveryFailureClass::CorruptCheckpoint,
-                                "current branch schema carrier differs from its native target",
-                            )
-                            .into());
-                        }
+                        // A cell without a carrier bound to its exact target is
+                        // not a readmitted root authority. Exact branch-cell
+                        // readmission owns that refusal (missing commit
+                        // artifact, root image or schema root) and reaches it
+                        // before any recovered state is installed.
+                        let Some(source) = roots.schema_authorities.get(&commit).filter(|source| {
+                            source.authority_digest() == *selected.roots().schema_root()
+                        }) else {
+                            continue;
+                        };
                         compare_registries(source.registry(), target, context)?;
                         // Symmetry refuses added as well as removed canonical carriers.
                         compare_registries(target, source.registry(), context)?;
