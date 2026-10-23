@@ -13,7 +13,7 @@ use worth_relational::facade::identity::KindId;
 use worth_relational::facade::transactions::RecordRef;
 
 /// One retained field pre-image bound into the strengthened commit receipt.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct WorthQueryRetainedPreImageField {
     locus: InstalledPreImageLocus,
     value: AspectValue,
@@ -51,11 +51,27 @@ impl WorthQueryRetainedPreImageField {
 }
 
 /// Exact pre-image slice retained for a recorded inverse (R8.2).
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct WorthQueryRetainedPreImage {
     fields: Vec<WorthQueryRetainedPreImageField>,
     total_encoded_bytes: usize,
     _private: (),
+}
+
+impl std::fmt::Debug for WorthQueryRetainedPreImage {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("WorthQueryRetainedPreImage")
+            .finish_non_exhaustive()
+    }
+}
+
+impl std::fmt::Debug for WorthQueryRetainedPreImageField {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("WorthQueryRetainedPreImageField")
+            .finish_non_exhaustive()
+    }
 }
 
 impl WorthQueryRetainedPreImage {

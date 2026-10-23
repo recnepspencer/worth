@@ -1,7 +1,7 @@
 //! Both identities of one mutation request, encoded once beside the request.
 
 mod owned;
-pub use owned::ApplicationOwnedMutationIdentities;
+pub use owned::{ApplicationEncodedMutationKey, ApplicationOwnedMutationIdentities};
 
 use std::{fmt::Debug, marker::PhantomData};
 
@@ -13,6 +13,29 @@ use super::{
 };
 use crate::application_operation::ApplicationMutationBinding;
 use crate::application_schema::{ApplicationSchema, ApplicationValueEncodeDenial};
+
+enum MutationInput<'request, Input> {
+    Borrowed(&'request Input),
+    Shared(super::ApplicationSharedInput<Input>),
+}
+
+impl<Input> Clone for MutationInput<'_, Input> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Borrowed(input) => Self::Borrowed(input),
+            Self::Shared(input) => Self::Shared(input.clone()),
+        }
+    }
+}
+
+impl<Input> AsRef<Input> for MutationInput<'_, Input> {
+    fn as_ref(&self) -> &Input {
+        match self {
+            Self::Borrowed(input) => input,
+            Self::Shared(input) => input.as_ref(),
+        }
+    }
+}
 
 /// Which part of a mutation request could not be encoded into its identity.
 ///
@@ -64,8 +87,8 @@ pub(super) fn admitted_denial<E: Debug>(
 /// One request to `Binding`: its client key and input together with the
 /// identities encoded from exactly those two values.
 ///
-/// Only [`encode`](Self::encode) makes one, so the identities always describe
-/// the key and input they travel with. Whatever decides on the input, from the
+/// Encoding derives the identities from the request; [`with_encoded_input`](Self::with_encoded_input)
+/// instead shares the payload and identity of an already encoded input. Whatever decides on the input, from the
 /// handler to the idempotency binding, reads that input and those identities
 /// from this one value; there is no way to pair the identities of one request
 /// with the input of another. The binding type travels with them, so they
@@ -76,7 +99,7 @@ where
     Binding: ApplicationMutationBinding<Schema>,
 {
     key: &'request Binding::IdempotencyKey,
-    input: &'request Binding::Input,
+    input: MutationInput<'request, Binding::Input>,
     key_identity: [u8; 32],
     input_identity: [u8; 32],
     work: ApplicationCanonicalWork,
@@ -94,7 +117,7 @@ where
     fn clone(&self) -> Self {
         Self {
             key: self.key,
-            input: self.input,
+            input: self.input.clone(),
             key_identity: self.key_identity,
             input_identity: self.input_identity,
             work: self.work,
@@ -151,7 +174,7 @@ where
             .map_err(ApplicationMutationIdentityDenial::Input)?;
         Ok(Self {
             key,
-            input,
+            input: MutationInput::Borrowed(input),
             key_identity: key_identity.identity(),
             input_identity: input_identity.identity(),
             work: key_identity.work().combine(input_identity.work()),
@@ -188,7 +211,7 @@ where
             input_identity_admitted::<Binding::InputBinding, _, _>(input, admission)?;
         Ok(Self {
             key,
-            input,
+            input: MutationInput::Borrowed(input),
             key_identity: key_identity.identity(),
             input_identity: input_identity.identity(),
             work: key_identity.work().combine(input_identity.work()),
@@ -203,15 +226,16 @@ where
     /// share of the work: `canonical_work` reports the key's derivation and
     /// whatever work `input` still had to report, so an input encoded when a
     /// request bound its workflow requirement is counted once, here.
+    /// The shared payload remains owned after the encoded wrapper is dropped.
     pub fn with_encoded_input(
         key: &'request Binding::IdempotencyKey,
-        input: &'request ApplicationEncodedInput<Binding::InputBinding>,
+        input: &ApplicationEncodedInput<Binding::InputBinding>,
     ) -> Result<Self, ApplicationMutationIdentityDenial> {
         let key_identity = application_mutation_key_identity::<Schema, Binding>(key)
             .map_err(ApplicationMutationIdentityDenial::Key)?;
         Ok(Self {
             key,
-            input: input.input(),
+            input: MutationInput::Shared(input.shared_input().clone()),
             key_identity: key_identity.identity(),
             input_identity: *input.identity(),
             work: key_identity.work().combine(input.canonical_work()),
@@ -229,11 +253,18 @@ where
     where
         Binding::Input: Clone,
     {
-        ApplicationEncodedInput::reported_elsewhere(
-            self.input.clone(),
-            self.input_identity,
-            self.capture.clone(),
-        )
+        match &self.input {
+            MutationInput::Borrowed(input) => ApplicationEncodedInput::reported_elsewhere(
+                (*input).clone(),
+                self.input_identity,
+                self.capture.clone(),
+            ),
+            MutationInput::Shared(input) => ApplicationEncodedInput::reported_shared_elsewhere(
+                input.clone(),
+                self.input_identity,
+                self.capture.clone(),
+            ),
+        }
     }
 
     /// The client idempotency key these identities were encoded from.
@@ -242,8 +273,8 @@ where
     }
 
     /// The mutation input these identities were encoded from.
-    pub const fn mutation_input(&self) -> &'request Binding::Input {
-        self.input
+    pub fn mutation_input(&self) -> &Binding::Input {
+        self.input.as_ref()
     }
 
     /// Identity of the client idempotency key, scoped to the binding's key namespace.

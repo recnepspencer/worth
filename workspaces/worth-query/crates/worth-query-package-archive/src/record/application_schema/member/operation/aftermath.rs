@@ -17,6 +17,8 @@ use super::super::super::wire_vocabulary::{
     decode_optional, decode_usize, write_optional, write_usize,
 };
 
+mod inverse_binding;
+
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     contract: &PortableApplicationAftermathContract,
@@ -25,12 +27,17 @@ pub(super) fn write(
     write_optional(output, contract.mechanism(), write_mechanism)?;
     write_optional(output, contract.reconciliation(), |output, value| {
         output.text(value.procedure_slot())
-    })
+    })?;
+    if let Some(binding) = contract.inverse_binding() {
+        inverse_binding::write(output, binding)?;
+    }
+    Ok(())
 }
 
 pub(super) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
+    has_inverse_binding: bool,
 ) -> Result<PortableApplicationAftermathContract, Denial> {
     let authority = authority_from_tag(input.u16()?)?;
     let mechanism = match input.u16()? {
@@ -42,11 +49,16 @@ pub(super) fn decode(
         DeclaredReconciliationProcedure::new(input.text()?.to_owned())
             .map_err(|_| Denial::new(Kind::InvalidRecordShape))
     })?;
-    Ok(PortableApplicationAftermathContract::from_untrusted_fields(
+    let contract = PortableApplicationAftermathContract::from_untrusted_fields(
         authority,
         mechanism,
         reconciliation,
-    ))
+    );
+    Ok(if has_inverse_binding {
+        contract.with_untrusted_inverse_binding(inverse_binding::decode(input, budget)?)
+    } else {
+        contract
+    })
 }
 
 fn write_mechanism(

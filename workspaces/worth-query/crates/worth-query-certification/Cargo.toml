@@ -75,6 +75,12 @@ path = "examples/authored_workflow/main.rs"
 test = true
 harness = false
 
+[[example]]
+name = "application_correction"
+path = "examples/application_correction.rs"
+test = true
+harness = false
+
 [[test]]
 name = "program_example_authority"
 path = "tests/program_example_authority.rs"

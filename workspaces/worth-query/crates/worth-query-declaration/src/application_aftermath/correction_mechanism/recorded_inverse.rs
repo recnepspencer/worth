@@ -249,6 +249,23 @@ pub struct DeclaredRecordedInverse<Schema> {
 }
 
 impl<Schema> DeclaredRecordedInverse<Schema> {
+    pub(crate) fn from_binding<Correction>() -> Self
+    where
+        Schema: crate::application_schema::ApplicationSchema,
+        Correction: super::super::ApplicationCorrectionBinding<Schema>,
+    {
+        use crate::application_operation::ApplicationMutationBinding;
+        let inverse = super::super::ApplicationInverseBinding::<Schema, Correction>::descriptor();
+        Self {
+            inverse_operation_slot: inverse.operation_name().to_owned(),
+            lowering_correspondence: DeclaredLoweringCorrespondenceRef {
+                correspondence_slot: Correction::IDENTITY.to_owned(),
+            },
+            postcondition: DeclaredAftermathPostcondition::ExactPriorTruth,
+            preimage_demand: Correction::preimage_demand(),
+        }
+    }
+
     pub fn new(
         inverse_operation_slot: impl Into<String>,
         lowering_correspondence: DeclaredLoweringCorrespondenceRef,

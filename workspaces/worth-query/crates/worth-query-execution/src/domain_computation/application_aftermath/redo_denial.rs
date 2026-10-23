@@ -3,6 +3,8 @@
 /// Typed redo denial. Each variant is a distinct cause — no shared fallback.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryRedoDenialKind {
+    /// This association requires fresh disclosure through the ordinary correction entry.
+    DeclaredDisclosureRequired,
     ForeignPhase,
     /// Binding or intent is stale against current truth.
     Stale,

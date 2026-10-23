@@ -212,11 +212,12 @@ fn input_guard_readmits_as_authored_meaning_not_a_host_callback() {
     }
     assert!(changed, "the guard must declare its exact read");
     parts.members.sort();
-    assert_eq!(
+    assert!(matches!(
         validate_portable_application_schema_freshly(
             WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts)
         )
         .unwrap_err(),
-        ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency
-    );
+        ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency { operation, .. }
+            if operation == "SetRetention"
+    ));
 }

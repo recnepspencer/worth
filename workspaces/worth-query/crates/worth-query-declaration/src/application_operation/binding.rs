@@ -28,7 +28,7 @@ pub use identity::{
     application_value_identity, ApplicationCanonicalIdentity, ApplicationCanonicalInput,
     ApplicationCanonicalInputDenial, ApplicationCanonicalInputScalar, ApplicationCanonicalWork,
     ApplicationComputationPartitionIdentity, ApplicationComputationPartitionIdentityDenial,
-    ApplicationEncodedInput, ApplicationMutationIdentities,
+    ApplicationEncodedInput, ApplicationEncodedMutationKey, ApplicationMutationIdentities,
     ApplicationMutationIdentityAdmittedDenial, ApplicationMutationIdentityDenial,
     ApplicationOwnedMutationIdentities, ApplicationSharedInput, ApplicationValueIdentityDomain,
     CanonicalEncodingCharge,

@@ -87,6 +87,25 @@ impl RuntimeWorldObservationPort {
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
 
+    /// Selects one retained source on this exact target's inherited ancestry.
+    /// Traversal follows parent links under the original execution request.
+    pub fn select_product_branch_ancestor(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        target: &crate::branch::ProductBranchObservation,
+        source: &crate::identity::CompositeCommitIdentity,
+        maximum: Option<std::num::NonZeroUsize>,
+    ) -> Result<
+        crate::branch::ProductBranchAncestorSelection,
+        super::super::RuntimeWorldServiceDenial<
+            crate::branch::ProductBranchAncestorSelectionDenial,
+        >,
+    > {
+        self.service()?
+            .select_product_branch_ancestor(execution, target, source, maximum)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
     pub fn trace_product_branch_ancestry(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

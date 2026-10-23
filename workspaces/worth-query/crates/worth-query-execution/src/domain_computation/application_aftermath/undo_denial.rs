@@ -3,6 +3,8 @@
 /// Typed undo denial. Each variant is a distinct cause — no shared fallback.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryUndoDenialKind {
+    /// This association requires fresh disclosure through the ordinary correction entry.
+    DeclaredDisclosureRequired,
     /// Legal hold / irreversible legal classification.
     IrreversibleLegal,
     /// Audit retention forbids reversal.

@@ -31,6 +31,7 @@ pub use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 pub use crate::branch::{
     ComponentBranchTarget, CurrentProductHead, CustodyComponent, NoEffectRuntimeWorldBootstrap,
     OwnerCreatedComponentCustodyRecord, OwnerRetirementWork, PerformedRuntimeWorldBootstrap,
+    ProductBranchAncestorSelection, ProductBranchAncestorSelectionDenial,
     ProductBranchCreationIntent, ProductBranchCreationPlans, ProductBranchCurrentnessFailure,
     ProductBranchHistoryTraversal, ProductBranchName, ProductBranchNameDenial,
     ProductBranchObservation, ProductBranchObservationMismatch,
@@ -50,8 +51,8 @@ pub use crate::budget::{
 };
 
 pub use crate::history::{
-    CompositeCallerCorrelation, CompositeCommitParent, CompositeCommitProvenance,
-    CompositeComponentChangePosture, CompositeHistoryCatalogDenial,
+    CompositeAncestorSelectionDenial, CompositeCallerCorrelation, CompositeCommitParent,
+    CompositeCommitProvenance, CompositeComponentChangePosture, CompositeHistoryCatalogDenial,
     CompositeHistoryReclamationRequest, CompositeHistoryTraversal, CompositeRuntimeWorldCommit,
     CompositeSignalPublicationIdentity, HistoryCatalogCounters, HistoryMetadataLedger,
     HistoryReclamationDenial, HistoryReclamationOutcome, OrdinaryParent,

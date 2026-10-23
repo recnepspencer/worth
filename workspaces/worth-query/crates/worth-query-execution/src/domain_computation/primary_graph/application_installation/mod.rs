@@ -7,6 +7,7 @@ mod denial;
 mod limits;
 mod profile;
 mod program;
+pub(in crate::domain_computation::primary_graph) use program::WorthQuerySupportedProgramRecord;
 pub(in crate::domain_computation::primary_graph) mod program_admission;
 pub use super::bootstrap::checkpoint_transition::{
     WorthQueryCheckpointMigrationWriter, WorthQueryCheckpointProgramPredecessor,

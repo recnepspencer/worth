@@ -24,6 +24,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         {
             return outcome;
         }
+        let Some(support) = self.program_support.as_ref() else {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::application_program_required(),
+            );
+        };
+        let program = match program.retain_original_program(support, presented.revision()) {
+            Ok(program) => program,
+            Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
+        };
         self.compare_and_commit_application_with_output_observation(
             execution,
             phase,
@@ -124,6 +133,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ),
             );
         }
+        let program = match program.retain_original_program(support, occurrence.entry().revision())
+        {
+            Ok(program) => program,
+            Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
+        };
         self.compare_and_commit_application_with_causality(
             execution,
             phase,

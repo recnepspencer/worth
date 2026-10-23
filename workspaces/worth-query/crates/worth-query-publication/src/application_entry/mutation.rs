@@ -1,6 +1,7 @@
 mod attempt;
 pub(in crate::application_entry) mod authorization;
 mod authorization_assessment;
+pub(in crate::application_entry) mod captured_input;
 pub(in crate::application_entry) mod commit_binding;
 mod discovered;
 mod execution;
@@ -8,7 +9,7 @@ mod outcome;
 mod performed;
 mod performed_outputs;
 mod performed_source;
-mod preparation;
+pub(in crate::application_entry) mod preparation;
 mod prepared_program;
 pub(in crate::application_entry) mod program_output_continuation;
 mod program_output_settlement;

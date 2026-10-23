@@ -75,7 +75,7 @@ where
         let installed =
             install_rostered_application_program(self.program, installed_schema, roster)?;
         Ok(WorthQuerySupportedProgramRecord::installed(
-            installed,
+            std::sync::Arc::new(installed),
             &output_sources,
             &Program::Outputs::root_graph_types()
                 .into_iter()

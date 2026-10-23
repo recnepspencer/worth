@@ -1,6 +1,6 @@
 use super::super::provider_execution::{
-    progression_denied, WorthQueryProviderAttemptRegistrationContext, WorthQueryProviderProgressionOutcome,
-    WorthQueryRegisteredProviderAttempt,
+    progression_denied, WorthQueryProviderAttemptRegistrationContext,
+    WorthQueryProviderProgressionOutcome, WorthQueryRegisteredProviderAttempt,
 };
 use super::super::WorthQueryApplicationCommitDenialStage as DenialStage;
 use super::WorthQueryPreparedApplicationProviderAttempt;
@@ -17,6 +17,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAtt
     decision_facts: crate::domain_computation::authorization::WorthQueryProviderDecisionFactBinding,
     effects: super::effect_accumulator::WorthQueryRegisteredProviderEffects,
     idempotency: super::super::WorthQueryApplicationIdempotencyBinding,
+    original_authority: std::sync::Arc<super::super::WorthQueryApplicationCommitAuthorityBinding>,
     outcome_identity: super::super::WorthQueryApplicationCommitOutcomeIdentity,
     retained_authorization_fact_count: usize,
     external_effect: &'a worth_query_installation::facade::InstalledExternalEffectContract,
@@ -103,6 +104,15 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
     }
     let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(context.admission(&inspection).publication_request(), allocation_policy);
     let control = crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(context.admission(&inspection).publication_request()));
+    // The completed handler payload precedes fresh authorization's overlay.
+    // Correctable ordinary sources retain all semantic reads, including the
+    // projected prefix, rather than only output-source observations.
+    let correction_facts = context
+        .admission(&inspection)
+        .allowed_graph_contract()
+        .aftermath()
+        .filter(|contract| contract.correction_disclosure().is_some())
+        .map(|_| facts.clone());
     let application = crate::domain_computation::primary_graph::CompletedApplicationFacts::new(
         installed_read_scopes,
         facts,
@@ -134,6 +144,9 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
     let source_fact_rebase = match match &output_currentness_facts {
         Some(facts) => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit_output(
             facts.facts().clone(), facts.moved_by_own_effect(), facts.rebase_carry(), control,
+        ),
+        None if correction_facts.is_some() => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit_correction(
+            correction_facts.expect("declared correction retained the completed payload"), control,
         ),
         None => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit(
             decision_facts.facts().explicit_values().filter_map(|fact| fact.observed_source_fact().cloned()).collect(),
@@ -173,6 +186,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
             decision_facts,
             effects,
             idempotency: context.idempotency(&inspection),
+            original_authority: context.original_authority(&inspection),
             outcome_identity: context.outcome_identity(&inspection),
             retained_authorization_fact_count: context
                 .admission(&inspection)

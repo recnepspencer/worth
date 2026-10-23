@@ -3,6 +3,8 @@
 mod committed_changes;
 mod construction;
 pub use committed_changes::WorthQueryApplicationCommittedChanges;
+#[cfg(doctest)]
+mod disclosure_fences;
 mod output_source_identity;
 mod pending;
 mod projection;
@@ -304,8 +306,13 @@ impl WorthQueryApplicationCommitReceipt {
         self.authority_binding.idempotency_binding()
     }
 
-    pub const fn retained_preimage(&self) -> Option<&WorthQueryRetainedPreImage> {
+    pub(crate) const fn retained_preimage(&self) -> Option<&WorthQueryRetainedPreImage> {
         self.retained_preimage.as_ref()
+    }
+
+    /// Whether the performed occurrence retained values for a declared correction.
+    pub const fn has_retained_preimage(&self) -> bool {
+        self.retained_preimage.is_some()
     }
 
     pub const fn aftermath_causality(&self) -> Option<&WorthQueryCommittedAftermathCausality> {

@@ -16,6 +16,7 @@ pub struct DeclaredApplicationAftermathContract<Schema> {
     authority: DeclaredCorrectionAuthority,
     mechanism: Option<DeclaredCorrectionMechanism<Schema>>,
     reconciliation: Option<DeclaredReconciliationProcedure>,
+    inverse_binding: Option<super::DeclaredInverseBinding>,
 }
 
 impl<Schema> Clone for DeclaredApplicationAftermathContract<Schema> {
@@ -24,6 +25,7 @@ impl<Schema> Clone for DeclaredApplicationAftermathContract<Schema> {
             authority: self.authority,
             mechanism: self.mechanism.clone(),
             reconciliation: self.reconciliation.clone(),
+            inverse_binding: self.inverse_binding.clone(),
         }
     }
 }
@@ -35,6 +37,7 @@ impl<Schema> std::fmt::Debug for DeclaredApplicationAftermathContract<Schema> {
             .field("authority", &self.authority)
             .field("mechanism", &self.mechanism)
             .field("reconciliation", &self.reconciliation)
+            .field("inverse_binding", &self.inverse_binding)
             .finish()
     }
 }
@@ -44,6 +47,7 @@ impl<Schema> PartialEq for DeclaredApplicationAftermathContract<Schema> {
         self.authority == other.authority
             && self.mechanism == other.mechanism
             && self.reconciliation == other.reconciliation
+            && self.inverse_binding == other.inverse_binding
     }
 }
 
@@ -57,11 +61,18 @@ impl<Schema> PartialOrd for DeclaredApplicationAftermathContract<Schema> {
 
 impl<Schema> Ord for DeclaredApplicationAftermathContract<Schema> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        (&self.authority, &self.mechanism, &self.reconciliation).cmp(&(
-            &other.authority,
-            &other.mechanism,
-            &other.reconciliation,
-        ))
+        (
+            &self.authority,
+            &self.mechanism,
+            &self.reconciliation,
+            &self.inverse_binding,
+        )
+            .cmp(&(
+                &other.authority,
+                &other.mechanism,
+                &other.reconciliation,
+                &other.inverse_binding,
+            ))
     }
 }
 
@@ -71,6 +82,7 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
             authority: DeclaredCorrectionAuthority::RuntimeAlone,
             mechanism: Some(mechanism),
             reconciliation: None,
+            inverse_binding: None,
         }
     }
 
@@ -82,6 +94,7 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
             authority: DeclaredCorrectionAuthority::RuntimeWithExternalOwner,
             mechanism: Some(mechanism),
             reconciliation: Some(reconciliation),
+            inverse_binding: None,
         }
     }
 
@@ -90,11 +103,28 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
             authority: DeclaredCorrectionAuthority::NotCorrectable,
             mechanism: None,
             reconciliation: None,
+            inverse_binding: None,
         }
     }
 
     pub const fn authority(&self) -> DeclaredCorrectionAuthority {
         self.authority
+    }
+
+    /// Derives capture and inverse association from the same typed declaration.
+    pub fn recorded_inverse_binding<Correction>() -> Self
+    where
+        Schema: crate::application_schema::ApplicationSchema,
+        Correction: super::ApplicationCorrectionBinding<Schema>,
+    {
+        Self {
+            authority: DeclaredCorrectionAuthority::RuntimeAlone,
+            mechanism: Some(super::DeclaredCorrectionMechanism::RecordedInverse(
+                super::DeclaredRecordedInverse::from_binding::<Correction>(),
+            )),
+            reconciliation: None,
+            inverse_binding: Some(super::DeclaredInverseBinding::of::<Schema, Correction>()),
+        }
     }
 
     pub const fn mechanism(&self) -> Option<&DeclaredCorrectionMechanism<Schema>> {
@@ -115,6 +145,7 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
                 .mechanism
                 .map(DeclaredCorrectionMechanism::into_portable),
             reconciliation: self.reconciliation,
+            inverse_binding: self.inverse_binding,
         }
     }
 }
@@ -125,6 +156,7 @@ pub struct PortableApplicationAftermathContract {
     authority: DeclaredCorrectionAuthority,
     mechanism: Option<PortableCorrectionMechanism>,
     reconciliation: Option<DeclaredReconciliationProcedure>,
+    inverse_binding: Option<super::DeclaredInverseBinding>,
 }
 
 impl PortableApplicationAftermathContract {
@@ -139,11 +171,25 @@ impl PortableApplicationAftermathContract {
             authority,
             mechanism,
             reconciliation,
+            inverse_binding: None,
         }
     }
 
     pub const fn authority(&self) -> DeclaredCorrectionAuthority {
         self.authority
+    }
+
+    pub fn inverse_binding(&self) -> Option<&super::DeclaredInverseBinding> {
+        self.inverse_binding.as_ref()
+    }
+
+    /// Reconstructs descriptive association; installation still resolves its bindings.
+    pub fn with_untrusted_inverse_binding(
+        mut self,
+        binding: super::DeclaredInverseBinding,
+    ) -> Self {
+        self.inverse_binding = Some(binding);
+        self
     }
 
     pub const fn mechanism(&self) -> Option<&PortableCorrectionMechanism> {

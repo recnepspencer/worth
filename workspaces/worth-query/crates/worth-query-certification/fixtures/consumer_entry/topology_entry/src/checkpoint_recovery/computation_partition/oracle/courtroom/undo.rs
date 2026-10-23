@@ -57,19 +57,6 @@ fn directly_undone<const REUSE: bool, const MODE: u8>() -> OracleRun {
         .runtime()
         .mint_recovery_handle(&receipt)
         .unwrap();
-    let field = receipt
-        .retained_preimage()
-        .unwrap()
-        .field_for(super::super::super::facts::EntryValueBits::reference::<
-            CheckpointSchema,
-        >())
-        .unwrap();
-    let original = U64ApplicationValueBinding::decode(field.value()).unwrap();
-    assert_eq!(
-        original,
-        2.0_f64.to_bits(),
-        "the inverse uses the receipt's exact prior truth"
-    );
     let inverse = input.clone();
     let inverse_key = key + 1;
     let inverse_identities =
@@ -86,6 +73,19 @@ fn directly_undone<const REUSE: bool, const MODE: u8>() -> OracleRun {
         .admit_undo(handle, &authority.unwrap())
         .unwrap();
     let handoff = aftermath::progress_admitted_undo(undo).unwrap();
+    let field = handoff
+        .retained_preimage()
+        .unwrap()
+        .field_for(super::super::super::facts::EntryValueBits::reference::<
+            CheckpointSchema,
+        >())
+        .unwrap();
+    let original = U64ApplicationValueBinding::decode(field.value()).unwrap();
+    assert_eq!(
+        original,
+        2.0_f64.to_bits(),
+        "freshly admitted inverse uses the exact prior truth"
+    );
     let undo_receipt = preparation::committed(application.compare_and_commit_program_undo(
         program,
         &inverse_identities,

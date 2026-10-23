@@ -1,6 +1,7 @@
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 
 mod capability_workflow;
+mod correction;
 mod encoding;
 mod host_commit;
 mod mutation_binding;
@@ -80,6 +81,7 @@ pub struct WorthQueryApplicationIdempotencyBinding {
     workflow_client_key_identity: Option<[u8; 32]>,
     workflow_approval_identity: Option<[u8; 32]>,
     mutation_binding_identity: Option<[u8; 32]>,
+    correction_identity: Option<[u8; 32]>,
 }
 
 impl WorthQueryApplicationIdempotencyBinding {
@@ -105,6 +107,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_client_key_identity: None,
             workflow_approval_identity: None,
             mutation_binding_identity: None,
+            correction_identity: None,
         }
     }
 
@@ -190,6 +193,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
             mutation_binding_identity: self.mutation_binding_identity,
+            correction_identity: self.correction_identity,
         }
     }
 
@@ -233,6 +237,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
             mutation_binding_identity: self.mutation_binding_identity,
+            correction_identity: self.correction_identity,
         }
     }
 
@@ -264,6 +269,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
             mutation_binding_identity: self.mutation_binding_identity,
+            correction_identity: self.correction_identity,
         }
     }
 
@@ -295,6 +301,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
             mutation_binding_identity: self.mutation_binding_identity,
+            correction_identity: self.correction_identity,
         }
     }
 
@@ -326,6 +333,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
             mutation_binding_identity: self.mutation_binding_identity,
+            correction_identity: self.correction_identity,
         }
     }
 
@@ -357,6 +365,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             workflow_client_key_identity: self.workflow_client_key_identity,
             workflow_approval_identity: self.workflow_approval_identity,
             mutation_binding_identity: self.mutation_binding_identity,
+            correction_identity: self.correction_identity,
         }
     }
 }

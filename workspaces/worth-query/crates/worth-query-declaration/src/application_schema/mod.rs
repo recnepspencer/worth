@@ -1,4 +1,5 @@
 mod application_capability_authoring;
+mod application_correction_authoring;
 mod application_mutation_authoring;
 mod application_query_authoring;
 mod aspect_contract_identity;

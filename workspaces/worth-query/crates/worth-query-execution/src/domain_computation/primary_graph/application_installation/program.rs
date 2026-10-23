@@ -25,6 +25,7 @@ mod supported_program;
 pub use checkpoint::{
     in_memory_program_from_checkpoint, in_memory_rostered_program_from_checkpoint,
 };
+pub(in crate::domain_computation::primary_graph) use supported_program::WorthQuerySupportedProgramRecord;
 mod workflow_assessment;
 mod workflow_runtime;
 pub use construction::{

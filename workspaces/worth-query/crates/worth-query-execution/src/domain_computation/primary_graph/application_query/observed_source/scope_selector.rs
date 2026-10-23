@@ -1,36 +1,8 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use worth_foundational::facade::{AspectFieldLocator, AspectValue};
-
 use super::WorthQueryObservedSource;
-
-/// The original descriptive scope of a one-shot query. A later request must
-/// resolve it again; its previously selected entity ID grants no read access.
-pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedScopeSelector {
-    locator: AspectFieldLocator,
-    value: AspectValue,
-}
-
-impl WorthQueryObservedScopeSelector {
-    pub(in crate::domain_computation::primary_graph::application_query) fn new(
-        locator: &AspectFieldLocator,
-        value: &AspectValue,
-    ) -> Self {
-        Self {
-            locator: locator.clone(),
-            value: value.clone(),
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn locator(&self) -> &AspectFieldLocator {
-        &self.locator
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn value(&self) -> &AspectValue {
-        &self.value
-    }
-}
+use crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector;
 
 impl<Query> WorthQueryObservedSource<Query> {
     pub(in crate::domain_computation::primary_graph) fn retained_scope_selector(

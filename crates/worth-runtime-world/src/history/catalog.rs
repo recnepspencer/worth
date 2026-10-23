@@ -1,4 +1,5 @@
 mod admission;
+mod ancestry;
 mod counters;
 mod denial;
 mod entry;
@@ -28,6 +29,7 @@ use super::retention::{
 };
 use super::{CompositeCommitParent, CompositeRuntimeWorldCommit, PublicationRevision};
 
+pub use ancestry::{CompositeAncestorSelectionDenial, RetainedCompositeAncestor};
 pub use counters::HistoryCatalogCounters;
 pub use denial::CompositeHistoryCatalogDenial;
 pub(crate) use entry::CompositeHistoryCatalogEntry;

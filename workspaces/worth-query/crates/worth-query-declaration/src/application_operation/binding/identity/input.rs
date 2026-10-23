@@ -82,12 +82,28 @@ where
         identity: [u8; 32],
         capture: Option<ApplicationCanonicalInput>,
     ) -> Self {
+        Self::reported_shared_elsewhere(
+            ApplicationSharedInput::from_value(input),
+            identity,
+            capture,
+        )
+    }
+
+    pub(super) fn reported_shared_elsewhere(
+        input: ApplicationSharedInput<InputBinding::Value>,
+        identity: [u8; 32],
+        capture: Option<ApplicationCanonicalInput>,
+    ) -> Self {
         Self {
-            input: ApplicationSharedInput::from_value(input),
+            input,
             identity,
             work: ApplicationCanonicalWork::none(),
             capture,
         }
+    }
+
+    pub(super) fn shared_input(&self) -> &ApplicationSharedInput<InputBinding::Value> {
+        &self.input
     }
 
     /// The input the identity was encoded from.

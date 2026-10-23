@@ -254,6 +254,11 @@ fn assert_retained_status(
     let retained = receipt
         .retained_preimage()
         .expect("recorded inverse retains prior truth");
+    assert!(receipt.has_retained_preimage());
+    assert!(
+        !format!("{retained:?}").contains(expected),
+        "receipt debugging must not disclose the historical value"
+    );
     assert_eq!(
         retained
             .field_for(AccountStatus::reference())

@@ -18,6 +18,10 @@ const ROLE_FIELD: &str = "role";
 const PARENT_BRANCH_FIELD: &str = "parent-branch";
 const PARENT_COMMIT_FIELD: &str = "parent-commit";
 const OUTCOME_IDENTITY_FIELD: &str = "outcome-identity";
+const SOURCE_WORLD_OWNER_FIELD: &str = "source-world-owner";
+const SOURCE_WORLD_COMMIT_FIELD: &str = "source-world-commit";
+const SOURCE_BRANCH_FIELD: &str = "source-branch";
+const SOURCE_COMMIT_FIELD: &str = "source-commit";
 
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryAftermathCausalityLayout {
@@ -27,6 +31,10 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryAftermathCausa
     pub parent_branch_locator: AspectFieldLocator,
     pub parent_commit_locator: AspectFieldLocator,
     pub outcome_identity_locator: AspectFieldLocator,
+    pub source_world_owner_locator: AspectFieldLocator,
+    pub source_world_commit_locator: AspectFieldLocator,
+    pub source_branch_locator: AspectFieldLocator,
+    pub source_commit_locator: AspectFieldLocator,
     pub key_index_id: DerivedIndexId,
 }
 
@@ -45,6 +53,10 @@ pub(crate) fn lower_provider_aftermath_causality(
     let parent_branch_locator = planned_field_locator(ASPECT, PARENT_BRANCH_FIELD)?;
     let parent_commit_locator = planned_field_locator(ASPECT, PARENT_COMMIT_FIELD)?;
     let outcome_identity_locator = planned_field_locator(ASPECT, OUTCOME_IDENTITY_FIELD)?;
+    let source_world_owner_locator = planned_field_locator(ASPECT, SOURCE_WORLD_OWNER_FIELD)?;
+    let source_world_commit_locator = planned_field_locator(ASPECT, SOURCE_WORLD_COMMIT_FIELD)?;
+    let source_branch_locator = planned_field_locator(ASPECT, SOURCE_BRANCH_FIELD)?;
+    let source_commit_locator = planned_field_locator(ASPECT, SOURCE_COMMIT_FIELD)?;
     let shape = aspects()
         .struct_fields()
         .required(KEY_FIELD, ScalarAspectType::String)
@@ -52,13 +64,17 @@ pub(crate) fn lower_provider_aftermath_causality(
         .required(PARENT_BRANCH_FIELD, ScalarAspectType::String)
         .required(PARENT_COMMIT_FIELD, ScalarAspectType::UInt64)
         .required(OUTCOME_IDENTITY_FIELD, ScalarAspectType::UInt64)
+        .optional(SOURCE_WORLD_OWNER_FIELD, ScalarAspectType::UInt64)
+        .optional(SOURCE_WORLD_COMMIT_FIELD, ScalarAspectType::UInt64)
+        .optional(SOURCE_BRANCH_FIELD, ScalarAspectType::String)
+        .optional(SOURCE_COMMIT_FIELD, ScalarAspectType::UInt64)
         .finish()
         .map_err(|_| super::invalid_member(ASPECT))?;
     let contract = aspects()
         .contract()
         .for_key(valid_aspect_key(ASPECT)?)
         .identified_by(identity)
-        .at_revision(aspects().vocabulary().revision(1))
+        .at_revision(aspects().vocabulary().revision(2))
         .struct_aspect(shape);
     let registry = register_entity(
         registry,
@@ -82,6 +98,10 @@ pub(crate) fn lower_provider_aftermath_causality(
             parent_branch_locator,
             parent_commit_locator,
             outcome_identity_locator,
+            source_world_owner_locator,
+            source_world_commit_locator,
+            source_branch_locator,
+            source_commit_locator,
             key_index_id: DerivedIndexId(0),
         },
     ))

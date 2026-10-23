@@ -24,6 +24,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphAp
     decision_facts: crate::domain_computation::authorization::WorthQueryProviderDecisionFactBinding,
     effects: super::super::effect_accumulator::WorthQueryRegisteredProviderEffects,
     idempotency: WorthQueryApplicationIdempotencyBinding,
+    original_authority: std::sync::Arc<
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding,
+    >,
     preimage_demand: Option<worth_query_installation::facade::InstalledPreImageDemand>,
     aftermath_causality: Option<
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
@@ -126,6 +129,14 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.outcome_identity
     }
 
+    pub(in crate::domain_computation::primary_graph) fn original_authority(
+        &self,
+    ) -> &std::sync::Arc<
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding,
+    > {
+        &self.original_authority
+    }
+
     pub(in crate::domain_computation::primary_graph) fn emitted_effect_count(&self) -> usize {
         self.effects.emissions().len()
     }
@@ -191,6 +202,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         )?;
         let publication_recovery = provider.reserve_application_publication_recovery(
             self.affinity.product_publication().observation(),
+            Some(self.idempotency),
         )?;
         let reservation = provider.reserve_application_commit_causality(
             self.affinity.product_publication().observation(),
@@ -280,6 +292,7 @@ impl WorthQueryPrimaryGraphProvider {
             decision_facts,
             effects,
             idempotency,
+            original_authority,
             outcome_identity,
             retained_authorization_fact_count,
             external_effect,
@@ -324,6 +337,7 @@ impl WorthQueryPrimaryGraphProvider {
                 decision_facts,
                 effects,
                 idempotency,
+                original_authority,
                 preimage_demand: preimage_demand.cloned(),
                 aftermath_causality,
                 dispatch_outbox,

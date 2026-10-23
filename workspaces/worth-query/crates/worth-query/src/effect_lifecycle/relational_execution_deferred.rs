@@ -242,7 +242,10 @@ fn allocation_failure(
         }
         Class::Request(Request::Admission(_))
         | Class::Request(Request::Stopped(
-            Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped,
+            Stop::WorkCounterOverflow
+            | Stop::WorkCeiling
+            | Stop::NestedStopped
+            | Stop::AccountingUnavailable,
         ))
         | Class::Request(Request::Panicked)
         | Class::Physical(_) => None,

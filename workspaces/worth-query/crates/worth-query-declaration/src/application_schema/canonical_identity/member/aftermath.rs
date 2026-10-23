@@ -10,6 +10,52 @@ pub(super) fn append_declared_aftermath(
 ) {
     append_authority(basis, prefix, contract.authority());
     append_mechanism(basis, prefix, contract.mechanism());
+    if let Some(binding) = contract.inverse_binding() {
+        for (field, value) in binding.disclosure().canonical_fields() {
+            basis.text(
+                format!("{prefix}.inverse-binding.disclosure.{field}"),
+                value,
+            );
+        }
+        basis.text(
+            format!("{prefix}.inverse-binding.identity"),
+            binding.identity().as_str(),
+        );
+        super::mutation_description::append(
+            basis,
+            &format!("{prefix}.inverse-binding.source"),
+            binding.source(),
+        );
+        super::mutation_description::append(
+            basis,
+            &format!("{prefix}.inverse-binding.inverse"),
+            binding.inverse(),
+        );
+        basis.text(
+            format!("{prefix}.inverse-binding.source-handler"),
+            binding.source_handler(),
+        );
+        basis.text(
+            format!("{prefix}.inverse-binding.inverse-handler"),
+            binding.inverse_handler(),
+        );
+        basis.text(
+            format!("{prefix}.inverse-binding.source-query"),
+            binding.source_query().unwrap_or_default(),
+        );
+        basis.bool(
+            format!("{prefix}.inverse-binding.source-query-present"),
+            binding.source_query().is_some(),
+        );
+        basis.text(
+            format!("{prefix}.inverse-binding.inverse-query"),
+            binding.inverse_query().unwrap_or_default(),
+        );
+        basis.bool(
+            format!("{prefix}.inverse-binding.inverse-query-present"),
+            binding.inverse_query().is_some(),
+        );
+    }
     basis.text(
         format!("{prefix}.reconciliation"),
         contract

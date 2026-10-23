@@ -1,4 +1,5 @@
 //! Prepare one installed handler candidate without entering commit progression.
+mod original_input;
 use super::{
     commit_binding::{WorthQueryCommitExtension, WorthQueryMutationCommitBinding},
     staged::WorthQueryStagedMutation,
@@ -16,25 +17,25 @@ use worth_query_execution::facade::primary_graph::{
 use worth_query_execution::facade::runtime::ExecutionAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 
-pub(super) type CandidateProgram<Schema, Binding> = WorthQueryApplicationEffectProgram<
+pub(in crate::application_entry) type CandidateProgram<Schema, Binding> = WorthQueryApplicationEffectProgram<
     Schema, <Binding as ApplicationMutationBinding<Schema>>::Operation,
     <Binding as ApplicationMutationBinding<Schema>>::Input,
     <<Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
 >;
-pub(super) struct PreparedCandidate<
+pub(in crate::application_entry) struct PreparedCandidate<
     'request,
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 > {
-    pub(super) program: CandidateProgram<Schema, Binding>,
-    pub(super) result: Binding::Result,
+    pub(in crate::application_entry) program: CandidateProgram<Schema, Binding>,
+    pub(in crate::application_entry) result: Binding::Result,
     pub(super) identities: ApplicationMutationIdentities<'request, Schema, Binding>,
     pub(super) principal: &'request worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub(super) extension: WorthQueryCommitExtension,
     pub(super) decision_work:
         worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
 }
-pub(super) enum CandidatePreparation<
+pub(in crate::application_entry) enum CandidatePreparation<
     'request,
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
@@ -81,7 +82,94 @@ where
     > {
         self.require_workflow_transition()?;
         let staged = self.stage()?;
-        let identities = self.identities()?;
+        let captured_input = self.capture_original_input(phase)?;
+        let identities = match captured_input.as_ref() {
+            Some(input) => ApplicationMutationIdentities::with_encoded_input(self.key, input)
+                .map_err(WorthQueryApplicationRequestMutationDenial::Identity)?,
+            None => self.identities()?,
+        };
+        self.prepare_staged_candidate(
+            phase,
+            identities,
+            staged,
+            prepare,
+            decision_work,
+            allocation_policy,
+        )
+    }
+
+    /// Uses the caller's existing owning identity carrier for the same candidate spine.
+    pub(in crate::application_entry) fn prepare_owned_candidate<'request>(
+        &'request mut self,
+        phase: &AdvancementPhase<'_>,
+        identities: ApplicationMutationIdentities<'request, Schema, Intent::Binding>,
+        prepare: impl FnOnce(
+            &Self,
+            &ApplicationMutationIdentities<'_, Schema, Intent::Binding>,
+            WorthQueryStagedMutation<Schema, Intent>,
+        ) -> Result<
+            super::authorization::PreparedMutation<Schema, Intent::Binding>,
+            WorthQueryApplicationRequestMutationDenial,
+        >,
+        decision_work: &mut worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        CandidatePreparation<'request, Schema, Intent::Binding>,
+        WorthQueryApplicationRequestMutationDenial,
+    > {
+        self.require_workflow_transition()?;
+        let staged = self.stage()?;
+        let prepared = self.prepare_staged_candidate(
+            phase,
+            identities,
+            staged,
+            prepare,
+            decision_work,
+            allocation_policy,
+        )?;
+        match prepared {
+            CandidatePreparation::Prepared(mut candidate) => {
+                let access =
+                    worth_query_execution::publication_boundary::program_publication_access();
+                if !candidate.program.requires_original_input_retention(&access) {
+                    candidate.program = candidate
+                        .program
+                        .retain_performed_correction_input::<Intent::Binding>(
+                            &access,
+                            self.request.application,
+                            candidate.identities.encoded_input(),
+                        )
+                        .map_err(|cause| {
+                            WorthQueryApplicationRequestMutationDenial::Handler(
+                                MutationHandlerExecutionDenial::Attempt(cause),
+                            )
+                        })?;
+                }
+                Ok(CandidatePreparation::Prepared(candidate))
+            }
+            settled => Ok(settled),
+        }
+    }
+
+    fn prepare_staged_candidate<'request>(
+        &'request self,
+        phase: &AdvancementPhase<'_>,
+        identities: ApplicationMutationIdentities<'request, Schema, Intent::Binding>,
+        staged: WorthQueryStagedMutation<Schema, Intent>,
+        prepare: impl FnOnce(
+            &Self,
+            &ApplicationMutationIdentities<'_, Schema, Intent::Binding>,
+            WorthQueryStagedMutation<Schema, Intent>,
+        ) -> Result<
+            super::authorization::PreparedMutation<Schema, Intent::Binding>,
+            WorthQueryApplicationRequestMutationDenial,
+        >,
+        decision_work: &mut worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        CandidatePreparation<'request, Schema, Intent::Binding>,
+        WorthQueryApplicationRequestMutationDenial,
+    > {
         let prepared = prepare(self, &identities, staged)?;
         let principal_identity = prepared.principal_identity;
         let mut admission = prepared.admission;
@@ -146,6 +234,21 @@ where
                 }
             };
         let (mut program, result) = completed.into_parts();
+        let publication_access =
+            worth_query_execution::publication_boundary::program_publication_access();
+        if program.requires_original_input_retention(&publication_access) {
+            program = program
+                .retain_original_mutation_input::<Intent::Binding>(
+                    &publication_access,
+                    self.request.application,
+                    identities.encoded_input(),
+                )
+                .map_err(|cause| {
+                    WorthQueryApplicationRequestMutationDenial::Handler(
+                        MutationHandlerExecutionDenial::Attempt(cause),
+                    )
+                })?;
+        }
         if self.workflow_birth_identity.is_some() {
             let authority = self
                 .workflow_birth_authority

@@ -8,8 +8,10 @@ use std::sync::Weak;
 use worth_runtime_world::facade::ProductBranchIncarnation;
 use worth_runtime_world::facade::ProductBranchObservation;
 mod contention;
+mod correction;
 pub use contention::WorthQueryApplicationBranchCommitContentionForTest;
 pub(super) struct WorthQueryApplicationBranchCommitCoordinator {
+    corrections: correction::CorrectionCommitLanes,
     contention: Arc<contention::ContentionControl>,
     lanes: Mutex<BTreeMap<ProductBranchIncarnation, Weak<WorthQueryApplicationBranchCommitLane>>>,
 }
@@ -25,6 +27,7 @@ pub(crate) struct WorthQueryApplicationBranchCommitCoordination<'lane> {
 impl WorthQueryApplicationBranchCommitCoordinator {
     pub(super) fn new() -> Self {
         Self {
+            corrections: correction::CorrectionCommitLanes::default(),
             contention: Arc::default(),
             lanes: Mutex::new(BTreeMap::new()),
         }

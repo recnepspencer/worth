@@ -21,6 +21,26 @@ pub(in crate::domain_computation::primary_graph::application_query) struct NonLi
     pub(in crate::domain_computation::primary_graph::application_query) truncation_count: usize,
 }
 
+/// Native root identities from the same disclosed tree used by ordinary projection.
+/// No application projection or retained-history callback runs here.
+pub(in crate::domain_computation::primary_graph::application_query) fn project_non_live_kernel_roots(
+    kernel: RawNonLiveKernelOutcome,
+) -> ProjectedNonLiveKernelOutcome<worth_relational::facade::identity::EntityId> {
+    let RawNonLiveKernelOutcome { mut raw } = kernel;
+    let rows: Vec<_> = raw.rows.iter().map(|node| node.entity_id()).collect();
+    raw.rows.clear();
+    let result_count = rows.len();
+    let truncation_count = usize::from(raw.has_more);
+    ProjectedNonLiveKernelOutcome {
+        rows,
+        receipt: NonLiveKernelReceiptEvidence {
+            read: raw,
+            result_count,
+            truncation_count,
+        },
+    }
+}
+
 impl<QueryResult> ProjectedNonLiveKernelOutcome<QueryResult> {
     pub(in crate::domain_computation::primary_graph::application_query) fn into_parts(
         self,

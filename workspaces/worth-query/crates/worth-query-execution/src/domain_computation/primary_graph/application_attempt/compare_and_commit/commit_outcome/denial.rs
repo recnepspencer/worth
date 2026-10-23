@@ -94,6 +94,7 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// programming error in the caller, not intent drift: build the binding from
     /// the same key and input the handler ran with.
     MutationInputMismatch,
+    CorrectionContextMismatch,
     /// The installed operation owns an executable body, but the candidate was
     /// not produced by its native executor. Caller-authored effects cannot
     /// substitute another implementation, even within the declared footprint.
@@ -211,6 +212,14 @@ pub struct WorthQueryApplicationCommitDenial {
 }
 
 impl WorthQueryApplicationCommitDenial {
+    pub(crate) const fn correction_context_mismatch() -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::CorrectionContextMismatch,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: None,
+            cause: None,
+        }
+    }
     pub(crate) const fn recovery_handoff_mismatch(
         kind: crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind,
     ) -> Self {

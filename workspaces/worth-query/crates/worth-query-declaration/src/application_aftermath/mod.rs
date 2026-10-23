@@ -4,6 +4,14 @@
 //! axes. Published law-14 posture names are derived only at installation.
 
 mod contract;
+mod correction_binding;
+pub use correction_binding::{
+    dispatch_application_correction, ApplicationCorrectionBinding,
+    ApplicationCorrectionDerivationDenial, ApplicationCorrectionDispatch,
+    ApplicationCorrectionPreImage, ApplicationCorrectionVisitor, ApplicationInverseBinding,
+    DeclaredInverseBinding, DeclaredInverseBindingParts,
+};
+pub use correction_binding::{DeclaredCorrectionDisclosure, DeclaredCorrectionDisclosureParts};
 mod correction_authority;
 mod correction_mechanism;
 mod postcondition;

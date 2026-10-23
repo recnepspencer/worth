@@ -12,6 +12,11 @@ use worth_query_installation::facade::ApplicationSchema;
 
 pub(crate) enum ApplicationCommitCausality<'handoff> {
     Ordinary,
+    RecordedReverse(
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::WorthQueryPreparedCorrectionSource,
+        >,
+    ),
     Aftermath {
         pending: WorthQueryPendingAftermathCausality,
         handle: &'handoff WorthQueryRecoveryHandle,
@@ -38,6 +43,14 @@ impl<'handoff> ApplicationCommitCausality<'handoff> {
     {
         match self {
             Self::Ordinary => Ok(None),
+            Self::RecordedReverse(source) => {
+                if !source.matches_admission(admission) {
+                    return Err(WorthQueryApplicationCommitDenial::correction_context_mismatch());
+                }
+                Ok(Some(WorthQueryPendingAftermathCausality::recorded_reverse(
+                    source,
+                )))
+            }
             Self::Aftermath { pending, handle } => {
                 if admission.runtime_authority() != handle.runtime_authority() {
                     return Err(

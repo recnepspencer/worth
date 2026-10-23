@@ -15,6 +15,15 @@ pub use capability_command::{
     WorthQueryCompletedCapabilityCommand, WorthQueryTerminalCapabilityCommand,
 };
 mod capability_revocation;
+mod correction;
+pub use correction::{
+    WorthQueryApplicationCorrection, WorthQueryApplicationCorrectionDenial,
+    WorthQueryApplicationCorrectionOutcome, WorthQueryApplicationCorrectionPreparation,
+    WorthQueryApplicationCorrectionRequest, WorthQueryApplicationCorrections,
+    WorthQueryCorrectionApplicability, WorthQueryCorrectionHistoryLimits,
+    WorthQueryCorrectionValue, WorthQueryKeyedApplicationCorrection,
+    WorthQueryPreparedApplicationCorrection, WorthQuerySelectedCorrectionSource,
+};
 mod demand;
 mod denial;
 mod elevation_approval;

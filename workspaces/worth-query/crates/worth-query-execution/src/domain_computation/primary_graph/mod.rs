@@ -65,6 +65,7 @@ pub(crate) mod product_activation;
 mod product_operation;
 pub(in crate::domain_computation) use product_operation::SharedSelectedProductOperation;
 mod program_occurrence;
+pub(in crate::domain_computation) use program_occurrence::OriginalProgramMeaning;
 mod provider;
 pub(in crate::domain_computation) use application_attempt::retained_decision_facts::StorageControl;
 pub(in crate::domain_computation::primary_graph) use provider::OutstandingDispatchInFlightLease;
@@ -129,6 +130,7 @@ pub(in crate::domain_computation::primary_graph) use application_runtime::Instal
 pub(in crate::domain_computation::primary_graph) use application_runtime::PerformedInstalledTransportCompletion;
 pub(in crate::domain_computation) use application_runtime::WorthQueryInstalledTransportCompletionBinding;
 pub(in crate::domain_computation) use entity_resolution::WorthQueryEntityResolutionTruth;
+pub(in crate::domain_computation) use entity_resolution::WorthQueryObservedScopeSelector;
 pub(in crate::domain_computation) use entity_resolution::WorthQueryInstalledEntityResolutionContext;
 pub(in crate::domain_computation) use entity_resolution::WorthQueryResolvedEntity;
 pub(in crate::domain_computation) use entity_resolution::WorthQueryIssuedSelectedScope;

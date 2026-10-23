@@ -7,6 +7,45 @@ use crate::publication_boundary::program_publication_access;
 use worth_query_declaration::facade::application_operation::{
     ApplicationEncodedInput, ApplicationMutationBinding,
 };
+
+#[test]
+fn native_capture_allocation_preserves_actual_cancellation_and_deadline_stops() {
+    use crate::domain_computation::primary_graph::{
+        WorthQueryAdvancementDenial as Denial, WorthQueryManagedComputationInterruption as Stop,
+    };
+    use worth_query_admission::facade::authenticated_principal::{
+        WorthQueryCancellationSource, WorthQueryRequestScope,
+    };
+    let (world, _) = super::capability_world();
+    let opening = live_scope();
+    let cancellation = WorthQueryCancellationSource::new();
+    cancellation.cancel();
+    let expired = WorthQueryCancellationSource::new();
+    let stopped = [
+        (
+            WorthQueryRequestScope::new(None, cancellation.token()),
+            Stop::Cancelled,
+        ),
+        (
+            WorthQueryRequestScope::new(Some(std::time::Instant::now()), expired.token()),
+            Stop::DeadlineExceeded,
+        ),
+    ];
+    type InputBinding = <CapabilityTouchMutationBinding as ApplicationMutationBinding<
+        IdentityExecutionSchema,
+    >>::InputBinding;
+    world.application.with_application_advancement(&opening, |phase| {
+        for (request, expected) in &stopped {
+            let cause = world.application.capture_operation_input_in_advancement::<InputBinding>(
+                &phase, &program_publication_access(), request, &capability_input(100),
+            ).unwrap_err();
+            assert!(matches!(cause,
+                crate::publication_boundary::operation_input_capture::WorthQueryOperationInputCaptureDenial::Allocation(_)),
+                "reach the actual payload allocation owner after the live opening");
+            assert!(matches!(cause.execution_stop(), Some(Denial::Interrupted(actual)) if actual == *expected));
+        }
+    }).unwrap();
+}
 #[test]
 fn funded_capture_capability_input_holds_payload_until_its_last_native_owner() {
     let (world, principal) = super::capability_world();
@@ -87,7 +126,29 @@ fn funded_capture_capability_input_holds_payload_until_its_last_native_owner() {
                 held,
                 "admitted capability retains SAME payload after initiating encoded owner drops"
             );
-            drop(admitted);
+            let operation = world
+                .application
+                .installed_schema()
+                .installed_operation(CapabilityTouchOperation::reference())
+                .unwrap();
+            let admission = world
+                .application
+                .authorize_capability_operation(&phase, admitted, &operation, Default::default())
+                .unwrap();
+            let retained = crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding::from_admission(
+                &admission,
+                idempotency(98, 98),
+            );
+            drop(admission);
+            assert!(
+                parent.charged_memory_bytes() >= before + quote,
+                "retained original meaning keeps the native payload's final-owner custody"
+            );
+            assert_eq!(
+                retained.retained_governed_input::<CapabilityTouchInput>().unwrap().amount,
+                50,
+            );
+            drop(retained);
             assert!(
                 parent.charged_memory_bytes() + quote <= held,
                 "last actual native input owner releases the reservation"

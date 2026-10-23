@@ -28,6 +28,8 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     InvalidAuthoritativeValue,
     IncompleteDecisionReadSet,
     DecisionDependencyMismatch,
+    /// Required original correction interpretation could not be retained.
+    CorrectionCaptureDenied,
     DecisionFactBudgetExceeded,
     /// Fresh inline payload backing was refused by its allocation owner.
     AllocationDenied,

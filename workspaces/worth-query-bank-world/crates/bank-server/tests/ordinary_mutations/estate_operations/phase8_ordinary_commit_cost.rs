@@ -78,7 +78,7 @@ fn ordinary_commit_pays_zero_aftermath_slots_while_machinery_is_live() {
     );
     assert!(receipt.external_dispatch().is_none());
     assert!(
-        receipt.retained_preimage().is_none(),
+        !receipt.has_retained_preimage(),
         "an ordinary no-demand commit must build no footprint and scan no decision facts"
     );
 

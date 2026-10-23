@@ -128,7 +128,7 @@ pub mod facade {
         CompensateNextAction, InstalledAftermathNextActionContract,
         InstalledAftermathPostcondition, InstalledAftermathRecoveryContract, InstalledCompensation,
         InstalledCorrectionAuthority, InstalledCorrectionMechanism,
-        InstalledExternalEffectContract, InstalledExternalEffectPosture,
+        InstalledExternalEffectContract, InstalledExternalEffectPosture, InstalledInverseBinding,
         InstalledLoweringCorrespondence, InstalledLoweringCorrespondenceRef,
         InstalledPreImageDemand, InstalledPreImageLocus, InstalledRecordedInverse,
         IrreversibleNextActionContract, PublishedAftermathPosture, ReconcilableNextActionContract,

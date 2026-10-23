@@ -3,6 +3,8 @@
 //! redo intent with Relational-owned branch lineage (8.5).
 
 mod causal_commit;
+mod correction;
+pub(in crate::domain_computation) use correction::OriginalCorrectionDisclosure;
 mod commit_causality;
 pub(crate) use commit_causality::ApplicationCommitCausality;
 mod causal_fact;
@@ -27,7 +29,10 @@ pub mod undo_progression;
 pub use derivation_failure::WorthQueryAftermathDerivationFailure;
 
 pub(crate) use causal_fact::WorthQueryPendingAftermathCausality;
-pub use causal_fact::{WorthQueryAftermathCausalRole, WorthQueryCommittedAftermathCausality};
+pub use causal_fact::{
+    WorthQueryAftermathCausalRole, WorthQueryCommittedAftermathCausality,
+    WorthQueryRecordedCorrectionSource,
+};
 pub(in crate::domain_computation) use external_effect::dispatch_external_effect;
 #[cfg(test)]
 pub(crate) use external_effect::dispatch_outbox_create_intent;

@@ -187,7 +187,7 @@ impl FinancialCourtroomWorld {
             .into_parts()
             })
             .expect("installed host call opens");
-        let reads = self
+        let mut effects = self
             .application
             .with_host_advancement(|host_phase| {
                 self
@@ -198,14 +198,14 @@ impl FinancialCourtroomWorld {
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap()
-            })
-            .expect("installed host call opens");
-        let mut effects = self.application.with_host_advancement(|host_phase| reads
             .complete_projected_dependencies(
-                &host_phase, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                &host_phase,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap()
-            .begin_effect_program()).expect("installed host call opens");
+            .begin_effect_program()
+            })
+            .expect("installed host call opens");
         let record = effects.existing_entity(&record).unwrap();
         effects
             .write_field(

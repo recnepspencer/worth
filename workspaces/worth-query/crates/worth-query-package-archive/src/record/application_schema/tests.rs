@@ -1,4 +1,5 @@
 mod canonical_contract;
+mod correction_binding;
 mod fixture;
 mod invariant;
 mod mutation_description;

@@ -57,7 +57,7 @@ pub(crate) fn compile_application_mutation_catalog<Schema>(
 where
     Schema: ApplicationSchema,
 {
-    let mut bindings = BTreeMap::new();
+    let mut descriptors = BTreeMap::new();
     for descriptor in schema.member_provenance.mutation_bindings() {
         validate_identities(descriptor)?;
         workflow_requirements::validate(descriptor)?;
@@ -82,11 +82,8 @@ where
         validate_principal(schema, descriptor)?;
         validate_outputs(schema, descriptor)?;
         source_query::validate(schema, descriptor)?;
-        let compiled = Arc::new(WorthQueryCompiledApplicationMutationBinding::new(
-            descriptor.clone(),
-        ));
-        if let Some(existing) = bindings.insert(descriptor.identity().to_owned(), compiled) {
-            let kind = if existing.descriptor() == descriptor {
+        if let Some(existing) = descriptors.insert(descriptor.identity().to_owned(), descriptor) {
+            let kind = if existing == descriptor {
                 DenialKind::MutationBindingIdentityCollision
             } else {
                 DenialKind::MutationBindingMeaningChanged
@@ -94,6 +91,24 @@ where
             return Err(denial(kind, descriptor.identity()));
         }
     }
+    let bindings = descriptors
+        .iter()
+        .map(|(identity, descriptor)| {
+            let inverse = crate::application_aftermath::resolve_inverse_binding(
+                schema.installed_declaration().members(),
+                descriptor,
+                &descriptors,
+                schema.member_provenance.query_bindings(),
+            )?;
+            Ok((
+                identity.clone(),
+                Arc::new(WorthQueryCompiledApplicationMutationBinding::new(
+                    (*descriptor).clone(),
+                    inverse,
+                )),
+            ))
+        })
+        .collect::<Result<_, WorthQueryApplicationOperationInstallationDenial>>()?;
     Ok(WorthQueryInstalledApplicationMutationCatalog { bindings })
 }
 

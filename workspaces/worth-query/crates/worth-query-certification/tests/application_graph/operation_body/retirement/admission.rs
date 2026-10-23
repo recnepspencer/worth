@@ -147,15 +147,23 @@ fn fresh_readmission_reconstructs_retirement_meaning_and_required_authority() {
             WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
         )
         .unwrap_err();
-        assert_eq!(
-            denied,
-            if corrupt == "read" {
-                ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency
-            } else {
-                ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency
-            },
-            "{corrupt}"
-        );
+        match (corrupt, denied) {
+            (
+                "read",
+                ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency {
+                    operation,
+                    ..
+                },
+            ) => assert_eq!(operation, "SetRetention"),
+            (
+                _,
+                ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
+                    operation,
+                    ..
+                },
+            ) => assert_eq!(operation, "SetRetention"),
+            (_, denied) => panic!("{corrupt}: wrong dependency denial: {denied:?}"),
+        }
     }
 }
 #[test]

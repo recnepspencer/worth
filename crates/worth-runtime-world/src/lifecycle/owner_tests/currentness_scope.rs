@@ -39,38 +39,6 @@ fn currentness_scope_holds_operation_and_service_through_exact_head_callback() {
 }
 
 #[test]
-fn admitted_currentness_refuses_before_registry_lookup_and_keeps_custody() {
-    let (_fixture, owner, expected) = setup();
-    let port = port(&owner);
-    let custody = Box::new(41);
-    let address = &*custody as *const i32;
-    let mut claims = Vec::new();
-    let stopped = port
-        .while_product_branch_current_admitted(
-            &expected,
-            custody,
-            &mut |work| {
-                claims.push(work);
-                claims.len() == 1
-            },
-            |_, _| panic!("a refused lookup cannot enter the current-head callback"),
-        )
-        .unwrap_err();
-    let ProductBranchCurrentnessFailure::PreparationDenied(custody) = stopped else {
-        panic!("the second before-read claim is the admission refusal")
-    };
-    assert_eq!(&*custody as *const i32, address);
-    assert_eq!(*custody, 41);
-    assert_eq!(claims.len(), 2);
-    assert_eq!(owner.state.operation.active(), 0);
-    assert_eq!(
-        port.observe_product_branch(expected.branch_identity())
-            .unwrap(),
-        expected
-    );
-}
-
-#[test]
 fn currentness_scope_returns_unmodified_custody_after_actual_publication() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

@@ -154,4 +154,22 @@ fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
     assert!(recovered.dispatch_outbox().is_some());
     assert_retained_status(&recovered, "open");
     assert_eq!(commit_count(), baseline + 2);
+    let commit = original.commit_reference().clone();
+    let original_meaning = original.authority_binding().clone();
+    let original_preimage = original.retained_preimage().cloned();
+    drop(original);
+    drop(recovered);
+    let occurrence = world
+        .application
+        .primary_provider
+        .observe_completed_application(&commit)
+        .expect("response loss and receipt disposal preserve the performed source");
+    assert_eq!(
+        occurrence.commit_evidence().original_authority(),
+        &original_meaning
+    );
+    assert_eq!(
+        occurrence.commit_evidence().retained_preimage(),
+        original_preimage.as_ref()
+    );
 }

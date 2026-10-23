@@ -248,6 +248,8 @@ where
                 .bind_preconditions(admission.mutation_preconditions().identity())
                 .bind_governed_input(admission.governed_input_identity())
                 .bind_governed_proposal(admission.governed_proposal_identity());
+            let command_lane = self.primary_provider.correction_commit_lane(&bound);
+            let _command = command_lane.as_ref().map(|lane| lane.enter());
             let lane = self
                 .primary_provider
                 .application_branch_commit_lane(product.observation());

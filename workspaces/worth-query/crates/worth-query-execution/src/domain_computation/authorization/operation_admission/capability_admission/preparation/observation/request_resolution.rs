@@ -40,6 +40,11 @@ pub(in crate::domain_computation::authorization) struct WorthQueryCapabilityCont
 }
 
 impl<Schema, Scope> WorthQueryResolvedCapabilityRequest<Schema, Scope> {
+    pub(in crate::domain_computation::authorization) fn resource(
+        &self,
+    ) -> &WorthQueryApplicationEntityIdentity<Schema, Scope> {
+        &self.resource
+    }
     pub(in crate::domain_computation::authorization) fn resource_entity_id(&self) -> EntityId {
         self.resource.entity_id()
     }

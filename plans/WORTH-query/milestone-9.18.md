@@ -1,16 +1,14 @@
 # Milestone 9.18: Tree-Based Semantic Undo And Redo
 
-> **Status:** Not started. Design reconciled with the current application entry,
+> **Status:** Phase 1 certified and closed; Phase 2 boundary review; Phases 3–4 held. Design reconciled with the current application entry,
 > program adoption, workflow and owner-publication code on 2026-09-29.
 > **Dependencies:** 9.17.4, 9.17.5, 9.17.6 and [9.17.7](./milestone-9.17.7.md)
 > are completed. Phase 1 may begin
 > independently; inbound completion and custody
 > courts gate external-effect integration and final acceptance, not Phase 1 entry.
-> This document specifies destination
-> APIs; it does not claim that tree correction ships today. On 2026-10-22 the
-> Proprietary consumer court was retargeted from the deleted House application to
-> the general modeling kernel, and authored create/delete correction was made
-> explicit.
+> This document specifies destination APIs; it does not claim that tree correction
+> ships today. All four phases and their acceptance gates are public-repository
+> work. Private CAD/Studio adoption belongs to a separate consumer milestone.
 
 ## Goal And Roadmap Placement
 
@@ -64,18 +62,6 @@ already distinguish freeze pre-images, disbursement compensation and external de
 notice effects. Bank's generic provisional undo/redo HTTP routes were removed;
 `bank-http-adapter/tests/protocol_boundary.rs` protects that cutover. Install new
 accepted correction commands through the real server, HTTP adapter and user node.
-
-The separate WORTH Proprietary repository is the CAD consumer. Its October 2026 reset
-deleted `HouseApplication`, the `worthy-house-*` crates and the per-family CAD entry.
-Its general modeling milestone (`cad/docs/plans/general-modeling.md` there) rebuilds
-the kernel as an ordinary application through `worth-query-decl` and
-`worth-query-host`: cells are entities, modeling operations are transactions, names
-are lineage keys and undo is this milestone's accepted correction, with no private
-undo stack. Its `cad/docs/plans/platform-gaps.md` states what the kernel needs from
-this milestone. These are domain bindings for this platform correction contract, not
-proof that an accepted correction API exists. Its WORTH dependency is pinned to an
-exact revision; cross-repository acceptance must build against the exact candidate
-facade through a reviewed pin update or explicit local dependency override.
 
 ## Adversarial Courtroom
 
@@ -157,52 +143,26 @@ Keep `ReverseJournal` available as its own business operation. Historical correc
 uses its installed meaning where applicable and adds exact source/correction linkage;
 a user-supplied journal identifier alone cannot select or authorize a historical inverse.
 
-### WORTH Proprietary: real authored source and regenerated geometry
+### Public authored lifecycle and locality
 
-Add `tests/it/correction/` to `worth-modeling-conformance` in that repository. Start
-from the real CAD application installation and ordinary authored operations: the
-general modeling thin slice of sketch, extrude, subtract, circular pattern and a
-chamfer addressed by role path. Do not certify this with a substitute geometry
-provider or a certification-only entry.
+Extend the real public application composition with authored create/delete and a
+derived entity family. Correct a create by retiring its entity. Correct a delete by
+creating a successor from the retained pre-image and binding its declared logical
+key to the retired entity. Observe new generational identity, preserved logical
+correspondence and rejection of stale physical references. A family without that
+binding is denied reversibility at installation.
 
-- Build the slice with actual units and tolerance. Change one sketch dimension and
-  raise the pattern count from four to five; retain those exact edit occurrences.
-  Make an unrelated feature edit. Reverse the dimension change through the CAD
-  correction command, observe source parameters and actual solid volume, and verify
-  the unrelated edit survives. The oracle computes volume analytically from
-  independent dimensions and checks exported STEP in the independent OCCT process;
-  it does not reuse production geometry or inverse helpers.
-- Reverse the pattern count. The generator's own derived settlement retires the fifth
-  instance; the correction never names a generated child. Instances 0 to 3 keep their
-  names, the chamfer stays on instance 2, and cells whose names never changed keep
-  their entity IDs.
-- Reapply the original dimension change and verify new source/geometry occurrences.
-  Change the dimension again before reversal to expose the exact applicability
-  conflict. A retained sibling exercises source interpretation versus current target
-  rules. No old geometry receipt makes unsupported code callable.
-- Evict derived cells, meshes and scene views through their owner lifecycle and
-  rebuild from the corrected source. Assert stable semantic correspondence by name and
-  current output lineage, not equality of regenerated raw entity IDs or cached mesh
-  bytes. A pending required output remains visibly pending; source success is not
-  geometry completion.
-- Delete the chamfer and reverse the deletion; delete the pattern and reverse that.
-  Both use the [new-identity correspondence](#source-target-and-installed-meaning)
-  binding: each feature returns as a new entity bound to the retired one by its
-  authored name, and downstream cells re-derive their names from it. A family without
-  the binding is denied reversibility at installation. It must not fail for the first
-  time after a user edits.
-- A local UI redo continuation may clear on a new edit. Reopen the explicit bounded
-  history chooser and recover both retained alternatives. Clearing selection never
-  deletes history or correction evidence. The CAD application consumes the shared
-  correction owner rather than co-committing a competing inverse/history system.
+Change the source that controls a derived family's membership, reverse that exact
+occurrence and settle through its ordinary producer. Observe the changed membership,
+stable names of unaffected members and preserved unrelated edits. Evict derived
+state through its owner lifecycle and regenerate it from corrected source; compare
+independent values and semantic correspondence. Source publication and required
+output completion remain separately observable.
 
-The first proof is the thin slice, followed by a model with 1,000 unrelated features
-while correcting one dependency closure. Count producer contacts and source/history
-visits; unrelated features must not enter the correction or output work. A native
-Studio shortcut/menu journey is required when that UI enables Undo/Redo; the headless
-correction gate does not claim native UI or restart-durable correction support.
-Existing Save/Open tests alone cannot certify that new correction records and live
-recovery rights survive restart.
+Run the same affected dependency closure with 10 and 1,000 unrelated source/history
+entries. Count producer contacts and source/history visits; unrelated entries must
+not enter correction or derived work. Drop selection handles and discardable indexes,
+then inspect retained canonical alternatives through the public history chooser.
 
 ## Product Decision Lock
 
@@ -240,6 +200,23 @@ checks handler membership, schema/version support, bounded capture and legal ext
 posture; execution checks live target applicability and authority. Domain packages author
 these bindings at entry-band composition; pure schema meaning remains Query-agnostic.
 
+The same correction binding declares an existing application query for historical
+disclosure. Its installed meaning expressly governs access to that occurrence's
+retained input and demanded pre-images. Co-retain the original descriptive scope
+selector and full subject identity from native scope resolution. Query parameters
+are declared safe selection metadata or are captured canonically under that query's
+parameter binding during the original admitted operation. They are not reconstructed
+by calling application code with protected history before disclosure is authorized.
+
+Selection freshly resolves the subject on the exact target, checks its full original
+identity including generation, and runs the declared disclosure query through ordinary
+current principal, purpose, scope, parameter and selected-security admission. The
+required native root/row must be present; an admitted but empty or filtered query
+does not permit disclosure. Only then may the domain derive an inverse from historical
+material. Preparation repeats the relevant disclosure checks and separately admits
+the inverse under current authority. Unsupported parameter provenance is a typed
+refusal. Permission to run the old source action again is not required.
+
 Required pre-images and retained governed inputs are captured with the original admitted
 candidate from its actual changed footprint, co-retained with the performed occurrence.
 A later read cannot recreate a missing pre-image. Uncorrectable operations remain valid
@@ -250,7 +227,7 @@ Authored create and delete are correctable only through a new-identity correspon
 binding, declared once per family with its other correction bindings. Correcting a
 create retires the created entity. Correcting a delete creates a successor entity from
 the retained pre-image, and the family's declared logical key binds it to the retired
-entity. The key is domain meaning, such as a CAD feature's authored name; the platform
+entity. The key is domain meaning, such as an authored record's name; the platform
 compares the declared key and never infers it. Generational identities keep stale
 physical references from binding to the successor. A family without the binding is
 denied reversibility at installation.
@@ -442,10 +419,6 @@ B/bank-user-node/src/{session,server/routes}/             E authenticated correc
 B/bank-courtroom/tests/transport_process_courtroom/
   correction.rs                                         N actual process journey
 
-WORTH Proprietary repository, coordinated consumer phase only:
-crates/worth-cad-entry/src/application/correction/         N CAD semantic bindings
-crates/worth-modeling-conformance/tests/it/correction/     N source/geometry courts
-apps/worthy-studio/                                        E undo/redo, history chooser
 ```
 
 Declaration classifies stable semantic meaning; installation resolves supported
@@ -476,6 +449,14 @@ within 400 lines; this specification grants no line-cap exemptions.
 
 ### Phase 1: One exact source correction through the ordinary entry
 
+**Certified and closed.** The public authored court and scoped native owner
+evidence establish inverse preparation/publication/readback, exact Signal
+retention, disjoint and conflicting dependencies, copied/foreign selection,
+fresh authority, irreversible-inverse replay, fork parentage and pending-command
+cutover. Independent source and evidence review cleared these Phase 1 boundaries.
+Affected compilation and repository enforcement pass with the intended facade
+exports and no added documentation-debt waiver.
+
 Consume completed predecessor publication and custody contracts. Install typed inverse
 bindings and original pre-image capture, implement exact ancestry selection, fresh
 ordinary correction admission and one Relational successor with exact Signal retention.
@@ -488,6 +469,8 @@ shape admits a create or a retire, so Phase 2's correspondence binding extends i
 rather than replacing it.
 
 ### Phase 2: Composite compatibility, effects and recovery
+
+**In boundary review.** Phases 3–4 remain held until this phase is certified.
 
 Extend that path to owner definition successors, program compatibility, required-output
 reconciliation, compensation, workflow/inbound dispositions and authored create/delete
@@ -506,12 +489,11 @@ undo/edit/reapply divergence and handle/index destruction; remove linear-head po
 and migrate useful provisional tests together. Ordinary edits cannot clear alternatives.
 This phase establishes the accepted platform product and enables full consumer adoption.
 
-### Phase 4: CAD integration, cutover and public closure
+### Phase 4: Public integration, cutover and closure
 
-Build Proprietary against the exact new facade once its general modeling thin slice
-exists, install CAD correction bindings, and complete real source/geometry and
-1,000-feature work courts. Studio's undo/redo and history chooser follow canonical
-history. Complete Bank
+Complete the public authored lifecycle, derived-family regeneration and
+1,000-entry locality courts. The public history chooser follows canonical history.
+Complete Bank
 transport/user-node behavior and DTO compatibility. Remove executable provisional
 exports, callers, linear-stack tests and misleading documentation together; retain
 accepted aftermath/recovery. Ship documentation and run the required enforcement and
@@ -558,26 +540,22 @@ closeout guide. The implementation phases must deliver:
 | Ordinary callers | `foundations/ordinary-application-front-door.md` and `foundations/branches-and-previews.md`: compiled request/correction examples, explicit alternatives, idempotency, bounded history, denial, source-versus-output completion. |
 | Program/workflow authors | `foundations/programs-and-adoption.md` and `foundations/workflows.md`: source interpretation, target support, fresh approvals and non-rewindable performed effects. |
 | Bank maintainers/users | `workspaces/worth-query-bank-world/docs/public-consumer-contract.md` and `docs/process-transport.md` in that workspace: new commands, authentication, response loss, journal compensation and external recovery. |
-| CAD/Studio maintainers | Proprietary `cad/docs/plans/general-modeling.md` (Undo) and `cad/docs/plans/platform-gaps.md`: CAD correction bindings, local selection versus canonical alternatives, the create/delete correspondence binding, real integration evidence and native UI scope. |
 
 Compile snippets through the public certification example; check transport examples
 against real process journeys. Keep planned syntax explicitly marked until it compiles.
 Document mandatory recovery even when optional diagnostics/payload disclosure is omitted.
-Cross-repository documentation and pin changes belong to Phase 4, not this design-only edit.
 
 ## Acceptance Evidence, QA And Handoff
 
-9.18 closes only after all four phases, the composite public court, real Bank process
-court and real Proprietary source/geometry court pass against the candidate APIs.
-Platform certification without the private product build is platform evidence only;
-missing access or a mismatched dependency pin leaves the product integration gate open.
-Do not replace that gate with a generic CAD mock or claim existing CAD tests prove
-new correction semantics.
+9.18 closes only after all four phases, the composite public court, public authored
+lifecycle/locality court and real Bank process court pass against the candidate APIs.
+Certification covers the public platform and its public Bank consumer. Private
+consumer adoption, dependency pins, geometry and native UI acceptance are separate
+work and do not gate this milestone.
 
 Verification uses the existing grouped `application_graph` target in
 `workspaces/worth-query/Cargo.toml`, affected owner tests, public compile tests/example,
-Bank's grouped process target in `workspaces/worth-query-bank-world/Cargo.toml` and
-Proprietary's grouped `worth-modeling-conformance` `it` target. Confirm target/test
+Bank's grouped process target in `workspaces/worth-query-bank-world/Cargo.toml`. Confirm target/test
 names by discovery before expensive runs. Focused semantic/compile checks belong in CI;
 process and population lanes use explicit bounded workload/resource budgets. Record
 executed commands, candidate revisions and unavailable environments in normal CI/review
@@ -590,7 +568,7 @@ revision checks links, path claims and diff integrity; it does not claim runtime
 
 QA focuses on counterfeit source authority, stale target/program reuse, omitted negative
 read conflicts, partial effects misreported as rollback, automatic external redispatch,
-provisional residue, incomplete cross-repository adoption and correction work leaking
+provisional residue, incomplete public consumer adoption and correction work leaking
 into ordinary requests. Review the independent observations and lawful negative twins
 before expanding test volume. Accepted 9.16/9.17 recovery, disclosure, branch isolation,
 workflow custody, cert-only replay and derived-state rebuildability remain mandatory.

@@ -15,6 +15,8 @@ mod branch_commit_coordination;
 mod commit_causality;
 pub(super) mod committed_dispatch_outbox;
 mod completed_observation;
+mod correction_idempotency;
+pub(in crate::domain_computation::primary_graph) use correction_idempotency::CorrectionIdempotencyObservation;
 mod decision_facts;
 pub(in crate::domain_computation) use decision_facts::PrimaryDecisionReadSetComparison;
 pub(in crate::domain_computation::primary_graph) mod dispatch_outbox;

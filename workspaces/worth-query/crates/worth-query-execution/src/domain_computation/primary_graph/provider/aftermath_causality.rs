@@ -12,6 +12,7 @@ use worth_relational::facade::transactions::{
 };
 
 use super::WorthQueryPrimaryGraphProvider;
+mod source_fields;
 use crate::domain_computation::application_aftermath::{
     WorthQueryCommittedAftermathCausality, WorthQueryPendingAftermathCausality,
 };
@@ -48,7 +49,7 @@ pub(super) fn aftermath_causality_create_intent(
     mutation_partition: worth_relational::facade::identity::PartitionId,
 ) -> MutationIntent {
     let key = pending.key();
-    let fields = BTreeMap::from([
+    let mut fields = BTreeMap::from([
         (
             layout.key_locator.clone(),
             AspectValue::String(InternedString::from(key.clone())),
@@ -70,6 +71,7 @@ pub(super) fn aftermath_causality_create_intent(
             AspectValue::UInt64(outcome_identity.get()),
         ),
     ]);
+    source_fields::append(layout, pending, &mut fields);
     MutationIntent::Create(CreateIntent::Entity(EntitySpec {
         partition_id: mutation_partition,
         kind_id: layout.entity_kind,
@@ -199,7 +201,7 @@ impl WorthQueryAftermathCausalityRead<'_> {
         if values
             .iter()
             .zip(self.expected_values(&values).iter())
-            .any(|(observed, expected)| observed.as_ref() != Some(expected))
+            .any(|(observed, expected)| observed.as_ref() != expected.as_ref())
         {
             return Err("aftermath causality record drifted from admitted meaning".into());
         }
@@ -285,19 +287,21 @@ impl WorthQueryAftermathCausalityRead<'_> {
             .ok_or(WorthQueryAftermathCausalityReadDenial::Unavailable)
     }
 
-    fn expected_values(&self, observed: &AftermathCausalityValues) -> [AspectValue; 5] {
-        [
-            self.key_value(),
-            AspectValue::UInt64(self.pending.role().code()),
-            AspectValue::String(InternedString::from(
+    fn expected_values(&self, observed: &AftermathCausalityValues) -> Vec<Option<AspectValue>> {
+        let mut values = vec![
+            Some(self.key_value()),
+            Some(AspectValue::UInt64(self.pending.role().code())),
+            Some(AspectValue::String(InternedString::from(
                 self.pending.parent().branch_id.0.clone(),
-            )),
-            AspectValue::UInt64(self.pending.parent().commit_id.0),
-            AspectValue::UInt64(self.outcome_identity.map_or_else(
+            ))),
+            Some(AspectValue::UInt64(self.pending.parent().commit_id.0)),
+            Some(AspectValue::UInt64(self.outcome_identity.map_or_else(
                 || observed[4].as_ref().and_then(as_u64).unwrap_or(0),
                 WorthQueryApplicationCommitOutcomeIdentity::get,
-            )),
-        ]
+            ))),
+        ];
+        values.extend(source_fields::values(self.pending));
+        values
     }
 
     fn key_value(&self) -> AspectValue {
@@ -319,6 +323,7 @@ fn required_fields(
         &layout.outcome_identity_locator,
     ]
     .into_iter()
+    .chain(source_fields::locators(layout))
     .map(|locator| {
         locator
             .field_path()

@@ -12,6 +12,7 @@ use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIden
 use worth_query_installation::facade::WorthQueryInstalledAftermathContract;
 
 use super::WorthQueryApplicationIdempotencyBinding;
+use worth_query_declaration::facade::application_operation::ApplicationSharedInput;
 
 /// Exact capability input retained from the original operation admission.
 ///
@@ -20,29 +21,60 @@ use super::WorthQueryApplicationIdempotencyBinding;
 /// only observe it through a typed downcast; no caller can replace the value.
 #[derive(Clone)]
 pub(crate) struct WorthQueryRetainedGovernedInput {
+    encoded: Option<Arc<dyn Any + Send + Sync>>,
     value: Arc<dyn Any + Send + Sync>,
     type_id: TypeId,
     type_name: &'static str,
     governed_identity: Option<[u8; 32]>,
+    original_scope: Option<Arc<super::super::WorthQueryObservedScopeSelector>>,
+    correction:
+        Option<Arc<crate::domain_computation::application_aftermath::OriginalCorrectionDisclosure>>,
 }
 
 impl WorthQueryRetainedGovernedInput {
-    fn from_admission<Input>(input: &Input, governed_identity: Option<[u8; 32]>) -> Self
+    fn from_admission<Input>(
+        input: &ApplicationSharedInput<Input>,
+        governed_identity: Option<[u8; 32]>,
+        original_scope: Option<&Arc<super::super::WorthQueryObservedScopeSelector>>,
+        correction: Option<
+            &Arc<crate::domain_computation::application_aftermath::OriginalCorrectionDisclosure>,
+        >,
+        encoded: Option<&Arc<dyn Any + Send + Sync>>,
+    ) -> Self
     where
-        Input: Clone + Send + Sync + 'static,
+        Input: Send + Sync + 'static,
     {
         Self {
+            encoded: encoded.cloned(),
             value: Arc::new(input.clone()),
             type_id: TypeId::of::<Input>(),
             type_name: std::any::type_name::<Input>(),
             governed_identity,
+            original_scope: original_scope.cloned(),
+            correction: correction.cloned(),
         }
     }
 
     pub(crate) fn downcast_ref<Input: 'static>(&self) -> Option<&Input> {
         (self.type_id == TypeId::of::<Input>())
-            .then(|| self.value.downcast_ref::<Input>())
+            .then(|| {
+                self.value
+                    .downcast_ref::<ApplicationSharedInput<Input>>()
+                    .map(AsRef::as_ref)
+            })
             .flatten()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn encoded_input<Binding>(
+        &self,
+    ) -> Option<
+        &worth_query_declaration::facade::application_operation::ApplicationEncodedInput<Binding>,
+    >
+    where
+        Binding:
+            worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding,
+    {
+        self.encoded.as_ref()?.downcast_ref()
     }
 
     pub(crate) const fn has_governed_identity(&self) -> bool {
@@ -53,13 +85,28 @@ impl WorthQueryRetainedGovernedInput {
         self.governed_identity
     }
 
+    pub(in crate::domain_computation) fn original_scope(
+        &self,
+    ) -> Option<&Arc<super::super::WorthQueryObservedScopeSelector>> {
+        self.original_scope.as_ref()
+    }
+    pub(in crate::domain_computation) fn correction(
+        &self,
+    ) -> Option<&crate::domain_computation::application_aftermath::OriginalCorrectionDisclosure>
+    {
+        self.correction.as_deref()
+    }
+
     #[cfg(test)]
     pub(crate) fn axis_probe(governed_identity: [u8; 32]) -> Self {
         Self {
+            encoded: None,
             value: Arc::new(()),
             type_id: TypeId::of::<()>(),
             type_name: std::any::type_name::<()>(),
             governed_identity: Some(governed_identity),
+            original_scope: None,
+            correction: None,
         }
     }
 }
@@ -86,6 +133,7 @@ impl Eq for WorthQueryRetainedGovernedInput {}
 /// retained on a commit receipt so recovery can bind to admitted truth.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationCommitAuthorityBinding {
+    original_mutation_binding: Option<std::any::TypeId>,
     /// Query runtime that admitted the operation this receipt commits.
     ///
     /// Not the Relational `provider_runtime_instance_id`, which identifies the
@@ -98,6 +146,7 @@ pub struct WorthQueryApplicationCommitAuthorityBinding {
     principal_scope: WorthQueryOperationScopeBinding,
     idempotency_binding: WorthQueryApplicationIdempotencyBinding,
     retained_governed_input: Option<WorthQueryRetainedGovernedInput>,
+    original_program: Option<Arc<super::super::OriginalProgramMeaning>>,
 }
 
 impl WorthQueryApplicationCommitAuthorityBinding {
@@ -119,19 +168,33 @@ impl WorthQueryApplicationCommitAuthorityBinding {
     where
         Input: Clone + Send + Sync + 'static,
     {
-        let retained_governed_input = admission.capability_input().map(|input| {
-            WorthQueryRetainedGovernedInput::from_admission(
+        let retained_governed_input = match admission.original_input() {
+            Some((input, identity)) => Some(WorthQueryRetainedGovernedInput::from_admission(
                 input,
-                admission.governed_input_identity().copied(),
-            )
-        });
+                Some(identity),
+                admission.original_scope(),
+                admission.original_correction_disclosure(),
+                admission.original_encoded_input(),
+            )),
+            None => admission.shared_capability_input().map(|input| {
+                WorthQueryRetainedGovernedInput::from_admission(
+                    input,
+                    admission.governed_input_identity().copied(),
+                    admission.original_scope(),
+                    admission.original_correction_disclosure(),
+                    admission.original_encoded_input(),
+                )
+            }),
+        };
         Self {
+            original_mutation_binding: admission.original_mutation_binding(),
             runtime_authority: admission.runtime_authority(),
             installed_operation: *admission.installed_operation_identity_bytes(),
             installed_aftermath: admission.allowed_graph_contract().aftermath().cloned(),
             principal_scope: admission.operation_scope_binding().clone(),
             idempotency_binding,
             retained_governed_input,
+            original_program: admission.original_program().cloned(),
         }
     }
 
@@ -142,6 +205,16 @@ impl WorthQueryApplicationCommitAuthorityBinding {
 
     pub const fn installed_operation(&self) -> &[u8; 32] {
         &self.installed_operation
+    }
+
+    pub(crate) const fn original_mutation_binding(&self) -> Option<std::any::TypeId> {
+        self.original_mutation_binding
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn original_program(
+        &self,
+    ) -> Option<&super::super::OriginalProgramMeaning> {
+        self.original_program.as_deref()
     }
 
     /// Exact compiled aftermath retained from the admitted installed operation.
@@ -163,7 +236,7 @@ impl WorthQueryApplicationCommitAuthorityBinding {
     ///
     /// A mismatched type yields no value; the caller never supplies replacement
     /// bytes or a fallback value.
-    pub fn retained_governed_input<Input: 'static>(&self) -> Option<&Input> {
+    pub(crate) fn retained_governed_input<Input: 'static>(&self) -> Option<&Input> {
         self.retained_governed_input.as_ref()?.downcast_ref()
     }
 

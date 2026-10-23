@@ -103,12 +103,12 @@ fn recovery_capacity_denies_before_any_selected_product_head_moves() {
     let root_slot = world
         .application
         .primary_provider
-        .reserve_application_publication_recovery(root.product().observation())
+        .reserve_application_publication_recovery(root.product().observation(), None)
         .expect("total minus one recovery slot remains admissible");
     let sibling_a_slot = world
         .application
         .primary_provider
-        .reserve_application_publication_recovery(sibling_a.product().observation())
+        .reserve_application_publication_recovery(sibling_a.product().observation(), None)
         .expect("the final installed recovery slot remains admissible");
     let denied_program = world
         .application

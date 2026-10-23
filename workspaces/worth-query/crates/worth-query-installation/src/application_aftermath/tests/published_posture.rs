@@ -19,6 +19,7 @@ fn runtime_alone_recorded_inverse_publishes_reversible() {
             recorded_inverse::<Balance>(),
         ))
         .expect("recorded inverse installs");
+    assert!(installed.correction_disclosure().is_none());
     assert_eq!(
         installed.published_posture(),
         PublishedAftermathPosture::Reversible

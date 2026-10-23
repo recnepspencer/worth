@@ -142,6 +142,8 @@ where
             .mutation_product()
             .ok_or_else(WorthQueryApplicationIdempotencyResolutionDenial::foreign_admission)?
             .publication_binding();
+        let command_lane = self.primary_provider.correction_commit_lane(&bound);
+        let _command = command_lane.as_ref().map(|lane| lane.enter());
         let commit_lane = self
             .primary_provider
             .application_branch_commit_lane(product.observation());
@@ -300,6 +302,13 @@ where
                     .bind_governed_proposal(admission.governed_proposal_identity());
                 (read_for, binding)
             })
+            .collect::<Vec<_>>();
+        let command_lanes = self
+            .primary_provider
+            .correction_commit_lanes(bindings.iter().map(|(_, binding)| *binding));
+        let _commands = command_lanes
+            .iter()
+            .map(|lane| lane.enter())
             .collect::<Vec<_>>();
         let product = admission
             .graph_work()

@@ -8,6 +8,44 @@ use crate::identity::ProductBranchIncarnation;
 
 use super::super::RuntimeWorldOwnerRoot;
 
+pub(super) fn select_ancestor<D, I, E, Ctx, T>(
+    owner: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    target: &ProductBranchObservation,
+    source: &crate::identity::CompositeCommitIdentity,
+    maximum: Option<NonZeroUsize>,
+) -> Result<
+    crate::branch::ProductBranchAncestorSelection,
+    crate::branch::ProductBranchAncestorSelectionDenial,
+>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    use crate::branch::ProductBranchAncestorSelectionDenial as Denial;
+    require_available_occurrence(owner, target.lifecycle_incarnation()).map_err(Denial::Branch)?;
+    let _operation = owner
+        .reserve_creation_operation()
+        .map_err(|()| Denial::Branch(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable))?;
+    owner
+        .state
+        .branches
+        .branch_cell_by_lifecycle(target.lifecycle_incarnation())
+        .ok_or(Denial::Branch(
+            RuntimeWorldBranchAdmissionDenial::RetiredBranch,
+        ))?;
+    let ancestor = owner
+        .state
+        .history
+        .select_retained_ancestor(execution, target.selected_commit(), source, maximum)
+        .map_err(Denial::History)?;
+    Ok(crate::branch::ProductBranchAncestorSelection::owner_issued(
+        target.clone(),
+        ancestor,
+    ))
+}
+
 pub(super) fn trace<D, I, E, Ctx, T>(
     owner: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -7,6 +7,13 @@ mod cleanup;
 mod close;
 mod conditional_definition;
 mod context;
+mod correction_source;
+pub use correction_source::{
+    WorthQueryCorrectionCommandKey, WorthQueryCorrectionDerivationDenial,
+    WorthQueryCorrectionInputSelection, WorthQueryCorrectionIntent,
+    WorthQueryCorrectionSelectionDenial, WorthQueryPreparedCorrectionSource,
+    WorthQuerySelectedCorrectionSource,
+};
 mod generated_materialization;
 pub(in crate::domain_computation::primary_graph) use generated_materialization::admit_required_invariants;
 mod history;

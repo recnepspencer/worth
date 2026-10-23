@@ -21,7 +21,7 @@ impl BankCommitPublicDescription {
             expected_fact_count: execution.precondition_comparison().expected_fact_count(),
             canonical_work: BankCommitCanonicalWorkPhases::from_query(execution.canonical_work()),
             co_committed_dispatch_outbox: execution.dispatch_outbox().is_some(),
-            retained_preimage: execution.retained_preimage().is_some(),
+            retained_preimage: execution.has_retained_preimage(),
             performed_preimage_retention_work: execution.mutation_work().is_some_and(|work| {
                 work.preimage_validated_intents_examined() != 0
                     || work.preimage_mutation_targets_materialized() != 0

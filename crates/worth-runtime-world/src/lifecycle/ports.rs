@@ -110,6 +110,17 @@ pub(crate) trait RuntimeWorldObservationService:
         occurrence: crate::identity::ProductBranchIncarnation,
     ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial>;
 
+    fn select_product_branch_ancestor(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        target: &ProductBranchObservation,
+        source: &crate::identity::CompositeCommitIdentity,
+        maximum: Option<std::num::NonZeroUsize>,
+    ) -> Result<
+        crate::branch::ProductBranchAncestorSelection,
+        crate::branch::ProductBranchAncestorSelectionDenial,
+    >;
+
     fn trace_product_branch_ancestry(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

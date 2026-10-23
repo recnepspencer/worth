@@ -8,6 +8,8 @@ use crate::domain_computation::execution_runtime::WorthQueryApplicationQueryReso
 use crate::domain_computation::primary_graph::WorthQueryAdmittedChange;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
 use crate::facade::runtime::ExecutionAllocationPolicy;
+#[path = "post_commit_recovery/correction_cutover.rs"]
+mod correction_cutover;
 
 #[test]
 fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidence() {

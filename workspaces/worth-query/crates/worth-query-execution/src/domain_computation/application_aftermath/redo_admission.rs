@@ -206,6 +206,15 @@ pub(super) fn admit_redo_against_product(
             return Err(WorthQueryRedoDenial::duplicate_redo());
         }
         let binding = handle.binding();
+        if binding
+            .installed_aftermath()
+            .correction_disclosure()
+            .is_some()
+        {
+            return Err(WorthQueryRedoDenial::new(
+                super::redo_denial::WorthQueryRedoDenialKind::DeclaredDisclosureRequired,
+            ));
+        }
         let retained_governed_input =
             bound_original_governed_input(binding.retained_governed_input())
                 .ok_or_else(WorthQueryRedoDenial::changed_operation_meaning)?

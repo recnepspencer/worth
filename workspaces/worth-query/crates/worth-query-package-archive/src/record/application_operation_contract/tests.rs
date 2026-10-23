@@ -31,7 +31,7 @@ fn complete_operation_contract_round_trips_every_payload_family_with_exact_work(
         original,
         decode_hex(include_str!("tests/application_operation_contract_v6.hex").trim())
     );
-    let frozen_hex = include_str!("tests/application_operation_contract_v7.hex").trim();
+    let frozen_hex = include_str!("tests/application_operation_contract_v10.hex").trim();
     assert_eq!(encode_hex(&bytes), frozen_hex);
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 12);
     let mut decoder =

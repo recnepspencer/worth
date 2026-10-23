@@ -21,6 +21,21 @@ pub enum WorthQueryOperationInputCaptureDenial {
     Allocation(ExecutionAllocationDenial),
     Encoding(ApplicationValueEncodeDenial),
 }
+impl WorthQueryOperationInputCaptureDenial {
+    /// Preserves the allocation owner's request cause separately from physical refusal.
+    pub fn execution_stop(&self) -> Option<WorthQueryAdvancementDenial> {
+        match self {
+            Self::Execution(cause) => Some(*cause),
+            Self::Allocation(cause) => match cause.classify() {
+                worth_execution::ExecutionAllocationDenialClass::Request(cause) => Some(
+                    crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_scope_stop(cause),
+                ),
+                worth_execution::ExecutionAllocationDenialClass::Physical(_) => None,
+            },
+            Self::Encoding(_) => None,
+        }
+    }
+}
 impl std::fmt::Display for WorthQueryOperationInputCaptureDenial {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "operation input capture refused: {self:?}")

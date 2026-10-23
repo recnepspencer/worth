@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use worth_relational::facade::history::{CommitId, RelationalCommitReceipt};
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
+use super::super::idempotency::WorthQueryIdempotencyLookupKey;
 use super::super::WorthQueryPrimaryGraphCommittedApplication;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryCommitHistoryHold;
 
@@ -17,8 +18,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedCommi
     >,
     by_session:
         BTreeMap<crate::domain_computation::WorthQueryProviderSessionAffinityIdentity, CommitId>,
-    by_idempotency:
-        BTreeMap<(super::super::WorthQueryProductIdempotencyAffinity, [u8; 32]), CommitId>,
+    by_idempotency: BTreeMap<WorthQueryIdempotencyLookupKey, CommitId>,
     /// Evidence still holding its performed publication, by World commit.
     performed_by_world: BTreeMap<CompositeCommitIdentity, CommitId>,
     /// The World history hold each recorded commit's publication handed over,
@@ -29,7 +29,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedCommi
 /// The selectors one evidence entry is indexed under besides its commit.
 struct EvidenceKeys {
     affinity: crate::domain_computation::WorthQueryProviderSessionAffinityIdentity,
-    idempotency: (super::super::WorthQueryProductIdempotencyAffinity, [u8; 32]),
+    idempotency: WorthQueryIdempotencyLookupKey,
     dispatch_correlation:
         Option<crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity>,
 }
@@ -41,11 +41,11 @@ impl EvidenceKeys {
                 .commit_evidence()
                 .provider_session_binding()
                 .affinity_identity(),
-            idempotency: (
-                super::super::WorthQueryProductIdempotencyAffinity::from_publication(
+            idempotency: WorthQueryIdempotencyLookupKey::for_binding(
+                &super::super::WorthQueryProductIdempotencyAffinity::from_publication(
                     evidence.committed_product_publication(),
                 ),
-                *evidence.commit_evidence().idempotency().key_identity(),
+                &evidence.commit_evidence().idempotency(),
             ),
             dispatch_correlation: evidence
                 .commit_evidence()
@@ -231,9 +231,19 @@ impl WorthQueryCompletedCommitEvidenceStore {
         crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
         WorthQueryPrimaryGraphCommittedApplication,
     )>{
-        let commit = self
-            .by_idempotency
-            .get(&(product.clone(), *binding.key_identity()))?;
+        self.observe_lookup_key(&WorthQueryIdempotencyLookupKey::for_binding(
+            product, &binding,
+        ))
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn observe_lookup_key(
+        &self,
+        key: &WorthQueryIdempotencyLookupKey,
+    ) -> Option<(
+        crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
+        WorthQueryPrimaryGraphCommittedApplication,
+    )>{
+        let commit = self.by_idempotency.get(key)?;
         let evidence = self.by_commit.get(commit)?;
         Some((evidence.commit_evidence().idempotency(), evidence.clone()))
     }

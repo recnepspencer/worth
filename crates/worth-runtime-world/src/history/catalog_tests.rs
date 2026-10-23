@@ -24,3 +24,6 @@ mod publication_metadata;
 
 #[path = "catalog_tests/managed_traversal.rs"]
 mod managed_traversal;
+
+#[path = "catalog_tests/ancestor_selection.rs"]
+mod ancestor_selection;

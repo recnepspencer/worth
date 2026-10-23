@@ -28,6 +28,8 @@ use worth_signal::facade::branch::validate_signal_branch_name;
 
 type TestOwner = super::TestOwner;
 
+#[path = "fork_creation/ancestor_selection.rs"]
+mod ancestor_selection;
 #[path = "fork_creation/custody.rs"]
 mod custody;
 #[path = "fork_creation/destinations.rs"]

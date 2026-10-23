@@ -35,6 +35,11 @@ fn checkpoint(cause: MapKernelStop, stage_identity: Option<String>) -> WorkflowF
         MapKernelStop::NestedStopped => {
             WorkflowFrontierFailure::Denied(Denial::ComputationNestedStopped { stage_identity })
         }
+        MapKernelStop::AccountingUnavailable => {
+            WorkflowFrontierFailure::Denied(Denial::ComputationAccountingUnavailable {
+                stage_identity,
+            })
+        }
     }
 }
 pub(super) fn scope(cause: WorkCeilingDenial) -> WorkflowFrontierFailure {
@@ -44,6 +49,23 @@ pub(super) fn scope(cause: WorkCeilingDenial) -> WorkflowFrontierFailure {
         WorkCeilingDenial::Panicked => WorkflowFrontierFailure::Denied(Denial::ComputationPanic {
             stage_identity: None,
         }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn unavailable_accounting_retains_its_own_workflow_stop() {
+        let stopped = scope(WorkCeilingDenial::Stopped(
+            MapKernelStop::AccountingUnavailable,
+        ));
+        assert!(matches!(
+            stopped,
+            WorkflowFrontierFailure::Denied(Denial::ComputationAccountingUnavailable {
+                stage_identity: None
+            })
+        ));
     }
 }
 pub(super) fn map(

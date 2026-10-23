@@ -198,7 +198,7 @@ impl WorthQueryRecoveryHandleBinding {
     }
 
     /// Exact original capability input carried from operation admission.
-    pub fn original_input<Input: 'static>(&self) -> Option<&Input> {
+    pub(crate) fn original_input<Input: 'static>(&self) -> Option<&Input> {
         self.retained_governed_input.as_ref()?.downcast_ref()
     }
 

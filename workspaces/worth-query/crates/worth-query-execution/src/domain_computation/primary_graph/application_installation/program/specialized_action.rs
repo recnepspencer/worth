@@ -49,6 +49,7 @@ where
             TypeId::from(action.operation_type()) == operation
                 && action.mutation_binding_type().is_some_and(|binding| {
                     self.backing
+                        .initial
                         .output_source_bindings
                         .contains(&TypeId::from(binding))
                 })

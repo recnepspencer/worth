@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 
 mod access_observation;
 mod authorization;
+mod correction_disclosure;
 mod denial;
 mod finish;
 mod governed_access;

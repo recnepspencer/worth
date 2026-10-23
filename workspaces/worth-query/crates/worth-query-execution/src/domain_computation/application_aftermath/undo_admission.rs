@@ -175,6 +175,15 @@ pub fn admit_undo(
                 .ensure_for(handle)
                 .map_err(|denial| map_recovery_denial(denial.kind()))?;
             let binding = handle.binding().clone();
+            if binding
+                .installed_aftermath()
+                .correction_disclosure()
+                .is_some()
+            {
+                return Err(WorthQueryUndoDenial::new(
+                    WorthQueryUndoDenialKind::DeclaredDisclosureRequired,
+                ));
+            }
             let aftermath = binding.installed_aftermath();
             let derived_request = derive_request_from_axes(aftermath)?;
             let evidence = prepare_undo_evidence(&binding, aftermath, derived_request)?;

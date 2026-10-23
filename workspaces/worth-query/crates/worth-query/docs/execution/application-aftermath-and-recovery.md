@@ -73,8 +73,9 @@ uses a declared source-only owning action, observes actual native fresh evidence
 closes independent cleanup and reads current/retained product truth. Real partial
 publication/refusal are exercised by the public owning certification courts.
 
-The `provisional_aftermath` facade contains the current undo/redo experiment.
-It is not part of the stable feature described here.
+Use [recorded source correction](recorded-source-correction.md) to select an
+original receipt, prepare its declared inverse under current authority and
+publish a new child of the target branch.
 
 ## Ordinary operation recovery
 
@@ -690,8 +691,8 @@ when every count is zero; it cannot erase support needed by exact recovery.
 - Relational remains the authority for commit history, entity lineage, branch
   head, and ancestry. Runtime Bridge may transport an already-admitted portable
   description, but it does not decide any of those facts.
-- Exact pre-image retention is stable infrastructure. What an eventual undo or
-  redo product may lawfully do with retained truth is still deferred.
+- Recorded source correction joins exact pre-image retention to the installed
+  inverse binding, current disclosure and ordinary inverse admission.
 - `worth-proof` supplies generic progression and proof-bearing carriers. Query
   operations still require the exact Query-owned authority values returned by
   the owning workflow; a caller-defined generic marker opens no recovery door.
@@ -721,43 +722,28 @@ version and distinguish `PredatesWindow`, `ExceedsWindow`, and `Retired`.
 These values explain what Query observed; they do not overwrite the external
 owner's ledger.
 
-## Anti-Patterns
+## Preserve the owning recovery path
 
-- Do not derive a protocol family or version from `std::any::type_name`.
-- Do not retain or parse a raw correlation-family string beside the typed
-  `WorthQueryExternalEffectCorrelationFamily`.
-- Do not accept payload bytes, effect names, completion flags, or recovery slots
-  from the caller after operation admission.
-- Do not treat acknowledgement, silence, timeout, or response loss as completion.
-- Do not construct publication from copied enums or raw receipt fields.
-- Do not serialize a recovery handle and treat the bytes as live authority.
-- Do not extract, serialize, or accept a raw Relational settlement capability.
-- Do not retry the application operation after `SettlementDeferred`; repair the
-  typed application carrier.
-- Do not use an aftermath recovery handle to repair publication settlement, or
-  use a settlement carrier to redispatch an external effect.
-- Do not treat `WorthQueryRecoveryBrief` or ordinary stop-remediation guidance
-  as an application-aftermath recovery handle.
-- Do not add Query-local lineage, parent selection, branch heads, or publication
-  order. Those are Relational responsibilities.
-- Do not use `provisional_aftermath` as a stable product contract.
+Declare protocol versions and typed correlation families explicitly. Retain
+the admitted payload, dispatch record and returned native carrier together.
+External completion follows the protocol's authenticated observation.
 
-## Current Limits
+After `SettlementDeferred`, repair the returned settlement carrier. An
+aftermath handle continues its own external-effect or correction workflow.
+Published briefs describe available support; live recovery uses the native
+owner-issued carrier. Relational owns commit ancestry and Runtime World owns
+composite publication.
 
-- Application settlement carriers and aftermath recovery handles are
-  runtime-local and not restart-durable. Published aftermath recovery support
-  reports when a Store capability is still required.
-- Reconciliation and compensation currently produce exact owner-bound admission
-  values. No accepted Query surface executes those corrective effects yet.
-- The accepted external-effect lane carries one declared typed effect per
-  operation contract.
-- Durable cross-runtime recovery, branch-aware reversal, merge interaction,
-  rebase, and restart-stable history navigation belong to the cross-runtime
-  roadmap.
-- Undo and redo behavior, eligibility, occurrence meaning, divergence policy,
-  and public DX await the Query Undo/Redo Semantics milestone.
+## Recovery lifetime and scope
+
+Settlement carriers and aftermath recovery handles belong to their runtime.
+Published recovery support identifies the owner needed to continue recovery.
+Reconciliation and compensation admission values retain their exact owner
+binding. Each external-effect operation contract declares one typed effect.
 
 ## Related Docs
+
+- [Recorded source correction](recorded-source-correction.md)
 
 - [Canonical Graph Obligation Progression](../domain-capabilities/canonical-graph-obligation-progression.md)
 - [Provider Sessions And Decision Read-Sets](../domain-capabilities/provider-sessions-and-decision-read-sets.md)
