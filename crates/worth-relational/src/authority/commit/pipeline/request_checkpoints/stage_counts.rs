@@ -5,7 +5,7 @@ use crate::transactions::data::WorkerIntentBatch;
 use std::sync::{Arc, Mutex};
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
-fn assert_one_consult_per_stage(batches: usize, split: bool, strategy: bool) {
+fn assert_one_consult_per_safe_point(batches: usize, split: bool, strategy: bool) {
     let runtime = runtime_with_test_schema();
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
@@ -58,8 +58,11 @@ fn assert_one_consult_per_stage(batches: usize, split: bool, strategy: bool) {
     .unwrap();
     let visits = visits.lock().unwrap();
     use CommitStage::*;
-    // Each literal names the stage beside its single allowed consult.
-    let stages = [
+    // Each literal names one safe point beside its single allowed consult.
+    // Publication owns two: its entry, before preflight, and the final
+    // pre-effect boundary after preflight, where the caller's original request
+    // keeps its first cause ahead of any separate operation control.
+    let safe_points = [
         Validation,
         Admission,
         Draft,
@@ -71,47 +74,26 @@ fn assert_one_consult_per_stage(batches: usize, split: bool, strategy: bool) {
         PublicationPreparation,
         CandidateRegistration,
         Publication,
+        Publication,
     ];
-    let counts = stages.map(|stage| {
-        (
-            stage,
-            visits.iter().filter(|visit| **visit == stage).count(),
-        )
-    });
-    assert_eq!(
-        counts,
-        [
-            (Validation, 1),
-            (Admission, 1),
-            (Draft, 1),
-            (Boundary, 1),
-            (Mutation, 1),
-            (History, 1),
-            (Snapshot, 1),
-            (Artifact, 1),
-            (PublicationPreparation, 1),
-            (CandidateRegistration, 1),
-            (Publication, 1)
-        ]
-    );
-    assert_eq!(*visits, stages);
+    assert_eq!(*visits, safe_points);
 }
 
 #[test]
-fn ordinary_commit_consults_once_per_named_stage() {
-    assert_one_consult_per_stage(1, false, false);
+fn ordinary_commit_consults_once_per_named_safe_point() {
+    assert_one_consult_per_safe_point(1, false, false);
 }
 #[test]
-fn batch_commit_consults_once_per_named_stage() {
-    assert_one_consult_per_stage(3, false, false);
-}
-
-#[test]
-fn split_commit_consults_once_per_named_stage() {
-    assert_one_consult_per_stage(1, true, false);
+fn batch_commit_consults_once_per_named_safe_point() {
+    assert_one_consult_per_safe_point(3, false, false);
 }
 
 #[test]
-fn strategy_commit_consults_once_per_named_stage() {
-    assert_one_consult_per_stage(1, false, true);
+fn split_commit_consults_once_per_named_safe_point() {
+    assert_one_consult_per_safe_point(1, true, false);
+}
+
+#[test]
+fn strategy_commit_consults_once_per_named_safe_point() {
+    assert_one_consult_per_safe_point(1, false, true);
 }

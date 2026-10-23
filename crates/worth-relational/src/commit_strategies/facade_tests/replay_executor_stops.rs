@@ -15,6 +15,8 @@ const REFUSAL: Cause = Cause::PolicyMemoryExhausted {
 struct RefuseOnce {
     calls: Arc<AtomicUsize>,
     published: Arc<AtomicUsize>,
+    /// Publication consults made by one live publication of the same commit.
+    one_publication: Arc<AtomicUsize>,
 }
 impl CommitStrategyExecutor for RefuseOnce {
     fn execute(
@@ -25,7 +27,7 @@ impl CommitStrategyExecutor for RefuseOnce {
     ) -> Result<StrategyExecutionResult, StrategyExecutorFailure> {
         assert_eq!(
             self.published.load(Ordering::SeqCst),
-            1,
+            self.one_publication.load(Ordering::SeqCst),
             "executor must run after reconstruction's publication"
         );
         if self.calls.fetch_add(1, Ordering::SeqCst) == 0 {
@@ -39,6 +41,7 @@ impl CommitStrategyExecutor for RefuseOnce {
 fn executor_memory_refusal_is_returned_by_value_without_a_verification_outcome() {
     let calls = Arc::new(AtomicUsize::new(0));
     let published = Arc::new(AtomicUsize::new(0));
+    let one_publication = Arc::new(AtomicUsize::new(0));
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
@@ -47,6 +50,7 @@ fn executor_memory_refusal_is_returned_by_value_without_a_verification_outcome()
             RefuseOnce {
                 calls: calls.clone(),
                 published: published.clone(),
+                one_publication: one_publication.clone(),
             },
         ))
         .build();
@@ -61,9 +65,24 @@ fn executor_memory_refusal_is_returned_by_value_without_a_verification_outcome()
     let validated = authority
         .validate_lowered_plan(&execution, &runtime, lowered)
         .unwrap();
-    let committed = authority
-        .execute_validated_commit(&execution, &runtime, validated)
-        .unwrap();
+    // A publication may consult its request at more than one safe point. The
+    // live commit measures one publication's consults; reconstruction of the
+    // same commit must make exactly that many before the executor runs.
+    let counted = one_publication.clone();
+    let committed = stage_observation::with_observer(
+        Box::new(move |stage| {
+            if stage == CommitStage::Publication {
+                counted.fetch_add(1, Ordering::SeqCst);
+            }
+        }),
+        || authority.execute_validated_commit(&execution, &runtime, validated),
+    )
+    .unwrap();
+    let one_publication = one_publication.load(Ordering::SeqCst);
+    assert!(
+        one_publication > 0,
+        "a live publication consults its request"
+    );
     let request = RelationalReplayRequest {
         commit_id: committed.commit.commit_id,
         branch_id: BranchId("main".into()),
@@ -84,7 +103,7 @@ fn executor_memory_refusal_is_returned_by_value_without_a_verification_outcome()
         },
     );
     assert_eq!(calls.load(Ordering::SeqCst), 1);
-    assert_eq!(published.load(Ordering::SeqCst), 1);
+    assert_eq!(published.load(Ordering::SeqCst), one_publication);
     assert_eq!(result, Err(RelationalRecoveryStop::Request(REFUSAL)));
     // Retry is a new verification from the same retained bytes, after the one-shot refusal.
     published.store(0, Ordering::SeqCst);
