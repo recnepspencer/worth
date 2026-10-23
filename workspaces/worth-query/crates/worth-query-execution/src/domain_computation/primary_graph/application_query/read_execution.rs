@@ -101,7 +101,6 @@ pub(super) fn read_bounded_root_rows<
     let pinned = pin_runtime_read(
         runtime,
         execution,
-        graph,
         &read,
         &[],
         WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,

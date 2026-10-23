@@ -3,6 +3,7 @@ use worth_query_declaration::facade::{
     application_aftermath::{
         DeclaredCorrectionAuthority, DeclaredCorrectionBinding, DeclaredCorrectionBindingParts,
         DeclaredCorrectionDisclosure, DeclaredCorrectionDisclosureParts,
+        DeclaredCorrectionOutputField, DeclaredCorrectionOutputFieldParts,
         PortableApplicationAftermathContract,
     },
     application_operation::{
@@ -10,7 +11,7 @@ use worth_query_declaration::facade::{
         ApplicationMutationScopeDescription, ApplicationMutationScopeResolutionMode,
         ApplicationWorkflowExecutionRequirements,
     },
-    application_schema::ApplicationSchemaMember,
+    application_schema::{ApplicationFieldPresence, ApplicationSchemaMember},
     portable_identity::WorthQueryPortableTypeIdentity,
 };
 
@@ -24,6 +25,14 @@ fn correction_archive_retains_both_bindings_handlers_queries_and_codecs() {
         inverse_handler: "restore-handler.v2".to_owned(),
         source_query: Some("amount-before.v1".to_owned()),
         inverse_query: Some("amount-current.v2".to_owned()),
+        source_output_fields: vec![DeclaredCorrectionOutputField::from_untrusted_parts(DeclaredCorrectionOutputFieldParts {
+            source_binding: identity("set-amount.v1"), role: "created-account".to_owned(),
+            entity: "Account".to_owned(), aspect: "State".to_owned(), field: "id".to_owned(),
+            presence: ApplicationFieldPresence::Required,
+            scalar_family: worth_foundational::facade::ScalarAspectType::UInt64,
+            value_binding: identity("worth.u64"), unit: Some("journal-number".to_owned()),
+            binding_unit: Some("journal-number".to_owned()), frame: Some("ledger".to_owned()), canonical: None,
+        })],
         disclosure: DeclaredCorrectionDisclosure::from_untrusted_parts(DeclaredCorrectionDisclosureParts {
             binding: identity("amount-history.v1"), input: identity("history-input.v1"),
             query_name: "amount-history".to_owned(), query: identity("history-query.v1"),

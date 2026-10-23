@@ -14,6 +14,8 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::{
     InstalledCorrectionAuthority, InstalledCorrectionMechanism,
 };
+pub(in crate::domain_computation::primary_graph) mod source_outputs;
+pub use source_outputs::WorthQueryCorrectionOutputProjectionDenial;
 
 pub(super) fn mechanism<'a, S: ApplicationSchema>(
     source: &'a WorthQuerySelectedCorrectionSource<'_, S>,
@@ -32,6 +34,7 @@ pub(super) fn mechanism<'a, S: ApplicationSchema>(
 
 pub(super) fn derive<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
     source: &WorthQuerySelectedCorrectionSource<'_, S>,
+    request: worth_execution::ExecutionRequest<'_, '_>,
     input: &<C::Source as ApplicationMutationBinding<S>>::Input,
 ) -> Result<C::InverseIntent, Denial> {
     match mechanism(source)? {
@@ -48,10 +51,24 @@ pub(super) fn derive<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
             .map_err(Denial::Domain)
         }
         InstalledCorrectionMechanism::Compensation(_) => {
-            C::derive_correction(input, ApplicationCorrectionSourceMaterial::Compensation)
-                .map_err(Denial::Domain)
+            let outputs = source_outputs::SourceOutputs::<S, C>::new(source, request);
+            let result = C::derive_correction(
+                input,
+                ApplicationCorrectionSourceMaterial::Compensation(&outputs),
+            );
+            finish_derivation(result, outputs.take_failure())
         }
     }
+}
+
+pub(in crate::domain_computation::primary_graph) fn finish_derivation<T>(
+    result: Result<T, worth_query_declaration::facade::application_aftermath::ApplicationCorrectionDerivationDenial>,
+    failure: Option<WorthQueryCorrectionOutputProjectionDenial>,
+) -> Result<T, Denial> {
+    if let Some(cause) = failure {
+        return Err(Denial::SourceOutput(cause));
+    }
+    result.map_err(Denial::Domain)
 }
 
 struct DisclosedPreImage<'a>(&'a WorthQueryRetainedPreImage);

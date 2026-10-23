@@ -11,6 +11,23 @@ pub(super) fn append_declared_aftermath(
     append_authority(basis, prefix, contract.authority());
     append_mechanism(basis, prefix, contract.mechanism());
     if let Some(binding) = contract.correction_binding() {
+        basis.u64(
+            format!("{prefix}.correction.source-output-fields.count"),
+            binding.source_output_fields().len() as u64,
+        );
+        for (index, field) in binding.source_output_fields().iter().enumerate() {
+            let locus = format!("{prefix}.correction.source-output-fields.{index}");
+            basis.text(
+                format!("{locus}.source-binding"),
+                field.parts().source_binding.as_str(),
+            );
+            basis.text(format!("{locus}.role"), &field.parts().role);
+            basis.optional_text(
+                format!("{locus}.binding-unit"),
+                field.parts().binding_unit.as_deref(),
+            );
+            super::field::append_schema_field(basis, &locus, &field.projected_value_member());
+        }
         for (field, value) in binding.disclosure().canonical_fields() {
             basis.text(
                 format!("{prefix}.inverse-binding.disclosure.{field}"),

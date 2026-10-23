@@ -18,6 +18,10 @@ pub mod query;
 pub mod required_output_courts;
 pub mod required_output_recovery;
 pub mod schema;
+pub mod source_output_correction;
+pub mod source_output_courts;
+pub mod source_output_handlers;
+pub mod source_output_model;
 
 #[path = "../../tests/application_graph/document_retention_model/operator_identity.rs"]
 pub mod authentication;

@@ -14,6 +14,13 @@ pub use correction_binding::{
 };
 pub use correction_binding::{DeclaredCorrectionDisclosure, DeclaredCorrectionDisclosureParts};
 mod correction_authority;
+pub use correction_binding::{
+    ApplicationCorrectionOutput, ApplicationCorrectionOutputField, DeclaredCorrectionOutputField,
+    DeclaredCorrectionOutputFieldParts,
+};
+pub use correction_binding::{
+    ApplicationCorrectionSourceFieldDenial, ApplicationCorrectionSourceOutputs,
+};
 mod correction_mechanism;
 mod postcondition;
 mod reconciliation;

@@ -53,6 +53,10 @@ pub trait ApplicationCorrectionBinding<Schema: ApplicationSchema>: Sized + 'stat
         false,
     >;
     fn mechanism() -> DeclaredCorrectionMechanism<Schema>;
+    /// Additional historical fields the disclosure contract permits deriving from outputs.
+    fn source_output_fields() -> Vec<super::ApplicationCorrectionOutputField<Schema>> {
+        Vec::new()
+    }
     fn derive_correction(
         original: &<Self::Source as ApplicationMutationBinding<Schema>>::Input,
         material: super::ApplicationCorrectionSourceMaterial<'_, Schema>,
@@ -75,6 +79,7 @@ pub struct DeclaredCorrectionBinding {
     source_query: Option<String>,
     inverse_query: Option<String>,
     disclosure: super::DeclaredCorrectionDisclosure,
+    source_output_fields: Vec<super::DeclaredCorrectionOutputField>,
 }
 
 impl DeclaredCorrectionBinding {
@@ -89,6 +94,7 @@ impl DeclaredCorrectionBinding {
             source_query: parts.source_query,
             inverse_query: parts.inverse_query,
             disclosure: parts.disclosure,
+            source_output_fields: parts.source_output_fields,
         }
     }
 
@@ -105,6 +111,10 @@ impl DeclaredCorrectionBinding {
             source_query: source.source_query_identifier().map(str::to_owned),
             inverse_query: inverse.source_query_identifier().map(str::to_owned),
             disclosure: super::DeclaredCorrectionDisclosure::of::<Schema, Correction::Disclosure>(),
+            source_output_fields: Correction::source_output_fields()
+                .into_iter()
+                .map(super::ApplicationCorrectionOutputField::into_declaration)
+                .collect(),
         }
     }
 
@@ -132,6 +142,9 @@ impl DeclaredCorrectionBinding {
     pub fn disclosure(&self) -> &super::DeclaredCorrectionDisclosure {
         &self.disclosure
     }
+    pub fn source_output_fields(&self) -> &[super::DeclaredCorrectionOutputField] {
+        &self.source_output_fields
+    }
 }
 
 /// Authority-free fields decoded from a portable inverse association.
@@ -144,4 +157,5 @@ pub struct DeclaredCorrectionBindingParts {
     pub source_query: Option<String>,
     pub inverse_query: Option<String>,
     pub disclosure: super::DeclaredCorrectionDisclosure,
+    pub source_output_fields: Vec<super::DeclaredCorrectionOutputField>,
 }

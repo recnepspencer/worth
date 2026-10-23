@@ -63,7 +63,10 @@ where
     let input = retained
         .encoded_input::<<C::Source as ApplicationMutationBinding<Schema>>::InputBinding>()
         .ok_or(Denial::UnsupportedSourceMeaning)?;
-    let inverse = super::material::derive::<Schema, C>(source, input.input())?;
+    let execution = phase
+        .execution_request_for(&target.application().product_runtime)
+        .map_err(|_| Denial::ForeignPhase)?;
+    let inverse = super::material::derive::<Schema, C>(source, execution, input.input())?;
     let input = target.application().capture_operation_input_in_advancement::<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>(
         phase, access, request, inverse.input(),
     ).map_err(Denial::InputCapture)?;

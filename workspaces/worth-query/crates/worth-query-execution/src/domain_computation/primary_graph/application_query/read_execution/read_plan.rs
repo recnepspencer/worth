@@ -99,37 +99,16 @@ impl ReadPlan<'_> {
             maximum_result_count: self.maximum_result_count,
         }
     }
-    pub(in crate::domain_computation::primary_graph::application_query) fn selected_indexes(
-        &self,
-        graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
-    ) -> Vec<worth_relational::facade::indexes::DerivedIndexId> {
-        self.contract
-            .predicates()
-            .iter()
-            .filter_map(|predicate| {
-                let (entity, aspect, field) = predicate.field();
-                graph
-                    .equality_field(entity, aspect, field)?
-                    .equality_index_id
-            })
-            .collect()
-    }
 }
 
 impl ReadPlan<'_> {
     pub(in crate::domain_computation::primary_graph::application_query) fn snapshot_unavailable_denial(
         &self,
     ) -> super::WorthQueryApplicationReadExecutionDenial {
-        let predicates = self.contract.predicates();
         if !self.contract.root_paths().is_empty() {
             super::read_execution_denial(
                 super::WorthQueryApplicationReadExecutionDenialKind::TraversalUnavailable,
                 self.name,
-            )
-        } else if let [predicate] = predicates {
-            super::read_execution_denial(
-                super::WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
-                predicate.field().2,
             )
         } else {
             super::read_execution_denial(

@@ -479,7 +479,10 @@ rather than replacing it.
 adoption and fixed-root required-output publication/recovery are implemented.
 Unpublished correction owners retain the actual inverse input and transformed
 key for fresh-authority recovery. Typed runtime-alone compensation preserves
-intervening numeric movements through fresh corrective admission; Bank adoption
+intervening numeric movements through fresh corrective admission. Created-output
+field manifests and native projection supply original role-bound values after
+live edits and retirement; owner checks cover field meaning and suppressed-read
+refusals. Bank adoption
 and its accounting/process courts remain pending. Phases 3–4 remain held until
 this phase is certified.
 

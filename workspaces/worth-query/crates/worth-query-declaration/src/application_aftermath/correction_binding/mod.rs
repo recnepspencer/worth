@@ -3,7 +3,15 @@ mod disclosure;
 mod dispatch;
 mod inverse;
 mod source_material;
-pub use source_material::ApplicationCorrectionSourceMaterial;
+mod source_output;
+pub use source_material::{
+    ApplicationCorrectionSourceFieldDenial, ApplicationCorrectionSourceMaterial,
+    ApplicationCorrectionSourceOutputs,
+};
+pub use source_output::{
+    ApplicationCorrectionOutput, ApplicationCorrectionOutputField, DeclaredCorrectionOutputField,
+    DeclaredCorrectionOutputFieldParts,
+};
 mod visitor;
 
 pub use disclosure::{DeclaredCorrectionDisclosure, DeclaredCorrectionDisclosureParts};

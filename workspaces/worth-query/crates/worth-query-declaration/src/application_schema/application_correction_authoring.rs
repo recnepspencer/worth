@@ -14,9 +14,14 @@ impl<Schema: ApplicationSchema> ApplicationSchemaDeclarationBuilder<Schema> {
                 Correction,
             >())
             .finish();
-        let builder = self
+        let mut builder = self
             .declared_operation(definition)
             .application_mutation_binding::<Correction::Source>();
+        for field in Correction::source_output_fields() {
+            builder
+                .member_provenance
+                .register_field_binding(field.binding_recipe().clone());
+        }
         let disclosure = Correction::Disclosure::descriptor();
         let builder = if builder
             .member_provenance

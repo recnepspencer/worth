@@ -5,6 +5,7 @@ use worth_query_declaration::facade::application_aftermath::{
 
 use super::super::super::mutation_description;
 mod disclosure;
+mod source_outputs;
 use crate::denial::WorthQueryPackageArchiveDenial as Denial;
 use crate::record::application_schema::wire_vocabulary::{
     decode_optional, decode_type_identity, write_optional, write_type_identity,
@@ -27,7 +28,8 @@ pub(super) fn write(
     write_optional(output, binding.inverse_query(), |output, query| {
         output.text(query)
     })?;
-    disclosure::write(output, binding.disclosure())
+    disclosure::write(output, binding.disclosure())?;
+    source_outputs::write(output, binding.source_output_fields())
 }
 
 pub(super) fn decode(
@@ -44,6 +46,7 @@ pub(super) fn decode(
             source_query: decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
             inverse_query: decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
             disclosure: disclosure::decode(input)?,
+            source_output_fields: source_outputs::decode(input, budget)?,
         },
     ))
 }

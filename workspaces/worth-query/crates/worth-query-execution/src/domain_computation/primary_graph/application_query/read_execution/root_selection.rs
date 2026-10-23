@@ -1,8 +1,6 @@
 use worth_query_declaration::facade::application_query::ApplicationQueryObservableInfluence;
 use worth_relational::facade::identity::EntityId;
-use worth_relational::facade::indexes::{
-    BoundedEntityFieldLookupRequest, BoundedIndexParityMode, DerivedIndexGenerationId,
-};
+use worth_relational::facade::indexes::DerivedIndexGenerationId;
 
 use super::{
     read_execution_denial, OneShotReadWorkObservation, WorthQueryApplicationReadExecutionDenial,
@@ -89,7 +87,7 @@ pub(super) fn select_bounded_roots(
                 relation_records_examined: 0,
             })
         }
-        [predicate] => select_indexed_root(
+        [predicate] => select_scoped_root(
             runtime,
             execution,
             graph,
@@ -106,7 +104,7 @@ pub(super) fn select_bounded_roots(
     }
 }
 
-fn select_indexed_root(
+fn select_scoped_root(
     runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
@@ -149,56 +147,14 @@ fn select_indexed_root(
         .bindings()
         .iter()
         .find(|(name, _)| *name == predicate.parameter())
-        .map(|(_, value)| value.clone())
+        .map(|(_, value)| value)
         .ok_or_else(|| {
             read_execution_denial(
                 WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
                 predicate.parameter(),
             )
         })?;
-    let equality_index_id = layout.equality_index_id.ok_or_else(|| {
-        read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
-            field,
-        )
-    })?;
-    let request = BoundedEntityFieldLookupRequest::new(
-        plan.snapshot.clone(),
-        equality_index_id,
-        layout.entity_kind,
-        layout.locator.clone(),
-        expected,
-        2,
-    )
-    .map_err(|_| {
-        read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
-            field,
-        )
-    })?;
-    interruption.checkpoint(field)?;
-    let lookup = execute_governed_predicate_lookup(runtime, execution, computation, request)
-        .map_err(|denial| {
-            super::denial::relational_lookup_denial(
-                denial,
-                WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
-                field,
-            )
-        })?;
     let mut work = RootSelectionWork::new(interruption, spent);
-    work.charge_predicate(lookup.examined_entry_count(), 0, field)?;
-    interruption.checkpoint(field)?;
-    let scoped = lookup
-        .candidate_entity_ids()
-        .iter()
-        .copied()
-        .find(|candidate| *candidate == plan.root);
-    if scoped.is_none() && lookup.overflowed() {
-        return Err(read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::PredicateLookupOverflow,
-            field,
-        ));
-    }
     let projection = runtime.project_snapshot(plan.snapshot).ok_or_else(|| {
         read_execution_denial(
             WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
@@ -206,9 +162,11 @@ fn select_indexed_root(
         )
     })?;
     let mut set_source = RootPathSourceBuilder::default();
-    let selected_predicate_source = if capture_result_set || scoped.is_some() {
+    // Observe both matching and filtered subjects: a later guard change can
+    // change row presence even when the current result is empty.
+    let observed = {
         set_source.observe_entity(plan.root);
-        let observed = set_source.observe_guard_field(
+        set_source.observe_guard_field(
             execution,
             &projection,
             graph,
@@ -217,11 +175,28 @@ fn select_indexed_root(
             predicate.aspect_key(),
             predicate.field_key(),
             &mut work,
-        )?;
-        scoped.map(|_| observed)
-    } else {
-        None
+        )?
     };
+    interruption.checkpoint(field)?;
+    let frontier = std::collections::BTreeSet::from([plan.root]);
+    let lookup = path_union::read_governed_root_guard(
+        execution,
+        runtime,
+        computation,
+        &frontier,
+        layout.entity_kind,
+        &layout.locator,
+        expected,
+    )
+    .map_err(|stop| path_union::frontier_denial(stop, field))?;
+    work.charge_predicate(
+        lookup.entity_records_examined(),
+        lookup.matching_entity_ids_reserved(),
+        field,
+    )?;
+    let examined_candidates = lookup.entity_records_examined();
+    let scoped = lookup.into_matching_entity_ids().into_iter().next();
+    let selected_predicate_source = scoped.map(|_| observed);
     let result_set_source = capture_result_set
         .then(|| set_source.finish())
         .transpose()?;
@@ -230,27 +205,11 @@ fn select_indexed_root(
         selected_predicate_source,
         root_path_source: None,
         result_set_source,
-        examined_candidates: lookup.examined_entry_count(),
+        examined_candidates,
         predicate_work_units: work.predicate_work_units,
         work_units: work.work_units,
-        predicate_index_generation: Some(lookup.generation_id()),
+        predicate_index_generation: None,
         adjacency_lists_read: 0,
         relation_records_examined: 0,
     })
-}
-
-fn execute_governed_predicate_lookup(
-    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    _projection: super::super::disclosure::WorthQueryApplicationInternalProjectionAdmission<'_>,
-    request: BoundedEntityFieldLookupRequest,
-) -> Result<
-    worth_relational::facade::indexes::BoundedEntityFieldLookupOutcome,
-    worth_relational::facade::indexes::BoundedEntityFieldLookupDenial,
-> {
-    runtime.execute_bounded_entity_field_lookup(
-        request,
-        BoundedIndexParityMode::Production,
-        execution,
-    )
 }

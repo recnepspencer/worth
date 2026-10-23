@@ -31,6 +31,7 @@ fn main() {
 }
 
 fn run() {
+    application_correction_support::source_output_courts::run();
     application_correction_support::compensation_courts::run();
     application_correction_support::required_output_recovery::run();
     application_correction_support::required_output_courts::run();

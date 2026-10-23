@@ -66,6 +66,8 @@ pub(crate) fn resolve_correction_binding(
             if compensation.compensating_operation_slot() == inverse.operation_name() => {}
         _ => return Err(denied()),
     }
+    source_outputs::validate(members, source, declaration.source_output_fields())
+        .map_err(|()| denied())?;
     Ok(Some(InstalledCorrectionBinding {
         declaration: declaration.clone(),
         source_type: source.binding_type(),
@@ -73,3 +75,5 @@ pub(crate) fn resolve_correction_binding(
         disclosure_query_type: disclosure.query_type(),
     }))
 }
+
+mod source_outputs;

@@ -14,9 +14,9 @@ worth_query_application! {
 worth_query_application_contribution! {
     pub contribution NumericContribution in NumericSchema {
         identity: "numeric-correction.application.v1",
-        corrections: [RecordedEdit, super::compensation_movement::NeutralizeCredit],
+        corrections: [RecordedEdit, super::compensation_movement::NeutralizeCredit, super::source_output_correction::RecordIssued],
         members: |schema| {
-            super::compensation_movement::declare(super::calculation::declare(super::adoption::declare(schema))).entity(ExternalMapping::reference()).entity(Principal::reference()).entity(Number::reference())
+            super::source_output_model::declare(super::compensation_movement::declare(super::calculation::declare(super::adoption::declare(schema)))).entity(ExternalMapping::reference()).entity(Principal::reference()).entity(Number::reference())
                 .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
                 .aspect(Principal::reference(), PrincipalFacts::reference()).aspect(Number::reference(), NumberFacts::reference())
                 .field(ExternalMapping::reference(), ExternalIdentityField::reference()).field(ExternalMapping::reference(), MappingStatusField::reference())

@@ -102,6 +102,32 @@ impl WorthQueryApplicationCommittedChanges {
             .collect()
     }
 
+    /// Borrow one exact original field without cloning its retained payload.
+    pub(in crate::domain_computation::primary_graph) fn committed_field_ref<'a>(
+        &'a self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        entity: EntityId,
+        locator: &AspectFieldLocator,
+    ) -> Result<Option<&'a AspectValue>, worth_execution::MapKernelStop> {
+        let [_field] = locator.field_path().fields() else {
+            return Ok(None);
+        };
+        let mut committed = None;
+        let mut duplicate = false;
+        for patch in &self.envelope.patch.authoritative_record_patches {
+            request.check_live()?;
+            if patch.target != RecordRef::Entity(entity) {
+                continue;
+            }
+            for_each_committed_field_value(patch, locator, |value| {
+                if committed.replace(value).is_some() {
+                    duplicate = true;
+                }
+            });
+        }
+        Ok((!duplicate).then_some(committed).flatten())
+    }
+
     fn committed_field_value(
         &self,
         entity: EntityId,
@@ -129,15 +155,21 @@ impl WorthQueryApplicationCommittedChanges {
     }
 }
 
-fn for_each_committed_field_value(
-    patch: &PublishedAuthoritativeRecordPatch,
+fn for_each_committed_field_value<'patch>(
+    patch: &'patch PublishedAuthoritativeRecordPatch,
     locator: &AspectFieldLocator,
-    mut visit: impl FnMut(&AspectValue),
+    mut visit: impl FnMut(&'patch AspectValue),
 ) {
     let [field] = locator.field_path().fields() else {
         return;
     };
-    let aspect = locator.aspect().aspect_key();
+    let Some(aspect) = patch
+        .authoritative_patch
+        .changed_aspect_keys()
+        .find(|actual| *actual == locator.aspect().aspect_key())
+    else {
+        return;
+    };
     let whole = patch
         .authoritative_patch
         .struct_set_for(aspect)

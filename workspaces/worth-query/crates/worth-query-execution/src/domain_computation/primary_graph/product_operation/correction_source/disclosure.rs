@@ -30,6 +30,7 @@ pub enum WorthQueryCorrectionDerivationDenial {
     OriginalSubjectChanged,
     SubjectNotDisclosed,
     MissingPreImage,
+    SourceOutput(super::material::WorthQueryCorrectionOutputProjectionDenial),
     SemanticMaterialUnavailable,
     MissingTargetParent,
     InputCapture(crate::domain_computation::primary_graph::WorthQueryOperationInputCaptureDenial),

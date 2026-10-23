@@ -24,6 +24,7 @@ and list it in the contribution's `corrections: [RecordedEdit]` declaration.
 | `Disclosure` | The query determining whether the current caller can inspect the original subject on the target. |
 | `source_definition()` | The source operation's external-effect policy. Access is declared by the source operation. |
 | `mechanism()` | The recorded-inverse capture demand or compensation business postcondition, bound to the actual corrective operation. |
+| `source_output_fields()` | Historical fields of declared created output roles required by compensation. |
 | `disclosure_parameters(original)` | Query parameters associated with the original governed input. |
 | `derive_correction(original, material)` | The domain's deterministic action construction from the original input and its mechanism-specific material. |
 | `inverse_key(key)` | Conversion of the client command key to the inverse binding's key type. |
@@ -118,7 +119,7 @@ fn derive_correction(
     material: ApplicationCorrectionSourceMaterial<'_, NumericSchema>,
 ) -> Result<Debit, ApplicationCorrectionDerivationDenial> {
     match material {
-        ApplicationCorrectionSourceMaterial::Compensation => Ok(Debit {
+        ApplicationCorrectionSourceMaterial::Compensation(_) => Ok(Debit {
             key: original.key.clone(),
             amount: original.amount,
         }),
@@ -141,6 +142,62 @@ original correction command and receipt, including its causal source link.
 The [compiled credit/debit binding](../../../worth-query-certification/examples/application_correction_support/compensation_movement.rs)
 and [compensation court](../../../worth-query-certification/examples/application_correction_support/compensation_courts.rs)
 show current-balance arithmetic, intervening work, replay and current authority.
+
+## Read original fields of a created output
+
+A source can create an entity whose identifier is allocated during execution.
+Declare an exactly-one Create output role on the source mutation and bind the
+actual created entity with `writer.create_output::<Role>(&entity)`. The
+correction can then request fields of that role from the original commit.
+
+For each required field, construct a typed witness from the source binding,
+its declared role and the entity's field reference:
+
+```rust,ignore
+fn issued_key() -> ApplicationCorrectionOutputField<NumericSchema> {
+    ApplicationCorrectionOutput::<IssueBinding, Actual>::field(Key::reference())
+}
+
+fn source_output_fields() -> Vec<ApplicationCorrectionOutputField<NumericSchema>> {
+    vec![issued_key()]
+}
+
+fn derive_correction(
+    original: &Issue,
+    material: ApplicationCorrectionSourceMaterial<'_, NumericSchema>,
+) -> Result<Record, ApplicationCorrectionDerivationDenial> {
+    let ApplicationCorrectionSourceMaterial::Compensation(fields) = material else {
+        return Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning);
+    };
+    let encoded = fields.field(&issued_key())
+        .map_err(|_| ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning)?;
+    let key = StringApplicationValueBinding::decode(encoded)
+        .map_err(|_| ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning)?;
+    // Construct the domain's corrective intent using the original key.
+    record_issued_output(original, key)
+}
+```
+
+`source_output_fields()` is the correction's complete manifest. Installation
+checks the actual source binding, role, entity and field meaning, including the
+value codec, unit and coordinate frame. Use the field's ordinary value binding
+to decode its borrowed representation inside `derive_correction`.
+
+The material view follows the original role's full generational entity identity
+into that same commit's canonical field patch. It returns the original value
+after later edits or retirement of the live entity. Current disclosure of the
+source subject runs first; the corrective action then receives its own fresh
+ordinary admission. A refused material read terminates preparation even when
+the domain callback catches its marker error.
+
+The [complete binding](../../../worth-query-certification/examples/application_correction_support/source_output_correction.rs)
+requests both the created identifier and original payload. Its
+[ordinary handlers](../../../worth-query-certification/examples/application_correction_support/source_output_handlers.rs)
+bind two actual created roles, and its
+[runtime court](../../../worth-query-certification/examples/application_correction_support/source_output_courts.rs)
+reads back the published output, changes its payload, retires it and corrects
+from the original committed values. Exact replay preserves the original
+correction receipt and World head.
 
 ## Required outputs and recovery
 

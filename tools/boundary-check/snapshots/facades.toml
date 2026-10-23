@@ -674,6 +674,7 @@ exports = [
     "WorthQueryConditionalRuntimeReinstallationReceipt",
     "WorthQueryConditionalSignalDecision",
     "WorthQueryCorrectionDerivationDenial",
+    "WorthQueryCorrectionOutputProjectionDenial",
     "WorthQueryCorrectionSelectionDenial",
     "WorthQueryCorrelatedInboundOccurrence",
     "WorthQueryCurrentBodyRequirementAssessment",

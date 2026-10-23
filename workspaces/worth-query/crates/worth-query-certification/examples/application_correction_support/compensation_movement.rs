@@ -141,7 +141,10 @@ impl ApplicationCorrectionBinding<NumericSchema> for NeutralizeCredit {
         original: &Credit,
         material: ApplicationCorrectionSourceMaterial<'_, NumericSchema>,
     ) -> Result<Debit, ApplicationCorrectionDerivationDenial> {
-        if !matches!(material, ApplicationCorrectionSourceMaterial::Compensation) {
+        if !matches!(
+            material,
+            ApplicationCorrectionSourceMaterial::Compensation(_)
+        ) {
             return Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning);
         }
         Ok(Debit {

@@ -2185,6 +2185,17 @@ validation, checked sizes, request cancellation and fallible effect-buffer growt
 remain with their original owners. Invariant validation and atomic commit still
 precede successful publication.
 
+For an authored deletion, declare the entity read with
+`operation_read_entity(Operation::reference(), Entity::reference())` alongside
+the delete grant. In `decide`, resolve the target, call
+`reader.entity(&identity, Entity::reference())`, then carry
+`reader.mutation_target(&identity)` into the candidate. The entity observation
+supplies the native dependency used by deletion lowering. In `build_candidate`,
+project that target, call `writer.delete_entity(...)`, and bind its declared
+Retire role with `writer.retire_output::<Role>(&target)`. The
+[compiled retirement handler](../workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/source_output_handlers.rs)
+shows this sequence with ordinary installed read and delete authority.
+
 The full, compiling version of all three is
 `.../examples/product_workflow_support/application_entry.rs` (about 320
 lines). The schema registers the binding with

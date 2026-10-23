@@ -54,7 +54,6 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
     let pinned = super::pin_runtime_read(
         runtime,
         execution,
-        graph,
         &super::read_plan::ReadPlan::of(plan),
         &extra,
         WorthQueryApplicationReadExecutionDenialKind::TargetIdentityIndexUnavailable,

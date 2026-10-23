@@ -144,13 +144,13 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
                 execution,
                 self.first.basis.snapshot_handle(),
                 pin,
-                |graph| ReadPlan::public_worker(&self.first).selected_indexes(graph),
+                |_| Vec::new(),
             ),
             None => self.first.graph_work.prepare_query_read(
                 self.first.basis.identity(),
                 execution,
                 self.first.basis.snapshot_handle(),
-                |graph| ReadPlan::public_worker(&self.first).selected_indexes(graph),
+                |_| Vec::new(),
             ),
         }
         .map_err(|cause| {
@@ -162,13 +162,13 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
                 execution,
                 self.second.basis.snapshot_handle(),
                 pin,
-                |graph| ReadPlan::public_worker(&self.second).selected_indexes(graph),
+                |_| Vec::new(),
             ),
             None => self.second.graph_work.prepare_query_read(
                 self.second.basis.identity(),
                 execution,
                 self.second.basis.snapshot_handle(),
-                |graph| ReadPlan::public_worker(&self.second).selected_indexes(graph),
+                |_| Vec::new(),
             ),
         }
         .map_err(|cause| {

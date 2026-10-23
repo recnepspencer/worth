@@ -2,6 +2,7 @@
 use super::*;
 use crate::application_aftermath::resolve_correction_binding;
 mod disclosure;
+mod source_outputs;
 use std::{any::TypeId, collections::BTreeMap};
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_declaration::facade::{
@@ -68,6 +69,7 @@ fn parts(source: &ApplicationMutationBindingDescriptor) -> DeclaredCorrectionBin
         inverse_handler: source.handler().identity().to_owned(),
         source_query: source.source_query_identifier().map(str::to_owned),
         inverse_query: source.source_query_identifier().map(str::to_owned),
+        source_output_fields: Vec::new(),
         disclosure: DeclaredCorrectionDisclosure::of::<MutationSchema, disclosure::HistoryBinding>(
         ),
     }
