@@ -286,6 +286,24 @@ mod tests {
         )]
     }
 
+    /// Admission prices every retained item's heap key before the kernel runs,
+    /// so kernel visits are the key callbacks after this declaration pass.
+    fn declaration_key_visits() -> usize {
+        let visits = AtomicUsize::new(0);
+        let item_bytes = |_: &u64, _: &u64| 0;
+        let key_clone_bytes = |_: &u64| {
+            visits.fetch_add(1, Ordering::SeqCst);
+            0
+        };
+        super::extent::declaration::<u64, u64, (u64, u64)>(
+            &streams(),
+            &item_bytes,
+            &key_clone_bytes,
+        )
+        .unwrap();
+        visits.into_inner()
+    }
+
     #[test]
     fn checked_merge_preserves_order_and_stops_inside_one_large_stream() {
         let expected = super::super::canonical_merge_streams(streams());
@@ -326,8 +344,9 @@ mod tests {
             },
         )
         .unwrap_err();
-        assert!(visited.load(Ordering::SeqCst) > 1);
-        assert!(visited.load(Ordering::SeqCst) < 1_000);
+        let kernel_visits = visited.load(Ordering::SeqCst) - declaration_key_visits();
+        assert!(kernel_visits > 1);
+        assert!(kernel_visits < 1_000);
         assert!(matches!(
             stop,
             PacketExecutionStop::Execution {
@@ -340,6 +359,7 @@ mod tests {
     #[test]
     fn checked_merge_observes_cancellation_between_heap_pops() {
         let cancellation = CancellationSource::new();
+        let declaration = declaration_key_visits();
         let visits = AtomicUsize::new(0);
         let stop = canonical_merge_streams_checked(
             streams(),
@@ -347,14 +367,14 @@ mod tests {
             None,
             |_, _| 0,
             |_| {
-                if visits.fetch_add(1, Ordering::SeqCst) == 40 {
+                if visits.fetch_add(1, Ordering::SeqCst) == declaration + 40 {
                     cancellation.cancel();
                 }
                 0
             },
         )
         .unwrap_err();
-        assert!(visits.load(Ordering::SeqCst) < 1_000);
+        assert!(visits.load(Ordering::SeqCst) - declaration < 1_000);
         assert!(matches!(
             stop,
             PacketExecutionStop::Execution {
