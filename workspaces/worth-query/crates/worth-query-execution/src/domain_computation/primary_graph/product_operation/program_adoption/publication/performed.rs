@@ -68,6 +68,14 @@ impl WorthQueryPerformedBranchAdoption {
         self.publication.commit().identity()
     }
 
+    /// Exact Signal publication retained or produced by this adopted target.
+    /// Descriptive component identity grants no permission to publish.
+    pub fn signal_publication(
+        &self,
+    ) -> Option<&worth_runtime_world::facade::CompositeSignalPublicationIdentity> {
+        self.publication.commit().signal_publication_identity()
+    }
+
     pub fn relational_owner_contacts(&self) -> u64 {
         self.publication.cost_counters().relational_owner_contacts()
     }

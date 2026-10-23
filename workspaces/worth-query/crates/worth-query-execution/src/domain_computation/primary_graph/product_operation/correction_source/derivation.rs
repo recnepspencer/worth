@@ -51,7 +51,8 @@ where
         maximum_history,
         maximum_results,
     )?;
-    super::compatibility::require_compatible_source::<Schema, C>(target, phase, source)?;
+    let interpretation =
+        super::compatibility::require_compatible_source::<Schema, C>(target, phase, source)?;
     let retained = source
         .occurrence()
         .commit_evidence()
@@ -81,6 +82,7 @@ where
         key,
         &input,
         inverse.scope_binding(),
+        interpretation,
     )?;
     Ok((input, std::sync::Arc::new(prepared)))
 }

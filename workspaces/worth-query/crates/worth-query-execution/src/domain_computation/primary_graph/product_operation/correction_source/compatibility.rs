@@ -1,6 +1,7 @@
 //! First-use eligibility compares semantic source meaning on the exact target.
 use super::disclosure::WorthQueryCorrectionDerivationDenial as Denial;
 use super::*;
+use crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation;
 use crate::domain_computation::primary_graph::{
     exact_basis_access::open_exact_basis_snapshot,
     output_reuse::{first_moved_fact, retained_fact_denial},
@@ -11,12 +12,12 @@ pub(super) fn require_compatible_source<Schema, C>(
     target: &WorthQuerySelectedProductOperation<'_, Schema>,
     phase: &WorthQueryAdvancementPhase<'_>,
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
-) -> Result<(), Denial>
+) -> Result<WorthQueryProgramSupportInterpretation, Denial>
 where
     Schema: ApplicationSchema,
     C: ApplicationCorrectionBinding<Schema>,
 {
-    require_target_program::<Schema, C>(target, source)?;
+    let interpretation = require_target_program::<Schema, C>(target, source)?;
     let facts = source
         .occurrence()
         .commit_evidence()
@@ -42,13 +43,14 @@ where
                     "correction semantic dependency",
                 ))),
             }
-        })
+        })?;
+    Ok(interpretation)
 }
 
 fn require_target_program<Schema, C>(
     target: &WorthQuerySelectedProductOperation<'_, Schema>,
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
-) -> Result<(), Denial>
+) -> Result<WorthQueryProgramSupportInterpretation, Denial>
 where
     Schema: ApplicationSchema,
     C: ApplicationCorrectionBinding<Schema>,
@@ -62,13 +64,31 @@ where
     let inspection = target
         .inspect_selected_program()
         .map_err(Denial::TargetProgram)?;
-    let record = target
+    let support = target
         .application()
         .installed_program_support()
-        .and_then(|support| support.native_program(inspection.revision()))
         .ok_or(Denial::UnsupportedTargetProgram)?;
-    if !original.is_same_installed_program(record) {
-        return Err(Denial::UnsupportedTargetProgram);
+    let record = support
+        .native_program(inspection.revision())
+        .ok_or(Denial::UnsupportedTargetProgram)?;
+    let declared = original
+        .action_inventory()
+        .resolve_unique_binding::<Schema, ApplicationInverseBinding<Schema, C>>()
+        .map_err(Denial::InverseAction)?;
+    record
+        .installed
+        .action_inventory()
+        .resolve_declared_action::<Schema, ApplicationInverseBinding<Schema, C>>(declared)
+        .map_err(Denial::InverseAction)?;
+    let requirements = support
+        .adoption_requirements(
+            target.application().installed_schema(),
+            original.revision(),
+            inspection.revision(),
+        )
+        .map_err(Denial::ProgramComparison)?;
+    if !requirements.semantically_equivalent() {
+        return Err(Denial::ProgramMeaningChanged(Box::new(requirements)));
     }
     let original_binding = crate::equality_type_id::EqualityTypeId::of::<C::Source>();
     if record.requires_output_source(original_binding) {
@@ -82,5 +102,7 @@ where
     if !record.declares_action(inverse) {
         return Err(Denial::UnsupportedTargetProgram);
     }
-    Ok(())
+    support
+        .retain_interpretation(inspection.revision())
+        .ok_or(Denial::UnsupportedTargetProgram)
 }

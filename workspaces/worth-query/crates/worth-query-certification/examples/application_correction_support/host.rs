@@ -4,7 +4,7 @@ use worth_query_host::facade::{
     application_contribution::*,
     application_entry::*,
     application_installation::*,
-    declaration::{application_program::*, application_schema::*, authentication::*},
+    declaration::{application_program::*, authentication::*},
     primary_graph::*,
     runtime,
 };
@@ -28,7 +28,10 @@ pub fn install() -> Host {
         ApplicationProgramAuthoring::<NumericSchema, Program>::begin()
             .validated_program()
             .unwrap(),
-        WorthQueryApplicationProgramRoster::new(),
+        WorthQueryApplicationProgramRoster::new()
+            .support(validated::<Successor>())
+            .support(validated::<ChangedInverse>())
+            .support(validated::<ChangedSource>()),
         NumericSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
@@ -68,6 +71,7 @@ pub fn install() -> Host {
                 .field(ReadEnabled::reference(), true)
                 .field(Ceiling::reference(), 100_u64),
             )?;
+            super::adoption::seed(graph);
             Ok(())
         },
     )

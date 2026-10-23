@@ -64,7 +64,6 @@ impl OperationHandler<NumericSchema, OtherBinding> for Handler {
             Value::ReadEnabled(_) => reader
                 .field(&root, ReadEnabled::reference())
                 .map(|value| value.is_some()),
-            _ => return HandlerResult::DomainDenied(MissingValue),
         };
         match present {
             Ok(true) => {}
@@ -95,7 +94,6 @@ impl OperationHandler<NumericSchema, OtherBinding> for Handler {
             Value::ReadEnabled(value) => {
                 writer.write_field(&target, ReadEnabled::reference(), value)
             }
-            _ => return HandlerResult::DomainDenied(MissingValue),
         };
         match written {
             Ok(()) => HandlerResult::Completed(Edited),

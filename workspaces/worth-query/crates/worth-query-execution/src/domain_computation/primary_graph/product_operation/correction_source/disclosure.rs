@@ -36,6 +36,13 @@ pub enum WorthQueryCorrectionDerivationDenial {
     CommandKey(worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial),
     SourceDiverged,
     UnsupportedTargetProgram,
+    ProgramComparison(
+        worth_query_installation::facade::WorthQueryProgramAdoptionRequirementsDenial,
+    ),
+    ProgramMeaningChanged(
+        Box<worth_query_installation::facade::WorthQueryProgramAdoptionRequirements>,
+    ),
+    InverseAction(worth_query_installation::facade::WorthQueryActionResolutionDenial),
     RequiredOutputReconciliation,
     TargetProgram(
         crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial,

@@ -37,16 +37,100 @@ impl ApplicationProgramDefinition<NumericSchema> for Program {
     type Rules = ApplicationRuleLeaf;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("numeric-correction.program.v1");
-    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
-            ApplicationFeatureSpec::root::<NumericSchema, NumericFeature>()
-                .action::<EditBinding, Completion>()
-                .finish_action()
-                .action::<OtherBinding, OtherCompletion>()
-                .finish_action()
-                .action::<super::principal_status::Binding, PrincipalCompletion>()
-                .finish_action()
-                .finish(),
-        ]
+    fn adoption_authorization<
+        Visitor: ApplicationProgramAdoptionAuthorizationVisitor<NumericSchema>,
+    >(
+        visitor: Visitor,
+    ) -> Visitor::Output {
+        visitor.capability::<super::adoption::AdoptBinding>()
     }
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        features::<Completion, OtherCompletion>()
+    }
+}
+
+pub struct Successor;
+pub struct ChangedInverse;
+pub struct ChangedSource;
+pub struct ChangedCompletion;
+impl ApplicationActionDelivery<NumericSchema, EditBinding> for ChangedCompletion {
+    type Mode = ApplicationSourceCompletion;
+    const IDENTITY: &'static str = "numeric-correction.changed-source-completion.v1";
+}
+impl ApplicationProgramDefinition<NumericSchema> for ChangedSource {
+    type Contributions = (NumericContribution,);
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("numeric-correction.changed-source.v1");
+    fn adoption_authorization<
+        Visitor: ApplicationProgramAdoptionAuthorizationVisitor<NumericSchema>,
+    >(
+        visitor: Visitor,
+    ) -> Visitor::Output {
+        visitor.capability::<super::adoption::AdoptBinding>()
+    }
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        features::<ChangedCompletion, OtherCompletion>()
+    }
+}
+pub struct ChangedOtherCompletion;
+impl ApplicationActionDelivery<NumericSchema, OtherBinding> for ChangedOtherCompletion {
+    type Mode = ApplicationSourceCompletion;
+    const IDENTITY: &'static str = "numeric-correction.changed-other-completion.v1";
+}
+impl ApplicationProgramDefinition<NumericSchema> for Successor {
+    type Contributions = (NumericContribution,);
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("numeric-correction.successor.v1");
+    fn adoption_authorization<
+        Visitor: ApplicationProgramAdoptionAuthorizationVisitor<NumericSchema>,
+    >(
+        visitor: Visitor,
+    ) -> Visitor::Output {
+        visitor.capability::<super::adoption::AdoptBinding>()
+    }
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        features::<Completion, OtherCompletion>()
+    }
+}
+impl ApplicationProgramDefinition<NumericSchema> for ChangedInverse {
+    type Contributions = (NumericContribution,);
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("numeric-correction.changed-inverse.v1");
+    fn adoption_authorization<
+        Visitor: ApplicationProgramAdoptionAuthorizationVisitor<NumericSchema>,
+    >(
+        visitor: Visitor,
+    ) -> Visitor::Output {
+        visitor.capability::<super::adoption::AdoptBinding>()
+    }
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        features::<Completion, ChangedOtherCompletion>()
+    }
+}
+pub fn validated<P: ApplicationProgramDefinition<NumericSchema>>(
+) -> ValidatedApplicationProgram<NumericSchema, P> {
+    ApplicationProgramAuthoring::<NumericSchema, P>::begin()
+        .validated_program()
+        .unwrap()
+}
+fn features<
+    S: ApplicationActionDelivery<NumericSchema, EditBinding>,
+    D: ApplicationActionDelivery<NumericSchema, OtherBinding>,
+>() -> Vec<ApplicationFeatureSpec> {
+    vec![
+        ApplicationFeatureSpec::root::<NumericSchema, NumericFeature>()
+            .action::<EditBinding, S>()
+            .finish_action()
+            .action::<OtherBinding, D>()
+            .finish_action()
+            .action::<super::principal_status::Binding, PrincipalCompletion>()
+            .finish_action()
+            .finish(),
+    ]
 }

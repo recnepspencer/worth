@@ -21,6 +21,7 @@ fn main() {
 }
 
 fn run() {
+    application_correction_support::adoption_courts::run();
     selected_source_after_disjoint_edit();
     independent_semantic_dependency();
     reverse_after_disjoint_and_replay();

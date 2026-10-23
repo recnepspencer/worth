@@ -57,5 +57,6 @@ impl<Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema>
             self.maximum_results,
         )?;
         compatibility::require_compatible_source::<Schema, C>(self.target, self.phase, self.source)
+            .map(|_| ())
     }
 }

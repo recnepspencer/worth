@@ -22,6 +22,7 @@ pub struct WorthQueryPreparedCorrectionSource {
     target_parent: RelationalCommitReceipt,
     target_branch: BranchId,
     intent: WorthQueryCorrectionIntent,
+    target_program: crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation,
 }
 
 impl WorthQueryPreparedCorrectionSource {
@@ -35,6 +36,7 @@ impl WorthQueryPreparedCorrectionSource {
         key: &WorthQueryCorrectionCommandKey,
         input: &ApplicationEncodedInput<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>,
         scope: <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::ScopeBinding,
+        target_program: crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation,
     ) -> Result<Self, WorthQueryCorrectionDerivationDenial>
     where
         <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::ScopeBinding:
@@ -61,6 +63,7 @@ impl WorthQueryPreparedCorrectionSource {
             .ok_or(Denial::MissingTargetParent)?;
         Ok(Self {
             ancestry,
+            target_program,
             material: source.occurrence().clone(),
             runtime: target.application().runtime.authority_identity(),
             actor: actor.principal_entity_id(),
@@ -127,6 +130,7 @@ impl std::fmt::Debug for WorthQueryPreparedCorrectionSource {
 impl PartialEq for WorthQueryPreparedCorrectionSource {
     fn eq(&self, other: &Self) -> bool {
         self.runtime == other.runtime
+            && self.target_program.same_support_as(&other.target_program)
             && self.actor == other.actor
             && self.scope == other.scope
             && self.inverse_input == other.inverse_input

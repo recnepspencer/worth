@@ -101,6 +101,19 @@ The caller needs current disclosure and current admission for the inverse.
 Another authorized actor can correct the source after the original actor's
 mapping is disabled.
 
+An occurrence can be corrected after ordinary adoption to a program with
+equivalent installed meaning. The runtime compares the retained source program
+with the selected current program and resolves the complete original inverse
+action in that program. The correction runs under the current program and
+retains its exact Signal definition basis. Preparation keeps both program
+interpretations alive through publication or recovery.
+
+`InverseAction` distinguishes a missing, ambiguous or changed inverse action.
+`ProgramMeaningChanged` carries the installed comparison requirements when
+the programs differ. `ProgramComparison` preserves a comparison refusal.
+The compiled example exercises adoption, reversal, exact retry and an adoption
+that makes an already prepared correction stale.
+
 A prepared candidate retains an exact target. A later head change returns the
 native stale outcome. Prepare again against the current target when the
 application chooses to retry. Keep the same client key for the same command.

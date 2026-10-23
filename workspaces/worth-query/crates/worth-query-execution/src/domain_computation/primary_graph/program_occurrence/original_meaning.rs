@@ -24,11 +24,10 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
 }
 
 impl OriginalProgramMeaning {
-    pub(in crate::domain_computation::primary_graph) fn is_same_installed_program(
+    pub(in crate::domain_computation::primary_graph) fn action_inventory(
         &self,
-        program: &crate::domain_computation::primary_graph::application_installation::WorthQuerySupportedProgramRecord,
-    ) -> bool {
-        std::ptr::eq(self.program.as_ref(), program)
+    ) -> worth_query_installation::facade::WorthQueryInstalledActionInventory<'_> {
+        self.program.installed.action_inventory()
     }
     pub(in crate::domain_computation::primary_graph) fn revision(
         &self,

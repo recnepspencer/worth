@@ -16,7 +16,7 @@ worth_query_application_contribution! {
         identity: "numeric-correction.application.v1",
         corrections: [RecordedEdit],
         members: |schema| {
-            schema.entity(ExternalMapping::reference()).entity(Principal::reference()).entity(Number::reference())
+            super::adoption::declare(schema).entity(ExternalMapping::reference()).entity(Principal::reference()).entity(Number::reference())
                 .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
                 .aspect(Principal::reference(), PrincipalFacts::reference()).aspect(Number::reference(), NumberFacts::reference())
                 .field(ExternalMapping::reference(), ExternalIdentityField::reference()).field(ExternalMapping::reference(), MappingStatusField::reference())

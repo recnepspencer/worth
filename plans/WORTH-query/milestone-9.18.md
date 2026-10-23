@@ -1,6 +1,6 @@
 # Milestone 9.18: Tree-Based Semantic Undo And Redo
 
-> **Status:** Phase 1 certified and closed; Phase 2 boundary review; Phases 3–4 held. Design reconciled with the current application entry,
+> **Status:** Phase 1 certified and closed; Phase 2 in progress; Phases 3–4 held. Design reconciled with the current application entry,
 > program adoption, workflow and owner-publication code on 2026-09-29.
 > **Dependencies:** 9.17.4, 9.17.5, 9.17.6 and [9.17.7](./milestone-9.17.7.md)
 > are completed. Phase 1 may begin
@@ -326,8 +326,8 @@ Add `corrections()` to an ordinary branch-bound request; do not add mutation to 
 read request. Principal, purpose, deadlines and cancellation come from the existing typed
 request scope. Domain intent, exact source, idempotency and bounded work are explicit.
 
-This is the required new call shape, not currently compiling API. Convert it into a
-compiled public example in Phase 1 and keep the example as the compatibility contract:
+The compiled `application_correction` example supplies the ordinary reversal
+contract, including exhaustive preparation custody:
 
 ```rust,ignore
 let request = application.request(&principal, &scope).on_branch(branch);
@@ -338,9 +338,14 @@ let preparation = request.corrections()
     .idempotency(&correction_key)
     .limits(correction_limits)
     .prepare()?;
-let outcome = preparation.publish();
-// Exhaustively match performed, no-effect/denial and unpublished custody.
-// A performed source may still own required-output or external recovery work.
+match preparation {
+    WorthQueryApplicationCorrectionPreparation::Prepared(candidate) => {
+        handle_outcome(candidate.publish()?);
+    }
+    WorthQueryApplicationCorrectionPreparation::Settled(outcome) => handle_outcome(outcome),
+    WorthQueryApplicationCorrectionPreparation::PublicationPending => show_pending(),
+    WorthQueryApplicationCorrectionPreparation::ProductUnpublished(handle) => retain_recovery(handle),
+}
 ```
 
 The selected receipt is re-resolved under disclosure and owner provenance, not cast
@@ -470,7 +475,8 @@ rather than replacing it.
 
 ### Phase 2: Composite compatibility, effects and recovery
 
-**In boundary review.** Phases 3–4 remain held until this phase is certified.
+**In progress.** Retained-source correction across equivalent installed program
+adoption is implemented. Phases 3–4 remain held until this phase is certified.
 
 Extend that path to owner definition successors, program compatibility, required-output
 reconciliation, compensation, workflow/inbound dispositions and authored create/delete

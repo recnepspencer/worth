@@ -1,4 +1,6 @@
 //! One authored numeric model shared by the correction example and its public court.
+pub mod adoption;
+pub mod adoption_courts;
 pub mod correction;
 pub mod edit;
 pub mod host;
