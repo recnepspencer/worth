@@ -24,6 +24,8 @@ fn worker_serial(cancellation: &CancellationSource) -> SerialRequest {
 // canonical cancellation fixtures: process construction is genuinely unique.
 #[test]
 fn worker_only_native_reduction_certifies_shared_scheduled_engine_without_accounting() {
+    use std::sync::{Condvar, Mutex};
+    let completion = (Mutex::new(ReorderedCompletion::default()), Condvar::new());
     let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
         max_workers: NonZeroUsize::new(2).unwrap(),
         charged_memory_bytes: None,
@@ -37,14 +39,57 @@ fn worker_only_native_reduction_certifies_shared_scheduled_engine_without_accoun
         (id(4), 4),
     ]))
     .unwrap();
+    let cancellation = CancellationSource::new();
+    let backing = worker_serial(&cancellation);
+    let serial = map
+        .run_reduce_retained_native(
+            ExecutionRequest::serial(&backing),
+            ExecutionWorkCeiling::new(None),
+            |value, context| {
+                context.poll()?;
+                Ok::<_, KernelFailure<()>>(Text(value.to_string()))
+            },
+            Text("_".into()),
+            combine,
+        )
+        .result
+        .unwrap();
+    let parallel = map
+        .run_reduce_retained_native(
+            request,
+            ExecutionWorkCeiling::new(None),
+            |value, context| {
+                assert!(!context.has_accounting());
+                context.poll()?;
+                if *value != 4 {
+                    reverse_completion(*value, &completion);
+                }
+                Ok::<_, KernelFailure<()>>(Text(value.to_string()))
+            },
+            Text("_".into()),
+            combine,
+        )
+        .result
+        .unwrap();
+    assert_eq!(
+        parallel.tree.result(),
+        serial.tree.result(),
+        "canonical association survives reversed completion"
+    );
+    assert_eq!(parallel.tree.checked_full_build_cost(), None);
+    assert_eq!(parallel.report.accounted_cost(), None);
+    assert_eq!(parallel.metrics.accounted_metrics(), None);
+    assert_eq!(parallel.report.physical().peak_charged_memory_bytes(), 0);
+    assert!(parallel.report.physical().active_workers_high_watermark() >= 2);
     request
         .run_native(|active| {
-            let (tree, report, metrics) = map
+            // Perturbed certification verifies association, while the production run
+            // above independently proves simultaneous native worker execution.
+            let (certified, report, _) = map
                 .certify_reduce_native(
                     active.unwrap(),
                     17,
                     |value, context| {
-                        assert!(!context.has_accounting());
                         context.poll()?;
                         Ok::<_, KernelFailure<()>>(Text(value.to_string()))
                     },
@@ -52,19 +97,50 @@ fn worker_only_native_reduction_certifies_shared_scheduled_engine_without_accoun
                     combine,
                 )
                 .unwrap();
-            assert!(!tree.result().0.is_empty());
-            assert_eq!(tree.checked_full_build_cost(), None);
+            assert_eq!(certified.result(), serial.tree.result());
             assert_eq!(report.accounted_cost(), None);
-            assert_eq!(metrics.accounted_metrics(), None);
-            assert_eq!(report.physical().peak_charged_memory_bytes(), 0);
-            assert!(report.physical().active_workers_high_watermark() >= 1);
         })
         .unwrap();
+    assert_eq!(completion.0.lock().unwrap().finished, [3, 1]);
     assert_eq!(lease.charged_memory_bytes(), 0);
     assert!(
         lease.try_reserve_workers(2).is_ok(),
         "original worker claims release"
     );
+}
+
+#[derive(Default)]
+struct ReorderedCompletion {
+    first_entered: bool,
+    later_completed: bool,
+    finished: Vec<u64>,
+}
+
+fn reverse_completion(
+    value: u64,
+    completion: &(std::sync::Mutex<ReorderedCompletion>, std::sync::Condvar),
+) {
+    let (state, ready) = completion;
+    let mut state = state.lock().unwrap();
+    if value == 1 {
+        state.first_entered = true;
+        ready.notify_all();
+    }
+    let (mut state, guard) = ready
+        .wait_timeout_while(state, std::time::Duration::from_secs(30), |state| {
+            if value == 1 {
+                !state.later_completed
+            } else {
+                !state.first_entered
+            }
+        })
+        .unwrap();
+    assert!(!guard.timed_out(), "ordinary parallel kernels must overlap");
+    state.finished.push(value);
+    if value == 3 {
+        state.later_completed = true;
+        ready.notify_all();
+    }
 }
 
 #[test]

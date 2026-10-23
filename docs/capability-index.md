@@ -58,7 +58,11 @@ schema members, action meaning, typed runtime configuration, required roles and
 delivery roots. Supply actual handlers and domain configuration through the
 generated runtime constructor. Use lower-level builders for specialized composition.
 For tracked numerical work, use the
-[managed/partitioned computation lifecycle](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
+[managed/partitioned computation lifecycle](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation):
+declare semantic membership, gather tracked inputs, compute with the original
+checkpoint and complete on the owning operation. Canonical identities and
+association preserve results across admitted placements; tracked changes refresh
+affected partitions while unchanged partitions retain their results.
 For application execution, compose
 [one process execution service](build-an-application.md#one-process-execution-service):
 retain an `Arc<host::runtime::ExecutionAuthority>` above applications and sessions,

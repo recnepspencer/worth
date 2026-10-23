@@ -51,6 +51,9 @@ mod input_validation_tests;
 mod shared_input;
 pub use shared_input::ApplicationSharedInput;
 mod partition;
+mod polled;
+#[cfg(test)]
+mod polled_tests;
 mod request;
 mod work;
 
@@ -63,6 +66,10 @@ pub use partition::{
     application_computation_input_digest, application_computation_item_digest,
     application_computation_partition_identity, ApplicationComputationPartitionIdentity,
     ApplicationComputationPartitionIdentityDenial,
+};
+pub use polled::{
+    application_computation_input_digest_polled, application_computation_item_digest_polled,
+    application_computation_partition_digest_polled,
 };
 pub use request::{
     ApplicationMutationIdentities, ApplicationMutationIdentityAdmittedDenial,
@@ -275,21 +282,14 @@ fn canonical_identity_with_capture<T: Serialize + ?Sized, A: encoder::EncodingAd
     value: &T,
     mut sink: encoder::HashingSink<A>,
 ) -> Result<captured_input::EncodedInputIdentity, encoder::CanonicalEncodeError<A::Error>> {
-    let encoded = (|| {
-        let mut framing = 0_usize;
-        for part in [domain, scope] {
-            let length = (part.len() as u64).to_be_bytes();
-            sink.put(&length)?;
-            sink.put(part.as_bytes())?;
-            framing = framing.saturating_add(length.len() + part.len());
-        }
-        encoder::encode_into(&mut sink, value)?;
-        Ok::<_, encoder::CanonicalEncodeError<A::Error>>(framing)
-    })();
+    let encoded = encode_framed(&mut sink, domain, scope, value);
     if let Some(error) = sink.take_terminal_failure() {
         return Err(error);
     }
-    let framing = encoded?;
+    encoded?;
+    let framing = 16_usize
+        .saturating_add(domain.len())
+        .saturating_add(scope.len());
     let hashed = sink.hashed_bytes();
     let work = ApplicationCanonicalWork::one_derivation(
         hashed.saturating_sub(framing),
@@ -305,6 +305,19 @@ fn canonical_identity_with_capture<T: Serialize + ?Sized, A: encoder::EncodingAd
         canonical,
         capture: capture.map(|bytes| ApplicationCanonicalInput::new(bytes, framing)),
     })
+}
+
+fn encode_framed<T: Serialize + ?Sized, S: Sink>(
+    sink: &mut S,
+    domain: &str,
+    scope: &str,
+    value: &T,
+) -> Result<(), encoder::CanonicalEncodeError<S::AdmissionError>> {
+    for part in [domain, scope] {
+        sink.put(&(part.len() as u64).to_be_bytes())?;
+        sink.put(part.as_bytes())?;
+    }
+    encoder::encode_into(sink, value)
 }
 
 fn rejected(binding_identity: WorthQueryPortableTypeIdentity) -> ApplicationValueEncodeDenial {

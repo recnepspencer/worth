@@ -8,8 +8,9 @@ use std::sync::Arc;
 use worth_execution::PartitionItemId;
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_declaration::facade::application_operation::{
-    application_computation_input_digest, application_computation_item_digest,
-    application_computation_partition_identity,
+    application_computation_input_digest, application_computation_input_digest_polled,
+    application_computation_item_digest, application_computation_item_digest_polled,
+    application_computation_partition_digest_polled, application_computation_partition_identity,
 };
 use worth_query_declaration::facade::application_program::{
     ApplicationComputationInput, ApplicationComputationPartition,
@@ -61,6 +62,7 @@ where
                 |meter| {
                     application_computation_item_digest(value, &mut |charge| meter.admit(charge))
                 },
+                |poll| application_computation_item_digest_polled(value, &mut || poll()),
                 |denial| WorthQueryPartitionedComputationDenial::ItemNotEncodable {
                     item: *item,
                     denial,
@@ -88,12 +90,16 @@ where
     let derived = encode_identity(
         execution,
         work,
-        |meter| application_computation_partition_identity(key, &mut |charge| meter.admit(charge)),
+        |meter| {
+            application_computation_partition_identity(key, &mut |charge| meter.admit(charge))
+                .map(|identity| *identity.digest())
+        },
+        |poll| application_computation_partition_digest_polled(key, &mut || poll()),
         |denial| WorthQueryPartitionedComputationDenial::KeyNotEncodable { item, denial },
     )?;
     let (partition, routed) = routing.route_in(
         item,
-        *derived.digest(),
+        derived,
         execution
             .allocation_policy()
             .map_err(WorthQueryPartitionedComputationDenial::Resource)?,
@@ -124,6 +130,7 @@ where
                 meter.admit(charge)
             })
         },
+        |poll| application_computation_input_digest_polled::<Input, _, _>(input, &mut || poll()),
         WorthQueryPartitionedComputationDenial::InputNotEncodable,
     )
 }

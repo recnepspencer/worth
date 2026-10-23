@@ -1293,6 +1293,13 @@ cancellation, deadline and untaken nested stop. Propagate a typed denial before
 authoring a candidate from the result. Completion returns the decision to the
 candidate-building and commit steps.
 
+During plan preparation, the runtime derives item, input and partition-key
+identities through canonical encoding. The original request's controls are polled
+while serializing values, ordering map entries and growing temporary buffers.
+Encoding rejection, allocation failure and interruption propagate through the
+same typed preparation outcome. A serializer that catches an interruption still
+leaves that original interruption latched at the encoding boundary.
+
 For an explicitly accounted request, `checkpoint.advance(work)` records work
 against that request and its ancestors. Calling it in a worker-only request
 returns `Resource(AccountingUnavailable)`; use `poll()` for control checks.

@@ -87,10 +87,20 @@ pub(super) fn encode_identity<T, Stopped>(
         &mut EncodingMeter<'_>,
     )
         -> Result<T, ApplicationComputationPartitionIdentityDenial<CheckpointDenial>>,
+    encode_polled: impl FnOnce(
+        &mut dyn FnMut() -> Result<(), CheckpointDenial>,
+    ) -> Result<
+        T,
+        ApplicationComputationPartitionIdentityDenial<CheckpointDenial>,
+    >,
     value_denial: impl FnOnce(ApplicationValueEncodeDenial) -> Denial<Stopped>,
 ) -> Result<T, Denial<Stopped>> {
-    let encoded = execution
-        .decision_stage(|context| {
+    let encoded = if !execution.has_accounting() {
+        execution.decision_stage(|context| {
+            encode_polled(&mut || context.poll().map_err(checkpoint_denial))
+        })
+    } else {
+        execution.decision_stage(|context| {
             let mut control = |charge| {
                 match charge {
                     CanonicalEncodingCharge::Work(units) if context.has_accounting() => {
@@ -107,7 +117,8 @@ pub(super) fn encode_identity<T, Stopped>(
             };
             encode(&mut meter)
         })
-        .map_err(preparation_denial)?;
+    }
+    .map_err(preparation_denial)?;
     encoded.map_err(|denial| match denial {
         ApplicationComputationPartitionIdentityDenial::Key(denial) => value_denial(denial),
         ApplicationComputationPartitionIdentityDenial::Admission(denial) => {

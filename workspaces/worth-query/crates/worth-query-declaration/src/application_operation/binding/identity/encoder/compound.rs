@@ -50,6 +50,12 @@ impl<'a, S: Sink> Compound<'a, S> {
     ) -> Result<Ordering, CanonicalEncodeError<S::AdmissionError>> {
         let (left_key, left_value) = &self.entries[left];
         let (right_key, right_value) = &self.entries[right];
+        if !self.sink.tracks_work() {
+            self.sink.poll()?;
+            return Ok(left_key
+                .cmp(right_key)
+                .then_with(|| left_value.cmp(right_value)));
+        }
         let key_visits = left_key
             .len()
             .min(right_key.len())
@@ -76,7 +82,11 @@ impl<'a, S: Sink> Compound<'a, S> {
         left: usize,
         right: usize,
     ) -> Result<(), CanonicalEncodeError<S::AdmissionError>> {
-        self.sink.admit(CanonicalEncodingCharge::Work(1))?;
+        if self.sink.tracks_work() {
+            self.sink.admit(CanonicalEncodingCharge::Work(1))?;
+        } else {
+            self.sink.poll()?;
+        }
         self.entries.swap(left, right);
         Ok(())
     }
@@ -181,11 +191,13 @@ impl<S: Sink> ser::SerializeMap for Compound<'_, S> {
             return Err(CanonicalEncodeError::Serialization);
         }
         let (bytes, nested) = encode_entry(self.sink, key)?.finish();
-        let buffered = bytes
-            .len()
-            .checked_add(nested)
-            .ok_or_else(|| self.sink.fail_capacity())?;
-        self.sink.buffered(buffered)?;
+        if self.sink.tracks_work() {
+            let buffered = bytes
+                .len()
+                .checked_add(nested)
+                .ok_or_else(|| self.sink.fail_capacity())?;
+            self.sink.buffered(buffered)?;
+        }
         self.pending_key = Some(bytes);
         Ok(())
     }
@@ -195,11 +207,13 @@ impl<S: Sink> ser::SerializeMap for Compound<'_, S> {
             return Err(CanonicalEncodeError::Serialization);
         }
         let (bytes, nested) = encode_entry(self.sink, value)?.finish();
-        let buffered = bytes
-            .len()
-            .checked_add(nested)
-            .ok_or_else(|| self.sink.fail_capacity())?;
-        self.sink.buffered(buffered)?;
+        if self.sink.tracks_work() {
+            let buffered = bytes
+                .len()
+                .checked_add(nested)
+                .ok_or_else(|| self.sink.fail_capacity())?;
+            self.sink.buffered(buffered)?;
+        }
         reserve(self.sink, &mut self.entries, 1)?;
         let key = self.pending_key.take().expect("checked above");
         self.entries.push((key, bytes));

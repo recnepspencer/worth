@@ -26,9 +26,9 @@ use crate::application_program::{ApplicationComputationInput, ApplicationComputa
 use crate::application_schema::ApplicationValueEncodeDenial;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
-const PARTITION_KEY_DOMAIN: &str = "worth-query.computation-partition-key.v1";
-const INPUT_VALUE_DOMAIN: &str = "worth-query.computation-input-value.v1";
-const ITEM_VALUE_DOMAIN: &str = "worth-query.computation-item-value.v1";
+pub(super) const PARTITION_KEY_DOMAIN: &str = "worth-query.computation-partition-key.v1";
+pub(super) const INPUT_VALUE_DOMAIN: &str = "worth-query.computation-input-value.v1";
+pub(super) const ITEM_VALUE_DOMAIN: &str = "worth-query.computation-item-value.v1";
 
 /// One partition key's digest, its partition identity and the work that
 /// derived them.
@@ -135,24 +135,29 @@ where
     F: FnMut(CanonicalEncodingCharge) -> Result<(), E>,
     E: Debug,
 {
-    match canonical_identity_admitted(domain, identity, value, admission) {
-        Ok(identity) => Ok(identity),
-        Err(CanonicalEncodeError::Serialization) => {
-            Err(ApplicationComputationPartitionIdentityDenial::Key(
-                rejected(WorthQueryPortableTypeIdentity::declared(identity)),
-            ))
-        }
-        Err(CanonicalEncodeError::Admission(error)) => Err(
-            ApplicationComputationPartitionIdentityDenial::Admission(error),
+    canonical_identity_admitted(domain, identity, value, admission)
+        .map_err(|error| identity_denial(identity, error))
+}
+
+pub(super) fn identity_denial<E: Debug>(
+    identity: &'static str,
+    error: CanonicalEncodeError<E>,
+) -> ApplicationComputationPartitionIdentityDenial<E> {
+    match error {
+        CanonicalEncodeError::Serialization => ApplicationComputationPartitionIdentityDenial::Key(
+            rejected(WorthQueryPortableTypeIdentity::declared(identity)),
         ),
-        Err(CanonicalEncodeError::AdmissionDeferred) => {
+        CanonicalEncodeError::Admission(error) => {
+            ApplicationComputationPartitionIdentityDenial::Admission(error)
+        }
+        CanonicalEncodeError::AdmissionDeferred => {
             unreachable!("the canonical owner returns its latched admission cause")
         }
-        Err(CanonicalEncodeError::CapacityOverflow) => {
-            Err(ApplicationComputationPartitionIdentityDenial::CapacityOverflow)
+        CanonicalEncodeError::CapacityOverflow => {
+            ApplicationComputationPartitionIdentityDenial::CapacityOverflow
         }
-        Err(CanonicalEncodeError::Allocation) => {
-            Err(ApplicationComputationPartitionIdentityDenial::Allocation)
+        CanonicalEncodeError::Allocation => {
+            ApplicationComputationPartitionIdentityDenial::Allocation
         }
     }
 }

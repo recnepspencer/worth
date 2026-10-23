@@ -2,6 +2,7 @@
 use super::super::tree_report::WorthQueryPartitionedTreeRun as TreeRun;
 use super::*;
 use worth_foundational::facade::{DeterminismContract, ExecutionPosture, ExecutionRequestPolicy};
+mod selective;
 
 struct PollOnly(Arc<Owner>);
 impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for PollOnly {
@@ -34,11 +35,17 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Pol
         input: &Root,
         partition: WorthQueryComputationPartitionMembers<'_, Parity, Number>,
     ) -> Result<u64, WorthQueryComputationInputDenial<u32>> {
-        let sum = self.0.gather(reader, input, partition)?;
-        let label = reader
-            .field(input, AccountLabel::reference())?
-            .expect("seeded label");
-        Ok(sum + u64::try_from(label.len()).unwrap())
+        self.0.gathered.lock().unwrap().push(partition.key().0);
+        let sum = partition.items().map(|(_, item)| item.0).sum::<u64>();
+        let extra = if partition.key().0 == 1 {
+            reader
+                .field(input, AccountLabel::reference())?
+                .expect("seeded label")
+                .len()
+        } else {
+            0
+        };
+        Ok(sum + u64::try_from(extra).unwrap())
     }
     fn compute_partition(
         &self,
@@ -54,6 +61,11 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Pol
     }
     fn complete(&self, reduced: u64) -> Result<u64, u32> {
         Ok(reduced)
+    }
+}
+impl TestOwner for PollOnly {
+    fn gathered(&self) -> &Mutex<Vec<u64>> {
+        &self.0.gathered
     }
 }
 type NativeInstalled =
@@ -75,9 +87,9 @@ fn policy() -> ExecutionRequestPolicy {
     )
 }
 
-fn native_attempt(
+fn native_attempt<Owned: TestOwner>(
     world: &AuthorizationWorld,
-    installed: &NativeInstalled,
+    installed: &WorthQueryInstalledPartitionedComputation<Schema, Feature, Computation, Owned>,
     prior: ComputationPrior,
 ) -> NativeAttempt {
     let request = live_scope();
@@ -94,7 +106,7 @@ fn native_attempt(
             let allocation = execution.allocation_policy().unwrap();
             runs();
             tree_runs();
-            installed.owner.0.gathered.lock().unwrap().clear();
+            installed.owner.gathered().lock().unwrap().clear();
             ComputationPrior::hand_in_test(Some(prior));
             SealedComputationRun::keep_in_test(None);
             let mut value = None;
@@ -169,17 +181,17 @@ fn native_attempt(
             assert_eq!(typed.routing.partitions().count(), 2);
             assert_eq!(
                 typed.call_sequence.prefix(),
-                5,
-                "membership plus four stable item keys"
+                typed.items.len() + 1,
+                "membership plus stable item keys"
             );
             assert_eq!(
                 typed.call_sequence.shape().len(),
-                7,
-                "two canonical partition gathers"
+                typed.items.len() + 1 + typed.partitions.len(),
+                "one gather per canonical partition"
             );
             assert_eq!(typed.native_run.accounted_cost(), None);
             assert_eq!(*typed.tree.result(), value.unwrap());
-            let mut gathered = installed.owner.0.gathered.lock().unwrap().clone();
+            let mut gathered = installed.owner.gathered().lock().unwrap().clone();
             gathered.sort_unstable();
             observed = Some(NativeAttempt {
                 value: value.unwrap(),
@@ -222,7 +234,7 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         &installed,
         ComputationPrior::new(edition(), Err(Cause::FirstRun), None),
     );
-    assert_eq!(first.value, 10 + 2 * "primary".len() as u64);
+    assert_eq!(first.value, 10 + "primary".len() as u64);
     assert_eq!(first.gathered, [0, 1]);
     assert!(
         matches!(first.runs.as_slice(), [(Run::Full(Cause::FirstRun), Some(report))]
@@ -299,11 +311,11 @@ fn worker_only_partition_run_retains_facts_reuses_and_observes_a_real_source_edi
         })
         .unwrap();
     let edited = native_attempt(&world, &installed, retained_prior(unchanged.sealed));
-    assert_eq!(edited.value, 10 + 2 * label.len() as u64);
+    assert_eq!(edited.value, 10 + label.len() as u64);
     assert_eq!(
         edited.gathered,
-        [0, 1],
-        "both actual gathers read the edited field"
+        [1],
+        "only the partition consuming the edited field gathers again"
     );
     assert!(matches!(edited.runs.as_slice(), [(Run::Incremental, None)]));
     assert!(edited

@@ -20,7 +20,7 @@ pub(super) use serializer::tag;
 use serializer::Encoder;
 pub use sink::CanonicalEncodingCharge;
 pub(super) use sink::{
-    CallbackAdmission, CanonicalEncodeError, EncodingAdmission, HashingSink, Sink,
+    CallbackAdmission, CanonicalEncodeError, EncodingAdmission, HashingSink, PollingAdmission, Sink,
 };
 
 pub(super) fn encode_into<S: Sink, T: Serialize + ?Sized>(
