@@ -35,6 +35,7 @@ pub enum WorthQueryGeneratedOutputRestorationFailureCause {
     /// A custom invariant rejected the prepared restoration; the fields name it
     /// and its version.
     PreparationInvariantRejected {
+        refusal: worth_relational::facade::runtime::CustomInvariantRefusal,
         identifier: String,
         major: u16,
         minor: u16,
@@ -89,13 +90,14 @@ pub(super) fn preparation_failure_cause(
         }
     };
     let ConflictClass::InvariantViolation {
-        fields: InvariantViolationFields::CustomInvariantViolation { identity },
+        fields: InvariantViolationFields::CustomInvariantViolation { identity, refusal },
         ..
     } = &error.class
     else {
         return WorthQueryGeneratedOutputRestorationFailureCause::Preparation;
     };
     WorthQueryGeneratedOutputRestorationFailureCause::PreparationInvariantRejected {
+        refusal: refusal.clone(),
         identifier: identity.rule_id.as_str().to_owned(),
         major: identity.semantic_version.major,
         minor: identity.semantic_version.minor,

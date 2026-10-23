@@ -186,7 +186,7 @@ fn evaluate_custom_registration<'state>(
             crate::validation::data::CustomInvariantVerdict::Pass,
         ) => vec![InvariantVerdict::Pass],
         crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
-            crate::validation::data::CustomInvariantVerdict::Violation,
+            crate::validation::data::CustomInvariantVerdict::Violation(refusal),
         ) => vec![InvariantVerdict::Violation(
             crate::validation::data::InvariantViolation {
                 class: registration.execution_point().class(),
@@ -198,6 +198,7 @@ fn evaluate_custom_registration<'state>(
                 fields:
                     crate::validation::data::InvariantViolationFields::CustomInvariantViolation {
                         identity: registration.descriptor().identity.clone(),
+                        refusal,
                     },
             },
         )],
@@ -221,18 +222,15 @@ fn evaluate_custom_registration<'state>(
     }
     if work.exceeded() {
         verdicts = vec![InvariantVerdict::Violation(
-            crate::validation::data::InvariantViolation {
-                class: registration.execution_point().class(),
-                code: crate::diagnostics::data::DiagnosticCode::InvariantViolation,
-                detail: format!(
-                    "custom invariant '{}' exceeded its installed work budget",
-                    registration.rule_id().as_str(),
+            custom_invariant_failure_violation(
+                registration.execution_point().class(),
+                &CustomInvariantFailure::execution_error(
+                    &registration.descriptor().identity,
+                    crate::validation::data::CustomInvariantExecutionError::new(
+                        "custom invariant exceeded its installed work budget",
+                    ),
                 ),
-                fields:
-                    crate::validation::data::InvariantViolationFields::CustomInvariantViolation {
-                        identity: registration.descriptor().identity.clone(),
-                    },
-            },
+            ),
         )];
     }
     RegisteredInvariantEvaluation {

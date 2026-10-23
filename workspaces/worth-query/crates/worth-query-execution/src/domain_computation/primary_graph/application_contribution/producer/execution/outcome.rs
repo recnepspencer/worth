@@ -194,6 +194,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         WorthQueryApplicationCommitOutcome::Denied(commit_denial) => {
             use WorthQueryApplicationCommitDenialKind as Kind;
             let kind = commit_denial.kind();
+            let invariant = commit_denial.custom_invariant_denial().cloned();
             let execution = commit_denial
                 .execution_denial_cause()
                 .map(|cause| (commit_denial.stage(), cause));
@@ -256,6 +257,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 | Kind::RecoveryHandoffMismatch { .. } => failed(identity, commit_denial),
             };
             Err(failure
+                .with_custom_invariant_denial(invariant)
                 .with_commit_denial_kind(kind)
                 .with_commit_execution_denial(execution))
         }
@@ -346,3 +348,6 @@ fn refused_preflight(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod invariant_refusal_tests;

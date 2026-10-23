@@ -3,6 +3,7 @@ mod partition;
 mod partition_allocation_delta;
 mod partition_allocation_walk;
 mod partition_content;
+mod partition_symbols;
 mod publication;
 mod slot_resolution;
 mod working_state;

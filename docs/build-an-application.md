@@ -3514,6 +3514,62 @@ the caller's original reservation until released or transferred. The returned
 `ScopeOutcome` keeps the genuine admission/callback stop and original report.
 Known finite Scan/Map result declarations retain their existing checks.
 
+### Typed refusal from installed invariants
+
+An installed `WorthQueryApplicationInvariantRule` declares `type Refusal` and
+`type RefusalBinding`. The binding is the application's existing readable scalar
+value declaration for that type, with the canonical JSON contract and a finite
+`ValueDecodeBounds` wire maximum. Installation refuses a missing canonical
+contract or an unbounded wire representation. There is no separate refusal codec.
+A cause-free rule explicitly declares `Refusal = ()` and uses
+`WorthQueryEmptyInvariantRefusal` as its binding.
+
+Entry-local value declarations can derive
+`worth_query_decl::facade::application_schema::WorthValue` with
+`#[worth_value(crate = "worth_query_decl::facade::application_schema")]`.
+That facade exports the existing canonical shape and bounded seed vocabulary,
+including delegates for values constructed by a separate domain owner; the
+entry needs no lower platform dependency.
+
+For a foreign domain type, an entry-owned `ValueSeedDelegate<Value = DomainType>`
+can be the root grammar as well as a field grammar. Its binding declares
+`ApplicationCanonicalValueContract::delegated::<Delegate>(bounds)` and uses
+`encode_delegated_canonical_value` and `decode_delegated_canonical_value` (or the
+admitted decoder). These call the same canonical writer, bounded seeds and
+canonical comparison as ordinary values. They borrow the original value for
+encoding; no domain-value clone, alternate codec or platform trait on the pure
+domain type is needed.
+
+Evaluation returns `WorthQueryApplicationInvariantVerdict::Pass` or
+`Violation(refusal)`. `WorthQueryApplicationInvariantExecutionError` means that
+the rule could not evaluate, including a refusal that exceeds its declared wire
+maximum; it is not a domain violation. Cancellation and deadlines retain the
+original request's control outcome. The adapter admits the maximum retained refusal bytes against the original
+evaluation meter before encoding, including ordinary serial rule hooks.
+
+Rules at the same execution point evaluate in installation binding order,
+including under a multiworker policy. The original publication result carries the first violation in that
+order. Its `WorthQueryApplicationCommitDenial` exposes
+`decode_invariant_refusal::<YourRefusalBinding>()`; a mismatched binding returns
+`WorthQueryInvariantRefusalDecodeDenial::TypeMismatch` before decoding. The
+unchanged canonical bytes are also available through `invariant_refusal_bytes()`.
+Relational retains that same payload in the transaction conflict and diagnostic
+history. Neither reading the denial nor decoding it reruns the rejected candidate.
+
+Native recovery checkpoints retain symbol meanings from installation configuration,
+published canonical envelopes, retained roots and the historical mirror, including
+aspect/field revision keys and structural fingerprint families. Capture and
+readmission use the storage owner's same symbol-closure traversal. Client
+keys interned only while preparing an unpublished attempt do not change the
+checkpoint. The runtime's live symbol interner can still resolve those pending
+keys; recovery persists the selected retained truth.
+
+The [temporal integrity rule](../workspaces/worth-query/crates/worth-query-certification/examples/product_workflow_support/integrity.rs)
+returns `TemporalIntegrityRefusal::InvalidState` with the candidate revision and
+lifecycle. The [installed refusal courts](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/typed_invariant_refusal.rs)
+exercise original-caller decoding, unchanged native checkpoints, cancellation,
+installed order, size refusal, decode mismatch, and reproducible payload bytes.
+
 ### Optional invariant work and original interruption
 
 Within an explicitly accounted execution policy, the work ceiling can be absent:

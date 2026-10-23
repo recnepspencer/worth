@@ -6,6 +6,7 @@ mod decision_read_set;
 mod denial_cause;
 mod execution;
 mod invariant_execution;
+mod invariant_refusal;
 mod lane;
 mod program_binding;
 mod recorded_idempotency;
@@ -245,9 +246,10 @@ impl WorthQueryApplicationCommitDenial {
         &self,
     ) -> Option<&worth_relational::facade::transactions::CustomInvariantSemanticIdentity> {
         match self.custom_invariant()? {
-            crate::domain_computation::WorthQueryCustomInvariantDenial::Violation { identity } => {
-                Some(identity)
-            }
+            crate::domain_computation::WorthQueryCustomInvariantDenial::Violation {
+                identity,
+                ..
+            } => Some(identity),
             crate::domain_computation::WorthQueryCustomInvariantDenial::Failure { .. } => None,
         }
     }

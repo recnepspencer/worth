@@ -24,7 +24,10 @@ dependencies = [
 
 [[packages]]
 package = "worth-query-decl"
-dependencies = ["worth-query-declaration"]
+dependencies = [
+    "serde",
+    "worth-query-declaration",
+]
 
 [[packages]]
 package = "worth-query-host"

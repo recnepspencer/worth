@@ -53,7 +53,11 @@ fn assert_fact_custody_denial(error: TransactionCommitError) {
         panic!("expected a native invariant conflict, got {error:?}");
     };
     let ConflictClass::InvariantViolation {
-        fields: InvariantViolationFields::CustomInvariantViolation { identity },
+        fields:
+            InvariantViolationFields::CustomInvariantViolation {
+                identity,
+                refusal: _,
+            },
         ..
     } = error.class
     else {

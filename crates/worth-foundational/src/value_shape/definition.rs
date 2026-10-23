@@ -62,6 +62,9 @@ impl ValueShapeDefinition {
             body: Value::SHAPE_BODY,
         }
     }
+    pub fn from_delegate<Delegate: super::delegates::ValueSeedDelegate>() -> Self {
+        Delegate::EDGE.resolve()
+    }
     pub(super) fn delegate<Delegate: super::delegates::ValueSeedDelegate>() -> Self {
         Self {
             identity: TypeId::of::<Delegate>(),

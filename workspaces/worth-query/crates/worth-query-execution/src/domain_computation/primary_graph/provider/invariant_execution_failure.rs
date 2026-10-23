@@ -183,8 +183,8 @@ fn map_custom_invariant_failure(
     use worth_relational::facade::transactions::InvariantViolationFields;
 
     let denial = match fields {
-        InvariantViolationFields::CustomInvariantViolation { identity } => {
-            WorthQueryCustomInvariantDenial::Violation { identity }
+        InvariantViolationFields::CustomInvariantViolation { identity, refusal } => {
+            WorthQueryCustomInvariantDenial::Violation { identity, refusal }
         }
         InvariantViolationFields::CustomInvariantFailure {
             identity,

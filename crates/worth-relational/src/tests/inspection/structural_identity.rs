@@ -263,14 +263,20 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
     let mut runtime = persisted_runtime_with_test_schema();
     let left = create_entity(execution, &runtime, "left");
     let right = create_entity(execution, &runtime, "right");
+    // Recovery requires a real retained meaning, not a fabricated numeric symbol.
+    let family = runtime.services.symbols.with_read(|symbols| {
+        symbols
+            .symbol("left")
+            .expect("the published client key is interned")
+    });
     assert!(runtime.set_entity_structural_identity_for_test(
         left,
-        Some(StructuralFingerprint::new(Symbol(51), 1001)),
+        Some(StructuralFingerprint::new(family, 1001)),
         Some(LineageId(501)),
     ));
     assert!(runtime.set_entity_structural_identity_for_test(
         right,
-        Some(StructuralFingerprint::new(Symbol(51), 1002)),
+        Some(StructuralFingerprint::new(family, 1002)),
         Some(LineageId(502)),
     ));
     runtime
@@ -293,7 +299,7 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
             &StructuralIdentityQueryRequest {
                 scope: InspectionScope::Current,
                 partition_scope: None,
-                fingerprint_family: Symbol(51),
+                fingerprint_family: family,
             },
         )
         .expect("read request remains live");
@@ -324,7 +330,7 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
             &StructuralIdentityQueryRequest {
                 scope: InspectionScope::Current,
                 partition_scope: None,
-                fingerprint_family: Symbol(51),
+                fingerprint_family: family,
             },
         )
         .expect("read request remains live");

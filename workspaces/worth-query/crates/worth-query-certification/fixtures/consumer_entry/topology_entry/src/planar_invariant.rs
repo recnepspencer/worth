@@ -64,6 +64,8 @@ pub struct PositiveTurnRule<Schema: TopologySchemaBinding> {
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationInvariantRule<Schema>
     for PositiveTurnRule<Schema>
 {
+    type Refusal = ();
+    type RefusalBinding = WorthQueryEmptyInvariantRefusal;
     type Scope = Vec<[WorthQueryApplicationInvariantEntity<Schema, Body>; 3]>;
 
     fn prepare_scope(
@@ -91,7 +93,10 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationInvariantRule<Schema>
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+        Result<
+            WorthQueryApplicationInvariantVerdict<()>,
+            WorthQueryApplicationInvariantExecutionError,
+        >,
     > {
         Some(self.evaluate_with_budget(context, scope, Some(budget)))
     }
@@ -100,8 +105,10 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationInvariantRule<Schema>
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
         scope: &Self::Scope,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<()>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         self.evaluate_with_budget(context, scope, None)
     }
 }
@@ -177,8 +184,10 @@ impl<Schema: TopologySchemaBinding> PositiveTurnRule<Schema> {
         context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
         scope: &<Self as WorthQueryApplicationInvariantRule<Schema>>::Scope,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<()>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         evaluation_checkpoint(budget, 0)?;
         let proposed = context.proposed();
         if self.mode.load(Ordering::SeqCst) == INVARIANT_PROBE_EVALUATION_EXPANSION {
@@ -229,7 +238,7 @@ impl<Schema: TopologySchemaBinding> PositiveTurnRule<Schema> {
                 )
             })?;
             if turn <= 0 {
-                return Ok(WorthQueryApplicationInvariantVerdict::Violation);
+                return Ok(WorthQueryApplicationInvariantVerdict::Violation(()));
             }
         }
         Ok(WorthQueryApplicationInvariantVerdict::Pass)

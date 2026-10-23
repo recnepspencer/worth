@@ -1,9 +1,10 @@
 //! Native-request decoding. Standalone representation decoding remains separate.
 use super::{
-    CanonicalValue, CanonicalValueSeed, ValueCodecDenial as D, ValueDecodeAdmission,
-    ValueDecodeBounds,
+    CanonicalValue, DelegatedValueSeed, ValueCodecDenial as D, ValueDecodeAdmission,
+    ValueDecodeBounds, ValueDelegate, ValueSeedDelegate,
 };
 use serde::de::DeserializeSeed;
+use serde::Serialize;
 use std::io::Write;
 
 /// Decode through one borrowed admission callback supplied by the native owner.
@@ -23,13 +24,39 @@ pub(super) fn decode_recording<Value: CanonicalValue>(
     admission: &mut ValueDecodeAdmission<'_>,
     require_admission: bool,
 ) -> Result<Value, D> {
+    decode_delegate_recording::<ValueDelegate<Value>>(raw, bounds, admission, require_admission)
+}
+
+/// Bounded canonical decoding using the same seed contract as a declared field.
+pub fn decode_delegated_canonical_value<Delegate: ValueSeedDelegate>(
+    raw: &str,
+    bounds: ValueDecodeBounds,
+) -> Result<Delegate::Value, D> {
+    decode_delegate_recording::<Delegate>(raw, bounds, &mut |_, _| Ok(()), false)
+}
+
+/// The caller's admission loan reaches every nested seed and canonical check.
+pub fn decode_delegated_canonical_value_with_admission<Delegate: ValueSeedDelegate>(
+    raw: &str,
+    bounds: ValueDecodeBounds,
+    admission: &mut ValueDecodeAdmission<'_>,
+) -> Result<Delegate::Value, D> {
+    decode_delegate_recording::<Delegate>(raw, bounds, admission, true)
+}
+
+fn decode_delegate_recording<Delegate: ValueSeedDelegate>(
+    raw: &str,
+    bounds: ValueDecodeBounds,
+    admission: &mut ValueDecodeAdmission<'_>,
+    require_admission: bool,
+) -> Result<Delegate::Value, D> {
     if bounds
         .maximum_wire_bytes()
         .is_some_and(|maximum| raw.len() > maximum)
     {
         return Err(D::WireBytes);
     }
-    if require_admission && !Value::SUPPORTS_ADMISSION {
+    if require_admission && !Delegate::SUPPORTS_ADMISSION {
         return Err(D::UnsupportedAdmission);
     }
     let mut latched = super::decode_control::RecordingAdmission {
@@ -37,33 +64,33 @@ pub(super) fn decode_recording<Value: CanonicalValue>(
         refusal: None,
         require_admission,
     };
-    let result = decode::<Value>(raw, bounds, &mut latched, require_admission);
+    let result = decode::<Delegate>(raw, bounds, &mut latched, require_admission);
     if let Some(denial) = latched.refusal {
         return Err(denial);
     }
     result
 }
 
-fn decode<Value: CanonicalValue>(
+fn decode<Delegate: ValueSeedDelegate>(
     raw: &str,
     bounds: ValueDecodeBounds,
     admission: &mut ValueDecodeAdmission<'_>,
     require_admission: bool,
-) -> Result<Value, D> {
+) -> Result<Delegate::Value, D> {
     admission.admit(raw.len(), 0)?;
     if require_admission {
-        super::ValueShapeDefinition::of::<Value>().inspect_admitted(admission)?;
+        super::ValueShapeDefinition::from_delegate::<Delegate>().inspect_admitted(admission)?;
     } else {
-        super::ValueShapeDefinition::of::<Value>().inspect()?;
+        super::ValueShapeDefinition::from_delegate::<Delegate>().inspect()?;
     }
     let mut decoder = serde_json::Deserializer::from_str(raw);
     decoder.disable_recursion_limit();
-    let seed = CanonicalValueSeed::<Value>::with_admission(bounds, admission);
+    let seed = DelegatedValueSeed::<Delegate>::new(bounds, Some(admission));
     let value = seed
         .deserialize(serde_stacker::Deserializer::new(&mut decoder))
         .map_err(|_| D::Malformed)?;
     decoder.end().map_err(|_| D::Malformed)?;
-    <super::ValueDelegate<Value> as super::ValueSeedDelegate>::validate(&value, bounds)?;
+    Delegate::validate(&value, bounds)?;
     // Compare canonical serialization directly against the admitted source.
     // This is the actual serializer, with no second owned encoding allocation.
     let mut comparison = CanonicalComparison {

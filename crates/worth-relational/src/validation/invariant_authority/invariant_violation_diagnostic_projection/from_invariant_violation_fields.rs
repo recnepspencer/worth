@@ -187,8 +187,8 @@ impl<'a> InvariantViolationDiagnosticProjection<'a> {
                 failure: *failure,
                 detail,
             },
-            InvariantViolationFields::CustomInvariantViolation { identity } => {
-                Self::CustomInvariantViolation { identity }
+            InvariantViolationFields::CustomInvariantViolation { identity, refusal } => {
+                Self::CustomInvariantViolation { identity, refusal }
             }
             InvariantViolationFields::PartitionIsolation {
                 contract_id,

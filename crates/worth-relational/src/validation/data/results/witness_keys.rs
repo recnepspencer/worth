@@ -149,7 +149,7 @@ pub(super) fn invariant_violation_witness_key(
             phase.diagnostic_label(),
             failure.diagnostic_label()
         ),
-        InvariantViolationFields::CustomInvariantViolation { identity } => format!(
+        InvariantViolationFields::CustomInvariantViolation { identity, .. } => format!(
             "custom_violation:{}:{}.{}",
             identity.rule_id.as_str(),
             identity.semantic_version.major,

@@ -69,6 +69,9 @@ pub struct PositiveParameterCountRule<Schema: ParameterSchemaBinding> {
 impl<Schema: ParameterSchemaBinding> WorthQueryApplicationInvariantRule<Schema>
     for PositiveParameterCountRule<Schema>
 {
+    type Refusal = ();
+    type RefusalBinding =
+        worth_query_host::facade::application_invariants::WorthQueryEmptyInvariantRefusal;
     type Scope = Vec<WorthQueryApplicationInvariantEntity<Schema, Parameter>>;
 
     fn supports_checked_preparation(&self) -> bool {
@@ -87,7 +90,10 @@ impl<Schema: ParameterSchemaBinding> WorthQueryApplicationInvariantRule<Schema>
         scope: &Self::Scope,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+        Result<
+            WorthQueryApplicationInvariantVerdict<()>,
+            WorthQueryApplicationInvariantExecutionError,
+        >,
     > {
         Some(self.evaluate_under(context, scope, Some(budget)))
     }
@@ -103,8 +109,10 @@ impl<Schema: ParameterSchemaBinding> WorthQueryApplicationInvariantRule<Schema>
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
         scope: &Self::Scope,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<()>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         self.evaluate_under(context, scope, None)
     }
 }
@@ -133,8 +141,10 @@ impl<Schema: ParameterSchemaBinding> PositiveParameterCountRule<Schema> {
         context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
         scope: &<Self as WorthQueryApplicationInvariantRule<Schema>>::Scope,
         budget: Option<&dyn CustomInvariantLeaseBudget>,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<()>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         if budget.is_some_and(|budget| !budget.checkpoint(0)) {
             return Err(WorthQueryApplicationInvariantExecutionError::new(
                 "caller stopped",
@@ -156,7 +166,7 @@ impl<Schema: ParameterSchemaBinding> PositiveParameterCountRule<Schema> {
                     WorthQueryApplicationInvariantExecutionError::new("parameter count absent")
                 })?;
             if PositiveCount::get(&count) == 0 {
-                return Ok(WorthQueryApplicationInvariantVerdict::Violation);
+                return Ok(WorthQueryApplicationInvariantVerdict::Violation(()));
             }
         }
         Ok(WorthQueryApplicationInvariantVerdict::Pass)

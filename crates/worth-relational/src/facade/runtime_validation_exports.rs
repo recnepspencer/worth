@@ -1,7 +1,7 @@
 pub use crate::validation::data::{
     CustomInvariantAccessContract, CustomInvariantDescriptor, CustomInvariantExecutionContext,
     CustomInvariantExecutionError, CustomInvariantInterruption, CustomInvariantLeaseBudget,
-    CustomInvariantOperationalMetadata, CustomInvariantPreparationError,
+    CustomInvariantOperationalMetadata, CustomInvariantPreparationError, CustomInvariantRefusal,
     CustomInvariantRegistration, CustomInvariantRegistrationError, CustomInvariantRule,
     CustomInvariantRuleId, CustomInvariantScopePlanner, CustomInvariantSemanticIdentity,
     CustomInvariantSemanticVersion, CustomInvariantVerdict, InvariantCatalog, InvariantCheckResult,

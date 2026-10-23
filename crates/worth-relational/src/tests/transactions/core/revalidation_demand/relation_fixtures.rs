@@ -67,7 +67,9 @@ impl CustomInvariantRule for RelationLabelRule {
             if scalar(source, "name") == Some(AspectValue::String(STRICT_MODE_NAME.into()))
                 && scalar(value, "label") != Some(AspectValue::String(COMPLIANT_NAME.into()))
             {
-                return Ok(CustomInvariantVerdict::Violation);
+                return Ok(CustomInvariantVerdict::Violation(
+                    crate::validation::data::CustomInvariantRefusal::Empty,
+                ));
             }
         }
         Ok(CustomInvariantVerdict::Pass)
@@ -106,7 +108,7 @@ pub(super) fn assert_rule(error: TransactionCommitError) {
     };
     assert!(
         matches!(error.class, crate::transactions::data::ConflictClass::InvariantViolation {
-        fields: InvariantViolationFields::CustomInvariantViolation { ref identity }, ..
+        fields: InvariantViolationFields::CustomInvariantViolation { ref identity, .. }, ..
     } if identity.rule_id.as_str() == RULE),
         "actual refusal: {:?}",
         error.class

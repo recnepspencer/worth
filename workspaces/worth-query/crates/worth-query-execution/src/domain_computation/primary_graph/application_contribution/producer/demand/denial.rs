@@ -1,4 +1,6 @@
 pub(super) mod cleanup_custody;
+mod diagnostic_copy;
+mod invariant_refusal;
 mod kind;
 mod publication_stale;
 pub use kind::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture};
@@ -25,6 +27,7 @@ pub struct WorthQueryOutputDemandDenial {
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct DemandDenialEvidence {
+    custom_invariant: Option<crate::domain_computation::WorthQueryCustomInvariantDenial>,
     publication_stale: Option<ProducerPublicationStale>,
     publication_companion_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
     producer_admission_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
@@ -349,32 +352,6 @@ impl WorthQueryOutputDemandDenial {
         )
     }
 }
-
-// Cloning is diagnostic only. The original refusal remains the unique owner.
-impl Clone for WorthQueryOutputDemandDenial {
-    fn clone(&self) -> Self {
-        Self {
-            kind: self.kind.clone(),
-            evidence: self.evidence.clone(),
-            cleanup: None,
-            subject: self.subject.clone(),
-            domain_reason: self.domain_reason,
-            readmission_failure: self.readmission_failure,
-            recovery_posture: self.recovery_posture,
-        }
-    }
-}
-impl PartialEq for WorthQueryOutputDemandDenial {
-    fn eq(&self, other: &Self) -> bool {
-        self.kind == other.kind
-            && self.evidence == other.evidence
-            && self.subject == other.subject
-            && self.domain_reason == other.domain_reason
-            && self.readmission_failure == other.readmission_failure
-            && self.recovery_posture == other.recovery_posture
-    }
-}
-impl Eq for WorthQueryOutputDemandDenial {}
 
 impl worth_execution::ChargedBytes for WorthQueryOutputDemandDenial {
     fn additional_charged_bytes(&self) -> u64 {

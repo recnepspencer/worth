@@ -66,6 +66,8 @@ pub(super) struct AccountingRule {
     pub(super) contacts: Contacts,
 }
 impl WorthQueryApplicationInvariantRule<HookSchema> for AccountingRule {
+    type Refusal = ();
+    type RefusalBinding = crate::facade::application_invariants::WorthQueryEmptyInvariantRefusal;
     type Scope = ();
     fn prepare_scope(
         &self,
@@ -81,8 +83,10 @@ impl WorthQueryApplicationInvariantRule<HookSchema> for AccountingRule {
         &self,
         _: &WorthQueryApplicationInvariantContext<'_, '_, HookSchema>,
         _: &(),
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
-    {
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<()>,
+        WorthQueryApplicationInvariantExecutionError,
+    > {
         self.contacts.ordinary.fetch_add(1, Ordering::SeqCst);
         for _ in 0..if self.work { EVALUATION_UNITS } else { 0 } {
             self.contacts.visits.fetch_add(1, Ordering::SeqCst);
@@ -129,7 +133,10 @@ impl WorthQueryApplicationInvariantRule<HookSchema> for AccountingRule {
         _: &(),
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+        Result<
+            WorthQueryApplicationInvariantVerdict<()>,
+            WorthQueryApplicationInvariantExecutionError,
+        >,
     > {
         self.contacts.evaluation.fetch_add(1, Ordering::SeqCst);
         if !budget.checkpoint(0) {

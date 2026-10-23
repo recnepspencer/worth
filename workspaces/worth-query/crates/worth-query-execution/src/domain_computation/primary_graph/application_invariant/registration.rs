@@ -34,6 +34,7 @@ where
         binding_identity: ApplicationSchemaBindingIdentity,
         program_selection: Option<WorthQueryProgramRuleSelection>,
     ) -> Result<CustomInvariantRegistration, String> {
+        super::refusal::maximum::<Rule::RefusalBinding>()?;
         CustomInvariantRegistration::new(InstalledApplicationInvariantRule {
             rule: *self,
             descriptor,
@@ -129,6 +130,11 @@ where
         );
         self.rule
             .evaluate_checked(&context, &scope.rule_scope, budget)
+            .map(|result| {
+                result.and_then(|verdict| {
+                    super::refusal::encode::<Rule::RefusalBinding>(verdict, budget)
+                })
+            })
     }
 
     fn evaluate(
@@ -141,11 +147,16 @@ where
         {
             return Ok(CustomInvariantVerdict::Pass);
         }
+        let refusal_budget = context.refusal_budget();
         let context = super::WorthQueryApplicationInvariantContext::new(
             context,
             self.binding_identity.clone(),
             std::sync::Arc::clone(&scope.admission),
         );
-        self.rule.evaluate(&context, &scope.rule_scope)
+        self.rule
+            .evaluate(&context, &scope.rule_scope)
+            .and_then(|verdict| {
+                super::refusal::encode::<Rule::RefusalBinding>(verdict, refusal_budget)
+            })
     }
 }

@@ -61,7 +61,14 @@ fn plan_invariant_execution_inner<'state>(
     } else {
         packet_partition_scope(request.merged_plan())
     };
-    let proof_kind = proof_kind_for_runtime(lease);
+    let proof_kind = if registrations
+        .iter()
+        .any(|registration| !matches!(registration, InvariantPacketRegistration::Native(_)))
+    {
+        PreparationProofKind::RequiresSerial
+    } else {
+        proof_kind_for_runtime(lease)
+    };
     let strategy = preparation_strategy_for_runtime(lease, registrations.len(), proof_kind);
     let packets = invariant_work_packets(
         request,
@@ -128,6 +135,9 @@ fn preparation_strategy_for_runtime(
     }) {
         return PreparationStrategy::serial(SerialPreparationReason::SerialPosture);
     }
+    if proof_kind == PreparationProofKind::RequiresSerial {
+        return PreparationStrategy::serial(SerialPreparationReason::ProofRequiresSerial);
+    }
     if !packet_width_is_profitable(packet_count, MIN_PARALLEL_PACKET_WIDTH) {
         return PreparationStrategy {
             parallel_legality: ParallelLegality::ProvenParallel,
@@ -136,10 +146,6 @@ fn preparation_strategy_for_runtime(
             serial_selection_reason: Some(SerialPreparationReason::InsufficientPacketBreadth),
         };
     }
-    if proof_kind == PreparationProofKind::RequiresSerial {
-        return PreparationStrategy::serial(SerialPreparationReason::ProofRequiresSerial);
-    }
-
     PreparationStrategy {
         parallel_legality: ParallelLegality::ProvenParallel,
         parallel_profitability: ParallelProfitability::Profitable,

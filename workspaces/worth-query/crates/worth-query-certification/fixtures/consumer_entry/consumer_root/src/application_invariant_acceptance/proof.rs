@@ -280,7 +280,7 @@ fn require_planar_violation<Denial: std::fmt::Debug, Result: std::fmt::Debug>(
         denial.stage(),
         WorthQueryApplicationCommitDenialStage::InvariantExecution
     );
-    let Some(WorthQueryCustomInvariantDenial::Violation { identity }) =
+    let Some(WorthQueryCustomInvariantDenial::Violation { identity, .. }) =
         denial.custom_invariant_denial()
     else {
         panic!("the denial must carry the domain violation, not an execution failure")

@@ -10,8 +10,17 @@ pub use worth_relational::facade::runtime::{
     CustomInvariantExecutionError as WorthQueryApplicationInvariantExecutionError,
     CustomInvariantInterruption,
     CustomInvariantPreparationError as WorthQueryApplicationInvariantPreparationError,
-    CustomInvariantVerdict as WorthQueryApplicationInvariantVerdict,
 };
+
+pub(crate) mod refusal;
+pub use refusal::{WorthQueryEmptyInvariantRefusal, WorthQueryInvariantRefusalDecodeDenial};
+
+/// A domain violation is distinct from failure to evaluate and interruption.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum WorthQueryApplicationInvariantVerdict<Refusal> {
+    Pass,
+    Violation(Refusal),
+}
 
 mod access_denial;
 mod prepared_scope;
@@ -39,6 +48,10 @@ where
     Schema: ApplicationSchema,
 {
     type Scope: Send + Sync + 'static;
+    type Refusal: 'static;
+    /// The declared canonical application value codec, with a finite wire bound.
+    /// Cause-free rules explicitly use `()` and `WorthQueryEmptyInvariantRefusal`.
+    type RefusalBinding: worth_query_declaration::facade::application_schema::ApplicationReadableScalarValueBinding<Value = Self::Refusal>;
 
     fn prepare_scope(
         &self,
@@ -77,7 +90,10 @@ where
         _scope: &Self::Scope,
         _budget: &dyn worth_relational::facade::runtime::CustomInvariantLeaseBudget,
     ) -> Option<
-        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+        Result<
+            WorthQueryApplicationInvariantVerdict<Self::Refusal>,
+            WorthQueryApplicationInvariantExecutionError,
+        >,
     > {
         None
     }
@@ -86,5 +102,8 @@ where
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
         scope: &Self::Scope,
-    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>;
+    ) -> Result<
+        WorthQueryApplicationInvariantVerdict<Self::Refusal>,
+        WorthQueryApplicationInvariantExecutionError,
+    >;
 }

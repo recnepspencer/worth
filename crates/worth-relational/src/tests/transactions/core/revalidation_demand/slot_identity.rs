@@ -52,9 +52,7 @@ fn judgement_tracks_the_nonzero_slot_named_by_the_demand() {
         matches!(
             error.class,
             crate::transactions::data::ConflictClass::InvariantViolation {
-                fields: crate::validation::data::InvariantViolationFields::CustomInvariantViolation {
-                    ref identity,
-                },
+                fields: crate::validation::data::InvariantViolationFields::CustomInvariantViolation { ref identity, .. },
                 ..
             } if identity.rule_id.as_str() == STRICTNESS_RULE_ID
         ),

@@ -117,7 +117,9 @@ impl CustomInvariantRule for RequiredChild {
                     ContractValidatedAspectValueView::Scalar(AspectValue::Bool(true))
                 )
             }) {
-                return Ok(CustomInvariantVerdict::Violation);
+                return Ok(CustomInvariantVerdict::Violation(
+                    crate::validation::data::CustomInvariantRefusal::Empty,
+                ));
             }
         }
         if !children.is_empty() {
@@ -158,7 +160,7 @@ pub(super) fn assert_custom_violation(error: &crate::transactions::data::Transac
         matches!(error,
             TransactionCommitError::Conflict { error, .. }
             if matches!(&error.class, ConflictClass::InvariantViolation {
-                fields: InvariantViolationFields::CustomInvariantViolation { identity }, ..
+                fields: InvariantViolationFields::CustomInvariantViolation { identity, .. }, ..
             } if ["test.retained-root.child-completeness.commit",
                 "test.retained-root.child-completeness.mutation",
                 "test.retained-root.child-completeness.publication"].contains(&identity.rule_id.as_str()))

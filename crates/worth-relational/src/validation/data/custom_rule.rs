@@ -1,4 +1,6 @@
 mod errors;
+mod refusal;
+pub use refusal::CustomInvariantRefusal;
 mod touched_scope;
 
 pub use crate::validation::custom_rule::{

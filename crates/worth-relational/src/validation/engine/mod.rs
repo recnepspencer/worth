@@ -5,6 +5,7 @@ pub(crate) mod evaluator;
 pub(crate) mod input_preparation;
 mod metrics;
 mod observation;
+mod ordered_rules;
 mod policy;
 mod profile;
 mod request;

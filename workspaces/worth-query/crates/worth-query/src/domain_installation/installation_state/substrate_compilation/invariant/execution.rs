@@ -120,7 +120,9 @@ impl InstalledRequiresOutgoingRelationsRule {
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
         execution_checkpoint(budget, 0)?;
         if !scope.traversal_exhausted {
-            return Ok(CustomInvariantVerdict::Violation);
+            return Ok(CustomInvariantVerdict::Violation(
+                worth_relational::facade::runtime::CustomInvariantRefusal::Empty,
+            ));
         }
         if scope.visible_relevant_entities.is_empty()
             && scope.planned_relevant_entity_count == 0
@@ -131,7 +133,9 @@ impl InstalledRequiresOutgoingRelationsRule {
         for entity in &scope.visible_relevant_entities {
             execution_checkpoint(budget, 1)?;
             if !self.visible_entity_satisfies(context, *entity, budget)? {
-                return Ok(CustomInvariantVerdict::Violation);
+                return Ok(CustomInvariantVerdict::Violation(
+                    worth_relational::facade::runtime::CustomInvariantRefusal::Empty,
+                ));
             }
         }
         Ok(CustomInvariantVerdict::Pass)

@@ -198,6 +198,9 @@ fn cause(
         Decision::OperationTerminalFailure(_, Terminal::ApplicationCommit(kind)) => {
             Some(application_commit_cause(*kind))
         }
+        Decision::OperationTerminalFailure(_, Terminal::CustomInvariant(denial)) => {
+            Some(Cause::CustomInvariant(denial.clone()))
+        }
         Decision::Eligible(_)
         | Decision::Suppressed(_)
         | Decision::Deferred(_)

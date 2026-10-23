@@ -53,6 +53,8 @@ pub enum WorthQueryConditionalExecutionTerminal {
 /// Why processing a due wake ended as it did, when a specific cause is known.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalExecutionCause {
+    /// The original domain evidence or evaluation failure, retained unchanged.
+    CustomInvariant(crate::domain_computation::WorthQueryCustomInvariantDenial),
     ManagedCleanupRequired(crate::domain_computation::WorthQueryMutationCleanupFailureKind),
     /// A reentry retry or unresolved outcome retains the original typed cause.
     Reentry(super::super::WorthQueryConditionalReentryFailure),

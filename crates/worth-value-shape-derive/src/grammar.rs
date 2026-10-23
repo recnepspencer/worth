@@ -6,6 +6,7 @@ use syn::{Attribute, Data, DeriveInput, Fields, Ident, Type};
 
 pub(crate) struct Value {
     pub ident: Ident,
+    pub facade: syn::Path,
     pub wire_name: String,
     pub kind: ValueKind,
 }
@@ -45,7 +46,7 @@ pub(crate) struct TaggedVariant {
 
 impl Value {
     pub(crate) fn parse(input: DeriveInput) -> syn::Result<Self> {
-        reject_delegate_attributes(&input.attrs)?;
+        let facade = attributes::facade_path(&input.attrs)?;
         if !input.generics.params.is_empty() || input.generics.where_clause.is_some() {
             return Err(syn::Error::new_spanned(
                 input.generics,
@@ -123,6 +124,7 @@ impl Value {
         };
         Ok(Self {
             ident: input.ident,
+            facade,
             wire_name,
             kind,
         })

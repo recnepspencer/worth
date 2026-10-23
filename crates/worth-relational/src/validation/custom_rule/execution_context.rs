@@ -162,6 +162,12 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         super::interruption::check_live(self.execution)
     }
 
+    /// Charges encoded refusal storage to this evaluation's original meter.
+    /// This remains available to serial rules with ordinary evaluation hooks.
+    pub fn refusal_budget(&self) -> &dyn super::CustomInvariantLeaseBudget {
+        &self.work
+    }
+
     pub fn observation_kind(&self) -> InvariantObservationKind {
         self.observation_kind
     }

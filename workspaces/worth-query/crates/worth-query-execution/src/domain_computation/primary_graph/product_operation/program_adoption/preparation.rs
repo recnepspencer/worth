@@ -126,6 +126,7 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
     /// `identity` names it.
     TargetRuleRejected {
         identity: worth_relational::facade::transactions::CustomInvariantSemanticIdentity,
+        refusal: worth_relational::facade::runtime::CustomInvariantRefusal,
     },
     /// The branch transaction could not be prepared. Its private workflow
     /// candidate and commit log are not a consumer disclosure surface.

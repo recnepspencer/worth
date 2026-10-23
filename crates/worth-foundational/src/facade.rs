@@ -693,12 +693,14 @@ pub use crate::budget_limits::{BudgetRefused, ExhaustedLimit, LimitCounts, Limit
 pub use crate::resident_value::ChargedBytes;
 pub use crate::responsibilities::{foundational_responsibilities, ResponsibilityArea};
 pub use crate::value_shape::{
-    decode_canonical_value, decode_canonical_value_with_admission, encode_canonical_value,
-    value_decode_error, ArrayDelegate, BoxDelegate, CanonicalDocumentCodec, CanonicalValue,
-    CanonicalValueSeed, DelegatedValueSeed, OptionalDelegate, PairDelegate, SequenceDelegate,
-    UsizeDelegate, ValueCodecDenial, ValueDecodeAdmission, ValueDecodeBounds, ValueDecodeControl,
-    ValueDelegate, ValueFieldDefinition, ValueFieldShape, ValuePrimitive, ValueSeedDelegate,
-    ValueShape, ValueShapeBody, ValueShapeDefinition, ValueShapeDepth, ValueShapeEdge,
+    decode_canonical_value, decode_canonical_value_with_admission,
+    decode_delegated_canonical_value, decode_delegated_canonical_value_with_admission,
+    encode_canonical_value, encode_delegated_canonical_value, value_decode_error, ArrayDelegate,
+    BoxDelegate, CanonicalDocumentCodec, CanonicalValue, CanonicalValueSeed, DelegatedValueSeed,
+    OptionalDelegate, PairDelegate, SequenceDelegate, UsizeDelegate, ValueCodecDenial,
+    ValueDecodeAdmission, ValueDecodeBounds, ValueDecodeControl, ValueDelegate,
+    ValueFieldDefinition, ValueFieldShape, ValuePrimitive, ValueSeedDelegate, ValueShape,
+    ValueShapeBody, ValueShapeDefinition, ValueShapeDepth, ValueShapeEdge,
     ValueTaggedVariantDefinition, ValueTaggedVariantShape, ValueVariantDefinition,
     ValueVariantShape,
 };

@@ -158,6 +158,7 @@ fn target_rule_rejects_existing_state_by_its_installed_identity() {
     let WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(
         worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial::TargetRuleRejected {
             identity,
+            refusal: _,
         },
     ) = denial
     else {

@@ -9,9 +9,14 @@ use worth_relational::facade::transactions::{
 #[test]
 fn custom_semantic_violation_preserves_owner_identity() {
     let identity = semantic_identity();
+    let refusal = worth_relational::facade::runtime::CustomInvariantRefusal::DeclaredValue {
+        value_identity: "tests.domain-refusal.v1".into(),
+        bytes: b"17".to_vec(),
+    };
     let failure = map_custom_invariant_failure(
         InvariantViolationFields::CustomInvariantViolation {
             identity: identity.clone(),
+            refusal: refusal.clone(),
         },
         "custom semantic violation".to_owned(),
     )
@@ -23,7 +28,7 @@ fn custom_semantic_violation_preserves_owner_identity() {
     );
     assert_eq!(
         failure.custom_invariant_denial(),
-        Some(&WorthQueryCustomInvariantDenial::Violation { identity })
+        Some(&WorthQueryCustomInvariantDenial::Violation { identity, refusal })
     );
     let denial = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::invariant_execution_denied(
             crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::InvariantExecution,

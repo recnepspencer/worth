@@ -80,9 +80,7 @@ fn demand_only_rejection_survives_the_narrow_effect_claim() {
         matches!(
             error.class,
             crate::transactions::data::ConflictClass::InvariantViolation {
-                fields: crate::validation::data::InvariantViolationFields::CustomInvariantViolation {
-                    ref identity,
-                },
+                fields: crate::validation::data::InvariantViolationFields::CustomInvariantViolation { ref identity, .. },
                 ..
             } if identity.rule_id.as_str() == STRICTNESS_RULE_ID
         ),

@@ -200,7 +200,11 @@ impl WorkflowFactCustody {
                 .committed_aspect_states()
                 .entity_aspect_state(*entity)
             {
-                Ok(_) => return Ok(CustomInvariantVerdict::Violation),
+                Ok(_) => {
+                    return Ok(CustomInvariantVerdict::Violation(
+                        worth_relational::facade::runtime::CustomInvariantRefusal::Empty,
+                    ))
+                }
                 Err(StructuralReadError::OutsideDeclaredAccess) => (),
                 Err(error) => return Err(read_failure(error)),
             }
@@ -211,12 +215,16 @@ impl WorkflowFactCustody {
                 .planned_relation_endpoint_updates()
                 .is_empty()
         {
-            return Ok(CustomInvariantVerdict::Violation);
+            return Ok(CustomInvariantVerdict::Violation(
+                worth_relational::facade::runtime::CustomInvariantRefusal::Empty,
+            ));
         }
         for create in context.touched().planned_relation_creates() {
             custody_checkpoint(budget, CUSTODY_CANDIDATE_WORK)?;
             if !self.allows_relation_create(create.kind_id(), create.source(), create.target()) {
-                return Ok(CustomInvariantVerdict::Violation);
+                return Ok(CustomInvariantVerdict::Violation(
+                    worth_relational::facade::runtime::CustomInvariantRefusal::Empty,
+                ));
             }
         }
         for entity in context.touched().direct_visible_entity_ids() {
@@ -242,10 +250,14 @@ impl WorkflowFactCustody {
             {
                 let before = self.provenance_value(before);
                 if before.is_none() || before != self.provenance_value(after) {
-                    return Ok(CustomInvariantVerdict::Violation);
+                    return Ok(CustomInvariantVerdict::Violation(
+                        worth_relational::facade::runtime::CustomInvariantRefusal::Empty,
+                    ));
                 }
             } else if before != after {
-                return Ok(CustomInvariantVerdict::Violation);
+                return Ok(CustomInvariantVerdict::Violation(
+                    worth_relational::facade::runtime::CustomInvariantRefusal::Empty,
+                ));
             }
         }
         for relation in context.touched().visible_relation_ids() {
@@ -265,7 +277,9 @@ impl WorkflowFactCustody {
                 .relation(*relation)
                 .map_err(read_failure)?;
             if before != after {
-                return Ok(CustomInvariantVerdict::Violation);
+                return Ok(CustomInvariantVerdict::Violation(
+                    worth_relational::facade::runtime::CustomInvariantRefusal::Empty,
+                ));
             }
             let before_fields = context
                 .committed_aspect_states()
@@ -282,7 +296,9 @@ impl WorkflowFactCustody {
                 (Err(error), _) | (_, Err(error)) => return Err(read_failure(error)),
             };
             if !unchanged_fields {
-                return Ok(CustomInvariantVerdict::Violation);
+                return Ok(CustomInvariantVerdict::Violation(
+                    worth_relational::facade::runtime::CustomInvariantRefusal::Empty,
+                ));
             }
         }
         Ok(CustomInvariantVerdict::Pass)

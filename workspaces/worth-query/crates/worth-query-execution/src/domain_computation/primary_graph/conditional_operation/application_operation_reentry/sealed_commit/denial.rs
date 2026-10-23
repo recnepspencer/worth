@@ -12,6 +12,9 @@ use crate::domain_computation::{
 };
 
 pub(super) fn classify_denial(denial: &Denial) -> Outcome {
+    if let Some(invariant) = denial.custom_invariant_denial() {
+        return Outcome::TerminalFailure(Terminal::CustomInvariant(invariant.clone()));
+    }
     if denial.stage() == Stage::ProviderCommit {
         let outcome = classify_kind(denial.kind());
         if matches!(&outcome, Outcome::RetryableCommitFailure(_)) {

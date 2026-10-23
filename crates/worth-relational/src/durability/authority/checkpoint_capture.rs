@@ -8,6 +8,8 @@ use crate::history::data::{
 use crate::identity::data::PartitionId;
 use crate::runtime::RelationalRuntime;
 
+mod symbols;
+
 pub(super) struct CapturedCheckpointBasis {
     pub(super) latest_commit: Option<RelationalCommitReceipt>,
     pub(super) branch_cells: Vec<crate::branch::RelationalBranchCellCheckpoint>,
@@ -117,6 +119,9 @@ impl CapturedCheckpointBasis {
                 _ => None,
             })
             .map(|root| root.schema_authority().clone());
+        let partitions = runtime.materialize_partitions();
+        let symbol_table =
+            symbols::retained_dictionary(runtime, &envelopes, &partitions, &branch_roots)?;
         let captured = Self {
             latest_commit: envelopes
                 .last()
@@ -130,7 +135,7 @@ impl CapturedCheckpointBasis {
                 pending_reservations: runtime.record_identity.pending_snapshot(),
             },
             envelopes,
-            partitions: runtime.materialize_partitions(),
+            partitions,
             mirror_schema_authority,
             aspect_contracts: runtime
                 .schema_contract_runtime
@@ -142,7 +147,7 @@ impl CapturedCheckpointBasis {
                 super::super::derived_index_artifacts::checkpoint_derived_index_artifacts(
                     runtime, &retained,
                 )?,
-            symbol_table: runtime.services.symbols.snapshot(),
+            symbol_table,
             runtime_name: runtime.runtime_name().to_string(),
         };
         routes

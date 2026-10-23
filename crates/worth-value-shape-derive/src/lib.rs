@@ -17,6 +17,8 @@ mod shape;
 /// select an explicit `#[worth_value(delegate = OwnerDelegate)]` admitted seed.
 /// Literal rename, snake_case enum renaming and strict
 /// unknown fields are supported; other Serde behavior fails at the declaration.
+/// `#[worth_value(crate = "audience::facade")]` selects the same canonical
+/// implementation through the consumer's audience facade.
 #[proc_macro_derive(WorthValue, attributes(serde, worth_value))]
 pub fn derive_worth_value(input: TokenStream) -> TokenStream {
     let result = syn::parse::<syn::DeriveInput>(input)

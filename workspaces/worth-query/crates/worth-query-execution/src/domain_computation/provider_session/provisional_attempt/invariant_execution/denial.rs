@@ -10,6 +10,7 @@ pub enum WorthQueryCustomInvariantDenial {
     Violation {
         /// The invariant that found the violation.
         identity: worth_relational::facade::transactions::CustomInvariantSemanticIdentity,
+        refusal: worth_relational::facade::runtime::CustomInvariantRefusal,
     },
     /// The invariant could not be evaluated; the phase and failure kind say where
     /// and why.

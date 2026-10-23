@@ -116,7 +116,9 @@ impl CustomInvariantRule for ReadsSummary {
             false
         };
         Ok(if rejects {
-            CustomInvariantVerdict::Violation
+            CustomInvariantVerdict::Violation(
+                crate::validation::data::CustomInvariantRefusal::Empty,
+            )
         } else {
             CustomInvariantVerdict::Pass
         })

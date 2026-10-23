@@ -12,3 +12,6 @@ worth-query-declaration = { path = "../worth-query-declaration" }
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+serde.workspace = true
