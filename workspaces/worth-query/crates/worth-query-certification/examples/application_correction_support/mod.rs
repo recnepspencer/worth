@@ -1,12 +1,26 @@
 //! One authored numeric model shared by the correction example and its public court.
 pub mod adoption;
 pub mod adoption_courts;
+pub mod authored_identity_correction;
+pub mod authored_identity_courts;
+pub mod authored_identity_handlers;
+pub mod authored_identity_model;
+pub mod authored_identity_reference;
 pub mod calculation;
 pub mod calculation_query;
 pub mod calculation_readiness;
 pub mod compensation_courts;
 pub mod compensation_movement;
+pub mod composite_definition_adapters;
+pub mod composite_definition_contract;
+pub mod composite_definition_court;
+pub mod composite_definition_handler;
+pub mod composite_definition_model;
+pub mod composite_definition_query;
+pub mod composite_definition_recovery;
+pub mod composite_definition_runtime;
 pub mod correction;
+pub mod correction_race_court;
 pub mod edit;
 pub mod host;
 pub mod other_edit;

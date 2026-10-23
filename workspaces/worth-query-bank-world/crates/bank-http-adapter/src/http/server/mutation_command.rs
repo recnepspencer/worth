@@ -9,7 +9,7 @@ use std::{
     num::NonZeroUsize,
     time::{Duration, Instant},
 };
-pub(super) enum MoneyCommand {
+pub(super) enum MutationCommand {
     Create {
         input: AdmittedBankHttpMutation,
         key: BankIdempotencyKey,
@@ -19,19 +19,20 @@ pub(super) enum MoneyCommand {
         history: NonZeroUsize,
     },
     Read {
+        account: bank_domain::model::AccountId,
         maximum_results: usize,
     },
     ResumeSource,
     ReleaseCleanup,
     Close,
 }
-pub(super) struct AdmittedMoneyCommand {
+pub(super) struct AdmittedMutationCommand {
     pub(super) request_id: String,
     pub(super) credential: BankHttpCredential,
     pub(super) custody_id: String,
     pub(super) sequence: u64,
     pub(super) deadline: Instant,
-    pub(super) command: MoneyCommand,
+    pub(super) command: MutationCommand,
 }
 #[allow(
     clippy::result_large_err,
@@ -40,7 +41,7 @@ pub(super) struct AdmittedMoneyCommand {
 pub(super) fn admit(
     request: BankHttpMutationRequest,
     maximum_deadline: Duration,
-) -> Result<AdmittedMoneyCommand, BankHttpMutationOutcome> {
+) -> Result<AdmittedMutationCommand, BankHttpMutationOutcome> {
     let (protocol, request_id, credential, custody_id, sequence, deadline, command) = match request
     {
         BankHttpMutationRequest::Create {
@@ -54,6 +55,35 @@ pub(super) fn admit(
             operation,
         } => {
             let input = match operation {
+                BankHttpMutationOperation::RevokeEstateCapability { estate, grant } => {
+                    bank_domain::estate::EstateCaseId::new(estate)
+                        .zip(bank_domain::estate::CapabilityGrantId::new(grant))
+                        .map(|(estate, grant)| {
+                            AdmittedBankHttpMutation::RevokeEstateCapability(
+                                bank_domain::estate::EstateAction::RevokeCapability {
+                                    estate,
+                                    grant,
+                                },
+                            )
+                        })
+                }
+                BankHttpMutationOperation::FreezeEstateAccount { estate, account } => {
+                    bank_domain::estate::EstateCaseId::new(estate)
+                        .zip(bank_domain::model::AccountId::parse_canonical_text(
+                            &account,
+                        ))
+                        .map(|(estate, account)| {
+                            AdmittedBankHttpMutation::FreezeEstateAccount(
+                                bank_domain::schema::FreezeEstateAccount::new(estate, account),
+                            )
+                        })
+                }
+                BankHttpMutationOperation::CorrectEstateFreeze { source } => {
+                    Some(AdmittedBankHttpMutation::CorrectEstateFreeze(source))
+                }
+                BankHttpMutationOperation::CorrectSendMoney { source } => {
+                    Some(AdmittedBankHttpMutation::CorrectSendMoney(source))
+                }
                 BankHttpMutationOperation::Deposit {
                     institution,
                     account,
@@ -106,7 +136,7 @@ pub(super) fn admit(
                 custody_id,
                 sequence,
                 controls.deadline_milliseconds,
-                MoneyCommand::Create {
+                MutationCommand::Create {
                     input,
                     key,
                     history,
@@ -134,7 +164,7 @@ pub(super) fn admit(
                 custody_id,
                 sequence,
                 controls.deadline_milliseconds,
-                MoneyCommand::Resume { history },
+                MutationCommand::Resume { history },
             )
         }
         BankHttpMutationRequest::Read {
@@ -144,7 +174,15 @@ pub(super) fn admit(
             custody_id,
             sequence,
             controls,
+            account,
         } => {
+            let account = bank_domain::model::AccountId::parse_canonical_text(&account)
+                .ok_or_else(|| {
+                    reject(
+                        Some(request_id.clone()),
+                        BankHttpDenialKind::MalformedRequest,
+                    )
+                })?;
             if controls.maximum_results == 0 {
                 return Err(reject(
                     Some(request_id),
@@ -158,7 +196,8 @@ pub(super) fn admit(
                 custody_id,
                 sequence,
                 controls.deadline_milliseconds,
-                MoneyCommand::Read {
+                MutationCommand::Read {
+                    account,
                     maximum_results: controls.maximum_results,
                 },
             )
@@ -177,7 +216,7 @@ pub(super) fn admit(
             custody_id,
             sequence,
             controls.deadline_milliseconds,
-            MoneyCommand::ResumeSource,
+            MutationCommand::ResumeSource,
         ),
         BankHttpMutationRequest::ReleaseCleanup {
             protocol,
@@ -193,7 +232,7 @@ pub(super) fn admit(
             custody_id,
             sequence,
             controls.deadline_milliseconds,
-            MoneyCommand::ReleaseCleanup,
+            MutationCommand::ReleaseCleanup,
         ),
         BankHttpMutationRequest::Close {
             protocol,
@@ -209,7 +248,7 @@ pub(super) fn admit(
             custody_id,
             sequence,
             controls.deadline_milliseconds,
-            MoneyCommand::Close,
+            MutationCommand::Close,
         ),
     };
     let basis = super::request_admission::UnadmittedBankHttpControls {
@@ -232,7 +271,7 @@ pub(super) fn admit(
             BankHttpDenialKind::MalformedRequest,
         ));
     }
-    Ok(AdmittedMoneyCommand {
+    Ok(AdmittedMutationCommand {
         request_id: basis.request_id,
         credential,
         custody_id,

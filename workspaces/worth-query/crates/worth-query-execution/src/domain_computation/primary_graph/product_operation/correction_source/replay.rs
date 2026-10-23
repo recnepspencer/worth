@@ -62,7 +62,7 @@ pub(super) fn select_input<Schema: ApplicationSchema, C: ApplicationCorrectionBi
                     return Err(WorthQueryCorrectionDerivationDenial::UnsupportedSourceMeaning);
                 }
                 Selection::Replay {
-                    intent,
+                    intent: intent.with_recorded_definition(&binding),
                     input: input.clone(),
                 }
             }

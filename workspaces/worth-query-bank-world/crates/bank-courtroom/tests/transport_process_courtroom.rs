@@ -6,6 +6,8 @@ mod credential_lifecycle;
 mod effect_observation;
 #[path = "transport_process_courtroom/elevation.rs"]
 mod elevation;
+#[path = "transport_process_courtroom/estate_correction.rs"]
+mod estate_correction;
 #[path = "transport_process_courtroom/identity_world.rs"]
 mod identity_world;
 #[path = "transport_process_courtroom/live.rs"]
@@ -16,6 +18,8 @@ mod payment;
 mod process;
 #[path = "transport_process_courtroom/rail_completion.rs"]
 mod rail_completion;
+#[path = "transport_process_courtroom/recorded_correction.rs"]
+mod recorded_correction;
 #[path = "transport_process_courtroom/recovery.rs"]
 mod recovery;
 #[path = "../../bank-server/tests/support/mod.rs"]
@@ -336,11 +340,10 @@ fn assert_terminal_resume(outcome: &BankUserNodeAccountActivityPageOutcome) {
 }
 
 fn request_controls(maximum_results: usize) -> serde_json::Value {
-    serde_json::json!({
-        "deadline_milliseconds": 5_000,
-        "maximum_results": maximum_results,
-        "maximum_work": 20_000
-    })
+    serde_json::json!(bank_http_adapter::BankHttpRequestControls::new(
+        5_000,
+        maximum_results,
+    ))
 }
 
 async fn assert_restarted_node_has_no_session(client: &reqwest::Client, address: SocketAddr) {
@@ -371,11 +374,7 @@ async fn account_summary_with_request_id(
         .post(format!("http://{address}/v1/queries/account-summary"))
         .json(&serde_json::json!({
             "request_id": request_id,
-            "controls": {
-                "deadline_milliseconds": 5_000,
-                "maximum_results": 1,
-                "maximum_work": 20_000
-            },
+            "controls": request_controls(1),
             "account": account
         }))
         .send()

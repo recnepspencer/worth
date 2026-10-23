@@ -7,6 +7,7 @@ use crate::application_capability::{
 use crate::application_operation::*;
 use crate::application_schema::*;
 mod disclosure;
+mod source_reuse;
 
 struct Inverse;
 crate::worth_query_operation_reads!(RenameOperation => [AccountIdField]);
@@ -64,8 +65,19 @@ impl ApplicationCorrectionBinding<MutationSchema> for Inverse {
         Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning)
     }
 
-    fn inverse_key(key: &str) -> u64 {
-        key.parse().unwrap()
+    fn inverse_key(
+        key: &str,
+    ) -> Result<u64, crate::application_schema::ApplicationValueEncodeDenial> {
+        key.parse().map_err(|_| {
+            crate::application_schema::ApplicationValueEncodeDenial::Validation(
+                crate::application_schema::ApplicationValueValidationDenial::rejected(
+                    crate::portable_identity::WorthQueryPortableTypeIdentity::declared(
+                        "correction-key",
+                    ),
+                    "expected an unsigned integer",
+                ),
+            )
+        })
     }
 
     fn visit<Visitor: ApplicationCorrectionVisitor<MutationSchema>>(

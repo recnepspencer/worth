@@ -28,6 +28,11 @@ impl RetainedCompositeAncestor {
     }
 }
 
+/// Why a retained source could not be established on the target's ancestry.
+/// `NotAncestor` establishes a different lineage; `SelectionLimitReached`
+/// means the requested work ended before that question was resolved.
+/// Unavailable entries and retired gaps require retained history to be present
+/// before selection can succeed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CompositeAncestorSelectionDenial {
     SourceUnavailable,

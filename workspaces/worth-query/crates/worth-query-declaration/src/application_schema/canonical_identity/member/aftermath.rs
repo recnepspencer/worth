@@ -11,6 +11,42 @@ pub(super) fn append_declared_aftermath(
     append_authority(basis, prefix, contract.authority());
     append_mechanism(basis, prefix, contract.mechanism());
     if let Some(binding) = contract.correction_binding() {
+        basis.optional_text(
+            format!("{prefix}.correction.completed-external-reconciliation"),
+            binding
+                .completed_external_reconciliation()
+                .map(|procedure| procedure.procedure_slot()),
+        );
+        basis.bool(
+            format!("{prefix}.correction.authored-identity.present"),
+            binding.authored_identity().is_some(),
+        );
+        if let Some(identity) = binding.authored_identity() {
+            let parts = identity.parts();
+            let locus = format!("{prefix}.correction.authored-identity");
+            basis.text(format!("{locus}.family"), parts.family.as_str());
+            basis.text(format!("{locus}.source-role"), &parts.source_role);
+            basis.text(format!("{locus}.inverse-role"), &parts.inverse_role);
+            basis.text(
+                format!("{locus}.source-posture"),
+                match parts.source_posture {
+                    crate::application_operation::ApplicationMutationOutputPosture::Create => {
+                        "create"
+                    }
+                    crate::application_operation::ApplicationMutationOutputPosture::Retire => {
+                        "retire"
+                    }
+                    crate::application_operation::ApplicationMutationOutputPosture::Preserve => {
+                        "preserve"
+                    }
+                },
+            );
+            basis.optional_text(
+                format!("{locus}.binding-unit"),
+                parts.binding_unit.as_deref(),
+            );
+            super::field::append_schema_field(basis, &format!("{locus}.key"), &parts.logical_key);
+        }
         basis.u64(
             format!("{prefix}.correction.source-output-fields.count"),
             binding.source_output_fields().len() as u64,

@@ -176,6 +176,7 @@ where
             admission,
             lease,
             provider: WorthQueryProviderAttemptPreparation {
+                workflow_origin: None,
                 local_action_settlement: read_set.local_action_settlement,
                 body_external_emission,
                 required_output_demand,

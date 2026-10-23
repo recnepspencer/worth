@@ -73,6 +73,7 @@ pub(super) fn lower_transition(
     Ok((
         registry,
         WorkflowTransitionLayout {
+            identity_index_id: worth_relational::facade::indexes::DerivedIndexId(0),
             advancer,
             executor,
 

@@ -45,6 +45,7 @@ pub enum WorthQueryCorrectionDerivationDenial {
     ),
     InverseAction(worth_query_installation::facade::WorthQueryActionResolutionDenial),
     RequiredOutputReconciliation,
+    Workflow(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial),
     TargetProgram(
         crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial,
     ),

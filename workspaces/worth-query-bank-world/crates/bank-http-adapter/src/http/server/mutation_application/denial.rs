@@ -64,6 +64,7 @@ pub(in crate::http::server) fn request_mutation_denial(
         | Denial::CapabilityInstallation
         | Denial::PrincipalResolution
         | Denial::IdempotencyUnavailable
+        | Denial::InputCapture
         | Denial::Handler
         | Denial::SourceExpectation
         | Denial::ProgramSelection => {

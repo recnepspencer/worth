@@ -55,9 +55,21 @@ pub(crate) fn resolve_correction_binding(
         || declaration.source_query() != source.source_query_identifier()
         || declaration.inverse_query() != inverse.source_query_identifier()
         || declaration.identity().as_str().trim().is_empty()
-        || contract.authority() != DeclaredCorrectionAuthority::RuntimeAlone
     {
         return Err(denied());
+    }
+    match contract.authority() {
+        DeclaredCorrectionAuthority::RuntimeAlone
+            if contract.reconciliation().is_none()
+                && declaration.completed_external_reconciliation().is_none() => {}
+        DeclaredCorrectionAuthority::RuntimeWithExternalOwner
+            if contract.reconciliation().is_some()
+                && declaration.completed_external_reconciliation() == contract.reconciliation()
+                && matches!(
+                    contract.mechanism(),
+                    Some(PortableCorrectionMechanism::Compensation(_))
+                ) => {}
+        _ => return Err(denied()),
     }
     match contract.mechanism() {
         Some(PortableCorrectionMechanism::RecordedInverse(recorded))
@@ -68,6 +80,8 @@ pub(crate) fn resolve_correction_binding(
     }
     source_outputs::validate(members, source, declaration.source_output_fields())
         .map_err(|()| denied())?;
+    authored_identity::validate(members, source, inverse, declaration, contract.mechanism())
+        .map_err(|()| denied())?;
     Ok(Some(InstalledCorrectionBinding {
         declaration: declaration.clone(),
         source_type: source.binding_type(),
@@ -76,4 +90,5 @@ pub(crate) fn resolve_correction_binding(
     }))
 }
 
+mod authored_identity;
 mod source_outputs;

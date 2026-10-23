@@ -4,7 +4,7 @@ use super::super::protocol::{
 };
 use super::{
     authentication::BankHttpApplicationAuthenticator,
-    mutation_command::{admit, reject, AdmittedMoneyCommand},
+    mutation_command::{admit, reject, AdmittedMutationCommand},
     mutation_worker,
 };
 use std::thread::JoinHandle;
@@ -21,7 +21,7 @@ use worth_query_host::facade::admission::authenticated_principal::WorthQueryCanc
 
 pub(super) enum WorkerCommand {
     Execute {
-        command: AdmittedMoneyCommand,
+        command: AdmittedMutationCommand,
         queued_slot: tokio::sync::OwnedSemaphorePermit,
         cancellation: WorthQueryCancellationSource,
         response: oneshot::Sender<BankHttpMutationOutcome>,
@@ -42,7 +42,7 @@ pub(super) enum WorkerCommand {
     },
     Handoff {
         return_sender: mpsc::Sender<WorkerCommand>,
-        command: AdmittedMoneyCommand,
+        command: AdmittedMutationCommand,
         queued_slot: tokio::sync::OwnedSemaphorePermit,
         cancellation: WorthQueryCancellationSource,
         response: oneshot::Sender<

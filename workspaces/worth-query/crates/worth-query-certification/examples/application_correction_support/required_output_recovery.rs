@@ -99,7 +99,7 @@ pub fn run() {
     );
     assert_eq!(other_edit::handler_contacts(), after_prepare);
 
-    let key = RecordedEdit::inverse_key("unpublished-required-correction");
+    let key = RecordedEdit::inverse_key("unpublished-required-correction").unwrap();
     let foreign_key = "different-required-correction".to_owned();
     let wrong_key = request
         .advanced()

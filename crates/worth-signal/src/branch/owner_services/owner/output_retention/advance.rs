@@ -33,7 +33,7 @@ where
             runtime_ctx,
             cancellation,
             apply,
-            None,
+            &mut None,
         )
     }
 
@@ -45,19 +45,18 @@ where
         runtime_ctx: &mut Ctx,
         cancellation: &SignalOwnerCancellationToken,
         apply: F,
-        publication: crate::branch::owner_services::conditional_execution::SignalConditionalDefinitionPublicationOperation,
+        publication: &mut Option<crate::branch::owner_services::conditional_execution::SignalConditionalDefinitionPublicationOperation>,
     ) -> SignalBranchAdvanceCompletion
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
-        let (scope, mint) = publication.into_advance_parts();
         self.advance_with_definition_publication(
             execution,
             expected,
             runtime_ctx,
             cancellation,
             apply,
-            Some((scope, mint)),
+            publication,
         )
     }
 
@@ -69,12 +68,7 @@ where
         runtime_ctx: &mut Ctx,
         cancellation: &SignalOwnerCancellationToken,
         apply: F,
-        definition_publication: Option<
-            (
-                crate::branch::owner_services::conditional_execution::SignalConditionalDefinitionPublicationScope,
-                crate::branch::owner_services::conditional_execution::SignalConditionalDefinitionAdvanceMint,
-            ),
-        >,
+        definition_publication: &mut Option<crate::branch::owner_services::conditional_execution::SignalConditionalDefinitionPublicationOperation>,
     ) -> SignalBranchAdvanceCompletion
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
@@ -91,7 +85,7 @@ where
                 &mut completed,
                 definition_publication
                     .as_ref()
-                    .map(|(scope, _)| scope.clone()),
+                    .map(|publication| publication.advance_scope()),
             )
         }));
         let Some(completed) = completed else {
@@ -111,7 +105,10 @@ where
             self.cell.incarnation().get(),
             retention.take_one(),
         );
-        let definition_binding = definition_publication.map(|(_, mint)| mint.bind(basis.clone()));
+        let definition_binding = definition_publication.take().map(|publication| {
+            let (_, mint) = publication.into_advance_parts();
+            mint.bind(basis.clone())
+        });
         let outcome =
             SignalBranchAdvanceOutcome::owner_issued(basis, transaction, definition_binding);
         if let Err(payload) = execution {

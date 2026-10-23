@@ -152,8 +152,8 @@ impl ApplicationCorrectionBinding<NumericSchema> for NeutralizeCredit {
             amount: original.amount,
         })
     }
-    fn inverse_key(key: &str) -> String {
-        format!("compensating-debit:{key}")
+    fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
+        Ok(format!("compensating-debit:{key}"))
     }
     fn visit<V: ApplicationCorrectionVisitor<NumericSchema>>(
         dispatch: ApplicationCorrectionDispatch<NumericSchema, Self, V>,

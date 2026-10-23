@@ -24,6 +24,14 @@ pub enum DeclaredCorrectionMechanism<Schema> {
 }
 
 impl<Schema: crate::application_schema::ApplicationSchema> DeclaredCorrectionMechanism<Schema> {
+    /// A created entity has no prior fields; installation requires its authored
+    /// Create-to-Retire family correspondence before accepting this posture.
+    pub fn recorded_create_inverse_binding<C: super::ApplicationCorrectionBinding<Schema>>() -> Self
+    {
+        Self::RecordedInverse(DeclaredRecordedInverse::from_binding::<C>(
+            DeclaredPreImageDemand::created_entity(),
+        ))
+    }
     /// Derives the inverse operation and exact capture from one typed binding.
     pub fn recorded_inverse_binding<C: super::ApplicationCorrectionBinding<Schema>>(
         demand: DeclaredPreImageDemand<Schema>,

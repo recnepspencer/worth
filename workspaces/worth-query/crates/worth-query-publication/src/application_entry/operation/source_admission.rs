@@ -76,6 +76,7 @@ where
     pub(in crate::application_entry) installed_action:
         worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
     pub(super) workflow: Option<WorkflowAdmission>,
+    pub(super) recorded_correction: Option<worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent>,
     marker: std::marker::PhantomData<fn() -> (A, Mode)>,
     // Retention outlives captured intent and native workflow custody on abandonment.
     pub(in crate::application_entry) runtime: WorthQueryProgramApplicationRuntime<S, P>,
@@ -133,6 +134,7 @@ where
             description,
             installed_action: installed_action.clone(),
             workflow: None,
+            recorded_correction: None,
             marker: std::marker::PhantomData,
         })
     }
@@ -226,6 +228,11 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
+        // Recorded corrections enter with their actual prepared publication outcome.
+        // Ordinary execution cannot replace that exact-target candidate on retry.
+        if self.recorded_correction.is_some() {
+            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
+        }
         let (selected, owner) = self.select(phase, request)?;
         let mut native = self
             .description
@@ -299,6 +306,7 @@ where
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        performed: Option<&worth_query_execution::facade::primary_graph::WorthQueryManagedApplicationRecoveryPerformed>,
     ) -> Result<
         worth_query_execution::facade::primary_graph::WorthQueryAdmittedIdempotencyRead,
         WorthQueryApplicationRecoveryRequestDenial,
@@ -307,7 +315,13 @@ where
         let mut native = self
             .description
             .request_view(request, &self.installed_action);
-        let prepared = self.authorize_recovery_view(phase, request, &mut native)?;
+        let mut prepared = self.authorize_recovery_view(phase, request, &mut native)?;
+        if let Some(performed) = performed {
+            prepared.idempotency = performed.bind_performed_definition(
+                &worth_query_execution::publication_boundary::program_publication_access(),
+                prepared.idempotency,
+            );
+        }
         native.read_recovery_idempotency(phase, &prepared)
     }
 }

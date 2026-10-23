@@ -91,7 +91,8 @@ impl<'a, S: ApplicationSchema> WorthQueryApplicationCorrectionRequest<'a, '_, '_
             Ok(match prepared {
                 NativePreparation::Prepared(inverse) => WorthQueryRequiredCorrectionPreparation::Prepared(
                     WorthQueryPreparedRequiredCorrection { inverse, application, demand: demand.expect("first-use derivation supplies its actual input demand") }),
-                NativePreparation::Settled(outcome) => WorthQueryRequiredCorrectionPreparation::Settled(Outcome::NotPerformed(outcome)),
+                NativePreparation::IntentDrift => WorthQueryRequiredCorrectionPreparation::Settled(Outcome::NotPerformed(crate::application_entry::WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)),
+                NativePreparation::Replay { outcome, .. } => WorthQueryRequiredCorrectionPreparation::Settled(Outcome::NotPerformed(outcome)),
                 NativePreparation::PublicationPending => WorthQueryRequiredCorrectionPreparation::PublicationPending,
                 NativePreparation::ProductUnpublished(handle) => WorthQueryRequiredCorrectionPreparation::ProductUnpublished(handle),
             })

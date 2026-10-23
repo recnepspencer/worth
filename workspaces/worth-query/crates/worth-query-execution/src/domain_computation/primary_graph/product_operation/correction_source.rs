@@ -13,6 +13,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
+mod authored_identity;
+pub(in crate::domain_computation::primary_graph) use authored_identity::AuthoredCorrectionCandidateDenial;
 mod compatibility;
 mod derivation;
 mod inspection;
@@ -155,9 +157,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         WorthQueryCorrectionSelectionDenial,
     > {
         let application = self.application();
-        let execution = phase
-            .execution_request_for(&application.product_runtime)
-            .map_err(|_| WorthQueryCorrectionSelectionDenial::ForeignPhase)?;
         if receipt.runtime_authority() != application.runtime.authority_identity() {
             return Err(WorthQueryCorrectionSelectionDenial::ForeignRuntime);
         }
@@ -174,6 +173,92 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         {
             return Err(WorthQueryCorrectionSelectionDenial::SourcePublicationMismatch);
         }
+        self.select_retained_occurrence(
+            phase,
+            principal,
+            request,
+            occurrence,
+            maximum,
+            maximum_results,
+        )
+    }
+
+    /// Resolves descriptive coordinates through the completed-evidence owner.
+    pub fn select_recorded_correction_source(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        locator: &crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource,
+        maximum: Option<NonZeroUsize>,
+        maximum_results: NonZeroUsize,
+    ) -> Result<
+        WorthQuerySelectedCorrectionSource<'runtime, Schema>,
+        WorthQueryCorrectionSelectionDenial,
+    > {
+        self.select_correction_source_coordinates(
+            phase,
+            principal,
+            request,
+            &locator.coordinates(),
+            maximum,
+            maximum_results,
+        )
+    }
+
+    /// Resolves untrusted wire coordinates without constructing an owner-issued World identity.
+    pub fn select_correction_source_coordinates(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        locator: &crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceCoordinates,
+        maximum: Option<NonZeroUsize>,
+        maximum_results: NonZeroUsize,
+    ) -> Result<
+        WorthQuerySelectedCorrectionSource<'runtime, Schema>,
+        WorthQueryCorrectionSelectionDenial,
+    > {
+        let occurrence = self
+            .application()
+            .primary_provider
+            .observe_completed_application(locator.relational())
+            .ok_or(WorthQueryCorrectionSelectionDenial::SourceUnavailable)?;
+        let actual = occurrence
+            .committed_product_publication()
+            .composite_commit();
+        if actual.owner_identity().get() != locator.world_owner()
+            || actual.ordinal() != locator.world_commit()
+        {
+            return Err(WorthQueryCorrectionSelectionDenial::SourcePublicationMismatch);
+        }
+        self.select_retained_occurrence(
+            phase,
+            principal,
+            request,
+            occurrence,
+            maximum,
+            maximum_results,
+        )
+    }
+
+    fn select_retained_occurrence(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        occurrence: WorthQueryPrimaryGraphCommittedApplication,
+        maximum: Option<NonZeroUsize>,
+        maximum_results: NonZeroUsize,
+    ) -> Result<
+        WorthQuerySelectedCorrectionSource<'runtime, Schema>,
+        WorthQueryCorrectionSelectionDenial,
+    > {
+        let application = self.application();
+        let execution = phase
+            .execution_request_for(&application.product_runtime)
+            .map_err(|_| WorthQueryCorrectionSelectionDenial::ForeignPhase)?;
+        let performed = occurrence.committed_product_publication();
         let original = occurrence.commit_evidence().original_authority();
         let retained = original
             .retained_governed_input_carrier()

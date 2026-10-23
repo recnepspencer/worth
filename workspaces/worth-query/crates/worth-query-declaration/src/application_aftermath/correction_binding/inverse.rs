@@ -53,6 +53,17 @@ pub trait ApplicationCorrectionBinding<Schema: ApplicationSchema>: Sized + 'stat
         false,
     >;
     fn mechanism() -> DeclaredCorrectionMechanism<Schema>;
+    /// Declares compensation of business state after the original external owner
+    /// has completed. The completed external result and its terminal are preserved;
+    /// this association grants no authority to reverse or redispatch that result.
+    fn completed_external_reconciliation() -> Option<super::super::DeclaredReconciliationProcedure>
+    {
+        None
+    }
+    /// Family and native output roles for an authored create/delete inverse.
+    fn authored_identity() -> Option<super::ApplicationAuthoredCorrection<Schema>> {
+        None
+    }
     /// Additional historical fields the disclosure contract permits deriving from outputs.
     fn source_output_fields() -> Vec<super::ApplicationCorrectionOutputField<Schema>> {
         Vec::new()
@@ -61,7 +72,10 @@ pub trait ApplicationCorrectionBinding<Schema: ApplicationSchema>: Sized + 'stat
         original: &<Self::Source as ApplicationMutationBinding<Schema>>::Input,
         material: super::ApplicationCorrectionSourceMaterial<'_, Schema>,
     ) -> Result<Self::InverseIntent, ApplicationCorrectionDerivationDenial>;
-    fn inverse_key(key: &str) -> <ApplicationInverseBinding<Schema, Self> as ApplicationMutationBinding<Schema>>::IdempotencyKey;
+    fn inverse_key(key: &str) -> Result<
+        <ApplicationInverseBinding<Schema, Self> as ApplicationMutationBinding<Schema>>::IdempotencyKey,
+        crate::application_schema::ApplicationValueEncodeDenial,
+    >;
     fn visit<Visitor: super::ApplicationCorrectionVisitor<Schema>>(
         dispatch: super::ApplicationCorrectionDispatch<Schema, Self, Visitor>,
     ) -> Visitor::Output;
@@ -80,6 +94,8 @@ pub struct DeclaredCorrectionBinding {
     inverse_query: Option<String>,
     disclosure: super::DeclaredCorrectionDisclosure,
     source_output_fields: Vec<super::DeclaredCorrectionOutputField>,
+    authored_identity: Option<super::DeclaredAuthoredCorrection>,
+    completed_external_reconciliation: Option<super::super::DeclaredReconciliationProcedure>,
 }
 
 impl DeclaredCorrectionBinding {
@@ -95,6 +111,8 @@ impl DeclaredCorrectionBinding {
             inverse_query: parts.inverse_query,
             disclosure: parts.disclosure,
             source_output_fields: parts.source_output_fields,
+            authored_identity: parts.authored_identity,
+            completed_external_reconciliation: parts.completed_external_reconciliation,
         }
     }
 
@@ -111,6 +129,9 @@ impl DeclaredCorrectionBinding {
             source_query: source.source_query_identifier().map(str::to_owned),
             inverse_query: inverse.source_query_identifier().map(str::to_owned),
             disclosure: super::DeclaredCorrectionDisclosure::of::<Schema, Correction::Disclosure>(),
+            authored_identity: Correction::authored_identity()
+                .map(super::ApplicationAuthoredCorrection::into_declaration),
+            completed_external_reconciliation: Correction::completed_external_reconciliation(),
             source_output_fields: Correction::source_output_fields()
                 .into_iter()
                 .map(super::ApplicationCorrectionOutputField::into_declaration)
@@ -145,6 +166,14 @@ impl DeclaredCorrectionBinding {
     pub fn source_output_fields(&self) -> &[super::DeclaredCorrectionOutputField] {
         &self.source_output_fields
     }
+    pub fn authored_identity(&self) -> Option<&super::DeclaredAuthoredCorrection> {
+        self.authored_identity.as_ref()
+    }
+    pub fn completed_external_reconciliation(
+        &self,
+    ) -> Option<&super::super::DeclaredReconciliationProcedure> {
+        self.completed_external_reconciliation.as_ref()
+    }
 }
 
 /// Authority-free fields decoded from a portable inverse association.
@@ -158,4 +187,6 @@ pub struct DeclaredCorrectionBindingParts {
     pub inverse_query: Option<String>,
     pub disclosure: super::DeclaredCorrectionDisclosure,
     pub source_output_fields: Vec<super::DeclaredCorrectionOutputField>,
+    pub authored_identity: Option<super::DeclaredAuthoredCorrection>,
+    pub completed_external_reconciliation: Option<super::super::DeclaredReconciliationProcedure>,
 }

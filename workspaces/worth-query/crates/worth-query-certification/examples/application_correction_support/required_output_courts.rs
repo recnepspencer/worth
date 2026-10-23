@@ -11,8 +11,14 @@ use super::{
     schema::NumericSchema,
 };
 use worth_query_host::facade::{
-    application_entry::*, declaration::application_operation::ApplicationMutationBinding,
-    primary_graph::WorthQueryApplicationRequiredOutputSource, runtime::ExecutionAllocationPolicy,
+    admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
+    application_contribution::{
+        WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
+    },
+    application_entry::*,
+    declaration::application_operation::ApplicationMutationBinding,
+    primary_graph::WorthQueryApplicationRequiredOutputSource,
+    runtime::ExecutionAllocationPolicy,
 };
 pub fn run() {
     let application = host::install_with_outputs();
@@ -58,6 +64,42 @@ pub fn run() {
     };
     settle(&application, disjoint);
     let selected = request.corrections().select(&original, limits()).unwrap();
+    let cancellation = WorthQueryCancellationSource::new();
+    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped_principal = authenticate_operator(application.installed_schema(), &stopped_scope);
+    let stopped_request = application
+        .runtime()
+        .request(&stopped_principal, &stopped_scope);
+    let before_cancel = head(&application);
+    let contacts = super::other_edit::handler_contacts();
+    cancellation.cancel();
+    let cancelled = stopped_request
+        .corrections()
+        .reverse(&selected)
+        .idempotency("cancelled-before-correction-preparation")
+        .limits(limits())
+        .prepare_performed::<RecordedEdit, OutputProgram, Root>(&application);
+    assert!(
+        matches!(
+            cancelled,
+            Err(WorthQueryApplicationCorrectionDenial::ExecutionRequest(
+                WorthQueryAdvancementDenial::Interrupted(
+                    WorthQueryManagedComputationInterruption::Cancelled
+                )
+            ))
+        ),
+        "preparation must preserve the actual request cancellation"
+    );
+    assert_eq!(super::other_edit::handler_contacts(), contacts);
+    assert_eq!(head(&application), before_cancel);
+    assert_eq!(
+        host::read(&application),
+        [Row {
+            primary: 11,
+            secondary: 19
+        }]
+    );
+    assert_eq!(read_calculation(&application), 23);
     assert!(matches!(
         request.corrections().reverse(&selected).idempotency("ordinary-output-refusal").limits(limits()).prepare(),
         Err(WorthQueryApplicationCorrectionDenial::Derivation(
@@ -107,6 +149,49 @@ pub fn run() {
         original.commit_reference()
     );
     let before_retry = head(&application);
+    let cancellation = WorthQueryCancellationSource::new();
+    let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token());
+    let stopped_principal = authenticate_operator(application.installed_schema(), &stopped_scope);
+    let stopped_request = application
+        .runtime()
+        .request(&stopped_principal, &stopped_scope);
+    cancellation.cancel();
+    let failure = performed
+        .start_required_outputs(
+            &application,
+            &stopped_request,
+            WorthQueryOutputDemandControls::host_policy(),
+        )
+        .err()
+        .expect("cancelled output start must return the performed source");
+    assert!(
+        matches!(failure.denial(),
+            WorthQueryRequiredOutputPreparationDenial::Demand(WorthQueryApplicationOutputDemandDenial::Demand(denial))
+            if matches!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                WorthQueryAdvancementDenial::Interrupted(WorthQueryManagedComputationInterruption::Cancelled)
+            ))
+        ),
+        "output handoff retains exact request cancellation: {:?}",
+        failure.denial()
+    );
+    let performed = failure.into_performed();
+    assert_eq!(
+        performed.receipt().commit_reference(),
+        correction.commit_reference()
+    );
+    assert_eq!(head(&application), before_retry);
+    assert_eq!(
+        host::read(&application),
+        [Row {
+            primary: 5,
+            secondary: 19
+        }]
+    );
+    assert_eq!(
+        read_calculation(&application),
+        23,
+        "performed correction survives while its original output delivery stays pending"
+    );
     let retry = request
         .corrections()
         .reverse(&selected)
@@ -169,7 +254,7 @@ pub fn run() {
             secondary: 19
         }]
     );
-    println!("required-output correction, pending replay and original-owner delivery passed");
+    println!("required-output correction, pre-effect/post-performed cancellation, pending replay and original-owner delivery passed");
 }
 pub(super) fn limits() -> WorthQueryCorrectionHistoryLimits {
     WorthQueryCorrectionHistoryLimits::new(None, std::num::NonZeroUsize::MIN)

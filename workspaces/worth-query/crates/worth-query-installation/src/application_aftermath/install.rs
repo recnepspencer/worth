@@ -51,6 +51,9 @@ pub struct WorthQueryInstalledAftermathContract {
     authority: InstalledCorrectionAuthority,
     mechanism: Option<InstalledCorrectionMechanism>,
     correction_disclosure: Option<DeclaredCorrectionDisclosure>,
+    completed_external_reconciliation: Option<
+        worth_query_declaration::facade::application_aftermath::DeclaredReconciliationProcedure,
+    >,
     external_effect: InstalledExternalEffectPosture,
     published_posture: PublishedAftermathPosture,
     next_actions: InstalledAftermathNextActionContract,
@@ -76,6 +79,13 @@ impl WorthQueryInstalledAftermathContract {
 
     pub const fn correction_disclosure(&self) -> Option<&DeclaredCorrectionDisclosure> {
         self.correction_disclosure.as_ref()
+    }
+    pub const fn completed_external_reconciliation(
+        &self,
+    ) -> Option<
+        &worth_query_declaration::facade::application_aftermath::DeclaredReconciliationProcedure,
+    > {
+        self.completed_external_reconciliation.as_ref()
     }
 
     pub const fn external_effect(&self) -> &InstalledExternalEffectPosture {
@@ -184,6 +194,10 @@ pub(crate) fn install_application_aftermath(
         correction_disclosure: portable
             .correction_binding()
             .map(|inverse| inverse.disclosure().clone()),
+        completed_external_reconciliation: portable
+            .correction_binding()
+            .and_then(|binding| binding.completed_external_reconciliation())
+            .cloned(),
         external_effect: InstalledExternalEffectPosture::from_operation_contract(external_effect),
         published_posture,
         next_actions,

@@ -189,7 +189,9 @@ where
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
 
-        publication: super::conditional_execution::SignalConditionalDefinitionPublicationOperation,
+        publication: &mut Option<
+            super::conditional_execution::SignalConditionalDefinitionPublicationOperation,
+        >,
         expected: &AdmittedSignalBranchBasis,
         runtime_ctx: &mut Ctx,
         cancellation: &SignalOwnerCancellationToken,
@@ -200,7 +202,10 @@ where
     {
         use crate::branch::SignalBranchAdvanceCompletion;
         let execution = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            self.validate_conditional_definition_publication(&publication, expected)?;
+            let admitted = publication
+                .as_ref()
+                .expect("the original publication remains admitted");
+            self.validate_conditional_definition_publication(admitted, expected)?;
             let owner = self
                 .upgrade_owner()
                 .map_err(SignalBranchAdvanceDenial::OwnerUnavailable)?;
@@ -209,7 +214,7 @@ where
             let cell = owner
                 .lookup_cell(&admission, branch_id)
                 .map_err(|denial| map_advance_registry_denial(denial, branch_id))?;
-            if publication.incarnation() != cell.incarnation() {
+            if admitted.incarnation() != cell.incarnation() {
                 return Err(SignalBranchAdvanceDenial::ConditionalDefinitionPublicationMismatch);
             }
             let output = owner.reserve_advance_output(&admission, &cell)?;

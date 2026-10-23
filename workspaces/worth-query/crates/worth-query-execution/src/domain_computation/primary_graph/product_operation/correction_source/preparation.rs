@@ -1,7 +1,10 @@
 //! Source material and exact target retained between inverse preparation and publication.
 use super::*;
+mod workflow;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use crate::domain_computation::primary_graph::workflow::correction::PreparedWorkflowCorrection;
+pub(super) use workflow::prepare_workflow;
 use worth_query_declaration::facade::application_aftermath::ApplicationInverseBinding;
 use worth_query_declaration::facade::application_operation::{
     ApplicationEncodedInput, ApplicationMutationBinding, ApplicationMutationScopeResolution,
@@ -12,6 +15,8 @@ use worth_relational::facade::{
 };
 
 pub struct WorthQueryPreparedCorrectionSource {
+    authored_identity: Option<super::authored_identity::PreparedAuthoredIdentity>,
+    workflow: Option<PreparedWorkflowCorrection>,
     ancestry: ProductBranchAncestorSelection,
     material: WorthQueryPrimaryGraphCommittedApplication,
     runtime: WorthQueryRuntimeAuthorityIdentity,
@@ -39,6 +44,7 @@ impl WorthQueryPreparedCorrectionSource {
         scope: <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::ScopeBinding,
         target_program: crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation,
         required_root: Option<crate::equality_type_id::EqualityTypeId>,
+        workflow: Option<PreparedWorkflowCorrection>,
     ) -> Result<Self, WorthQueryCorrectionDerivationDenial>
     where
         <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::ScopeBinding:
@@ -63,7 +69,16 @@ impl WorthQueryPreparedCorrectionSource {
             .commit_receipt()
             .cloned()
             .ok_or(Denial::MissingTargetParent)?;
+        let execution = phase
+            .execution_request_for(&target.application().product_runtime)
+            .map_err(|_| Denial::ForeignPhase)?;
+        let authored_identity = super::authored_identity::PreparedAuthoredIdentity::prepare::<
+            Schema,
+            C,
+        >(source, &execution)?;
         Ok(Self {
+            authored_identity,
+            workflow,
             ancestry,
             target_program,
             required_root,
@@ -83,6 +98,27 @@ impl WorthQueryPreparedCorrectionSource {
 
     pub fn intent(&self) -> WorthQueryCorrectionIntent {
         self.intent
+    }
+    pub(in crate::domain_computation::primary_graph) fn validate_workflow_candidate(
+        &self,
+        batch: &worth_relational::facade::transactions::WorkerIntentBatch,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
+    {
+        match &self.workflow {
+            Some(workflow) => workflow.validate_candidate(batch),
+            None => Ok(()),
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn validate_authored_candidate<'a>(
+        &self,
+        roles: impl Iterator<Item = (&'a str, worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture, &'a str, &'a worth_relational::facade::transactions::EntityReference)>,
+        batch: &worth_relational::facade::transactions::WorkerIntentBatch,
+        request: &WorthQueryRequestScope,
+    ) -> Result<(), super::AuthoredCorrectionCandidateDenial> {
+        match &self.authored_identity {
+            Some(identity) => identity.validate_candidate(roles, batch, request),
+            None => Ok(()),
+        }
     }
 
     pub(crate) fn source_commit(&self) -> &RelationalCommitReceipt {
@@ -139,6 +175,8 @@ impl std::fmt::Debug for WorthQueryPreparedCorrectionSource {
 impl PartialEq for WorthQueryPreparedCorrectionSource {
     fn eq(&self, other: &Self) -> bool {
         self.runtime == other.runtime
+            && self.authored_identity == other.authored_identity
+            && self.workflow == other.workflow
             && self.required_root == other.required_root
             && self.target_program.same_support_as(&other.target_program)
             && self.actor == other.actor

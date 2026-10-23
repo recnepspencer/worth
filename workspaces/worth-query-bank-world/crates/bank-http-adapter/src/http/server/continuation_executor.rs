@@ -171,13 +171,9 @@ where
         if matches!(
             outcome,
             BankHttpAccountActivityPageOutcome::Delivered { .. }
-        ) && let Err(denial) = revalidate_replay(
-            application,
-            &principal,
-            request.account,
-            &request.controls,
-            &scope,
-        ) {
+        ) && let Err(denial) =
+            revalidate_replay(application, &principal, request.account, &scope)
+        {
             if revokes_cached_access(denial) {
                 registry.deny_protected_replay(&token, denial);
             }
@@ -260,13 +256,9 @@ where
             if matches!(
                 outcome,
                 BankHttpAccountActivityPageOutcome::Delivered { .. }
-            ) && let Err(denial) = revalidate_replay(
-                application,
-                &principal,
-                request.account,
-                &request.controls,
-                &scope,
-            ) {
+            ) && let Err(denial) =
+                revalidate_replay(application, &principal, request.account, &scope)
+            {
                 if revokes_cached_access(denial) {
                     registry.deny_protected_replay(&job.request.continuation, denial);
                 }

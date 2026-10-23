@@ -144,6 +144,40 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
         )
     }
 
+    /// Publishes the same recorded inverse while retaining its exact commit observation.
+    fn commit_program_correction_retained_in_advancement<Binding>(
+        &self,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        program: WorthQueryApplicationEffectProgram<
+            Schema,
+            Binding::Operation,
+            Binding::Input,
+            <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+        >,
+        identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
+        source: std::sync::Arc<
+            crate::domain_computation::primary_graph::WorthQueryPreparedCorrectionSource,
+        >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQueryApplicationRetainedCommitOutcome
+    where
+        Self: Sized,
+        Schema: ApplicationSchema,
+        Binding: ApplicationMutationBinding<Schema>,
+        Binding::Input: Clone + Send + Sync + 'static,
+    {
+        let outcome = self.commit_program_correction_in_advancement(
+            access,
+            phase,
+            program.with_client_observation(),
+            identities,
+            source,
+            allocation_policy,
+        );
+        self.owned_runtime().retained_commit_outcome(outcome)
+    }
+
     /// Commits an admitted undo through the same occurrence and action gates.
     fn compare_and_commit_program_undo<Binding>(
         &self,

@@ -337,6 +337,12 @@ impl WorthQueryApplicationIdempotencyBinding {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) const fn conditional_definition_identity(
+        &self,
+    ) -> Option<[u8; 32]> {
+        self.conditional_definition_identity
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn bind_conditional_definition(
         self,
         identity: Option<&[u8; 32]>,

@@ -9,6 +9,7 @@ mod effects;
 mod entities;
 mod estate_relation_installation;
 mod fields;
+mod freeze_correction;
 mod member_installation;
 mod mutation_bindings;
 mod operation_program_installation;
@@ -22,6 +23,7 @@ pub use capability_contracts::*;
 pub use effects::*;
 pub use entities::*;
 pub use fields::*;
+pub use freeze_correction::*;
 pub use mutation_bindings::*;
 pub use policies::*;
 pub use relations::*;
@@ -41,5 +43,5 @@ pub(crate) fn install_estate_world(
     let schema = policy_installation::install(schema);
     let schema = capability_contract_installation::install(schema);
     let schema = effect_installation::install(schema);
-    operation_program_installation::install(schema)
+    freeze_correction::install(operation_program_installation::install(schema))
 }

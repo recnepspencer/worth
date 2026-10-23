@@ -1,3 +1,4 @@
+mod combined_cancellation;
 mod combined_race;
 mod faults;
 mod progress;

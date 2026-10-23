@@ -117,10 +117,15 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
         Schema: crate::application_schema::ApplicationSchema,
         Correction: super::ApplicationCorrectionBinding<Schema>,
     {
+        let reconciliation = Correction::completed_external_reconciliation();
         Self {
-            authority: DeclaredCorrectionAuthority::RuntimeAlone,
+            authority: if reconciliation.is_some() {
+                DeclaredCorrectionAuthority::RuntimeWithExternalOwner
+            } else {
+                DeclaredCorrectionAuthority::RuntimeAlone
+            },
             mechanism: Some(Correction::mechanism()),
-            reconciliation: None,
+            reconciliation,
             correction_binding: Some(super::DeclaredCorrectionBinding::of::<Schema, Correction>()),
         }
     }

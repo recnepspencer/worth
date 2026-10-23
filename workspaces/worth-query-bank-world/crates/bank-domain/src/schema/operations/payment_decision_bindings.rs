@@ -37,8 +37,7 @@ worth_query_structured_value_binding!(
 
 pub struct PaymentDecisionOutputs;
 
-/// The payment intent an approval or a rejection preserves. Both decisions
-/// share [`PaymentDecisionOutputs`], so one role serves both handlers.
+/// The payment intent preserved by a rejection.
 pub struct DecidedPaymentOutput;
 
 impl WorthQueryApplicationOutputRole for DecidedPaymentOutput {
@@ -77,7 +76,7 @@ worth_query_mutation_binding!(
     program required,
     workflow_authority required,
     workflow_requirements worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::requiring_approval::<crate::schema::workflow::ApprovedBusinessPaymentApproval>(),
-    outputs PaymentDecisionOutputs,
+    outputs super::ApprovedPaymentOutputs,
     principal BankPrincipalBinding,
         mapping ExternalPrincipalMapping,
         principal_entity Principal,

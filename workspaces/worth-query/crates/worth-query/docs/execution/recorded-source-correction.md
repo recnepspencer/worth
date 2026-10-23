@@ -3,8 +3,10 @@
 A correction applies the recorded inverse or compensating action declared by
 the application. Select a performed source receipt, prepare the action against
 the target branch, then publish the prepared candidate. Success appends a new
-World commit while preserving the target's intervening disjoint edits and exact
-Signal basis.
+World commit while preserving the target's intervening disjoint edits. A
+Relational-only correction retains the target's Signal basis; an authored
+conditional-definition correction publishes its explicit Signal successor with
+the corrected Relational state.
 
 The [compiled numeric example](../../../worth-query-certification/examples/application_correction.rs)
 starts with primary `5` and secondary `7`, changes primary to `11`, changes
@@ -24,10 +26,12 @@ and list it in the contribution's `corrections: [RecordedEdit]` declaration.
 | `Disclosure` | The query determining whether the current caller can inspect the original subject on the target. |
 | `source_definition()` | The source operation's external-effect policy. Access is declared by the source operation. |
 | `mechanism()` | The recorded-inverse capture demand or compensation business postcondition, bound to the actual corrective operation. |
-| `source_output_fields()` | Historical fields of declared created output roles required by compensation. |
+| `source_output_fields()` | Historical fields of declared created output roles used to derive compensation or a created-entity inverse. |
+| `authored_identity()` | The authored lifecycle family, logical-key field and exact source/inverse output roles for create/delete inversion. |
+| `completed_external_reconciliation()` | The exact reconciliation procedure authorizing business compensation of a completed external workflow operation. |
 | `disclosure_parameters(original)` | Query parameters associated with the original governed input. |
 | `derive_correction(original, material)` | The domain's deterministic action construction from the original input and its mechanism-specific material. |
-| `inverse_key(key)` | Conversion of the client command key to the inverse binding's key type. |
+| `inverse_key(key)` | Fallible conversion to the inverse binding's key type, returning `Result<Key, ApplicationValueEncodeDenial>`. Validation refusals use the ordinary mutation key-identity denial. |
 | `visit(dispatch)` | Typed selection of conventional or capability admission for the inverse. |
 
 The complete [numeric binding](../../../worth-query-certification/examples/application_correction_support/correction.rs)
@@ -86,12 +90,91 @@ Choose bounds from the application's history and query contracts.
 
 Selection requires current disclosure plus retained native ancestry and source
 material. A copied receipt identifies the same performed source in its owning
-runtime. Each preparation observes the target again.
+runtime. Keep the returned source selection alive for the correction and its
+retries: it owns the source's history pin while operation owners can close
+normally. Each preparation observes the target again and checks current authority.
 
 `inspect(limits)` reports semantic compatibility. Preparation additionally
 derives and captures the inverse input, resolves its scope, admits the current
 caller and runs the installed handler to build a candidate. State changes when
 `publish()` succeeds. Dropping the candidate releases its preparation.
+
+## Select a source after closing its operation
+
+Capture the completed receipt's `correction_source()` locator, then close
+the completed operation normally. A later request can select that locator:
+
+```rust,ignore
+let locator = receipt.correction_source();
+// Close the completed operation through its owning handle.
+let request = runtime.request(&current_principal, &scope);
+let source = request.corrections().select_recorded(&locator, limits)?;
+let preparation = request.corrections()
+    .reverse(&source)
+    .idempotency("correct-original-transfer")
+    .limits(limits)
+    .prepare()?;
+```
+
+`WorthQueryRecordedCorrectionSource` contains the World commit identity and
+full Relational receipt. Its `coordinates()` method returns the serializable
+`WorthQueryCorrectionSourceCoordinates`. Store these coordinates with the
+application's history entry. A receiving transport deserializes this type or
+constructs it with `WorthQueryCorrectionSourceCoordinates::from_untrusted_parts`,
+then calls `request.corrections().select_coordinates(&coordinates, limits)`.
+Selection resolves the actual retained completed evidence, compares its World
+identity and checks ancestry and current disclosure on the target branch. Keep
+the complete coordinates together when serializing them.
+
+Normal operation close releases its custody while the native history owner
+governs source retention. Selection returns a typed refusal when that evidence
+is unavailable or the current caller cannot disclose the original subject.
+The inverse then receives its own current admission checks during preparation.
+For a sequence of requests that must keep the source available, retain a source
+selection through the sequence and release it when that history is no longer
+needed. Serialized coordinates locate an occurrence; its live selection owns
+retention. After the final selection is released, subsequent publications can
+retire that optional source history.
+
+The [Bank accounting court](../../../../../worth-query-bank-world/crates/bank-server/tests/ordinary_mutations/recorded_correction.rs)
+shows closed source operations, later transfers, a freshly authenticated teller,
+original-journal compensation and replay through this entry.
+
+## Keep the corrective action's delivery owner
+
+Choose preparation according to the inverse action's installed delivery:
+
+| Delivery | Preparation |
+| --- | --- |
+| Mutation publication with its ordinary receipt | `prepare()` |
+| An installed action with SourceCompletion or RetainedCommit delivery | `prepare_operation::<Correction, Program, Action>(&application)` |
+| An installed action with a fixed required output root | `prepare_performed::<Correction, Program, Root>(&application)` |
+
+Bank exposes its installed journal compensation through this public entrance:
+
+```rust,ignore
+let preparation = runtime.prepare_send_money_correction(
+    &teller,
+    &scope,
+    &completed_source.coordinates(),
+    client_key,
+    limits,
+)?;
+```
+
+This returns `WorthQueryOperationCorrectionPreparation`. Publish a `Prepared`
+candidate to receive `WorthQuerySourceOnlyAdvance`; a `Continued` result supplies
+that existing action's progress directly. Store the returned active, completed
+or terminal owner before replying to the client. Advance it with a fresh request,
+read through its declared delivery and close it through its ordinary lifecycle.
+A refusal returns its owner so the caller can continue or close it later.
+
+`IdempotencyIntentDrift` identifies reuse of the key for different correction
+meaning. `PublicationPending` and `ProductUnpublished` preserve the outstanding
+native publication obligation. Equivalent retries resolve the original action
+and its performed source. The Bank
+[correction entry](../../../../../worth-query-bank-world/crates/bank-server/src/correction.rs)
+shows selection of received coordinates and the typed action entrance.
 
 ## Compensate a performed operation
 
@@ -142,6 +225,63 @@ original correction command and receipt, including its causal source link.
 The [compiled credit/debit binding](../../../worth-query-certification/examples/application_correction_support/compensation_movement.rs)
 and [compensation court](../../../worth-query-certification/examples/application_correction_support/compensation_courts.rs)
 show current-balance arithmetic, intervening work, replay and current authority.
+
+## Correct an operation performed inside a workflow
+
+Select the performed operation's receipt in the same way as an ordinary source.
+The runtime retains its originating workflow instance, transition and operation
+receipt. Preparation resolves that exact native settlement on the selected
+target and preserves the instance's current continuation. A live successor keeps
+its progress; a completed or cancelled instance keeps its terminal disposition.
+
+Continue an unsettled operation through its original owner first. A pending
+operation in external-owner custody returns `WorkflowOperationInOwnerCustody`
+during correction preparation. Once the original operation settles, its
+authored decision dependencies still determine correction compatibility.
+Workflow authority consumed by that successful settlement is accounted for
+separately from the source's authored reads. The corrective operation receives
+fresh disclosure and ordinary admission on the current target.
+
+The inverse handler writes the domain subject covered by the binding. Native
+candidate validation preserves the original workflow instance and its custody.
+The [document retention example](../../../worth-query-certification/tests/application_graph/workflow_approval/correction.rs)
+shows an approved retention edit corrected after completion, during a live
+successor and after cancellation.
+
+## Compensate a completed external workflow operation
+
+Declare the source's real external effect and inbound protocol in
+`source_definition()`. Bind a separate business compensation through
+`mechanism()` and name the original external owner's reconciliation procedure:
+
+```rust,ignore
+fn completed_external_reconciliation() -> Option<DeclaredReconciliationProcedure> {
+    Some(DeclaredReconciliationProcedure::new(
+        "confirm-approved-payment-settlement",
+    ).expect("the payment settlement procedure has a stable identity"))
+}
+```
+
+Installation binds this procedure to the correction's source, inverse and
+disclosure meaning. Preparation requires the canonical authenticated inbound
+completion for the exact original dispatch, publication and product incarnation,
+plus the originating workflow operation's native settlement. Keep advancing and
+accepting the original owner until these obligations settle, then prepare the
+compensation through a fresh request.
+
+Bank's `ReverseApprovedPayment` reads the journal created by the approved payment
+and derives an ordinary `ReverseJournal` intent. Current teller admission and
+balanced posting invariants govern the new compensating journal. The original
+payment remains committed, the remote settlement remains completed and the
+workflow keeps its existing continuation. Exact retry returns the same
+compensating occurrence. Call
+`runtime.prepare_approved_payment_correction(&teller, &scope, &coordinates, key, limits)`
+to retain the installed journal reversal's delivery; publish or continue its
+returned owner and close it under a fresh request. The
+[binding](../../../../../worth-query-bank-world/crates/bank-domain/src/schema/approved_payment_correction.rs)
+shows the declaration and original journal projection; the
+[owning journey](../../../../../worth-query-bank-world/crates/bank-server/tests/approved_payment_workflow/owner_custody/correction.rs)
+shows original rail custody, settlement, compensation and replay.
 
 ## Read original fields of a created output
 
@@ -198,6 +338,149 @@ bind two actual created roles, and its
 reads back the published output, changes its payload, retires it and corrects
 from the original committed values. Exact replay preserves the original
 correction receipt and World head.
+
+## Restore an authored entity with a new identity
+
+An authored entity has two useful identities: its domain logical key and its
+native generational entity identity. A recorded deletion restores the authored
+values under the same logical key by creating a successor entity. The successor
+receives a new native identity. References to the retired entity continue to
+identify that retired occurrence. The corrective operation's created output
+identifies the successor for subsequent authored relationships.
+
+Declare one family for the logical-key field used by both lifecycle directions:
+
+```rust,ignore
+pub struct NumberFamily;
+impl ApplicationAuthoredCorrectionFamily<NumericSchema> for NumberFamily {
+    const IDENTITY: &'static str = "numeric.authored-number.v1";
+    type Entity = Number;
+
+    fn logical_key() -> ApplicationAuthoredLogicalKey<NumericSchema, Number> {
+        ApplicationAuthoredLogicalKey::from_field(Key::reference())
+    }
+}
+```
+
+The family binds the entity and the complete field meaning, including its value
+codec, unit and coordinate frame. Use an exactly-one Create role on the creating
+operation and an exactly-one Retire role on the deleting operation. Their
+handlers bind the actual entities through `create_output` and `retire_output`.
+
+For a creation's inverse, return this association from `authored_identity()`:
+
+```rust,ignore
+Some(ApplicationAuthoredCorrection::retire_created::<
+    Self, NumberFamily, Created, Retired,
+>())
+```
+
+Use `DeclaredCorrectionMechanism::recorded_create_inverse_binding::<Self>()`.
+Its derivation receives `ApplicationCorrectionSourceMaterial::CreatedEntity`.
+Declare any original created fields needed by the domain inverse in
+`source_output_fields()` and decode them with their ordinary bindings. At native
+candidate validation, the retired role and actual delete must both name the
+original created entity's full generational identity.
+
+For a deletion's inverse, return the opposite association:
+
+```rust,ignore
+Some(ApplicationAuthoredCorrection::restore_retired::<
+    Self, NumberFamily, Retired, Created,
+>())
+```
+
+Use `recorded_inverse_binding::<Self>(demand)` and capture the logical key plus
+the authored fields needed to rebuild the entity. Derive the restoring intent
+from `RecordedInverse(preimage)`. The ordinary handler allocates the successor,
+initializes those values and binds its Create output. Native validation compares
+that actual allocation and initialized key with the original retired role and
+its captured key before publication. A mismatched key, unrelated deletion or
+substituted existing entity produces `CorrectionIdentityMismatch`.
+
+Choose a disclosure scope that remains meaningful after retirement, such as the
+owning document or collection. The caller's current disclosure and the inverse's
+current admission still govern restoration. Use the corrective receipt's created
+output to identify the successor when establishing a new authored relationship.
+For relations declared with `same_context_unbounded_retain_dangling`, retirement
+preserves the original endpoints for audit and changes the relation's lifecycle
+to `RetainedDanglingForAudit`. Ordinary live adjacency reads omit that relation.
+A consumer that requires it refuses the missing live relationship, even when a
+successor with the same logical key is available through a fresh query.
+
+The [complete family and correction bindings](../../../worth-query-certification/examples/application_correction_support/authored_identity_correction.rs)
+show both directions. The [ordinary lifecycle handlers](../../../worth-query-certification/examples/application_correction_support/authored_identity_handlers.rs)
+perform the actual allocation and deletion; the
+[reference consumer](../../../worth-query-certification/examples/application_correction_support/authored_identity_reference.rs)
+follows the authored relation while live and compares its endpoint's complete
+identity with the original created output. After retirement and restoration, it
+requires the exact missing-relationship refusal and an unchanged product head. The
+[lifecycle court](../../../worth-query-certification/examples/application_correction_support/authored_identity_courts.rs)
+checks restored values, the new native identity, independent edits, exact retry
+and mismatched candidates.
+
+## Correct an authored conditional definition
+
+Keep the authored parameters in ordinary application fields. Declare a recorded
+inverse that captures those parameters and derives the corrective intent from
+their original values. Use the same ordinary handler for the authored edit and
+its correction, so both prepare their effects through current admission.
+
+In the handler's decision, build the replacement predicate provider from the
+admitted input and tracked reads, then call
+`reader.prepare_conditional_definition::<Conditional, Node, Clock, Provider>(provider)`.
+`Conditional` is the installed contribution binding; its `Installed` type is
+`WorthQueryConditionalClockHandle<Schema, Node, Clock>`. Installation supplies
+that exact clock handle. The method prepares the successor against the decision's
+retained product and returns `WorthQueryAdmittedApplicationConditionalDefinition`.
+Carry that permit in the decision value.
+
+In `build_candidate`, write the authored fields through the ordinary
+`CandidateWriter` and pass the permit to
+`writer.advance_conditional_definition(decision.definition)`. Publishing the
+candidate joins the Relational effects and Signal definition successor in one
+World commit. The receipt identifies both component publications and the
+conditional definition generation. A moved target returns the ordinary stale
+outcome; prepare again against the current target to retry.
+
+The [complete ordinary handler](../../../worth-query-certification/examples/application_correction_support/composite_definition_handler.rs)
+and [correction binding](../../../worth-query-certification/examples/application_correction_support/composite_definition_model.rs)
+show these two stages. Their [runtime example](../../../worth-query-certification/examples/application_correction_support/composite_definition_court.rs)
+changes an authored parameter from `5` to `23`, changes a separate field to
+`19`, then corrects the original parameter to `5`. Readback preserves `19`.
+The replacement predicate then permits an actual due conditional operation.
+Equivalent correction retries return the original receipt and World head.
+
+Bind the conditional's semantic output version through
+`bind_host_output_version_provider` when installing its predicate. The example
+uses the temporal operation's actual output value, `99`, as its output identity
+under exact comparison.
+
+Advance the installed conditional owner through its ordinary clock observation.
+Its canonical Relational subscription supplies performed changes, including
+changes completed during recovery, so the corrected definition evaluates current
+dependencies. Open the clock port during host advancement, finish that phase,
+then call the port's `observe` method with the execution request.
+
+A fresh receipt can also transfer its owned change through
+`deliver_relational_change_to_conditional`. When a completed source operation
+owns that receipt, `close_with_evidence` releases its cleanup and returns the
+original completion evidence for delivery. Historical receipt copies support
+comparison and exact command lookup.
+For an action with source delivery, use
+`prepare_operation::<Correction, Program, Action>(&application)` and retain the
+owner returned by publication. An interruption can leave Relational settlement
+pending before the Signal definition runs, or leave both component results
+waiting for World publication. In either case, advance that same owner with a
+fresh request. Recovery continues its retained definition and component results;
+the performed receipt identifies the combined successor and its actual
+definition generation. World observations expose the last complete published
+pair until that successor is published.
+
+Keep the owner while recovery or delivery remains pending. A close refusal
+returns it with the outstanding native obligation. After recovery, consume the
+action's declared delivery and close the returned owner normally. Reuse the
+original client key when checking the command after a lost response.
 
 ## Required outputs and recovery
 
@@ -298,8 +581,9 @@ mapping is disabled.
 An occurrence can be corrected after ordinary adoption to a program with
 equivalent installed meaning. The runtime compares the retained source program
 with the selected current program and resolves the complete original inverse
-action in that program. The correction runs under the current program and
-retains its exact Signal definition basis. Preparation keeps both program
+action in that program. The correction runs under the current program.
+Relational-only correction retains the current Signal basis; an authored
+conditional-definition correction supplies its explicit successor. Preparation keeps both program
 interpretations alive through publication or recovery.
 
 `InverseAction` distinguishes a missing, ambiguous or changed inverse action.

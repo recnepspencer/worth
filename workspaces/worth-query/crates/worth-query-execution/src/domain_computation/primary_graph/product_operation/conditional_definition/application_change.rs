@@ -37,20 +37,21 @@ pub(in crate::domain_computation::primary_graph) struct
 
 impl WorthQueryAdmittedApplicationConditionalDefinition {
     pub(super) fn new<Schema: worth_query_installation::facade::ApplicationSchema>(
-        selected: &super::super::WorthQuerySelectedProductOperation<'_, Schema>,
+        application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        product: &crate::basis::WorthQueryProductBranchLease,
         identity: [u8; 32],
         predecessor: Arc<BridgeInstalledConditionalLowering>,
         request: BridgeOwnedConditionalInstallationRequest,
     ) -> Self {
         Self {
-            runtime_authority: selected.application().runtime.authority_identity(),
-            application_binding: selected.application().installed_schema().binding_identity(),
-            expected_product: selected.product().observation().clone(),
+            runtime_authority: application.runtime.authority_identity(),
+            application_binding: application.installed_schema().binding_identity(),
+            expected_product: product.observation().clone(),
             identity,
             predecessor,
             request,
-            bridge: selected.application().bridge.conditional_operations(),
-            activations: Arc::clone(&selected.application().product_runtime.activations),
+            bridge: application.bridge.conditional_operations(),
+            activations: Arc::clone(&application.product_runtime.activations),
         }
     }
 

@@ -14,13 +14,25 @@ impl<Schema: ApplicationSchema> ApplicationSchemaDeclarationBuilder<Schema> {
                 Correction,
             >())
             .finish();
-        let mut builder = self
-            .declared_operation(definition)
-            .application_mutation_binding::<Correction::Source>();
+        let builder = self.declared_operation(definition);
+        let mut builder = if builder
+            .member_provenance
+            .mutation_bindings()
+            .contains(&Correction::Source::descriptor())
+        {
+            builder
+        } else {
+            builder.application_mutation_binding::<Correction::Source>()
+        };
         for field in Correction::source_output_fields() {
             builder
                 .member_provenance
                 .register_field_binding(field.binding_recipe().clone());
+        }
+        if let Some(identity) = Correction::authored_identity() {
+            builder
+                .member_provenance
+                .register_field_binding(identity.binding_recipe().clone());
         }
         let disclosure = Correction::Disclosure::descriptor();
         let builder = if builder

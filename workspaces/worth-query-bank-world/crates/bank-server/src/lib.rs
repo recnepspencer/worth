@@ -12,6 +12,12 @@ mod authenticated_principal;
 mod authentication_boundary;
 mod bank_projection;
 mod committed_dispatch_outbox;
+mod correction;
+pub use correction::{
+    BankApprovedPaymentCorrectionPreparation, BankSendMoneyCorrectionPreparation,
+};
+mod estate_correction;
+pub use estate_correction::BankEstateFreezeCorrectionPreparation;
 mod error;
 #[cfg(test)]
 mod estate_capability_admission;
@@ -159,7 +165,7 @@ pub use application_definition::{
     EstateCaseOpeningAction, EstateCaseOpeningDelivery, EstateDisbursementAction,
     EstateDisbursementDelivery, EstateReleaseAction, EstateReleaseDelivery,
     ExecutorRecognitionAction, ExecutorRecognitionDelivery, ProgramDeploymentRevocationAction,
-    ProgramDeploymentRevocationDelivery,
+    ProgramDeploymentRevocationDelivery, RestoreFrozenAccountAction, RestoreFrozenAccountDelivery,
 };
 
 pub use operation_commit::{BankManagedCleanup, BankReleasedManagedCleanup};

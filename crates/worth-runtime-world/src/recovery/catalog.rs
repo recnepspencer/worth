@@ -15,7 +15,7 @@ mod initialization;
 mod page;
 #[path = "catalog/update.rs"]
 mod update;
-use update::ReservedProductUnpublishedRecordUpdate;
+pub(crate) use update::ReservedProductUnpublishedRecordUpdate;
 
 #[cfg(test)]
 #[path = "catalog_tests.rs"]

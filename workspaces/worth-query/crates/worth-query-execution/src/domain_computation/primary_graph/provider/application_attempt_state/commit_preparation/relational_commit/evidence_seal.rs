@@ -15,6 +15,7 @@ use crate::domain_computation::primary_graph::provider::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCommitEvidence {
+    workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     provider_session_binding:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
     idempotency:
@@ -89,6 +90,7 @@ pub(super) fn seal(
         )
     });
     WorthQueryPrimaryGraphCommitEvidence {
+        workflow_origin: committed.attempt().workflow_origin().cloned(),
         provider_session_binding: committed.attempt().affinity().provider_session().clone(),
         idempotency: committed.attempt().idempotency(),
         commit: committed.committed().envelope().commit.clone(),
@@ -126,6 +128,11 @@ impl WorthQueryMutationWorkCommitSeal {
 }
 
 impl WorthQueryPrimaryGraphCommitEvidence {
+    pub(in crate::domain_computation::primary_graph) fn workflow_origin(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>{
+        self.workflow_origin.as_ref()
+    }
     /// Original admitted meaning co-retained with the performed occurrence.
     /// This is historical evidence; current authority is admitted separately.
     pub(in crate::domain_computation::primary_graph) fn original_authority(

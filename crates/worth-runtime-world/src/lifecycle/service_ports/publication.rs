@@ -12,6 +12,8 @@ use crate::publication::{
 use std::sync::{Arc, Weak};
 use worth_signal::facade::{SignalError, SignalTransaction};
 
+mod conditional_recovery;
+
 /// Executes the concrete component-owner progression and exact product CAS.
 pub struct RuntimeWorldPublicationPort<D, I, E, Ctx, T>
 where
@@ -135,7 +137,7 @@ where
         execution: worth_execution::ExecutionRequest<'_, '_>,
 
         mut prepared: PreparedCompositePublicationWithSignal,
-        publication: worth_signal::facade::branch::SignalConditionalDefinitionPublicationOperation,
+        mut bridge_prepared: worth_runtime_bridge::facade::BridgePreparedConditionalInstallationExtension,
         context: &mut Ctx,
         cancellation: &RuntimeWorldCancellationToken,
         apply: F,
@@ -150,11 +152,12 @@ where
             &crate::publication::ConditionalDefinitionAttemptCustody,
         ) -> Result<(), SignalError>,
         H: FnOnce(
-            worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding,
             &crate::publication::ConditionalDefinitionAttemptCustody,
         ) -> Result<(), SignalError>,
     {
         let custody = prepared.reserve_conditional_definition_custody();
+        let publication = bridge_prepared.take_runtime_world_publication_operation();
+        custody.retain_prepared(bridge_prepared);
         let owner = match self.service() {
             Ok(owner) => owner,
             Err(_) => return (unavailable(prepared.expected_head().clone()), custody),
@@ -169,7 +172,7 @@ where
             context,
             cancellation,
             |transaction| apply(transaction, &custody),
-            |successor| admit_activation(successor, &custody),
+            || admit_activation(&custody),
         );
         (owner.finish_publication(outcome, cancellation), custody)
     }
@@ -184,7 +187,7 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
         execution: worth_execution::ExecutionRequest<'_, '_>,
 
         prepared: PreparedCompositePublicationWithSignal,
-        mut bridge_prepared: worth_runtime_bridge::facade::BridgePreparedConditionalInstallationExtension,
+        bridge_prepared: worth_runtime_bridge::facade::BridgePreparedConditionalInstallationExtension,
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
         cancellation: &RuntimeWorldCancellationToken,
     ) -> crate::publication::RuntimeWorldConditionalDefinitionPublicationOutcome {
@@ -193,30 +196,23 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
             RuntimeWorldPublicationOutcome,
         };
 
-        let publication = bridge_prepared.take_runtime_world_publication_operation();
         let (outcome, custody) = self.execute_conditional_definition_with_signal(
             execution,
             prepared,
-            publication,
+            bridge_prepared,
             &mut (),
             cancellation,
             |transaction, custody| {
                 let completion = bridge
-                    .apply_owned_conditional_installation_extension(transaction, bridge_prepared)
+                    .apply_owned_conditional_installation_extension(
+                        transaction,
+                        custody.take_prepared(),
+                    )
                     .map_err(|denial| SignalError::invalid_input(format!("{denial:?}")))?;
                 custody.retain_applied(completion);
                 Ok(())
             },
-            |binding, custody| {
-                let mut applied = custody.lease_applied();
-                bridge
-                    .complete_owned_conditional_installation_activation(
-                        applied.applied_mut(),
-                        binding,
-                    )
-                    .map_err(|denial| SignalError::invalid_input(format!("{denial:?}")))?;
-                Ok(())
-            },
+            |custody| custody.complete_activation(bridge),
         );
         match outcome {
             RuntimeWorldPublicationOutcome::Performed(publication) => {

@@ -115,6 +115,7 @@ fn execution_request_denial(
         kind @ (Session::ExecutionResource {
             denial:
                 Resource::WorkCounterOverflow
+                | Resource::AccountingUnavailable
                 | Resource::RetainedBytesExhausted
                 | Resource::CapacityOverflow
                 | Resource::NativeAllocationRefused { .. }

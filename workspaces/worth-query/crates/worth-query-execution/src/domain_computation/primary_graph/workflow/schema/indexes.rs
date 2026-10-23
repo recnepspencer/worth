@@ -53,5 +53,14 @@ pub(in crate::domain_computation::primary_graph) fn register_indexes(
         branch_scoped: true,
     })?;
     layout.captured_input.identity_index_id = installed.index_id;
+    let installed = install(DerivedIndexDefinition {
+        index_id: DerivedIndexId(0),
+        name: "worth-query-workflow.transition-identity".to_owned(),
+        kind: DerivedIndexKind::EntityField {
+            field_locator: layout.transition.identity.clone(),
+        },
+        branch_scoped: true,
+    })?;
+    layout.transition.identity_index_id = installed.index_id;
     Ok(())
 }

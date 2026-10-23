@@ -1,16 +1,17 @@
-# Owning HTTP money commands
+# Owning HTTP mutations
 
 ## What this feature is
 
-Deposit, withdrawal and send-money commands retain their actual Query operation
-between HTTP requests. The transport stores finite custody; Query decides
-admission, source execution, recovery, original-commit delivery and native close.
+Deposit, withdrawal, send-money, estate freeze, capability revocation and recorded
+correction commands retain their Query operation between HTTP requests. Query
+owns admission, source execution, recovery, delivery and close. The HTTP custody
+ID addresses that operation throughout its lifecycle.
 
 ## Why you use it
 
 A lost response does not lose the original operation. Choose a custody ID before
 sending create, then address that custody with fresh authenticated commands.
-The ID is descriptive transport routing, not a permission or idempotency key.
+Authenticate each command and keep the original idempotency key with its input.
 
 ## Stable entry points
 
@@ -25,16 +26,14 @@ the node supplies its current session credential for each command.
 
 ## Core mental model
 
-Create alone supplies the original typed money input and native idempotency key.
+Create supplies the original typed mutation input and native idempotency key.
 Optional send-money accounting revision and account-status conditions are encoded
-through the Bank typed precondition builder once. Resume, read and close cannot
-replace these fields. The transport retains no principal, scope or grant proof. Business authorization
-is freshly native on advance and retained read. Native cleanup uses its own
-runtime-issued release authority and fresh admitted scope; an actor business
-grant is not a substitute for those cleanup rights.
+through the Bank typed precondition builder. That captured input remains with the
+operation. Each advance and retained read checks current business authorization.
+Cleanup uses runtime-issued release authority and a freshly admitted request.
 
-A record occupies one globally bounded permit before its first advance. Commands
-for the same ID route to one persistent worker on a dedicated execution thread. Each accepted command increments
+Commands for the same ID route to one persistent worker on a dedicated execution
+thread. Each accepted command increments
 that record's sequence exactly once. A stale or duplicate sequence performs no
 second advancement and replays no protected query rows. Native refusal retains
 the returned owner; a sequence refused before record admission is not consumed.
@@ -47,9 +46,11 @@ capacity; partial and uncertain publication remain owned for recovery.
 One create or resume command invokes at most one native advance. Supply explicit
 nonzero `maximum_history_work` on each such command. Pending responses identify
 native posture; another fresh command advances it. Fresh completion and recovered
-receipt evidence are distinguished by `recovered`; recovery never invents a
-`MoneyMovementResult`. Read uses the original retained World observation with
-fresh query authority, `maximum_results` and `maximum_work`.
+receipt evidence are distinguished by `recovered`. Money actions retain their
+original publication for activity reads. Read supplies an explicit `account` and uses the original
+retained World observation with fresh query authority and `maximum_results`.
+The account chooses which activity to query; the retained operation chooses the
+publication at which that activity is read.
 
 The worker stores every returned native owner before sending its response.
 After queue admission, timeout, cancellation or reply loss may leave the result
@@ -75,6 +76,30 @@ command, rather than making a claim about an earlier operation with that key.
 
 ## Real example
 
+A completed money command returns `source`, the exact occurrence's descriptive
+coordinates. To correct a closed send-money occurrence, create a new custody
+with a fresh idempotency key and `operation: { "operation": "correct_send_money",
+"source": source }`. Current teller authority and account disclosure are checked
+before the installed journal reversal runs. The original and compensating
+journals remain available in account activity, including intervening movements.
+
+Use the same source and key to recover an uncertain correction result. Completion
+returns the original correction occurrence. To inspect its retained activity
+after later transactions, send:
+
+```json
+{
+  "command": "read", "request_id": "correction-activity",
+  "custody_id": "client-chosen-correction", "sequence": 3,
+  "account": "fixture:101",
+  "controls": { "deadline_milliseconds": 5000, "maximum_results": 16 }
+}
+```
+
+This user-node request uses the current authenticated session. Direct Bank HTTP
+requests additionally include `protocol` and `credential`. The response's
+publication basis identifies the retained correction version.
+
 After losing an append-partial response, resume the same ID with sequence 2,
 fresh credentials and a funded history bound. Native recovery adopts the original
 publication without posting money again. Continue with one explicit command per
@@ -91,7 +116,36 @@ successful shutdown joins the mutation workers. After listener loss,
 refusal returns the continuation. Rail completion custody retains
 its separate handoff contract.
 
-## Estate and native cleanup custody
+## Correcting an estate freeze
+
+Create `freeze_estate_account` with an estate ID and canonical account ID:
+
+```json
+{ "operation": "freeze_estate_account", "estate": 3, "account": "fixture:100" }
+```
+
+The completed response supplies the exact freeze occurrence in `source`. Close
+that custody with the next sequence. To restore its recorded account status,
+create a new operation with a fresh key:
+
+```javascript
+const operation = {
+  operation: "correct_estate_freeze",
+  source: freezeResponse.source
+};
+```
+
+Restoration requires the account still to be Frozen and current authority for
+that estate/account.
+Both commands complete with a receipt; use an ordinary account-summary query to
+observe the current status, then close the completed custody. A revoked grant
+causes fresh correction admission to return `permission_denied`.
+
+An authorized issuer revokes a grant through `revoke_estate_capability` with its
+estate and grant IDs. Resume pending custody with fresh controls and close after
+completion. Revocation uses the same command sequencing and recovery lifecycle.
+
+## Estate effects and native cleanup custody
 
 Estate notification and disbursement construct declared SourceCompletion owners.
 Their bounded, client-chosen request ID is the initial custody address (sequence
@@ -104,26 +158,24 @@ actual recovery token or the native completed/operator-required claim posture.
 It does not manufacture the handler's result after recovery.
 
 `release_cleanup` invokes the native owner's physical cleanup under a fresh
-bounded issuer. `collection_released` describes only that cleanup collection;
-the original source owner and publication uncertainty remain retained. It does
-not authorize another source effect, establish completion, or clear a live
-unpublished operation. Failed release leaves exact custody in its worker.
+bounded issuer. `collection_released` reports release of that cleanup collection.
+Continue managing the original source owner according to its publication posture.
+A failed release leaves custody in its worker for a fresh attempt.
 
 Four elevation transitions can return `cleanup_required`. Their actual native
 owner and original uncommitted evidence occupy the same finite transport custody.
-They never expire with an elevation token. Execution and physical retry remain
+Their lifecycle continues through cleanup and close. Execution and physical retry remain
 on the original dedicated thread. After `cleanup_released`, the host calls
 `take_released_cleanup` with fresh authenticated close controls to receive a
 move-only `BankHttpReleasedCleanup`. The reserved transport delivery guard returns
 that exact evidence if the handoff response is not consumed; shutdown sees its
 outstanding custody. `into_parts()` transfers a `BankHttpCleanupRuntime` keeper
 and the actual `BankReleasedManagedCleanup`, whose physical receipt remains
-separate from its original business outcome. This handoff does not restore a
-consumed requested, approved, or mandatory-review authority.
+separate from its original business outcome. Further business transitions require
+their own current authority.
 
 <!-- illustrative -->
 ```rust,ignore
-// Illustrative: not compiled.
 let handoff = continuation.take_released_cleanup(fresh_close_command).await?;
 let (keeper, evidence) = handoff.into_parts();
 let original = evidence.business();
@@ -133,16 +185,15 @@ let runtime = keeper.runtime();
 ```
 
 Listener-independent `inspect_recovery` and `retry_recovery` delegate to the
-existing estate recovery registry under fresh credentials. They do not advance
-the source handler. The continuation keeps this actual registry and installation
+existing estate recovery registry under fresh credentials. The continuation keeps this registry and installation
 alive across listener loss; a queued rail retry can also return `outcome_unknown`.
 
 ## How it relates to other features
 
-Payment continuation describes a business payment; estate recovery owns external
-effect custody; account-page cursors own query continuation. None is an authority
-or replacement for this money operation. Money retained reads use native history,
-not a current-view reconstruction from commit receipt counts.
+Payment continuation tracks a business payment; estate recovery owns external
+effect custody; account-page cursors own query continuation. Each lifecycle has
+its own operations and completion evidence. Money retained reads use the original
+native history observation to return the exact publication's account activity.
 
 ## Inspection and debugging
 
@@ -156,33 +207,18 @@ native catalog and cleanup access. It cannot reconstruct lost transport records.
 Strict DTOs reject earlier protocol versions and fields belonging to a different
 command. The native operation remains the authority for terminal and retry truth.
 
-## Anti-patterns
+## Host lifetime
 
-Do not cache authenticated grants, reset a command budget in a hidden pump,
-interpret queued timeout as not applied, or evict pending custody on a TTL.
-Do not reconstruct the descriptor from a transport token or receipt.
+Custody lives in the running Bank process. Keep the host continuation and original
+operation records until each operation and cleanup obligation closes. When a
+queued request times out, resume its custody with fresh credentials and controls
+to discover the actual outcome. Pending operations remain owned through recovery.
 
-Cold certification processes carry a named `trusted_root_pem` in their typed
-`cold_certification` configuration. The generated courtroom CA signs the actual
-identity server certificate; the client adds that root for its own TLS connection.
-Missing or malformed roots refuse installation. The isolated Selenium container
-imports that public root into its browser NSS database before sessions start;
-administration HTTP receives the same named root explicitly. Browser sessions use
-temporary profiles without certificate-bypass flags. Ordinary installation keeps
-its normal TLS roots; certification never disables certificate or hostname validation.
-
-## Current limits
-
-This is in-process transport custody, without process-crash durability. Dropping
-the final host continuation closes ingress and allows workers to end normally;
-it performs no cleanup I/O and promises neither settlement nor native disposal.
-Native World catalog records and physical cleanup obligations are distinct.
-Independent native discovery applies only to the actual native records supported
-by that catalog while their runtime remains alive, not to every ordinary posture.
-Failed managed-run cleanup belongs to its actual native cleanup collection,
-not a World catalog record. Abandonment neither discharges that collection nor
-promises catalog discovery for it. Final runtime destruction has no added cleanup guarantee. A deliberately abandoned
-ordinary descriptor cannot be recreated as equivalent operation custody.
+Complete cleanup and close before destroying the runtime. Dropping the final
+continuation closes ingress and lets workers end; explicit native cleanup owns
+resource release. World catalog discovery and managed cleanup collections expose
+their respective live obligations while the runtime remains available.
+Process-crash durability requires a separate host persistence contract.
 
 ## Related docs
 

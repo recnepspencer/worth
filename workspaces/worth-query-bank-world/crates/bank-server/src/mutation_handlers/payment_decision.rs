@@ -121,7 +121,10 @@ fn author_approval_candidate(
     candidate: &mut CandidateWriter<'_, BankSchema, ApprovePaymentMutationBinding>,
 ) -> Result<PaymentDecisionResult, HandlerExecutionDenial> {
     let (journal, payment) = exact_approved_payment(proposal.effects())?;
-    author_journal(candidate, journal, proposal.proposed_snapshot())?;
+    let journal_entity = author_journal(candidate, journal, proposal.proposed_snapshot())?;
+    candidate
+        .create_output::<bank_domain::schema::ApprovedPaymentJournal>(&journal_entity)
+        .map_err(HandlerExecutionDenial::new)?;
     let payment_entity = author_payment_decision(candidate, payment)?;
     candidate
         .emit_external(
@@ -136,7 +139,7 @@ fn author_approval_candidate(
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate
-        .preserve_output::<DecidedPaymentOutput>(&payment_entity)
+        .preserve_output::<bank_domain::schema::ApprovedPaymentOutput>(&payment_entity)
         .map_err(HandlerExecutionDenial::new)?;
     Ok(PaymentDecisionResult {
         payment: payment.id(),

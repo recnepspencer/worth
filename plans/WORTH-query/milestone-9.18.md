@@ -1,6 +1,6 @@
 # Milestone 9.18: Tree-Based Semantic Undo And Redo
 
-> **Status:** Phase 1 certified and closed; Phase 2 in progress; Phases 3–4 held. Design reconciled with the current application entry,
+> **Status:** Phases 1–2 certified and closed; Phase 3 next; Phase 4 held. Design reconciled with the current application entry,
 > program adoption, workflow and owner-publication code on 2026-09-29.
 > **Dependencies:** 9.17.4, 9.17.5, 9.17.6 and [9.17.7](./milestone-9.17.7.md)
 > are completed. Phase 1 may begin
@@ -475,16 +475,19 @@ rather than replacing it.
 
 ### Phase 2: Composite compatibility, effects and recovery
 
-**In progress.** Retained-source correction across equivalent installed program
-adoption and fixed-root required-output publication/recovery are implemented.
-Unpublished correction owners retain the actual inverse input and transformed
-key for fresh-authority recovery. Typed runtime-alone compensation preserves
-intervening numeric movements through fresh corrective admission. Created-output
-field manifests and native projection supply original role-bound values after
-live edits and retirement; owner checks cover field meaning and suppressed-read
-refusals. Bank adoption
-and its accounting/process courts remain pending. Phases 3–4 remain held until
-this phase is certified.
+**Certified and closed.** The complete public correction example establishes
+program compatibility, required-output settlement, authored create/delete
+correspondence, compensation, composite definition publication, same-head races
+and cancellation. Real partial-publication and unwind regressions preserve the
+original owner, recover under fresh authority, complete exact replay and normal
+close, and execute the corrected conditional through its canonical subscription.
+Focused Signal and World controls establish original permit/candidate retention
+and exact successor custody. Query workflow and Bank accounting, estate,
+approved-payment and authenticated process courts establish their actual
+continuation, external-effect and compensation boundaries. Independent source
+and evidence reviews cleared the corrections. Boundary enforcement, generated
+contexts, scoped formatting, line caps and whitespace checks pass; the facade
+snapshot adds the intended exports without new documentation debt.
 
 Extend that path to owner definition successors, program compatibility, required-output
 reconciliation, compensation, workflow/inbound dispositions and authored create/delete

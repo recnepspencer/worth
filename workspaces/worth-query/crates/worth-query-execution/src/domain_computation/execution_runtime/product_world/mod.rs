@@ -4,6 +4,7 @@ mod application_publication;
 mod bootstrap;
 mod branch_close;
 mod clock;
+mod conditional_recovery;
 mod creation;
 mod history;
 mod installation_denial;

@@ -3,7 +3,7 @@ use super::super::protocol::{
     BankHttpDenialKind, BankHttpMutationOutcome, BankHttpMutationRequest,
 };
 use super::{
-    mutation_command::{admit, reject, AdmittedMoneyCommand, MoneyCommand},
+    mutation_command::{admit, reject, AdmittedMutationCommand, MutationCommand},
     mutation_custody::MutationRecord,
     native_cleanup_custody::*,
 };
@@ -21,7 +21,7 @@ impl super::mutation_executor::BankHttpMutationContinuation {
         request: BankHttpMutationRequest,
     ) -> Result<BankHttpReleasedCleanup, BankHttpMutationOutcome> {
         let command = admit(request, self.transport.maximum_deadline)?;
-        if !matches!(command.command, MoneyCommand::Close) {
+        if !matches!(command.command, MutationCommand::Close) {
             return Err(reject(
                 Some(command.request_id),
                 BankHttpDenialKind::MalformedRequest,
@@ -71,7 +71,7 @@ impl super::mutation_executor::BankHttpMutationContinuation {
 pub(super) async fn execute<A: super::authentication::BankHttpApplicationAuthenticator>(
     application: Arc<A>,
     records: &mut HashMap<String, MutationRecord>,
-    command: AdmittedMoneyCommand,
+    command: AdmittedMutationCommand,
     cancellation: WorthQueryCancellationSource,
     response: oneshot::Sender<
         Result<super::native_cleanup_delivery::CleanupDelivery, BankHttpMutationOutcome>,

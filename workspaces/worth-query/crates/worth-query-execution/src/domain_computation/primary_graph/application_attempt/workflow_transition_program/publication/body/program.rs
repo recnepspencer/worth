@@ -88,6 +88,9 @@ where
                     execution,
                     &context,
                     &interruption,
+                    crate::domain_computation::primary_graph::handler::ConditionalDefinitionAdmission::new(
+                        runtime, read_set.admission.graph_work().mutation_product(),
+                    ),
                 );
                 handler.prepare_decision(identities.mutation_input(), &mut reader)
             },

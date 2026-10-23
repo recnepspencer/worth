@@ -1,6 +1,8 @@
 mod cancellation;
 mod component_plan;
 mod conditional_definition;
+mod conditional_recovery;
+pub use conditional_recovery::PreparedConditionalDefinitionRecovery;
 mod cost_counters;
 mod custody;
 #[cfg(test)]

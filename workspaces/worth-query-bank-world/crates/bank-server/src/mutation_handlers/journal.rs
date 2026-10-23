@@ -5,8 +5,8 @@ use bank_domain::model::{AccountId, AccountJournalRevision};
 use bank_domain::proposals::BankSnapshot;
 use bank_domain::schema::{
     Account, AccountActivityEffect, AccountIdentity, AccountingRevision, ActivityEvent, BankSchema,
-    JournalEntry, JournalIdentityField, JournalPosting, JournalPurpose, Posting, PostingAccount,
-    PostingAccountSequence, PostingAmount, PostingIdentityField, Purpose,
+    JournalEntry, JournalIdentityField, JournalInstitutionContext, JournalPosting, JournalPurpose,
+    Posting, PostingAccount, PostingAccountSequence, PostingAmount, PostingIdentityField, Purpose,
 };
 use worth_query_host::facade::declaration::{
     application_operation::ApplicationMutationBinding,
@@ -33,6 +33,7 @@ where
     JournalEntry: OperationCreates<Binding::Operation>,
     Posting: OperationCreates<Binding::Operation>,
     JournalIdentityField: OperationWrites<Binding::Operation>,
+    JournalInstitutionContext: OperationWrites<Binding::Operation>,
     JournalPurpose: OperationWrites<Binding::Operation>,
     PostingIdentityField: OperationWrites<Binding::Operation>,
     PostingAmount: OperationWrites<Binding::Operation>,
@@ -51,6 +52,10 @@ where
         .ok_or_else(|| HandlerExecutionDenial::new(InvalidJournalCandidate))?
         .account();
     let context = resolve_account::<Binding>(candidate, context_id)?;
+    let institution = proposed
+        .account(context_id)
+        .ok_or_else(|| HandlerExecutionDenial::new(InvalidJournalCandidate))?
+        .institution();
     let journal_entity = candidate
         .create_entity_in_context(
             &context,
@@ -63,6 +68,13 @@ where
             &journal_entity,
             JournalIdentityField::reference(),
             journal.id(),
+        )
+        .map_err(HandlerExecutionDenial::new)?;
+    candidate
+        .initialize_field(
+            &journal_entity,
+            JournalInstitutionContext::reference(),
+            institution,
         )
         .map_err(HandlerExecutionDenial::new)?;
     candidate

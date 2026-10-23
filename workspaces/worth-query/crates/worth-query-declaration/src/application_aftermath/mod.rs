@@ -12,6 +12,10 @@ pub use correction_binding::{
     ApplicationCorrectionVisitor, ApplicationInverseBinding, DeclaredCorrectionBinding,
     DeclaredCorrectionBindingParts,
 };
+pub use correction_binding::{
+    ApplicationAuthoredCorrection, ApplicationAuthoredCorrectionFamily,
+    ApplicationAuthoredLogicalKey, DeclaredAuthoredCorrection, DeclaredAuthoredCorrectionParts,
+};
 pub use correction_binding::{DeclaredCorrectionDisclosure, DeclaredCorrectionDisclosureParts};
 mod correction_authority;
 pub use correction_binding::{

@@ -137,3 +137,17 @@ The control arm stays on that runtime receiver. It produces genuine Relational
 settlement custody before World publication; subsequent recovery uses ordinary
 fresh admission and the original move-only source owner. This adds one exact
 caller to `control-callers.txt` and creates no control or application authority.
+
+## Correction cancellation handoffs
+
+The combined World owner court already proves cancellation after one and both
+component effects, unchanged selected World and retained unpublished custody.
+Reuse that passing evidence. Complete the two public-entry endpoints in the
+existing required-output correction journey: cancel before inverse preparation
+and compare handler contacts, source fields, derived value and exact World head;
+then cancel required-output start after correction publication. The latter must
+return its actual performed-source owner with typed request cancellation, preserve
+the committed inverse and pending derived value, and accept exact correction
+replay while that same owner remains retained. Resume output delivery through a
+fresh lawful request and settle the independently expected calculation. No new
+publication control or parallel test target is required.

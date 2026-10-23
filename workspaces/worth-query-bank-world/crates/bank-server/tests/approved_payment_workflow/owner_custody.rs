@@ -21,6 +21,9 @@ use worth_query_host::facade::primary_graph::{
 use super::assertions::key;
 use super::ready_payment::ReadyPaymentWorld;
 
+#[path = "owner_custody/correction.rs"]
+mod correction;
+
 fn cancel(
     ready: &ReadyPaymentWorld,
     command_key: &str,

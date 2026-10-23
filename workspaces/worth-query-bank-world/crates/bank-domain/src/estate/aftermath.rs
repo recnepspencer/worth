@@ -10,7 +10,7 @@ use worth_query_decl::facade::application_aftermath::{
     DeclaredPreImageLocus, DeclaredReconciliationProcedure, DeclaredRecordedInverse,
 };
 
-use crate::schema::{BankSchema, CapabilityGrantStatusField, EmergencyAccessStatusField, Status};
+use crate::schema::{BankSchema, CapabilityGrantStatusField, EmergencyAccessStatusField};
 
 use super::EstateCapabilityOperation;
 
@@ -46,11 +46,11 @@ pub fn declared_aftermath_for(
                     .expect("estate reconciliation is well-formed"),
             ),
         ),
-        EstateCapabilityOperation::FreezeAccount => Some(runtime_alone_inverse(
-            "unfreeze-account",
-            "estate-freeze-inverse",
-            DeclaredPreImageLocus::from_field(Status::reference()),
-        )),
+        EstateCapabilityOperation::FreezeAccount => Some(
+            DeclaredApplicationAftermathContract::runtime_alone(
+                <crate::schema::RestoreRecordedEstateFreeze as worth_query_decl::facade::application_aftermath::ApplicationCorrectionBinding<BankSchema>>::mechanism(),
+            ),
+        ),
         // Activation and emergency-request create lanes: the grant/access record
         // does not exist yet, so ExactPriorTruth recorded-inverse is not an
         // honest correction. Correction is a separate revoke/approve operation.

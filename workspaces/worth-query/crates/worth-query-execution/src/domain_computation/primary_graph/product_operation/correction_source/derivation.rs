@@ -60,6 +60,7 @@ where
         .original_authority()
         .retained_governed_input_carrier()
         .ok_or(Denial::UnsupportedSourceMeaning)?;
+    let workflow = super::preparation::prepare_workflow::<Schema, C>(target, phase, source)?;
     let input = retained
         .encoded_input::<<C::Source as ApplicationMutationBinding<Schema>>::InputBinding>()
         .ok_or(Denial::UnsupportedSourceMeaning)?;
@@ -82,6 +83,7 @@ where
         inverse.scope_binding(),
         interpretation,
         required_root,
+        workflow,
     )?;
     Ok((input, std::sync::Arc::new(prepared)))
 }

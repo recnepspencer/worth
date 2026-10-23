@@ -42,6 +42,13 @@ fork Relational and reuse Signal, reuse Relational and fork Signal, or fork both
 The product identity never collapses into either component identity. Branches
 that share Signal may advance their Relational histories independently.
 
+To correct a retained operation on a branch, bind an ordinary request with
+`.on_branch(target)` and use its
+[recorded correction entry](../execution/recorded-source-correction.md).
+Selection proves the source belongs to the target's retained ancestry; preparation
+checks current disclosure, program meaning and inverse authority. Publication
+appends one child of that target and preserves its disjoint intervening edits.
+
 A selected occurrence pins exact history for repeatable reads while the branch
 head advances. Closing a product retires its World history first and then any
 private component branches. Retained reads can defer cleanup; the returned

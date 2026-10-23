@@ -95,6 +95,8 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// the same key and input the handler ran with.
     MutationInputMismatch,
     CorrectionContextMismatch,
+    /// The actual inverse output does not preserve its installed authored family correspondence.
+    CorrectionIdentityMismatch,
     /// The installed operation owns an executable body, but the candidate was
     /// not produced by its native executor. Caller-authored effects cannot
     /// substitute another implementation, even within the declared footprint.
@@ -212,6 +214,14 @@ pub struct WorthQueryApplicationCommitDenial {
 }
 
 impl WorthQueryApplicationCommitDenial {
+    pub(crate) fn correction_identity_mismatch(detail: &'static str) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::CorrectionIdentityMismatch,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: Some(detail.into()),
+            cause: None,
+        }
+    }
     pub(crate) const fn correction_context_mismatch() -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::CorrectionContextMismatch,

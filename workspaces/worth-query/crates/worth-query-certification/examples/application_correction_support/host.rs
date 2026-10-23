@@ -21,6 +21,7 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         contracts.producer::<super::calculation::Producer>()?;
         contracts.conditional::<super::calculation_readiness::Readiness>()?;
+        contracts.conditional::<super::composite_definition_runtime::Conditional>()?;
         Ok(())
     }
     fn configure(
@@ -30,7 +31,23 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
         setup.handler::<super::calculation::Binding, _>(super::calculation::Handler)?;
         setup.producer::<super::calculation::Producer>(super::calculation::Provider)?;
         setup.conditional::<super::calculation_readiness::Readiness>(())?;
+        setup.conditional::<super::composite_definition_runtime::Conditional>(())?;
+        setup.handler::<super::composite_definition_model::Binding, _>(
+            super::composite_definition_handler::Handler,
+        )?;
         setup.handler::<edit::EditBinding, _>(edit::Handler)?;
+        setup.handler::<super::authored_identity_model::CreateBinding, _>(
+            super::authored_identity_handlers::Handler,
+        )?;
+        setup.handler::<super::authored_identity_model::RetireBinding, _>(
+            super::authored_identity_handlers::Handler,
+        )?;
+        setup.handler::<super::authored_identity_model::RestoreBinding, _>(
+            super::authored_identity_handlers::Handler,
+        )?;
+        setup.handler::<super::authored_identity_reference::Binding, _>(
+            super::authored_identity_reference::Handler,
+        )?;
         setup.handler::<super::source_output_model::IssueBinding, _>(
             super::source_output_handlers::IssueHandler,
         )?;

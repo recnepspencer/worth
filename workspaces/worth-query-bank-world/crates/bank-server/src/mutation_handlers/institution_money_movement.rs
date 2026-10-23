@@ -99,6 +99,8 @@ where
         worth_query_host::facade::domain::OperationCreates<Binding::Operation>,
     bank_domain::schema::JournalIdentityField:
         worth_query_host::facade::domain::OperationWrites<Binding::Operation>,
+    bank_domain::schema::JournalInstitutionContext:
+        worth_query_host::facade::domain::OperationWrites<Binding::Operation>,
     bank_domain::schema::JournalPurpose:
         worth_query_host::facade::domain::OperationWrites<Binding::Operation>,
     bank_domain::schema::PostingIdentityField:

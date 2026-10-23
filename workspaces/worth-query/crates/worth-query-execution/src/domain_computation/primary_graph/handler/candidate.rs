@@ -27,7 +27,7 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
-    candidate: &'borrow mut WorthQueryApplicationEffectProgramBuilder<
+    pub(super) candidate: &'borrow mut WorthQueryApplicationEffectProgramBuilder<
         Schema,
         Binding::Operation,
         Binding::Input,

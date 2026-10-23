@@ -1,5 +1,10 @@
 //! Typed inverse meaning, visited by the audience that owns ordinary preparation.
+mod authored_identity;
 mod disclosure;
+pub use authored_identity::{
+    ApplicationAuthoredCorrection, ApplicationAuthoredCorrectionFamily,
+    ApplicationAuthoredLogicalKey, DeclaredAuthoredCorrection, DeclaredAuthoredCorrectionParts,
+};
 mod dispatch;
 mod inverse;
 mod source_material;

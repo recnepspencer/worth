@@ -332,6 +332,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowInstanceLayout {
 
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowTransitionLayout {
+    pub(in crate::domain_computation::primary_graph) identity_index_id: DerivedIndexId,
     pub(in crate::domain_computation::primary_graph) output_binding: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) output_count: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) advancer:

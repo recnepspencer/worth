@@ -106,9 +106,6 @@ pub(super) fn install_money_programs(
         .operation_create(WithdrawOperation::reference(), JournalEntry::reference())
         .operation_create(WithdrawOperation::reference(), Posting::reference())
         .money_movement_program(WithdrawOperation::reference())
-        .operation_create(SendMoneyOperation::reference(), JournalEntry::reference())
-        .operation_create(SendMoneyOperation::reference(), Posting::reference())
-        .money_movement_program(SendMoneyOperation::reference())
         .operation_create(
             ReverseJournalOperation::reference(),
             JournalEntry::reference(),
@@ -157,6 +154,25 @@ pub(super) fn install_payment_program(
             InitiateBusinessPaymentOperation::reference(),
             PaymentStatusField::reference(),
         )
+        .operation_write(
+            RejectPaymentOperation::reference(),
+            PaymentStatusField::reference(),
+        )
+        .operation_create(RejectPaymentOperation::reference(), Approval::reference())
+        .operation_link(
+            RejectPaymentOperation::reference(),
+            PaymentApproval::reference(),
+        )
+        .operation_link(
+            RejectPaymentOperation::reference(),
+            ApprovalPrincipal::reference(),
+        )
+}
+
+pub(super) fn install_approved_payment_program(
+    schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
+) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
+    schema
         .operation_create(ApprovePaymentOperation::reference(), Approval::reference())
         .operation_create(
             ApprovePaymentOperation::reference(),
@@ -180,19 +196,6 @@ pub(super) fn install_payment_program(
             ApprovedPaymentSettlementEffect::reference(),
         )
         .money_movement_program(ApprovePaymentOperation::reference())
-        .operation_write(
-            RejectPaymentOperation::reference(),
-            PaymentStatusField::reference(),
-        )
-        .operation_create(RejectPaymentOperation::reference(), Approval::reference())
-        .operation_link(
-            RejectPaymentOperation::reference(),
-            PaymentApproval::reference(),
-        )
-        .operation_link(
-            RejectPaymentOperation::reference(),
-            ApprovalPrincipal::reference(),
-        )
 }
 
 pub(super) fn install_authorization_program(

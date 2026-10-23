@@ -33,7 +33,7 @@ pub(super) enum SignalExecutionRequest<'a, Ctx, F, H> {
 
 pub(super) enum SignalDefinitionPublicationAdmission {
     Prepared(worth_signal::facade::branch::SignalConditionalDefinitionPublicationOperation),
-    Admitted(worth_signal::facade::branch::AdmittedSignalConditionalDefinitionPublication),
+    Retained(std::sync::Arc<crate::publication::ConditionalDefinitionAttemptCustody>),
 }
 
 /// The mutation type used when a publication declares it will not touch the
@@ -68,6 +68,37 @@ where
     {
         match (attempt.plan().signal().posture(), request) {
             (SignalComponentPlanPosture::RetainExact, _) => Ok(()),
+            (SignalComponentPlanPosture::AdoptSettled, request) => {
+                let adopted = attempt
+                    .plan()
+                    .signal()
+                    .settled_adoption()
+                    .expect("settled Signal plan carries original evidence")
+                    .retained_image();
+                progress.set_signal(adopted);
+                attempt.record_progress(progress);
+                let custody = attempt
+                    .conditional_definition_custody()
+                    .expect("conditional adoption carries original custody");
+                if custody.has_binding() {
+                    let activation = match request {
+                        SignalExecutionRequest::AdvanceExact {
+                            admit_activation, ..
+                        }
+                        | SignalExecutionRequest::PublishConditionalDefinition {
+                            admit_activation,
+                            ..
+                        } => admit_activation,
+                        SignalExecutionRequest::RetainExact => {
+                            unreachable!("conditional adoption has an activation continuation")
+                        }
+                    };
+                    if activation(None).is_err() {
+                        return Err(activation_failure(progress.signal().retained_image()));
+                    }
+                }
+                Ok(())
+            }
             (
                 SignalComponentPlanPosture::AdvanceExact,
                 SignalExecutionRequest::AdvanceExact {
@@ -128,28 +159,33 @@ where
             ) => {
                 attempt.counters_mut().record_signal_owner_contact();
                 let signal_cancellation = runtime_cancellation.signal_token();
-                let SignalDefinitionPublicationAdmission::Admitted(publication) = publication
-                else {
+                let SignalDefinitionPublicationAdmission::Retained(custody) = publication else {
                     unreachable!("definition publication is admitted before owner execution")
                 };
-                let mut completion = self
+                let (mut completion, returned_publication) = self
                     .state
                     .signal_definition_publication
                     .advance_exact_with_completion(
                         execution,
-                        publication,
+                        custody.take_publication(),
                         attempt.plan().signal().expected(),
                         runtime_ctx,
                         signal_cancellation,
                         apply,
                     );
+                if let Some(publication) = returned_publication {
+                    custody.retain_publication(publication);
+                }
                 let result = completion.take_result();
                 match result {
                     Some(Ok(mut outcome)) => {
-                        let binding = outcome.take_conditional_definition_advance_binding();
+                        let binding = outcome
+                            .take_conditional_definition_advance_binding()
+                            .expect("definition movement carries binding");
+                        custody.retain_binding(binding);
                         progress.set_signal(SignalAttemptProgress::advanced(outcome));
                         attempt.record_progress(progress);
-                        if admit_activation(binding).is_err() {
+                        if admit_activation(None).is_err() {
                             completion.resume_unwind();
                             return Err(activation_failure(progress.signal().retained_image()));
                         }

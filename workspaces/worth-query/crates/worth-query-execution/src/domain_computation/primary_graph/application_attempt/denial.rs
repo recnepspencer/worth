@@ -181,6 +181,7 @@ pub struct WorthQueryApplicationAttemptDenial {
 /// Inspection preserves the original owner cause.
 #[derive(Debug)]
 enum AttemptDenialCause {
+    IndexedLookup(Box<worth_relational::facade::indexes::BoundedEntityFieldLookupDenial>),
     OutputObservation(Box<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop>),
     None,
     RelationalExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
@@ -351,6 +352,7 @@ mod output_observation;
 impl std::error::Error for WorthQueryApplicationAttemptDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &self.cause {
+            AttemptDenialCause::IndexedLookup(denial) => Some(denial.as_ref()),
             AttemptDenialCause::OutputObservation(stop) => Some(stop.as_ref()),
             AttemptDenialCause::NativeQueryRead(stop) => Some(stop.as_ref()),
             AttemptDenialCause::RetainedSource(denial) => Some(denial.as_ref()),
@@ -372,3 +374,4 @@ mod expression;
 mod request_read;
 
 mod capacity;
+mod indexed_lookup;

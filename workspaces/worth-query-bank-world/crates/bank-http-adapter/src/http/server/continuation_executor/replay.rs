@@ -5,7 +5,7 @@ use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequ
 use super::{
     denied, malformed, query_denial, AdmittedPageRequest, BankHttpAccountActivityPageOutcome,
     BankHttpApplicationAuthenticator, BankHttpContinuationRegistry, BankHttpDenial,
-    BankHttpDenialKind, BankHttpNextAction, BankHttpRequestControls,
+    BankHttpDenialKind, BankHttpNextAction,
 };
 
 pub(super) fn revokes_cached_access(denial: BankHttpDenial) -> bool {
@@ -22,7 +22,6 @@ pub(super) fn revalidate_replay<A>(
     application: &A,
     principal: &BankAuthenticatedPrincipal,
     account: AccountId,
-    controls: &BankHttpRequestControls,
     scope: &WorthQueryRequestScope,
 ) -> Result<(), BankHttpDenial>
 where

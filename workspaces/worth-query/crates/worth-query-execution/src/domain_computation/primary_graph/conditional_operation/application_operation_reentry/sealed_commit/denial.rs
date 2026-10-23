@@ -210,7 +210,8 @@ fn classify_kind(kind: Kind) -> Outcome {
         | Kind::ProgramSupportRetired
         | Kind::ProgramActivationUnresolved
         | Kind::RecoveryHandoffMismatch { .. }
-        | Kind::CorrectionContextMismatch => {
+        | Kind::CorrectionContextMismatch
+        | Kind::CorrectionIdentityMismatch => {
             Outcome::TerminalFailure(Terminal::ApplicationCommit(kind))
         }
     }

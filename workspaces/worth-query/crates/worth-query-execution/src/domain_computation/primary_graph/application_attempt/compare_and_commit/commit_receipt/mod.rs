@@ -134,6 +134,16 @@ impl WorthQueryApplicationCommitReceipt {
         &self.commit
     }
 
+    /// Exact historical coordinates for selection after this receipt is released.
+    pub fn correction_source(
+        &self,
+    ) -> crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource {
+        crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource::from_untrusted_parts(
+            self.committed_product_publication.composite_commit().clone(),
+            self.commit.clone(),
+        )
+    }
+
     pub const fn committed_product_publication(
         &self,
     ) -> &super::WorthQueryCommittedProductPublication {

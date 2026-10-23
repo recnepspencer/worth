@@ -23,7 +23,6 @@ pub(super) fn install(
         .operation_projection_work_budget(view, 32)
         .operation_read_field(view, EstateCaseIdentityField::reference());
     let schema = lifecycle::install(schema);
-    let schema = freeze_account::install(schema);
     let schema = delegation::install(schema);
     let schema = capability_revocation::install(schema);
     let schema = recognize_executor::install(schema);

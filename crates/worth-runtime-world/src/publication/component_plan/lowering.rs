@@ -28,6 +28,7 @@ pub(crate) fn lower_component_plans(
     expected: ResolvedExpectedProductHead,
     prepared_candidate: Option<PreparedRelationalCommitCandidate>,
     settled_adoption: Option<crate::publication::SettledRelationalPublicationAdoption>,
+    settled_signal_adoption: Option<crate::publication::SignalAttemptProgress>,
 ) -> Result<LoweredOwnerComponentPlan, NoEffectCompositePublication> {
     let intent = expected.intent().clone();
     let expected_head = expected.expected().clone();
@@ -39,7 +40,13 @@ pub(crate) fn lower_component_plans(
         settled_adoption,
         &expected_head,
     )?;
-    let signal = lower_signal_plan(basis.signal_basis().clone(), intent.changes_signal());
+    let signal = match settled_signal_adoption {
+        Some(progress) if intent.changes_signal() && progress.successor_basis().is_some() => {
+            SignalComponentPlan::adopt_settled(basis.signal_basis().clone(), progress)
+        }
+        Some(_) => return Err(lowering_denied(&expected_head)),
+        None => lower_signal_plan(basis.signal_basis().clone(), intent.changes_signal()),
+    };
     Ok(LoweredOwnerComponentPlan::new(expected, relational, signal))
 }
 

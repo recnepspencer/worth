@@ -71,12 +71,16 @@ impl SignalConditionalDefinitionAdvanceBinding {
         publication_scope: &SignalConditionalDefinitionPublicationScope,
         predecessor: &AdmittedSignalBranchBasis,
         incarnation: SignalBranchCellIncarnation,
-    ) -> Option<AdmittedSignalBranchBasis> {
-        (Arc::ptr_eq(&self.service_authority, service_authority)
+    ) -> Result<AdmittedSignalBranchBasis, Self> {
+        if Arc::ptr_eq(&self.service_authority, service_authority)
             && self.publication_scope.matches(publication_scope)
             && self.predecessor.admission_identity() == predecessor.admission_identity()
             && self.predecessor.observation() == predecessor.observation()
-            && self.incarnation == incarnation)
-            .then_some(self.successor)
+            && self.incarnation == incarnation
+        {
+            Ok(self.successor)
+        } else {
+            Err(self)
+        }
     }
 }

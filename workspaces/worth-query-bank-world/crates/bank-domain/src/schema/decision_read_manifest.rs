@@ -80,21 +80,6 @@ fn install_money_movement_reads(
         install_institution_movement_reads(schema, ApplyOpeningFundingOperation::reference());
     let schema = install_institution_movement_reads(schema, DepositOperation::reference());
     let schema = install_institution_movement_reads(schema, WithdrawOperation::reference());
-    let schema = schema
-        .operation_read_field(
-            SendMoneyOperation::reference(),
-            AccountIdentity::reference(),
-        )
-        .operation_read_field(
-            SendMoneyOperation::reference(),
-            AccountingRevision::reference(),
-        )
-        .operation_read_field(SendMoneyOperation::reference(), Status::reference())
-        .operation_read_field(
-            SendMoneyOperation::reference(),
-            PrincipalIdentityField::reference(),
-        )
-        .operation_read_relation(SendMoneyOperation::reference(), PersonalOwner::reference());
     install_reversal_reads(schema)
 }
 
@@ -139,10 +124,15 @@ fn install_payment_reads(
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
     let schema =
         install_account_projection_reads(schema, InitiateBusinessPaymentOperation::reference());
-    let schema = install_accounting_projection_reads(schema, ApprovePaymentOperation::reference());
-    let schema = install_payment_projection_reads(schema, ApprovePaymentOperation::reference());
     let schema = install_account_projection_reads(schema, RejectPaymentOperation::reference());
     install_payment_projection_reads(schema, RejectPaymentOperation::reference())
+}
+
+pub(super) fn install_approved_payment_reads(
+    schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
+) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
+    let schema = install_accounting_projection_reads(schema, ApprovePaymentOperation::reference());
+    install_payment_projection_reads(schema, ApprovePaymentOperation::reference())
 }
 
 fn install_account_access_reads(

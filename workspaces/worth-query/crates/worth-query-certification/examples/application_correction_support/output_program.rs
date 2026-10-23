@@ -103,6 +103,9 @@ impl ApplicationProgramDefinition<NumericSchema> for OutputProgram {
         vec![
             super::compensation_movement::feature(),
             super::source_output_model::feature(),
+            super::composite_definition_model::feature(),
+            super::authored_identity_model::feature(),
+            super::authored_identity_reference::feature(),
             ApplicationFeatureSpec::root::<NumericSchema, program::NumericFeature>()
                 .provides::<SourcePort>()
                 .action::<edit::EditBinding, Delivery>()

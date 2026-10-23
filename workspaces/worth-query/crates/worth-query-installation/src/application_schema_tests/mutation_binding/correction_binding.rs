@@ -1,7 +1,9 @@
 //! Resolve descriptive correction associations against actual native inventory.
 use super::*;
 use crate::application_aftermath::resolve_correction_binding;
+mod authored_identity;
 mod disclosure;
+mod external_compensation;
 mod source_outputs;
 use std::{any::TypeId, collections::BTreeMap};
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
@@ -70,6 +72,8 @@ fn parts(source: &ApplicationMutationBindingDescriptor) -> DeclaredCorrectionBin
         source_query: source.source_query_identifier().map(str::to_owned),
         inverse_query: source.source_query_identifier().map(str::to_owned),
         source_output_fields: Vec::new(),
+        authored_identity: None,
+        completed_external_reconciliation: None,
         disclosure: DeclaredCorrectionDisclosure::of::<MutationSchema, disclosure::HistoryBinding>(
         ),
     }

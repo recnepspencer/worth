@@ -87,6 +87,19 @@ pub(super) fn prepare_aftermath_basis(
     builder.text("authority", authority_label(portable.authority()));
     push_correction_contract(&mut builder, portable, reconciliation);
     if let Some(inverse) = portable.correction_binding() {
+        builder.text(
+            "inverse-completed-external-reconciliation-present",
+            inverse
+                .completed_external_reconciliation()
+                .is_some()
+                .to_string(),
+        );
+        builder.text(
+            "inverse-completed-external-reconciliation",
+            inverse
+                .completed_external_reconciliation()
+                .map_or("", |procedure| procedure.procedure_slot()),
+        );
         for (field, value) in inverse.disclosure().canonical_fields() {
             builder.text(format!("inverse-disclosure-{field}"), value);
         }

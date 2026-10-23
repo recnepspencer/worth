@@ -18,6 +18,8 @@ pub enum ApplicationCorrectionSourceFieldDenial {
 /// Historical material selected by the original operation's installed mechanism.
 /// This read-only value supplies no current operation authority.
 pub enum ApplicationCorrectionSourceMaterial<'source, Schema> {
+    /// Original created-output fields for a declared Create-to-Retire inverse.
+    CreatedEntity(&'source dyn ApplicationCorrectionSourceOutputs<Schema>),
     RecordedInverse(&'source dyn ApplicationCorrectionPreImage<Schema>),
     Compensation(&'source dyn ApplicationCorrectionSourceOutputs<Schema>),
 }

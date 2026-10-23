@@ -8,15 +8,33 @@ use worth_signal::facade::branch::AdmittedSignalBranchBasis;
 pub enum SignalComponentPlanPosture {
     RetainExact,
     AdvanceExact,
+    /// Adopt the exact advanced owner result retained by a recovery record.
+    /// This posture performs no further Signal owner mutation.
+    AdoptSettled,
 }
 
 #[derive(Debug)]
 pub struct SignalComponentPlan {
     posture: SignalComponentPlanPosture,
     expected: AdmittedSignalBranchBasis,
+    adoption: Option<crate::publication::SignalAttemptProgress>,
 }
 
 impl SignalComponentPlan {
+    pub(crate) fn adopt_settled(
+        expected: AdmittedSignalBranchBasis,
+        progress: crate::publication::SignalAttemptProgress,
+    ) -> Self {
+        Self {
+            posture: SignalComponentPlanPosture::AdoptSettled,
+            expected,
+            adoption: Some(progress),
+        }
+    }
+
+    pub(crate) fn settled_adoption(&self) -> Option<&crate::publication::SignalAttemptProgress> {
+        self.adoption.as_ref()
+    }
     pub const fn posture(&self) -> SignalComponentPlanPosture {
         self.posture
     }
@@ -29,6 +47,7 @@ impl SignalComponentPlan {
         Self {
             posture: SignalComponentPlanPosture::RetainExact,
             expected,
+            adoption: None,
         }
     }
 
@@ -36,6 +55,7 @@ impl SignalComponentPlan {
         Self {
             posture: SignalComponentPlanPosture::AdvanceExact,
             expected,
+            adoption: None,
         }
     }
 }

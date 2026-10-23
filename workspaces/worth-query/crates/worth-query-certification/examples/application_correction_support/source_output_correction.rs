@@ -70,8 +70,8 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordIssued {
             payload,
         })
     }
-    fn inverse_key(key: &str) -> String {
-        format!("record-issued:{key}")
+    fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
+        Ok(format!("record-issued:{key}"))
     }
     fn visit<V: ApplicationCorrectionVisitor<NumericSchema>>(
         dispatch: ApplicationCorrectionDispatch<NumericSchema, Self, V>,

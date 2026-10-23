@@ -8,6 +8,8 @@ pub(in crate::domain_computation) use correction::OriginalCorrectionDisclosure;
 mod commit_causality;
 pub(crate) use commit_causality::ApplicationCommitCausality;
 mod causal_fact;
+mod correction_coordinates;
+pub use correction_coordinates::WorthQueryCorrectionSourceCoordinates;
 pub mod derivation_failure;
 pub mod external_effect;
 mod governed_input;

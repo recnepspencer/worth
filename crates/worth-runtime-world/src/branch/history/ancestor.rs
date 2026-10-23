@@ -31,6 +31,10 @@ impl ProductBranchAncestorSelection {
     }
 }
 
+/// Identifies whether exact ancestor selection stopped at current branch
+/// admission or at retained-history lookup. The nested cause preserves the
+/// owner's distinction between stale selection, unavailable history and work
+/// that reached its requested traversal bound.
 #[derive(Debug)]
 pub enum ProductBranchAncestorSelectionDenial {
     Branch(RuntimeWorldBranchAdmissionDenial),

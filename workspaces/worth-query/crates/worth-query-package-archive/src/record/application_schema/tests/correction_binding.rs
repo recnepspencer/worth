@@ -25,6 +25,20 @@ fn correction_archive_retains_both_bindings_handlers_queries_and_codecs() {
         inverse_handler: "restore-handler.v2".to_owned(),
         source_query: Some("amount-before.v1".to_owned()),
         inverse_query: Some("amount-current.v2".to_owned()),
+        completed_external_reconciliation: Some(worth_query_declaration::facade::application_aftermath::DeclaredReconciliationProcedure::new("settled-source-local-compensation").unwrap()),
+        authored_identity: Some(worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrection::from_untrusted_parts(
+            worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrectionParts {
+                family: identity("authored-account.v1"), source_role: "retired".to_owned(), inverse_role: "restored".to_owned(),
+                source_posture: worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture::Retire,
+                binding_unit: None,
+                logical_key: Box::new(ApplicationSchemaMember::Field {
+                    entity: "Account".to_owned(), aspect: "State".to_owned(), field: "name".to_owned(),
+                    presence: ApplicationFieldPresence::Required, scalar_family: worth_foundational::facade::ScalarAspectType::String,
+                    value_type: "worth.string".to_owned(), canonical: None, unit: None, frame: None,
+                    writable: false, equality_queryable: false, unique: false,
+                }),
+            },
+        )),
         source_output_fields: vec![DeclaredCorrectionOutputField::from_untrusted_parts(DeclaredCorrectionOutputFieldParts {
             source_binding: identity("set-amount.v1"), role: "created-account".to_owned(),
             entity: "Account".to_owned(), aspect: "State".to_owned(), field: "id".to_owned(),
@@ -57,6 +71,18 @@ fn correction_archive_retains_both_bindings_handlers_queries_and_codecs() {
     let bytes = encode_member(&member);
     assert_eq!(decode_member(&bytes), member);
     assert_eq!(encode_member(&decode_member(&bytes)), bytes);
+
+    // Independent wire expectation: present option, u32 text width, exact procedure.
+    // An encoder/decoder pair that drops the explicit external opt-in cannot pass.
+    let external_suffix = b"\0\x01\0\0\0\x21settled-source-local-compensation";
+    assert!(bytes.ends_with(external_suffix));
+    let mut invalid_option = bytes.clone();
+    let option = bytes.len() - external_suffix.len();
+    invalid_option[option + 1] = 2;
+    assert_eq!(
+        try_decode_member(&invalid_option).unwrap_err().kind(),
+        crate::facade::WorthQueryPackageArchiveDenialKind::UnsupportedRecordVariant,
+    );
 
     // Losing any suffix of the association cannot silently degrade to descriptive aftermath.
     for end in [bytes.len() - 1, bytes.len() - "amount-current.v2".len()] {

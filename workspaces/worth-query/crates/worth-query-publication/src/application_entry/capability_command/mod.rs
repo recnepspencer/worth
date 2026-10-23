@@ -84,6 +84,22 @@ pub struct WorthQueryCapabilityCommand<
 impl<'r, S: ApplicationSchema, P: ApplicationProgramDefinition<S>, D>
     WorthQueryCapabilityCommand<'r, S, P, D>
 {
+    /// Describes this native command's current publication custody.
+    pub fn posture(&self) -> super::WorthQuerySourceOnlyPosture {
+        use super::WorthQuerySourceOnlyPosture as Posture;
+        use NativePublicationState as State;
+        match &self.state {
+            State::Initial => Posture::Initial,
+            State::RetryableNoEffect(_) => Posture::RetryableNoEffect,
+            State::Unpublished(_) => Posture::ProductUnpublished,
+            State::Performed(_) => Posture::RecoveryPerformed,
+            State::Keyed(WorthQueryApplicationUncommitted::Aborted) => Posture::ProvedAborted,
+            State::Keyed(_) | State::UnresolvedAdvancement(_) => Posture::Indeterminate,
+            State::Stopped(_) => Posture::Terminal,
+            State::AdmissionStopped(never) | State::RetainedPending(never) => match *never {},
+        }
+    }
+
     pub(super) fn new(
         runtime: WorthQueryProgramApplicationRuntime<S, P>,
         branch: WorthQueryProductBranch,

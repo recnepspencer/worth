@@ -9,7 +9,11 @@ use worth_query_declaration::facade::{
 };
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
 mod binding;
+mod operation;
 mod required_output;
+pub use operation::{
+    WorthQueryOperationCorrectionPreparation, WorthQueryPreparedOperationCorrection,
+};
 pub use required_output::{
     WorthQueryPreparedRequiredCorrection, WorthQueryRequiredCorrectionPreparation,
 };

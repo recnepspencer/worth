@@ -63,6 +63,7 @@ pub(super) fn request(
         )
         | Request::Stopped(
             MapKernelStop::WorkCounterOverflow
+            | MapKernelStop::AccountingUnavailable
             | MapKernelStop::WorkCeiling
             | MapKernelStop::NestedStopped,
         )

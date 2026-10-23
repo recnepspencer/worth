@@ -60,6 +60,20 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self.product_runtime.operation_control_for_test()
     }
 
+    /// Delegates certification faults to the installed Bridge's original
+    /// Signal owner; it cannot create a publication or replacement owner.
+    #[doc(hidden)]
+    pub fn signal_operation_control_for_test(
+        &self,
+    ) -> Result<
+        worth_signal::facade::branch::SignalOwnerOperationControlForTest,
+        worth_signal::facade::branch::SignalOwnerUnavailable,
+    > {
+        self.bridge
+            .conditional()
+            .signal_operation_control_for_test()
+    }
+
     /// Arms real contention at the final Product read for late-request tests.
     #[doc(hidden)]
     pub fn pause_product_currentness_for_test(

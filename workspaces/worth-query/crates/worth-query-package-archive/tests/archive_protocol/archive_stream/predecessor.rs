@@ -24,6 +24,6 @@ fn original_pre_actor_all_family_package_is_unsupported_intact_without_a_candida
         WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
     );
     assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
-    assert_eq!(WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION, 10);
+    assert_eq!(WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION, 12);
     assert_eq!(submitted, original.as_slice());
 }

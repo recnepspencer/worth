@@ -25,6 +25,7 @@ pub enum BankApplicationAttemptDenialKind {
     DecisionFactBudgetExceeded,
     AllocationDenied,
     RetainedSourceStorageDenied,
+    CorrectionCaptureDenied,
     MutationPreconditionMismatch,
     SourceRetired,
     SourceChanged,
@@ -151,6 +152,7 @@ const fn application_attempt_kind(
             BankApplicationAttemptDenialKind::ProjectionAdmissionMismatch
         }
         Query::CurrentAuthorityDenied => BankApplicationAttemptDenialKind::CurrentAuthorityDenied,
+        Query::CorrectionCaptureDenied => BankApplicationAttemptDenialKind::CorrectionCaptureDenied,
         Query::OutsideRealizedReadScope => {
             BankApplicationAttemptDenialKind::OutsideRealizedReadScope
         }

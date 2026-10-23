@@ -1,4 +1,5 @@
 //! Authored source selection through the ordinary request and a real performed receipt.
+#![recursion_limit = "256"]
 mod application_correction_support;
 use application_correction_support::publication_courts::*;
 use application_correction_support::{authentication::*, edit::Value, host, query::Row};
@@ -11,12 +12,25 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::primary_graph::WorthQueryCorrectionDerivationDenial;
 
 fn main() {
+    let court = std::env::args().nth(1);
     let (done, completion) = std::sync::mpsc::channel();
     let worker = std::thread::Builder::new()
         .name("application-correction".to_owned())
         .stack_size(64 * 1024 * 1024)
         .spawn(move || {
-            run();
+            match court.as_deref() {
+                None => run(),
+                Some("composite") => application_correction_support::composite_definition_court::run(),
+                Some("composite-recovery") => application_correction_support::composite_definition_recovery::run(),
+                Some("composite-unwind") => application_correction_support::composite_definition_recovery::unwind::run(),
+                Some("authored") => application_correction_support::authored_identity_courts::run(),
+                Some("race") => application_correction_support::correction_race_court::run(),
+                Some("outputs") => {
+                    application_correction_support::required_output_recovery::run();
+                    application_correction_support::required_output_courts::run();
+                }
+                Some(other) => panic!("unknown correction court {other:?}; expected composite, composite-recovery, composite-unwind, authored, race, outputs, or no argument for all"),
+            }
             let _ = done.send(());
         })
         .expect("start the application thread");
@@ -31,6 +45,11 @@ fn main() {
 }
 
 fn run() {
+    application_correction_support::correction_race_court::run();
+    application_correction_support::authored_identity_courts::run();
+    application_correction_support::composite_definition_court::run();
+    application_correction_support::composite_definition_recovery::run();
+    application_correction_support::composite_definition_recovery::unwind::run();
     application_correction_support::source_output_courts::run();
     application_correction_support::compensation_courts::run();
     application_correction_support::required_output_recovery::run();

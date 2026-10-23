@@ -1,4 +1,6 @@
 //! Primary Graph application contracts.
+pub use crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceCoordinates;
+pub use crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource;
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
 
 pub use crate::domain_computation::primary_graph::{
@@ -36,7 +38,9 @@ pub use worth_relational::facade::indexes::{
     DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest,
 };
 pub use worth_relational::facade::lineage::{LineageEventKind, LineageEventRecord};
-pub use worth_relational::facade::mvcc::CompanionPreflightStop;
+pub use worth_relational::facade::mvcc::{
+    CompanionPreflightStop, RelationalOperationInterruption, RelationalPublicationDeferred,
+};
 pub use worth_relational::facade::publication::RecordStructuralChange;
 pub use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 
@@ -282,9 +286,12 @@ pub use crate::domain_computation::{
 };
 pub use worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts;
 pub use worth_runtime_world::facade::{
-    ProductUnpublishedNextAction, ProductUnpublishedRecoveryHandle, RecoveryContinuationContract,
-    RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial, RuntimeWorldRecoveryPage,
-    RuntimeWorldServiceDenial, RuntimeWorldSettledRelationalAdoptionDenial,
+    CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial, NoEffectCause,
+    ProductBranchAncestorSelectionDenial, ProductUnpublishedNextAction,
+    ProductUnpublishedRecoveryHandle, RecoveryContinuationContract,
+    RuntimeWorldBranchAdmissionDenial, RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial,
+    RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial,
+    RuntimeWorldSettledRelationalAdoptionDenial,
 };
 pub use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 

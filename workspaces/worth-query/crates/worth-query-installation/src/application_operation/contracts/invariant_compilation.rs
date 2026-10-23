@@ -79,6 +79,20 @@ fn application_invariant_execution_contract(
         .map_err(|_| ())
 }
 
+impl WorthQueryInvariantExecutionContract {
+    /// Compiles native publication obligations from the installed invariant catalog.
+    /// This carries validation duties without granting application mutation scopes.
+    pub fn for_installed_application_invariants(
+        invariants: &[crate::application_schema::WorthQueryInstalledApplicationInvariantDescriptor],
+    ) -> Result<Self, &'static str> {
+        if invariants.is_empty() {
+            return Ok(Self::NotRequired);
+        }
+        application_invariant_execution_contract(invariants)
+            .map_err(|()| "invalid-installed-application-invariant-contract")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::application_invariant_execution_contract;
@@ -109,6 +123,37 @@ mod tests {
             assert_eq!(custom.maximum_work_units(), work);
             assert_eq!(custom, &descriptor);
         }
+    }
+
+    #[test]
+    fn native_reference_contract_compiles_exact_invariants_without_application_mutation() {
+        let descriptor = custom_invariant(NonZeroU64::new(7));
+        let native =
+            super::WorthQueryInvariantExecutionContract::for_installed_application_invariants(
+                std::slice::from_ref(&descriptor),
+            )
+            .unwrap();
+        let required = native
+            .requirements()
+            .iter()
+            .find_map(|r| r.application_invariant())
+            .unwrap();
+        assert_eq!(required, &descriptor);
+        let (effects, _, control) = super::mutation_contracts(0, &[descriptor]).unwrap();
+        assert!(matches!(
+            effects,
+            super::WorthQueryOperationEffectContract::NotRequired
+        ));
+        assert!(
+            control.requirements().is_empty(),
+            "read-only control retains its original authority"
+        );
+        assert!(
+            super::WorthQueryInvariantExecutionContract::for_installed_application_invariants(&[])
+                .unwrap()
+                .requirements()
+                .is_empty()
+        );
     }
 
     fn custom_invariant(

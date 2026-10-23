@@ -114,6 +114,16 @@ impl CrossGateWorld {
     }
 
     pub(crate) fn commit_with(&self, binding: BankIdempotencyKey) -> BankCommitReceipt {
+        self.commit_with_source(binding).0
+    }
+
+    pub(crate) fn commit_with_source(
+        &self,
+        binding: BankIdempotencyKey,
+    ) -> (
+        BankCommitReceipt,
+        worth_query_host::facade::primary_graph::WorthQueryRecordedCorrectionSource,
+    ) {
         {
             let source_actor = &self.fixture.authenticate_specialist();
             let source_scope = &request_scope();
@@ -146,14 +156,21 @@ impl CrossGateWorld {
             else {
                 panic!("native source completion required")
             };
-            assert!(matches!(
-                source_completed.evidence(),
-                worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
-            ));
+            let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+                receipt,
+                ..
+            } = source_completed.evidence()
+            else {
+                panic!("original notification must produce fresh native source evidence");
+            };
+            let source = receipt.correction_source();
             let closed_source = source_completed
                 .close_with_evidence(&source_request)
                 .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
-            bank_server::BankCommitReceipt::from_closed_source(closed_source)
+            (
+                bank_server::BankCommitReceipt::from_closed_source(closed_source),
+                source,
+            )
         }
     }
 

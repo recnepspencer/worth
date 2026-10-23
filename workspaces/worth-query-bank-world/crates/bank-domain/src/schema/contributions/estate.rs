@@ -10,6 +10,7 @@ use super::super::{estate::install_estate_world, BankSchema};
 worth_query_application_contribution! {
     pub contribution BankEstate in BankSchema {
         identity: "worth.bank.estate.v1",
+        corrections: [crate::schema::RestoreRecordedEstateFreeze],
         members: |schema| {
             let schema = install_estate_world(schema)
                 .ability(ViewEstateCase::reference())

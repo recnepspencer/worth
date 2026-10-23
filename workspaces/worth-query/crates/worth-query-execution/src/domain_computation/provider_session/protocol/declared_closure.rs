@@ -105,7 +105,7 @@ impl WorthQueryProviderPlanDeclarations {
             .application_touches
             .as_ref()
             .is_some_and(|touches| !touches.scopes().is_empty());
-        if closure.touch.is_empty() && !application_touches {
+        if closure.touch.is_empty() && !application_touches && closure.effect.is_empty() {
             return Vec::new();
         }
         self.invariant_requirements

@@ -248,9 +248,7 @@ pub(crate) trait RuntimeWorldOwnerExecutionService {
                 Self::SignalTransactionKey,
             >,
         ) -> Result<(), SignalError>,
-        H: FnOnce(
-            worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding,
-        ) -> Result<(), SignalError>;
+        H: FnOnce() -> Result<(), SignalError>;
 }
 
 #[cfg(test)]

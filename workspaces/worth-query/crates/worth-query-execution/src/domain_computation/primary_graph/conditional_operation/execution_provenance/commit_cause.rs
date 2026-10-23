@@ -51,6 +51,7 @@ pub(super) fn application_commit_cause(
         | Kind::ProgramSupportRetired
         | Kind::ProgramActivationUnresolved
         | Kind::RecoveryHandoffMismatch { .. }
-        | Kind::CorrectionContextMismatch => WorthQueryConditionalExecutionCause::TerminalFailure,
+        | Kind::CorrectionContextMismatch
+        | Kind::CorrectionIdentityMismatch => WorthQueryConditionalExecutionCause::TerminalFailure,
     }
 }

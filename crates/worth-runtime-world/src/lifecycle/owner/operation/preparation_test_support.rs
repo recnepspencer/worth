@@ -163,6 +163,9 @@ pub(super) fn retained_relational_plan(
         SignalComponentPlanPosture::AdvanceExact => {
             SignalComponentPlan::advance_exact(signal_basis)
         }
+        SignalComponentPlanPosture::AdoptSettled => {
+            panic!("settled plans require actual recovery evidence")
+        }
     };
     LoweredOwnerComponentPlan::new(
         resolved,

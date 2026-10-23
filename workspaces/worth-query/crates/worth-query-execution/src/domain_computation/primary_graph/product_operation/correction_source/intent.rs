@@ -11,6 +11,7 @@ use worth_query_declaration::facade::{
 pub struct WorthQueryCorrectionIntent {
     identity: [u8; 32],
     command_key: WorthQueryCorrectionCommandKey,
+    replay_definition_identity: Option<[u8; 32]>,
 }
 
 impl WorthQueryCorrectionIntent {
@@ -56,14 +57,25 @@ impl WorthQueryCorrectionIntent {
         Self {
             identity: digest.finalize().into(),
             command_key: *command_key,
+            replay_definition_identity: None,
         }
+    }
+
+    pub(super) fn with_recorded_definition(
+        mut self,
+        recorded: &crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+    ) -> Self {
+        self.replay_definition_identity = recorded.conditional_definition_identity();
+        self
     }
 
     pub fn bind_idempotency(
         self,
         binding: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
     ) -> crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding {
-        binding.bind_correction_command(&self.command_key.identity(), &self.identity)
+        binding
+            .bind_correction_command(&self.command_key.identity(), &self.identity)
+            .bind_conditional_definition(self.replay_definition_identity.as_ref())
     }
 
     pub(super) fn matches(

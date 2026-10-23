@@ -1,5 +1,4 @@
 //! Certification of admitted workflow approval decisions and exact replay.
-
 use worth_query_host::facade::application_entry::{
     PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
     RequiredWorkflowApproval, WorkflowApprovalDecision, WorkflowDefinitionExpectedPredecessor,
@@ -38,6 +37,8 @@ mod authentication;
 mod back_custody;
 #[path = "workflow_approval/commit_boundary.rs"]
 mod commit_boundary;
+#[path = "workflow_approval/correction.rs"]
+mod correction;
 #[path = "workflow_approval/custody.rs"]
 mod custody;
 #[path = "workflow_approval/effect_currentness.rs"]

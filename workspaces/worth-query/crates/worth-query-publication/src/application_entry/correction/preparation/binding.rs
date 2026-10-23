@@ -13,7 +13,12 @@ pub(super) type Inverse<S, C> = ApplicationInverseBinding<S, C>;
 
 pub(super) enum NativePreparation<'a, S: ApplicationSchema, B: ApplicationMutationBinding<S>> {
     Prepared(super::super::publication::PreparedInverse<'a, S, B>),
-    Settled(crate::application_entry::WorthQueryApplicationMutationOutcome<B::Denial, B::Result>),
+    IntentDrift,
+    Replay {
+        outcome: crate::application_entry::WorthQueryApplicationMutationOutcome<B::Denial, B::Result>,
+        identities: ApplicationOwnedMutationIdentities<S, B>,
+        intent: worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent,
+    },
     PublicationPending,
     ProductUnpublished(worth_runtime_world::facade::ProductUnpublishedRecoveryHandle),
 }
@@ -64,6 +69,11 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
                 &self.request.key,
             )
             .map_err(Denial::Derivation)?;
+        let inverse_key = C::inverse_key(&self.request.key).map_err(|cause| {
+            Denial::Mutation(WorthQueryApplicationRequestMutationDenial::Identity(
+                ApplicationMutationIdentityDenial::Key(cause),
+            ))
+        })?;
         let selected = target
             .select_correction_input::<C>(
                 &access,
@@ -83,14 +93,17 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
                 (input, Some(source), intent)
             }
             WorthQueryCorrectionInputSelection::Replay { intent, input } => (input, None, intent),
-            WorthQueryCorrectionInputSelection::IntentDrift => return Ok(Preparation::Settled(
-                crate::application_entry::WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)),
-            WorthQueryCorrectionInputSelection::PublicationPending => return Ok(Preparation::PublicationPending),
-            WorthQueryCorrectionInputSelection::ProductUnpublished(handle) => return Ok(Preparation::ProductUnpublished(handle)),
+            WorthQueryCorrectionInputSelection::IntentDrift => return Ok(Preparation::IntentDrift),
+            WorthQueryCorrectionInputSelection::PublicationPending => {
+                return Ok(Preparation::PublicationPending)
+            }
+            WorthQueryCorrectionInputSelection::ProductUnpublished(handle) => {
+                return Ok(Preparation::ProductUnpublished(handle))
+            }
         };
         let identities =
             ApplicationOwnedMutationIdentities::<Schema, Inverse<Schema, C>>::with_encoded_input(
-                C::inverse_key(&self.request.key),
+                inverse_key,
                 &input,
             )
             .map_err(|cause| {
@@ -120,7 +133,11 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
                 .resolve_idempotency(phase, &prepared.admission, prepared.idempotency)
                 .map_err(Denial::Mutation)?
                 .ok_or(Denial::RecordedOutcomeUnavailable)?;
-            return Ok(Preparation::Settled(outcome));
+            return Ok(Preparation::Replay {
+                outcome,
+                identities,
+                intent,
+            });
         };
         let owner = request
             .application
@@ -144,7 +161,11 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
             )
             .map_err(Denial::Mutation)?;
         match candidate {
-            CandidatePreparation::Settled(outcome) => Ok(Preparation::Settled(outcome)),
+            CandidatePreparation::Settled(outcome) => Ok(Preparation::Replay {
+                outcome,
+                identities,
+                intent,
+            }),
             CandidatePreparation::Prepared(PreparedCandidate {
                 program, result, ..
             }) => Ok(Preparation::Prepared(
@@ -202,10 +223,12 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
                     publication: Box::new(prepared),
                 },
             ),
-            NativePreparation::Settled(outcome) => Public::Settled(super::super::outcome::erase::<
-                Schema,
-                Inverse<Schema, C>,
-            >(outcome)),
+            NativePreparation::IntentDrift => Public::Settled(crate::application_entry::WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift),
+            NativePreparation::Replay { outcome, .. } => {
+                Public::Settled(super::super::outcome::erase::<Schema, Inverse<Schema, C>>(
+                    outcome,
+                ))
+            }
             NativePreparation::PublicationPending => Public::PublicationPending,
             NativePreparation::ProductUnpublished(handle) => Public::ProductUnpublished(handle),
         })

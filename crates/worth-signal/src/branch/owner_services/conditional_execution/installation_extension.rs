@@ -51,6 +51,11 @@ pub struct SignalConditionalDefinitionPublicationOperation {
 }
 
 impl SignalConditionalDefinitionPublicationOperation {
+    pub(in crate::branch::owner_services) fn advance_scope(
+        &self,
+    ) -> SignalConditionalDefinitionPublicationScope {
+        self.scope.clone()
+    }
     pub(in crate::branch::owner_services) fn into_advance_parts(
         self,
     ) -> (
@@ -217,18 +222,43 @@ where
             SignalConditionalInstallationCustody,
             SignalConditionalExecutionPort<D, I, T>,
         ),
-        SignalConditionalInstallationExtensionDenial,
+        (
+            Self,
+            SignalConditionalDefinitionAdvanceBinding,
+            SignalConditionalInstallationExtensionDenial,
+        ),
     > {
-        let successor_basis = binding
-            .into_successor_if_matches(
-                &self.service_authority,
-                &self.publication_scope,
-                &self.predecessor,
-                self.incarnation,
-            )
-            .ok_or(SignalConditionalInstallationExtensionDenial::SuccessorBindingMismatch)?;
+        let successor_basis = match binding.into_successor_if_matches(
+            &self.service_authority,
+            &self.publication_scope,
+            &self.predecessor,
+            self.incarnation,
+        ) {
+            Ok(basis) => basis,
+            Err(binding) => {
+                return Err((
+                    self,
+                    binding,
+                    SignalConditionalInstallationExtensionDenial::SuccessorBindingMismatch,
+                ))
+            }
+        };
         let service = self.successor_service.complete(successor_basis);
         Ok((self.contract, self.custody, service))
+    }
+}
+
+impl<D, I, T> std::fmt::Debug for SignalConditionalInstallationExtensionCompletion<D, I, T>
+where
+    D: Copy + Ord + std::fmt::Debug + 'static,
+    I: Copy + Ord,
+    T: Copy + Ord,
+{
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("SignalConditionalInstallationExtensionCompletion")
+            .field("predecessor", &self.predecessor)
+            .finish_non_exhaustive()
     }
 }
 

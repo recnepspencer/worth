@@ -8,6 +8,7 @@ pub(in crate::domain_computation::primary_graph) mod adoption;
 mod approval;
 mod assessment;
 pub(in crate::domain_computation::primary_graph) mod captured_input;
+pub(in crate::domain_computation::primary_graph) mod correction;
 pub(in crate::domain_computation::primary_graph) mod definition;
 pub(in crate::domain_computation::primary_graph) mod evidence_dependency;
 pub(in crate::domain_computation::primary_graph) mod instance;

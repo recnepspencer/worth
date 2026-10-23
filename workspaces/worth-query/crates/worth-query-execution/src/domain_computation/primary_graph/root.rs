@@ -187,6 +187,9 @@ impl WorthQueryPrimaryGraph {
             .chain(std::iter::once(
                 self.layout.workflow().captured_input.identity_index_id,
             ))
+            .chain(std::iter::once(
+                self.layout.workflow().transition.identity_index_id,
+            ))
             .collect::<BTreeSet<_>>()
             .into_iter()
             .collect::<Vec<_>>()

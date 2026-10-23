@@ -8,7 +8,8 @@ pub use inspection::{WorthQueryApplicationCorrection, WorthQueryCorrectionApplic
 pub use outcome::{WorthQueryApplicationCorrectionOutcome, WorthQueryCorrectionValue};
 pub use preparation::{
     WorthQueryApplicationCorrectionPreparation, WorthQueryApplicationCorrectionRequest,
-    WorthQueryKeyedApplicationCorrection, WorthQueryPreparedRequiredCorrection,
+    WorthQueryKeyedApplicationCorrection, WorthQueryOperationCorrectionPreparation,
+    WorthQueryPreparedOperationCorrection, WorthQueryPreparedRequiredCorrection,
     WorthQueryRequiredCorrectionPreparation,
 };
 pub use publication::WorthQueryPreparedApplicationCorrection;
@@ -52,6 +53,7 @@ pub enum WorthQueryApplicationCorrectionDenial {
     RecordedOutcomeUnavailable,
     Mutation(super::WorthQueryApplicationRequestMutationDenial),
     RequiredOutputs(super::WorthQueryPerformedMutationExecutionDenial),
+    SourceOperation(super::WorthQueryOperationConstructionDenial),
     ProgramOwner(worth_query_execution::facade::application_installation::WorthQuerySelectedProgramOwnerDenial),
     ExecutionRequest(WorthQueryAdvancementDenial),
     ProductSelection(WorthQueryProductBranchAdmissionDenial),
@@ -85,6 +87,49 @@ impl<'application, 'principal, 'scope, Schema: ApplicationSchema>
 impl<'application, Schema: ApplicationSchema>
     WorthQueryApplicationCorrections<'application, '_, '_, Schema>
 {
+    /// Selects retained native evidence from exact historical coordinates under current authority.
+    pub fn select_recorded(
+        &self,
+        locator: &worth_query_execution::facade::primary_graph::WorthQueryRecordedCorrectionSource,
+        limits: WorthQueryCorrectionHistoryLimits,
+    ) -> Result<
+        WorthQuerySelectedCorrectionSource<'application, Schema>,
+        WorthQueryApplicationCorrectionDenial,
+    > {
+        self.select_coordinates(&locator.coordinates(), limits)
+    }
+
+    /// Resolves received coordinates through native history and current disclosure admission.
+    pub fn select_coordinates(
+        &self,
+        locator: &worth_query_execution::facade::primary_graph::WorthQueryCorrectionSourceCoordinates,
+        limits: WorthQueryCorrectionHistoryLimits,
+    ) -> Result<
+        WorthQuerySelectedCorrectionSource<'application, Schema>,
+        WorthQueryApplicationCorrectionDenial,
+    > {
+        use WorthQueryApplicationCorrectionDenial as Denial;
+        self.application
+            .with_application_advancement(self.scope, |phase| {
+                let target = self
+                    .application
+                    .on_branch(self.branch)
+                    .select(&phase)
+                    .map_err(Denial::ProductSelection)?;
+                target
+                    .select_correction_source_coordinates(
+                        &phase,
+                        self.principal,
+                        self.scope,
+                        locator,
+                        limits.maximum_ancestors,
+                        limits.maximum_disclosure_results,
+                    )
+                    .map_err(Denial::Source)
+            })
+            .map_err(Denial::ExecutionRequest)?
+    }
+
     /// Resolves the performed source and reads its declared disclosure query on this target.
     pub fn select(
         &self,

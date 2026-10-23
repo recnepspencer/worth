@@ -1,5 +1,7 @@
+mod approved_payment_correction;
 mod authentication;
 mod contributions;
+mod correction;
 mod decision_read_manifest;
 mod entities;
 mod estate;
@@ -16,8 +18,10 @@ mod relations;
 mod values;
 mod workflow;
 
+pub use approved_payment_correction::ReverseApprovedPayment;
 pub use authentication::*;
 pub use contributions::{BankAccounts, BankEstate, BankPayments};
+pub use correction::ReverseSentMoney;
 pub use entities::*;
 pub use estate::*;
 pub use fields::*;

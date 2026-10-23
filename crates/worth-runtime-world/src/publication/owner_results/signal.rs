@@ -19,6 +19,14 @@ enum CompositeSignalOwnerResultKind {
 }
 
 impl CompositeSignalOwnerResult {
+    pub(crate) fn settled_advance(&self) -> Option<super::super::SignalAttemptProgress> {
+        match &self.result {
+            CompositeSignalOwnerResultKind::Advanced(outcome) => Some(
+                super::super::SignalAttemptProgress::advanced_arc(std::sync::Arc::clone(outcome)),
+            ),
+            _ => None,
+        }
+    }
     /// Exact owner-issued outcome retained by this composite result.
     pub fn advanced_outcome(&self) -> Option<&SignalBranchAdvanceOutcome> {
         match &self.result {
@@ -92,7 +100,7 @@ impl CompositeSignalOwnerResult {
             SignalComponentPlanPosture::RetainExact => {
                 self.posture() == CompositeComponentChangePosture::RetainExact
             }
-            SignalComponentPlanPosture::AdvanceExact => {
+            SignalComponentPlanPosture::AdvanceExact | SignalComponentPlanPosture::AdoptSettled => {
                 matches!(self.result, CompositeSignalOwnerResultKind::Advanced(_))
             }
         }

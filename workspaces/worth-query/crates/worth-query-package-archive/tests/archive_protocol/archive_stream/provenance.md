@@ -56,3 +56,21 @@ above contain no query, so their payloads preserve the whole-aspect v8 bytes;
 only frame versions and the enclosing archive checksum change. Record8 remains
 unsupported and is tested without payload reinterpretation. Outer archive2,
 manifest1 and release-envelope1 remain unchanged.
+
+Record12 appends the optional authored lifecycle family binding to a correction
+association and its explicit completed-external reconciliation opt-in, following
+record11's historical output-field manifest. The frozen
+minimal, domain-operation, artifact, schema, native-aspect, conditional-binding
+and package-root vectors contain no correction association. Their record12
+expectations therefore change only each record's two-byte version. The minimal
+archive's version changes at bytes 118–119. Its release-envelope counterpart
+changes that nested archive and recalculates only its SHA-256 checksum at bytes
+50–81. These expectations were constructed from the retained record10 vectors
+with PowerShell byte operations and `SHA256.HashData`, independently of the
+production encoder. The record10 archive and envelope remain refusal controls;
+the protocol court also checks record11 rejection. The correction-binding
+roundtrip court carries the actual nonempty authored family and logical key, plus
+a completed-external procedure. That procedure's optional tag, text width and
+bytes are checked against a handwritten wire suffix; its unknown optional tag
+is separately refused. The frozen vectors remain unchanged because they contain
+no correction association.

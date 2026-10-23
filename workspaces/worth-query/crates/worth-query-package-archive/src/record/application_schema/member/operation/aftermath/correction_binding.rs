@@ -1,9 +1,10 @@
 //! Portable encoding of the typed source and corrective action association.
 use worth_query_declaration::facade::application_aftermath::{
-    DeclaredCorrectionBinding, DeclaredCorrectionBindingParts,
+    DeclaredCorrectionBinding, DeclaredCorrectionBindingParts, DeclaredReconciliationProcedure,
 };
 
 use super::super::super::mutation_description;
+mod authored_identity;
 mod disclosure;
 mod source_outputs;
 use crate::denial::WorthQueryPackageArchiveDenial as Denial;
@@ -29,7 +30,17 @@ pub(super) fn write(
         output.text(query)
     })?;
     disclosure::write(output, binding.disclosure())?;
-    source_outputs::write(output, binding.source_output_fields())
+    source_outputs::write(output, binding.source_output_fields())?;
+    write_optional(
+        output,
+        binding.authored_identity(),
+        authored_identity::write,
+    )?;
+    write_optional(
+        output,
+        binding.completed_external_reconciliation(),
+        |output, procedure| output.text(procedure.procedure_slot()),
+    )
 }
 
 pub(super) fn decode(
@@ -47,6 +58,14 @@ pub(super) fn decode(
             inverse_query: decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
             disclosure: disclosure::decode(input)?,
             source_output_fields: source_outputs::decode(input, budget)?,
+            authored_identity: decode_optional(input, authored_identity::decode)?,
+            completed_external_reconciliation: decode_optional(input, |input| {
+                DeclaredReconciliationProcedure::new(input.text()?.to_owned()).map_err(|_| {
+                    Denial::new(
+                        crate::denial::WorthQueryPackageArchiveDenialKind::InvalidRecordShape,
+                    )
+                })
+            })?,
         },
     ))
 }

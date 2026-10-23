@@ -26,8 +26,39 @@ pub(super) fn mechanism<'a, S: ApplicationSchema>(
         .original_authority()
         .installed_aftermath()
         .ok_or(Denial::UnsupportedSourceMeaning)?;
-    if contract.authority() != InstalledCorrectionAuthority::RuntimeAlone {
-        return Err(Denial::UnsupportedSourceMeaning);
+    match contract.authority() {
+        InstalledCorrectionAuthority::RuntimeAlone => {}
+        InstalledCorrectionAuthority::RuntimeWithExternalOwner
+            if contract
+                .completed_external_reconciliation()
+                .is_some_and(|declared| {
+                    contract.reconciliation().is_some_and(|installed| {
+                        declared.procedure_slot() == installed.procedure_slot()
+                    })
+                })
+                && contract.correction_disclosure().is_some()
+                && matches!(
+                    contract.mechanism(),
+                    Some(InstalledCorrectionMechanism::Compensation(_))
+                )
+                && source
+                    .occurrence()
+                    .commit_evidence()
+                    .workflow_origin()
+                    .is_some() =>
+        {
+            match source.application.resolve_correction_external_settlement(source.occurrence()) {
+                Ok(true) => {},
+                Ok(false) => return Err(Denial::Workflow(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
+                        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody,
+                        "original external workflow operation has no authenticated completion",
+                    ),
+                )),
+                Err(_) => return Err(Denial::UnsupportedSourceMeaning),
+            }
+        }
+        _ => return Err(Denial::UnsupportedSourceMeaning),
     }
     contract.mechanism().ok_or(Denial::UnsupportedSourceMeaning)
 }
@@ -38,6 +69,16 @@ pub(super) fn derive<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
     input: &<C::Source as ApplicationMutationBinding<S>>::Input,
 ) -> Result<C::InverseIntent, Denial> {
     match mechanism(source)? {
+        InstalledCorrectionMechanism::RecordedInverse(inverse)
+            if inverse.preimage_demand().loci().is_empty() =>
+        {
+            let outputs = source_outputs::SourceOutputs::<S, C>::new(source, request);
+            let result = C::derive_correction(
+                input,
+                ApplicationCorrectionSourceMaterial::CreatedEntity(&outputs),
+            );
+            finish_derivation(result, outputs.take_failure())
+        }
         InstalledCorrectionMechanism::RecordedInverse(_) => {
             let preimage = source
                 .occurrence()

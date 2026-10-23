@@ -105,6 +105,12 @@ pub struct DeclaredPreImageDemand<Schema> {
 }
 
 impl<Schema> DeclaredPreImageDemand<Schema> {
+    pub(super) fn created_entity() -> Self {
+        Self {
+            loci: Vec::new(),
+            maximum_encoded_bytes: 0,
+        }
+    }
     pub fn new(
         loci: impl IntoIterator<Item = DeclaredPreImageLocus<Schema>>,
         maximum_encoded_bytes: usize,

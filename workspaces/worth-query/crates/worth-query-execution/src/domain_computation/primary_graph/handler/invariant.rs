@@ -66,7 +66,8 @@ where
     operation_scope_binding: &'borrow WorthQueryOperationScopeBinding,
     identities: &'borrow ApplicationMutationIdentities<'borrow, Schema, Binding>,
     execution: &'borrow QueryRequestExecution<'borrow>,
-    context_use: &'borrow Cell<DecisionContextUse>,
+    pub(super) context_use: &'borrow Cell<DecisionContextUse>,
+    pub(super) conditional_definitions: super::ConditionalDefinitionAdmission<'borrow, Schema>,
     interruption: &'borrow Cell<Option<HandlerInterruption>>,
 }
 
@@ -94,6 +95,7 @@ where
         execution: &'borrow QueryRequestExecution<'borrow>,
         context_use: &'borrow Cell<DecisionContextUse>,
         interruption: &'borrow Cell<Option<HandlerInterruption>>,
+        conditional_definitions: super::ConditionalDefinitionAdmission<'borrow, Schema>,
     ) -> Self {
         Self {
             reader,
@@ -104,6 +106,7 @@ where
             execution,
             context_use,
             interruption,
+            conditional_definitions,
         }
     }
 

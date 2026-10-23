@@ -13,6 +13,8 @@ use worth_runtime_bridge::facade::{
 mod fixture;
 use fixture::{definition_world, source_free_request};
 
+#[path = "definition_publication/combined_recovery.rs"]
+mod combined_recovery;
 #[path = "definition_publication/recovery.rs"]
 mod recovery;
 #[path = "definition_publication/resource_budget.rs"]

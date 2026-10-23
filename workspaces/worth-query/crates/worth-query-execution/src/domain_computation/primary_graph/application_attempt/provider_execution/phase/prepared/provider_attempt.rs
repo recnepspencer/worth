@@ -31,6 +31,7 @@ pub(super) fn prepare_application_provider_attempt(
     )
     .map(|prepared| {
         prepared
+            .with_workflow_origin(preparation.workflow_origin)
             .with_local_action_settlement(preparation.local_action_settlement)
             .with_body_external_emission(preparation.body_external_emission)
             .with_required_output_demand(preparation.required_output_demand)

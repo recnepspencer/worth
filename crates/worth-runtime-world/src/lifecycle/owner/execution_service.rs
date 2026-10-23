@@ -12,6 +12,8 @@ use super::RuntimeWorldOwnerRoot;
 
 #[path = "execution_service/admission.rs"]
 mod admission;
+#[path = "execution_service/conditional_recovery.rs"]
+mod conditional_recovery;
 #[path = "execution_service/relational.rs"]
 mod relational;
 #[path = "execution_service/signal.rs"]
@@ -109,9 +111,7 @@ where
     ) -> OwnerExecutionOutcome
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
-        H: FnOnce(
-            worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding,
-        ) -> Result<(), SignalError>,
+        H: FnOnce() -> Result<(), SignalError>,
     {
         self.execute_publication(
             execution,
@@ -121,12 +121,7 @@ where
                 publication: SignalDefinitionPublicationAdmission::Prepared(publication),
                 runtime_ctx,
                 apply,
-                admit_activation: |binding| match binding {
-                    Some(binding) => admit_activation(binding),
-                    None => Err(SignalError::invalid_input(
-                        "Signal definition publication returned no activation binding",
-                    )),
-                },
+                admit_activation: |_| admit_activation(),
             },
         )
     }
@@ -166,12 +161,18 @@ where
                 .signal_definition_publication
                 .admit(publication, attempt.plan().signal().expected())
             {
-                Ok(publication) => SignalExecutionRequest::PublishConditionalDefinition {
-                    publication: SignalDefinitionPublicationAdmission::Admitted(publication),
-                    runtime_ctx,
-                    apply,
-                    admit_activation,
-                },
+                Ok(publication) => {
+                    let custody = attempt
+                        .conditional_definition_custody()
+                        .expect("conditional publication owns definition custody");
+                    custody.retain_publication(publication);
+                    SignalExecutionRequest::PublishConditionalDefinition {
+                        publication: SignalDefinitionPublicationAdmission::Retained(custody),
+                        runtime_ctx,
+                        apply,
+                        admit_activation,
+                    }
+                }
                 Err(denial) => {
                     return self.no_effect(attempt, signal::map_advance_no_effect(&denial))
                 }
@@ -183,6 +184,12 @@ where
             return self.no_effect(attempt, cause);
         }
 
+        let retained_signal = attempt
+            .plan()
+            .signal()
+            .settled_adoption()
+            .map(SignalAttemptProgress::retained_image)
+            .unwrap_or_else(SignalAttemptProgress::untouched);
         let relational = match self.execute_relational(execution, &mut attempt) {
             Ok(progress) => progress,
             Err(RelationalExecutionFailure {
@@ -190,14 +197,12 @@ where
                 no_effect,
                 partial,
             }) => {
-                let progress =
-                    CompositeAttemptProgress::new(partial, SignalAttemptProgress::untouched());
+                let progress = CompositeAttemptProgress::new(partial, retained_signal);
                 return self.retain_or_no_effect(attempt, progress, cause, no_effect);
             }
         };
         let relational_successor = relational.successor_basis().cloned();
-        let mut progress =
-            CompositeAttemptProgress::new(relational, SignalAttemptProgress::untouched());
+        let mut progress = CompositeAttemptProgress::new(relational, retained_signal);
         attempt.record_progress(&progress);
 
         if progress.relational_requires_settlement() {

@@ -254,7 +254,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 | Kind::ProgramSupportRetired
                 | Kind::ProgramActivationUnresolved
                 | Kind::RecoveryHandoffMismatch { .. }
-                | Kind::CorrectionContextMismatch => failed(identity, commit_denial),
+                | Kind::CorrectionContextMismatch
+                | Kind::CorrectionIdentityMismatch => failed(identity, commit_denial),
             };
             Err(failure
                 .with_commit_denial_kind(kind)

@@ -16,6 +16,16 @@ providers, users, credentials, groups, redirect URIs, and teardown records. It
 must still acquire identity through the supported OIDC flow and may not mint or
 decode-and-trust a token locally.
 
+## Courtroom TLS trust
+
+Cold processes receive `trusted_root_pem` in their `cold_certification`
+configuration. The courtroom CA signs the identity server certificate, and each
+client adds that root to its TLS configuration. Missing or malformed roots fail
+installation. The Selenium container imports the public root into its browser
+NSS database before sessions start; administration HTTP receives the same root.
+Browser sessions use temporary profiles and validate certificates and hostnames.
+Ordinary deployments use their configured TLS roots.
+
 ## Process topology
 
 The completed courtroom contains:

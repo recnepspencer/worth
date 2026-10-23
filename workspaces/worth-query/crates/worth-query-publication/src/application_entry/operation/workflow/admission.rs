@@ -90,7 +90,12 @@ where
         WorthQueryApplicationRecoveryRequestDenial,
     > {
         if self.workflow.is_none() {
-            return native.authorize_owning_recovery(phase, &self.runtime);
+            let mut prepared = native.authorize_owning_recovery(phase, &self.runtime)?;
+            if let Some(intent) = self.recorded_correction {
+                prepared.extension.correction = Some(intent);
+                prepared.idempotency = intent.bind_idempotency(prepared.idempotency);
+            }
+            return Ok(prepared);
         }
         self.bind_workflow_view(native, false);
         let (selected, _) = self.select(phase, request)?;

@@ -15,7 +15,7 @@ use crate::schema::{
     Account, AccountIdentity, ApplyOpeningFundingOperation, BankPrincipalBinding,
     BankPrincipalIdBinding, BankSchema, DepositOperation, ExternalPrincipalMapping, Identity,
     Institution, InstitutionIdentity, InstitutionIdentityField, Principal, SendMoneyOperation,
-    WithdrawOperation,
+    SendMoneyOutputs, WithdrawOperation,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -123,7 +123,7 @@ worth_query_mutation_binding!(
     denial MoneyMovementDenialBinding,
     handler identity "bank.operation.send-money.handler.v1",
     program required,
-    outputs NoApplicationMutationOutputs,
+    outputs SendMoneyOutputs,
     principal BankPrincipalBinding,
         mapping ExternalPrincipalMapping,
         principal_entity Principal,

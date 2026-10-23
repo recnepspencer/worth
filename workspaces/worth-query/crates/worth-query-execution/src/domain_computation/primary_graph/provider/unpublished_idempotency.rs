@@ -149,7 +149,7 @@ impl WorthQueryUnpublishedIdempotencyStore {
             return None;
         }
         let removed = self.by_key.remove(key);
-        self.remove_recovery(handle);
+        self.by_recovery.retain(|(_, candidate)| candidate != key);
         removed
     }
 
@@ -225,8 +225,13 @@ impl super::WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph::provider) fn begin_managed_unpublished_recovery(
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
+        recovery: worth_runtime_world::facade::RuntimeWorldRecoveryPort,
     ) -> Result<ManagedUnpublishedRecoveryGuard, ManagedUnpublishedRecoveryStop> {
-        ManagedUnpublishedRecoveryGuard::begin(Arc::clone(&self.unpublished_idempotency), handle)
+        ManagedUnpublishedRecoveryGuard::begin(
+            Arc::clone(&self.unpublished_idempotency),
+            handle,
+            recovery,
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn reserve_unpublished_application_idempotency(

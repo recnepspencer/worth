@@ -70,6 +70,7 @@ pub enum BankUserNodeMutationRequest {
         custody_id: String,
         sequence: u64,
         controls: BankHttpMutationReadControls,
+        account: String,
     },
     ResumeSource {
         request_id: String,

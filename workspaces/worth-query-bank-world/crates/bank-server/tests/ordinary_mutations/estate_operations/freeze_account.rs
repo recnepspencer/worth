@@ -1,3 +1,7 @@
+#[path = "freeze_account/correction.rs"]
+mod correction;
+#[path = "freeze_account/correction_owner.rs"]
+mod correction_owner;
 #[path = "freeze_account/fixture.rs"]
 pub(crate) mod fixture;
 

@@ -170,6 +170,9 @@ impl ProductBranchObservationMismatch {
     }
 }
 
+/// Why World could not admit the selected branch operation. Stale-source
+/// variants require a new observation and admission; retired or unavailable
+/// history requires the caller to choose an available branch or occurrence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeWorldBranchAdmissionDenial {
     CancelledBeforeEffect,

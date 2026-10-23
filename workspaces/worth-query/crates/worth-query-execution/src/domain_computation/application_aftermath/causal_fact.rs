@@ -42,6 +42,14 @@ pub struct WorthQueryRecordedCorrectionSource {
     relational: RelationalCommitReceipt,
 }
 impl WorthQueryRecordedCorrectionSource {
+    /// Descriptive coordinates to be resolved against retained native evidence.
+    pub fn from_untrusted_parts(
+        world: worth_runtime_world::facade::CompositeCommitIdentity,
+        relational: RelationalCommitReceipt,
+    ) -> Self {
+        Self { world, relational }
+    }
+
     pub fn world(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
         &self.world
     }
@@ -100,6 +108,11 @@ impl WorthQueryPendingAftermathCausality {
     }
     pub(crate) fn recorded_source(&self) -> Option<&WorthQueryRecordedCorrectionSource> {
         self.source.as_ref()
+    }
+    pub(crate) fn prepared_correction(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryPreparedCorrectionSource> {
+        self.correction.as_deref()
     }
 
     pub(crate) fn key(&self) -> String {

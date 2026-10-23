@@ -150,6 +150,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             execution,
                             &context_use,
                             &interruption,
+                            crate::domain_computation::primary_graph::handler::ConditionalDefinitionAdmission::new(
+                                self, admission.graph_work().mutation_product(),
+                            ),
                         );
                         on_contact();
                         handler_contacted = true;

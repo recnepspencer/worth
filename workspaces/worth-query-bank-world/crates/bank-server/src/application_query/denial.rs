@@ -191,7 +191,8 @@ impl BankApplicationQueryDenial {
             }
         }
     }
-    pub(crate) fn from_request_query(denial: WorthQueryApplicationRequestQueryDenial) -> Self {
+    /// Projects an ordinary or correction-disclosure query through the same Bank causes.
+    pub fn from_request_query(denial: WorthQueryApplicationRequestQueryDenial) -> Self {
         match denial {
             WorthQueryApplicationRequestQueryDenial::ExecutionRequest(cause) => {
                 Self::from_execution_request(cause)

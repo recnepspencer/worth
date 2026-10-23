@@ -77,8 +77,7 @@ pub use installation_extension::{
     SignalPreparedConditionalInstallationExtension,
 };
 pub(in crate::branch::owner_services) use installation_extension::{
-    SignalConditionalDefinitionAdvanceMint, SignalConditionalInstallationTarget,
-    SignalPreparedInstallationTarget,
+    SignalConditionalInstallationTarget, SignalPreparedInstallationTarget,
 };
 pub(in crate::branch::owner_services) use issuance::SignalConditionalServiceAuthority;
 pub use issuance::SignalConditionalServiceIssuanceDenial;
