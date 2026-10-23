@@ -1,6 +1,9 @@
 mod aftermath_causality;
 pub(in crate::domain_computation::primary_graph) mod relational_execution_denial;
-pub(in crate::domain_computation) use aftermath_causality::WorthQueryAftermathCausalityReadDenial;
+pub use aftermath_causality::WorthQueryAftermathCausalityReadDenial;
+pub(in crate::domain_computation::primary_graph) use aftermath_causality::{
+    WorthQueryActiveReversalProgress, WorthQueryCanonicalCorrectionFact,
+};
 mod application_attempt_state;
 pub(in crate::domain_computation::primary_graph::provider) use application_attempt_state::publish_recovered;
 pub(in crate::domain_computation::primary_graph) use application_attempt_state::FactlessCurrentness;

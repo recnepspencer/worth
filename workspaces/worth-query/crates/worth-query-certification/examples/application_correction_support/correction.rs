@@ -61,6 +61,14 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordedEdit {
     fn inverse_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
         Ok(format!("numeric-inverse:{key}"))
     }
+    fn reapplication_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
+        Ok(format!("numeric-reapplication:{key}"))
+    }
+    fn visit_reapplication<Visitor: ApplicationReapplicationVisitor<NumericSchema>>(
+        dispatch: ApplicationReapplicationDispatch<NumericSchema, Self, Visitor>,
+    ) -> Visitor::Output {
+        dispatch.conventional()
+    }
     fn visit<Visitor: ApplicationCorrectionVisitor<NumericSchema>>(
         dispatch: ApplicationCorrectionDispatch<NumericSchema, Self, Visitor>,
     ) -> Visitor::Output {

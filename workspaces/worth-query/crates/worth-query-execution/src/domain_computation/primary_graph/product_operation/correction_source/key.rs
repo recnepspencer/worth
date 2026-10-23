@@ -30,11 +30,32 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         request: &WorthQueryRequestScope,
         wire_key: &str,
     ) -> Result<WorthQueryCorrectionCommandKey, WorthQueryCorrectionDerivationDenial> {
+        self.action_command_key::<ApplicationInverseBinding<Schema, C>>(
+            phase, principal, request, wire_key,
+        )
+    }
+    pub fn reapplication_command_key<C: ApplicationCorrectionBinding<Schema>>(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        wire_key: &str,
+    ) -> Result<WorthQueryCorrectionCommandKey, WorthQueryCorrectionDerivationDenial> {
+        self.action_command_key::<C::Source>(phase, principal, request, wire_key)
+    }
+    fn action_command_key<Binding: ApplicationMutationBinding<Schema>>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+        wire_key: &str,
+    ) -> Result<WorthQueryCorrectionCommandKey, WorthQueryCorrectionDerivationDenial> {
         use WorthQueryCorrectionDerivationDenial as Denial;
         let binding = self
             .application()
             .installed_schema()
-            .installed_mutation_binding::<ApplicationInverseBinding<Schema, C>>()
+            .installed_mutation_binding::<Binding>()
             .map_err(|_| Denial::UnsupportedTargetProgram)?;
         let actor = self.resolve_authenticated_principal(phase, binding.principal_binding(), principal,
             request, crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary)

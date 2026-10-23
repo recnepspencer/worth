@@ -48,6 +48,7 @@ where
         maximum_history,
         maximum_results,
     )?;
+    let lineage = super::lineage::reverse_lineage(target, phase, source)?;
     let interpretation = super::compatibility::require_compatible_source::<Schema, C>(
         target,
         phase,
@@ -71,13 +72,19 @@ where
     let input = target.application().capture_operation_input_in_advancement::<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>(
         phase, access, request, inverse.input(),
     ).map_err(Denial::InputCapture)?;
-    let prepared = super::WorthQueryPreparedCorrectionSource::retain::<Schema, C>(
+    let prepared = super::WorthQueryPreparedCorrectionSource::retain::<
+        Schema,
+        C,
+        ApplicationInverseBinding<Schema, C>,
+    >(
         target,
         phase,
         principal,
         request,
         source,
         ancestry,
+        None,
+        lineage,
         key,
         &input,
         inverse.scope_binding(),

@@ -14,7 +14,7 @@ pub fn run() {
 fn history_limits() -> WorthQueryCorrectionHistoryLimits {
     WorthQueryCorrectionHistoryLimits::new(None, std::num::NonZeroUsize::MIN)
 }
-fn adopt<P: ApplicationProgramDefinition<NumericSchema>>(
+pub(super) fn adopt<P: ApplicationProgramDefinition<NumericSchema>>(
     host: &host::Host,
 ) -> WorthQueryPerformedBranchAdoption {
     let target = *host.supported_program::<P>().unwrap().owned_revision();
@@ -145,7 +145,7 @@ fn changed_inverse_refuses() {
     assert!(matches!(
         request.corrections().reverse(&selected).idempotency("changed-inverse").limits(history_limits()).prepare(),
         Err(WorthQueryApplicationCorrectionDenial::Derivation(
-            WorthQueryCorrectionDerivationDenial::InverseAction(
+            WorthQueryCorrectionDerivationDenial::Action(
                 worth_query_installation::facade::WorthQueryActionResolutionDenial::MeaningMismatch))),
     ), "matching inverse binding type cannot conceal changed installed delivery meaning");
     assert_eq!(

@@ -123,7 +123,7 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
         Binding: ApplicationMutationBinding<Schema>,
         Binding::Input: Clone + Send + Sync + 'static,
     {
-        if !source.is_inverse::<Binding>()
+        if !source.is_action_binding::<Binding>()
             || !source.matches_input(identities.input_identity())
             || !source.requires_root(None)
         {

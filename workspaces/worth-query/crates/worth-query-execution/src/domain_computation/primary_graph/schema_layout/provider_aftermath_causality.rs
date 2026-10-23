@@ -22,6 +22,8 @@ const SOURCE_WORLD_OWNER_FIELD: &str = "source-world-owner";
 const SOURCE_WORLD_COMMIT_FIELD: &str = "source-world-commit";
 const SOURCE_BRANCH_FIELD: &str = "source-branch";
 const SOURCE_COMMIT_FIELD: &str = "source-commit";
+mod lineage;
+pub(in crate::domain_computation::primary_graph) use lineage::WorthQueryCorrectionLineageLayout;
 
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryAftermathCausalityLayout {
@@ -36,6 +38,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryAftermathCausa
     pub source_branch_locator: AspectFieldLocator,
     pub source_commit_locator: AspectFieldLocator,
     pub key_index_id: DerivedIndexId,
+    pub lineage: WorthQueryCorrectionLineageLayout,
 }
 
 pub(crate) fn lower_provider_aftermath_causality(
@@ -67,14 +70,14 @@ pub(crate) fn lower_provider_aftermath_causality(
         .optional(SOURCE_WORLD_OWNER_FIELD, ScalarAspectType::UInt64)
         .optional(SOURCE_WORLD_COMMIT_FIELD, ScalarAspectType::UInt64)
         .optional(SOURCE_BRANCH_FIELD, ScalarAspectType::String)
-        .optional(SOURCE_COMMIT_FIELD, ScalarAspectType::UInt64)
-        .finish()
-        .map_err(|_| super::invalid_member(ASPECT))?;
+        .optional(SOURCE_COMMIT_FIELD, ScalarAspectType::UInt64);
+    let (shape, lineage) = lineage::lower(shape)?;
+    let shape = shape.finish().map_err(|_| super::invalid_member(ASPECT))?;
     let contract = aspects()
         .contract()
         .for_key(valid_aspect_key(ASPECT)?)
         .identified_by(identity)
-        .at_revision(aspects().vocabulary().revision(2))
+        .at_revision(aspects().vocabulary().revision(3))
         .struct_aspect(shape);
     let registry = register_entity(
         registry,
@@ -103,6 +106,7 @@ pub(crate) fn lower_provider_aftermath_causality(
             source_branch_locator,
             source_commit_locator,
             key_index_id: DerivedIndexId(0),
+            lineage,
         },
     ))
 }

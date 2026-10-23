@@ -89,6 +89,16 @@ inverse or compensating action. The application declares an
 idempotency key, prepares against the current target, then publishes. The new
 commit records the original source and preserves unrelated intervening edits.
 
+For retained reapplication, enable `visit_reapplication` and implement
+`reapplication_key` on that declaration. Read
+`corrections().alternatives(&source, limits, maximum_entries)` through its
+continuation, and select the caller's chosen reversal from the completed page.
+Then use `corrections().reapply(&alternative).idempotency(key).limits(limits)`
+with the original source action's delivery. The source input is retained, while
+the current request supplies fresh authority. Ordinary edits preserve the
+history choices; the selected branch's canonical relationships determine which
+reversal a new reapplication consumes.
+
 Keep the source selection alive through the correction and its retries. Choose
 `prepare_operation` for an action with source-completion or retained-commit
 delivery, and advance and close the returned owning handle. Fixed required

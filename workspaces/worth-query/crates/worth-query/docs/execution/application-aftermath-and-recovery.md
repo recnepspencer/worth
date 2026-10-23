@@ -75,7 +75,10 @@ publication/refusal are exercised by the public owning certification courts.
 
 Use [recorded source correction](recorded-source-correction.md) to select an
 original receipt, prepare its declared inverse under current authority and
-publish a new child of the target branch.
+publish a new child of the target branch. Its history chooser lists explicit
+reversal alternatives for retained reapplication. Reapplication uses the
+original source input with fresh admission and the source action's installed
+delivery and recovery owners.
 
 ## Ordinary operation recovery
 
@@ -123,10 +126,6 @@ retry or recreate missing one-shot delivery. These deliberate native controls
 are advanced native substrate. Ordinary discovered callers retain the complete
 operation and supply fresh authority to `advance`; they never rebuild these
 requests or extract raw custody to implement a second retry path.
-
-The sealed certification control exercises controlled reservation-capacity
-refusal on the actual abandoned-source vector. It does not claim ordinary
-allocator OOM resilience or enforcement of an execution-memory quota.
 
 ## Authenticated Inbound Completion
 

@@ -34,7 +34,7 @@ where
             + WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
         Source::Input: Clone + Send + Sync + 'static,
     {
-        if !source.is_inverse::<Source>()
+        if !source.is_action_binding::<Source>()
             || !source.matches_input(identities.input_identity())
             || !source.requires_root(Some(TypeId::of::<Root>()))
         {

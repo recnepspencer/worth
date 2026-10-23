@@ -1,16 +1,22 @@
 //! Recorded correction selection through the ordinary fresh request.
+mod alternatives;
 mod inspection;
 mod outcome;
 mod preparation;
 mod publication;
 use super::WorthQueryApplicationRequest;
+pub use alternatives::{
+    WorthQueryApplicationCorrectionAlternatives, WorthQueryCorrectionAlternativeRef,
+    WorthQueryCorrectionAlternativesContinuation, WorthQuerySelectedCorrectionAlternative,
+};
 pub use inspection::{WorthQueryApplicationCorrection, WorthQueryCorrectionApplicability};
 pub use outcome::{WorthQueryApplicationCorrectionOutcome, WorthQueryCorrectionValue};
 pub use preparation::{
     WorthQueryApplicationCorrectionPreparation, WorthQueryApplicationCorrectionRequest,
-    WorthQueryKeyedApplicationCorrection, WorthQueryOperationCorrectionPreparation,
-    WorthQueryPreparedOperationCorrection, WorthQueryPreparedRequiredCorrection,
-    WorthQueryRequiredCorrectionPreparation,
+    WorthQueryApplicationReapplication, WorthQueryApplicationReapplicationRequest,
+    WorthQueryKeyedApplicationCorrection, WorthQueryKeyedApplicationReapplication,
+    WorthQueryOperationCorrectionPreparation, WorthQueryPreparedOperationCorrection,
+    WorthQueryPreparedRequiredCorrection, WorthQueryRequiredCorrectionPreparation,
 };
 pub use publication::WorthQueryPreparedApplicationCorrection;
 use std::num::NonZeroUsize;

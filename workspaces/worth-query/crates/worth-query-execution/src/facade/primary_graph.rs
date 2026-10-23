@@ -1,7 +1,12 @@
 //! Primary Graph application contracts.
 pub use crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceCoordinates;
 pub use crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource;
+pub use crate::domain_computation::application_aftermath::{
+    WorthQueryAftermathCausalRole, WorthQueryCommittedAftermathCausality,
+    WorthQueryCorrectionLineageBinding,
+};
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
+pub use crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial;
 
 pub use crate::domain_computation::primary_graph::{
     WorthQueryExecutionLeaseDenial, WorthQueryPublicationFaultGuardForTest,
@@ -169,6 +174,8 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryConditionalRuntimeLifecycleProbe,
     WorthQueryConditionalRuntimeReinstallationReceipt, WorthQueryConditionalSignalDecision,
+    WorthQueryCorrectionAlternativeRef, WorthQueryCorrectionAlternativeResolution,
+    WorthQueryCorrectionAlternativesContinuation, WorthQueryCorrectionAlternativesPage,
     WorthQueryCorrectionDerivationDenial, WorthQueryCorrectionOutputProjectionDenial,
     WorthQueryCorrectionSelectionDenial, WorthQueryCorrelatedInboundOccurrence,
     WorthQueryCurrentBodyRequirementAssessment, WorthQueryCurrentOutputDenial,
@@ -264,20 +271,21 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryRequiredOutputSourcePreparationFailure, WorthQueryRestoredGeneratedOutput,
     WorthQueryRetainedBatchQueryAdmissionDenial, WorthQueryRetainedGeneratedOutputEntity,
     WorthQueryReviewedElevation, WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
-    WorthQuerySelectedApplicationProducer, WorthQuerySelectedCorrectionSource,
-    WorthQuerySelectedProductOperation, WorthQuerySelectedProgramInspection,
-    WorthQuerySelectedProgramInspectionDenial, WorthQuerySourceExpectationDenial,
-    WorthQuerySourceExpectationDenialKind, WorthQueryStoppedBranchSetAdoption,
-    WorthQuerySuspendedGeneratedOutput, WorthQueryTemporalInvocationFailure,
-    WorthQueryTemporalInvocationFailureKind, WorthQueryTemporalOperationAuthorization,
-    WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker,
-    WorthQueryTemporalPrincipalAdmission, WorthQueryTemporalPrincipalFailure,
-    WorthQueryTemporalPrincipalFailureKind, WorthQueryTemporalPrincipalSource,
-    WorthQueryTemporalQueryAuthorization, WorthQueryTemporalQueryAuthorizationDenial,
-    WorthQueryTemporalReconstructionAccess, WorthQueryTouchedRecordIdentity,
-    WorthQueryUnpublishedBranchAdoption, WorthQueryUnpublishedGeneratedOutputRestoration,
-    WorthQueryValueDecodeDenial, WorthQueryWorkflowDefinitionDisposition,
-    WorthQueryWorkflowDispositions, WorthQueryWorkflowInstanceDisposition,
+    WorthQuerySelectedApplicationProducer, WorthQuerySelectedCorrectionAlternative,
+    WorthQuerySelectedCorrectionSource, WorthQuerySelectedProductOperation,
+    WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial,
+    WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
+    WorthQueryStoppedBranchSetAdoption, WorthQuerySuspendedGeneratedOutput,
+    WorthQueryTemporalInvocationFailure, WorthQueryTemporalInvocationFailureKind,
+    WorthQueryTemporalOperationAuthorization, WorthQueryTemporalOperationExecution,
+    WorthQueryTemporalOperationInvoker, WorthQueryTemporalPrincipalAdmission,
+    WorthQueryTemporalPrincipalFailure, WorthQueryTemporalPrincipalFailureKind,
+    WorthQueryTemporalPrincipalSource, WorthQueryTemporalQueryAuthorization,
+    WorthQueryTemporalQueryAuthorizationDenial, WorthQueryTemporalReconstructionAccess,
+    WorthQueryTouchedRecordIdentity, WorthQueryUnpublishedBranchAdoption,
+    WorthQueryUnpublishedGeneratedOutputRestoration, WorthQueryValueDecodeDenial,
+    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositions,
+    WorthQueryWorkflowInstanceDisposition,
 };
 pub use crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSample;
 pub use crate::domain_computation::{

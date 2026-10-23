@@ -1,4 +1,4 @@
-//! The prepared inverse publishes through its selected native program owner.
+//! The prepared correction action publishes through its selected native program owner.
 use super::{outcome::*, WorthQueryApplicationCorrectionDenial};
 use crate::application_entry::mutation::preparation::CandidateProgram;
 use std::sync::Arc;
@@ -12,7 +12,7 @@ use worth_query_execution::facade::{
 use worth_query_execution::publication_boundary::recorded_correction::WorthQueryPreparedCorrectionSource;
 use worth_query_installation::facade::ApplicationSchema;
 
-/// An inverse candidate retaining its exact historical source and selected target.
+/// A correction candidate retaining its exact historical source and selected target.
 /// Dropping the candidate discards it without publishing effects.
 pub struct WorthQueryPreparedApplicationCorrection<'application> {
     pub(super) publication: Box<dyn CorrectionPublication + 'application>,
@@ -29,7 +29,7 @@ pub(super) trait CorrectionPublication {
         self: Box<Self>,
     ) -> Result<WorthQueryApplicationCorrectionOutcome, WorthQueryApplicationCorrectionDenial>;
 }
-pub(super) struct PreparedInverse<
+pub(super) struct PreparedCorrectionAction<
     'application,
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
@@ -41,7 +41,7 @@ pub(super) struct PreparedInverse<
     pub(super) result: Binding::Result,
     pub(super) source: Arc<WorthQueryPreparedCorrectionSource>,
 }
-impl<Schema, Binding> CorrectionPublication for PreparedInverse<'_, Schema, Binding>
+impl<Schema, Binding> CorrectionPublication for PreparedCorrectionAction<'_, Schema, Binding>
 where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,

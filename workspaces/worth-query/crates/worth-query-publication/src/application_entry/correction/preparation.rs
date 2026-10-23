@@ -9,17 +9,23 @@ use worth_query_declaration::facade::{
 };
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
 mod binding;
+mod candidate;
 mod operation;
+mod reapplication;
 mod required_output;
 pub use operation::{
     WorthQueryOperationCorrectionPreparation, WorthQueryPreparedOperationCorrection,
+};
+pub use reapplication::{
+    WorthQueryApplicationReapplication, WorthQueryApplicationReapplicationRequest,
+    WorthQueryKeyedApplicationReapplication,
 };
 pub use required_output::{
     WorthQueryPreparedRequiredCorrection, WorthQueryRequiredCorrectionPreparation,
 };
 
-/// Preparation either retains an unpublished inverse candidate or returns existing
-/// command evidence and custody. A settled retry does not execute the inverse again.
+/// Preparation retains an unpublished correction candidate or existing command custody.
+/// A settled retry returns the original operation's outcome.
 pub enum WorthQueryApplicationCorrectionPreparation<'application> {
     Prepared(super::publication::WorthQueryPreparedApplicationCorrection<'application>),
     Settled(super::outcome::WorthQueryApplicationCorrectionOutcome),

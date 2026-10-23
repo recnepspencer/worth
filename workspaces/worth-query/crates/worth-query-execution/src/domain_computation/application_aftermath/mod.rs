@@ -33,7 +33,7 @@ pub use derivation_failure::WorthQueryAftermathDerivationFailure;
 pub(crate) use causal_fact::WorthQueryPendingAftermathCausality;
 pub use causal_fact::{
     WorthQueryAftermathCausalRole, WorthQueryCommittedAftermathCausality,
-    WorthQueryRecordedCorrectionSource,
+    WorthQueryCorrectionLineageBinding, WorthQueryRecordedCorrectionSource,
 };
 pub(in crate::domain_computation) use external_effect::dispatch_external_effect;
 #[cfg(test)]

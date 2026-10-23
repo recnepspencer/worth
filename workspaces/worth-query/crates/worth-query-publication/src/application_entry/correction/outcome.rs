@@ -1,10 +1,10 @@
-//! Type-erased domain values retain the actual inverse binding's result and refusal.
+//! Type-erased domain values retain the selected correction action's result and refusal.
 use crate::application_entry::WorthQueryApplicationMutationOutcome;
 use std::any::Any;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_installation::facade::ApplicationSchema;
 
-/// The inverse binding's actual domain result or refusal.
+/// The correction action binding's actual domain result or refusal.
 /// Inspect its binding identity and downcast to the application's declared value type.
 pub struct WorthQueryCorrectionValue {
     binding: &'static str,
@@ -25,7 +25,7 @@ impl std::fmt::Debug for WorthQueryCorrectionValue {
             .finish_non_exhaustive()
     }
 }
-/// Ordinary mutation outcomes with domain values retained under their inverse binding.
+/// Ordinary mutation outcomes with domain values retained under their action binding.
 /// Unpublished and unresolved outcomes preserve their native recovery custody.
 pub type WorthQueryApplicationCorrectionOutcome =
     WorthQueryApplicationMutationOutcome<WorthQueryCorrectionValue, WorthQueryCorrectionValue>;

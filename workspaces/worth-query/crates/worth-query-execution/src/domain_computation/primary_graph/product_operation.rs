@@ -9,10 +9,13 @@ mod conditional_definition;
 mod context;
 pub(in crate::domain_computation::primary_graph) mod correction_source;
 pub use correction_source::{
-    WorthQueryCorrectionCommandKey, WorthQueryCorrectionDerivationDenial,
-    WorthQueryCorrectionInputSelection, WorthQueryCorrectionIntent,
-    WorthQueryCorrectionOutputProjectionDenial, WorthQueryCorrectionSelectionDenial,
-    WorthQueryPreparedCorrectionSource, WorthQuerySelectedCorrectionSource,
+    WorthQueryCorrectionActionInputSelection, WorthQueryCorrectionAlternativeRef,
+    WorthQueryCorrectionAlternativeResolution, WorthQueryCorrectionAlternativesContinuation,
+    WorthQueryCorrectionAlternativesPage, WorthQueryCorrectionCommandKey,
+    WorthQueryCorrectionDerivationDenial, WorthQueryCorrectionInputSelection,
+    WorthQueryCorrectionIntent, WorthQueryCorrectionOutputProjectionDenial,
+    WorthQueryCorrectionSelectionDenial, WorthQueryPreparedCorrectionSource,
+    WorthQuerySelectedCorrectionAlternative, WorthQuerySelectedCorrectionSource,
 };
 mod generated_materialization;
 pub(in crate::domain_computation::primary_graph) use generated_materialization::admit_required_invariants;

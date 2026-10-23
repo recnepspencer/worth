@@ -25,6 +25,7 @@ fn correction_archive_retains_both_bindings_handlers_queries_and_codecs() {
         inverse_handler: "restore-handler.v2".to_owned(),
         source_query: Some("amount-before.v1".to_owned()),
         inverse_query: Some("amount-current.v2".to_owned()),
+        reapplication_source: Some(identity("set-amount.v1")),
         completed_external_reconciliation: Some(worth_query_declaration::facade::application_aftermath::DeclaredReconciliationProcedure::new("settled-source-local-compensation").unwrap()),
         authored_identity: Some(worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrection::from_untrusted_parts(
             worth_query_declaration::facade::application_aftermath::DeclaredAuthoredCorrectionParts {
@@ -74,7 +75,8 @@ fn correction_archive_retains_both_bindings_handlers_queries_and_codecs() {
 
     // Independent wire expectation: present option, u32 text width, exact procedure.
     // An encoder/decoder pair that drops the explicit external opt-in cannot pass.
-    let external_suffix = b"\0\x01\0\0\0\x21settled-source-local-compensation";
+    let external_suffix =
+        b"\0\x01\0\0\0\x21settled-source-local-compensation\0\x01\0\0\0\x0dset-amount.v1";
     assert!(bytes.ends_with(external_suffix));
     let mut invalid_option = bytes.clone();
     let option = bytes.len() - external_suffix.len();
@@ -82,6 +84,15 @@ fn correction_archive_retains_both_bindings_handlers_queries_and_codecs() {
     assert_eq!(
         try_decode_member(&invalid_option).unwrap_err().kind(),
         crate::facade::WorthQueryPackageArchiveDenialKind::UnsupportedRecordVariant,
+    );
+    let mut invalid_reapplication = bytes.clone();
+    let reapplication_option = bytes.len() - b"\0\x01\0\0\0\x0dset-amount.v1".len();
+    invalid_reapplication[reapplication_option + 1] = 2;
+    assert_eq!(
+        try_decode_member(&invalid_reapplication)
+            .unwrap_err()
+            .kind(),
+        crate::facade::WorthQueryPackageArchiveDenialKind::UnsupportedRecordVariant
     );
 
     // Losing any suffix of the association cannot silently degrade to descriptive aftermath.

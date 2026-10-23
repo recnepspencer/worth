@@ -7,6 +7,26 @@ use worth_query_host::facade::application_entry::*;
 use worth_query_host::facade::primary_graph::WorthQueryCorrectionDerivationDenial;
 
 #[test]
+fn retained_reapplication_uses_explicit_alternatives_and_active_consumption() {
+    model::tree_reapplication::run();
+}
+
+#[test]
+fn reapplication_preserves_branch_authority_and_current_source_decisions() {
+    model::tree_controls::run();
+}
+
+#[test]
+fn reapplication_completes_original_required_outputs_and_retries() {
+    model::required_reapplication::run();
+}
+
+#[test]
+fn correction_history_rebuild_preserves_causality_and_source_expiry() {
+    model::history_reapplication::run();
+}
+
+#[test]
 fn performed_source_survives_operation_close_and_receipt_copy() {
     let host = host::install();
     let receipt = host::edit(&host, Value::Primary(11), "original");

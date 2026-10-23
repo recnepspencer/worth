@@ -114,7 +114,6 @@ pub(crate) use provider::WorthQueryPrimaryGraphProvider;
 pub(in crate::domain_computation) use provider::ApplicationFactTable;
 pub(in crate::domain_computation) use provider::CompletedApplicationFacts;
 pub(in crate::domain_computation) use provider::WorthQueryPrimaryGraphApplicationDecisionFact;
-pub(in crate::domain_computation) use provider::WorthQueryAftermathCausalityReadDenial;
 pub(in crate::domain_computation) use provider::WorthQueryUnpublishedIdempotencyDisposition;
 pub(in crate::domain_computation) use application_branch::primary_relational_branch_id;
 pub(in crate::domain_computation) use application_branch::primary_truth_branch_identity;

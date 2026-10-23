@@ -1,6 +1,6 @@
 //! Corrections transfer their exact inverse into the installed action's native source custody.
-use super::binding::{Inverse, NativePreparation};
 use super::*;
+use super::{binding::Inverse, candidate::NativePreparation};
 use crate::application_entry::mutation::authorization::WorthQueryBindingAdmission;
 use crate::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationRetainedMutationOutcome,
@@ -87,22 +87,61 @@ impl<'a, S: ApplicationSchema + 'static> WorthQueryApplicationCorrectionRequest<
                     target.derive_correction_inverse::<C>(access, &phase, principal, scope, source, key,
                         limits.maximum_ancestors, limits.maximum_disclosure_results).map_err(Denial::Derivation)
                 })?;
-            use WorthQueryOperationCorrectionPreparation as Public;
-            Ok(match prepared {
-                NativePreparation::Prepared(inverse) => {
-                    let operation = Operation::<S, Inverse<S, C>, P, A>::retain_recorded_correction(
-                        application, branch, &inverse.identities, inverse.source.intent()).map_err(Denial::SourceOperation)?;
-                    Public::Prepared(WorthQueryPreparedOperationCorrection { inverse, operation })
-                }
-                NativePreparation::Replay { outcome, identities, intent } => {
-                    let operation = Operation::<S, Inverse<S, C>, P, A>::retain_recorded_correction(
-                        application, branch, &identities, intent).map_err(Denial::SourceOperation)?;
-                    Public::Continued(operation.accept_recorded_publication(WorthQueryApplicationRetainedMutationOutcome::Other(outcome)))
-                }
-                NativePreparation::IntentDrift => Public::IdempotencyIntentDrift,
-                NativePreparation::PublicationPending => Public::PublicationPending,
-                NativePreparation::ProductUnpublished(handle) => Public::ProductUnpublished(handle),
-            })
+            retain_operation::<S, Inverse<S, C>, P, A>(prepared, application, branch)
         }).map_err(Denial::ExecutionRequest)?
     }
+}
+
+pub(super) fn retain_operation<'a, S, B, P, A>(
+    prepared: NativePreparation<'a, S, B>,
+    application: &WorthQueryProgramApplicationRuntime<S, P>,
+    branch: WorthQueryProductBranch,
+) -> Result<
+    WorthQueryOperationCorrectionPreparation<'a, S, B, P, A>,
+    WorthQueryApplicationCorrectionDenial,
+>
+where
+    S: ApplicationSchema + 'static,
+    B: ApplicationMutationAdmissionBinding<S>,
+    B::Admission: WorthQueryBindingAdmission<S, B>,
+    B::Input: Clone + Send + Sync + ApplicationMutationIntent<S, Binding = B>,
+    B::IdempotencyKey: Clone,
+    B::ScopeBinding: ApplicationMutationScopeResolution<S, B::PrincipalIdentity>,
+    P: ApplicationProgramDefinition<S>,
+    A: ApplicationAction<S, B>,
+    Mode<S, B, A>: WorthQuerySourceDeliveryMode,
+{
+    use WorthQueryApplicationCorrectionDenial as Denial;
+    use WorthQueryOperationCorrectionPreparation as Public;
+    Ok(match prepared {
+        NativePreparation::Prepared(action) => {
+            let operation = Operation::<S, B, P, A>::retain_recorded_correction(
+                application,
+                branch,
+                &action.identities,
+                action.source.intent(),
+            )
+            .map_err(Denial::SourceOperation)?;
+            Public::Prepared(WorthQueryPreparedOperationCorrection { action, operation })
+        }
+        NativePreparation::Replay {
+            outcome,
+            identities,
+            intent,
+        } => {
+            let operation = Operation::<S, B, P, A>::retain_recorded_correction(
+                application,
+                branch,
+                &identities,
+                intent,
+            )
+            .map_err(Denial::SourceOperation)?;
+            Public::Continued(operation.accept_recorded_publication(
+                WorthQueryApplicationRetainedMutationOutcome::Other(outcome),
+            ))
+        }
+        NativePreparation::IntentDrift => Public::IdempotencyIntentDrift,
+        NativePreparation::PublicationPending => Public::PublicationPending,
+        NativePreparation::ProductUnpublished(handle) => Public::ProductUnpublished(handle),
+    })
 }

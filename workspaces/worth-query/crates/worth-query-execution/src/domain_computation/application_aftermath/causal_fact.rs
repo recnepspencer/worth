@@ -2,6 +2,8 @@
 
 use worth_relational::facade::history::{CommitId, RelationalCommitReceipt};
 use worth_relational::facade::transactions::RecordRef;
+mod correction_lineage;
+pub use correction_lineage::WorthQueryCorrectionLineageBinding;
 
 /// Query meaning of one co-committed aftermath relation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -9,6 +11,7 @@ pub enum WorthQueryAftermathCausalRole {
     Undo,
     Redo,
     RecordedReverse,
+    RecordedReapply,
 }
 
 impl WorthQueryAftermathCausalRole {
@@ -17,6 +20,7 @@ impl WorthQueryAftermathCausalRole {
             Self::Undo => 1,
             Self::Redo => 2,
             Self::RecordedReverse => 3,
+            Self::RecordedReapply => 4,
         }
     }
 }
@@ -28,6 +32,7 @@ pub(crate) struct WorthQueryPendingAftermathCausality {
     parent: RelationalCommitReceipt,
     target_branch: worth_relational::facade::history::BranchId,
     source: Option<WorthQueryRecordedCorrectionSource>,
+    lineage: Option<WorthQueryCorrectionLineageBinding>,
     correction: Option<
         std::sync::Arc<
             crate::domain_computation::primary_graph::WorthQueryPreparedCorrectionSource,
@@ -63,6 +68,7 @@ impl WorthQueryPendingAftermathCausality {
         Self {
             target_branch: parent.branch_id.clone(),
             source: None,
+            lineage: None,
             correction: None,
             role: WorthQueryAftermathCausalRole::Undo,
             parent,
@@ -73,6 +79,7 @@ impl WorthQueryPendingAftermathCausality {
         Self {
             target_branch: parent.branch_id.clone(),
             source: None,
+            lineage: None,
             correction: None,
             role: WorthQueryAftermathCausalRole::Redo,
             parent,
@@ -85,7 +92,8 @@ impl WorthQueryPendingAftermathCausality {
         >,
     ) -> Self {
         Self {
-            role: WorthQueryAftermathCausalRole::RecordedReverse,
+            role: correction.lineage_binding().role(),
+            lineage: Some(correction.lineage_binding().clone()),
             parent: correction.target_parent().clone(),
             target_branch: correction.target_branch().clone(),
             source: Some(WorthQueryRecordedCorrectionSource {
@@ -108,6 +116,9 @@ impl WorthQueryPendingAftermathCausality {
     }
     pub(crate) fn recorded_source(&self) -> Option<&WorthQueryRecordedCorrectionSource> {
         self.source.as_ref()
+    }
+    pub(crate) fn correction_lineage(&self) -> Option<&WorthQueryCorrectionLineageBinding> {
+        self.lineage.as_ref()
     }
     pub(crate) fn prepared_correction(
         &self,
@@ -137,6 +148,7 @@ pub struct WorthQueryCommittedAftermathCausality {
     child: RelationalCommitReceipt,
     fact_record: RecordRef,
     source: Option<WorthQueryRecordedCorrectionSource>,
+    lineage: Option<WorthQueryCorrectionLineageBinding>,
 }
 
 impl WorthQueryCommittedAftermathCausality {
@@ -153,6 +165,7 @@ impl WorthQueryCommittedAftermathCausality {
             child,
             fact_record,
             source: pending.source,
+            lineage: pending.lineage,
         })
     }
 
@@ -170,6 +183,9 @@ impl WorthQueryCommittedAftermathCausality {
     pub fn recorded_source(&self) -> Option<&WorthQueryRecordedCorrectionSource> {
         self.source.as_ref()
     }
+    pub fn correction_lineage(&self) -> Option<&WorthQueryCorrectionLineageBinding> {
+        self.lineage.as_ref()
+    }
 
     pub const fn fact_record(&self) -> &RecordRef {
         &self.fact_record
@@ -184,6 +200,7 @@ impl WorthQueryCommittedAftermathCausality {
         self.role == pending.role
             && self.parent == pending.parent
             && self.source == pending.source
+            && self.lineage == pending.lineage
             && self.child.branch_id == pending.target_branch
     }
 }

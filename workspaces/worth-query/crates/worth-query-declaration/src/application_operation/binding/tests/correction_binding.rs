@@ -85,6 +85,14 @@ impl ApplicationCorrectionBinding<MutationSchema> for Inverse {
     ) -> Visitor::Output {
         dispatch.conventional()
     }
+    fn visit_reapplication<Visitor: ApplicationReapplicationVisitor<MutationSchema>>(
+        dispatch: ApplicationReapplicationDispatch<MutationSchema, Self, Visitor>,
+    ) -> Visitor::Output {
+        dispatch.conventional()
+    }
+    fn reapplication_key(key: &str) -> Result<u64, ApplicationValueEncodeDenial> {
+        Self::inverse_key(key)
+    }
 }
 
 crate::worth_query_application_contribution! {
@@ -131,6 +139,15 @@ fn contribution_correction_clause_registers_exact_binding_capture_and_dispatch()
         contract.correction_binding(),
         Some(&DeclaredCorrectionBinding::of::<MutationSchema, Inverse>())
     );
+    assert_eq!(
+        contract
+            .correction_binding()
+            .unwrap()
+            .reapplication_source(),
+        Some(binding.description().binding_identity())
+    );
+    assert_eq!(Inverse::reapplication_key("42").unwrap(), 42);
+    assert!(Inverse::reapplication_key("replacement-input").is_err());
     let Some(PortableCorrectionMechanism::RecordedInverse(inverse)) = contract.mechanism() else {
         panic!("the same clause installs capture demand")
     };

@@ -1,9 +1,6 @@
 //! Typed correction delivery reuses ordinary required-output custody.
 use super::super::*;
-use super::{
-    binding::{Inverse, NativePreparation},
-    Prepare,
-};
+use super::{binding::Inverse, candidate::NativePreparation, Prepare};
 use crate::application_entry::mutation::{
     authorization::WorthQueryBindingAdmission,
     performed::performed_outcome,
@@ -88,14 +85,30 @@ impl<'a, S: ApplicationSchema> WorthQueryApplicationCorrectionRequest<'a, '_, '_
                         .map_err(|cause| Denial::RequiredOutputs(crate::application_entry::WorthQueryPerformedMutationExecutionDenial::Connection(cause)))?);
                     Ok((input, source))
                 })?;
-            Ok(match prepared {
-                NativePreparation::Prepared(inverse) => WorthQueryRequiredCorrectionPreparation::Prepared(
-                    WorthQueryPreparedRequiredCorrection { inverse, application, demand: demand.expect("first-use derivation supplies its actual input demand") }),
-                NativePreparation::IntentDrift => WorthQueryRequiredCorrectionPreparation::Settled(Outcome::NotPerformed(crate::application_entry::WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)),
-                NativePreparation::Replay { outcome, .. } => WorthQueryRequiredCorrectionPreparation::Settled(Outcome::NotPerformed(outcome)),
-                NativePreparation::PublicationPending => WorthQueryRequiredCorrectionPreparation::PublicationPending,
-                NativePreparation::ProductUnpublished(handle) => WorthQueryRequiredCorrectionPreparation::ProductUnpublished(handle),
-            })
+            Ok(retain_required_output(prepared, application, demand))
         }).map_err(Denial::ExecutionRequest)?
+    }
+}
+
+pub(super) fn retain_required_output<'a, S, B, P, R>(
+    prepared: NativePreparation<'a, S, B>,
+    application: &'a WorthQueryProgramApplicationRuntime<S, P>,
+    demand: Option<Demand<S, R>>,
+) -> WorthQueryRequiredCorrectionPreparation<'a, S, B, P, R>
+where
+    S: ApplicationSchema,
+    B: ApplicationMutationBinding<S>
+        + WorthQueryApplicationRequiredOutputSource<S, Connection<S, R>>,
+    P: ApplicationProgramDefinition<S>,
+    R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
+    Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
+{
+    match prepared {
+        NativePreparation::Prepared(action) => WorthQueryRequiredCorrectionPreparation::Prepared(
+            WorthQueryPreparedRequiredCorrection { action, application, demand: demand.expect("first-use derivation supplies its actual input demand") }),
+        NativePreparation::IntentDrift => WorthQueryRequiredCorrectionPreparation::Settled(Outcome::NotPerformed(crate::application_entry::WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)),
+        NativePreparation::Replay { outcome, .. } => WorthQueryRequiredCorrectionPreparation::Settled(Outcome::NotPerformed(outcome)),
+        NativePreparation::PublicationPending => WorthQueryRequiredCorrectionPreparation::PublicationPending,
+        NativePreparation::ProductUnpublished(handle) => WorthQueryRequiredCorrectionPreparation::ProductUnpublished(handle),
     }
 }

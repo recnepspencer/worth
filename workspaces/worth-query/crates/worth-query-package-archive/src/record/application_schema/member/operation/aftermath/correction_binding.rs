@@ -40,7 +40,8 @@ pub(super) fn write(
         output,
         binding.completed_external_reconciliation(),
         |output, procedure| output.text(procedure.procedure_slot()),
-    )
+    )?;
+    write_optional(output, binding.reapplication_source(), write_type_identity)
 }
 
 pub(super) fn decode(
@@ -66,6 +67,7 @@ pub(super) fn decode(
                     )
                 })
             })?,
+            reapplication_source: decode_optional(input, decode_type_identity)?,
         },
     ))
 }

@@ -278,11 +278,13 @@ pub use super::product_operation::{
     WorthQueryBranchSetAdoptionResumeDenial, WorthQueryBranchSetAdoptionResumeFailure,
     WorthQueryClosedBranchSetAdoption, WorthQueryCompletedGeneratedOutputReconstruction,
     WorthQueryConditionalDefinitionPublicationDenial,
-    WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryCorrectionCommandKey,
-    WorthQueryCorrectionDerivationDenial, WorthQueryCorrectionInputSelection,
-    WorthQueryCorrectionIntent, WorthQueryCorrectionOutputProjectionDenial,
-    WorthQueryCorrectionSelectionDenial, WorthQueryGeneratedEntity,
-    WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryCorrectionActionInputSelection,
+    WorthQueryCorrectionAlternativeRef, WorthQueryCorrectionAlternativeResolution,
+    WorthQueryCorrectionAlternativesContinuation, WorthQueryCorrectionAlternativesPage,
+    WorthQueryCorrectionCommandKey, WorthQueryCorrectionDerivationDenial,
+    WorthQueryCorrectionInputSelection, WorthQueryCorrectionIntent,
+    WorthQueryCorrectionOutputProjectionDenial, WorthQueryCorrectionSelectionDenial,
+    WorthQueryGeneratedEntity, WorthQueryGeneratedOutputInvariantAdmissionDenial,
     WorthQueryGeneratedOutputPublicationNoEffect,
     WorthQueryGeneratedOutputPublicationNoEffectCause, WorthQueryGeneratedOutputReconstruction,
     WorthQueryGeneratedOutputReconstructionDenial, WorthQueryGeneratedOutputReconstructionFailure,
@@ -304,9 +306,10 @@ pub use super::product_operation::{
     WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
     WorthQueryReconstructedOutputEntity, WorthQueryRestoredGeneratedOutput,
     WorthQueryRetainedBatchQueryAdmissionDenial, WorthQueryRetainedGeneratedOutputEntity,
-    WorthQuerySelectedCorrectionSource, WorthQuerySelectedProductOperation,
-    WorthQueryStoppedBranchSetAdoption, WorthQuerySuspendedGeneratedOutput,
-    WorthQueryUnpublishedBranchAdoption, WorthQueryUnpublishedGeneratedOutputRestoration,
+    WorthQuerySelectedCorrectionAlternative, WorthQuerySelectedCorrectionSource,
+    WorthQuerySelectedProductOperation, WorthQueryStoppedBranchSetAdoption,
+    WorthQuerySuspendedGeneratedOutput, WorthQueryUnpublishedBranchAdoption,
+    WorthQueryUnpublishedGeneratedOutputRestoration,
 };
 pub use super::provider::{
     WorthQueryCommittedDispatchOutboxObservation, WorthQueryCommittedDispatchOutboxReadDenial,
@@ -367,6 +370,7 @@ mod operation_body;
 pub use authorization::*;
 pub use operation_body::*;
 
+pub use super::provider::WorthQueryAftermathCausalityReadDenial;
 pub use super::provider::{
     WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,
     WorthQueryRecoveredProgramSourceDeliveryDenialForTest,

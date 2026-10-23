@@ -7,6 +7,11 @@ pub use authored_identity::{
 };
 mod dispatch;
 mod inverse;
+mod reapplication;
+pub use reapplication::{
+    dispatch_application_reapplication, ApplicationReapplicationDispatch,
+    ApplicationReapplicationVisitor,
+};
 mod source_material;
 mod source_output;
 pub use source_material::{

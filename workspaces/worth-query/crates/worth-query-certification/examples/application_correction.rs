@@ -25,11 +25,20 @@ fn main() {
                 Some("composite-unwind") => application_correction_support::composite_definition_recovery::unwind::run(),
                 Some("authored") => application_correction_support::authored_identity_courts::run(),
                 Some("race") => application_correction_support::correction_race_court::run(),
+                Some("tree-controls") => application_correction_support::tree_controls::run(),
+                Some("tree-history") => application_correction_support::history_reapplication::run(),
+                Some("tree-outputs") => application_correction_support::required_reapplication::run(),
+                Some("tree") => {
+                    application_correction_support::tree_reapplication::run();
+                    application_correction_support::tree_controls::run();
+                    application_correction_support::required_reapplication::run();
+                    application_correction_support::history_reapplication::run();
+                }
                 Some("outputs") => {
                     application_correction_support::required_output_recovery::run();
                     application_correction_support::required_output_courts::run();
                 }
-                Some(other) => panic!("unknown correction court {other:?}; expected composite, composite-recovery, composite-unwind, authored, race, outputs, or no argument for all"),
+                Some(other) => panic!("unknown correction court {other:?}; expected composite, composite-recovery, composite-unwind, authored, race, tree, tree-controls, tree-history, tree-outputs, outputs, or no argument for all"),
             }
             let _ = done.send(());
         })
@@ -45,6 +54,10 @@ fn main() {
 }
 
 fn run() {
+    application_correction_support::tree_reapplication::run();
+    application_correction_support::tree_controls::run();
+    application_correction_support::required_reapplication::run();
+    application_correction_support::history_reapplication::run();
     application_correction_support::correction_race_court::run();
     application_correction_support::authored_identity_courts::run();
     application_correction_support::composite_definition_court::run();

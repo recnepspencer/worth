@@ -1,27 +1,11 @@
 //! One ordinary inverse admission and handler spine, shared by declared admission modes.
+use super::candidate::NativePreparation;
 use super::*;
-use crate::application_entry::mutation::{
-    authorization::WorthQueryBindingAdmission,
-    captured_input::CapturedMutationInput,
-    preparation::{CandidatePreparation, PreparedCandidate},
-    request::WorthQueryApplicationMutationRequest,
-};
+use crate::application_entry::mutation::authorization::WorthQueryBindingAdmission;
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
-use worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionInputSelection;
+use worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionActionInputSelection;
 
 pub(super) type Inverse<S, C> = ApplicationInverseBinding<S, C>;
-
-pub(super) enum NativePreparation<'a, S: ApplicationSchema, B: ApplicationMutationBinding<S>> {
-    Prepared(super::super::publication::PreparedInverse<'a, S, B>),
-    IntentDrift,
-    Replay {
-        outcome: crate::application_entry::WorthQueryApplicationMutationOutcome<B::Denial, B::Result>,
-        identities: ApplicationOwnedMutationIdentities<S, B>,
-        intent: worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent,
-    },
-    PublicationPending,
-    ProductUnpublished(worth_runtime_world::facade::ProductUnpublishedRecoveryHandle),
-}
 
 impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
     pub(super) fn candidate<C, Admission>(
@@ -87,98 +71,36 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
             )
             .map_err(Denial::Derivation)?;
         let (input, source, intent) = match selected {
-            WorthQueryCorrectionInputSelection::FirstUse(_) => {
+            WorthQueryCorrectionActionInputSelection::FirstUse(_) => {
                 let (input, source) = derive(&target, &access, &command_key)?;
                 let intent = source.intent();
                 (input, Some(source), intent)
             }
-            WorthQueryCorrectionInputSelection::Replay { intent, input } => (input, None, intent),
-            WorthQueryCorrectionInputSelection::IntentDrift => return Ok(Preparation::IntentDrift),
-            WorthQueryCorrectionInputSelection::PublicationPending => {
+            WorthQueryCorrectionActionInputSelection::Replay { intent, input } => {
+                (input, None, intent)
+            }
+            WorthQueryCorrectionActionInputSelection::IntentDrift => {
+                return Ok(Preparation::IntentDrift)
+            }
+            WorthQueryCorrectionActionInputSelection::PublicationPending => {
                 return Ok(Preparation::PublicationPending)
             }
-            WorthQueryCorrectionInputSelection::ProductUnpublished(handle) => {
+            WorthQueryCorrectionActionInputSelection::ProductUnpublished(handle) => {
                 return Ok(Preparation::ProductUnpublished(handle))
             }
         };
-        let identities =
-            ApplicationOwnedMutationIdentities::<Schema, Inverse<Schema, C>>::with_encoded_input(
-                inverse_key,
-                &input,
-            )
-            .map_err(|cause| {
-                Denial::Mutation(WorthQueryApplicationRequestMutationDenial::Identity(cause))
-            })?
-            .with_additional_canonical_work(command_key.canonical().work());
-        let mutation = WorthQueryApplicationMutationRequest::new(
-            request.application,
-            request.principal,
-            request.scope,
-            request.branch,
-            CapturedMutationInput::<Schema, Inverse<Schema, C>>::new(input),
-        );
-        let mut mutation = mutation.idempotency(identities.key());
-        let Some(source) = source else {
-            let staged = mutation.stage().map_err(Denial::Mutation)?;
-            let prepared = Admission::prepare_selected(
-                phase,
-                &mutation,
-                &identities.borrow(),
-                staged,
-                &target,
-            )
-            .map_err(Denial::Mutation)?;
-            let prepared = bind_correction(prepared, intent);
-            let outcome = mutation
-                .resolve_idempotency(phase, &prepared.admission, prepared.idempotency)
-                .map_err(Denial::Mutation)?
-                .ok_or(Denial::RecordedOutcomeUnavailable)?;
-            return Ok(Preparation::Replay {
-                outcome,
-                identities,
+        super::candidate::prepare_action_candidate::<Schema, Inverse<Schema, C>, Admission>(
+            request,
+            phase,
+            &target,
+            inverse_key,
+            command_key,
+            super::candidate::CorrectionActionInput {
+                input,
+                source,
                 intent,
-            });
-        };
-        let owner = request
-            .application
-            .selected_program_owner(&target)
-            .map_err(Denial::ProgramOwner)?;
-        let execution = phase
-            .checked_execution_request_for(request.application.product_runtime())
-            .map_err(Denial::ExecutionRequest)?;
-        let mut work =
-            worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted;
-        let candidate = mutation
-            .prepare_owned_candidate(
-                phase,
-                identities.borrow(),
-                |mutation, identities, staged| {
-                    Admission::prepare_selected(phase, mutation, identities, staged, &target)
-                        .map(|prepared| bind_correction(prepared, intent))
-                },
-                &mut work,
-                execution.allocation_policy(),
-            )
-            .map_err(Denial::Mutation)?;
-        match candidate {
-            CandidatePreparation::Settled(outcome) => Ok(Preparation::Replay {
-                outcome,
-                identities,
-                intent,
-            }),
-            CandidatePreparation::Prepared(PreparedCandidate {
-                program, result, ..
-            }) => Ok(Preparation::Prepared(
-                super::super::publication::PreparedInverse::<Schema, Inverse<Schema, C>> {
-                    application: request.application,
-                    owner,
-                    program,
-                    identities,
-                    result,
-                    source,
-                },
-            )),
-        }
+            },
+        )
     }
 }
 
@@ -216,33 +138,6 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
                 )
                 .map_err(WorthQueryApplicationCorrectionDenial::Derivation)
         })?;
-        use WorthQueryApplicationCorrectionPreparation as Public;
-        Ok(match prepared {
-            NativePreparation::Prepared(prepared) => Public::Prepared(
-                super::super::publication::WorthQueryPreparedApplicationCorrection {
-                    publication: Box::new(prepared),
-                },
-            ),
-            NativePreparation::IntentDrift => Public::Settled(crate::application_entry::WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift),
-            NativePreparation::Replay { outcome, .. } => {
-                Public::Settled(super::super::outcome::erase::<Schema, Inverse<Schema, C>>(
-                    outcome,
-                ))
-            }
-            NativePreparation::PublicationPending => Public::PublicationPending,
-            NativePreparation::ProductUnpublished(handle) => Public::ProductUnpublished(handle),
-        })
+        Ok(prepared.into_public())
     }
-}
-
-fn bind_correction<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>(
-    mut prepared: crate::application_entry::mutation::authorization::PreparedMutation<
-        Schema,
-        Binding,
-    >,
-    intent: worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent,
-) -> crate::application_entry::mutation::authorization::PreparedMutation<Schema, Binding> {
-    prepared.extension.correction = Some(intent);
-    prepared.idempotency = intent.bind_idempotency(prepared.idempotency);
-    prepared
 }

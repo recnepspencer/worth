@@ -27,6 +27,16 @@ pub enum WorthQueryCorrectionDerivationDenial {
     ForeignSelection,
     TargetIncarnationChanged,
     UnsupportedSourceMeaning,
+    ReapplicationUnavailable,
+    SourceAlreadyReversed,
+    ForeignAlternative,
+    NoActiveReversal,
+    AlternativeResolutionIncomplete,
+    ActiveReversalConsumed,
+    Selection(Box<super::WorthQueryCorrectionSelectionDenial>),
+    History(
+        crate::domain_computation::primary_graph::provider::WorthQueryAftermathCausalityReadDenial,
+    ),
     OriginalSubjectChanged,
     SubjectNotDisclosed,
     MissingPreImage,
@@ -43,7 +53,7 @@ pub enum WorthQueryCorrectionDerivationDenial {
     ProgramMeaningChanged(
         Box<worth_query_installation::facade::WorthQueryProgramAdoptionRequirements>,
     ),
-    InverseAction(worth_query_installation::facade::WorthQueryActionResolutionDenial),
+    Action(worth_query_installation::facade::WorthQueryActionResolutionDenial),
     RequiredOutputReconciliation,
     Workflow(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial),
     TargetProgram(

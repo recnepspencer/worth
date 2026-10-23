@@ -18,14 +18,18 @@ pub use capability_command::{
 mod capability_revocation;
 mod correction;
 pub use correction::{
-    WorthQueryApplicationCorrection, WorthQueryApplicationCorrectionDenial,
-    WorthQueryApplicationCorrectionOutcome, WorthQueryApplicationCorrectionPreparation,
-    WorthQueryApplicationCorrectionRequest, WorthQueryApplicationCorrections,
-    WorthQueryCorrectionApplicability, WorthQueryCorrectionHistoryLimits,
-    WorthQueryCorrectionValue, WorthQueryKeyedApplicationCorrection,
+    WorthQueryApplicationCorrection, WorthQueryApplicationCorrectionAlternatives,
+    WorthQueryApplicationCorrectionDenial, WorthQueryApplicationCorrectionOutcome,
+    WorthQueryApplicationCorrectionPreparation, WorthQueryApplicationCorrectionRequest,
+    WorthQueryApplicationCorrections, WorthQueryApplicationReapplication,
+    WorthQueryApplicationReapplicationRequest, WorthQueryCorrectionAlternativeRef,
+    WorthQueryCorrectionAlternativesContinuation, WorthQueryCorrectionApplicability,
+    WorthQueryCorrectionHistoryLimits, WorthQueryCorrectionValue,
+    WorthQueryKeyedApplicationCorrection, WorthQueryKeyedApplicationReapplication,
     WorthQueryOperationCorrectionPreparation, WorthQueryPreparedApplicationCorrection,
     WorthQueryPreparedOperationCorrection, WorthQueryPreparedRequiredCorrection,
-    WorthQueryRequiredCorrectionPreparation, WorthQuerySelectedCorrectionSource,
+    WorthQueryRequiredCorrectionPreparation, WorthQuerySelectedCorrectionAlternative,
+    WorthQuerySelectedCorrectionSource,
 };
 mod demand;
 mod denial;

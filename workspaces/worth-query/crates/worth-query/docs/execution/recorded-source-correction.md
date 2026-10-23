@@ -1,7 +1,8 @@
 # Correct a recorded source operation
 
 A correction applies the recorded inverse or compensating action declared by
-the application. Select a performed source receipt, prepare the action against
+the application. Reapplication performs the original retained input again under
+current authority. Select a performed source receipt, prepare the action against
 the target branch, then publish the prepared candidate. Success appends a new
 World commit while preserving the target's intervening disjoint edits. A
 Relational-only correction retains the target's Signal basis; an authored
@@ -33,6 +34,8 @@ and list it in the contribution's `corrections: [RecordedEdit]` declaration.
 | `derive_correction(original, material)` | The domain's deterministic action construction from the original input and its mechanism-specific material. |
 | `inverse_key(key)` | Fallible conversion to the inverse binding's key type, returning `Result<Key, ApplicationValueEncodeDenial>`. Validation refusals use the ordinary mutation key-identity denial. |
 | `visit(dispatch)` | Typed selection of conventional or capability admission for the inverse. |
+| `visit_reapplication(dispatch)` | Enables the original source binding's conventional or capability admission for retained reapplication. |
+| `reapplication_key(key)` | Converts a new reapplication command key into the original source binding's key type. |
 
 The complete [numeric binding](../../../worth-query-certification/examples/application_correction_support/correction.rs)
 captures primary and decodes it through `U64ApplicationValueBinding`. Its
@@ -142,7 +145,8 @@ original-journal compensation and replay through this entry.
 
 ## Keep the corrective action's delivery owner
 
-Choose preparation according to the inverse action's installed delivery:
+Choose preparation according to the action's installed delivery. Reversal uses
+the inverse action; reapplication uses the original source action:
 
 | Delivery | Preparation |
 | --- | --- |
@@ -175,6 +179,92 @@ native publication obligation. Equivalent retries resolve the original action
 and its performed source. The Bank
 [correction entry](../../../../../worth-query-bank-world/crates/bank-server/src/correction.rs)
 shows selection of received coordinates and the typed action entrance.
+
+## Reapply an explicit historical alternative
+
+Enable reapplication on the same `ApplicationCorrectionBinding` by implementing
+`visit_reapplication` and `reapplication_key`. The declaration chooses the
+original source binding's admission mode:
+
+```rust,ignore
+fn visit_reapplication<V: ApplicationReapplicationVisitor<NumericSchema>>(
+    dispatch: ApplicationReapplicationDispatch<NumericSchema, Self, V>,
+) -> V::Output {
+    dispatch.conventional()
+}
+
+fn reapplication_key(key: &str) -> Result<String, ApplicationValueEncodeDenial> {
+    Ok(format!("numeric-reapplication:{key}"))
+}
+```
+
+For a capability-governed source, use `dispatch.capability::<Capability>()`.
+Installation records the association with the original source binding. At
+preparation, Query takes its retained encoded input and resolves the source
+action and delivery in the current program. The ordinary handler evaluates
+that input against current state and current authority.
+
+Read alternatives through the same branch-bound request. `maximum_entries`
+sets the page width independently of the ancestry and disclosure limits:
+
+```rust,ignore
+let source = request.corrections().select(&source_receipt, limits)?;
+let mut page = request.corrections()
+    .alternatives(&source, limits, maximum_entries)?;
+let mut alternatives = page.entries().to_vec();
+while let Some(continuation) = page.continuation() {
+    let next = request.corrections()
+        .continue_alternatives(&source, limits, maximum_entries, continuation)?;
+    alternatives.extend_from_slice(next.entries());
+    page = next;
+}
+let chosen = choose_alternative(&alternatives);
+let selected = page.select(chosen, limits)?;
+let preparation = request.corrections().reapply(&selected)
+    .idempotency(client_key)
+    .limits(limits)
+    .prepare_operation::<RecordedEdit, Program, Action>(&application)?;
+```
+
+`choose_alternative` is the application's history chooser and returns a reference
+to one of the listed entries. Each entry identifies an exact performed reversal.
+Complete the continuation before selection: the complete traversal establishes
+which reversal is currently eligible to be consumed. `AlternativeResolutionIncomplete`
+means further pages remain. Each continuation belongs to the exact native index
+generation and target observation. A stale or unavailable continuation returns
+a typed refusal; obtain a new page under the current request.
+
+Publish or continue `WorthQueryOperationCorrectionPreparation` and close its
+ordinary source owner as described above. For an original action with fixed
+required outputs, use `prepare_performed::<Correction, Program, Root>` and
+complete its output owner. Both entries use the original retained input.
+
+An ordinary edit preserves historical alternatives. For example, source S is
+reversed by U, reapplied by R and reversed again by V. The chooser still lists
+U and V. Choosing U now repeats S's original meaning and consumes V, the active
+reversal on this branch. The committed relation records the chosen U and the
+consumed V separately. Another command must wait for a new reversal before
+reapplying again. Reverse the newly performed occurrence to open that next
+cycle.
+
+A fork created before consumption may independently reapply its inherited
+alternative. A fork created after consumption inherits the consumed relation.
+This follows the selected branch's actual ancestry. Reusing a command key
+resolves its original selected and consumed relationships, including after a
+later reversal; the retry leaves that later reversal available.
+
+Retain the selected alternative through preparation and retries. Historical
+entries remain useful for display when optional source material expires.
+Selection reports unavailable semantic material or the native ancestry owner's
+history-expiry refusal, according to which required evidence expired. Current
+disclosure and fresh mutation authority apply to every new selection and
+preparation. A changed source action or delivery produces a typed action or
+program meaning refusal so the application can explain the required support.
+
+The [tree journey](../../../worth-query-certification/examples/application_correction_support/tree_reapplication.rs)
+shows multi-page selection, older-alternative choice, exact retries and normal
+source close. The [required-output journey](../../../worth-query-certification/examples/application_correction_support/required_reapplication.rs)
+shows the source publication and subsequent output settlement separately.
 
 ## Compensate a performed operation
 

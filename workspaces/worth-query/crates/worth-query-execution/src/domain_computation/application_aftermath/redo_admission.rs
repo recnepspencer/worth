@@ -1,9 +1,8 @@
-//! Fresh redo admission (R8.42 / R8.43 / R8.45 / §8 redo_admission).
+//! Retirement boundary for provisional redo admission.
 //!
-//! Proved undo derives the descriptive intent. Current lawfulness comes only
-//! from fresh effect authority and linear-lane policy. The intent never
-//! decides divergence. Callers do not supply booleans for "copied" or
-//! "already consumed" — those facts are derived (R8.43 / Gate 8.3 lesson).
+//! Proved undo remains descriptive. Retained reapplication requires declared
+//! correction selection and fresh ordinary admission; this provisional door
+//! preserves typed refusal and recovery custody until its facade is removed.
 
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryCanonicalWorkEvidence, WorthQueryCanonicalWorkPhases,
@@ -13,7 +12,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryRetainedGovernedInput,
     WorthQuerySelectedProductOperation,
 };
-use worth_relational::facade::history::RelationalCommitReceipt;
 
 use super::governed_input::bound_original_governed_input;
 use super::recovery_handle::{RelinquishOnDenial, WorthQueryRecoveryHandleBinding};
@@ -33,21 +31,17 @@ where
         proved: &WorthQueryProvedUndo,
     ) -> Result<WorthQueryRedoIntent, WorthQueryAftermathDerivationFailure> {
         let product_commit = self.product().selected_commit().clone();
-        if &product_commit != proved.undo_product_publication().composite_commit() {
-            return Err(WorthQueryAftermathDerivationFailure::BasisRejected);
-        }
         let head = self
             .product()
             .relational_basis()
             .observation()
             .commit_receipt()
-            .filter(|head| *head == proved.undo_commit())
             .cloned()
             .ok_or(WorthQueryAftermathDerivationFailure::BasisRejected)?;
         WorthQueryRedoIntent::derive(proved, product_commit, head)
     }
 
-    /// Admit redo against fresh authority and Relational-owned history.
+    /// Refuse provisional redo after validating its retained custody.
     pub fn admit_redo(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
@@ -58,17 +52,9 @@ where
         // Reading the selected product can itself deny. That is a non-event for
         // the recovery, so it relinquishes rather than dropping the handle it
         // is holding (Q8.21-L11).
-        let current_product_commit = self.product().selected_commit().clone();
-        let (recovery, (current_head, prior_redo)) = recovery.admit_deriving(|_| {
+        let (recovery, prior_redo) = recovery.admit_deriving(|_| {
             let execution = phase.execution_request_for(&self.application().product_runtime)
                 .map_err(|_| WorthQueryRedoDenial::new(super::WorthQueryRedoDenialKind::ForeignPhase))?;
-            let current_head = self
-                .product()
-                .relational_basis()
-                .observation()
-                .commit_receipt()
-                .cloned()
-                .ok_or_else(WorthQueryRedoDenial::stale)?;
             let pending =
                 WorthQueryPendingAftermathCausality::redo_of(intent.undo_commit().clone());
             let prior_redo = self
@@ -86,7 +72,10 @@ where
                     } => WorthQueryRedoDenial::active_snapshot_capacity_exhausted(
                         maximum_active_snapshots,
                     ),
-                    crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::Unavailable => {
+                    crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::Unavailable
+                    | crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::ForeignContinuation
+                    | crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::IndexUnavailable { .. }
+                    | crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::InconsistentCanonicalRelationships => {
                         WorthQueryRedoDenial::stale()
                     }
                     crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::RetentionCapacityExhausted => {
@@ -102,16 +91,9 @@ where
                 .map_or(WorthQueryPriorRedoObservation::Absent, |_| {
                     WorthQueryPriorRedoObservation::Committed
                 });
-            Ok((current_head, prior_redo))
+            Ok(prior_redo)
         })?;
-        admit_redo_against_product(
-            recovery,
-            authority,
-            intent,
-            &current_product_commit,
-            &current_head,
-            prior_redo,
-        )
+        refuse_provisional_redo(recovery, authority, intent, prior_redo)
     }
 }
 
@@ -178,84 +160,49 @@ impl WorthQueryRedoAdmission {
     }
 }
 
-/// Admit one redo from a descriptive intent, the proved undo that minted it,
-/// live handle, fresh authority, and the linear chain that owns divergence
-/// policy.
+/// Validate retained evidence, then require the declared correction entrance.
 ///
 /// Copied-intent is detected by re-deriving from `proved` and comparing
 /// digests. Duplicate redo is detected from the co-committed Query causal fact. Neither
 /// fact is a caller-supplied boolean (R8.43).
-pub(super) fn admit_redo_against_product(
+pub(super) fn refuse_provisional_redo(
     recovery: WorthQueryRedoRecovery,
     authority: &WorthQueryRecoveryEffectAuthority,
     intent: &WorthQueryRedoIntent,
-    current_product_commit: &worth_runtime_world::facade::CompositeCommitIdentity,
-    current_head: &RelationalCommitReceipt,
     prior_redo: WorthQueryPriorRedoObservation,
 ) -> Result<WorthQueryRedoAdmission, WorthQueryRedoDenial> {
     // Every check below is preparatory — nothing has been redone yet — so a
     // denial relinquishes the handle and leaves the commit recoverable rather
     // than consuming it by omission (Q8.21-L11).
-    let (recovery, retained_governed_input) = recovery.admit_deriving(|recovery| {
-        let handle = recovery.handle();
-        authority
-            .ensure_for(handle)
-            .map_err(|denial| map_recovery_denial(denial.kind()))?;
-        reject_copied_intent(intent, recovery.proved())?;
-        if prior_redo == WorthQueryPriorRedoObservation::Committed {
-            return Err(WorthQueryRedoDenial::duplicate_redo());
-        }
-        let binding = handle.binding();
-        if binding
-            .installed_aftermath()
-            .correction_disclosure()
-            .is_some()
-        {
-            return Err(WorthQueryRedoDenial::new(
-                super::redo_denial::WorthQueryRedoDenialKind::DeclaredDisclosureRequired,
-            ));
-        }
-        let retained_governed_input =
+    recovery
+        .admit_deriving(|recovery| {
+            let handle = recovery.handle();
+            authority
+                .ensure_for(handle)
+                .map_err(|denial| map_recovery_denial(denial.kind()))?;
+            reject_copied_intent(intent, recovery.proved())?;
+            if prior_redo == WorthQueryPriorRedoObservation::Committed {
+                return Err(WorthQueryRedoDenial::duplicate_redo());
+            }
+            let binding = handle.binding();
             bound_original_governed_input(binding.retained_governed_input())
-                .ok_or_else(WorthQueryRedoDenial::changed_operation_meaning)?
-                .clone();
-        if binding.runtime_instance_id() != intent.runtime_instance()
-            || principal_scope_digest(binding) != *intent.principal_scope_digest()
-        {
-            return Err(WorthQueryRedoDenial::foreign_principal());
-        }
-        if binding.installed_operation() != intent.original_operation()
-            || binding.installed_aftermath().compatibility_generation()
-                != intent.compatibility_generation()
-        {
-            return Err(WorthQueryRedoDenial::changed_operation_meaning());
-        }
-        // R8.45 — lane policy, not intent policy.
-        if current_product_commit != intent.bound_product_commit()
-            || current_head != intent.bound_relational_head()
-        {
-            return Err(WorthQueryRedoDenial::divergence_invalidation());
-        }
-        Ok(retained_governed_input)
-    })?;
-    let redo_admission_work = intent.work();
-    let idempotency = WorthQueryApplicationIdempotencyBinding::new(
-        *intent.identity().digest().bytes(),
-        retained_governed_input
-            .governed_identity()
-            .expect("bound governed input has an identity"),
-    );
-    assert_eq!(redo_admission_work.basis_preparations(), 1);
-    assert_eq!(redo_admission_work.digest_derivations(), 1);
-    assert_eq!(redo_admission_work.digest_text_materializations(), 0);
-    Ok(WorthQueryRedoAdmission {
-        recovery,
-        intent: intent.clone(),
-        retained_governed_input,
-        idempotency,
-        redo_admission_work,
-        _private: (),
-    })
+                .ok_or_else(WorthQueryRedoDenial::changed_operation_meaning)?;
+            if binding.runtime_instance_id() != intent.runtime_instance()
+                || principal_scope_digest(binding) != *intent.principal_scope_digest()
+            {
+                return Err(WorthQueryRedoDenial::foreign_principal());
+            }
+            if binding.installed_operation() != intent.original_operation()
+                || binding.installed_aftermath().compatibility_generation()
+                    != intent.compatibility_generation()
+            {
+                return Err(WorthQueryRedoDenial::changed_operation_meaning());
+            }
+            Err(WorthQueryRedoDenial::new(
+                WorthQueryRedoDenialKind::DeclaredDisclosureRequired,
+            ))
+        })
+        .map(|(_, admission)| admission)
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

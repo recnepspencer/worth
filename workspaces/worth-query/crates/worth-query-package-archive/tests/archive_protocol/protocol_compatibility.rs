@@ -113,8 +113,8 @@ fn zero_and_future_versions_report_the_exact_protocol_layer_and_posture() {
 }
 
 #[test]
-fn pre_authored_identity_record_grammars_are_refused_before_payload_decode() {
-    for version in [10_u16, 11_u16] {
+fn displaced_correction_record_grammars_are_refused_before_payload_decode() {
+    for version in [10_u16, 11_u16, 12_u16] {
         let mut archive = package_archive_bytes();
         put_u16(&mut archive, MANIFEST_FRAME_BYTES, version);
         let denial =

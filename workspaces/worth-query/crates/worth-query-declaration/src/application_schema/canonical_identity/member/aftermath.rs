@@ -12,6 +12,12 @@ pub(super) fn append_declared_aftermath(
     append_mechanism(basis, prefix, contract.mechanism());
     if let Some(binding) = contract.correction_binding() {
         basis.optional_text(
+            format!("{prefix}.correction.reapplication-source"),
+            binding
+                .reapplication_source()
+                .map(|identity| identity.as_str()),
+        );
+        basis.optional_text(
             format!("{prefix}.correction.completed-external-reconciliation"),
             binding
                 .completed_external_reconciliation()

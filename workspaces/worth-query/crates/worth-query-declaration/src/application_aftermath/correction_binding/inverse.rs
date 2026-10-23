@@ -79,6 +79,26 @@ pub trait ApplicationCorrectionBinding<Schema: ApplicationSchema>: Sized + 'stat
     fn visit<Visitor: super::ApplicationCorrectionVisitor<Schema>>(
         dispatch: super::ApplicationCorrectionDispatch<Schema, Self, Visitor>,
     ) -> Visitor::Output;
+    /// Enables the original source binding's ordinary admission for retained reapplication.
+    fn visit_reapplication<Visitor: super::ApplicationReapplicationVisitor<Schema>>(
+        dispatch: super::ApplicationReapplicationDispatch<Schema, Self, Visitor>,
+    ) -> Visitor::Output {
+        dispatch.unavailable()
+    }
+    fn reapplication_key(
+        key: &str,
+    ) -> Result<
+        <Self::Source as ApplicationMutationBinding<Schema>>::IdempotencyKey,
+        crate::application_schema::ApplicationValueEncodeDenial,
+    > {
+        let _ = key;
+        Err(
+            crate::application_schema::ApplicationValueEncodeDenial::CodecRejected {
+                binding_identity: WorthQueryPortableTypeIdentity::declared(Self::IDENTITY),
+                reason: "source reapplication is not declared",
+            },
+        )
+    }
 }
 
 /// Portable descriptive association derived from both actual mutation bindings.
@@ -96,6 +116,7 @@ pub struct DeclaredCorrectionBinding {
     source_output_fields: Vec<super::DeclaredCorrectionOutputField>,
     authored_identity: Option<super::DeclaredAuthoredCorrection>,
     completed_external_reconciliation: Option<super::super::DeclaredReconciliationProcedure>,
+    reapplication_source: Option<WorthQueryPortableTypeIdentity>,
 }
 
 impl DeclaredCorrectionBinding {
@@ -113,6 +134,7 @@ impl DeclaredCorrectionBinding {
             source_output_fields: parts.source_output_fields,
             authored_identity: parts.authored_identity,
             completed_external_reconciliation: parts.completed_external_reconciliation,
+            reapplication_source: parts.reapplication_source,
         }
     }
 
@@ -132,6 +154,7 @@ impl DeclaredCorrectionBinding {
             authored_identity: Correction::authored_identity()
                 .map(super::ApplicationAuthoredCorrection::into_declaration),
             completed_external_reconciliation: Correction::completed_external_reconciliation(),
+            reapplication_source: super::reapplication::declared_source::<Schema, Correction>(),
             source_output_fields: Correction::source_output_fields()
                 .into_iter()
                 .map(super::ApplicationCorrectionOutputField::into_declaration)
@@ -174,6 +197,9 @@ impl DeclaredCorrectionBinding {
     ) -> Option<&super::super::DeclaredReconciliationProcedure> {
         self.completed_external_reconciliation.as_ref()
     }
+    pub fn reapplication_source(&self) -> Option<&WorthQueryPortableTypeIdentity> {
+        self.reapplication_source.as_ref()
+    }
 }
 
 /// Authority-free fields decoded from a portable inverse association.
@@ -189,4 +215,5 @@ pub struct DeclaredCorrectionBindingParts {
     pub source_output_fields: Vec<super::DeclaredCorrectionOutputField>,
     pub authored_identity: Option<super::DeclaredAuthoredCorrection>,
     pub completed_external_reconciliation: Option<super::super::DeclaredReconciliationProcedure>,
+    pub reapplication_source: Option<WorthQueryPortableTypeIdentity>,
 }

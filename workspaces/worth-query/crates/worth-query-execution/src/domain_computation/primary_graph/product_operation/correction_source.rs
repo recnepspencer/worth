@@ -13,22 +13,30 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
+mod alternatives;
 mod authored_identity;
+pub use alternatives::{
+    WorthQueryCorrectionAlternativeRef, WorthQueryCorrectionAlternativeResolution,
+    WorthQueryCorrectionAlternativesContinuation, WorthQueryCorrectionAlternativesPage,
+    WorthQuerySelectedCorrectionAlternative,
+};
 pub(in crate::domain_computation::primary_graph) use authored_identity::AuthoredCorrectionCandidateDenial;
 mod compatibility;
 mod derivation;
 mod inspection;
 mod intent;
 mod key;
+mod lineage;
 pub(in crate::domain_computation::primary_graph) mod material;
 mod preparation;
+mod reapplication;
 mod replay;
 mod required_output;
 pub use intent::WorthQueryCorrectionIntent;
 pub use key::WorthQueryCorrectionCommandKey;
 pub use material::WorthQueryCorrectionOutputProjectionDenial;
 pub use preparation::WorthQueryPreparedCorrectionSource;
-pub use replay::WorthQueryCorrectionInputSelection;
+pub use replay::{WorthQueryCorrectionActionInputSelection, WorthQueryCorrectionInputSelection};
 mod disclosure;
 pub use disclosure::WorthQueryCorrectionDerivationDenial;
 use worth_query_admission::facade::authenticated_principal::{

@@ -74,3 +74,14 @@ a completed-external procedure. That procedure's optional tag, text width and
 bytes are checked against a handwritten wire suffix; its unknown optional tag
 is separately refused. The frozen vectors remain unchanged because they contain
 no correction association.
+
+Record13 appends the optional retained-source reapplication binding identity to
+the correction association. The frozen record12 payloads described above and
+the complete operation-contract vector contain no correction association.
+Their record13 copies therefore change only the record's two-byte version;
+the release envelope additionally updates the nested archive's SHA-256 checksum
+at bytes 50–81. PowerShell byte operations and `SHA256.HashData` constructed
+these expectations independently of the production encoder. The record12
+archive and envelope remain intact as refusal controls, and the protocol court
+rejects record10, record11 and record12 before decoding any payload. The
+correction-binding roundtrip carries the nonempty reapplication source identity.

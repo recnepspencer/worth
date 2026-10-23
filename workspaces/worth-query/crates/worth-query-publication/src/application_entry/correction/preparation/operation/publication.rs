@@ -1,10 +1,10 @@
 //! Publish one correction with exactly its installed action's delivery obligation.
 use super::*;
-use crate::application_entry::correction::publication::PreparedInverse;
+use crate::application_entry::correction::publication::PreparedCorrectionAction;
 use worth_query_execution::facade::application_installation::WorthQueryProgramOwner;
 use worth_query_execution::facade::primary_graph::WorthQueryApplicationRetainedCommitOutcome;
 
-/// An unpublished inverse and its already-constructed native delivery owner.
+/// An unpublished correction action and its native delivery owner.
 pub struct WorthQueryPreparedOperationCorrection<'a, S, B, P, A>
 where
     S: ApplicationSchema,
@@ -14,7 +14,7 @@ where
     A: ApplicationAction<S, B>,
     Mode<S, B, A>: WorthQuerySourceDeliveryMode,
 {
-    pub(super) inverse: PreparedInverse<'a, S, B>,
+    pub(super) action: PreparedCorrectionAction<'a, S, B>,
     pub(super) operation: Operation<S, B, P, A>,
 }
 
@@ -32,15 +32,15 @@ where
     /// Publishes once and transfers every native outcome into ordinary source custody.
     pub fn publish(self) -> Result<Advance<S, B, P, A>, WorthQueryApplicationCorrectionDenial> {
         use WorthQueryApplicationCorrectionDenial as Denial;
-        let Self { inverse, operation } = self;
-        let PreparedInverse {
+        let Self { action, operation } = self;
+        let PreparedCorrectionAction {
             application,
             owner,
             program,
             identities,
             result,
             source,
-        } = inverse;
+        } = action;
         let scope = program.request_scope().clone();
         application
             .with_application_advancement(&scope, |phase| {

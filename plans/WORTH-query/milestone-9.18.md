@@ -1,6 +1,6 @@
 # Milestone 9.18: Tree-Based Semantic Undo And Redo
 
-> **Status:** Phases 1–2 certified and closed; Phase 3 next; Phase 4 held. Design reconciled with the current application entry,
+> **Status:** Phases 1–3 certified and closed; Phase 4 held. Design reconciled with the current application entry,
 > program adoption, workflow and owner-publication code on 2026-09-29.
 > **Dependencies:** 9.17.4, 9.17.5, 9.17.6 and [9.17.7](./milestone-9.17.7.md)
 > are completed. Phase 1 may begin
@@ -356,14 +356,22 @@ are separate typed installed bindings, not a free-form mechanism flag.
 
 ```rust,ignore
 let request = application.request(&fresh_principal, &fresh_scope).on_branch(branch);
-let page = request.corrections().alternatives(&selected, page_limits)?;
-let alternative = page.select(&alternative_ref)?; // descriptive exact selection
-let outcome = request.corrections()
+let mut page = request.corrections()
+    .alternatives(&selected, correction_limits, maximum_entries)?;
+let mut alternatives = page.entries().to_vec();
+while let Some(continuation) = page.continuation() {
+    let next = request.corrections().continue_alternatives(
+        &selected, correction_limits, maximum_entries, continuation,
+    )?;
+    alternatives.extend_from_slice(next.entries());
+    page = next;
+}
+let alternative = page.select(choose_alternative(&alternatives), correction_limits)?;
+let preparation = request.corrections()
     .reapply(&alternative)
     .idempotency(&reapplication_key)
     .limits(correction_limits)
-    .prepare()?
-    .publish();
+    .prepare()?;
 ```
 
 Reapplication has no input setter, principal-copy helper or implicit redo top.
@@ -383,29 +391,30 @@ R replace/remove, S committed successor destination (no empty placeholder).
 ```text
 Q/worth-query-declaration/src/application_aftermath/       E semantic authoring owner
   correction_mechanism/{recorded_inverse,compensation}.rs E existing mechanism meaning
-  correction_binding/{mod,inverse,reapplication}.rs       N typed handler/input binding
+  correction_binding/{mod,inverse,reapplication}.rs       E typed handler/input binding
   reconciliation.rs                                     E reconciliation declaration
 Q/worth-query-installation/src/application_aftermath/      E installed meaning owner
   correction_mechanism/                                  E validated mechanisms
-  correction_binding/{mod,validation,compatibility}.rs    N support/version resolution
+  correction_binding/{mod,validation}.rs                 E binding/support validation
 Q/worth-query-execution/src/domain_computation/application_aftermath/
-  correction/
-    mod.rs                                              N private facade, exports only
-    selection/{mod,occurrence,retention}.rs               N exact source and custody
-    admission/{mod,applicability,program,authority}.rs    N fresh complete admission
-    planning/{mod,components,dependencies}.rs            N fixed semantic plan
-    reversal/{mod,preparation,progression}.rs             N inverse/compensation execution
-    reapplication/{mod,preparation,progression}.rs        N retained meaning execution
-    history/{mod,causality,alternatives}.rs               N owner-backed projection
+  causal_fact/{correction_lineage}.rs                    E immutable causal vocabulary
   retained_preimage.rs, governed_input.rs                E original capture foundation
   recovery_handle/, recovery_progression/, external_effect/ E existing custody owners
   undo_*.rs, redo_*.rs                                   R provisional policy/progression
 Q/worth-query-execution/src/domain_computation/primary_graph/
   product_operation/                                    E ordinary owner coordination
+    correction_source/{disclosure,compatibility,inspection}.rs E exact source admission
+    correction_source/{material,authored_identity}/      E retained meaning/identity
+    correction_source/{derivation,preparation,required_output}.rs E action preparation
+    correction_source/{alternatives,lineage,reapplication,replay}.rs E tree progression
+  provider/aftermath_causality/{canonical_record,lineage_fields,correction_history}.rs E native fact access
+  schema_layout/provider_aftermath_causality/            E canonical fields/index selectors
   workflow/                                             E performed correction disposition
 Q/worth-query-publication/src/application_entry/
   request.rs                                            E corrections() entry
-  correction/{mod,selection,preparation,outcome,alternatives}.rs N caller progression
+  correction.rs                                         E caller facade
+  correction/{inspection,preparation,outcome,alternatives}.rs E caller progression
+  correction/preparation/{candidate,binding,reapplication,operation,required_output}.rs E ordinary delivery
 Q/worth-query-publication/src/application_aftermath/       E disclosed correction projection
 Q/worth-query-host/src/facade.rs                          E exports; remove provisional lane
 Q/worth-query-decl/src/facade.rs                          E declaration exports only
@@ -499,6 +508,23 @@ simulated and called completed. Later phases trust honest performed/unpublished/
 posture and complete mandatory custody.
 
 ### Phase 3: Explicit tree reapplication and bounded history
+
+**Certified and closed.** Retained source input reapplication uses current
+authority and the original action's ordinary delivery owner. The public tree
+court establishes older-alternative selection, exact retry, competing prepared
+choices, branch-local consumption and current handler decisions. Native indexed
+pagination, canonical relationship reconstruction and actual history expiry
+preserve their distinct boundaries. Required-output completion and compiler
+fences pass. The public Bank adapter preserves the new refusal categories and
+nested request stops. Independent source and evidence reviews cleared these
+boundaries; affected compilation, repository enforcement, generated contexts,
+formatting, line caps and whitespace checks pass.
+
+The implementation plan is
+[retained reapplication and correction alternatives](../../docs/plans/semantic-correction-tree-history.md).
+It distinguishes the selected historical alternative from the active reversal
+consumed on the target ancestry, using canonical causal facts and native indexed
+pagination. Phase 4 is the next integration slice.
 
 Add retained-meaning reapplication, canonical causal edges, exact alternative selection,
 branch-local consumed-edge rules, bounded pagination and lawful retention expiry. Prove

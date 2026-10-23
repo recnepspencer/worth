@@ -2,10 +2,12 @@
 use super::*;
 mod workflow;
 use crate::basis::WorthQueryProductBranchReadIdentity;
+use crate::domain_computation::application_aftermath::{
+    WorthQueryAftermathCausalRole, WorthQueryCorrectionLineageBinding,
+};
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::workflow::correction::PreparedWorkflowCorrection;
 pub(super) use workflow::prepare_workflow;
-use worth_query_declaration::facade::application_aftermath::ApplicationInverseBinding;
 use worth_query_declaration::facade::application_operation::{
     ApplicationEncodedInput, ApplicationMutationBinding, ApplicationMutationScopeResolution,
 };
@@ -14,16 +16,25 @@ use worth_relational::facade::{
     identity::EntityId,
 };
 
+/// Native correction meaning retained from derivation through ordinary publication.
+///
+/// It binds the exact source, action input, caller, scope, target and lineage to
+/// their checked program interpretation. Its ancestry pins preserve optional
+/// material until publication releases this preparation; it grants no standalone
+/// mutation or recovery authority.
 pub struct WorthQueryPreparedCorrectionSource {
     authored_identity: Option<super::authored_identity::PreparedAuthoredIdentity>,
     workflow: Option<PreparedWorkflowCorrection>,
     ancestry: ProductBranchAncestorSelection,
+    /// Keeps selected and active reversal material pinned for the prepared action's lifetime.
+    _alternative_ancestry: Option<(ProductBranchAncestorSelection, ProductBranchAncestorSelection)>,
+    lineage: WorthQueryCorrectionLineageBinding,
     material: WorthQueryPrimaryGraphCommittedApplication,
     runtime: WorthQueryRuntimeAuthorityIdentity,
     actor: EntityId,
     scope: EntityId,
-    inverse_input: [u8; 32],
-    inverse: std::any::TypeId,
+    action_input: [u8; 32],
+    action_binding: std::any::TypeId,
     target_parent: RelationalCommitReceipt,
     target_branch: BranchId,
     intent: WorthQueryCorrectionIntent,
@@ -32,29 +43,38 @@ pub struct WorthQueryPreparedCorrectionSource {
 }
 
 impl WorthQueryPreparedCorrectionSource {
-    pub(super) fn retain<Schema: ApplicationSchema, C: ApplicationCorrectionBinding<Schema>>(
+    pub(super) fn retain<
+        Schema: ApplicationSchema,
+        C: ApplicationCorrectionBinding<Schema>,
+        Binding: ApplicationMutationBinding<Schema>,
+    >(
         target: &WorthQuerySelectedProductOperation<'_, Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
         ancestry: ProductBranchAncestorSelection,
+        alternative_ancestry: Option<(
+            ProductBranchAncestorSelection,
+            ProductBranchAncestorSelection,
+        )>,
+        lineage: WorthQueryCorrectionLineageBinding,
         key: &WorthQueryCorrectionCommandKey,
-        input: &ApplicationEncodedInput<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>,
-        scope: <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::ScopeBinding,
+        input: &ApplicationEncodedInput<Binding::InputBinding>,
+        scope: Binding::ScopeBinding,
         target_program: crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation,
         required_root: Option<crate::equality_type_id::EqualityTypeId>,
         workflow: Option<PreparedWorkflowCorrection>,
     ) -> Result<Self, WorthQueryCorrectionDerivationDenial>
     where
-        <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::ScopeBinding:
-            ApplicationMutationScopeResolution<Schema, <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::PrincipalIdentity>,
+        Binding::ScopeBinding:
+            ApplicationMutationScopeResolution<Schema, Binding::PrincipalIdentity>,
     {
         use WorthQueryCorrectionDerivationDenial as Denial;
         let binding = target
             .application()
             .installed_schema()
-            .installed_mutation_binding::<ApplicationInverseBinding<Schema, C>>()
+            .installed_mutation_binding::<Binding>()
             .map_err(|_| Denial::UnsupportedTargetProgram)?;
         let actor = target.resolve_authenticated_principal(phase, binding.principal_binding(), principal, request,
             crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary)
@@ -72,32 +92,43 @@ impl WorthQueryPreparedCorrectionSource {
         let execution = phase
             .execution_request_for(&target.application().product_runtime)
             .map_err(|_| Denial::ForeignPhase)?;
-        let authored_identity = super::authored_identity::PreparedAuthoredIdentity::prepare::<
-            Schema,
-            C,
-        >(source, &execution)?;
+        let authored_identity = if lineage.role() == WorthQueryAftermathCausalRole::RecordedReverse
+        {
+            super::authored_identity::PreparedAuthoredIdentity::prepare::<Schema, C>(
+                source, &execution,
+            )?
+        } else {
+            None
+        };
+        let intent = WorthQueryCorrectionIntent::from_disclosed_source::<Schema, C>(
+            target, source, key, &lineage,
+        );
         Ok(Self {
             authored_identity,
             workflow,
             ancestry,
+            _alternative_ancestry: alternative_ancestry,
+            lineage,
             target_program,
             required_root,
             material: source.occurrence().clone(),
             runtime: target.application().runtime.authority_identity(),
             actor: actor.principal_entity_id(),
             scope: scope.entity_id(),
-            inverse_input: *input.identity(),
-            inverse: std::any::TypeId::of::<ApplicationInverseBinding<Schema, C>>(),
+            action_input: *input.identity(),
+            action_binding: std::any::TypeId::of::<Binding>(),
             target_parent,
             target_branch: basis.identity().branch_id().clone(),
-            intent: WorthQueryCorrectionIntent::from_disclosed_source::<Schema, C>(
-                target, source, key,
-            ),
+            intent,
         })
     }
 
+    /// The immutable descriptive command intent carried into ordinary idempotency admission.
     pub fn intent(&self) -> WorthQueryCorrectionIntent {
         self.intent
+    }
+    pub(crate) fn lineage_binding(&self) -> &WorthQueryCorrectionLineageBinding {
+        &self.lineage
     }
     pub(in crate::domain_computation::primary_graph) fn validate_workflow_candidate(
         &self,
@@ -135,11 +166,11 @@ impl WorthQueryPreparedCorrectionSource {
     pub(crate) fn target_branch(&self) -> &BranchId {
         &self.target_branch
     }
-    pub(crate) fn is_inverse<Binding: 'static>(&self) -> bool {
-        self.inverse == std::any::TypeId::of::<Binding>()
+    pub(crate) fn is_action_binding<Binding: 'static>(&self) -> bool {
+        self.action_binding == std::any::TypeId::of::<Binding>()
     }
     pub(crate) fn matches_input(&self, identity: &[u8; 32]) -> bool {
-        self.inverse_input == *identity
+        self.action_input == *identity
     }
     pub(crate) fn requires_root(
         &self,
@@ -181,8 +212,9 @@ impl PartialEq for WorthQueryPreparedCorrectionSource {
             && self.target_program.same_support_as(&other.target_program)
             && self.actor == other.actor
             && self.scope == other.scope
-            && self.inverse_input == other.inverse_input
-            && self.inverse == other.inverse
+            && self.action_input == other.action_input
+            && self.action_binding == other.action_binding
+            && self.lineage == other.lineage
             && self.intent == other.intent
             && self.target_parent == other.target_parent
             && self.target_branch == other.target_branch

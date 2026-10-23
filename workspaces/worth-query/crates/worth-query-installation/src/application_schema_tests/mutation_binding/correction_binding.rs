@@ -32,6 +32,7 @@ fn correction_binding_resolves_exact_native_members_and_rejects_changed_meaning(
         "source-query",
         "inverse-query",
         "inverse-membership",
+        "reapplication-source",
     ] {
         let mut altered = parts(&source);
         match axis {
@@ -46,6 +47,9 @@ fn correction_binding_resolves_exact_native_members_and_rejects_changed_meaning(
                 altered.inverse = worth_query_declaration::facade::application_operation::ApplicationMutationDescription::from_untrusted_parts(description);
             }
             "source-handler" => altered.source_handler = "foreign-source-handler".to_owned(),
+            "reapplication-source" => {
+                altered.reapplication_source = Some(identity("foreign-source"))
+            }
             "inverse-handler" => altered.inverse_handler = "foreign-inverse-handler".to_owned(),
             "source-query" => altered.source_query = Some("foreign-source-query".to_owned()),
             "inverse-query" => altered.inverse_query = Some("foreign-inverse-query".to_owned()),
@@ -74,6 +78,7 @@ fn parts(source: &ApplicationMutationBindingDescriptor) -> DeclaredCorrectionBin
         source_output_fields: Vec::new(),
         authored_identity: None,
         completed_external_reconciliation: None,
+        reapplication_source: Some(source.description().binding_identity().clone()),
         disclosure: DeclaredCorrectionDisclosure::of::<MutationSchema, disclosure::HistoryBinding>(
         ),
     }

@@ -1,4 +1,4 @@
-//! Counted request stops at the shipped prior-redo read.
+//! Request stops retain precedence over provisional redo retirement.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
 use crate::domain_computation::{
@@ -61,6 +61,10 @@ fn admit_redo_keeps_the_prior_redo_read_stop_at_every_consult() {
                                         .admit_redo(&phase, recovery, &authority, &intent)
                                         .map(|_| ())
                                         .map_err(|denial| denial.kind())
+                                        .or_else(|kind| match kind {
+                                            WorthQueryRedoDenialKind::DeclaredDisclosureRequired => Ok(()),
+                                            other => Err(other),
+                                        })
                                 },
                             )
                             .unwrap();

@@ -55,6 +55,9 @@ pub(crate) fn resolve_correction_binding(
         || declaration.source_query() != source.source_query_identifier()
         || declaration.inverse_query() != inverse.source_query_identifier()
         || declaration.identity().as_str().trim().is_empty()
+        || declaration
+            .reapplication_source()
+            .is_some_and(|binding| binding != source.description().binding_identity())
     {
         return Err(denied());
     }

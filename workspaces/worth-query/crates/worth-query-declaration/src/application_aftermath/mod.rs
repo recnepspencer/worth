@@ -13,6 +13,10 @@ pub use correction_binding::{
     DeclaredCorrectionBindingParts,
 };
 pub use correction_binding::{
+    dispatch_application_reapplication, ApplicationReapplicationDispatch,
+    ApplicationReapplicationVisitor,
+};
+pub use correction_binding::{
     ApplicationAuthoredCorrection, ApplicationAuthoredCorrectionFamily,
     ApplicationAuthoredLogicalKey, DeclaredAuthoredCorrection, DeclaredAuthoredCorrectionParts,
 };

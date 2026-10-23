@@ -1,9 +1,8 @@
 //! Descriptive redo intent derived only from a proved undo (R8.42 / R8.10).
 //!
 //! Binding fields record what was true at derivation. They authorize nothing.
-//! Invalidation-on-divergence is **not** a method of this type; it is lane
-//! policy checked against Relational-owned branch history (R8.45). A 9.18 rebasing lane must reuse
-//! this type unchanged.
+//! Retained reapplication uses declared correction alternatives. This
+//! provisional description remains available until the facade cutover.
 
 use worth_foundational::facade::{
     canonicalization, prepare_canonical_basis_sequence, CanonicalBasisDomain, CanonicalBasisEntry,
@@ -158,11 +157,8 @@ impl WorthQueryRedoIntentIdentity {
 
 /// Descriptive redo intent. Embeds no runtime authority and no replay state.
 ///
-/// # Reuse for 9.18
-///
-/// This type records a bound linear head as descriptive data. It never asks
-/// whether that head is still current. A rebasing lane can therefore reuse
-/// [`WorthQueryRedoIntent`] unchanged and apply a different lane policy.
+/// Its recorded heads are historical description. They supply no current
+/// applicability; provisional redo admission refuses progression.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryRedoIntent {
     identity: WorthQueryRedoIntentIdentity,

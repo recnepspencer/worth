@@ -1,4 +1,5 @@
 # Law 1, reach: exact test targets, test-only mounted sources, fixtures and certification sources.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/history_reapplication.rs
 # Combined publication courts exercise actual owner settlement, cancellation and World CAS.
 crates/worth-relational/ crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/definition_publication/combined_recovery.rs
 crates/worth-relational/ crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/definition_publication/combined_recovery/continuation.rs

@@ -60,6 +60,8 @@ fn derivation(cause: WorthQueryCorrectionDerivationDenial) -> BankHttpDenial {
         D::DependencyComparison(cause) => query(Q::OutputSettlement(cause)),
         D::InputCapture(cause) => input_capture(cause),
         D::Ancestry(cause) => ancestry(cause),
+        D::Selection(cause) => selection(*cause),
+        D::History(cause) => history(cause),
         D::SourceOutput(WorthQueryCorrectionOutputProjectionDenial::Stopped(stop)) => {
             advancement_denial::request(WorkCeilingDenial::Stopped(stop))
         }
@@ -74,16 +76,21 @@ fn derivation(cause: WorthQueryCorrectionDerivationDenial) -> BankHttpDenial {
             }
             _ => stale(),
         },
-        D::SubjectNotDisclosed | D::ForeignSelection => {
+        D::SubjectNotDisclosed | D::ForeignSelection | D::ForeignAlternative => {
             BankHttpDenial::new(Kind::PermissionDenied, Next::None)
         }
         D::ForeignPhase => BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator),
         D::TargetIncarnationChanged
+        | D::SourceAlreadyReversed
+        | D::NoActiveReversal
+        | D::AlternativeResolutionIncomplete
+        | D::ActiveReversalConsumed
         | D::OriginalSubjectChanged
         | D::SourceDiverged
         | D::ProgramMeaningChanged(_)
         | D::Domain(_) => stale(),
         D::UnsupportedSourceMeaning
+        | D::ReapplicationUnavailable
         | D::MissingPreImage
         | D::SourceOutput(_)
         | D::SemanticMaterialUnavailable
@@ -91,10 +98,27 @@ fn derivation(cause: WorthQueryCorrectionDerivationDenial) -> BankHttpDenial {
         | D::CommandKey(_)
         | D::UnsupportedTargetProgram
         | D::ProgramComparison(_)
-        | D::InverseAction(_)
+        | D::Action(_)
         | D::RequiredOutputReconciliation
         | D::TargetProgram(_)
         | D::Basis(_) => unavailable(),
+    }
+}
+
+fn history(cause: WorthQueryAftermathCausalityReadDenial) -> BankHttpDenial {
+    use WorthQueryAftermathCausalityReadDenial as D;
+    match cause {
+        D::ExecutionDenied(cause) => mutation_application::pending_execution_stop(cause),
+        D::ForeignContinuation => stale(),
+        D::ActiveSnapshotCapacityExhausted { .. }
+        | D::RetentionCapacityExhausted
+        | D::Unavailable => unavailable(),
+        D::RetentionIdentityExhausted
+        | D::SnapshotIdentityExhausted
+        | D::InconsistentCanonicalRelationships => {
+            BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator)
+        }
+        D::IndexUnavailable { .. } => BankHttpDenial::new(Kind::Unavailable, Next::ContactOperator),
     }
 }
 

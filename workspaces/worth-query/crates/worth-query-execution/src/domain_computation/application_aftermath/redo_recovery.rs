@@ -11,7 +11,7 @@ use super::{
 };
 
 /// Redo holds the handle inside the sealed continuation, so every redo denial —
-/// stale head, copied intent, divergence — would otherwise drop it and destroy
+/// retirement, copied intent, changed meaning — would otherwise drop it and destroy
 /// the commit's recovery instead of leaving it available for a corrected
 /// attempt (Q8.21-L11).
 ///

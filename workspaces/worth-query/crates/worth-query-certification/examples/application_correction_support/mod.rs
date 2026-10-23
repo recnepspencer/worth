@@ -22,6 +22,7 @@ pub mod composite_definition_runtime;
 pub mod correction;
 pub mod correction_race_court;
 pub mod edit;
+pub mod history_reapplication;
 pub mod host;
 pub mod other_edit;
 pub mod output_program;
@@ -31,11 +32,14 @@ pub mod publication_courts;
 pub mod query;
 pub mod required_output_courts;
 pub mod required_output_recovery;
+pub mod required_reapplication;
 pub mod schema;
 pub mod source_output_correction;
 pub mod source_output_courts;
 pub mod source_output_handlers;
 pub mod source_output_model;
+pub mod tree_controls;
+pub mod tree_reapplication;
 
 #[path = "../../tests/application_graph/document_retention_model/operator_identity.rs"]
 pub mod authentication;

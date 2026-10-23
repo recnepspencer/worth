@@ -31,8 +31,11 @@ pub fn program_publication_access() -> WorthQueryProgramPublicationAccess {
 
 pub mod recorded_correction {
     pub use crate::domain_computation::primary_graph::{
-        WorthQueryCorrectionCommandKey, WorthQueryCorrectionInputSelection,
-        WorthQueryCorrectionIntent, WorthQueryPreparedCorrectionSource,
+        WorthQueryCorrectionActionInputSelection, WorthQueryCorrectionAlternativeRef,
+        WorthQueryCorrectionAlternativeResolution, WorthQueryCorrectionAlternativesContinuation,
+        WorthQueryCorrectionAlternativesPage, WorthQueryCorrectionCommandKey,
+        WorthQueryCorrectionInputSelection, WorthQueryCorrectionIntent,
+        WorthQueryPreparedCorrectionSource, WorthQuerySelectedCorrectionAlternative,
     };
 }
 

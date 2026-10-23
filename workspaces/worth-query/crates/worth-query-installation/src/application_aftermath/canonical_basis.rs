@@ -88,6 +88,16 @@ pub(super) fn prepare_aftermath_basis(
     push_correction_contract(&mut builder, portable, reconciliation);
     if let Some(inverse) = portable.correction_binding() {
         builder.text(
+            "reapplication-source-present",
+            inverse.reapplication_source().is_some().to_string(),
+        );
+        builder.text(
+            "reapplication-source",
+            inverse
+                .reapplication_source()
+                .map_or("", |identity| identity.as_str()),
+        );
+        builder.text(
             "inverse-completed-external-reconciliation-present",
             inverse
                 .completed_external_reconciliation()

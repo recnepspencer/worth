@@ -11,7 +11,6 @@ use worth_query_host::facade::provisional_aftermath as aftermath;
 mod after_publication;
 mod owner_refusals;
 mod preparation;
-mod redo;
 
 #[test]
 fn undo_directly_on_its_target_reuses_the_retained_partitions() {

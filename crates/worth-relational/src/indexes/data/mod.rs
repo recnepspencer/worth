@@ -1,3 +1,7 @@
+mod entity_field_page;
+pub use entity_field_page::{
+    BoundedEntityFieldBoundary, BoundedEntityFieldPage, BoundedEntityFieldPageStop,
+};
 mod related_entity_prefix;
 pub use related_entity_prefix::{
     BoundedRelatedEntityPrefixBoundary, BoundedRelatedEntityPrefixDenial,

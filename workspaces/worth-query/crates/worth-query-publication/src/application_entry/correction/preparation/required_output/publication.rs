@@ -1,8 +1,8 @@
 //! One corrected source publication hands back the existing performed-source owners.
 use super::*;
-use crate::application_entry::correction::publication::PreparedInverse;
-/// An admitted inverse and its demand retained until the exact target publishes.
-/// Dropping it releases preparation without performing the inverse.
+use crate::application_entry::correction::publication::PreparedCorrectionAction;
+/// An admitted correction action and its demand retained until the target publishes.
+/// Dropping it releases the unpublished preparation.
 pub struct WorthQueryPreparedRequiredCorrection<'a, S, B, P, R>
 where
     S: ApplicationSchema,
@@ -12,7 +12,7 @@ where
     R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
     Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
 {
-    pub(super) inverse: PreparedInverse<'a, S, B>,
+    pub(super) action: PreparedCorrectionAction<'a, S, B>,
     pub(super) application: &'a WorthQueryProgramApplicationRuntime<S, P>,
     pub(super) demand: Demand<S, R>,
 }
@@ -28,18 +28,18 @@ where
 {
     pub fn publish(self) -> Result<Outcome<S, B, P, R>, WorthQueryApplicationCorrectionDenial> {
         let Self {
-            inverse,
+            action,
             application,
             demand,
         } = self;
-        let PreparedInverse {
+        let PreparedCorrectionAction {
             application: runtime,
             owner,
             program,
             identities,
             result,
             source,
-        } = inverse;
+        } = action;
         let scope = program.request_scope().clone();
         runtime.with_application_advancement(&scope, |phase| {
             let execution = phase.checked_execution_request_for(runtime.product_runtime())

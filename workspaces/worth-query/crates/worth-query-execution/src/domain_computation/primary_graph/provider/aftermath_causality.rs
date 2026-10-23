@@ -12,28 +12,50 @@ use worth_relational::facade::transactions::{
 };
 
 use super::WorthQueryPrimaryGraphProvider;
+mod canonical_record;
+mod correction_history;
+mod lineage_fields;
 mod source_fields;
 use crate::domain_computation::application_aftermath::{
     WorthQueryCommittedAftermathCausality, WorthQueryPendingAftermathCausality,
 };
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryAftermathCausalityLayout;
+pub(in crate::domain_computation::primary_graph) use canonical_record::WorthQueryCanonicalCorrectionFact;
+pub(in crate::domain_computation::primary_graph) use correction_history::WorthQueryActiveReversalProgress;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(in crate::domain_computation) enum WorthQueryAftermathCausalityReadDenial {
-    ActiveSnapshotCapacityExhausted {
-        maximum_active_snapshots: usize,
-    },
+/// Why an exact canonical aftermath read could not return a complete answer.
+///
+/// Missing native index generations require explicit reconstruction. A refused
+/// page cannot establish active-reversal applicability, and an inconsistent
+/// relationship is never resolved by choosing a row from posting order.
+pub enum WorthQueryAftermathCausalityReadDenial {
+    /// The native snapshot owner could not admit another simultaneous observation.
+    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    /// Retaining the exact read basis exceeded the native retention capacity.
     RetentionCapacityExhausted,
+    /// The native owner could not issue another retention identity.
     RetentionIdentityExhausted,
+    /// The native owner could not issue another snapshot identity.
     SnapshotIdentityExhausted,
+    /// Preserves the request owner's resource refusal or cancellation/deadline stop.
     ExecutionDenied(
         Result<
             crate::domain_computation::WorthQueryProviderSessionDenialKind,
             crate::domain_computation::WorthQueryProviderSessionControlStopKind,
         >,
     ),
+    /// Required canonical records or exact native history could not be resolved.
     Unavailable,
+    /// Canonical relationships disagree, including multiple unconsumed reversals.
+    InconsistentCanonicalRelationships,
+    /// A continuation belongs to a different owner, basis, generation or selector.
+    ForeignContinuation,
+    /// The selected native index has no installed or exact published generation.
+    IndexUnavailable {
+        index_id: worth_relational::facade::indexes::DerivedIndexId,
+    },
 }
 
 impl From<&'static str> for WorthQueryAftermathCausalityReadDenial {
@@ -72,6 +94,7 @@ pub(super) fn aftermath_causality_create_intent(
         ),
     ]);
     source_fields::append(layout, pending, &mut fields);
+    lineage_fields::append(layout, pending, &mut fields);
     MutationIntent::Create(CreateIntent::Entity(EntitySpec {
         partition_id: mutation_partition,
         kind_id: layout.entity_kind,
@@ -301,6 +324,7 @@ impl WorthQueryAftermathCausalityRead<'_> {
             ))),
         ];
         values.extend(source_fields::values(self.pending));
+        values.extend(lineage_fields::values(self.pending));
         values
     }
 
@@ -324,6 +348,7 @@ fn required_fields(
     ]
     .into_iter()
     .chain(source_fields::locators(layout))
+    .chain(lineage_fields::locators(layout))
     .map(|locator| {
         locator
             .field_path()
