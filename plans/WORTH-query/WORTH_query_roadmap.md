@@ -5708,7 +5708,8 @@ The governing milestone spec is
 - public branch-history/aftermath facade, executable documentation, complete
   provisional-lane cutover, and independent hostile certification
 - real Bank authenticated process/accounting/external-effect correction and real
-  WORTH Proprietary House source/geometry correction against the candidate facade;
+  WORTH Proprietary CAD source/geometry correction (the general modeling thin slice,
+  including authored create/delete) against the candidate facade;
   product session redo selection cannot erase canonical history alternatives
 
 ### Must Preserve

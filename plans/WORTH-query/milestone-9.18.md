@@ -7,7 +7,10 @@
 > independently; inbound completion and custody
 > courts gate external-effect integration and final acceptance, not Phase 1 entry.
 > This document specifies destination
-> APIs; it does not claim that tree correction ships today.
+> APIs; it does not claim that tree correction ships today. On 2026-10-22 the
+> Proprietary consumer court was retargeted from the deleted House application to
+> the general modeling kernel, and authored create/delete correction was made
+> explicit.
 
 ## Goal And Roadmap Placement
 
@@ -62,14 +65,16 @@ notice effects. Bank's generic provisional undo/redo HTTP routes were removed;
 `bank-http-adapter/tests/protocol_boundary.rs` protects that cutover. Install new
 accepted correction commands through the real server, HTTP adapter and user node.
 
-The separate WORTH Proprietary repository contains actual CAD/House consumers through
-`worth-query-decl` and `worth-query-host`: `HouseApplication`, `worth-cad-entry`,
-`worthy-house-declarations` and `worthy-house-certification`. Its
-`docs/house/query-platform.md` still labels `CorrectAuthoredChange` and
-`ReapplyAuthoredChange` planned and requires capture/generation/identity gates before
-shipping them. These are domain bindings for this platform correction contract, not
+The separate WORTH Proprietary repository is the CAD consumer. Its October 2026 reset
+deleted `HouseApplication`, the `worthy-house-*` crates and the per-family CAD entry.
+Its general modeling milestone (`cad/docs/plans/general-modeling.md` there) rebuilds
+the kernel as an ordinary application through `worth-query-decl` and
+`worth-query-host`: cells are entities, modeling operations are transactions, names
+are lineage keys and undo is this milestone's accepted correction, with no private
+undo stack. Its `cad/docs/plans/platform-gaps.md` states what the kernel needs from
+this milestone. These are domain bindings for this platform correction contract, not
 proof that an accepted correction API exists. Its WORTH dependency is pinned to an
-older revision; cross-repository acceptance must build against the exact candidate
+exact revision; cross-repository acceptance must build against the exact candidate
 facade through a reviewed pin update or explicit local dependency override.
 
 ## Adversarial Courtroom
@@ -154,43 +159,50 @@ a user-supplied journal identifier alone cannot select or authorize a historical
 
 ### WORTH Proprietary: real authored source and regenerated geometry
 
-Extend `worthy-house-certification/tests/journeys.rs` with `journeys/correction/` in
-that repository. Start from real `HouseApplication` installation and ordinary CAD
-source commands, using the existing extrusion/split, workflow and program-adoption
-journeys for composition. Do not certify this with a substitute geometry provider or
-`prepare_extrusion_source_for_certification` as the product entry.
+Add `tests/it/correction/` to `worth-modeling-conformance` in that repository. Start
+from the real CAD application installation and ordinary authored operations: the
+general modeling thin slice of sketch, extrude, subtract, circular pattern and a
+chamfer addressed by role path. Do not certify this with a substitute geometry
+provider or a certification-only entry.
 
-- Create a rectangular extrusion and dependent split with actual units/tolerance.
-  Change one source dimension; retain that exact edit occurrence. Make an unrelated
-  feature edit. Reverse the dimension change through House's correction command,
-  observe source parameters, actual solid volume and split volume conservation, and
-  verify the unrelated edit survives. The oracle computes the rectangular volume from
-  independent dimensions; it does not reuse production geometry or inverse helpers.
+- Build the slice with actual units and tolerance. Change one sketch dimension and
+  raise the pattern count from four to five; retain those exact edit occurrences.
+  Make an unrelated feature edit. Reverse the dimension change through the CAD
+  correction command, observe source parameters and actual solid volume, and verify
+  the unrelated edit survives. The oracle computes volume analytically from
+  independent dimensions and checks exported STEP in the independent OCCT process;
+  it does not reuse production geometry or inverse helpers.
+- Reverse the pattern count. The generator's own derived settlement retires the fifth
+  instance; the correction never names a generated child. Instances 0 to 3 keep their
+  names, the chamfer stays on instance 2, and cells whose names never changed keep
+  their entity IDs.
 - Reapply the original dimension change and verify new source/geometry occurrences.
-  Change the dimension again before reversal to expose the exact applicability conflict.
-  P0/P1 branch adoption and a retained sibling exercise source interpretation versus
-  current target rules. No old geometry receipt makes unsupported code callable.
-- Evict derived geometry/scene views through their owner lifecycle and rebuild from
-  the corrected source. Assert stable semantic correspondence and current output
-  lineage, not equality of regenerated raw entity IDs or cached mesh bytes. A pending
-  required output remains visibly pending; source success is not geometry completion.
-- Use actual source retirement/membership changes for the deletion case. Physical
-  identity resurrection is supported only by an owner-admitted restoration or explicit
-  new-identity correspondence contract. If that binding is absent, installation denies
-  reversibility for that family. It must not fail for the first time after a user edits.
+  Change the dimension again before reversal to expose the exact applicability
+  conflict. A retained sibling exercises source interpretation versus current target
+  rules. No old geometry receipt makes unsupported code callable.
+- Evict derived cells, meshes and scene views through their owner lifecycle and
+  rebuild from the corrected source. Assert stable semantic correspondence by name and
+  current output lineage, not equality of regenerated raw entity IDs or cached mesh
+  bytes. A pending required output remains visibly pending; source success is not
+  geometry completion.
+- Delete the chamfer and reverse the deletion; delete the pattern and reverse that.
+  Both use the [new-identity correspondence](#source-target-and-installed-meaning)
+  binding: each feature returns as a new entity bound to the retired one by its
+  authored name, and downstream cells re-derive their names from it. A family without
+  the binding is denied reversibility at installation. It must not fail for the first
+  time after a user edits.
 - A local UI redo continuation may clear on a new edit. Reopen the explicit bounded
-  history chooser and recover both retained alternatives. This reconciles the planned
-  House session UX with Query's canonical tree: clearing selection never deletes history
-  or correction evidence. House must consume the shared correction owner rather than
-  co-commit a competing inverse/history system.
+  history chooser and recover both retained alternatives. Clearing selection never
+  deletes history or correction evidence. The CAD application consumes the shared
+  correction owner rather than co-committing a competing inverse/history system.
 
-The first proof is a small real extrusion/split world, followed by a House population
-with 1,000 unrelated source features while correcting one dependency closure. Count
-producer contacts and source/history visits; unrelated population must not enter the
-correction or output work. A native Studio shortcut/menu journey is required when that
-UI enables Undo/Redo; the House command integration gate does not claim native UI or
-restart-durable correction support. Existing Save/Open tests alone cannot certify that
-new correction records and live recovery rights survive restart.
+The first proof is the thin slice, followed by a model with 1,000 unrelated features
+while correcting one dependency closure. Count producer contacts and source/history
+visits; unrelated features must not enter the correction or output work. A native
+Studio shortcut/menu journey is required when that UI enables Undo/Redo; the headless
+correction gate does not claim native UI or restart-durable correction support.
+Existing Save/Open tests alone cannot certify that new correction records and live
+recovery rights survive restart.
 
 ## Product Decision Lock
 
@@ -233,6 +245,15 @@ candidate from its actual changed footprint, co-retained with the performed occu
 A later read cannot recreate a missing pre-image. Uncorrectable operations remain valid
 ordinary operations with explicit posture. There is no automatic field-diff inverse.
 Historical capture stays truthful about unsupported create/delete/identity mechanisms.
+
+Authored create and delete are correctable only through a new-identity correspondence
+binding, declared once per family with its other correction bindings. Correcting a
+create retires the created entity. Correcting a delete creates a successor entity from
+the retained pre-image, and the family's declared logical key binds it to the retired
+entity. The key is domain meaning, such as a CAD feature's authored name; the platform
+compares the declared key and never infers it. Generational identities keep stale
+physical references from binding to the successor. A family without the binding is
+denied reversibility at installation.
 
 ### Component and derived-state posture
 
@@ -423,8 +444,8 @@ B/bank-courtroom/tests/transport_process_courtroom/
 
 WORTH Proprietary repository, coordinated consumer phase only:
 crates/worth-cad-entry/src/application/correction/         N CAD semantic bindings
-crates/worthy-house-application/src/commands/correction.rs N House command mapping
-crates/worthy-house-certification/tests/journeys/correction/ N source/geometry courts
+crates/worth-modeling-conformance/tests/it/correction/     N source/geometry courts
+apps/worthy-studio/                                        E undo/redo, history chooser
 ```
 
 Declaration classifies stable semantic meaning; installation resolves supported
@@ -462,12 +483,15 @@ Reach a new World commit and actual readback through the public request facade a
 compiled example. Prove disjoint versus overlapping edits, copied/foreign selectors,
 revoked authority and idempotency. Retained receipts alone cannot execute. This phase
 establishes the smallest real vertical path; later phases trust its occurrence and
-current-authority binding, not a future facade or private host plumbing.
+current-authority binding, not a future facade or private host plumbing. The successor
+shape admits a create or a retire, so Phase 2's correspondence binding extends it
+rather than replacing it.
 
 ### Phase 2: Composite compatibility, effects and recovery
 
 Extend that path to owner definition successors, program compatibility, required-output
-reconciliation, compensation and workflow/inbound dispositions. Use existing World
+reconciliation, compensation, workflow/inbound dispositions and authored create/delete
+through the new-identity correspondence binding. Use existing World
 preparation/publication/recovery and existing output demand. Prove two-owner partial
 effects, same-head races, cancellation at each boundary and no mixed world. Complete
 the Bank accounting and external process court. No missing 9.17.7 capability may be
@@ -482,11 +506,12 @@ undo/edit/reapply divergence and handle/index destruction; remove linear-head po
 and migrate useful provisional tests together. Ordinary edits cannot clear alternatives.
 This phase establishes the accepted platform product and enables full consumer adoption.
 
-### Phase 4: House integration, cutover and public closure
+### Phase 4: CAD integration, cutover and public closure
 
-Build Proprietary against the exact new facade, install CAD/House correction bindings,
-and complete real source/geometry and 1,000-feature work courts. Revise House's planned
-commands and session-continuation wording to match canonical history. Complete Bank
+Build Proprietary against the exact new facade once its general modeling thin slice
+exists, install CAD correction bindings, and complete real source/geometry and
+1,000-feature work courts. Studio's undo/redo and history chooser follow canonical
+history. Complete Bank
 transport/user-node behavior and DTO compatibility. Remove executable provisional
 exports, callers, linear-stack tests and misleading documentation together; retain
 accepted aftermath/recovery. Ship documentation and run the required enforcement and
@@ -533,7 +558,7 @@ closeout guide. The implementation phases must deliver:
 | Ordinary callers | `foundations/ordinary-application-front-door.md` and `foundations/branches-and-previews.md`: compiled request/correction examples, explicit alternatives, idempotency, bounded history, denial, source-versus-output completion. |
 | Program/workflow authors | `foundations/programs-and-adoption.md` and `foundations/workflows.md`: source interpretation, target support, fresh approvals and non-rewindable performed effects. |
 | Bank maintainers/users | `workspaces/worth-query-bank-world/docs/public-consumer-contract.md` and `docs/process-transport.md` in that workspace: new commands, authentication, response loss, journal compensation and external recovery. |
-| House/Studio maintainers | Proprietary `docs/house/query-platform.md` and `docs/house/milestones.md`: M3B bindings to accepted Query correction, local selection versus canonical alternatives, identity restoration gates, real integration evidence and native UI scope. |
+| CAD/Studio maintainers | Proprietary `cad/docs/plans/general-modeling.md` (Undo) and `cad/docs/plans/platform-gaps.md`: CAD correction bindings, local selection versus canonical alternatives, the create/delete correspondence binding, real integration evidence and native UI scope. |
 
 Compile snippets through the public certification example; check transport examples
 against real process journeys. Keep planned syntax explicitly marked until it compiles.
@@ -546,13 +571,13 @@ Cross-repository documentation and pin changes belong to Phase 4, not this desig
 court and real Proprietary source/geometry court pass against the candidate APIs.
 Platform certification without the private product build is platform evidence only;
 missing access or a mismatched dependency pin leaves the product integration gate open.
-Do not replace that gate with a generic CAD mock or claim existing House tests prove
+Do not replace that gate with a generic CAD mock or claim existing CAD tests prove
 new correction semantics.
 
 Verification uses the existing grouped `application_graph` target in
 `workspaces/worth-query/Cargo.toml`, affected owner tests, public compile tests/example,
 Bank's grouped process target in `workspaces/worth-query-bank-world/Cargo.toml` and
-Proprietary's grouped `worthy-house-certification` journeys target. Confirm target/test
+Proprietary's grouped `worth-modeling-conformance` `it` target. Confirm target/test
 names by discovery before expensive runs. Focused semantic/compile checks belong in CI;
 process and population lanes use explicit bounded workload/resource budgets. Record
 executed commands, candidate revisions and unavailable environments in normal CI/review
