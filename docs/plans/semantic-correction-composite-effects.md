@@ -1,7 +1,12 @@
 # Composite correction and owner-effect custody
 
-This public 9.18 Phase 2 slice covers simultaneous Relational and Signal
-definition successors and their interrupted publication. Phases 3–4 stay held.
+**Status:** Completed and covered by certified Phase 2 acceptance.
+The [9.18 specification](../../plans/WORTH-query/milestone-9.18.md)
+owns current milestone progress.
+
+This plan records the public composite-definition slice's historical boundary
+review, implementation order and intermediate verification notes, including
+checkpoints preceding its completed interrupted-publication acceptance.
 
 ## Boundary findings
 
@@ -129,11 +134,11 @@ At integration, batch affected Query checks, the real public correction court,
 formatting, scoped line caps, generated contexts and boundary enforcement.
 
 This plan does not introduce a history/reapplication framework, alternate World
-publication path, private consumer work, or a phase-close claim. The composite
-recorded correction requirement remains open until step 3 passes through the
-ordinary public handler and existing recovery owners.
+publication path, private consumer work, or a phase-close claim. Its historical
+acceptance gate required step 3 through the ordinary public handler and existing
+recovery owners.
 
-## Verification checkpoint
+## Historical verification checkpoint
 
 The complete World `operation_control::` family passed natively: eight tests,
 including both new combined cancellation boundaries and the uninterrupted twin.
@@ -228,8 +233,8 @@ components, exact replay publication and causal source, one eligible corrected
 wake, and its ordinary authored output 99. The same executable passes the real
 same-head race, authored identity, required-output custody/cancellation, source
 output, compensation, adoption and current-authority controls. This checkpoint
-does not certify interrupted composite recovery through Query; that boundary
-remains under separate review alongside the already-passing World owner courts.
+did not certify interrupted composite recovery through Query; that boundary
+subsequently completed through the separate composite-recovery plan.
 
 ## Workflow fixture access declaration
 

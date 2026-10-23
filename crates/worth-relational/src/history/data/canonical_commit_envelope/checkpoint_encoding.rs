@@ -45,6 +45,7 @@ impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
         let CanonicalCommitEnvelope {
             required_output_codec_retirements,
             required_output_origin,
+            required_output_materialization,
             commit,
             branch_context,
             branch_cell_checkpoint,
@@ -69,9 +70,9 @@ impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
             descriptor_semantics_version,
         } = self.envelope;
         let field_count = if self.include_descriptive_touches {
-            24
+            25
         } else {
-            23
+            24
         } - usize::from(!self.include_codec_retirements);
         let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", field_count)?;
         if self.include_codec_retirements {
@@ -81,6 +82,10 @@ impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
             )?;
         }
         fields.serialize_field("required_output_origin", required_output_origin)?;
+        fields.serialize_field(
+            "required_output_materialization",
+            required_output_materialization,
+        )?;
         fields.serialize_field("commit", commit)?;
         fields.serialize_field("branch_context", branch_context)?;
         fields.serialize_field("branch_cell_checkpoint", branch_cell_checkpoint)?;

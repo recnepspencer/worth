@@ -104,8 +104,7 @@ pub(in crate::http::server) fn commit_denial(
         | Denial::MutationBindingMismatch
         | Denial::MutationInputMismatch
         | Denial::CorrectionContextMismatch
-        | Denial::CorrectionIdentityMismatch
-        | Denial::RecoveryHandoffMismatch { .. } => BankHttpDenial::new(
+        | Denial::CorrectionIdentityMismatch => BankHttpDenial::new(
             BankHttpDenialKind::Unavailable,
             BankHttpNextAction::ContactOperator,
         ),

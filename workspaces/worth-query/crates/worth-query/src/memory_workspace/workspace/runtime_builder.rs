@@ -17,16 +17,10 @@ pub(super) fn memory_runtime_builder(
         RelationalRuntimeProfile::CertificationCore,
         RelationalConfigOverride::default(),
     );
-    let mut publication = defaults.publication.policy;
-    publication.max_patch_records_per_commit = publication
-        .max_patch_records_per_commit
-        .max(initial_seed_rows);
-    builder
-        .entity_capacity(
-            defaults
-                .storage
-                .initial_entity_capacity
-                .max(initial_seed_rows),
-        )
-        .publication(publication)
+    builder.entity_capacity(
+        defaults
+            .storage
+            .initial_entity_capacity
+            .max(initial_seed_rows),
+    )
 }

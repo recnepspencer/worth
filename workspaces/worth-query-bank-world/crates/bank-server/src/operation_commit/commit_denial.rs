@@ -3,7 +3,7 @@
 use worth_query_host::facade::admission::authentication_event::WorthQueryAuthenticationEventDenial;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitDenialStage, WorthQueryRecoveryHandleDenialKind,
+    WorthQueryApplicationCommitDenialStage,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -59,9 +59,6 @@ pub enum BankCommitDenialKind {
     SigningLifecycleRepresentationCapacity,
     SigningLifecycleObservation {
         kind: WorthQueryApplicationAttemptDenialKind,
-    },
-    RecoveryHandoffMismatch {
-        kind: WorthQueryRecoveryHandleDenialKind,
     },
     ElevationTransitionRequired,
     ElevationRequestProgramMismatch,
@@ -170,9 +167,6 @@ pub(crate) const fn denial_kind(
         Query::SigningLifecycleObservation { kind } => {
             BankCommitDenialKind::SigningLifecycleObservation { kind }
         }
-        Query::RecoveryHandoffMismatch { kind } => {
-            BankCommitDenialKind::RecoveryHandoffMismatch { kind }
-        }
         Query::ElevationTransitionRequired => BankCommitDenialKind::ElevationTransitionRequired,
         Query::ElevationRequestProgramMismatch => {
             BankCommitDenialKind::ElevationRequestProgramMismatch
@@ -227,14 +221,6 @@ pub(crate) const fn denial_stage(
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    fn recovery_handoff_mismatch_keeps_its_typed_cause() {
-        let kind = WorthQueryRecoveryHandleDenialKind::FreshAuthorityDenied;
-        assert_eq!(
-            denial_kind(WorthQueryApplicationCommitDenialKind::RecoveryHandoffMismatch { kind }),
-            BankCommitDenialKind::RecoveryHandoffMismatch { kind }
-        );
-    }
 
     #[test]
     fn execution_resource_retains_its_kind_location_and_memory_level() {

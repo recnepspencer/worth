@@ -5,7 +5,8 @@ use worth_query_host::facade::{
 };
 pub(super) mod estate;
 mod refusal;
-use refusal::correction_denial;
+pub(in crate::http::server) use refusal::correction_denial;
+pub(super) mod reapplication;
 
 pub(super) fn start(
     runtime: &BankIdentityRuntime,

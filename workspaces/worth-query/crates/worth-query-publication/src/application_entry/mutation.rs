@@ -2,6 +2,7 @@ mod attempt;
 pub(in crate::application_entry) mod authorization;
 mod authorization_assessment;
 pub(in crate::application_entry) mod captured_input;
+pub use captured_input::WorthQueryCapturedMutationInput;
 pub(in crate::application_entry) mod commit_binding;
 mod discovered;
 mod execution;

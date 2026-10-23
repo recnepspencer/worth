@@ -11,11 +11,19 @@ use worth_query_host::facade::primary_graph::{
 };
 
 mod binding;
+mod correction;
 mod custody;
+mod family_query;
 mod handler;
+mod history;
 mod inventory;
+mod locality;
+mod members;
+mod population;
 mod producer;
 mod readiness;
+mod regeneration;
+mod source_query;
 use binding::{InitialBinding, PreserveBinding};
 use producer::{InitialProducer, PreserveProducer, Provider};
 use readiness::Readiness;
@@ -25,7 +33,7 @@ pub(in crate::checkpoint_recovery::computation_partition) fn declare<
 >(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    schema
+    source_query::declare(family_query::declare(members::declare(schema)))
         .application_mutation_binding::<InitialBinding<Schema>>()
         .application_mutation_binding::<PreserveBinding<Schema>>()
 }

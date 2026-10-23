@@ -1,6 +1,6 @@
 use std::num::NonZeroUsize;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use bank_domain::model::AccountId;
 use bank_server::{BankApplicationQueryDenial, BankReadControls};
@@ -18,10 +18,13 @@ use super::super::protocol::{
 };
 use super::authenticated_owner::BankHttpAuthenticatedOwner;
 use super::authentication::BankHttpApplicationAuthenticator;
-use super::continuation_registry::{BankHttpContinuationRegistry, ResumeAdmission};
+use super::continuation_registry::{access, ResumeAdmission, SharedContinuationRegistry};
 use super::query_denial::query_denial;
 use super::query_publication::describe_query_publication;
 
+mod activity;
+pub(super) mod correction_history;
+use activity::{execute_page, execute_resume};
 mod replay;
 use replay::{fail_resume, revalidate_replay, revokes_cached_access};
 
@@ -45,6 +48,7 @@ pub(super) struct AdmittedResumeRequest {
 enum ContinuationCommand {
     Page(ContinuationJob<AdmittedPageRequest>),
     Resume(ContinuationJob<AdmittedResumeRequest>),
+    Correction(correction_history::HistoryJob),
 }
 
 struct ContinuationJob<R> {
@@ -65,18 +69,13 @@ impl BankHttpContinuationExecutor {
     pub(super) fn start<A>(
         application: Arc<A>,
         queue_capacity: usize,
-        registry_capacity: usize,
-        lifetime: Duration,
+        registry: SharedContinuationRegistry,
     ) -> (Self, JoinHandle<()>)
     where
         A: BankHttpApplicationAuthenticator,
     {
         let (sender, receiver) = mpsc::channel(queue_capacity);
-        let task = tokio::spawn(run(
-            application,
-            receiver,
-            BankHttpContinuationRegistry::new(registry_capacity, lifetime),
-        ));
+        let task = tokio::spawn(run(application, receiver, registry));
         (Self { sender }, task)
     }
 
@@ -129,197 +128,27 @@ impl BankHttpContinuationExecutor {
 async fn run<A>(
     application: Arc<A>,
     mut receiver: mpsc::Receiver<ContinuationCommand>,
-    mut registry: BankHttpContinuationRegistry,
+    registry: SharedContinuationRegistry,
 ) where
     A: BankHttpApplicationAuthenticator,
 {
     while let Some(command) = receiver.recv().await {
         match command {
+            ContinuationCommand::Correction(job) => {
+                let outcome =
+                    correction_history::execute(application.as_ref(), &registry, &job).await;
+                let _ = job.response.send(outcome);
+            }
             ContinuationCommand::Page(job) => {
-                let outcome = execute_page(application.as_ref(), &mut registry, &job).await;
+                let outcome = execute_page(application.as_ref(), &registry, &job).await;
                 let _ = job.response.send(outcome);
             }
             ContinuationCommand::Resume(job) => {
-                let outcome = execute_resume(application.as_ref(), &mut registry, &job).await;
+                let outcome = execute_resume(application.as_ref(), &registry, &job).await;
                 let _ = job.response.send(outcome);
             }
         }
     }
-}
-
-async fn execute_page<A>(
-    application: &A,
-    registry: &mut BankHttpContinuationRegistry,
-    job: &ContinuationJob<AdmittedPageRequest>,
-) -> BankHttpAccountActivityPageOutcome
-where
-    A: BankHttpApplicationAuthenticator,
-{
-    let request = &job.request;
-    let scope = WorthQueryRequestScope::new(Some(request.deadline), job.cancellation.token());
-    let principal = match application
-        .authenticate(request.credential.clone(), &scope)
-        .await
-    {
-        Ok(principal) => principal,
-        Err(denial) => return denied(Some(request.request_id.clone()), denial),
-    };
-    let owner = BankHttpAuthenticatedOwner::from_principal(&principal);
-    if let Some((token, outcome)) =
-        registry.replay_initial(&owner, request.account, &request.request_id)
-    {
-        if matches!(
-            outcome,
-            BankHttpAccountActivityPageOutcome::Delivered { .. }
-        ) && let Err(denial) =
-            revalidate_replay(application, &principal, request.account, &scope)
-        {
-            if revokes_cached_access(denial) {
-                registry.deny_protected_replay(&token, denial);
-            }
-            return denied(Some(request.request_id.clone()), denial);
-        }
-        return outcome;
-    }
-    let controls = match page_controls(&request.controls, &scope) {
-        Some(controls) => controls,
-        None => return denied(Some(request.request_id.clone()), malformed()),
-    };
-    let page = match application
-        .runtime()
-        .account_activity(request.account)
-        .as_principal(&principal)
-        .page(controls)
-    {
-        Ok(page) => page,
-        Err(error) => return denied(Some(request.request_id.clone()), query_denial(error)),
-    };
-    let (published, continuation) = page.into_parts();
-    let Some(activity) = published.rows().first().map(BankHttpAccountActivity::from) else {
-        return denied(Some(request.request_id.clone()), internal());
-    };
-    let publication = describe_query_publication(
-        published.receipt(),
-        BankHttpQueryCapabilityPurpose::AccountActivityReview,
-    );
-    registry
-        .register_initial(
-            owner,
-            request.account,
-            request.request_id.clone(),
-            continuation,
-            activity,
-            publication,
-        )
-        .unwrap_or_else(|_| denied(Some(request.request_id.clone()), saturated()))
-}
-
-async fn execute_resume<A>(
-    application: &A,
-    registry: &mut BankHttpContinuationRegistry,
-    job: &ContinuationJob<AdmittedResumeRequest>,
-) -> BankHttpAccountActivityPageOutcome
-where
-    A: BankHttpApplicationAuthenticator,
-{
-    let request = &job.request.page;
-    let scope = WorthQueryRequestScope::new(Some(request.deadline), job.cancellation.token());
-    let principal = match application
-        .authenticate(request.credential.clone(), &scope)
-        .await
-    {
-        Ok(principal) => principal,
-        Err(denial) => return denied(Some(request.request_id.clone()), denial),
-    };
-    let owner = BankHttpAuthenticatedOwner::from_principal(&principal);
-    let controls = match resume_controls(&request.controls, &scope) {
-        Some(controls) => controls,
-        None => return denied(Some(request.request_id.clone()), malformed()),
-    };
-    if let Some(interruption) = scope.interruption() {
-        let denial = match interruption {
-            WorthQueryRequestInterruption::Cancelled => {
-                BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry)
-            }
-            WorthQueryRequestInterruption::DeadlineExceeded => deadline_denial(),
-        };
-        return denied(Some(request.request_id.clone()), denial);
-    }
-    let continuation = match registry.begin_resume(
-        &owner,
-        request.account,
-        &request.request_id,
-        &job.request.continuation,
-    ) {
-        ResumeAdmission::Execute(continuation) => continuation,
-        ResumeAdmission::Replay(outcome) => {
-            if matches!(
-                outcome,
-                BankHttpAccountActivityPageOutcome::Delivered { .. }
-            ) && let Err(denial) =
-                revalidate_replay(application, &principal, request.account, &scope)
-            {
-                if revokes_cached_access(denial) {
-                    registry.deny_protected_replay(&job.request.continuation, denial);
-                }
-                return denied(Some(request.request_id.clone()), denial);
-            }
-            return outcome;
-        }
-        ResumeAdmission::InFlight => return denied(Some(request.request_id.clone()), saturated()),
-        ResumeAdmission::Unavailable => return denied(Some(request.request_id.clone()), stale()),
-    };
-    let page = application
-        .runtime()
-        .account_activity(request.account)
-        .as_principal(&principal)
-        .resume(continuation, controls);
-    complete_resume(registry, &job.request.continuation, request, page)
-}
-
-fn complete_resume(
-    registry: &mut BankHttpContinuationRegistry,
-    token: &str,
-    request: &AdmittedPageRequest,
-    page: Result<bank_server::BankAccountActivityPageResult, BankApplicationQueryDenial>,
-) -> BankHttpAccountActivityPageOutcome {
-    match page {
-        Ok(page) => {
-            let (published, continuation) = page.into_parts();
-            let Some(activity) = published.rows().first().map(BankHttpAccountActivity::from) else {
-                return fail_resume(registry, token, request, internal());
-            };
-            let publication = describe_query_publication(
-                published.receipt(),
-                BankHttpQueryCapabilityPurpose::AccountActivityReview,
-            );
-            registry.complete_resume(
-                token,
-                request.request_id.clone(),
-                activity,
-                continuation,
-                publication,
-            )
-        }
-        Err(error) => fail_resume(registry, token, request, query_denial(error)),
-    }
-}
-
-fn page_controls(
-    controls: &BankHttpRequestControls,
-    scope: &WorthQueryRequestScope,
-) -> Option<BankReadControls> {
-    BankReadControls::current(scope.clone(), controls.maximum_results).ok()
-}
-
-fn resume_controls<'a>(
-    controls: &BankHttpRequestControls,
-    scope: &'a WorthQueryRequestScope,
-) -> Option<WorthQueryApplicationQueryResumeControls<'a>> {
-    Some(WorthQueryApplicationQueryResumeControls::new(
-        NonZeroUsize::new(controls.maximum_results)?,
-        scope,
-    ))
 }
 
 fn denied(

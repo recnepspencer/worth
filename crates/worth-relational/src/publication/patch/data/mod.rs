@@ -11,7 +11,7 @@ mod semantic_change;
 
 pub use authoritative_patch_envelope::{
     CanonicalAuthoritativePatch, PublishedAuthoritativePatchEnvelope,
-    PublishedAuthoritativeRecordPatch,
+    PublishedAuthoritativeRecordPatch, PublishedRelationBirth,
 };
 pub use patch_batch::{PatchStreamBatch, PatchStreamRequest};
 pub use patch_detail::{PatchDetail, PatchFragmentBudget};

@@ -22,7 +22,10 @@ use crate::domain_computation::application_aftermath::{
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryAftermathCausalityLayout;
 pub(in crate::domain_computation::primary_graph) use canonical_record::WorthQueryCanonicalCorrectionFact;
-pub(in crate::domain_computation::primary_graph) use correction_history::WorthQueryActiveReversalProgress;
+pub(in crate::domain_computation::primary_graph) use correction_history::{
+    WorthQueryActiveReversalProgress, WorthQueryCorrectionHistoryPageAllocation,
+    WorthQueryCorrectionHistoryProgress,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 /// Why an exact canonical aftermath read could not return a complete answer.

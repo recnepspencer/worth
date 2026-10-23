@@ -111,6 +111,8 @@ fn validate_group(
         event.publication,
         origin,
         context,
+        lease,
+        true,
     )?;
     let _metadata = metadata::reserve(&event.kinds, context, lease)?;
     let (before, after) =

@@ -3,6 +3,7 @@ use super::{
     CanonicalCommitEnvelope, CanonicalRequiredOutputOrigin, CodecRetirementClosureStop as Stop,
 };
 use crate::branch::RelationalBranchRoot;
+use crate::history::data::CommitId;
 use crate::identity::data::{RelationId, VersionId};
 use crate::storage::overlay::{
     relation_partition_source_for_slot, OverlayStateView, PartitionAccess, PartitionCloneMode,
@@ -21,7 +22,9 @@ pub(super) fn validate(
     candidate: Option<&WorkingState>,
     origin: &CanonicalRequiredOutputOrigin,
     current: Option<&CanonicalCommitEnvelope>,
+    lookup_commit: &mut impl FnMut(CommitId) -> Option<Arc<CanonicalCommitEnvelope>>,
     lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
+    maximum_hops: usize,
     lease: Option<&ExecutionResourceLease<'_>>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
@@ -72,7 +75,21 @@ pub(super) fn validate(
             .and_then(|h| h.get(h.len().checked_sub(1)?))
             .map(|m| m.effective_at);
         if row.kind_id() != Some(entry.kind)
-            || write != Some(entry.after_write)
+            || !write
+                .map(|write| {
+                    super::output_materialization_write_matches(
+                        &crate::transactions::data::RecordRef::Relation(entry.id),
+                        origin.commit.commit_id,
+                        entry.after_write,
+                        write,
+                        lookup_commit,
+                        lookup,
+                        maximum_hops,
+                        context,
+                    )
+                })
+                .transpose()?
+                .unwrap_or(false)
             || !row
                 .extra()
                 .endpoints

@@ -5,7 +5,9 @@ use worth_query_host::facade::{
     application_entry::*, primary_graph::*, runtime::WorkCeilingDenial,
 };
 
-pub(super) fn correction_denial(cause: WorthQueryApplicationCorrectionDenial) -> BankHttpDenial {
+pub(in crate::http::server) fn correction_denial(
+    cause: WorthQueryApplicationCorrectionDenial,
+) -> BankHttpDenial {
     use WorthQueryApplicationCorrectionDenial as D;
     match cause {
         D::ExecutionRequest(cause) => advancement_denial::advancement(cause),

@@ -93,7 +93,6 @@ fn exercise(application: &host::Host) {
             .aftermath_causality()
             .unwrap()
             .recorded_source()
-            .unwrap()
             .relational(),
         source.commit_reference()
     );

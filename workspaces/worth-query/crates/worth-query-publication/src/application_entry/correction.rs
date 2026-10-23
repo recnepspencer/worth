@@ -7,7 +7,8 @@ mod publication;
 use super::WorthQueryApplicationRequest;
 pub use alternatives::{
     WorthQueryApplicationCorrectionAlternatives, WorthQueryCorrectionAlternativeRef,
-    WorthQueryCorrectionAlternativesContinuation, WorthQuerySelectedCorrectionAlternative,
+    WorthQueryCorrectionAlternativesContinuation, WorthQueryCorrectionAlternativesPage,
+    WorthQuerySelectedCorrectionAlternative,
 };
 pub use inspection::{WorthQueryApplicationCorrection, WorthQueryCorrectionApplicability};
 pub use outcome::{WorthQueryApplicationCorrectionOutcome, WorthQueryCorrectionValue};

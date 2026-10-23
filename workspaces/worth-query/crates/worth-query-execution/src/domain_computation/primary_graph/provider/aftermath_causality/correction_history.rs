@@ -3,6 +3,8 @@ use super::*;
 use crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource;
 use worth_foundational::facade::AspectFieldLocator;
 use worth_relational::facade::indexes::{BoundedEntityFieldBoundary, DerivedIndexId};
+mod page_allocation;
+pub(in crate::domain_computation::primary_graph) use page_allocation::WorthQueryCorrectionHistoryPageAllocation;
 
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryCorrectionHistoryBoundary {
@@ -12,6 +14,19 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCorrectionHist
 struct WorthQueryCorrectionHistoryPage {
     pub entries: Vec<WorthQueryCanonicalCorrectionFact>,
     pub next: Option<WorthQueryCorrectionHistoryBoundary>,
+    pub examined_entry_count: usize,
+    pub allocation: WorthQueryCorrectionHistoryPageAllocation,
+}
+pub(in crate::domain_computation::primary_graph) struct WorthQueryCorrectionHistoryProgress {
+    pub entries: Vec<WorthQueryCanonicalCorrectionFact>,
+    pub progress: WorthQueryActiveReversalProgress,
+    pub examined_entry_count: usize,
+    pub consumption_examined_entry_count: usize,
+    pub allocation: WorthQueryCorrectionHistoryPageAllocation,
+}
+struct ExactCorrectionFactLookup {
+    fact: Option<WorthQueryCanonicalCorrectionFact>,
+    examined_entry_count: usize,
 }
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryActiveReversalProgress {
@@ -38,6 +53,7 @@ impl WorthQueryPrimaryGraphProvider {
             &layout.lineage.reversed_source,
             lineage_fields::selector(&source.coordinates()),
         )
+        .map(|lookup| lookup.fact)
     }
     pub(in crate::domain_computation::primary_graph) fn consumption_of_reversal_at_basis(
         &self,
@@ -46,8 +62,9 @@ impl WorthQueryPrimaryGraphProvider {
         reversal: &WorthQueryRecordedCorrectionSource,
     ) -> Result<Option<WorthQueryCanonicalCorrectionFact>, WorthQueryAftermathCausalityReadDenial>
     {
-        let fact =
-            self.consumption_of_native_reversal_at_basis(execution, basis, reversal.relational())?;
+        let fact = self
+            .consumption_of_native_reversal_at_basis(execution, basis, reversal.relational())?
+            .fact;
         if fact
             .as_ref()
             .is_some_and(|fact| fact.active.as_ref() != Some(&reversal.coordinates()))
@@ -61,8 +78,7 @@ impl WorthQueryPrimaryGraphProvider {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         reversal: &worth_relational::facade::history::RelationalCommitReceipt,
-    ) -> Result<Option<WorthQueryCanonicalCorrectionFact>, WorthQueryAftermathCausalityReadDenial>
-    {
+    ) -> Result<ExactCorrectionFactLookup, WorthQueryAftermathCausalityReadDenial> {
         let layout = self.graph.layout.provider_aftermath_causality();
         self.lookup_correction_fact(
             execution,
@@ -79,8 +95,7 @@ impl WorthQueryPrimaryGraphProvider {
         index: DerivedIndexId,
         locator: &AspectFieldLocator,
         value: AspectValue,
-    ) -> Result<Option<WorthQueryCanonicalCorrectionFact>, WorthQueryAftermathCausalityReadDenial>
-    {
+    ) -> Result<ExactCorrectionFactLookup, WorthQueryAftermathCausalityReadDenial> {
         self.with_correction_snapshot(execution, basis, |runtime, snapshot, layout| {
             let request = BoundedEntityFieldLookupRequest::new(
                 snapshot.clone(),
@@ -104,10 +119,15 @@ impl WorthQueryPrimaryGraphProvider {
                     WorthQueryAftermathCausalityReadDenial::InconsistentCanonicalRelationships,
                 );
             }
-            rows.candidate_entity_ids()
+            let fact = rows
+                .candidate_entity_ids()
                 .first()
                 .map(|entity| canonical_record::read(runtime, snapshot, layout, execution, *entity))
-                .transpose()
+                .transpose()?;
+            Ok(ExactCorrectionFactLookup {
+                fact,
+                examined_entry_count: rows.examined_entry_count(),
+            })
         })
     }
     /// O(page width) posting work plus exact reads for the returned relevant facts.
@@ -143,13 +163,21 @@ impl WorthQueryPrimaryGraphProvider {
                     || Ok::<_, ()>(()),
                 )
                 .map_err(page_denial)?;
-            let entries = page
-                .candidate_entity_ids()
-                .iter()
-                .map(|entity| canonical_record::read(runtime, snapshot, layout, execution, *entity))
-                .collect::<Result<Vec<_>, _>>()?;
+            let mut allocation = WorthQueryCorrectionHistoryPageAllocation::new(execution)?;
+            let mut entries = allocation
+                .reserve_projection_slots::<WorthQueryCanonicalCorrectionFact>(
+                    page.candidate_entity_ids().len(),
+                )?;
+            for entity in page.candidate_entity_ids() {
+                let decoded =
+                    canonical_record::read(runtime, snapshot, layout, execution, *entity)?;
+                entries.push(allocation.clone_fact(&decoded)?);
+            }
+            let examined_entry_count = page.examined_entry_count();
             Ok(WorthQueryCorrectionHistoryPage {
                 entries,
+                allocation,
+                examined_entry_count,
                 next: page
                     .into_next_boundary()
                     .map(|native| WorthQueryCorrectionHistoryBoundary { native }),
@@ -163,26 +191,28 @@ impl WorthQueryPrimaryGraphProvider {
         root: &WorthQueryRecordedCorrectionSource,
         maximum: usize,
         prior: Option<&WorthQueryActiveReversalProgress>,
-    ) -> Result<
-        (
-            Vec<WorthQueryCanonicalCorrectionFact>,
-            WorthQueryActiveReversalProgress,
-        ),
-        WorthQueryAftermathCausalityReadDenial,
-    > {
-        let (after, mut active) = match prior {
+    ) -> Result<WorthQueryCorrectionHistoryProgress, WorthQueryAftermathCausalityReadDenial> {
+        let (after, active) = match prior {
             None => (None, None),
             Some(WorthQueryActiveReversalProgress::Incomplete { boundary, active }) => {
-                (Some(boundary), active.clone())
+                (Some(boundary), active.as_ref())
             }
             Some(WorthQueryActiveReversalProgress::Complete(_)) => {
                 return Err(WorthQueryAftermathCausalityReadDenial::ForeignContinuation)
             }
         };
-        let page = self.correction_alternatives_at_basis(execution, basis, root, maximum, after)?;
+        let mut page =
+            self.correction_alternatives_at_basis(execution, basis, root, maximum, after)?;
+        let mut active = active
+            .map(|fact| page.allocation.clone_fact(fact))
+            .transpose()?;
+        let mut consumption_examined_entry_count = 0usize;
         for entry in &page.entries {
-            let consumption =
+            let lookup =
                 self.consumption_of_native_reversal_at_basis(execution, basis, &entry.child)?;
+            consumption_examined_entry_count = consumption_examined_entry_count.checked_add(lookup.examined_entry_count)
+                .ok_or_else(|| aftermath_read_stop(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow))?;
+            let consumption = lookup.fact;
             if consumption.as_ref().is_some_and(|fact| {
                 fact.root != entry.root
                     || fact.active.as_ref().map(|active| active.relational()) != Some(&entry.child)
@@ -192,20 +222,24 @@ impl WorthQueryPrimaryGraphProvider {
                 );
             }
             if consumption.is_none() {
-                if active.replace(entry.clone()).is_some() {
+                if active.is_some() {
                     return Err(
                         WorthQueryAftermathCausalityReadDenial::InconsistentCanonicalRelationships,
                     );
                 }
+                active = Some(page.allocation.clone_fact(entry)?);
             }
         }
-        Ok((
-            page.entries,
-            match page.next {
+        Ok(WorthQueryCorrectionHistoryProgress {
+            entries: page.entries,
+            examined_entry_count: page.examined_entry_count,
+            consumption_examined_entry_count,
+            allocation: page.allocation,
+            progress: match page.next {
                 Some(boundary) => WorthQueryActiveReversalProgress::Incomplete { boundary, active },
                 None => WorthQueryActiveReversalProgress::Complete(active),
             },
-        ))
+        })
     }
     pub(in crate::domain_computation::primary_graph) fn performed_correction_source(
         &self,

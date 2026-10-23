@@ -12,6 +12,32 @@ pub struct WorthQueryCorrectionSourceCoordinates {
 }
 
 impl WorthQueryCorrectionSourceCoordinates {
+    /// Carries descriptive fields received by an application transport.
+    /// Selection resolves every field against retained native evidence.
+    pub fn from_untrusted_fields(
+        world_owner: u64,
+        world_commit: u64,
+        relational_branch: String,
+        relational_commit: u64,
+        relational_version: u64,
+        relational_parents: Vec<u64>,
+    ) -> Self {
+        use worth_relational::facade::{
+            history::{BranchId, CommitId},
+            identity::VersionId,
+        };
+        Self::from_untrusted_parts(
+            world_owner,
+            world_commit,
+            RelationalCommitReceipt {
+                branch_id: BranchId(relational_branch),
+                commit_id: CommitId(relational_commit),
+                version_id: VersionId(relational_version),
+                parents: relational_parents.into_iter().map(CommitId).collect(),
+            },
+        )
+    }
+
     pub fn from_untrusted_parts(
         world_owner: u64,
         world_commit: u64,

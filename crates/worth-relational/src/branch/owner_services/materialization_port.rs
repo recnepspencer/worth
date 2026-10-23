@@ -46,6 +46,11 @@ impl RelationalMaterializationPort {
             .commit_id()
             .ok_or(RelationalMaterializationError::SourceCommitMismatch)?;
         let records = source_generated_manifest(basis, generated_entities)?;
+        let (producer_publications, producer_records, producer_memory) =
+            crate::history::data::capture_materialization_producers(
+                execution, &runtime, basis, &records,
+            )
+            .map_err(RelationalMaterializationError::Commit)?;
         let mut transaction = runtime
             .begin_branch_transaction(
                 basis,
@@ -67,10 +72,13 @@ impl RelationalMaterializationPort {
         Ok(PreparedRelationalMaterializationSuspension {
             candidate,
             completion: RelationalMaterializationSuspensionCompletion {
+                producer_memory,
                 transaction_id,
                 branch_identity: basis.identity().clone(),
                 source_commit,
                 records,
+                producer_publications,
+                producer_records,
             },
         })
     }
@@ -185,8 +193,17 @@ impl RelationalMaterializationPort {
                 AllocationPolicy::SystemAllocation,
             )
             .map_err(RelationalMaterializationError::TransactionStaging)?;
-        let validated = transaction
+        let mut validated = transaction
             .validate(execution, &runtime)
+            .map_err(RelationalMaterializationError::Commit)?;
+        validated.required_output_materialization =
+            crate::history::data::prepare_materialization_continuity(
+                execution,
+                &runtime,
+                basis,
+                custody,
+                &validated.proposed_working_state,
+            )
             .map_err(RelationalMaterializationError::Commit)?;
         let invariant_evidence = validated.invariant_evidence().clone();
         let candidate = runtime

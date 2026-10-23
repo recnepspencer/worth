@@ -135,7 +135,7 @@ fn recorded_bank_correction_preserves_intervening_money_after_normal_close() {
             .journal;
         assert_eq!(
             receipt.aftermath_causality().unwrap().recorded_source(),
-            Some(&original)
+            &original
         );
         assert_eq!(world.balances(), (93, 7));
         let source_entries = world.activity(world.source);

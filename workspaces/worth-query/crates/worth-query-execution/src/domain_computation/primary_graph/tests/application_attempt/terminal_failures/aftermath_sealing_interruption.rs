@@ -1,6 +1,6 @@
 //! The commit door preserves a request that stops while sealing aftermath.
 use super::*;
-use crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality;
+use crate::domain_computation::primary_graph::tests::fixture::correction_source;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
@@ -10,34 +10,9 @@ fn aftermath_sealing_interruption_reaches_commit_evidence() {
     let _listener =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for (expired, reject_cleanup) in [(false, false), (true, false), (false, true), (true, true)] {
-        let world = installed_authorization_world(true);
-        let request = live_scope();
-        let (program, parent) = world
-            .application
-            .with_host_advancement(|phase| {
-                let principal =
-                    authenticated_principal(&phase.test_host_request(), &world, &request);
-                let account =
-                    resolved_account(&phase.test_host_request(), &world, "open", &request);
-                let program = admitted_program(
-                    &phase,
-                    &world,
-                    &principal,
-                    &account,
-                    &request,
-                    "aftermath-stop",
-                );
-                let parent = world
-                    .selected_product(&phase.test_host_request())
-                    .product()
-                    .relational_basis()
-                    .observation()
-                    .commit_receipt()
-                    .cloned()
-                    .expect("fixture has its parent receipt");
-                (program, parent)
-            })
-            .unwrap();
+        let world = correction_source::install();
+        let source = correction_source::edit(&world, "sealing-source", "edited-label");
+        let prepared = correction_source::prepare(&world, &source, "sealing-correction");
         let cancellation = WorthQueryCancellationSource::new();
         let deadline =
             expired.then(|| std::time::Instant::now() + std::time::Duration::from_secs(2));
@@ -54,15 +29,7 @@ fn aftermath_sealing_interruption_reaches_commit_evidence() {
         let outcome = world
             .application
             .with_application_advancement(&request, |phase| {
-                world
-                    .application
-                    .compare_and_commit_application_with_aftermath(
-                        &phase,
-                        program,
-                        idempotency(171, 171),
-                        WorthQueryPendingAftermathCausality::undo_of(parent),
-                        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                    )
+                correction_source::publish_in_advancement(&world, &phase, prepared)
             })
             .unwrap();
         let outcome = discharge_actual_cleanup(&world, outcome);

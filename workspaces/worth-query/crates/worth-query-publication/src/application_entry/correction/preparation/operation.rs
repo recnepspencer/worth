@@ -4,8 +4,9 @@ use super::{binding::Inverse, candidate::NativePreparation};
 use crate::application_entry::mutation::authorization::WorthQueryBindingAdmission;
 use crate::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationRetainedMutationOutcome,
-    WorthQueryCompletedSourceOperation, WorthQuerySourceDeliveryMode, WorthQuerySourceOnlyAdvance,
-    WorthQuerySourceOnlyOperation, WorthQueryTerminalSourceOperation,
+    WorthQueryCapturedMutationInput, WorthQueryCompletedSourceOperation,
+    WorthQuerySourceDeliveryMode, WorthQuerySourceOnlyAdvance, WorthQuerySourceOnlyOperation,
+    WorthQueryTerminalSourceOperation,
 };
 use worth_query_declaration::facade::application_program::*;
 use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
@@ -15,11 +16,24 @@ pub use publication::WorthQueryPreparedOperationCorrection;
 type Input<S, B> = <B as ApplicationMutationBinding<S>>::Input;
 type Mode<S, B, A> =
     <<A as ApplicationAction<S, B>>::Delivery as ApplicationActionDelivery<S, B>>::Mode;
-type Operation<S, B, P, A> = WorthQuerySourceOnlyOperation<S, Input<S, B>, P, A, Mode<S, B, A>>;
+type Operation<S, B, P, A> =
+    WorthQuerySourceOnlyOperation<S, WorthQueryCapturedMutationInput<S, B>, P, A, Mode<S, B, A>>;
 type Advance<S, B, P, A> = WorthQuerySourceOnlyAdvance<
     Operation<S, B, P, A>,
-    WorthQueryCompletedSourceOperation<S, Input<S, B>, P, A, Mode<S, B, A>>,
-    WorthQueryTerminalSourceOperation<S, Input<S, B>, P, A, Mode<S, B, A>>,
+    WorthQueryCompletedSourceOperation<
+        S,
+        WorthQueryCapturedMutationInput<S, B>,
+        P,
+        A,
+        Mode<S, B, A>,
+    >,
+    WorthQueryTerminalSourceOperation<
+        S,
+        WorthQueryCapturedMutationInput<S, B>,
+        P,
+        A,
+        Mode<S, B, A>,
+    >,
 >;
 
 /// First publication and exact replay keep their original native delivery and recovery owners.
@@ -27,7 +41,7 @@ pub enum WorthQueryOperationCorrectionPreparation<'a, S, B, P, A>
 where
     S: ApplicationSchema,
     B: ApplicationMutationBinding<S>,
-    B::Input: ApplicationMutationIntent<S, Binding = B>,
+    B::Input: ApplicationMutationInputScope<S, B>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, B>,
     Mode<S, B, A>: WorthQuerySourceDeliveryMode,
@@ -57,11 +71,8 @@ impl<'a, S: ApplicationSchema + 'static> WorthQueryApplicationCorrectionRequest<
         Inverse<S, C>: ApplicationMutationAdmissionBinding<S>,
         <Inverse<S, C> as ApplicationMutationAdmissionBinding<S>>::Admission:
             WorthQueryBindingAdmission<S, Inverse<S, C>>,
-        Input<S, Inverse<S, C>>: Clone
-            + Send
-            + Sync
-            + ApplicationMutationIntent<S, Binding = Inverse<S, C>>
-            + ApplicationMutationInputScope<S, Inverse<S, C>>,
+        Input<S, Inverse<S, C>>:
+            Clone + Send + Sync + ApplicationMutationInputScope<S, Inverse<S, C>>,
         <Inverse<S, C> as ApplicationMutationBinding<S>>::IdempotencyKey: Clone,
         <Inverse<S, C> as ApplicationMutationBinding<S>>::ScopeBinding:
             ApplicationMutationScopeResolution<
@@ -104,7 +115,7 @@ where
     S: ApplicationSchema + 'static,
     B: ApplicationMutationAdmissionBinding<S>,
     B::Admission: WorthQueryBindingAdmission<S, B>,
-    B::Input: Clone + Send + Sync + ApplicationMutationIntent<S, Binding = B>,
+    B::Input: Clone + Send + Sync + ApplicationMutationInputScope<S, B>,
     B::IdempotencyKey: Clone,
     B::ScopeBinding: ApplicationMutationScopeResolution<S, B::PrincipalIdentity>,
     P: ApplicationProgramDefinition<S>,

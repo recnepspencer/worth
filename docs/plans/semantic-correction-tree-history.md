@@ -6,7 +6,8 @@ the existing independent source and evidence reviewers have cleared this plan.
 Phase 3 is certified and closed after the native, public tree, required-output,
 compile-contract and affected Bank checks passed and independent source and
 evidence review cleared the implementation. Required repository enforcement
-passes. Phase 4 integration is the next slice. Private consumer work is excluded.
+passes. The governing specification linked above owns current milestone progress.
+Private consumer work is excluded.
 
 ## Boundary review
 

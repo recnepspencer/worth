@@ -12,14 +12,6 @@ impl WorthQueryApplicationIdempotencyBinding {
         self
     }
 
-    pub(in crate::domain_computation::primary_graph) fn bind_correction(
-        mut self,
-        identity: &[u8; 32],
-    ) -> Self {
-        self.correction_identity = Some(*identity);
-        self
-    }
-
     pub(in crate::domain_computation::primary_graph) fn correction_identity(
         &self,
     ) -> Option<&[u8; 32]> {

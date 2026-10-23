@@ -150,7 +150,7 @@ fn published_snapshot_capacity_defers_at_preparation_without_reaching_settlement
         .schema_registry(test_schema_registry())
         .publication(PublicationConfig {
             coherent_publication_required: true,
-            max_patch_records_per_commit: 4096,
+            max_patch_records_per_commit: None,
             max_published_snapshot_handles: Some(2),
             max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,

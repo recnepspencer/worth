@@ -9,7 +9,7 @@ pub struct WorthQueryPreparedOperationCorrection<'a, S, B, P, A>
 where
     S: ApplicationSchema,
     B: ApplicationMutationBinding<S>,
-    B::Input: ApplicationMutationIntent<S, Binding = B>,
+    B::Input: ApplicationMutationInputScope<S, B>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, B>,
     Mode<S, B, A>: WorthQuerySourceDeliveryMode,
@@ -23,7 +23,7 @@ where
     S: ApplicationSchema + 'static,
     B: ApplicationMutationAdmissionBinding<S>,
     B::Admission: WorthQueryBindingAdmission<S, B>,
-    B::Input: Clone + Send + Sync + ApplicationMutationIntent<S, Binding = B>,
+    B::Input: Clone + Send + Sync + ApplicationMutationInputScope<S, B>,
     B::ScopeBinding: ApplicationMutationScopeResolution<S, B::PrincipalIdentity>,
     P: ApplicationProgramDefinition<S>,
     A: ApplicationAction<S, B>,

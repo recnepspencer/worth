@@ -13,7 +13,7 @@ mod bits;
 mod branches;
 pub(super) mod cancellation;
 mod common_operation_handoff;
-mod correction_grant;
+pub(in crate::checkpoint_recovery::computation_partition::oracle) mod correction_grant;
 mod equal_output;
 worth_execution::needs_os_threads! { mod interleaving; }
 mod lifecycle;
@@ -68,11 +68,7 @@ fn seeded_edit_counts_are_derived_from_the_model_at_every_decision() {
                     now.expected_calls(prior.as_ref()),
                     "seed {seed:#x}, {at}, decision {index}"
                 );
-                let reported: u128 = run
-                    .tree_runs
-                    .iter()
-                    .map(|tree| tree.metrics_for_test().recombined_nodes)
-                    .sum();
+                let reported = tree_work::completed_nodes(run);
                 assert_eq!(
                     reported,
                     tree::expected_nodes(&now, prior.as_ref()),

@@ -62,5 +62,6 @@ fn original_governed_input_is_owned_by_the_committed_occurrence() {
     assert!(original
         .retained_governed_input_carrier()
         .expect("the input retains its canonical association")
-        .has_governed_identity());
+        .governed_identity()
+        .is_some());
 }

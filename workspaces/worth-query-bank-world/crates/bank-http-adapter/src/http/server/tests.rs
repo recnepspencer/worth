@@ -13,7 +13,7 @@ use super::{bind_application, BankHttpServerConfiguration};
 mod continuation_replay;
 mod elevation;
 mod elevation_request_replay;
-mod fixture;
+pub(super) mod fixture;
 mod historical_cancellation;
 mod mutation;
 mod mutation_transport;

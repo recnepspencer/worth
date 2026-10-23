@@ -175,7 +175,7 @@ where
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         retain_output_observation: bool,
-        causality: ApplicationCommitCausality<'_>,
+        causality: ApplicationCommitCausality,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where

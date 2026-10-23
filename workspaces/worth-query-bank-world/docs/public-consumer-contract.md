@@ -264,9 +264,25 @@ delivery contracts. Deposit, withdrawal and send-money builders expose owning
 construction. Recorded journal correction enters through
 `prepare_send_money_correction` and retains the installed reversal's delivery.
 
+Historical SendMoney reapplication uses the retained original source input.
+Keep each needed occurrence's completed operation owner alive through historical
+selection and retries; its retained observation owns that occurrence's World
+history lease. Close those owners normally when the history is no longer needed.
+Read bounded `request.corrections().alternatives(...)` pages and continue until
+the native traversal completes. `into_page()` retains the latest page independently
+of the old request. Under a fresh request, call
+`corrections().select_alternative_coordinates(&page, &chosen_source, limits)` and
+pass the selected alternative to
+`prepare_send_money_reapplication(&principal, &scope, &alternative, key, limits)`.
+Publish its preparation and retain the returned ordinary SendMoney owner through
+delivery and close. A changed target requires refreshed history; an exact retry
+uses the same historical source and command key.
+
 Advance the returned operation with `operation.advance(&fresh_request,
 maximum_history_work)`, using `runtime.request(&fresh_principal, &fresh_scope)`
-and an explicit `NonZeroUsize` history bound for that attempt. Keep the owner
+and an `Option<NonZeroUsize>` history allowance for that attempt. Use `None` to
+follow history under the request's execution controls, or `Some(limit)` when the
+caller needs a specific traversal bound. Keep the owner
 returned by `Progress` or `Refused`. Native unpublished recovery uses fresh
 authorization and adopts the original journal/posting effects without executing
 the deposit handler again. A fresh stranger cannot recover a teller's deposit.
@@ -444,6 +460,18 @@ available at a user node without a credential field; that process supplies its
 own authenticated session. Recorded send-money and estate-freeze corrections
 enter through `/v1/mutations` with the completed original occurrence's `source`
 coordinates and a fresh command key. See [owning HTTP corrections](http-owning-money.md).
+
+The same authenticated node exposes `/v1/corrections/history` and
+`/v1/corrections/history/resume`. Save a row's descriptive `source`, finish all
+bounded pages, then create `reapply_send_money` with that source and the completed
+chooser token. Native selection rechecks current disclosure and original source
+admission. The chooser retains one native page under the configured token
+capacity/lifetime; the resulting mutation retains its separate delivery custody.
+Keep the original, reversal and reapplication custody IDs whose occurrences the
+journey needs. Each completed owner retains its own World observation. The chooser
+token retains traversal progress; keep completed owners alive through historical use.
+After these owners close, later publications may retire optional source history
+and fresh history requests return `stale`/`refresh`.
 
 Every Bank server request body declares `"protocol": "v4"`. The server admits
 that one version and refuses earlier versions before effects. Money commands

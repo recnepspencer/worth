@@ -1,43 +1,15 @@
 use super::artifact_execution::AssembledCommitExecution;
 
+mod durable_append_admission;
 mod phase;
 mod preparation;
 
+pub(crate) use durable_append_admission::CommitDurableAppendAdmission;
 use phase::finalize_publication_phase;
 use preparation::{
     prepare_publication_phase, PreparePublicationPhaseInput, PreparedPublicationCompletion,
     PreparedPublicationPhase,
 };
-
-pub(crate) struct CommitDurableAppendAdmission {
-    runtime_instance_id: u64,
-    commit_id: crate::history::data::CommitId,
-    branch_id: crate::history::data::BranchId,
-}
-
-impl CommitDurableAppendAdmission {
-    pub(crate) fn new(
-        runtime_instance_id: u64,
-        commit_id: crate::history::data::CommitId,
-        branch_id: &crate::history::data::BranchId,
-    ) -> Self {
-        Self {
-            runtime_instance_id,
-            commit_id,
-            branch_id: branch_id.clone(),
-        }
-    }
-
-    pub(crate) fn into_parts(
-        self,
-    ) -> (
-        u64,
-        crate::history::data::CommitId,
-        crate::history::data::BranchId,
-    ) {
-        (self.runtime_instance_id, self.commit_id, self.branch_id)
-    }
-}
 
 pub(crate) struct PublishedCommitExecution {
     admitted: super::execution_admission::AdmittedCommitExecution,
@@ -98,6 +70,9 @@ pub(super) fn prepare_commit_publication_execution(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     assembled: AssembledCommitExecution,
     required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
+    required_output_materialization: Option<
+        std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>,
+    >,
 ) -> Result<PreparedCommitPublicationExecution, crate::transactions::data::TransactionCommitError> {
     super::consult_stage(execution, super::CommitStage::PublicationPreparation)?;
     let (
@@ -129,6 +104,7 @@ pub(super) fn prepare_commit_publication_execution(
             PreparePublicationPhaseInput {
                 recovered_codec_publication_custody,
                 required_output_publication,
+                required_output_materialization,
                 created_entities: &created_entities,
                 created_relations: &created_relations,
                 commit_log,

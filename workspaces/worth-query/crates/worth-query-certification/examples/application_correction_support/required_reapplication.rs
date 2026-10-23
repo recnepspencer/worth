@@ -134,10 +134,10 @@ pub fn run() {
     let fact = reapplied.aftermath_causality().unwrap();
     assert_eq!(fact.role(), WorthQueryAftermathCausalRole::RecordedReapply);
     assert_eq!(
-        fact.recorded_source().unwrap().relational(),
+        fact.recorded_source().relational(),
         original.commit_reference()
     );
-    let lineage = fact.correction_lineage().unwrap();
+    let lineage = fact.correction_lineage();
     assert_eq!(lineage.root().relational(), original.commit_reference());
     assert_eq!(
         lineage.selected_alternative().unwrap().relational(),

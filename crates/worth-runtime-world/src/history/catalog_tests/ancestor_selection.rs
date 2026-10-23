@@ -27,6 +27,7 @@ fn selection_follows_fork_parent_links_and_distinguishes_incomplete_from_sibling
         .expect("the source before the fork is an actual ancestor");
     assert_eq!(selected.source().identity(), commits[0].identity());
     assert_eq!(selected.target(), target.identity());
+    assert_eq!(selected.parent_links_followed(), 3);
     assert!(matches!(
         catalog.select_retained_ancestor(&execution, target.identity(), sibling.identity(), None,),
         Err(Denial::NotAncestor)
@@ -80,6 +81,7 @@ fn selected_source_is_protected_and_retired_source_cannot_be_reselected() {
     let selected = catalog
         .select_retained_ancestor(&execution, source, source, NonZeroUsize::new(1))
         .unwrap();
+    assert_eq!(selected.parent_links_followed(), 0);
     let reclaim = || CompositeHistoryReclamationRequest::new(owner, vec![source.clone()], 1);
     assert_eq!(
         catalog

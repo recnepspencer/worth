@@ -110,10 +110,6 @@ pub enum WorthQueryApplicationCommitDenialKind {
     SigningLifecycleSubjectCapacity { maximum_subjects: usize },
     SigningLifecycleRepresentationCapacity,
     SigningLifecycleObservation { kind: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind },
-    /// A sealed undo or redo handoff belongs to different admitted truth.
-    RecoveryHandoffMismatch {
-        kind: crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind,
-    },
     /// The operation is bound to an elevation lifecycle and must be committed
     /// through its elevation lane, not as a plain commit.
     ElevationTransitionRequired,
@@ -225,16 +221,6 @@ impl WorthQueryApplicationCommitDenial {
     pub(crate) const fn correction_context_mismatch() -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::CorrectionContextMismatch,
-            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
-            detail: None,
-            cause: None,
-        }
-    }
-    pub(crate) const fn recovery_handoff_mismatch(
-        kind: crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind,
-    ) -> Self {
-        Self {
-            kind: WorthQueryApplicationCommitDenialKind::RecoveryHandoffMismatch { kind },
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
             detail: None,
             cause: None,

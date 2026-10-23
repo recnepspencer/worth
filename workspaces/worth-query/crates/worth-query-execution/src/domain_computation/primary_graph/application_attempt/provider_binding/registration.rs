@@ -176,7 +176,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
     let expected_steps = effects.shared_expected_steps();
     if let Some(source) = context
         .aftermath_causality(&inspection)
-        .and_then(|causality| causality.prepared_correction())
+        .map(|causality| causality.prepared_correction())
         && let Err(denial) = source.validate_authored_candidate(
             effects.native_publication_roles(),
             effects.batch(),
@@ -204,7 +204,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
     }
     if let Some(source) = context
         .aftermath_causality(&inspection)
-        .and_then(|causality| causality.prepared_correction())
+        .map(|causality| causality.prepared_correction())
         && let Err(denial) = source.validate_workflow_candidate(effects.batch())
     {
         let _ = staged.abort();

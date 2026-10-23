@@ -48,7 +48,7 @@ facades expose on its behalf. See [§7](#7-internal-crates-do-not-import).
 
 | Level | Meaning | Crates |
 |---|---|---|
-| **Stable** | The exported names are snapshotted in `tools/boundary-check/snapshots/facades.toml`. Adding, removing, or renaming an export fails boundary-check until the snapshot is updated deliberately. | `worth-query-decl`, `worth-query-host` (including `facade::primary_graph` and `facade::provisional_aftermath`), `worth-query-replay`, `worth-query-certification`, `worth-schema-core`, `worth-schema-graph` |
+| **Stable** | The exported names are snapshotted in `tools/boundary-check/snapshots/facades.toml`. Adding, removing, or renaming an export fails boundary-check until the snapshot is updated deliberately. | `worth-query-decl`, `worth-query-host` (including `facade::application_entry` and `facade::primary_graph`), `worth-query-replay`, `worth-query-certification`, `worth-schema-core`, `worth-schema-graph` |
 | **Active** | Maintained and used, with a documented entry point, but not snapshotted. Expect change. | `worth-signal`, `worth-signal-wasm`, `worth-relational`, `worth-server`, `worth-ui`, `worth-ui-native-platform`, `worth-store` |
 | **Dormant** | Present, but nothing active depends on it. | `worth-server-client-generation`; nine Store crates for semantic durable programs |
 
@@ -56,9 +56,6 @@ Separately from status, every crate in [§7](#7-internal-crates-do-not-import) i
 
 WORTH does not yet publish numbered versions. "Stable" means that a change
 to the surface is visible and deliberate, not that it cannot happen.
-
-`facade::provisional_aftermath` on the host facade is snapshotted, but its name
-says what it is: the aftermath and recovery vocabulary is still settling.
 
 ---
 
@@ -115,7 +112,7 @@ lower-runtime internals.
 | Module on `worth_query_host::facade` | What it gives you |
 |---|---|
 | `application_installation` | Install a validated program: `in_memory_program`, or `in_memory_rostered_program` with successor revisions. See [Build an Application §4](build-an-application.md#4-install-the-application-graph) |
-| `application_entry` | The request API: `application.request(&principal, &scope)` via `WorthQueryApplicationRequestExt`, then `.query(..)`, mutations, `.on_branch(..)`, `.programs()` for adoption ([§7](build-an-application.md#7-adopt-a-new-program-on-a-branch)), and the `prepare_workflow_*` lifecycle calls ([§6](build-an-application.md#6-author-publish-and-run-workflows)) |
+| `application_entry` | The request API: `application.request(&principal, &scope)` via `WorthQueryApplicationRequestExt`, then `.query(..)`, mutations, `.on_branch(..)`, `.corrections()` for [recorded correction and reapplication](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md), `.programs()` for adoption ([§7](build-an-application.md#7-adopt-a-new-program-on-a-branch)), and the `prepare_workflow_*` lifecycle calls ([§6](build-an-application.md#6-author-publish-and-run-workflows)) |
 | `application_contribution` | Contribution-composed applications: `ApplicationSchemaContribution`, `WorthQueryApplicationContribution`, handler and invariant setup |
 | `application_discovery` | Discover what an installed application offers |
 | `application_invariants` | Invariant factories and their execution points |
@@ -126,7 +123,6 @@ lower-runtime internals.
 | `product` | Product branches: the published state an application reads and writes |
 | `publication` | Published results, disclosure, and publication outcomes |
 | `convergence_epoch` | Convergence epochs across owners |
-| `provisional_aftermath` | Aftermath and recovery handles for effects that did not settle cleanly |
 | `declaration` | The declaration types a host needs, without a separate decl import |
 
 The two request shapes you will use most:
@@ -320,7 +316,7 @@ hold.
 | `worth-query-declaration` | Canonical declarations and binding grammar | `worth-query-decl` |
 | `worth-query-installation` | Portable packages and installed contracts | `worth_query_host::facade::domain` |
 | `worth-query-admission` | Basis, policy, resource, access-planning decisions | `worth_query_host::facade::admission` |
-| `worth-query-execution` | Execution over admitted plans | `worth_query_host::facade::{primary_graph, provisional_aftermath}` |
+| `worth-query-execution` | Execution over admitted plans, canonical correction history and recovery custody | `worth_query_host::facade::primary_graph` |
 | `worth-query-publication` | Disclosure and publication | `worth_query_host::facade::publication` |
 | `worth-query-package-archive` | The release archive protocol | Release tooling only |
 

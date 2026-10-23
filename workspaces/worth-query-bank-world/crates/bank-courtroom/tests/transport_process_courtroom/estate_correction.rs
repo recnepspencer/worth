@@ -1,7 +1,7 @@
 //! Historical estate correction uses fresh authority across the real process boundary.
 use super::*;
+use bank_http_adapter::BankHttpCorrectionSource;
 use bank_http_adapter::{BankHttpAccountStatus, BankHttpAccountSummary};
-use worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceCoordinates;
 
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "requires the real Docker identity provider and cold Bank/user-node processes"]
@@ -81,10 +81,7 @@ async fn closed_estate_freeze_corrects_until_its_actual_capability_is_revoked() 
     world.shutdown().await;
 }
 
-async fn freeze_and_close(
-    world: &TransportProcessWorld,
-    key: &str,
-) -> WorthQueryCorrectionSourceCoordinates {
+async fn freeze_and_close(world: &TransportProcessWorld, key: &str) -> BankHttpCorrectionSource {
     complete_and_close(
         world,
         key,
@@ -99,7 +96,7 @@ async fn complete_and_close(
     world: &TransportProcessWorld,
     key: &str,
     operation: serde_json::Value,
-) -> WorthQueryCorrectionSourceCoordinates {
+) -> BankHttpCorrectionSource {
     let mut outcome =
         forwarded(node_mutation(&world.client, world.peer_address, &create(key, operation)).await);
     while let BankHttpMutationOutcome::Pending { sequence, .. } = outcome {

@@ -89,7 +89,6 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             | Kind::ProgramNotActiveOnOccurrence { .. }
             | Kind::ProgramSupportRetired
             | Kind::ProgramActivationUnresolved
-            | Kind::RecoveryHandoffMismatch { .. }
             | Kind::CorrectionContextMismatch
             | Kind::CorrectionIdentityMismatch => cleanup_indeterminate(),
         },

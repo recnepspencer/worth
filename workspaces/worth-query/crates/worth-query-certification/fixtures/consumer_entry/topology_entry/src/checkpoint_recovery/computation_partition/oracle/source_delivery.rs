@@ -1,6 +1,7 @@
 //! The correction is an ordinary no-output action beside the real oracle roots.
 use super::super::entry_correction::EntryCorrectionBinding;
 use super::*;
+pub(super) mod correction;
 use worth_query_decl::facade::application_program::{
     ApplicationActionDelivery, ApplicationActionReference, ApplicationRootComposition,
     ApplicationSourceCompletion,

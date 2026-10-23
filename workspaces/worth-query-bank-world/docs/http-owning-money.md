@@ -116,6 +116,70 @@ successful shutdown joins the mutation workers. After listener loss,
 refusal returns the continuation. Rail completion custody retains
 its separate handoff contract.
 
+## Choosing and reapplying historical SendMoney
+
+Keep completed mutation custody for each occurrence that later historical
+selection or retry will need. Its retained native observation keeps that exact
+World occurrence available. For a source S, reversal U, reapplication R and later
+reversal V, retain their completed custody IDs until the chooser and command
+retries finish, then close each with its next sequence. Each owner retains its
+own occurrence. The history token retains traversal progress. Keep the completed
+owners alive for the occurrences the journey needs.
+
+After reversing a SendMoney occurrence, inspect its alternatives with
+`POST /v1/corrections/history`. Supply the original completed `source`, a request
+ID and explicit history, disclosure and page bounds:
+
+```javascript
+const historyRequest = {
+  request_id: "choose-original-transfer",
+  source: transferResponse.source,
+  controls: {
+    deadline_milliseconds: 5000,
+    maximum_history_work: 128,
+    maximum_disclosure_results: 16,
+    maximum_entries: 1
+  }
+};
+```
+
+The user-node supplies its current session credential. Direct Bank requests also
+carry `protocol: "v4"` and `credential`. Each delivered page contains
+`alternatives`, a `continuation` token and `complete`. Save the desired row's
+`source`. While `complete` is false, send the same source and token to
+`POST /v1/corrections/history/resume` with a new request ID and fresh controls.
+Page width and disclosure-query results have separate bounds. Repeating the
+initial or latest continuation request ID returns its recorded response after
+current disclosure succeeds.
+
+Once traversal is complete, create ordinary mutation custody for the chosen row:
+
+```javascript
+const operation = {
+  operation: "reapply_send_money",
+  history_token: finalPage.continuation,
+  source: chosenRow.source
+};
+```
+
+Use a fresh idempotency key for a new reapplication. Query resolves the row against
+canonical history and executes the captured original SendMoney input under
+current source authority and account truth. Reapplication appends a new journal;
+the original movement and its reversals remain visible. Advance its ordinary
+custody, read retained activity if needed, and close it with the next sequence
+when its historical use finishes.
+
+The chooser token belongs to the authenticated participant and expires under the
+server's configured handle lifetime. A branch advance makes its native resolution
+stale. Refresh history to choose again. For an exact command retry, select the
+same historical row with refreshed history and retain its original key; native
+retry returns the recorded occurrence even after another lineage transition.
+After losing a mutation response, resume its saved custody ID. Chooser expiry
+leaves that mutation owner retained for advancement and normal close.
+Once the completed history owners close, later publications can retire their
+optional source history. A fresh chooser then returns `stale` with `refresh`
+when that source is unavailable.
+
 ## Correcting an estate freeze
 
 Create `freeze_estate_account` with an estate ID and canonical account ID:

@@ -2,7 +2,7 @@
 use super::*;
 use crate::application_entry::mutation::{
     authorization::WorthQueryBindingAdmission,
-    captured_input::CapturedMutationInput,
+    captured_input::WorthQueryCapturedMutationInput,
     preparation::{CandidatePreparation, PreparedCandidate},
     request::WorthQueryApplicationMutationRequest,
 };
@@ -89,7 +89,7 @@ where
         request.principal,
         request.scope,
         request.branch,
-        CapturedMutationInput::<Schema, Binding>::new(input),
+        WorthQueryCapturedMutationInput::<Schema, Binding>::new(input),
     );
     let mut mutation = mutation.idempotency(identities.key());
     let Some(source) = source else {

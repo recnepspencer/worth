@@ -1,7 +1,9 @@
 //! Closed historical correction across independently authenticated node and Bank processes.
 use super::*;
+use bank_http_adapter::BankHttpCorrectionSource;
 use bank_http_adapter::{BankHttpAccountActivityItem, BankHttpAccountActivityPageOutcome};
-use worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceCoordinates;
+#[path = "recorded_correction/reapplication.rs"]
+mod reapplication;
 
 #[tokio::test(flavor = "multi_thread")]
 #[ignore = "requires the real Docker identity provider and cold Bank/user-node processes"]
@@ -43,11 +45,11 @@ async fn closed_money_correction_survives_response_loss_and_exact_replay() {
         matches!(forwarded(node_mutation(&world.client, recipient, &copied).await),
         BankHttpMutationOutcome::Rejected { denial, .. } if denial.kind == BankHttpDenialKind::PermissionDenied)
     );
-    let mixed = WorthQueryCorrectionSourceCoordinates::from_untrusted_parts(
-        intervening.world_owner(),
-        intervening.world_commit(),
-        original.relational().clone(),
-    );
+    let mixed = BankHttpCorrectionSource {
+        world_owner: intervening.world_owner,
+        world_commit: intervening.world_commit,
+        relational: original.relational.clone(),
+    };
     let mixed_request = create(
         "mixed-source",
         "mixed-key",
@@ -199,10 +201,7 @@ async fn closed_money_correction_survives_response_loss_and_exact_replay() {
             panic!("fresh authority reads the actual retained correction publication");
         };
         assert_eq!(activity.entries, source_after);
-        assert_eq!(
-            publication.basis.version,
-            performed.relational().version_id.0
-        );
+        assert_eq!(publication.basis.version, performed.relational.version_id);
         close(&world, custody, 4).await;
     }
     world.shutdown().await;
@@ -249,11 +248,7 @@ fn forwarded(outcome: BankUserNodeMutationOutcome) -> BankHttpMutationOutcome {
     response
 }
 
-async fn send(
-    world: &TransportProcessWorld,
-    key: &str,
-    amount: i64,
-) -> WorthQueryCorrectionSourceCoordinates {
+async fn send(world: &TransportProcessWorld, key: &str, amount: i64) -> BankHttpCorrectionSource {
     let request = create(
         key,
         key,

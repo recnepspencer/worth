@@ -1,5 +1,12 @@
 # Bank recorded-source compensation
 
+**Status:** Completed and covered by certified Phase 2 acceptance.
+The [9.18 specification](../../plans/WORTH-query/milestone-9.18.md)
+owns current milestone progress.
+
+The boundary review and implementation order below record this completed public
+Bank accounting/process slice's historical planning.
+
 ## Boundary review
 
 Phase 2 requires the actual Bank accounting and process journey. The verified
@@ -72,5 +79,6 @@ schema/operations/send_money_outputs.rs. Shared Journal authoring retains its
 existing owner. Consumer documentation will show the normal source-selection
 and correction entry, with detailed current examples in the existing guides.
 
-Phase 2 closes only after its complete acceptance evidence passes. Phases 3–4
-remain held. All work is public; private repositories are untouched.
+The historical Phase 2 gate required complete accounting and process acceptance
+evidence. Current milestone progress is maintained in the specification linked
+above. All work here is public; private repositories are untouched.

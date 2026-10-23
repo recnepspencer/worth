@@ -99,6 +99,7 @@ mod tests {
             PublishedAuthoritativeRecordPatch {
                 target: target_b.clone(),
                 structural_change: RecordStructuralChange::Created,
+                relation_birth: None,
                 authoritative_patch:
                     crate::publication::patch::data::PublishedAuthoritativePatch::empty(),
                 semantic_changes: Vec::new(),
@@ -108,6 +109,7 @@ mod tests {
             PublishedAuthoritativeRecordPatch {
                 target: target_a.clone(),
                 structural_change: RecordStructuralChange::Updated,
+                relation_birth: None,
                 authoritative_patch:
                     crate::publication::patch::data::PublishedAuthoritativePatch::empty(),
                 semantic_changes: Vec::new(),

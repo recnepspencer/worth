@@ -140,7 +140,6 @@ fn historical_created_output() {
             .aftermath_causality()
             .unwrap()
             .recorded_source()
-            .unwrap()
             .relational(),
         source.commit_reference()
     );

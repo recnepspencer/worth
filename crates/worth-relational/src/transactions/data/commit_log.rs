@@ -41,7 +41,7 @@ pub struct CommitHistorySummary {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CommitPatchBudgetSummary {
     pub patch_record_count: usize,
-    pub max_patch_records_per_commit: usize,
+    pub max_patch_records_per_commit: Option<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

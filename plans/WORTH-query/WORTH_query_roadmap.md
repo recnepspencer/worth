@@ -5665,6 +5665,10 @@ owner/type contracts, destination topology, deletion and acceptance requirements
 
 ## Milestone 9.18: Tree-Based Semantic Undo And Redo
 
+**Status:** All four public phases certified and closed. Public authored,
+derived-family, locality, history, Bank process and repository enforcement
+acceptance pass. Private consumer adoption belongs to a separate milestone.
+
 ### Goal
 
 Replace the provisional Milestone 9.16 linear undo/redo experiment with an
@@ -5707,9 +5711,9 @@ The governing milestone spec is
 - preserved alternative descendants rather than a mutable undo/redo stack
 - public branch-history/aftermath facade, executable documentation, complete
   provisional-lane cutover, and independent hostile certification
-- real Bank authenticated process/accounting/external-effect correction and real
-  WORTH Proprietary CAD source/geometry correction (the general modeling thin slice,
-  including authored create/delete) against the candidate facade;
+- real Bank authenticated process/accounting/external-effect correction and the
+  public authored create/delete, derived-family regeneration and locality courts
+  against the candidate facade;
   product session redo selection cannot erase canonical history alternatives
 
 ### Must Preserve
@@ -5731,9 +5735,10 @@ commit, stale or hostile attempts cannot move the product head, actual partial
 owner effects retain unpublished custody, divergence remains explicit,
 compensation does not claim reversal, and alternatives remain navigable.
 Ordinary commits pay zero correction planning/navigation work while installed
-pre-image capture remains separately accounted. The Bank process and Proprietary
-source/geometry journeys are acceptance gates; a missing consumer dependency update
-or private product run cannot be replaced by an in-memory substitute.
+pre-image capture remains separately accounted. The real Bank process and public
+authored lifecycle, family regeneration and 10/1,000-entry locality journeys are
+acceptance gates. Private CAD/Studio adoption belongs to a separate consumer
+milestone, as defined by the governing 9.18 specification.
 
 ## Milestone 9.19: Managed Advanced Access And Verified Footprints
 

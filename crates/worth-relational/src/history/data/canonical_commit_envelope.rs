@@ -26,6 +26,7 @@ pub(crate) use checkpoint_encoding::CheckpointCanonicalEnvelopeRef;
 #[path = "canonical_commit_envelope/descriptive_touches.rs"]
 mod descriptive_touches;
 mod required_output_codec_retirement;
+mod required_output_materialization;
 mod required_output_origin;
 pub use descriptive_touches::{
     RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
@@ -33,6 +34,9 @@ pub use descriptive_touches::{
 };
 pub(crate) use required_output_codec_retirement::{
     CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement,
+};
+pub(crate) use required_output_materialization::{
+    CanonicalRequiredOutputMaterialization, CanonicalRequiredOutputMaterializationRecord,
 };
 pub(crate) use required_output_origin::{
     CanonicalOutputMember, CanonicalOutputPublication, CanonicalRequiredOutputOrigin,
@@ -45,6 +49,9 @@ pub struct CanonicalCommitEnvelope {
         Vec<std::sync::Arc<CanonicalRequiredOutputCodecRetirement>>,
     #[serde(default)]
     pub(crate) required_output_origin: Option<std::sync::Arc<CanonicalRequiredOutputOrigin>>,
+    #[serde(default)]
+    pub(crate) required_output_materialization:
+        Option<std::sync::Arc<CanonicalRequiredOutputMaterialization>>,
     pub commit: RelationalCommitReceipt,
     pub branch_context: BranchId,
     /// Exact owner cell state immediately before this commit advances the
@@ -116,6 +123,7 @@ impl CanonicalCommitEnvelope {
         Self {
             required_output_codec_retirements: Vec::new(),
             required_output_origin: None,
+            required_output_materialization: None,
             commit,
             branch_context,
             branch_cell_checkpoint: None,
@@ -231,6 +239,7 @@ impl CanonicalCommitEnvelope {
         );
         let canonical_semantics = (
             &self.required_output_origin,
+            &self.required_output_materialization,
             &self.schema_version,
             &self.schema_authority,
             &self.merged_plan,

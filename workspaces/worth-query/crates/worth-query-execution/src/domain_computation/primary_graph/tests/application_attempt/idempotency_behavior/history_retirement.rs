@@ -1,218 +1,100 @@
-use super::*;
+//! Sealed correction metadata survives real optional history retirement.
+use crate::domain_computation::primary_graph::tests::fixture::correction_source;
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationIdempotencyResolution, WorthQueryCorrectionSelectionDenial,
+};
+use worth_runtime_world::facade::{
+    CompositeAncestorSelectionDenial, ProductBranchAncestorSelectionDenial,
+};
 
 #[test]
 fn a_causal_replay_after_its_history_retires_answers_with_its_sealed_causality() {
-    {
-        use crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality;
-
-        let world = installed_authorization_world(true);
-
-        // The original commit, later commits, and replay are separate host calls.
-        let request = live_scope();
-        let principal = world
-            .application
-            .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
-                authenticated_principal(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
-                    &world,
-                    &request,
-                )
-            })
-            .expect("the fixture read owns its installed host call");
-        let account = world
-            .application
-            .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
-                resolved_account(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
-                    &world,
-                    "open",
-                    &request,
-                )
-            })
-            .expect("the fixture read owns its installed host call");
-        let parent = world
-            .application
-            .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
-                world
-                    .selected_product(
-                        &(host_custody.phase_for_application(&world.application))
-                            .test_host_request(),
-                    )
-                    .product()
-                    .relational_basis()
-                    .observation()
-                    .commit_receipt()
-                    .cloned()
-                    .expect("fixture head")
-            })
-            .expect("the fixture read owns its installed host call");
-        let pending = WorthQueryPendingAftermathCausality::undo_of(parent);
-        let program = world
-            .application
-            .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
-                admitted_program(
-                    &host_custody.phase_for_application(&world.application),
-                    &world,
-                    &principal,
-                    &account,
-                    &request,
-                    "undone",
-                )
-            })
-            .expect("the fixture read owns its installed host call");
-        let WorthQueryApplicationCommitOutcome::Committed(original) = world
-            .application
-            .with_application_advancement(&request, |phase| {
-                world
-                    .application
-                    .compare_and_commit_application_with_aftermath(
-                        &phase,
-                        program,
-                        idempotency(41, 41),
-                        pending.clone(),
-                        ExecutionAllocationPolicy::SystemAllocation,
-                    )
-            })
-            .unwrap()
-        else {
-            panic!("the causal commit lands");
-        };
-        let causality = original
-            .aftermath_causality()
-            .cloned()
-            .expect("the fresh receipt carries its causality");
-        let causal_commit = original
-            .committed_product_publication()
-            .composite_commit()
-            .clone();
-        drop(original);
-
-        for (key, from, to) in [(43, "undone", "later-1"), (45, "later-1", "later-2")] {
-            let principal = world
+    let world = correction_source::install();
+    let source = correction_source::edit(&world, "retirement-source", "edited-label");
+    let prepared = correction_source::prepare(&world, &source, "retirement-correction");
+    let binding = prepared.binding;
+    let original = correction_source::committed(correction_source::publish(&world, prepared));
+    let causality = original.aftermath_causality().unwrap().clone();
+    let causal_commit = original
+        .committed_product_publication()
+        .composite_commit()
+        .clone();
+    let coordinates = original.correction_source().coordinates();
+    // Publication consumed the preparation. Release every remaining selected
+    // history/receipt handle before making retirement, rather than just age, observable.
+    drop(original);
+    drop(source);
+    drop(correction_source::edit(
+        &world,
+        "retirement-later-1",
+        "later-label-1",
+    ));
+    drop(correction_source::edit(
+        &world,
+        "retirement-later-2",
+        "later-label-2",
+    ));
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let history = world
                 .application
-                .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
-                    authenticated_principal(
-                        &(host_custody.phase_for_application(&world.application))
-                            .test_host_request(),
-                        &world,
-                        &request,
-                    )
-                })
-                .expect("the fixture read owns its installed host call");
-            let account = world
-                .application
-                .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
-                    resolved_account(
-                        &(host_custody.phase_for_application(&world.application))
-                            .test_host_request(),
-                        &world,
-                        from,
-                        &request,
-                    )
-                })
-                .expect("the fixture read owns its installed host call");
-            let program = world
-                .application
-                .with_host_advancement(|phase| {
-                    let host_custody = phase.test_host_request();
-                    admitted_program(
-                        &host_custody.phase_for_application(&world.application),
-                        &world,
-                        &principal,
-                        &account,
-                        &request,
-                        to,
-                    )
-                })
-                .expect("the fixture read owns its installed host call");
-            assert!(matches!(
-                world.application.compare_and_commit_application(
-                    program,
-                    idempotency(key, key),
-                    ExecutionAllocationPolicy::SystemAllocation
-                ),
-                WorthQueryApplicationCommitOutcome::Committed(_)
-            ));
-        }
-        let history = world
-            .application
-            .with_host_advancement(|phase| {
-                world.application.branches().history(
+                .branches()
+                .history(
                     &phase,
                     world.application.current_world(),
                     std::num::NonZeroUsize::new(64),
                 )
-            })
-            .expect("the original installed host opens a fresh phase")
-            .expect("the live branch exposes its history");
-        assert!(
-            history
-                .entries()
-                .all(|entry| entry.selected_commit() != &causal_commit),
-            "two later publications retired the causal commit's history"
-        );
-        drop(history);
-
-        let principal = world
-            .application
-            .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
-                authenticated_principal(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
-                    &world,
-                    &request,
-                )
-            })
-            .expect("the fixture read owns its installed host call");
-        let account = world
-            .application
-            .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
-                resolved_account(
-                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
-                    &world,
-                    "later-2",
-                    &request,
-                )
-            })
-            .expect("the fixture read owns its installed host call");
-        let replay = world
-            .application
-            .with_host_advancement(|phase| {
-                let host_custody = phase.test_host_request();
-                admitted_program(
-                    &host_custody.phase_for_application(&world.application),
-                    &world,
+                .unwrap();
+            assert!(
+                history
+                    .entries()
+                    .all(|entry| entry.selected_commit() != &causal_commit),
+                "later real publications must retire the correction commit"
+            );
+            drop(history);
+            let scope = super::super::super::fixture::live_scope();
+            let principal = super::super::super::fixture::authenticate_external(
+                world.application.installed_schema(),
+                "alice",
+                std::time::Duration::from_secs(120),
+                &scope,
+            );
+            let target = world.selected_product(&phase.test_host_request());
+            let denial = target
+                .select_correction_source_coordinates(
+                    &phase,
                     &principal,
-                    &account,
-                    &request,
-                    "undone",
+                    &scope,
+                    &coordinates,
+                    None,
+                    std::num::NonZeroUsize::MIN,
                 )
-            })
-            .expect("the fixture read owns its installed host call");
-        let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) = world
-            .application
-            .with_application_advancement(&request, |phase| {
-                world
-                    .application
-                    .compare_and_commit_application_with_aftermath(
-                        &phase,
-                        replay,
-                        idempotency(41, 41),
-                        pending,
-                        ExecutionAllocationPolicy::SystemAllocation,
+                .err()
+                .expect("a copied coordinate cannot pin expired history");
+            assert!(
+                matches!(
+                    denial,
+                    WorthQueryCorrectionSelectionDenial::Ancestry(
+                        worth_runtime_world::facade::RuntimeWorldServiceDenial::Denied(
+                            ProductBranchAncestorSelectionDenial::History(
+                                CompositeAncestorSelectionDenial::SourceUnavailable
+                            )
+                        )
                     )
-            })
-            .unwrap()
-        else {
-            panic!("a causal replay after retirement answers its commit, never intent drift");
-        };
-        assert_eq!(recovered.aftermath_causality(), Some(&causality));
-    }
+                ),
+                "fresh expired selection must fail at native history: {denial:?}"
+            );
+        })
+        .unwrap();
+    let WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(recovered) =
+        correction_source::replay(&world, binding)
+    else {
+        panic!("fresh admitted idempotency resolution recovers the original causal receipt");
+    };
+    assert_eq!(recovered.aftermath_causality(), Some(&causality));
+    assert_eq!(
+        recovered.committed_product_publication().composite_commit(),
+        &causal_commit
+    );
 }

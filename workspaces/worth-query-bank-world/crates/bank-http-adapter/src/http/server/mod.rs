@@ -8,6 +8,8 @@ mod configuration;
 mod continuation_executor;
 mod continuation_registry;
 mod continuation_routes;
+mod correction_history_routes;
+mod correction_source;
 mod elevation_executor;
 mod elevation_registry;
 mod elevation_routes;

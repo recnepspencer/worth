@@ -182,6 +182,7 @@ impl RelationalPreparationRuntime {
         )?;
         Ok(ValidatedRelationalProposal {
             required_output_publication: None,
+            required_output_materialization: None,
             commit_work_budget: self.commit_work_budget.clone(),
             mutation_authority: transaction.mutation_authority,
             transaction_id,

@@ -3,7 +3,7 @@ use super::*;
 use worth_query_decl::facade::application_schema::*;
 
 macro_rules! binding {
-    ($binding:ident, $outputs:ident, $role:ident, $support:ident, $action:ty, $postures:ident, $id:literal) => {
+    ($binding:ident, $outputs:ident, $role:ident, $support:ident, $extra:ident, $action:ty, $postures:ident, $extra_postures:ident, $id:literal) => {
         pub(in crate::checkpoint_recovery::computation_partition::oracle::collection) struct $outputs;
         pub(in crate::checkpoint_recovery::computation_partition::oracle::collection) struct $role<Schema>(PhantomData<fn() -> Schema>);
         impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRole for $role<Schema> {
@@ -27,7 +27,17 @@ macro_rules! binding {
             const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
                 &[<$role<Schema> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
             const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] =
-                &[<$support<Schema> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR];
+                &[<$support<Schema> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR,
+                  <$extra<Schema> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR];
+        }
+        pub(super) struct $extra<Schema>(PhantomData<fn() -> Schema>);
+        impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRoleFamily for $extra<Schema> {
+            type Schema = Schema;
+            type Contract = $outputs;
+            type Entity = members::GeneratedSupport;
+            const PREFIX: &'static str = "optional.";
+            const POSTURES: ApplicationMutationOutputPostureSet = ApplicationMutationOutputPostureSet::$extra_postures;
+            const MINIMUM: usize = 0;
         }
         pub(in crate::checkpoint_recovery::computation_partition::oracle::collection) struct $binding<Schema>(PhantomData<fn() -> Schema>);
         impl<Schema: TopologySchemaBinding> ApplicationMutationBinding<Schema>
@@ -36,7 +46,7 @@ macro_rules! binding {
             type Input = RegionOutputInput;
             type InputBinding = RegionOutputInputBinding;
             type Operation = TotalRegionOutput;
-            type Decision = u64;
+            type Decision = (u64, bool, u64);
             type Output = $outputs;
             type Result = worth_query_consumer_values::PlanarAdjustmentResult;
             type ResultBinding = PlanarMutationResultBinding;
@@ -105,7 +115,9 @@ binding!(
     InitialOutputs,
     CreatedTotal,
     CreatedSupport,
+    CreatedExtra,
     WorthQueryCreateOutput,
+    CREATE,
     CREATE,
     "initial"
 );
@@ -114,8 +126,10 @@ binding!(
     PreserveOutputs,
     PreservedTotal,
     PreservedSupport,
+    PreservedExtra,
     WorthQueryPreserveOutput,
     PRESERVE,
+    ALL,
     "preserve"
 );
 

@@ -14,6 +14,7 @@ use super::{CompositeHistoryCatalog, CompositeHistoryCatalogDenial, CompositeRun
 pub struct RetainedCompositeAncestor {
     source: Arc<CompositeRuntimeWorldCommit>,
     target: CompositeCommitIdentity,
+    parent_links_followed: usize,
     _protection: CompositeHistoryProtectionObligation,
     _catalog: CompositeHistoryCatalog,
 }
@@ -25,6 +26,12 @@ impl RetainedCompositeAncestor {
 
     pub fn target(&self) -> &CompositeCommitIdentity {
         &self.target
+    }
+
+    /// Parent links traversed from the selected target to this source.
+    /// The source and target admission lookups are separate from this count.
+    pub const fn parent_links_followed(&self) -> usize {
+        self.parent_links_followed
     }
 }
 
@@ -96,6 +103,7 @@ impl CompositeHistoryCatalog {
                 return Ok(RetainedCompositeAncestor {
                     source: Arc::clone(&source_entry.commit),
                     target: target.clone(),
+                    parent_links_followed: visited,
                     _protection: protect_installed(&state, source)?,
                     _catalog: self.clone(),
                 });

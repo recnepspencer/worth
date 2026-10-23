@@ -76,6 +76,7 @@ fn patch_record(
     PublishedAuthoritativeRecordPatch {
         target: RecordRef::Entity(EntityId::new(PartitionId(0), raw_entity_id, 0)),
         structural_change,
+        relation_birth: None,
         authoritative_patch: crate::publication::patch::data::PublishedAuthoritativePatch::empty(),
         semantic_changes: Vec::new(),
         contains_opaque_aspect: false,
@@ -91,6 +92,7 @@ fn fragment(
     crate::authority::mutation::FoundationalPatchFragment {
         target: record.target,
         structural_change: record.structural_change,
+        relation_birth: record.relation_birth,
         patch: worth_foundational::facade::AuthoritativeRecordAspectPatch::empty(),
         published_patch: record.authoritative_patch,
         semantic_changes: record.semantic_changes,

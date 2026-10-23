@@ -15,6 +15,7 @@ pub(crate) fn prepare_consulted_authoritative_commit(
     mut context: AuthoritativeCommitContext,
 ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
     let required_output_publication = context.required_output_publication.take();
+    let required_output_materialization = context.required_output_materialization.take();
     let allocation_policy = execution.allocation_policy();
     let scope_control = crate::validation::engine::InvariantPreparationControl::for_transaction(
         &context.validation_input,
@@ -65,6 +66,7 @@ pub(crate) fn prepare_consulted_authoritative_commit(
         runtime,
         assembled,
         required_output_publication,
+        required_output_materialization,
     )?;
     prepared.append_diagnostics(diagnostic_capture.finish());
     if let Some(interruption) =

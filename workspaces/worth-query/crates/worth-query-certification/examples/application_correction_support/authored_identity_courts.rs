@@ -174,7 +174,6 @@ fn create_retire_and_restore() {
             .aftermath_causality()
             .unwrap()
             .recorded_source()
-            .unwrap()
             .relational(),
         retired.commit_reference()
     );

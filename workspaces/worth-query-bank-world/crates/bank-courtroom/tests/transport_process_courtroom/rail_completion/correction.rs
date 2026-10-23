@@ -2,12 +2,12 @@
 use std::net::SocketAddr;
 
 use bank_external_rail::{inquire_completed_effect_count, inquire_dispatch_contact_count};
+use bank_http_adapter::BankHttpCorrectionSource;
 use bank_http_adapter::{
     BankHttpAccountActivityItem, BankHttpAccountActivityPageOutcome, BankHttpDenialKind,
     BankHttpMutationOutcome,
 };
 use bank_user_node::{BankUserNodeAccountActivityPageOutcome, BankUserNodeMutationOutcome};
-use worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceCoordinates;
 
 pub(super) async fn assert_original_notice_replays(
     client: &reqwest::Client,
@@ -36,11 +36,11 @@ pub(super) async fn assert_completed_notice_refuses_journal_inverse(
     client: &reqwest::Client,
     node: SocketAddr,
     rail: SocketAddr,
-    source: &WorthQueryCorrectionSourceCoordinates,
+    source: &BankHttpCorrectionSource,
     original_world: (u64, u64),
 ) {
     assert_eq!(
-        (source.world_owner(), source.world_commit()),
+        (source.world_owner, source.world_commit),
         original_world,
         "correction selects the actual authenticated external occurrence"
     );

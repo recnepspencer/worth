@@ -1,8 +1,13 @@
 # Correction of a workflow-produced occurrence
 
-This public 9.18 Phase 2 slice preserves workflow continuation and inbound
-completion while correcting one exact performed business operation. Phases 3–4
-remain held. Bank and estate transport adoption use the same native boundary.
+**Status:** Completed and covered by certified Phase 2 acceptance.
+The [9.18 specification](../../plans/WORTH-query/milestone-9.18.md)
+owns current milestone progress.
+
+This plan records the public workflow-correction slice's historical boundary
+review, implementation order and verification notes. It preserves workflow
+continuation and inbound completion while correcting one exact performed business
+operation. Bank and estate transport adoption use the same native boundary.
 
 ## Reviewed boundary
 

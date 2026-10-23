@@ -13,9 +13,7 @@ pub(super) fn locators(
 }
 
 pub(super) fn values(pending: &WorthQueryPendingAftermathCausality) -> [Option<AspectValue>; 4] {
-    let Some(source) = pending.recorded_source() else {
-        return [None, None, None, None];
-    };
+    let source = pending.recorded_source();
     [
         Some(AspectValue::UInt64(source.world().owner_identity().get())),
         Some(AspectValue::UInt64(source.world().ordinal())),

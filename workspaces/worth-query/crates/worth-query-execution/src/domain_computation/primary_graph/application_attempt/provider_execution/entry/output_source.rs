@@ -14,7 +14,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         presented: &WorthQueryPresentedProgram<'_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
-        causality: ApplicationCommitCausality<'_>,
+        causality: ApplicationCommitCausality,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
@@ -101,7 +101,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         presented: &WorthQueryPresentedProgram,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
-        causality: ApplicationCommitCausality<'_>,
+        causality: ApplicationCommitCausality,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where

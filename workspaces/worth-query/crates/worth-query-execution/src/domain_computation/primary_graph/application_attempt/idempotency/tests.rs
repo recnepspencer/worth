@@ -11,10 +11,16 @@ use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 fn correction_source_extends_intent_without_replacing_the_actual_inverse_input() {
     use super::WorthQueryRecordedIntentMatch;
     let inverse = WorthQueryApplicationIdempotencyBinding::new([1; 32], [2; 32]);
-    let first = inverse.bind_correction(&[3; 32]).bind_operation(&[5; 32]);
-    let retry = inverse.bind_correction(&[3; 32]).bind_operation(&[5; 32]);
-    let different_source = inverse.bind_correction(&[4; 32]).bind_operation(&[5; 32]);
-    assert_eq!(first.key_identity(), inverse.key_identity());
+    let first = inverse
+        .bind_correction_command(&[6; 32], &[3; 32])
+        .bind_operation(&[5; 32]);
+    let retry = inverse
+        .bind_correction_command(&[6; 32], &[3; 32])
+        .bind_operation(&[5; 32]);
+    let different_source = inverse
+        .bind_correction_command(&[6; 32], &[4; 32])
+        .bind_operation(&[5; 32]);
+    assert_eq!(first.key_identity(), &[6; 32]);
     assert_eq!(first.intent_identity(), inverse.intent_identity());
     assert_eq!(first.correction_identity(), Some(&[3; 32]));
     assert_eq!(

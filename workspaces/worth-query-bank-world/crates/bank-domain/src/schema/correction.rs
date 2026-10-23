@@ -117,4 +117,19 @@ impl ApplicationCorrectionBinding<BankSchema> for ReverseSentMoney {
     ) -> V::Output {
         dispatch.conventional()
     }
+
+    fn reapplication_key(
+        key: &str,
+    ) -> Result<
+        BankIdempotencyKey,
+        worth_query_decl::facade::application_schema::ApplicationValueEncodeDenial,
+    > {
+        Self::inverse_key(key)
+    }
+
+    fn visit_reapplication<V: ApplicationReapplicationVisitor<BankSchema>>(
+        dispatch: ApplicationReapplicationDispatch<BankSchema, Self, V>,
+    ) -> V::Output {
+        dispatch.conventional()
+    }
 }

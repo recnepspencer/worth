@@ -1,4 +1,6 @@
 //! Bounded lineage projection carries complete active-reversal resolution into selection.
+mod selection;
+
 use super::*;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::application_aftermath::{
@@ -6,6 +8,7 @@ use crate::domain_computation::application_aftermath::{
 };
 use crate::domain_computation::primary_graph::provider::{
     WorthQueryActiveReversalProgress, WorthQueryCanonicalCorrectionFact,
+    WorthQueryCorrectionHistoryPageAllocation, WorthQueryCorrectionHistoryProgress,
 };
 
 /// Descriptive reference to one canonical historical reversal in a lineage.
@@ -60,6 +63,9 @@ pub struct WorthQueryCorrectionAlternativesPage {
     entries: Vec<WorthQueryCorrectionAlternativeRef>,
     continuation: Option<WorthQueryCorrectionAlternativesContinuation>,
     resolution: Option<WorthQueryCorrectionAlternativeResolution>,
+    lineage_entries_examined: usize,
+    consumption_entries_examined: usize,
+    _allocation: WorthQueryCorrectionHistoryPageAllocation,
 }
 impl WorthQueryCorrectionAlternativesPage {
     /// Historical reversal references returned by this page's native posting range.
@@ -73,6 +79,14 @@ impl WorthQueryCorrectionAlternativesPage {
     /// Complete active-reversal classification, available only on the final page.
     pub fn resolution(&self) -> Option<&WorthQueryCorrectionAlternativeResolution> {
         self.resolution.as_ref()
+    }
+    /// Native lineage posting entries examined while producing this page.
+    pub fn lineage_entries_examined(&self) -> usize {
+        self.lineage_entries_examined
+    }
+    /// Native consumption-index entries examined for this page's reversals.
+    pub fn consumption_entries_examined(&self) -> usize {
+        self.consumption_entries_examined
     }
 }
 
@@ -124,29 +138,44 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             maximum_results,
         )
         .map_err(|denial| Denial::Selection(Box::new(denial)))?;
-        let root = super::lineage::reverse_identity(source)?.root().clone();
+        let identity = super::lineage::reverse_identity(source)?;
+        let root = identity.root();
         let target =
             WorthQueryProductBranchReadIdentity::from_observation(self.product().observation());
-        if after.is_some_and(|after| after.root != root || after.target != target) {
-            return Err(Denial::ForeignAlternative);
+        if let Some(after) = after {
+            if &after.root != root {
+                return Err(Denial::ForeignAlternative);
+            }
+            selection::require_current_target(&after.target, &target)?;
         }
         let execution = phase
             .execution_request_for(&self.application().product_runtime)
             .map_err(|_| Denial::ForeignPhase)?;
         let provider = &self.application().primary_provider;
-        let (facts, progress) = provider
+        let history: WorthQueryCorrectionHistoryProgress = provider
             .correction_alternatives_progress_at_basis(
                 &execution,
                 self.product().relational_basis(),
-                &root,
+                root,
                 maximum_entries.get(),
                 after.map(|after| &after.progress),
             )
             .map_err(Denial::History)?;
-        let entries = facts
-            .into_iter()
-            .map(|fact| WorthQueryCorrectionAlternativeRef { fact })
-            .collect();
+        // Local payloads drop before their reservation on every refused projection.
+        let mut allocation = history.allocation;
+        let facts = history.entries;
+        let progress = history.progress;
+        let root = allocation.clone_root(root).map_err(Denial::History)?;
+        let fact_capacity = facts.capacity();
+        let mut entries = allocation
+            .reserve_projection_slots::<WorthQueryCorrectionAlternativeRef>(facts.len())
+            .map_err(Denial::History)?;
+        for fact in facts {
+            entries.push(WorthQueryCorrectionAlternativeRef { fact });
+        }
+        allocation
+            .release_fact_slots(fact_capacity)
+            .map_err(Denial::History)?;
         let (continuation, resolution) = match progress {
             WorthQueryActiveReversalProgress::Complete(active) => (
                 None,
@@ -169,6 +198,9 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             entries,
             continuation,
             resolution,
+            lineage_entries_examined: history.examined_entry_count,
+            consumption_entries_examined: history.consumption_examined_entry_count,
+            _allocation: allocation,
         })
     }
 
@@ -188,11 +220,10 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         WorthQueryCorrectionDerivationDenial,
     > {
         use WorthQueryCorrectionDerivationDenial as Denial;
-        if resolution.target
-            != WorthQueryProductBranchReadIdentity::from_observation(self.product().observation())
-        {
-            return Err(Denial::ForeignAlternative);
-        }
+        selection::require_current_target(
+            &resolution.target,
+            &WorthQueryProductBranchReadIdentity::from_observation(self.product().observation()),
+        )?;
         let provider = &self.application().primary_provider;
         let selected = provider
             .performed_correction_source(&selected.fact)
@@ -203,12 +234,10 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         let fact = occurrence
             .aftermath_causality()
             .ok_or(Denial::ForeignAlternative)?;
-        let lineage = fact
-            .correction_lineage()
-            .ok_or(Denial::ForeignAlternative)?;
+        let lineage = fact.correction_lineage();
         if lineage.role() != crate::domain_computation::application_aftermath::WorthQueryAftermathCausalRole::RecordedReverse
             || lineage.root() != &resolution.root { return Err(Denial::ForeignAlternative); }
-        let operated = fact.recorded_source().ok_or(Denial::ForeignAlternative)?;
+        let operated = fact.recorded_source();
         let execution = phase
             .execution_request_for(&self.application().product_runtime)
             .map_err(|_| Denial::ForeignPhase)?;

@@ -1,9 +1,14 @@
 # Query composite correction recovery boundary
 
-This review concerns public 9.18 Phase 2 only. It supplements the existing
-composite effects plan; it does not change the milestone's acceptance criteria.
+**Status:** Completed and covered by certified Phase 2 acceptance.
+The [9.18 specification](../../plans/WORTH-query/milestone-9.18.md)
+owns current milestone progress.
 
-## Actual ownership and current gap
+This public composite-recovery review supplements the composite effects plan.
+Its boundary findings, implementation order and intermediate verification notes
+record the completed slice's historical planning and acceptance.
+
+## Historical ownership gap
 
 `prepare_operation` constructs the native source operation from the original
 inverse input, transformed key and `WorthQueryCorrectionIntent`. The inverse

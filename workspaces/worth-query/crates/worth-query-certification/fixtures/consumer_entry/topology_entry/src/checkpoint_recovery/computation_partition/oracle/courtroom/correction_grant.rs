@@ -2,11 +2,17 @@
 use super::super::super::entry_correction::capability::*;
 use super::*;
 use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphBootstrap;
-pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>, scope: &str) {
+pub(in crate::checkpoint_recovery::computation_partition::oracle) fn seed(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>,
+    scope: &str,
+) {
+    for set in ["even", "odd"] {
+        facts::seed_owned_set(graph, scope, set);
+    }
     seed_grant(graph, scope, "entry-correction-grant", 1);
     seed_grant(graph, scope, "program-adoption-grant", 2);
 }
-fn seed_grant(
+pub(in crate::checkpoint_recovery::computation_partition::oracle) fn seed_grant(
     graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>,
     scope: &str,
     grant: &str,

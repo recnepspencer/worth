@@ -161,6 +161,11 @@ impl RelationalCanonicalPublicationRoutes {
         visible_envelope(self.by_commit.get(&commit_id).map(|entry| entry.clone()))
     }
 
+    /// Includes reserved routes; bounds traversal through the visible subset.
+    pub(crate) fn catalog_len_bound(&self) -> usize {
+        self.by_commit.len()
+    }
+
     pub(crate) fn by_version(&self, version_id: VersionId) -> Option<Arc<CanonicalCommitEnvelope>> {
         visible_envelope(self.by_version.get(&version_id).map(|entry| entry.clone()))
     }

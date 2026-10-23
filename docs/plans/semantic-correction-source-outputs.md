@@ -1,8 +1,13 @@
 # Historical fields of an actual created source output
 
-This is the next public 9.18 Phase 2 boundary after typed compensation. It supplies
-the source-bound identity needed by Bank journal compensation. It does not close
-Phase 2 or begin Phases 3–4. Private remains outside the task.
+**Status:** Completed and covered by certified Phase 2 acceptance.
+The [9.18 specification](../../plans/WORTH-query/milestone-9.18.md)
+owns current milestone progress.
+
+This plan records the public source-output slice's historical boundary review,
+implementation order and intermediate verification notes. It supplies the
+source-bound identity needed by Bank journal compensation. Private work remains
+outside the task.
 
 ## Reviewed owners and constraints
 
@@ -161,6 +166,7 @@ incremental builds, unrestricted jobs and 64 MiB stacks. Reuse both independent
 reviewers for actual source/evidence clearance. Keep consumer guidance detailed,
 current and easy to find in the capability index.
 
-This first source-field checkpoint does not claim Preserve/Retire reconstruction,
+This first source-field checkpoint did not claim Preserve/Retire reconstruction,
 create/delete correspondence, Bank process transport or external-owner completion.
-Those remaining Phase 2 obligations require their real integration and evidence.
+Those obligations subsequently completed through their separate Phase 2 integration
+and acceptance boundaries.

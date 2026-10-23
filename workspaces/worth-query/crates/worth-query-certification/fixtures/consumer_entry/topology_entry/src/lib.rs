@@ -1,4 +1,6 @@
 #![forbid(unsafe_code)]
+// Threaded owner tests derive Send/Sync through nested persistent graph storage.
+#![recursion_limit = "256"]
 
 use fixture_values::PositiveLength;
 use worth_query_consumer_values as fixture_values;
@@ -73,8 +75,6 @@ worth_query_application_contribution! {
         members: |schema| {
             #[cfg(test)]
             let schema = checkpoint_recovery::required_chain::declare(schema);
-            #[cfg(test)]
-            let schema = checkpoint_recovery::computation_partition::declare(schema);
             let schema = alternate_output::declare_alternate_output(schema);
             let schema = vertex_replacement::declare_vertex_replacement(schema);
             let schema = prior_cycle_adjustment::declare_prior_cycle_adjustment(schema);
@@ -85,7 +85,7 @@ worth_query_application_contribution! {
                 Some(work) => schema.operation_projection_work_budget(EditPlanar::reference::<Schema>(), work),
                 None => schema,
             };
-            base_model::declare(schema)
+            let schema = base_model::declare(schema)
                 .operation(MutatePlanar::reference::<Schema>().definition().no_external_effect().no_aftermath().finish())
 
                 .operation_projection_work_budget(MutatePlanar::reference::<Schema>(), 256)
@@ -124,7 +124,10 @@ worth_query_application_contribution! {
                 .application_query(planar_discovery_definition::<Schema>())
                 .application_query_binding::<PlanarDiscoveryBinding<Schema>>()
                 .application_query(planar_output_query_definition::<Schema>())
-                .application_query_binding::<PlanarOutputReadBinding<Schema>>()
+                .application_query_binding::<PlanarOutputReadBinding<Schema>>();
+            #[cfg(test)]
+            let schema = checkpoint_recovery::computation_partition::declare(schema);
+            schema
         }
     }
 }

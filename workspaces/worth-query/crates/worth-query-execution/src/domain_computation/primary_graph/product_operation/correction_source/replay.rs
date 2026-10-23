@@ -60,7 +60,7 @@ pub(super) fn select_input<Schema: ApplicationSchema, C: ApplicationCorrectionBi
     let lineage = match &observed {
         Observed::Completed(_, committed) => committed
             .aftermath_causality()
-            .and_then(|fact| fact.correction_lineage())
+            .map(|fact| fact.correction_lineage())
             .cloned()
             .ok_or(WorthQueryCorrectionDerivationDenial::UnsupportedSourceMeaning)?,
         _ => super::lineage::reverse_identity(source)?,
@@ -108,7 +108,7 @@ pub(super) fn select_reapplication_input<
     let lineage = match &observed {
         Observed::Completed(_, committed) => committed
             .aftermath_causality()
-            .and_then(|fact| fact.correction_lineage())
+            .map(|fact| fact.correction_lineage())
             .cloned()
             .ok_or(Denial::UnsupportedSourceMeaning)?,
         _ => super::reapplication::selected_lineage(alternative)?,

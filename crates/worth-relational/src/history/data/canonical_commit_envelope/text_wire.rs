@@ -19,6 +19,9 @@ pub(crate) struct CanonicalEnvelopeWire<'a> {
         Vec<std::sync::Arc<super::CanonicalRequiredOutputCodecRetirement>>,
     #[serde(default)]
     required_output_origin: Option<std::sync::Arc<super::CanonicalRequiredOutputOrigin>>,
+    #[serde(default)]
+    required_output_materialization:
+        Option<std::sync::Arc<super::CanonicalRequiredOutputMaterialization>>,
     commit: RelationalCommitReceipt,
     branch_context: BranchId,
     branch_cell_checkpoint: Option<crate::branch::RelationalBranchCellCheckpoint>,
@@ -68,6 +71,7 @@ impl CanonicalEnvelopeWire<'_> {
         let envelope = super::CanonicalCommitEnvelope {
             required_output_codec_retirements: self.required_output_codec_retirements,
             required_output_origin: self.required_output_origin,
+            required_output_materialization: self.required_output_materialization,
             commit: self.commit,
             branch_context: self.branch_context,
             branch_cell_checkpoint: self.branch_cell_checkpoint,

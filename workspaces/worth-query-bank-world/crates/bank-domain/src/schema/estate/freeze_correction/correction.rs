@@ -92,4 +92,12 @@ impl ApplicationCorrectionBinding<BankSchema> for RestoreRecordedEstateFreeze {
     ) -> V::Output {
         dispatch.capability::<RestoreFrozenEstateAccountCapability>()
     }
+    fn reapplication_key(key: &str) -> Result<BankIdempotencyKey, ApplicationValueEncodeDenial> {
+        Self::inverse_key(key)
+    }
+    fn visit_reapplication<V: ApplicationReapplicationVisitor<BankSchema>>(
+        dispatch: ApplicationReapplicationDispatch<BankSchema, Self, V>,
+    ) -> V::Output {
+        dispatch.capability::<FreezeEstateAccountCapability>()
+    }
 }

@@ -49,6 +49,7 @@ fn common_operation_handoff_borrows_capability_preconditions_and_cleanup() {
             scope_key: SCOPE.to_owned(),
             entry: 1,
             mask: 2.0_f64.to_bits() ^ 3.0_f64.to_bits(),
+            expected: None,
         };
         let operation = request
             .mutate(OriginalCorrection(input))
@@ -63,6 +64,7 @@ fn common_operation_handoff_borrows_capability_preconditions_and_cleanup() {
                 scope_key: SCOPE.to_owned(),
                 entry: 1,
                 mask: 1,
+                expected: None,
             }))
             .without_source()
             .preconditions(TypedMutationPreconditions::new().expect_fact(
@@ -216,6 +218,7 @@ fn common_operation_handoff_completes_source_without_retained_observation() {
             scope_key: SCOPE.to_owned(),
             entry: 1,
             mask: 2.0_f64.to_bits() ^ 3.0_f64.to_bits(),
+            expected: None,
         }))
         .without_source()
         .preconditions(TypedMutationPreconditions::new().expect_fact(

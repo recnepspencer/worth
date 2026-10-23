@@ -17,6 +17,10 @@ pub(super) enum AdmittedBankHttpMutation {
     CorrectSendMoney(
         worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceCoordinates,
     ),
+    ReapplySendMoney {
+        history_token: String,
+        source: worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceCoordinates,
+    },
     Deposit(Deposit),
     Withdraw(Withdraw),
     SendMoney(

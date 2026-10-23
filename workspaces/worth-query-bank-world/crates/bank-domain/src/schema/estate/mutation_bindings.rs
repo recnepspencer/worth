@@ -1,8 +1,8 @@
 use worth_query_decl::facade::{
     application_operation::{
         ApplicationCapabilityMutationBinding, ApplicationMutationBinding,
-        ApplicationMutationFieldScope, ApplicationMutationIntent, NoApplicationMutationOutputs,
-        NoApplicationMutationSource,
+        ApplicationMutationFieldScope, ApplicationMutationInputScope, ApplicationMutationIntent,
+        NoApplicationMutationOutputs, NoApplicationMutationSource,
     },
     application_schema::{
         ApplicationFieldRef, ApplicationPrincipalBindingRef, EqualityPredicate, NoApplicationUnit,
@@ -230,6 +230,21 @@ impl ApplicationMutationBinding<BankSchema> for FreezeEstateAccountMutationBindi
 
 impl ApplicationCapabilityMutationBinding<BankSchema> for FreezeEstateAccountMutationBinding {
     type Capability = FreezeEstateAccountCapability;
+}
+
+impl ApplicationMutationInputScope<BankSchema, FreezeEstateAccountMutationBinding>
+    for EstateAction
+{
+    fn scope_for_binding(
+        &self,
+    ) -> <FreezeEstateAccountMutationBinding as ApplicationMutationBinding<BankSchema>>::ScopeBinding
+    {
+        ApplicationMutationFieldScope::new(
+            EstateCaseIdentityField::reference(),
+            self.estate()
+                .expect("every estate action variant carries its estate"),
+        )
+    }
 }
 
 impl ApplicationMutationIntent<BankSchema> for FreezeEstateAccount {

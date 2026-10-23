@@ -65,7 +65,7 @@ fn expired_candidate_denies_index_preflight_with_lifetime_not_missing_generation
         ))
         .publication(crate::facade::config::PublicationConfig {
             coherent_publication_required: true,
-            max_patch_records_per_commit: 4_096,
+            max_patch_records_per_commit: None,
             max_published_snapshot_handles: Some(8),
             max_active_snapshot_handles: Some(8),
             max_transaction_savepoints: 8,

@@ -1,13 +1,9 @@
 # Milestone 9.18: Tree-Based Semantic Undo And Redo
 
-> **Status:** Phases 1–3 certified and closed; Phase 4 held. Design reconciled with the current application entry,
-> program adoption, workflow and owner-publication code on 2026-09-29.
+> **Status:** All four public phases certified and closed.
 > **Dependencies:** 9.17.4, 9.17.5, 9.17.6 and [9.17.7](./milestone-9.17.7.md)
-> are completed. Phase 1 may begin
-> independently; inbound completion and custody
-> courts gate external-effect integration and final acceptance, not Phase 1 entry.
-> This document specifies destination APIs; it does not claim that tree correction
-> ships today. All four phases and their acceptance gates are public-repository
+> are completed. Inbound completion and custody courts gate external-effect
+> integration and final acceptance. All four phases and their acceptance gates are public-repository
 > work. Private CAD/Studio adoption belongs to a separate consumer milestone.
 
 ## Goal And Roadmap Placement
@@ -40,9 +36,10 @@ Correction here never grafts a historical component into a target world or silen
 rebases a stale attempt. Process-local custody remains the acceptance boundary;
 Store-backed reconstruction of correction history/custody is a successor contract.
 
-## Current Boundary And Required Change
+## Starting Boundary And Required Change
 
-Paths below are repository-relative evidence of today's implementation.
+The repository-relative paths below record the starting implementation and the
+required cutover. Current certification status is recorded under each phase.
 
 | Existing boundary | What 9.18 consumes and changes |
 | --- | --- |
@@ -524,7 +521,7 @@ The implementation plan is
 [retained reapplication and correction alternatives](../../docs/plans/semantic-correction-tree-history.md).
 It distinguishes the selected historical alternative from the active reversal
 consumed on the target ancestry, using canonical causal facts and native indexed
-pagination. Phase 4 is the next integration slice.
+pagination. Phase 4 public integration is complete.
 
 Add retained-meaning reapplication, canonical causal edges, exact alternative selection,
 branch-local consumed-edge rules, bounded pagination and lawful retention expiry. Prove
@@ -541,6 +538,15 @@ transport/user-node behavior and DTO compatibility. Remove executable provisiona
 exports, callers, linear-stack tests and misleading documentation together; retain
 accepted aftermath/recovery. Ship documentation and run the required enforcement and
 focused/integration gates below. No parallel product-owned correction engine remains.
+
+The public authored lifecycle, derived-family regeneration and 10/1,000-scope
+locality courts now pass against the accepted request and output paths. The
+canonical chooser survives handle and index disposal; the authenticated Bank
+process completes historical selection, response-loss recovery and normal owner
+close. Native publication admits the complete atomic bootstrap without an
+implicit patch-record ceiling while an explicitly selected finite ceiling still
+refuses with its typed publication trace. Repository boundary and generated-context
+checks pass; independent source and acceptance reviews clear the public boundary.
 
 Each phase adds its adversarial proof as the boundary becomes real; there is no final
 phase where all correctness testing begins. Implementation plans choose private edit

@@ -135,7 +135,7 @@ fn publication_handle_retention_is_bounded_by_policy() {
         .schema_registry(test_schema_registry())
         .publication(PublicationConfig {
             coherent_publication_required: true,
-            max_patch_records_per_commit: 4096,
+            max_patch_records_per_commit: None,
             max_published_snapshot_handles: Some(2),
             max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,
@@ -196,7 +196,7 @@ fn published_handle_and_admitted_observation_remain_exact_until_release() {
         .schema_registry(test_schema_registry())
         .publication(PublicationConfig {
             coherent_publication_required: true,
-            max_patch_records_per_commit: 4096,
+            max_patch_records_per_commit: None,
             max_published_snapshot_handles: Some(4),
             max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,
@@ -239,7 +239,7 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
         .schema_registry(test_schema_registry())
         .publication(PublicationConfig {
             coherent_publication_required: true,
-            max_patch_records_per_commit: 4096,
+            max_patch_records_per_commit: None,
             max_published_snapshot_handles: Some(3),
             max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,
@@ -251,7 +251,7 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
         .schema_registry(test_schema_registry())
         .publication(PublicationConfig {
             coherent_publication_required: true,
-            max_patch_records_per_commit: 4096,
+            max_patch_records_per_commit: None,
             max_published_snapshot_handles: Some(3),
             max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,

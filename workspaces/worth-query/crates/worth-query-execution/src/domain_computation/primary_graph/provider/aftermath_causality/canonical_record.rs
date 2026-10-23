@@ -103,7 +103,6 @@ fn decode(
                         .map(|active| lineage_fields::consumption_selector(active.relational()))
                         .as_ref()
         }
-        _ => false,
     };
     if !shape {
         return Err(Unavailable);

@@ -1,5 +1,12 @@
 # Retained correction delivery and Bank transport
 
+**Status:** Completed and covered by certified Phase 2 acceptance.
+The [9.18 specification](../../plans/WORTH-query/milestone-9.18.md)
+owns current milestone progress.
+
+The boundary review, implementation order and verification notes below record
+this completed public retained-delivery/Bank transport slice's historical planning.
+
 ## Boundary review
 
 The Bank inverse action declares retained-commit delivery. The recorded inverse
@@ -73,7 +80,7 @@ process checks. Use cached unoptimized first-party builds, unrestricted jobs and
 and process evidence. Batch final boundary/context/format/cap checks with the
 parallel Phase 2 slices. Private and later phases remain untouched.
 
-## Retained source and replay evidence
+## Historical retained-source and replay checkpoint
 
 The native retained-delivery and unpublished-recovery courts exposed a missing
 fixture lifetime: their coordinates survived close, but no selected source held
@@ -96,4 +103,4 @@ exact retained replay. The seven native estate freeze tests also pass, including
 capability revocation and the exact `SourceDiverged` refusal after restoration.
 The existing independent QA reviewer accepted these bounded source/runtime
 results. Payment workflow settlement, composite definition recovery, and the
-actual process journeys remain separate Phase 2 acceptance requirements.
+actual process journeys had separate Phase 2 acceptance boundaries.

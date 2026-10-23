@@ -17,12 +17,12 @@ use worth_query_declaration::facade::application_operation::ApplicationSharedInp
 /// Exact capability input retained from the original operation admission.
 ///
 /// The erased storage lets the non-generic commit receipt carry application
-/// input without inventing a second serialized command format. Recovery can
-/// only observe it through a typed downcast; no caller can replace the value.
+/// input and its funded allocation through receipt and recovery custody.
+/// Correction preparation accesses the original binding's encoded carrier.
 #[derive(Clone)]
 pub(crate) struct WorthQueryRetainedGovernedInput {
     encoded: Option<Arc<dyn Any + Send + Sync>>,
-    value: Arc<dyn Any + Send + Sync>,
+    _value: Arc<dyn Any + Send + Sync>,
     type_id: TypeId,
     type_name: &'static str,
     governed_identity: Option<[u8; 32]>,
@@ -46,7 +46,7 @@ impl WorthQueryRetainedGovernedInput {
     {
         Self {
             encoded: encoded.cloned(),
-            value: Arc::new(input.clone()),
+            _value: Arc::new(input.clone()),
             type_id: TypeId::of::<Input>(),
             type_name: std::any::type_name::<Input>(),
             governed_identity,
@@ -55,10 +55,11 @@ impl WorthQueryRetainedGovernedInput {
         }
     }
 
-    pub(crate) fn downcast_ref<Input: 'static>(&self) -> Option<&Input> {
+    #[cfg(test)]
+    fn downcast_ref<Input: 'static>(&self) -> Option<&Input> {
         (self.type_id == TypeId::of::<Input>())
             .then(|| {
-                self.value
+                self._value
                     .downcast_ref::<ApplicationSharedInput<Input>>()
                     .map(AsRef::as_ref)
             })
@@ -75,10 +76,6 @@ impl WorthQueryRetainedGovernedInput {
             worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding,
     {
         self.encoded.as_ref()?.downcast_ref()
-    }
-
-    pub(crate) const fn has_governed_identity(&self) -> bool {
-        self.governed_identity.is_some()
     }
 
     pub(crate) const fn governed_identity(&self) -> Option<[u8; 32]> {
@@ -101,7 +98,7 @@ impl WorthQueryRetainedGovernedInput {
     pub(crate) fn axis_probe(governed_identity: [u8; 32]) -> Self {
         Self {
             encoded: None,
-            value: Arc::new(()),
+            _value: Arc::new(()),
             type_id: TypeId::of::<()>(),
             type_name: std::any::type_name::<()>(),
             governed_identity: Some(governed_identity),
@@ -236,6 +233,7 @@ impl WorthQueryApplicationCommitAuthorityBinding {
     ///
     /// A mismatched type yields no value; the caller never supplies replacement
     /// bytes or a fallback value.
+    #[cfg(test)]
     pub(crate) fn retained_governed_input<Input: 'static>(&self) -> Option<&Input> {
         self.retained_governed_input.as_ref()?.downcast_ref()
     }

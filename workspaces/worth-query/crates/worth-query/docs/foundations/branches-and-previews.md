@@ -49,6 +49,22 @@ Selection proves the source belongs to the target's retained ancestry; preparati
 checks current disclosure, program meaning and inverse authority. Publication
 appends one child of that target and preserves its disjoint intervening edits.
 
+Correction alternatives also belong to the selected branch's history. Use
+`request.corrections().alternatives(...)`, follow its continuation to completion,
+and select the historical reversal the user chose. The completed traversal
+resolves the active reversal on that exact target. For example, after a source
+is reversed, reapplied and reversed again, choosing the first reversal reapplies
+the retained source input and consumes the currently active reversal. The
+receipt records both identities. A sibling branch keeps its own active reversal
+and continuation.
+
+Each history continuation binds its target observation. If the branch advances
+between pages or before selection, obtain a new traversal with a fresh request.
+Keep the command's idempotency key when retrying a submitted correction: an
+equivalent retry resolves its original performed occurrence. The
+[history chooser example](../../../worth-query-certification/examples/application_correction_support/tree_reapplication.rs)
+shows explicit older-alternative selection, pagination and ordinary close.
+
 A selected occurrence pins exact history for repeatable reads while the branch
 head advances. Closing a product retires its World history first and then any
 private component branches. Retained reads can defer cleanup; the returned

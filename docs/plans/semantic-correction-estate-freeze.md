@@ -1,5 +1,12 @@
 # Estate freeze recorded correction
 
+**Status:** Completed and covered by certified Phase 2 acceptance.
+The [9.18 specification](../../plans/WORTH-query/milestone-9.18.md)
+owns current milestone progress.
+
+The boundary review and implementation order below record this completed public
+estate-freeze correction slice's historical planning.
+
 ## Boundary review
 
 The ordinary freeze mutation resolves the exact estate/account relation, requires

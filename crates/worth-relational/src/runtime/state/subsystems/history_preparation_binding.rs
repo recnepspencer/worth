@@ -76,6 +76,17 @@ impl RelationalPreparationHistory {
         self.canonical_routes.by_version(version)
     }
 
+    pub(crate) fn canonical_envelope(
+        &self,
+        commit: CommitId,
+    ) -> Option<Arc<CanonicalCommitEnvelope>> {
+        self.canonical_routes.by_commit(commit)
+    }
+
+    pub(crate) fn canonical_catalog_len(&self) -> usize {
+        self.canonical_routes.catalog_len_bound()
+    }
+
     pub(crate) fn publication_requires_settlement(&self, commit_id: CommitId) -> bool {
         self.canonical_routes.has_unsettled_performed_publication() == Some(commit_id)
     }

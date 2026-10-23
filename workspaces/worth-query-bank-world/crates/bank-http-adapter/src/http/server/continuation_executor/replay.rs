@@ -3,9 +3,9 @@ use bank_server::{BankAuthenticatedPrincipal, BankReadControls};
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 
 use super::{
-    denied, malformed, query_denial, AdmittedPageRequest, BankHttpAccountActivityPageOutcome,
-    BankHttpApplicationAuthenticator, BankHttpContinuationRegistry, BankHttpDenial,
-    BankHttpDenialKind, BankHttpNextAction,
+    access, denied, malformed, query_denial, AdmittedPageRequest,
+    BankHttpAccountActivityPageOutcome, BankHttpApplicationAuthenticator, BankHttpDenial,
+    BankHttpDenialKind, BankHttpNextAction, SharedContinuationRegistry,
 };
 
 pub(super) fn revokes_cached_access(denial: BankHttpDenial) -> bool {
@@ -37,8 +37,8 @@ where
     Ok(())
 }
 
-pub(super) fn fail_resume(
-    registry: &mut BankHttpContinuationRegistry,
+pub(super) async fn fail_resume(
+    registry: &SharedContinuationRegistry,
     token: &str,
     request: &AdmittedPageRequest,
     denial: BankHttpDenial,
@@ -53,11 +53,14 @@ pub(super) fn fail_resume(
         _ => denial,
     };
     let outcome = denied(Some(request.request_id.clone()), denial);
-    registry.fail_resume(
-        token,
-        request.request_id.clone(),
-        outcome.clone(),
-        scrub_initial,
-    );
+    access(registry, |registry| {
+        registry.fail_resume(
+            token,
+            request.request_id.clone(),
+            outcome.clone(),
+            scrub_initial,
+        )
+    })
+    .await;
     outcome
 }

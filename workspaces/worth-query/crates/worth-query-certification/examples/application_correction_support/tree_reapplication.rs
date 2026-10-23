@@ -206,58 +206,69 @@ pub(super) fn alternative_on<'a>(
     reversal: &WorthQueryApplicationCommitReceipt,
     expected_count: usize,
 ) -> WorthQuerySelectedCorrectionAlternative<'a, NumericSchema> {
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope).on_branch(branch);
-    let selected = request.corrections().select(source, limits()).unwrap();
-    let mut page = request
-        .corrections()
-        .alternatives(&selected, limits(), NonZeroUsize::MIN)
-        .unwrap();
-    let mut entries = page.entries().to_vec();
-    assert!(entries.len() <= 1, "the requested page width is one");
-    if expected_count == 2 {
-        assert!(
-            page.continuation().is_some(),
-            "two alternatives require continuation at page width one"
-        );
-    }
-    if page.continuation().is_some() {
-        assert!(matches!(
-            page.select(&entries[0], limits()),
-            Err(WorthQueryApplicationCorrectionDenial::Derivation(
-                WorthQueryCorrectionDerivationDenial::AlternativeResolutionIncomplete
-            ))
-        ));
-    }
-    while let Some(continuation) = page.continuation() {
-        let next = request
+    let (page, chosen) = {
+        let scope = request_scope();
+        let principal = authenticate_operator(host.installed_schema(), &scope);
+        let request = host.runtime().request(&principal, &scope).on_branch(branch);
+        let selected = request.corrections().select(source, limits()).unwrap();
+        let mut page = request
             .corrections()
-            .continue_alternatives(&selected, limits(), NonZeroUsize::MIN, continuation)
+            .alternatives(&selected, limits(), NonZeroUsize::MIN)
             .unwrap();
-        assert!(
-            next.entries().len() <= 1,
-            "every continued page respects its requested width"
+        let mut entries = page.entries().to_vec();
+        assert!(entries.len() <= 1, "the requested page width is one");
+        if expected_count == 2 {
+            assert!(
+                page.continuation().is_some(),
+                "two alternatives require continuation at page width one"
+            );
+        }
+        if page.continuation().is_some() {
+            assert!(matches!(
+                page.select(&entries[0], limits()),
+                Err(WorthQueryApplicationCorrectionDenial::Derivation(
+                    WorthQueryCorrectionDerivationDenial::AlternativeResolutionIncomplete
+                ))
+            ));
+        }
+        while let Some(continuation) = page.continuation() {
+            let next = request
+                .corrections()
+                .continue_alternatives(&selected, limits(), NonZeroUsize::MIN, continuation)
+                .unwrap();
+            assert!(
+                next.entries().len() <= 1,
+                "every continued page respects its requested width"
+            );
+            entries.extend_from_slice(next.entries());
+            page = next;
+        }
+        assert_eq!(
+            entries.len(),
+            expected_count,
+            "ordinary edits preserve every canonical alternative"
         );
-        entries.extend_from_slice(next.entries());
-        page = next;
-    }
-    assert_eq!(
-        entries.len(),
-        expected_count,
-        "ordinary edits preserve every canonical alternative"
-    );
-    for (position, entry) in entries.iter().enumerate() {
-        assert!(
-            !entries[..position].contains(entry),
-            "continuation cannot repeat a row"
-        );
-    }
-    let chosen = entries
-        .iter()
-        .find(|entry| entry.performed_commit() == reversal.commit_reference())
-        .expect("the exact historical reversal is listed");
-    page.select(chosen, limits()).unwrap()
+        for (position, entry) in entries.iter().enumerate() {
+            assert!(
+                !entries[..position].contains(entry),
+                "continuation cannot repeat a row"
+            );
+        }
+        let chosen = entries
+            .iter()
+            .find(|entry| entry.performed_commit() == reversal.commit_reference())
+            .expect("the exact historical reversal is listed");
+        let coordinates = chosen.source().clone();
+        (page.into_page(), coordinates)
+    };
+    let fresh_scope = request_scope();
+    let fresh_principal = authenticate_operator(host.installed_schema(), &fresh_scope);
+    host.runtime()
+        .request(&fresh_principal, &fresh_scope)
+        .on_branch(branch)
+        .corrections()
+        .select_alternative_coordinates(&page, &chosen, limits())
+        .expect("detached history resolves the chosen source under a fresh request")
 }
 
 pub(super) fn reapply(
@@ -319,14 +330,14 @@ fn assert_reapplication(
 ) {
     let fact = receipt.aftermath_causality().unwrap();
     assert_eq!(fact.role(), WorthQueryAftermathCausalRole::RecordedReapply);
-    let lineage = fact.correction_lineage().unwrap();
+    let lineage = fact.correction_lineage();
     assert_eq!(lineage.root().relational(), root.commit_reference());
     assert_eq!(
         lineage.root().world(),
         root.committed_product_publication().composite_commit()
     );
     assert_eq!(
-        fact.recorded_source().unwrap().relational(),
+        fact.recorded_source().relational(),
         source.commit_reference()
     );
     assert_eq!(

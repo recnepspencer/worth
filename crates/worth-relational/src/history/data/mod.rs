@@ -5,8 +5,10 @@ mod canonical_commit_envelope;
 mod codec_retirement_closure;
 mod codec_retirement_preservation;
 pub(crate) use codec_retirement_closure::{
-    derive_codec_retirement_closure, readmit_required_output_route,
-    validate_codec_output_correspondence, CodecRetirementClosureStop, OwnedCodecRetirementClosure,
+    capture_materialization_producers, derive_codec_retirement_closure,
+    output_materialization_write_matches, prepare_materialization_continuity,
+    readmit_required_output_route, validate_codec_output_correspondence,
+    CodecRetirementClosureStop, OwnedCodecRetirementClosure,
 };
 pub(crate) use codec_retirement_preservation::validate_retired_codec_closure;
 mod canonical_record_allocation;
@@ -37,6 +39,7 @@ pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
 pub(crate) use canonical_commit_envelope::CanonicalOutputPublication;
 pub(crate) use canonical_commit_envelope::{
     CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement,
+    CanonicalRequiredOutputMaterialization, CanonicalRequiredOutputMaterializationRecord,
     CanonicalRequiredOutputOrigin,
 };
 pub use canonical_commit_envelope::{

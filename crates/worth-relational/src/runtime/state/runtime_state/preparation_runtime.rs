@@ -266,7 +266,7 @@ impl crate::capabilities::DiagnosticArtifactSink for RelationalPreparationRuntim
 }
 
 impl crate::capabilities::PublicationPolicySource for RelationalPreparationRuntime {
-    fn max_patch_records_per_commit(&self) -> usize {
+    fn max_patch_records_per_commit(&self) -> Option<usize> {
         self.config.publication.policy.max_patch_records_per_commit
     }
 }

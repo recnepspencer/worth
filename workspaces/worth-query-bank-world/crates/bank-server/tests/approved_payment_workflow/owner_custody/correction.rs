@@ -207,11 +207,7 @@ fn correction_waits_for_original_rail_owner_then_preserves_completed_settlement(
     );
     assert_eq!(support::balances(&ready), before_payment);
     assert_eq!(
-        inverse
-            .aftermath_causality()
-            .unwrap()
-            .recorded_source()
-            .unwrap(),
+        inverse.aftermath_causality().unwrap().recorded_source(),
         &source_coordinates
     );
     assert!(completed.close(&teller_request).is_ok());

@@ -1,8 +1,12 @@
 # Correction under the current installed program
 
-Phase 1 is closed. This first Phase 2 slice supplies retained-source/current-program
-compatibility. Remaining Phase 2 mechanisms stay open; Phases 3–4 remain held.
-All implementation and acceptance work here belongs to the public repository.
+**Status:** Completed and covered by certified Phase 2 acceptance.
+The [9.18 specification](../../plans/WORTH-query/milestone-9.18.md)
+owns current milestone progress.
+
+This plan records the retained-source/current-program compatibility slice's
+historical boundary review, implementation order and verification notes. All
+implementation and acceptance work here belongs to the public repository.
 
 ## Boundary review
 
@@ -70,7 +74,7 @@ enforcement. Reuse adequate unchanged Phase 1 native and World evidence. The exi
 independent reviewer inspects the actual diff and causal evidence before this slice
 is accepted; this slice alone does not certify Phase 2.
 
-Next Phase 2 work follows the same owners: required-output preparation and recovery,
+The subsequent Phase 2 work planned here followed the same owners: required-output preparation and recovery,
 authored definition successors, compensation/reconciliation, workflow dispositions,
-and create/delete correspondence. Bank process acceptance remains required. No
+and create/delete correspondence. Bank process acceptance was a separate gate. No
 private code or later-phase implementation is included here.

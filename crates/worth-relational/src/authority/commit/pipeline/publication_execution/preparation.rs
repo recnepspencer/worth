@@ -130,6 +130,8 @@ pub(super) struct PreparePublicationPhaseInput<'a> {
     pub(super) recovered_codec_publication_custody:
         Option<Arc<crate::durability::RecoveredCodecPublicationCustody>>,
     pub(super) required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
+    pub(super) required_output_materialization:
+        Option<Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,
     pub(super) created_entities: &'a crate::transactions::data::CommitCreatedEntityBindings,
     pub(super) created_relations: &'a crate::transactions::data::CommitCreatedRelationBindings,
     pub(super) commit_log: &'a mut CommitLog,
@@ -155,6 +157,7 @@ pub(super) fn prepare_publication_phase(
     let PreparePublicationPhaseInput {
         recovered_codec_publication_custody,
         required_output_publication,
+        required_output_materialization,
         created_entities,
         created_relations,
         commit_log,
@@ -180,6 +183,14 @@ pub(super) fn prepare_publication_phase(
         deferred_diagnostic_artifacts,
         target_schema_registry,
     ) = publication.into_finalize().into_parts();
+    if required_output_materialization.is_some()
+        && (recovered_codec_publication_custody.is_some() || required_output_publication.is_some())
+    {
+        return Err(crate::mvcc::origin_denial(
+            "materialization maintenance cannot also publish producer or codec retirement meaning",
+        ));
+    }
+    canonical_commit_envelope.required_output_materialization = required_output_materialization;
     if recovered_codec_publication_custody.is_some() && required_output_publication.is_some() {
         return Err(crate::mvcc::origin_denial(
             "codec retirement cannot also mint a producer completion",

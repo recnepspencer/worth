@@ -1,7 +1,11 @@
 # Required outputs of a recorded correction
 
-This is the next public Phase 2 slice of milestone 9.18. The equivalent-program
-compatibility slice is committed. Phases 3–4 remain held.
+**Status:** Completed and covered by certified Phase 2 acceptance.
+The [9.18 specification](../../plans/WORTH-query/milestone-9.18.md)
+owns current milestone progress.
+
+This plan records the public required-output slice's historical boundary review,
+implementation order and intermediate verification notes.
 
 ## Boundary review
 
@@ -124,9 +128,9 @@ gates after the coherent cutover. Use unoptimized incremental builds, unrestrict
 jobs and a 64 MiB Rust stack. Existing reviewers inspect final boundaries and
 actual evidence.
 
-This slice does not close Phase 2. Definition successors, compensation, workflow/
-inbound dispositions, create/delete correspondence and the remaining process,
-cancellation and two-owner courts still require their own completed integration.
+This slice originally left definition successors, compensation, workflow/inbound
+dispositions, create/delete correspondence and the process, cancellation and
+two-owner courts to their separate Phase 2 integration and acceptance boundaries.
 No private changes or later-phase implementation are included.
 
 ## Certification control reach

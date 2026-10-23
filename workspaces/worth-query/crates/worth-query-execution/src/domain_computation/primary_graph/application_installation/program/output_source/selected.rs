@@ -82,7 +82,7 @@ where
         owner: &WorthQuerySelectedProgramOwner<'_, Schema>,
         program: SourceProgram<Schema, Source>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
-        causality: crate::domain_computation::application_aftermath::ApplicationCommitCausality<'_>,
+        causality: crate::domain_computation::application_aftermath::ApplicationCommitCausality,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> ProgramSourceCommit
     where

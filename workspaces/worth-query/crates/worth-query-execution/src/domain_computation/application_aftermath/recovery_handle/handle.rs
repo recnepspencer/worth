@@ -125,16 +125,6 @@ impl WorthQueryRecoveryHandle {
     /// Not a transition and not reachable from outside the crate: the only
     /// callers are the [`RelinquishOnDenial`] combinators.
     fn relinquish(mut self) {
-        self.relinquish_in_place();
-    }
-
-    /// [`Self::relinquish`] through a `&mut` borrow.
-    ///
-    /// [`super::WorthQueryHeldRecoveryHandle`] can only reach its handle from
-    /// `Drop`, where it has no owned value to consume. Emptying `lifecycle`
-    /// here is also what makes this handle's own `Drop` a no-op afterwards, so
-    /// one leaving is recorded once.
-    pub(super) fn relinquish_in_place(&mut self) {
         if let Some(resource) = self.lifecycle.take() {
             let _ = resource.terminate(WorthQueryRecoveryResourceTerminal::Relinquished);
             self.registry.relinquish(self.slot);

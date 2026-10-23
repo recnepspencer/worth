@@ -198,7 +198,8 @@ pub(crate) struct MutationConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PublicationConfig {
     pub coherent_publication_required: bool,
-    pub max_patch_records_per_commit: usize,
+    /// Optional per-commit record policy; None preserves native allocation and accounting.
+    pub max_patch_records_per_commit: Option<usize>,
     /// Optional aggregate custody policy; None preserves accounting without a quota.
     pub max_published_snapshot_handles: Option<usize>,
     /// Optional active snapshot population policy, independent of backing allocation.

@@ -253,7 +253,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 | Kind::ProgramNotActiveOnOccurrence { .. }
                 | Kind::ProgramSupportRetired
                 | Kind::ProgramActivationUnresolved
-                | Kind::RecoveryHandoffMismatch { .. }
                 | Kind::CorrectionContextMismatch
                 | Kind::CorrectionIdentityMismatch => failed(identity, commit_denial),
             };

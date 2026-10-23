@@ -101,7 +101,7 @@ where
             <Source::ScopeBinding as worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding<Schema>>::Scope,
         >,
         idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
-        causality: crate::domain_computation::application_aftermath::ApplicationCommitCausality<'_>,
+        causality: crate::domain_computation::application_aftermath::ApplicationCommitCausality,
         root_kind: crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind,
         discovery: Option<std::sync::Arc<dyn std::any::Any + Send + Sync>>,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
@@ -134,7 +134,7 @@ where
             _ => unreachable!("the typed program source entrance supplies its matching payload"),
         };
         let correction = match &causality {
-            crate::domain_computation::application_aftermath::ApplicationCommitCausality::RecordedReverse(source) => Some(recovery::UnpublishedCorrectionCommand::new(source.intent(), &idempotency)),
+            crate::domain_computation::application_aftermath::ApplicationCommitCausality::RecordedCorrection(source) => Some(recovery::UnpublishedCorrectionCommand::new(source.intent(), &idempotency)),
             _ => None,
         };
         let idempotency = correction

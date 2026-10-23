@@ -276,7 +276,7 @@ pub mod publication {
         PublishedAspectChangePrecision, PublishedAuthoritativeAspectChange,
         PublishedAuthoritativeFieldSet, PublishedAuthoritativePatch,
         PublishedAuthoritativePatchEnvelope, PublishedAuthoritativeRecordPatch,
-        RecordStructuralChange,
+        PublishedRelationBirth, RecordStructuralChange,
     };
     pub use crate::publication::{
         PublicationArtifactsAccess, PublicationDiagnosticsAccess, PublicationPatchStreamAccess,

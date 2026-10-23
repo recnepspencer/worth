@@ -15,9 +15,12 @@ mod committed_dispatch_outbox;
 mod correction;
 pub use correction::{
     BankApprovedPaymentCorrectionPreparation, BankSendMoneyCorrectionPreparation,
+    BankSendMoneyReapplicationPreparation,
 };
 mod estate_correction;
-pub use estate_correction::BankEstateFreezeCorrectionPreparation;
+pub use estate_correction::{
+    BankEstateFreezeCorrectionPreparation, BankEstateFreezeReapplicationPreparation,
+};
 mod error;
 #[cfg(test)]
 mod estate_capability_admission;

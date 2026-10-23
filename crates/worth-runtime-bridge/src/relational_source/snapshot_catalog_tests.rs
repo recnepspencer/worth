@@ -43,6 +43,7 @@ fn publication_bridge_catalog_exposes_committed_patch_and_snapshot() {
                         EntityId::new(PartitionId::main(), 4, 1),
                     ),
                     structural_change: RecordStructuralChange::Updated,
+                    relation_birth: None,
                     authoritative_patch: published_patch(vec![WireOperation::WholeAspectClear {
                         aspect_key: AspectKey::new("profile.name").unwrap(),
                         aspect_identity: AspectIdentity(1),

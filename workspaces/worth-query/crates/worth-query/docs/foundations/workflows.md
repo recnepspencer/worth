@@ -19,6 +19,10 @@ The workflow kernel authorizes and records its own control steps. It enforces
 step, evidence, live-instance, and deadline budgets, and it keeps performed
 effects when an instance is canceled, migrated, or continued on a fork.
 
+To correct a performed operation, use its retained source receipt through the
+[ordinary correction entry](#correct-a-performed-workflow-operation). The
+correction receives current authorization and preserves the workflow's progress.
+
 ## Contents
 
 1. [Terms](#terms)
@@ -1150,6 +1154,35 @@ attestation. These native currentness rules do not independently declare a
 signature's business supersession event or permit signing an arbitrary future
 approval node. Reconcile changed evidence through the authored proposal/review
 path; do not manufacture a grant from restored values or a signature-shaped row.
+
+## Correct a performed workflow operation
+
+Keep the completed operation's source receipt or its full correction coordinates
+with the application's history entry. A fresh request on the target branch
+selects that source through `request.corrections()` and prepares its declared
+inverse or compensating action. Preparation checks current disclosure, the
+source's authored decision dependencies and the exact native workflow settlement.
+
+The correction appends a new domain operation. A completed instance stays
+completed, a cancelled instance stays cancelled, and a live successor keeps its
+current continuation. Fresh ordinary admission authorizes the corrective action.
+If the product requires another approval workflow, run that workflow with a
+fresh proposal and approval for the new action. The original approval remains
+evidence of the original operation's authorization.
+
+Finish any pending original operation through its retained owner before
+preparing its correction. For a completed external effect, the correction
+binding names the original owner's reconciliation procedure, and preparation
+requires its authenticated completion and workflow settlement. A business
+compensation then produces its own ordinary source and delivery owner. Advance,
+deliver and close that owner as usual; retain recovery custody whenever the
+returned outcome requires it.
+
+The [workflow correction guide](../execution/recorded-source-correction.md#correct-an-operation-performed-inside-a-workflow)
+explains declaration and settlement requirements. Its
+[document retention example](../../../worth-query-certification/tests/application_graph/workflow_approval/correction.rs)
+shows an approved operation corrected under current authority while preserving
+the workflow's terminal or live disposition.
 
 ## Navigate back
 

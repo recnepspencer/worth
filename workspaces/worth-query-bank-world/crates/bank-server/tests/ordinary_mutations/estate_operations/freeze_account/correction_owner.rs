@@ -42,7 +42,7 @@ fn source_only_freeze_correction_closes_and_replays_through_its_original_owner()
     let receipt = receipt.clone();
     assert_eq!(
         receipt.aftermath_causality().unwrap().recorded_source(),
-        Some(&source)
+        &source
     );
     assert_eq!(estate_account_status(&fixture), AccountStatus::Open);
     assert!(completed.close(&request).is_ok());

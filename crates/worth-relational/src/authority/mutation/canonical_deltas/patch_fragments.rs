@@ -30,6 +30,7 @@ pub(crate) struct FoundationalPatchFragment {
     pub(crate) semantic_changes: Vec<PublishedAuthoritativeAspectChange>,
     pub(crate) contains_opaque_aspect: bool,
     pub(crate) detail: PatchDetail,
+    pub(crate) relation_birth: Option<crate::publication::patch::data::PublishedRelationBirth>,
 }
 
 impl CanonicalRecordAspectDelta {
@@ -73,6 +74,7 @@ impl CanonicalRecordAspectDelta {
             semantic_changes,
             contains_opaque_aspect,
             detail,
+            relation_birth: None,
         })
     }
 }
@@ -144,6 +146,7 @@ impl FoundationalPatchFragment {
             semantic_changes: self.semantic_changes,
             contains_opaque_aspect: self.contains_opaque_aspect,
             detail: self.detail,
+            relation_birth: self.relation_birth,
         }
     }
 
@@ -165,6 +168,7 @@ impl FoundationalPatchFragment {
             semantic_changes: self.semantic_changes.clone(),
             contains_opaque_aspect: self.contains_opaque_aspect,
             detail: self.detail.clone(),
+            relation_birth: self.relation_birth,
         }
     }
 }

@@ -30,7 +30,36 @@ pub type BankApprovedPaymentCorrectionPreparation<'a> = WorthQueryOperationCorre
     ReverseJournalAction,
 >;
 
+/// Retained original SendMoney input with the installed action's ordinary delivery owner.
+pub type BankSendMoneyReapplicationPreparation<'a> = WorthQueryOperationCorrectionPreparation<
+    'a,
+    BankSchema,
+    bank_domain::schema::SendMoneyMutationBinding,
+    BankApplication,
+    crate::SendMoneyAction,
+>;
+
 impl BankIdentityRuntime {
+    /// Reapplies an explicitly selected historical alternative under current source admission.
+    pub fn prepare_send_money_reapplication<'a>(
+        &'a self,
+        principal: &BankAuthenticatedPrincipal,
+        scope: &WorthQueryRequestScope,
+        alternative: &worth_query_host::facade::primary_graph::WorthQuerySelectedCorrectionAlternative<'a, BankSchema>,
+        key: &str,
+        limits: WorthQueryCorrectionHistoryLimits,
+    ) -> Result<BankSendMoneyReapplicationPreparation<'a>, WorthQueryApplicationCorrectionDenial>
+    {
+        self.request(principal, scope)
+            .corrections()
+            .reapply(alternative)
+            .idempotency(key)
+            .limits(limits)
+            .prepare_operation::<ReverseSentMoney, BankApplication, crate::SendMoneyAction>(
+                self.application_program(),
+            )
+    }
+
     /// Compensates the original journal after native payment and workflow settlement.
     /// Current teller admission governs the retained reversal and its close custody.
     pub fn prepare_approved_payment_correction<'a>(

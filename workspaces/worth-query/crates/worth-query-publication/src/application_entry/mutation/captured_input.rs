@@ -8,7 +8,12 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationSchema,
 };
 
-pub(in crate::application_entry) struct CapturedMutationInput<Schema, Binding>
+/// An immutable captured input associated with its exact installed mutation binding.
+///
+/// Correction delivery owners name this carrier when several bindings share one
+/// input codec. It borrows its input and authored scope from the original encoded
+/// custody; it carries no principal, admission, or replacement-input constructor.
+pub struct WorthQueryCapturedMutationInput<Schema, Binding>
 where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
@@ -18,7 +23,7 @@ where
 }
 
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
-    CapturedMutationInput<Schema, Binding>
+    WorthQueryCapturedMutationInput<Schema, Binding>
 {
     pub(in crate::application_entry) fn new(
         input: ApplicationEncodedInput<Binding::InputBinding>,
@@ -30,7 +35,8 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     }
 }
 
-impl<Schema, Binding> ApplicationMutationIntent<Schema> for CapturedMutationInput<Schema, Binding>
+impl<Schema, Binding> ApplicationMutationIntent<Schema>
+    for WorthQueryCapturedMutationInput<Schema, Binding>
 where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,

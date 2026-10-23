@@ -41,6 +41,9 @@ pub(crate) struct RelationalMaterializationCustodyData {
     pub(crate) source_commit: CommitId,
     pub(crate) suspension_commit: CommitId,
     pub(crate) records: Vec<RelationalMaterializationRecord>,
+    pub(crate) producer_publications: Vec<CommitId>,
+    pub(crate) producer_records:
+        Vec<crate::history::data::CanonicalRequiredOutputMaterializationRecord>,
 }
 
 #[derive(Debug)]
@@ -51,11 +54,16 @@ pub struct RelationalMaterializationCustody {
         super::RelationalBranchMutationAuthorityMarker,
         RelationalMaterializationCustodyData,
     >,
+    _producer_memory: worth_execution::ExecutionMemoryReservation,
 }
 
 impl RelationalMaterializationCustody {
-    pub(crate) fn record(data: RelationalMaterializationCustodyData) -> Self {
+    pub(crate) fn record(
+        data: RelationalMaterializationCustodyData,
+        producer_memory: worth_execution::ExecutionMemoryReservation,
+    ) -> Self {
         Self {
+            _producer_memory: producer_memory,
             performed: worth_proof::Performed::record(
                 &super::issue_relational_branch_mutation_authority(),
                 data,
@@ -108,6 +116,10 @@ pub struct RelationalMaterializationSuspensionCompletion {
     pub(crate) branch_identity: super::RelationalBranchIdentity,
     pub(crate) source_commit: CommitId,
     pub(crate) records: Vec<RelationalMaterializationRecord>,
+    pub(crate) producer_publications: Vec<CommitId>,
+    pub(crate) producer_records:
+        Vec<crate::history::data::CanonicalRequiredOutputMaterializationRecord>,
+    pub(crate) producer_memory: worth_execution::ExecutionMemoryReservation,
 }
 
 impl RelationalMaterializationSuspensionCompletion {
@@ -118,13 +130,17 @@ impl RelationalMaterializationSuspensionCompletion {
         if commit.transaction_id != self.transaction_id {
             return Err(RelationalMaterializationError::PublicationResultMismatch);
         }
-        let custody =
-            RelationalMaterializationCustody::record(RelationalMaterializationCustodyData {
+        let custody = RelationalMaterializationCustody::record(
+            RelationalMaterializationCustodyData {
                 branch_identity: self.branch_identity,
                 source_commit: self.source_commit,
                 suspension_commit: commit.commit.commit_id,
                 records: self.records,
-            });
+                producer_publications: self.producer_publications,
+                producer_records: self.producer_records,
+            },
+            self.producer_memory,
+        );
         Ok(RelationalMaterializationSuspension { commit, custody })
     }
 }

@@ -165,7 +165,7 @@ macro_rules! custody {
                             sequence,
                             recovered,
                             commit: super::mutation_custody::describe_commit(receipt),
-                            source: receipt.correction_source().coordinates(),
+                            source: receipt.correction_source().coordinates().into(),
                         }
                     }
                     Self::Closed(receipt) => BankHttpMutationOutcome::AwaitingRailHandoff {

@@ -148,7 +148,7 @@ fn exercise(application: &host::Host) {
     composite::assert_combined(receipt);
     assert_eq!(
         receipt.aftermath_causality().unwrap().recorded_source(),
-        Some(&source.correction_source())
+        &source.correction_source()
     );
     assert_ne!(
         receipt.committed_product_publication().signal_publication(),

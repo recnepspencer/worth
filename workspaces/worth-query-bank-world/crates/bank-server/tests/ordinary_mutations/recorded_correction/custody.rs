@@ -108,7 +108,7 @@ fn unpublished_correction_keeps_original_custody_through_refusal_recovery_and_cl
     );
     assert_eq!(
         receipt.aftermath_causality().unwrap().recorded_source(),
-        Some(&source)
+        &source
     );
     let recovered_commit = receipt.correction_source();
     assert_eq!(world.balances(), (93, 7));
@@ -169,7 +169,7 @@ fn unpublished_correction_keeps_original_custody_through_refusal_recovery_and_cl
     assert_eq!(receipt.correction_source(), recovered_commit);
     assert_eq!(
         receipt.aftermath_causality().unwrap().recorded_source(),
-        Some(&source)
+        &source
     );
     assert_eq!(retained.selected_commit(), recovered_commit.world());
     assert_eq!(world.activity(world.source), source_after);

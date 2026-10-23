@@ -291,6 +291,7 @@
 //! ```
 //! use worth_query_host::facade::{domain::ApplicationSchema, application_entry::{
 //!     WorthQueryApplicationCorrectionAlternatives, WorthQueryCorrectionAlternativeRef,
+//!     WorthQueryCorrectionAlternativesPage,
 //!     WorthQueryCorrectionHistoryLimits, WorthQuerySelectedCorrectionAlternative,
 //!     WorthQueryApplicationReapplicationRequest, WorthQueryApplicationCorrectionPreparation,
 //!     WorthQueryApplicationCorrectionDenial, WorthQueryPreparedApplicationCorrection,
@@ -302,6 +303,9 @@
 //! ) -> Result<WorthQuerySelectedCorrectionAlternative<'a, S>, WorthQueryApplicationCorrectionDenial> {
 //!     page.select(alternative, limits)
 //! }
+//! fn detach<S: ApplicationSchema>(
+//!     page: WorthQueryApplicationCorrectionAlternatives<'_, '_, '_, S>,
+//! ) -> WorthQueryCorrectionAlternativesPage { page.into_page() }
 //! fn prepare<'a, S: ApplicationSchema>(
 //!     request: WorthQueryApplicationReapplicationRequest<'a, '_, '_, '_, S>,
 //! ) -> Result<WorthQueryApplicationCorrectionPreparation<'a>, WorthQueryApplicationCorrectionDenial> {
@@ -332,7 +336,6 @@ pub use worth_query_execution::facade::convergence_epoch;
 pub use worth_query_execution::facade::installed;
 pub use worth_query_execution::facade::primary_graph;
 pub use worth_query_execution::facade::product;
-pub use worth_query_execution::facade::provisional_aftermath;
 pub use worth_query_execution::facade::runtime;
 pub use worth_query_execution::facade::worth_query_application_contribution;
 pub use worth_query_installation::facade as domain;

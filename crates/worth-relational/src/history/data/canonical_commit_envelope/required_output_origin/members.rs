@@ -9,6 +9,7 @@ use worth_execution::MapKernelContext;
 #[allow(clippy::too_many_arguments)]
 pub(super) fn capture(
     envelope: &CanonicalCommitEnvelope,
+    history: &crate::runtime::RelationalPreparationHistory,
     basis: &AdmittedRelationalBranchBasis,
     state: &WorkingState,
     created: &CommitCreatedEntityBindings,
@@ -24,7 +25,7 @@ pub(super) fn capture(
         context
             .checkpoint((role.role.len() + role.entity_name.len() + 2) as u64)
             .map_err(origin_request)?;
-        let (id, old) = match (&role.target, role.posture) {
+        let (id, old, before_write) = match (&role.target, role.posture) {
             (EntityReference::Created(target), Posture::Create) => {
                 context
                     .checkpoint(created.resolve_work_bound(target).ok_or_else(overflow)?)
@@ -33,6 +34,7 @@ pub(super) fn capture(
                     created.resolve(target).ok_or_else(|| {
                         crate::mvcc::origin_denial("output was not allocated by this mutation")
                     })?,
+                    None,
                     None,
                 )
             }
@@ -79,13 +81,24 @@ pub(super) fn capture(
                 if member.kind != role.kind
                     || row.kind_id() != Some(role.kind)
                     || member.entity_name != role.entity_name
-                    || write != member.after_write
+                    || (write != member.after_write
+                        && !crate::history::data::output_materialization_write_matches(
+                            &RecordRef::Entity(*id),
+                            prior.commit.commit_id,
+                            member.after_write,
+                            write,
+                            &mut |commit| history.canonical_envelope(commit),
+                            &mut |version| history.canonical_envelope_for_version(version),
+                            history.canonical_catalog_len(),
+                            context,
+                        )
+                        .map_err(super::installation::relation_stop)?)
                 {
                     return Err(crate::mvcc::origin_denial(
                         "intervening native write revoked producer ownership before Preserve",
                     ));
                 }
-                (*id, Some(member))
+                (*id, Some(member), Some(write))
             }
             _ => {
                 return Err(crate::mvcc::origin_denial(
@@ -146,7 +159,7 @@ pub(super) fn capture(
             if patch.is_some_and(|patch| {
                 patch.structural_change != RecordStructuralChange::Updated
                     || patch.contains_opaque_aspect
-            }) || (old.is_some_and(|old| old.after_write != after_write)
+            }) || (before_write.is_some_and(|before| before != after_write)
                 && after_write != envelope.commit.version_id)
             {
                 return Err(crate::mvcc::origin_denial(
@@ -193,7 +206,7 @@ pub(super) fn capture(
                 |member| member.birth_producer.clone(),
             ),
             birth_dependency: old.map_or(dependency, |member| member.birth_dependency),
-            before_write: old.map(|member| member.after_write),
+            before_write,
             after_write,
         });
     }

@@ -246,9 +246,7 @@ fn reverse_after_disjoint_and_replay() {
             .conditional_definition_generation()
     );
     assert_eq!(causality.parent(), parent.commit_reference());
-    let recorded = causality
-        .recorded_source()
-        .expect("the exact original source is retained as metadata");
+    let recorded = causality.recorded_source();
     assert_eq!(recorded.relational(), source.commit_reference());
     assert_eq!(
         recorded.world(),

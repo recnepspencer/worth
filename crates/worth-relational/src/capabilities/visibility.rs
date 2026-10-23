@@ -26,11 +26,11 @@ impl VisibilityPolicySource for RelationalRuntime {
 }
 
 pub(crate) trait PublicationPolicySource {
-    fn max_patch_records_per_commit(&self) -> usize;
+    fn max_patch_records_per_commit(&self) -> Option<usize>;
 }
 
 impl PublicationPolicySource for RelationalRuntime {
-    fn max_patch_records_per_commit(&self) -> usize {
+    fn max_patch_records_per_commit(&self) -> Option<usize> {
         self.config.publication.policy.max_patch_records_per_commit
     }
 }

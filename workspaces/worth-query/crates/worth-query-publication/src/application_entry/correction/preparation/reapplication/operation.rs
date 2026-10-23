@@ -27,11 +27,8 @@ impl<'a, S: ApplicationSchema + 'static>
         C::Source: ApplicationMutationAdmissionBinding<S>,
         <C::Source as ApplicationMutationAdmissionBinding<S>>::Admission:
             WorthQueryBindingAdmission<S, C::Source>,
-        <C::Source as ApplicationMutationBinding<S>>::Input: Clone
-            + Send
-            + Sync
-            + ApplicationMutationIntent<S, Binding = C::Source>
-            + ApplicationMutationInputScope<S, C::Source>,
+        <C::Source as ApplicationMutationBinding<S>>::Input:
+            Clone + Send + Sync + ApplicationMutationInputScope<S, C::Source>,
         <C::Source as ApplicationMutationBinding<S>>::IdempotencyKey: Clone,
         <C::Source as ApplicationMutationBinding<S>>::ScopeBinding:
             ApplicationMutationScopeResolution<

@@ -47,6 +47,28 @@ estate commands. A completed occurrence supplies descriptive `source`
 coordinates for its installed recorded correction. The server resolves that
 source and checks current authority when the participant requests correction.
 
+For historical SendMoney reapplication, use `POST /v1/corrections/history` with
+that source and explicit history/disclosure/page bounds. Follow
+`POST /v1/corrections/history/resume` until `complete` is true, retaining the
+desired row's `source`. Create `reapply_send_money` through `/v1/mutations` with
+`history_token`, that chosen source and its command key. The Bank resolves the
+choice under fresh authority and retains the original action's ordinary delivery
+owner before replying. See the [worked chooser request](http-owning-money.md#choosing-and-reapplying-historical-sendmoney).
+
+Retain completed mutation custody for each source, reversal and reapplication
+occurrence that historical selection or retries still need. Each completed
+owner holds its own native World observation. Finish the historical journey,
+then close those custody IDs using their next sequences. Later publications
+can retire optional history after its last observation is released.
+
+History tokens use the existing authenticated, expiring continuation inventory.
+The server retains only the latest native page and bounded initial/latest response
+descriptions. Replayed history responses require current source disclosure.
+A changed branch basis requires fresh history; a refreshed chooser can select the
+same historical source for an exact command retry after later transactions.
+Mutation response loss continues through its saved custody ID and sequencing,
+independently of chooser token expiry.
+
 ## How It Executes
 
 1. Start the Bank server. It binds a dynamic or configured address and reports

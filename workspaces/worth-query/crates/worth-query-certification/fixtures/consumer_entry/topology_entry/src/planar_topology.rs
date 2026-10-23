@@ -1,5 +1,3 @@
-use std::num::NonZeroU64;
-
 use super::fixture_values::PositiveLength;
 use worth_query_decl::facade::application_schema::{
     ApplicationInvariantCostPosture, ApplicationInvariantDefinition,
@@ -132,9 +130,7 @@ where
     ApplicationInvariantDefinition::new(
         PositivePlanarTurn::reference(),
         ApplicationInvariantExecutionPoint::CommitBoundary,
-        RelationalInvariantWorkBudget::new(Some(
-            NonZeroU64::new(Schema::planar_invariant_work()).expect("nonzero fixture budget"),
-        )),
+        RelationalInvariantWorkBudget::new(Schema::planar_invariant_work()),
         ApplicationInvariantOperationalContract::new(
             ApplicationInvariantEnforcement::BlockCommit,
             [

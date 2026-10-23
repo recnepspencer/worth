@@ -47,6 +47,12 @@ where
             configuration.opaque_handle_lifetime(),
         ),
     ));
+    let continuation_registry = Arc::new(tokio::sync::Mutex::new(
+        continuation_registry::BankHttpContinuationRegistry::new(
+            configuration.opaque_handle_capacity().get(),
+            configuration.opaque_handle_lifetime(),
+        ),
+    ));
     let mutations = BankHttpMutationContinuation::start(
         Arc::clone(&application),
         configuration.queue_capacity(),
@@ -54,6 +60,7 @@ where
         configuration.opaque_handle_capacity(),
         configuration.maximum_deadline(),
         Arc::clone(&recovery_registry),
+        Arc::clone(&continuation_registry),
     )?;
     let (queue, dispatcher_task) = BankHttpExecutionQueue::start(
         Arc::clone(&application),
@@ -64,8 +71,7 @@ where
         continuation_executor::BankHttpContinuationExecutor::start(
             Arc::clone(&application),
             configuration.queue_capacity().get(),
-            configuration.opaque_handle_capacity().get(),
-            configuration.opaque_handle_lifetime(),
+            continuation_registry,
         );
     let (recovery, recovery_task) = recovery_executor::BankHttpRecoveryExecutor::start(
         Arc::clone(&application),

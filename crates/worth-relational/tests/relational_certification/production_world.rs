@@ -147,7 +147,7 @@ fn standard_supply_chain_baseline_matches_oracle_and_forks_without_copying() {
         .patch_budget_summary()
         .expect("Standard baseline records its patch budget");
     assert_eq!(budget.patch_record_count, 8_211);
-    assert_eq!(budget.max_patch_records_per_commit, 16_384);
+    assert_eq!(budget.max_patch_records_per_commit, Some(16_384));
     let certified = audit_supply_chain_baseline(execution, world)
         .expect("Standard baseline matches independent oracle");
     assert_eq!(

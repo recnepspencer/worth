@@ -111,7 +111,6 @@ fn reverse_under_successor() {
             .aftermath_causality()
             .unwrap()
             .recorded_source()
-            .unwrap()
             .relational(),
         source.commit_reference()
     );

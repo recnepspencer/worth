@@ -4,6 +4,8 @@ use crate::mvcc::RequiredOutputPublication as Publication;
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::{CommitCreatedEntityBindings, CommitCreatedRelationBindings};
 use worth_execution::{ExecutionRequest, MapKernelContext};
+mod retained_origin;
+use retained_origin::compare_retained_origin;
 
 impl CanonicalCommitEnvelope {
     #[allow(clippy::too_many_arguments)]
@@ -171,7 +173,9 @@ impl CanonicalCommitEnvelope {
                     None,
                     origin,
                     None,
+                    &mut |commit| runtime.history.canonical_envelope(commit),
                     &mut |version| runtime.history.canonical_envelope_for_version(version),
+                    runtime.history.canonical_catalog_len(),
                     lease,
                     context,
                 )
@@ -252,6 +256,7 @@ impl CanonicalCommitEnvelope {
             .map_err(|stop| origin_request(crate::execution::denial::lease_denial(stop)))?;
         let members = super::members::capture(
             self,
+            &runtime.history,
             basis,
             state,
             created,
@@ -273,7 +278,15 @@ impl CanonicalCommitEnvelope {
             context,
         )?;
         if let Some(prior) = previous {
-            relations::continue_relations(self, prior, basis, state, &mut relations, context)?;
+            relations::continue_relations(
+                self,
+                &runtime.history,
+                prior,
+                basis,
+                state,
+                &mut relations,
+                context,
+            )?;
         }
         let mut positions = basis.inner.root.output_publication_positions.clone();
         positions.insert(
@@ -313,7 +326,9 @@ impl CanonicalCommitEnvelope {
             Some(state),
             self.required_output_origin.as_deref().unwrap(),
             Some(self),
+            &mut |commit| runtime.history.canonical_envelope(commit),
             &mut |version| runtime.history.canonical_envelope_for_version(version),
+            runtime.history.canonical_catalog_len(),
             lease,
             context,
         )
@@ -322,69 +337,13 @@ impl CanonicalCommitEnvelope {
     }
 }
 
-fn relation_stop(stop: crate::history::data::CodecRetirementClosureStop) -> TransactionCommitError {
+pub(super) fn relation_stop(
+    stop: crate::history::data::CodecRetirementClosureStop,
+) -> TransactionCommitError {
     match stop {
         crate::history::data::CodecRetirementClosureStop::Request(cause) => origin_request(cause),
         crate::history::data::CodecRetirementClosureStop::Payload(detail) => {
             crate::mvcc::origin_denial(detail)
         }
     }
-}
-
-fn compare_retained_origin(
-    carried: &CanonicalRequiredOutputOrigin,
-    canonical: &CanonicalRequiredOutputOrigin,
-    context: &mut MapKernelContext<'_, '_>,
-) -> Result<(), TransactionCommitError> {
-    for origin in [carried, canonical] {
-        let mut work = std::mem::size_of_val(origin);
-        for bytes in [
-            origin.producer.len(),
-            origin.birth_producer.len(),
-            origin.meaning.family.len(),
-            origin.basis.branch_id().0.len(),
-            origin
-                .relations
-                .len()
-                .checked_mul(std::mem::size_of::<CanonicalRequiredOutputRelation>())
-                .ok_or_else(|| {
-                    origin_request(
-                        crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
-                    )
-                })?,
-        ] {
-            work = work.checked_add(bytes).ok_or_else(|| {
-                origin_request(
-                    crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
-                )
-            })?;
-        }
-        for member in &origin.members {
-            for bytes in [
-                std::mem::size_of_val(member),
-                member.role.len(),
-                member.entity_name.len(),
-                member.birth_producer.len(),
-            ] {
-                work = work.checked_add(bytes).ok_or_else(|| {
-                    origin_request(
-                        crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
-                    )
-                })?;
-            }
-        }
-        context
-            .checkpoint(u64::try_from(work).map_err(|_| {
-                origin_request(
-                    crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
-                )
-            })?)
-            .map_err(origin_request)?;
-    }
-    if carried != canonical {
-        return Err(crate::mvcc::origin_denial(
-            "retained publication custody differs from exact canonical membership",
-        ));
-    }
-    Ok(())
 }

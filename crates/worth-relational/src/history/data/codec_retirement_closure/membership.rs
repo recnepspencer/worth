@@ -21,6 +21,7 @@ pub(super) fn latest(
     basis: &AdmittedRelationalBranchBasis,
     id: EntityId,
     context: &mut MapKernelContext<'_, '_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<Arc<CanonicalCommitEnvelope>, Stop> {
     let mut next = basis.inner.root.commit_id();
     let bound = runtime.history.catalog_len();
@@ -40,6 +41,19 @@ pub(super) fn latest(
             }
         }
         if writes(&envelope, id, context)? {
+            if let Some(event) = &envelope.required_output_materialization {
+                super::materialization::validate_semantics(runtime, &envelope, context, lease)?;
+                for publication in &event.producer_publications {
+                    let original = runtime
+                        .history
+                        .canonical_envelope(*publication)
+                        .ok_or("maintenance producer history absent")?;
+                    let origin = original.validate_output_membership_header()?;
+                    if origin.outputs.binary_search(&id).is_ok() {
+                        return Ok(original);
+                    }
+                }
+            }
             return Err("present output has no installed producer publication".into());
         }
         next = envelope.commit.parents.first().copied();
@@ -84,7 +98,16 @@ pub(super) fn validate_member(
     };
     if row.is_live() != (member.posture != crate::mvcc::RequiredOutputRolePosture::Retire)
         || row.kind_id() != Some(member.kind)
-        || member.after_write != write
+        || !super::materialization::write_matches(
+            &RecordRef::Entity(id),
+            selected.commit.commit_id,
+            member.after_write,
+            write,
+            &mut |commit| runtime.history.canonical_envelope(commit),
+            &mut |version| runtime.history.canonical_envelope_for_version(version),
+            runtime.history.catalog_len(),
+            context,
+        )?
     {
         return Err("output differs from its complete publication native write position".into());
     }
@@ -121,6 +144,32 @@ pub(super) fn reconstruct(
     plan: &crate::schema::data::LoweredAspectContractPlan,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
+) -> Result<Option<super::payload_reconstruction::ReconstructedPayload>, Stop> {
+    reconstruct_chain(runtime, selected, id, plan, context, lease, true)
+}
+
+/// Canonical producer patches supply expected bytes; their maintenance gaps
+/// are validated by the enclosing semantic pass rather than recursively replayed.
+pub(super) fn reconstruct_canonical_payload(
+    runtime: &RelationalRuntime,
+    selected: &Arc<CanonicalCommitEnvelope>,
+    id: EntityId,
+    plan: &crate::schema::data::LoweredAspectContractPlan,
+    context: &mut MapKernelContext<'_, '_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
+) -> Result<Option<super::payload_reconstruction::ReconstructedPayload>, Stop> {
+    reconstruct_chain(runtime, selected, id, plan, context, lease, false)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn reconstruct_chain(
+    runtime: &RelationalRuntime,
+    selected: &Arc<CanonicalCommitEnvelope>,
+    id: EntityId,
+    plan: &crate::schema::data::LoweredAspectContractPlan,
+    context: &mut MapKernelContext<'_, '_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
+    validate_gap_payload: bool,
 ) -> Result<Option<super::payload_reconstruction::ReconstructedPayload>, Stop> {
     let origin = selected.validate_output_membership_header()?;
     let _member = origin
@@ -162,13 +211,17 @@ pub(super) fn reconstruct(
                     .canonical_envelope(predecessor)
                     .ok_or("publication predecessor history missing")?;
                 let prior = previous.validate_output_membership_header()?;
-                super::publication_succession::validate_succession(&current, prior, context)?;
+                super::publication_succession::validate_succession(
+                    runtime, &current, prior, context,
+                )?;
                 super::publication_succession::validate_gap(
                     runtime,
                     &current,
                     predecessor,
                     current_origin,
                     context,
+                    lease,
+                    validate_gap_payload,
                 )?;
                 current = previous;
             }

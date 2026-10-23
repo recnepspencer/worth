@@ -79,11 +79,21 @@ pub(super) fn admit(
                         })
                 }
                 BankHttpMutationOperation::CorrectEstateFreeze { source } => {
-                    Some(AdmittedBankHttpMutation::CorrectEstateFreeze(source))
+                    Some(AdmittedBankHttpMutation::CorrectEstateFreeze(source.into()))
                 }
                 BankHttpMutationOperation::CorrectSendMoney { source } => {
-                    Some(AdmittedBankHttpMutation::CorrectSendMoney(source))
+                    Some(AdmittedBankHttpMutation::CorrectSendMoney(source.into()))
                 }
+                BankHttpMutationOperation::ReapplySendMoney {
+                    history_token,
+                    source,
+                } => super::continuation_registry::BankHttpContinuationRegistry::recognizes_token(
+                    &history_token,
+                )
+                .then(|| AdmittedBankHttpMutation::ReapplySendMoney {
+                    history_token,
+                    source: source.into(),
+                }),
                 BankHttpMutationOperation::Deposit {
                     institution,
                     account,

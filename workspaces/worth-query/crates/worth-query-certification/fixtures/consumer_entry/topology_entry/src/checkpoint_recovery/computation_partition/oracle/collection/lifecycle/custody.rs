@@ -8,9 +8,10 @@ use worth_query_host::facade::application_entry::{
     WorthQueryProgramOutputOperationAdvance, WorthQuerySettledProgramOutputOperation,
 };
 
-type Program = OracleProgram<false, TOTALS_WORK, 1, { super::super::LIFECYCLE }>;
+pub(super) type Program = OracleProgram<false, TOTALS_WORK, 1, { super::super::LIFECYCLE }>;
 type App = Application<false, TOTALS_WORK, 1, { super::super::LIFECYCLE }>;
-type Settled = WorthQuerySettledProgramOutputOperation<CheckpointSchema, Program, OracleRoot>;
+pub(super) type Settled =
+    WorthQuerySettledProgramOutputOperation<CheckpointSchema, Program, OracleRoot>;
 type Pending = WorthQueryProgramOutputOperation<CheckpointSchema, Program, OracleRoot>;
 
 fn open(application: &App, request: &Request<'_, '_, '_>) -> Pending {
@@ -35,7 +36,7 @@ fn finish(mut operation: Pending, request: &Request<'_, '_, '_>) -> Settled {
     panic!("finite native lifecycle tree settles");
 }
 
-fn settle(application: &App, request: &Request<'_, '_, '_>) -> Settled {
+pub(super) fn settle(application: &App, request: &Request<'_, '_, '_>) -> Settled {
     finish(open(application, request), request)
 }
 

@@ -85,6 +85,14 @@ pub(super) fn router(state: BankHttpRouteState, maximum_body_bytes: usize) -> Ro
         )
         .route("/v1/live/account-activity", post(account_activity_stream))
         .route("/v1/mutations", post(mutate))
+        .route(
+            "/v1/corrections/history",
+            post(super::correction_history_routes::page),
+        )
+        .route(
+            "/v1/corrections/history/resume",
+            post(super::correction_history_routes::resume),
+        )
         .route("/v1/estate/disburse", post(disburse))
         .route("/v1/estate/elevation/request", post(request_elevation))
         .route("/v1/estate/elevation/approve", post(approve_elevation))

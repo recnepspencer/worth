@@ -1,8 +1,12 @@
 # Typed compensation through the ordinary correction entry
 
-This public 9.18 Phase 2 slice follows the committed fixed-root correction and
-recovery work. Phases 3–4 remain held. It establishes executable compensation;
-Bank accounting/process adoption and the remaining Phase 2 obligations stay open.
+**Status:** Completed and covered by certified Phase 2 acceptance.
+The [9.18 specification](../../plans/WORTH-query/milestone-9.18.md)
+owns current milestone progress.
+
+This plan records the public executable-compensation slice's historical boundary
+review, implementation order and verification notes. Bank accounting/process
+adoption had its separate Phase 2 acceptance boundary.
 
 ## Boundary review
 

@@ -148,6 +148,7 @@ fn work_overflow() -> TransactionCommitError {
 /// can update or retire them. New edges were captured from real allocations.
 pub(super) fn continue_relations(
     envelope: &CanonicalCommitEnvelope,
+    history: &crate::runtime::RelationalPreparationHistory,
     prior: &super::CanonicalRequiredOutputOrigin,
     basis: &crate::branch::AdmittedRelationalBranchBasis,
     state: &crate::storage::overlay::WorkingState,
@@ -180,7 +181,18 @@ pub(super) fn continue_relations(
             .and_then(|rows| rows.get(rows.len().checked_sub(1)?))
             .ok_or_else(|| crate::mvcc::origin_denial("prior relation write position absent"))?
             .effective_at;
-        if write != relation.after_write
+        if (write != relation.after_write
+            && !crate::history::data::output_materialization_write_matches(
+                &RecordRef::Relation(relation.id),
+                prior.commit.commit_id,
+                relation.after_write,
+                write,
+                &mut |commit| history.canonical_envelope(commit),
+                &mut |version| history.canonical_envelope_for_version(version),
+                history.canonical_catalog_len(),
+                context,
+            )
+            .map_err(super::installation::relation_stop)?)
             || row.kind_id() != Some(relation.kind)
             || !row.extra().endpoints.as_ref().is_some_and(|ends| {
                 ends.source == relation.source && ends.target == relation.target
@@ -232,7 +244,7 @@ pub(super) fn continue_relations(
             .ok_or_else(|| crate::mvcc::origin_denial("successor relation write position absent"))?
             .effective_at;
         if row.kind_id() != Some(relation.kind)
-            || (after_write != relation.after_write && after_write != envelope.commit.version_id)
+            || (after_write != write && after_write != envelope.commit.version_id)
             || patch.is_some_and(|patch| {
                 patch.structural_change != Change::Updated || patch.contains_opaque_aspect
             })
@@ -247,7 +259,7 @@ pub(super) fn continue_relations(
             source: ends.source,
             target: ends.target,
             birth: relation.birth,
-            before_write: Some(relation.after_write),
+            before_write: Some(write),
             after_write,
         });
     }

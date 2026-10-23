@@ -189,7 +189,6 @@ pub fn run() {
             .aftermath_causality()
             .unwrap()
             .recorded_source()
-            .unwrap()
             .relational(),
         original.commit_reference()
     );

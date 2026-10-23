@@ -343,6 +343,12 @@ impl<'runtime, Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema>
 }
 
 impl<Schema> WorthQuerySelectedCorrectionSource<'_, Schema> {
+    /// Native World parent links followed when selecting this source.
+    /// Zero means the source was the selected target occurrence itself.
+    pub fn ancestry_parent_links_followed(&self) -> usize {
+        self.ancestry.parent_links_followed()
+    }
+
     /// Native declaration dispatch retained by the original performed occurrence.
     pub fn source_binding_type(
         &self,

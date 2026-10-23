@@ -127,7 +127,6 @@ fn correction_preserves_completed_workflow_and_rejects_spent_approval() {
             .aftermath_causality()
             .unwrap()
             .recorded_source()
-            .unwrap()
             .relational(),
         source.commit_reference()
     );

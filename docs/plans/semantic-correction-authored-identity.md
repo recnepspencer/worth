@@ -1,8 +1,13 @@
 # Authored create and delete correction
 
-This public 9.18 Phase 2 slice implements the declared new-identity correspondence
-for authored lifecycle inverses. Bank compensation remains a separate corrective
-business action. Phases 3–4 and private adoption remain outside this slice.
+**Status:** Completed and covered by certified Phase 2 acceptance.
+The [9.18 specification](../../plans/WORTH-query/milestone-9.18.md)
+owns current milestone progress.
+
+This plan records the public authored-identity slice's historical boundary review,
+implementation order and verification notes. It implements the declared
+new-identity correspondence for authored lifecycle inverses. Bank compensation
+remains a separate business action; private adoption is outside this slice.
 
 ## Boundary review
 

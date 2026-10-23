@@ -185,21 +185,8 @@ impl WorthQueryRecoveryHandleBinding {
         &self.installed_aftermath
     }
 
-    pub(crate) const fn mutation_work(&self) -> Option<&WorthQueryPrimaryMutationWorkEvidence> {
-        self.mutation_work.as_ref()
-    }
-
-    pub(crate) const fn retained_preimage(&self) -> Option<&WorthQueryRetainedPreImage> {
-        self.retained_preimage.as_ref()
-    }
-
     pub(crate) const fn retained_governed_input(&self) -> Option<&WorthQueryRetainedGovernedInput> {
         self.retained_governed_input.as_ref()
-    }
-
-    /// Exact original capability input carried from operation admission.
-    pub(crate) fn original_input<Input: 'static>(&self) -> Option<&Input> {
-        self.retained_governed_input.as_ref()?.downcast_ref()
     }
 
     pub const fn expires_at_unix_ms(&self) -> Option<u64> {

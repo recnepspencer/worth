@@ -8,8 +8,6 @@ pub use correction_lineage::WorthQueryCorrectionLineageBinding;
 /// Query meaning of one co-committed aftermath relation.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryAftermathCausalRole {
-    Undo,
-    Redo,
     RecordedReverse,
     RecordedReapply,
 }
@@ -17,8 +15,6 @@ pub enum WorthQueryAftermathCausalRole {
 impl WorthQueryAftermathCausalRole {
     pub(crate) const fn code(self) -> u64 {
         match self {
-            Self::Undo => 1,
-            Self::Redo => 2,
             Self::RecordedReverse => 3,
             Self::RecordedReapply => 4,
         }
@@ -31,12 +27,10 @@ pub(crate) struct WorthQueryPendingAftermathCausality {
     role: WorthQueryAftermathCausalRole,
     parent: RelationalCommitReceipt,
     target_branch: worth_relational::facade::history::BranchId,
-    source: Option<WorthQueryRecordedCorrectionSource>,
-    lineage: Option<WorthQueryCorrectionLineageBinding>,
-    correction: Option<
-        std::sync::Arc<
-            crate::domain_computation::primary_graph::WorthQueryPreparedCorrectionSource,
-        >,
+    source: WorthQueryRecordedCorrectionSource,
+    lineage: WorthQueryCorrectionLineageBinding,
+    correction: std::sync::Arc<
+        crate::domain_computation::primary_graph::WorthQueryPreparedCorrectionSource,
     >,
 }
 
@@ -64,43 +58,21 @@ impl WorthQueryRecordedCorrectionSource {
 }
 
 impl WorthQueryPendingAftermathCausality {
-    pub(crate) fn undo_of(parent: RelationalCommitReceipt) -> Self {
-        Self {
-            target_branch: parent.branch_id.clone(),
-            source: None,
-            lineage: None,
-            correction: None,
-            role: WorthQueryAftermathCausalRole::Undo,
-            parent,
-        }
-    }
-
-    pub(crate) fn redo_of(parent: RelationalCommitReceipt) -> Self {
-        Self {
-            target_branch: parent.branch_id.clone(),
-            source: None,
-            lineage: None,
-            correction: None,
-            role: WorthQueryAftermathCausalRole::Redo,
-            parent,
-        }
-    }
-
-    pub(crate) fn recorded_reverse(
+    pub(crate) fn recorded_correction(
         correction: std::sync::Arc<
             crate::domain_computation::primary_graph::WorthQueryPreparedCorrectionSource,
         >,
     ) -> Self {
         Self {
             role: correction.lineage_binding().role(),
-            lineage: Some(correction.lineage_binding().clone()),
+            lineage: correction.lineage_binding().clone(),
             parent: correction.target_parent().clone(),
             target_branch: correction.target_branch().clone(),
-            source: Some(WorthQueryRecordedCorrectionSource {
+            source: WorthQueryRecordedCorrectionSource {
                 world: correction.source_world().clone(),
                 relational: correction.source_commit().clone(),
-            }),
-            correction: Some(correction),
+            },
+            correction,
         }
     }
 
@@ -114,28 +86,20 @@ impl WorthQueryPendingAftermathCausality {
     pub(crate) fn target_branch(&self) -> &worth_relational::facade::history::BranchId {
         &self.target_branch
     }
-    pub(crate) fn recorded_source(&self) -> Option<&WorthQueryRecordedCorrectionSource> {
-        self.source.as_ref()
+    pub(crate) fn recorded_source(&self) -> &WorthQueryRecordedCorrectionSource {
+        &self.source
     }
-    pub(crate) fn correction_lineage(&self) -> Option<&WorthQueryCorrectionLineageBinding> {
-        self.lineage.as_ref()
+    pub(crate) fn correction_lineage(&self) -> &WorthQueryCorrectionLineageBinding {
+        &self.lineage
     }
     pub(crate) fn prepared_correction(
         &self,
-    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryPreparedCorrectionSource> {
-        self.correction.as_deref()
+    ) -> &crate::domain_computation::primary_graph::WorthQueryPreparedCorrectionSource {
+        &self.correction
     }
 
     pub(crate) fn key(&self) -> String {
-        if let Some(correction) = &self.correction {
-            return correction.intent().causal_key();
-        }
-        format!(
-            "{}:{}:{}",
-            self.role.code(),
-            self.parent.branch_id.0,
-            self.parent.commit_id.0
-        )
+        self.correction.intent().causal_key()
     }
 }
 
@@ -147,8 +111,8 @@ pub struct WorthQueryCommittedAftermathCausality {
     parent: RelationalCommitReceipt,
     child: RelationalCommitReceipt,
     fact_record: RecordRef,
-    source: Option<WorthQueryRecordedCorrectionSource>,
-    lineage: Option<WorthQueryCorrectionLineageBinding>,
+    source: WorthQueryRecordedCorrectionSource,
+    lineage: WorthQueryCorrectionLineageBinding,
 }
 
 impl WorthQueryCommittedAftermathCausality {
@@ -180,11 +144,11 @@ impl WorthQueryCommittedAftermathCausality {
     pub const fn child(&self) -> &RelationalCommitReceipt {
         &self.child
     }
-    pub fn recorded_source(&self) -> Option<&WorthQueryRecordedCorrectionSource> {
-        self.source.as_ref()
+    pub fn recorded_source(&self) -> &WorthQueryRecordedCorrectionSource {
+        &self.source
     }
-    pub fn correction_lineage(&self) -> Option<&WorthQueryCorrectionLineageBinding> {
-        self.lineage.as_ref()
+    pub fn correction_lineage(&self) -> &WorthQueryCorrectionLineageBinding {
+        &self.lineage
     }
 
     pub const fn fact_record(&self) -> &RecordRef {

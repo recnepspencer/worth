@@ -111,8 +111,8 @@ fn stopped_tree_builds_match_serial_and_stopped_edits_are_exact_at_every_width()
             let [tree] = serial.tree_runs.as_slice() else {
                 panic!("one stopped tree report")
             };
-            assert!(tree.metrics_for_test().combine_calls > 0);
-            assert!(tree.metrics_for_test().recombined_nodes > 0);
+            assert!(tree_work::reducer_calls(&serial) > 0);
+            assert!(tree_work::completed_nodes(&serial) > 0);
             if retained {
                 assert!(matches!(
                     tree,

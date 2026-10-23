@@ -29,6 +29,11 @@ impl ProductBranchAncestorSelection {
     pub fn source(&self) -> &CompositeRuntimeWorldCommit {
         self.ancestor.source()
     }
+
+    /// Native parent links followed during this exact ancestry selection.
+    pub fn parent_links_followed(&self) -> usize {
+        self.ancestor.parent_links_followed()
+    }
 }
 
 /// Identifies whether exact ancestor selection stopped at current branch

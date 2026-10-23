@@ -1,7 +1,7 @@
 //! Fresh admission from the recorded correction's retained, encoded inverse.
 use super::super::*;
 use crate::application_entry::mutation::{
-    authorization::WorthQueryBindingAdmission, captured_input::CapturedMutationInput,
+    authorization::WorthQueryBindingAdmission, captured_input::WorthQueryCapturedMutationInput,
     request::WorthQueryApplicationMutationRequest, WorthQueryApplicationRecoveryRequestDenial,
 };
 use crate::application_entry::WorthQueryApplicationRequest;
@@ -76,7 +76,7 @@ where
             request.principal,
             request.scope,
             request.branch,
-            CapturedMutationInput::<S, B>::new(encoded.clone()),
+            WorthQueryCapturedMutationInput::<S, B>::new(encoded.clone()),
         )
         .idempotency(input.key());
         let encoded = Ok(encoded);
@@ -103,7 +103,7 @@ where
             request.principal,
             request.scope,
             request.branch,
-            CapturedMutationInput::<S, B>::new(encoded.clone()),
+            WorthQueryCapturedMutationInput::<S, B>::new(encoded.clone()),
         )
         .idempotency(input.key());
         let encoded = Ok(encoded);
@@ -143,7 +143,7 @@ where
             request.principal,
             request.scope,
             request.branch,
-            CapturedMutationInput::<S, B>::new(encoded.clone()),
+            WorthQueryCapturedMutationInput::<S, B>::new(encoded.clone()),
         )
         .idempotency(input.key());
         let encoded = Ok(encoded);

@@ -110,7 +110,6 @@ exports = [
     "installed",
     "primary_graph",
     "product",
-    "provisional_aftermath",
     "publication",
     "runtime",
     "worth_query_application",
@@ -271,6 +270,7 @@ exports = [
     "WorthQueryCapabilityCommandAdvance",
     "WorthQueryCapabilityCommandCompletion",
     "WorthQueryCapabilityCommandDenial",
+    "WorthQueryCapturedMutationInput",
     "WorthQueryClosedAssessmentObservation",
     "WorthQueryClosedBranchSetAdoption",
     "WorthQueryClosedFixedDelivery",
@@ -284,6 +284,7 @@ exports = [
     "WorthQueryCompletedWorkflowSelection",
     "WorthQueryCorrectionAlternativeRef",
     "WorthQueryCorrectionAlternativesContinuation",
+    "WorthQueryCorrectionAlternativesPage",
     "WorthQueryCorrectionApplicability",
     "WorthQueryCorrectionHistoryLimits",
     "WorthQueryCorrectionValue",
@@ -1012,7 +1013,6 @@ exports = [
     "inexact_native_deliveries_on_this_thread_for_test",
     "inspect_recovery_handle",
     "installed_source_reads_on_this_thread_for_test",
-    "map_ordinary_commit_conflict",
     "native_marking_on_this_thread_for_test",
     "partitioned_computation_runs_on_this_thread_for_test",
     "partitioned_computation_tree_work_on_this_thread_for_test",
@@ -1028,36 +1028,6 @@ exports = [
     "signal_request_charges_on_this_thread_for_test",
     "signal_request_refusals_on_this_thread_for_test",
     "test_execution_workers_for_test",
-]
-
-[[facades]]
-package = "worth-query-host::provisional_aftermath"
-exports = [
-    "WorthQueryAftermathCausalRole",
-    "WorthQueryCommittedAftermathCausality",
-    "WorthQueryProvedUndo",
-    "WorthQueryRedoAdmission",
-    "WorthQueryRedoDenial",
-    "WorthQueryRedoDenialKind",
-    "WorthQueryRedoIntent",
-    "WorthQueryRedoIntentIdentity",
-    "WorthQueryRedoProgressionHandoff",
-    "WorthQueryRedoRecovery",
-    "WorthQueryRetainedPreImage",
-    "WorthQueryUndoAdmission",
-    "WorthQueryUndoDenial",
-    "WorthQueryUndoDenialKind",
-    "WorthQueryUndoDerivedRequest",
-    "WorthQueryUndoIntentIdentity",
-    "WorthQueryUndoProgressionHandoff",
-    "admit_undo",
-    "consume_redo_progression",
-    "consume_unresolved_undo_progression",
-    "deny_irreversible_undo_attempt",
-    "map_ordinary_commit_conflict_to_redo",
-    "progress_admitted_reconciliation",
-    "progress_admitted_redo",
-    "progress_admitted_undo",
 ]
 
 [[facades]]

@@ -1,29 +1,30 @@
 //! Recorded publication enters the existing source owner's delivery and recovery spine.
 use super::*;
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationAdmissionBinding, ApplicationOwnedMutationIdentities,
+    ApplicationMutationAdmissionBinding, ApplicationMutationInputScope,
+    ApplicationOwnedMutationIdentities,
 };
 use worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionIntent;
 
-impl<S, I, P, A, M> WorthQuerySourceOnlyOperation<S, I, P, A, M>
+impl<S, B, P, A, M> WorthQuerySourceOnlyOperation<S, WorthQueryCapturedMutationInput<S, B>, P, A, M>
 where
     S: ApplicationSchema + 'static,
-    I: ApplicationMutationIntent<S> + Clone,
-    I::Binding: ApplicationMutationBinding<S, Input = I>,
-    <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey: Clone,
+    B: ApplicationMutationBinding<S>,
+    B::Input: Clone + ApplicationMutationInputScope<S, B>,
+    B::IdempotencyKey: Clone,
     P: ApplicationProgramDefinition<S>,
-    A: ApplicationAction<S, I::Binding>,
+    A: ApplicationAction<S, B>,
     M: WorthQuerySourceDeliveryMode,
 {
     pub(in crate::application_entry) fn retain_recorded_correction(
         runtime: &WorthQueryProgramApplicationRuntime<S, P>,
         branch: worth_query_execution::facade::product::WorthQueryProductBranch,
-        identities: &ApplicationOwnedMutationIdentities<S, I::Binding>,
+        identities: &ApplicationOwnedMutationIdentities<S, B>,
         correction: WorthQueryCorrectionIntent,
     ) -> Result<Self, WorthQueryOperationConstructionDenial> {
         let input = identities.borrow().encoded_input();
         let description = WorthQueryOperationDescription {
-            intent: input.input().clone(),
+            intent: WorthQueryCapturedMutationInput::new(input.clone()),
             encoded_input: Ok(input),
             key: identities.key().clone(),
             preconditions: Default::default(),

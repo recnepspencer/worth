@@ -122,9 +122,11 @@ let preparation = request.corrections()
 `WorthQueryRecordedCorrectionSource` contains the World commit identity and
 full Relational receipt. Its `coordinates()` method returns the serializable
 `WorthQueryCorrectionSourceCoordinates`. Store these coordinates with the
-application's history entry. A receiving transport deserializes this type or
-constructs it with `WorthQueryCorrectionSourceCoordinates::from_untrusted_parts`,
-then calls `request.corrections().select_coordinates(&coordinates, limits)`.
+application's history entry. A transport can define its own scalar wire type
+and construct native coordinates with
+`WorthQueryCorrectionSourceCoordinates::from_untrusted_fields`, supplying the
+World owner and commit, Relational branch and commit, version, and parent list.
+Then call `request.corrections().select_coordinates(&coordinates, limits)`.
 Selection resolves the actual retained completed evidence, compares its World
 identity and checks ancestry and current disclosure on the target branch. Keep
 the complete coordinates together when serializing them.
@@ -172,6 +174,12 @@ that existing action's progress directly. Store the returned active, completed
 or terminal owner before replying to the client. Advance it with a fresh request,
 read through its declared delivery and close it through its ordinary lifecycle.
 A refusal returns its owner so the caller can continue or close it later.
+
+Source-only correction owners retain `WorthQueryCapturedMutationInput` with the
+selected binding and original encoded input. This supports actions that share
+one input codec across several mutation bindings. Use the completed owner's
+`original_input()` borrow when the application needs to inspect the input;
+advance and close the owner through its ordinary action methods.
 
 `IdempotencyIntentDrift` identifies reuse of the key for different correction
 meaning. `PublicationPending` and `ProductUnpublished` preserve the outstanding
@@ -261,9 +269,55 @@ disclosure and fresh mutation authority apply to every new selection and
 preparation. A changed source action or delivery produces a typed action or
 program meaning refusal so the application can explain the required support.
 
+### Carry a chooser across requests
+
+A server can retain the native page while the client displays its scalar history
+entries. Consume the request-bound wrapper with `into_page()`, then associate
+that page with the server's existing session or continuation owner. Share the
+page with `Arc` when an in-flight request and the session both need it. Replacing
+or expiring the session entry releases its reference to the page.
+
+Keep source or alternative selections, or completed operation owners with retained
+commit delivery, alive for every occurrence the chooser needs. Release selections
+and close completed operation owners normally after the final selection and retry.
+Their native observations keep source history available while requests traverse
+and select historical entries.
+
+Each entry's `source()` coordinates identify the original occurrence operated on
+by that historical reversal. Send these coordinates with the client's selection.
+After traversal completes, a fresh authenticated request resolves that selection
+against the retained final page:
+
+```rust,ignore
+let completed_page = page.into_page();
+// A later request supplies its own principal and scope.
+let fresh_request = runtime.request(&current_principal, &fresh_scope)
+    .on_branch(target);
+let selected = fresh_request.corrections()
+    .select_alternative_coordinates(&completed_page, &chosen_source, limits)?;
+let preparation = fresh_request.corrections().reapply(&selected)
+    .idempotency(client_key)
+    .limits(limits)
+    .prepare_operation::<RecordedEdit, Program, Action>(&application)?;
+```
+
+Selection checks the page's exact target observation, resolves the chosen
+occurrence through native history, and checks current disclosure for its source.
+When the target has advanced, refresh the chooser and submit the chosen source
+with the same command key for an equivalent retry. Keep that key stable through
+response loss so ordinary idempotency resolves the recorded command.
+
+For paginated requests, retain each returned page's native continuation until
+the next page succeeds. Continue it through a fresh request's
+`continue_alternatives` method with the selected traversal source. The final page
+carries the completed lineage resolution used to select an entry displayed on
+any earlier page. Session ownership and expiry belong to the server's ordinary
+request lifecycle; action publication returns its own owner, which the server
+retains through advancement and normal close.
+
 The [tree journey](../../../worth-query-certification/examples/application_correction_support/tree_reapplication.rs)
-shows multi-page selection, older-alternative choice, exact retries and normal
-source close. The [required-output journey](../../../worth-query-certification/examples/application_correction_support/required_reapplication.rs)
+shows multi-page selection across fresh request scopes, older-alternative choice,
+exact retries and normal source close. The [required-output journey](../../../worth-query-certification/examples/application_correction_support/required_reapplication.rs)
 shows the source publication and subsequent output settlement separately.
 
 ## Compensate a performed operation

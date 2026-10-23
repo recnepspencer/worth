@@ -48,28 +48,19 @@ pub(super) fn values(pending: &WorthQueryPendingAftermathCausality) -> Vec<Optio
     let lineage = pending.correction_lineage();
     let mut fields = Vec::with_capacity(19);
     for source in [
-        lineage.map(|l| l.root()),
-        lineage.and_then(|l| l.selected_alternative()),
-        lineage.and_then(|l| l.active_reversal()),
-        lineage.and_then(|l| l.prior_transition()),
+        Some(lineage.root()),
+        lineage.selected_alternative(),
+        lineage.active_reversal(),
+        lineage.prior_transition(),
     ] {
         fields.extend(coordinates(source));
     }
     let reverse = pending.role() == WorthQueryAftermathCausalRole::RecordedReverse;
+    fields.push(reverse.then(|| selector(&lineage.root().coordinates())));
+    fields.push(reverse.then(|| selector(&pending.recorded_source().coordinates())));
     fields.push(
         lineage
-            .filter(|_| reverse)
-            .map(|l| selector(&l.root().coordinates())),
-    );
-    fields.push(
-        pending
-            .recorded_source()
-            .filter(|_| reverse)
-            .map(|s| selector(&s.coordinates())),
-    );
-    fields.push(
-        lineage
-            .and_then(|l| l.active_reversal())
+            .active_reversal()
             .map(|s| consumption_selector(s.relational())),
     );
     fields

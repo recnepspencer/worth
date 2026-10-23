@@ -86,7 +86,6 @@ fn arithmetic_and_replay() {
             .aftermath_causality()
             .unwrap()
             .recorded_source()
-            .unwrap()
             .relational(),
         source.commit_reference()
     );
@@ -114,7 +113,6 @@ fn arithmetic_and_replay() {
             .aftermath_causality()
             .unwrap()
             .recorded_source()
-            .unwrap()
             .relational(),
         source.commit_reference()
     );

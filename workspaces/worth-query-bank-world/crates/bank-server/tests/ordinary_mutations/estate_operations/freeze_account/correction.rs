@@ -76,7 +76,7 @@ fn closed_freeze_restores_the_recorded_status_and_exact_retry_preserves_its_rece
     };
     assert_eq!(
         receipt.aftermath_causality().unwrap().recorded_source(),
-        Some(&source)
+        &source
     );
     assert_eq!(estate_account_status(&fixture), AccountStatus::Open);
     assert_eq!(foreign_account_status(&fixture), AccountStatus::Open);
@@ -100,8 +100,8 @@ fn closed_freeze_restores_the_recorded_status_and_exact_retry_preserves_its_rece
         receipt.committed_product_publication().composite_commit()
     );
 
-    // Restoration moved the recorded Frozen after-image. A new command is refused
-    // at semantic source comparison, before the inverse handler can run again.
+    // The canonical reversal already consumed this exact source occurrence.
+    // A new command cannot run the inverse handler for it again.
     let moved = request
         .corrections()
         .reverse(&selected)
@@ -110,9 +110,9 @@ fn closed_freeze_restores_the_recorded_status_and_exact_retry_preserves_its_rece
         .prepare();
     match moved {
         Err(WorthQueryApplicationCorrectionDenial::Derivation(
-            WorthQueryCorrectionDerivationDenial::SourceDiverged,
+            WorthQueryCorrectionDerivationDenial::SourceAlreadyReversed,
         )) => (),
-        Err(cause) => panic!("restored source must fail exact after-image comparison: {cause:?}"),
+        Err(cause) => panic!("restored source must retain its canonical reversal: {cause:?}"),
         Ok(_) => panic!("a different command cannot restore the same moved source again"),
     }
     assert_eq!(estate_account_status(&fixture), AccountStatus::Open);

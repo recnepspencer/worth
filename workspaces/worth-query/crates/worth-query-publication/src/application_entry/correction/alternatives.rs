@@ -1,11 +1,9 @@
 //! Bounded history pages and exact selection under the current request.
 use super::*;
+use worth_query_execution::facade::primary_graph::WorthQueryCorrectionDerivationDenial;
 pub use worth_query_execution::facade::primary_graph::{
     WorthQueryCorrectionAlternativeRef, WorthQueryCorrectionAlternativesContinuation,
-    WorthQuerySelectedCorrectionAlternative,
-};
-use worth_query_execution::facade::primary_graph::{
-    WorthQueryCorrectionAlternativesPage, WorthQueryCorrectionDerivationDenial,
+    WorthQueryCorrectionAlternativesPage, WorthQuerySelectedCorrectionAlternative,
 };
 
 /// A disclosed page of alternatives and its native continuation or completed resolution.
@@ -15,6 +13,39 @@ pub struct WorthQueryApplicationCorrectionAlternatives<'a, 'p, 's, S> {
 }
 
 impl<'a, 'p, 's, S: ApplicationSchema> WorthQueryApplicationCorrections<'a, 'p, 's, S> {
+    /// Resolves an operated-source description using a detached completed native page.
+    /// The current request rechecks selected-source disclosure, ancestry and exact target.
+    pub fn select_alternative_coordinates(
+        &self,
+        page: &WorthQueryCorrectionAlternativesPage,
+        source: &worth_query_execution::facade::primary_graph::WorthQueryCorrectionSourceCoordinates,
+        limits: WorthQueryCorrectionHistoryLimits,
+    ) -> Result<WorthQuerySelectedCorrectionAlternative<'a, S>, WorthQueryApplicationCorrectionDenial>
+    {
+        use WorthQueryApplicationCorrectionDenial as Denial;
+        self.application
+            .with_application_advancement(self.scope, |phase| {
+                let target = self
+                    .application
+                    .on_branch(self.branch)
+                    .select(&phase)
+                    .map_err(Denial::ProductSelection)?;
+                target
+                    .select_correction_alternative_coordinates(
+                        &worth_query_execution::publication_boundary::program_publication_access(),
+                        &phase,
+                        self.principal,
+                        self.scope,
+                        page,
+                        source,
+                        limits.maximum_ancestors,
+                        limits.maximum_disclosure_results,
+                    )
+                    .map_err(Denial::Derivation)
+            })
+            .map_err(Denial::ExecutionRequest)?
+    }
+
     /// Reads the first bounded page of the source's canonical reversal alternatives.
     pub fn alternatives(
         self,
@@ -76,9 +107,25 @@ impl<'a, 'p, 's, S: ApplicationSchema> WorthQueryApplicationCorrections<'a, 'p, 
 }
 
 impl<'a, S: ApplicationSchema> WorthQueryApplicationCorrectionAlternatives<'a, '_, '_, S> {
+    /// Retains the existing native page independently of this request's borrowed scope.
+    /// Continuing or selecting it requires a fresh ordinary request.
+    pub fn into_page(self) -> WorthQueryCorrectionAlternativesPage {
+        self.page
+    }
+
     /// Canonical historical alternatives represented on this page.
     pub fn entries(&self) -> &[WorthQueryCorrectionAlternativeRef] {
         self.page.entries()
+    }
+
+    /// Relevant lineage postings examined by this bounded native page.
+    pub fn lineage_entries_examined(&self) -> usize {
+        self.page.lineage_entries_examined()
+    }
+
+    /// Exact consumption postings examined while classifying this page's reversals.
+    pub fn consumption_entries_examined(&self) -> usize {
+        self.page.consumption_entries_examined()
     }
 
     /// Continue until this is absent before selecting an alternative for preparation.

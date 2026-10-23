@@ -1,8 +1,12 @@
 # Semantic correction through the ordinary application entry
 
-This plan implements Phase 1 of `plans/WORTH-query/milestone-9.18.md`.
-Phases 2–4 remain held until this phase closes. The full 9.18 objective and all
-four phases are public-only; private consumer adoption does not gate closure.
+**Status:** Completed and covered by certified Phase 1 acceptance.
+The [9.18 specification](../../plans/WORTH-query/milestone-9.18.md)
+owns current milestone progress.
+
+This plan records the completed ordinary-entry slice's historical boundary review,
+implementation order and intermediate verification notes. The full milestone is
+public-only; private consumer adoption does not gate closure.
 
 ## Boundary review
 
@@ -134,9 +138,9 @@ Run scoped formatting, dirty Rust line caps and composition review, followed by
 the required boundary-check and generated agent-context checks. Do not clean
 caches or change compiler flags between checks without a demonstrated need.
 
-Phase 1 is not certified until the complete public path, adversarial evidence,
-required gates and independent review pass. No private build or edits are part
-of this plan.
+The historical Phase 1 acceptance gate required the complete public path,
+adversarial evidence, repository gates and independent review. No private build
+or edits were part of this plan.
 
 ### Replay and semantic compatibility boundary
 

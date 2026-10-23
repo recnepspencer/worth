@@ -21,7 +21,6 @@ pub fn run() {
         .aftermath_causality()
         .unwrap()
         .recorded_source()
-        .unwrap()
         .coordinates();
     let baseline = entries(&host, &source);
     assert_eq!(baseline.len(), 1);
@@ -106,7 +105,6 @@ fn consumed_edge_survives_reconstruction() {
             .aftermath_causality()
             .unwrap()
             .correction_lineage()
-            .unwrap()
             .active_reversal()
             .unwrap()
             .relational(),

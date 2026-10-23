@@ -23,6 +23,7 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
     records: &mut HashMap<String, MutationRecord>,
     permits: &Arc<Semaphore>,
     quiesced: &AtomicBool,
+    continuations: &super::continuation_registry::SharedContinuationRegistry,
     command: AdmittedMutationCommand,
     scope: WorthQueryRequestScope,
 ) -> BankHttpMutationOutcome {
@@ -57,6 +58,28 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
             Ok(permit) => permit,
             Err(_) => return reject(Some(command.request_id), BankHttpDenialKind::Saturated),
         };
+        let history_page =
+            if let super::mutation_application::AdmittedBankHttpMutation::ReapplySendMoney {
+                history_token,
+                ..
+            } = &input
+            {
+                match super::continuation_registry::access(continuations, |registry| {
+                    registry.correction_page(&owner, history_token)
+                })
+                .await
+                {
+                    Ok(page) => Some(page),
+                    Err(denial) => {
+                        return BankHttpMutationOutcome::Rejected {
+                            request_id: Some(command.request_id),
+                            denial,
+                        }
+                    }
+                }
+            } else {
+                None
+            };
         let (custody, refusal) = match super::mutation_construction::start(
             runtime,
             &principal,
@@ -64,6 +87,7 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
             BankMutationControls::new(scope.clone(), key),
             &request,
             history,
+            history_page.as_deref(),
         ) {
             Ok(constructed) => constructed,
             Err(denial) => {
@@ -215,7 +239,7 @@ fn describe(
             sequence,
             recovered,
             commit,
-            source,
+            source: source.into(),
         },
         CustodyDescription::Terminal => BankHttpMutationOutcome::Terminal {
             request_id,

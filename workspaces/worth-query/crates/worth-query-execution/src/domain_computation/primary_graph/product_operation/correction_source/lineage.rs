@@ -48,9 +48,7 @@ pub(super) fn reverse_identity<Schema>(
     match source.occurrence().aftermath_causality() {
         None => Ok(WorthQueryCorrectionLineageBinding::reverse(locator, None)),
         Some(fact) if fact.role() == WorthQueryAftermathCausalRole::RecordedReapply => {
-            let prior = fact
-                .correction_lineage()
-                .ok_or(Denial::UnsupportedSourceMeaning)?;
+            let prior = fact.correction_lineage();
             Ok(WorthQueryCorrectionLineageBinding::reverse(
                 prior.root().clone(),
                 Some(locator),

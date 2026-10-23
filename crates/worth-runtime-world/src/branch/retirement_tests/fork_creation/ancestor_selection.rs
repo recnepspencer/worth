@@ -48,6 +48,7 @@ fn inherited_source_selection_crosses_real_fork_roots_and_refuses_a_sibling() {
     assert_eq!(selected.source().identity(), source.selected_commit());
     assert_eq!(selected.source().basis(), source.basis());
     assert_eq!(selected.target(), &target);
+    assert_eq!(selected.parent_links_followed(), 2);
     assert!(matches!(
         owner.select_product_branch_ancestor(&execution, &target, sibling.selected_commit(), None,),
         Err(ProductBranchAncestorSelectionDenial::History(
