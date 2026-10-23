@@ -124,6 +124,7 @@ fn features<
     D: ApplicationActionDelivery<NumericSchema, OtherBinding>,
 >() -> Vec<ApplicationFeatureSpec> {
     vec![
+        super::compensation_movement::feature(),
         ApplicationFeatureSpec::root::<NumericSchema, NumericFeature>()
             .conditional_operation::<super::calculation::CalculateNumber>()
             .action::<EditBinding, S>()

@@ -101,6 +101,7 @@ impl ApplicationProgramDefinition<NumericSchema> for OutputProgram {
     }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
+            super::compensation_movement::feature(),
             ApplicationFeatureSpec::root::<NumericSchema, program::NumericFeature>()
                 .provides::<SourcePort>()
                 .action::<edit::EditBinding, Delivery>()

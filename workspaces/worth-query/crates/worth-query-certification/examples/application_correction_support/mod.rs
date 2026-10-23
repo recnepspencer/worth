@@ -4,6 +4,8 @@ pub mod adoption_courts;
 pub mod calculation;
 pub mod calculation_query;
 pub mod calculation_readiness;
+pub mod compensation_courts;
+pub mod compensation_movement;
 pub mod correction;
 pub mod edit;
 pub mod host;

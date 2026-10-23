@@ -3,15 +3,11 @@ use super::disclosure::{
     disclose_correction_source, WorthQueryCorrectionDerivationDenial as Denial,
 };
 use super::*;
-use crate::domain_computation::application_aftermath::retained_preimage::WorthQueryRetainedPreImage;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
 use worth_query_declaration::facade::{
-    application_aftermath::{
-        ApplicationCorrectionBinding, ApplicationCorrectionPreImage, ApplicationInverseBinding,
-        DeclaredPreImageLocus,
-    },
+    application_aftermath::{ApplicationCorrectionBinding, ApplicationInverseBinding},
     application_operation::{
         ApplicationEncodedInput, ApplicationMutationBinding, ApplicationMutationIntent,
         ApplicationMutationScopeResolution,
@@ -67,13 +63,7 @@ where
     let input = retained
         .encoded_input::<<C::Source as ApplicationMutationBinding<Schema>>::InputBinding>()
         .ok_or(Denial::UnsupportedSourceMeaning)?;
-    let preimage = source
-        .occurrence()
-        .commit_evidence()
-        .retained_preimage()
-        .ok_or(Denial::MissingPreImage)?;
-    let inverse =
-        C::derive_inverse(input.input(), &DisclosedPreImage(preimage)).map_err(Denial::Domain)?;
+    let inverse = super::material::derive::<Schema, C>(source, input.input())?;
     let input = target.application().capture_operation_input_in_advancement::<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>(
         phase, access, request, inverse.input(),
     ).map_err(Denial::InputCapture)?;
@@ -91,22 +81,4 @@ where
         required_root,
     )?;
     Ok((input, std::sync::Arc::new(prepared)))
-}
-
-struct DisclosedPreImage<'a>(&'a WorthQueryRetainedPreImage);
-impl<Schema> ApplicationCorrectionPreImage<Schema> for DisclosedPreImage<'_> {
-    fn field(
-        &self,
-        locus: &DeclaredPreImageLocus<Schema>,
-    ) -> Option<&worth_foundational::facade::AspectValue> {
-        self.0
-            .fields()
-            .iter()
-            .find(|field| {
-                field.locus().entity() == locus.entity()
-                    && field.locus().aspect() == locus.aspect()
-                    && field.locus().field() == locus.field()
-            })
-            .map(|field| field.value())
-    }
 }

@@ -1,7 +1,7 @@
 # Correct a recorded source operation
 
-A recorded correction restores authored state through an inverse declared by
-the application. Select a performed source receipt, prepare the inverse against
+A correction applies the recorded inverse or compensating action declared by
+the application. Select a performed source receipt, prepare the action against
 the target branch, then publish the prepared candidate. Success appends a new
 World commit while preserving the target's intervening disjoint edits and exact
 Signal basis.
@@ -12,7 +12,7 @@ secondary to `19`, and reverses the first operation. Readback becomes primary
 `5` and secondary `19`. Its fork and authority courts use the same installed
 application and ordinary request API.
 
-## Declare the inverse and disclosure query
+## Declare the corrective action and disclosure query
 
 Implement `decl::application_aftermath::ApplicationCorrectionBinding<Schema>`
 and list it in the contribution's `corrections: [RecordedEdit]` declaration.
@@ -23,15 +23,18 @@ and list it in the contribution's `corrections: [RecordedEdit]` declaration.
 | `InverseIntent` | The ordinary intent that performs the correction. Its binding supplies the handler, principal mapping and admission mode. |
 | `Disclosure` | The query determining whether the current caller can inspect the original subject on the target. |
 | `source_definition()` | The source operation's external-effect policy. Access is declared by the source operation. |
-| `preimage_demand()` | The exact fields needed by the inverse and their encoded storage demand. |
+| `mechanism()` | The recorded-inverse capture demand or compensation business postcondition, bound to the actual corrective operation. |
 | `disclosure_parameters(original)` | Query parameters associated with the original governed input. |
-| `derive_inverse(original, preimage)` | The domain's deterministic inverse construction. |
+| `derive_correction(original, material)` | The domain's deterministic action construction from the original input and its mechanism-specific material. |
 | `inverse_key(key)` | Conversion of the client command key to the inverse binding's key type. |
 | `visit(dispatch)` | Typed selection of conventional or capability admission for the inverse. |
 
 The complete [numeric binding](../../../worth-query-certification/examples/application_correction_support/correction.rs)
 captures primary and decodes it through `U64ApplicationValueBinding`. Its
-capture width comes from that binding's encoded representation. The
+`mechanism()` returns `DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(demand)`;
+the capture width comes from the field binding's encoded representation. Native
+derivation supplies `ApplicationCorrectionSourceMaterial::RecordedInverse(preimage)`.
+The
 [disclosure query](../../../worth-query-certification/examples/application_correction_support/query.rs)
 addresses the original number and applies its current read-enabled predicate.
 The [contribution](../../../worth-query-certification/examples/application_correction_support/schema.rs)
@@ -88,6 +91,56 @@ runtime. Each preparation observes the target again.
 derives and captures the inverse input, resolves its scope, admits the current
 caller and runs the installed handler to build a candidate. State changes when
 `publish()` succeeds. Dropping the candidate releases its preparation.
+
+## Compensate a performed operation
+
+Compensation applies a new forward operation to neutralize an earlier effect.
+Its handler evaluates the current target and preserves later lawful work. For
+example, a balance of `100` receives `+30`, then `+7`; compensating the first
+credit debits `30` from `137`, leaving `107`.
+
+Declare the compensation through the same `corrections: [Binding]` contribution
+clause and ordinary selection/preparation/publication entry. The binding names
+the actual source mutation, corrective intent and disclosure query. Its
+`mechanism()` derives the compensating operation slot from that concrete intent:
+
+```rust,ignore
+fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
+    DeclaredCorrectionMechanism::compensation_binding::<Self>(
+        DeclaredAftermathPostcondition::BusinessPostcondition {
+            identity: "original-credit-neutralized".to_owned(),
+        },
+    ).expect("the compensation declares a business postcondition")
+}
+
+fn derive_correction(
+    original: &Credit,
+    material: ApplicationCorrectionSourceMaterial<'_, NumericSchema>,
+) -> Result<Debit, ApplicationCorrectionDerivationDenial> {
+    match material {
+        ApplicationCorrectionSourceMaterial::Compensation => Ok(Debit {
+            key: original.key.clone(),
+            amount: original.amount,
+        }),
+        _ => Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning),
+    }
+}
+```
+
+Use either `BusinessPostcondition` or `InvariantRestored` to name the operation's
+business guarantee. Installation resolves its exact mutation binding, handler,
+input and disclosure meaning and publishes `Compensatable` posture. Recorded
+inversion publishes `Reversible` posture and receives its demanded pre-image.
+
+The original occurrence supplies the mechanism and original admitted input.
+Current disclosure controls access to that material; the compensating handler's
+fresh ordinary reads and admission determine current eligibility. Preparation
+retains the exact target through publication. Equivalent retries resolve the
+original correction command and receipt, including its causal source link.
+
+The [compiled credit/debit binding](../../../worth-query-certification/examples/application_correction_support/compensation_movement.rs)
+and [compensation court](../../../worth-query-certification/examples/application_correction_support/compensation_courts.rs)
+show current-balance arithmetic, intervening work, replay and current authority.
 
 ## Required outputs and recovery
 
@@ -175,7 +228,7 @@ shows publication recovery, explicit cleanup and native output settlement.
 
 ## Compatibility and current authority
 
-Eligibility compares the original operation's complete semantic dependencies
+Recorded-inverse eligibility compares the original operation's complete semantic dependencies
 against the target. Own writes are compared with their committed after-state.
 A later primary edit conflicts with restoring primary; a secondary edit is
 preserved. A changed decision dependency also matters: changing a ceiling read

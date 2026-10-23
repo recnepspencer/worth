@@ -1,4 +1,4 @@
-use super::InstalledInverseBinding;
+use super::InstalledCorrectionBinding;
 use crate::application_operation::{
     WorthQueryApplicationOperationInstallationDenial,
     WorthQueryApplicationOperationInstallationDenialKind as DenialKind,
@@ -11,12 +11,12 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationSchemaMember,
 };
 
-pub(crate) fn resolve_inverse_binding(
+pub(crate) fn resolve_correction_binding(
     members: &[ApplicationSchemaMember],
     source: &ApplicationMutationBindingDescriptor,
     bindings: &BTreeMap<String, &ApplicationMutationBindingDescriptor>,
     queries: &[ApplicationQueryBindingDescriptor],
-) -> Result<Option<InstalledInverseBinding>, WorthQueryApplicationOperationInstallationDenial> {
+) -> Result<Option<InstalledCorrectionBinding>, WorthQueryApplicationOperationInstallationDenial> {
     let contract = members.iter().find_map(|member| match member {
         ApplicationSchemaMember::OperationAftermath {
             operation,
@@ -27,7 +27,7 @@ pub(crate) fn resolve_inverse_binding(
     let Some(contract) = contract else {
         return Ok(None);
     };
-    let Some(declaration) = contract.inverse_binding() else {
+    let Some(declaration) = contract.correction_binding() else {
         return Ok(None);
     };
     let denied = || {
@@ -62,9 +62,11 @@ pub(crate) fn resolve_inverse_binding(
     match contract.mechanism() {
         Some(PortableCorrectionMechanism::RecordedInverse(recorded))
             if recorded.inverse_operation_slot() == inverse.operation_name() => {}
+        Some(PortableCorrectionMechanism::Compensation(compensation))
+            if compensation.compensating_operation_slot() == inverse.operation_name() => {}
         _ => return Err(denied()),
     }
-    Ok(Some(InstalledInverseBinding {
+    Ok(Some(InstalledCorrectionBinding {
         declaration: declaration.clone(),
         source_type: source.binding_type(),
         inverse_type: inverse.binding_type(),

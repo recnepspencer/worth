@@ -11,7 +11,7 @@ use worth_query_admission::facade::authenticated_principal::{
 use worth_query_declaration::facade::{
     application_aftermath::{
         ApplicationCorrectionBinding, ApplicationCorrectionDerivationDenial,
-        ApplicationInverseBinding, DeclaredInverseBinding,
+        ApplicationInverseBinding, DeclaredCorrectionBinding,
     },
     application_query::{
         ApplicationQueryBinding, ApplicationQueryScopeBinding, ApplicationQueryScopeResolutionMode,
@@ -122,7 +122,7 @@ where
         || association.inverse_type() != TypeId::of::<ApplicationInverseBinding<Schema, C>>()
         || association.disclosure_query_type()
             != TypeId::of::<<Disclosure<Schema, C> as ApplicationQueryBinding<Schema>>::Query>()
-        || association.declaration() != &DeclaredInverseBinding::of::<Schema, C>()
+        || association.declaration() != &DeclaredCorrectionBinding::of::<Schema, C>()
     {
         return Err(Denial::UnsupportedSourceMeaning);
     }

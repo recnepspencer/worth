@@ -2,19 +2,19 @@
 use std::sync::Arc;
 use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
 use worth_query_installation::facade::{
-    InstalledInverseBinding, WorthQueryInstalledApplicationQueryIdentity,
+    InstalledCorrectionBinding, WorthQueryInstalledApplicationQueryIdentity,
 };
 
 /// Historical descriptive meaning. Fresh query execution must authorize its use.
 pub(in crate::domain_computation) struct OriginalCorrectionDisclosure {
-    association: Arc<InstalledInverseBinding>,
+    association: Arc<InstalledCorrectionBinding>,
     query: WorthQueryInstalledApplicationQueryIdentity,
     parameters: Arc<WorthQueryAdmittedApplicationQueryParameters>,
 }
 
 impl OriginalCorrectionDisclosure {
     pub(in crate::domain_computation) fn from_original(
-        association: Arc<InstalledInverseBinding>,
+        association: Arc<InstalledCorrectionBinding>,
         query: WorthQueryInstalledApplicationQueryIdentity,
         parameters: WorthQueryAdmittedApplicationQueryParameters,
     ) -> Self {
@@ -24,7 +24,7 @@ impl OriginalCorrectionDisclosure {
             parameters: Arc::new(parameters),
         }
     }
-    pub(in crate::domain_computation) fn association(&self) -> &InstalledInverseBinding {
+    pub(in crate::domain_computation) fn association(&self) -> &InstalledCorrectionBinding {
         &self.association
     }
     pub(in crate::domain_computation) fn query(

@@ -182,7 +182,7 @@ pub(crate) fn install_application_aftermath(
         authority,
         mechanism,
         correction_disclosure: portable
-            .inverse_binding()
+            .correction_binding()
             .map(|inverse| inverse.disclosure().clone()),
         external_effect: InstalledExternalEffectPosture::from_operation_contract(external_effect),
         published_posture,

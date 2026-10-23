@@ -1,6 +1,6 @@
 //! Resolve descriptive correction associations against actual native inventory.
 use super::*;
-use crate::application_aftermath::resolve_inverse_binding;
+use crate::application_aftermath::resolve_correction_binding;
 mod disclosure;
 use std::{any::TypeId, collections::BTreeMap};
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
@@ -15,7 +15,7 @@ fn correction_binding_resolves_exact_native_members_and_rejects_changed_meaning(
     let inventory = BTreeMap::from([(source.identity().to_owned(), &source)]);
     let source_members = members(&source, parts(&source));
     let queries = [disclosure::HistoryBinding::descriptor()];
-    let installed = resolve_inverse_binding(&source_members, &source, &inventory, &queries)
+    let installed = resolve_correction_binding(&source_members, &source, &inventory, &queries)
         .unwrap()
         .unwrap();
     assert_eq!(installed.source_type(), TypeId::of::<MutationBinding>());
@@ -53,14 +53,14 @@ fn correction_binding_resolves_exact_native_members_and_rejects_changed_meaning(
             }
             _ => unreachable!(),
         }
-        assert_eq!(resolve_inverse_binding(&members(&source, altered), &source, &inventory, &queries).unwrap_err().kind(),
+        assert_eq!(resolve_correction_binding(&members(&source, altered), &source, &inventory, &queries).unwrap_err().kind(),
             crate::application_operation::WorthQueryApplicationOperationInstallationDenialKind::AftermathInstallationDenied,
             "{axis}");
     }
 }
 
-fn parts(source: &ApplicationMutationBindingDescriptor) -> DeclaredInverseBindingParts {
-    DeclaredInverseBindingParts {
+fn parts(source: &ApplicationMutationBindingDescriptor) -> DeclaredCorrectionBindingParts {
+    DeclaredCorrectionBindingParts {
         identity: identity("fixture.restore.v1"),
         source: source.description().clone(),
         inverse: source.description().clone(),
@@ -73,9 +73,63 @@ fn parts(source: &ApplicationMutationBindingDescriptor) -> DeclaredInverseBindin
     }
 }
 
+#[test]
+fn correction_compensation_resolves_its_actual_action_and_refuses_slot_or_authority_drift() {
+    let source = MutationBinding::descriptor();
+    let inventory = BTreeMap::from([(source.identity().to_owned(), &source)]);
+    let queries = [disclosure::HistoryBinding::descriptor()];
+    for (slot, authority, valid) in [
+        (
+            source.operation_name(),
+            DeclaredCorrectionAuthority::RuntimeAlone,
+            true,
+        ),
+        (
+            "uninstalled-compensation",
+            DeclaredCorrectionAuthority::RuntimeAlone,
+            false,
+        ),
+        (
+            source.operation_name(),
+            DeclaredCorrectionAuthority::RuntimeWithExternalOwner,
+            false,
+        ),
+    ] {
+        let contract = PortableApplicationAftermathContract::from_untrusted_fields(
+            authority,
+            Some(PortableCorrectionMechanism::Compensation(
+                DeclaredCompensation::new(
+                    slot,
+                    DeclaredAftermathPostcondition::BusinessPostcondition {
+                        identity: "effect-neutralized".to_owned(),
+                    },
+                )
+                .unwrap(),
+            )),
+            None,
+        )
+        .with_untrusted_correction_binding(
+            DeclaredCorrectionBinding::from_untrusted_parts(parts(&source)),
+        );
+        let members = [ApplicationSchemaMember::OperationAftermath {
+            operation: source.operation_name().to_owned(),
+            contract,
+        }];
+        let result = resolve_correction_binding(&members, &source, &inventory, &queries);
+        if valid {
+            let binding = result
+                .unwrap()
+                .expect("the installed compensating action resolves");
+            assert_eq!(binding.inverse_type(), TypeId::of::<MutationBinding>());
+        } else {
+            assert_eq!(result.unwrap_err().kind(), crate::application_operation::WorthQueryApplicationOperationInstallationDenialKind::AftermathInstallationDenied);
+        }
+    }
+}
+
 fn members(
     source: &ApplicationMutationBindingDescriptor,
-    parts: DeclaredInverseBindingParts,
+    parts: DeclaredCorrectionBindingParts,
 ) -> Vec<ApplicationSchemaMember> {
     let inverse = PortableRecordedInverse::from_untrusted_fields(
         source.operation_name().to_owned(),
@@ -97,7 +151,7 @@ fn members(
             Some(PortableCorrectionMechanism::RecordedInverse(inverse)),
             None,
         )
-        .with_untrusted_inverse_binding(DeclaredInverseBinding::from_untrusted_parts(parts)),
+        .with_untrusted_correction_binding(DeclaredCorrectionBinding::from_untrusted_parts(parts)),
     }]
 }
 

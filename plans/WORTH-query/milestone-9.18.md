@@ -478,7 +478,10 @@ rather than replacing it.
 **In progress.** Retained-source correction across equivalent installed program
 adoption and fixed-root required-output publication/recovery are implemented.
 Unpublished correction owners retain the actual inverse input and transformed
-key for fresh-authority recovery. Phases 3–4 remain held until this phase is certified.
+key for fresh-authority recovery. Typed runtime-alone compensation preserves
+intervening numeric movements through fresh corrective admission; Bank adoption
+and its accounting/process courts remain pending. Phases 3–4 remain held until
+this phase is certified.
 
 Extend that path to owner definition successors, program compatibility, required-output
 reconciliation, compensation, workflow/inbound dispositions and authored create/delete

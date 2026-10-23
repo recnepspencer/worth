@@ -1,4 +1,4 @@
-//! One typed association installs its source operation, capture and inverse bindings.
+//! One typed association installs source, mechanism, disclosure and corrective action.
 use super::{ApplicationSchema, ApplicationSchemaDeclarationBuilder};
 use crate::application_aftermath::{
     ApplicationCorrectionBinding, ApplicationInverseBinding, DeclaredApplicationAftermathContract,
@@ -8,11 +8,11 @@ use crate::{
 };
 
 impl<Schema: ApplicationSchema> ApplicationSchemaDeclarationBuilder<Schema> {
-    pub fn recorded_inverse<Correction: ApplicationCorrectionBinding<Schema>>(self) -> Self {
+    pub fn correction<Correction: ApplicationCorrectionBinding<Schema>>(self) -> Self {
         let definition = Correction::source_definition()
-            .aftermath(
-                DeclaredApplicationAftermathContract::recorded_inverse_binding::<Correction>(),
-            )
+            .aftermath(DeclaredApplicationAftermathContract::correction_binding::<
+                Correction,
+            >())
             .finish();
         let builder = self
             .declared_operation(definition)

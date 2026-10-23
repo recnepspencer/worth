@@ -249,7 +249,7 @@ pub struct DeclaredRecordedInverse<Schema> {
 }
 
 impl<Schema> DeclaredRecordedInverse<Schema> {
-    pub(crate) fn from_binding<Correction>() -> Self
+    pub(crate) fn from_binding<Correction>(preimage_demand: DeclaredPreImageDemand<Schema>) -> Self
     where
         Schema: crate::application_schema::ApplicationSchema,
         Correction: super::super::ApplicationCorrectionBinding<Schema>,
@@ -262,7 +262,7 @@ impl<Schema> DeclaredRecordedInverse<Schema> {
                 correspondence_slot: Correction::IDENTITY.to_owned(),
             },
             postcondition: DeclaredAftermathPostcondition::ExactPriorTruth,
-            preimage_demand: Correction::preimage_demand(),
+            preimage_demand,
         }
     }
 

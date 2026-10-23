@@ -13,13 +13,13 @@ use std::{
 use worth_query_declaration::facade::{
     application_aftermath::{
         ApplicationCorrectionBinding, ApplicationCorrectionVisitor, ApplicationInverseBinding,
-        DeclaredInverseBinding,
+        DeclaredCorrectionBinding,
     },
     application_operation::ApplicationMutationBinding,
     application_query::ApplicationQueryBinding,
     application_schema::ApplicationSchema,
 };
-use worth_query_installation::facade::InstalledInverseBinding;
+use worth_query_installation::facade::InstalledCorrectionBinding;
 
 pub(super) fn capture<Schema, Binding>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -33,7 +33,7 @@ where
         .installed_schema()
         .installed_mutation_binding::<Binding>()
         .map_err(|_| denied("original mutation binding is unavailable"))?;
-    let Some(association) = installed.retain_inverse_binding() else {
+    let Some(association) = installed.retain_correction_binding() else {
         return Ok(None);
     };
     if association.source_type() != TypeId::of::<Binding>() {
@@ -55,7 +55,7 @@ where
 struct Capture<'a, Schema> {
     runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     original: &'a dyn Any,
-    association: Arc<InstalledInverseBinding>,
+    association: Arc<InstalledCorrectionBinding>,
 }
 impl<Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema> for Capture<'_, Schema> {
     type Output = Result<OriginalCorrectionDisclosure, Denial>;
@@ -70,7 +70,8 @@ impl<Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema> for Capture
             || self.association.disclosure_query_type()
                 != TypeId::of::<<Correction::Disclosure as ApplicationQueryBinding<Schema>>::Query>(
                 )
-            || self.association.declaration() != &DeclaredInverseBinding::of::<Schema, Correction>()
+            || self.association.declaration()
+                != &DeclaredCorrectionBinding::of::<Schema, Correction>()
         {
             return Err(denied(
                 "typed correction differs from its installed association",

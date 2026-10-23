@@ -1,3 +1,4 @@
+//! Disclosure metadata belonging to the corrective action association.
 use crate::denial::{
     WorthQueryPackageArchiveDenial as Denial, WorthQueryPackageArchiveDenialKind as Kind,
 };

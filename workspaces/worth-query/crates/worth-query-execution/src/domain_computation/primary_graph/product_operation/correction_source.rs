@@ -18,6 +18,7 @@ mod derivation;
 mod inspection;
 mod intent;
 mod key;
+mod material;
 mod preparation;
 mod replay;
 mod required_output;

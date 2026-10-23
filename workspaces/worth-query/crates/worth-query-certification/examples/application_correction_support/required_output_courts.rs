@@ -217,7 +217,13 @@ pub(super) fn read_calculation(application: &host::OutputHost) -> u64 {
         .rows()[0]
         .value
 }
-pub(super) fn head(application: &host::OutputHost) -> impl Eq + std::fmt::Debug + use<> {
+pub(super) fn head<
+    P: worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+        NumericSchema,
+    >,
+>(
+    application: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<NumericSchema, P>,
+) -> impl Eq + std::fmt::Debug + use<P> {
     application
         .with_host_advancement(|phase| {
             application

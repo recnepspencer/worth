@@ -1,8 +1,8 @@
 use super::{decode_member, encode_member, try_decode_member};
 use worth_query_declaration::facade::{
     application_aftermath::{
-        DeclaredCorrectionAuthority, DeclaredCorrectionDisclosure,
-        DeclaredCorrectionDisclosureParts, DeclaredInverseBinding, DeclaredInverseBindingParts,
+        DeclaredCorrectionAuthority, DeclaredCorrectionBinding, DeclaredCorrectionBindingParts,
+        DeclaredCorrectionDisclosure, DeclaredCorrectionDisclosureParts,
         PortableApplicationAftermathContract,
     },
     application_operation::{
@@ -16,7 +16,7 @@ use worth_query_declaration::facade::{
 
 #[test]
 fn correction_archive_retains_both_bindings_handlers_queries_and_codecs() {
-    let binding = DeclaredInverseBinding::from_untrusted_parts(DeclaredInverseBindingParts {
+    let binding = DeclaredCorrectionBinding::from_untrusted_parts(DeclaredCorrectionBindingParts {
         identity: identity("restore-amount.v1"),
         source: description("set-amount.v1", "SetAmount", "amount-input.v1"),
         inverse: description("restore-amount.v1", "RestoreAmount", "restore-input.v2"),
@@ -40,7 +40,7 @@ fn correction_archive_retains_both_bindings_handlers_queries_and_codecs() {
         None,
         None,
     )
-    .with_untrusted_inverse_binding(binding);
+    .with_untrusted_correction_binding(binding);
     let member = ApplicationSchemaMember::OperationAftermath {
         operation: "SetAmount".to_owned(),
         contract,

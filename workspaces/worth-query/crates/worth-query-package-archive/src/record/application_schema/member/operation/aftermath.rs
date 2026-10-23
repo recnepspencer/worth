@@ -17,7 +17,7 @@ use super::super::super::wire_vocabulary::{
     decode_optional, decode_usize, write_optional, write_usize,
 };
 
-mod inverse_binding;
+mod correction_binding;
 
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
@@ -28,8 +28,8 @@ pub(super) fn write(
     write_optional(output, contract.reconciliation(), |output, value| {
         output.text(value.procedure_slot())
     })?;
-    if let Some(binding) = contract.inverse_binding() {
-        inverse_binding::write(output, binding)?;
+    if let Some(binding) = contract.correction_binding() {
+        correction_binding::write(output, binding)?;
     }
     Ok(())
 }
@@ -37,7 +37,7 @@ pub(super) fn write(
 pub(super) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
-    has_inverse_binding: bool,
+    has_correction_binding: bool,
 ) -> Result<PortableApplicationAftermathContract, Denial> {
     let authority = authority_from_tag(input.u16()?)?;
     let mechanism = match input.u16()? {
@@ -54,8 +54,8 @@ pub(super) fn decode(
         mechanism,
         reconciliation,
     );
-    Ok(if has_inverse_binding {
-        contract.with_untrusted_inverse_binding(inverse_binding::decode(input, budget)?)
+    Ok(if has_correction_binding {
+        contract.with_untrusted_correction_binding(correction_binding::decode(input, budget)?)
     } else {
         contract
     })

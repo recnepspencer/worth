@@ -1,4 +1,4 @@
-use super::super::{DeclaredPreImageDemand, DeclaredPreImageLocus};
+use super::super::{DeclaredCorrectionMechanism, DeclaredPreImageLocus};
 use crate::application_operation::{
     ApplicationMutationBinding, ApplicationMutationDescription, ApplicationMutationIntent,
 };
@@ -27,7 +27,7 @@ pub enum ApplicationCorrectionDerivationDenial {
     InvalidDisclosureParameters,
 }
 
-/// One installed source operation's deterministic recorded inverse association.
+/// One installed source operation's deterministic corrective action association.
 pub trait ApplicationCorrectionBinding<Schema: ApplicationSchema>: Sized + 'static {
     const IDENTITY: &'static str;
     type Source: ApplicationMutationBinding<Schema, Operation: ApplicationDeclaredOperation<Schema>>;
@@ -52,10 +52,10 @@ pub trait ApplicationCorrectionBinding<Schema: ApplicationSchema>: Sized + 'stat
         true,
         false,
     >;
-    fn preimage_demand() -> DeclaredPreImageDemand<Schema>;
-    fn derive_inverse(
+    fn mechanism() -> DeclaredCorrectionMechanism<Schema>;
+    fn derive_correction(
         original: &<Self::Source as ApplicationMutationBinding<Schema>>::Input,
-        preimage: &impl ApplicationCorrectionPreImage<Schema>,
+        material: super::ApplicationCorrectionSourceMaterial<'_, Schema>,
     ) -> Result<Self::InverseIntent, ApplicationCorrectionDerivationDenial>;
     fn inverse_key(key: &str) -> <ApplicationInverseBinding<Schema, Self> as ApplicationMutationBinding<Schema>>::IdempotencyKey;
     fn visit<Visitor: super::ApplicationCorrectionVisitor<Schema>>(
@@ -66,7 +66,7 @@ pub trait ApplicationCorrectionBinding<Schema: ApplicationSchema>: Sized + 'stat
 /// Portable descriptive association derived from both actual mutation bindings.
 /// Installation resolves this against the schema's native binding inventory.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub struct DeclaredInverseBinding {
+pub struct DeclaredCorrectionBinding {
     identity: WorthQueryPortableTypeIdentity,
     source: ApplicationMutationDescription,
     inverse: ApplicationMutationDescription,
@@ -77,9 +77,9 @@ pub struct DeclaredInverseBinding {
     disclosure: super::DeclaredCorrectionDisclosure,
 }
 
-impl DeclaredInverseBinding {
+impl DeclaredCorrectionBinding {
     /// Reconstructs descriptive meaning; native installation validates the association.
-    pub fn from_untrusted_parts(parts: DeclaredInverseBindingParts) -> Self {
+    pub fn from_untrusted_parts(parts: DeclaredCorrectionBindingParts) -> Self {
         Self {
             identity: parts.identity,
             source: parts.source,
@@ -135,7 +135,7 @@ impl DeclaredInverseBinding {
 }
 
 /// Authority-free fields decoded from a portable inverse association.
-pub struct DeclaredInverseBindingParts {
+pub struct DeclaredCorrectionBindingParts {
     pub identity: WorthQueryPortableTypeIdentity,
     pub source: ApplicationMutationDescription,
     pub inverse: ApplicationMutationDescription,

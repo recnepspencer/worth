@@ -10,7 +10,7 @@ pub(super) fn append_declared_aftermath(
 ) {
     append_authority(basis, prefix, contract.authority());
     append_mechanism(basis, prefix, contract.mechanism());
-    if let Some(binding) = contract.inverse_binding() {
+    if let Some(binding) = contract.correction_binding() {
         for (field, value) in binding.disclosure().canonical_fields() {
             basis.text(
                 format!("{prefix}.inverse-binding.disclosure.{field}"),

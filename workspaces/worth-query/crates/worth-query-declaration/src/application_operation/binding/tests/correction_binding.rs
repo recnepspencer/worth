@@ -44,19 +44,21 @@ impl ApplicationCorrectionBinding<MutationSchema> for Inverse {
             .no_external_effect()
     }
 
-    fn preimage_demand() -> DeclaredPreImageDemand<MutationSchema> {
-        DeclaredPreImageDemand::new(
-            [DeclaredPreImageLocus::from_field(
-                AccountIdField::reference(),
-            )],
-            64,
+    fn mechanism() -> DeclaredCorrectionMechanism<MutationSchema> {
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
+            DeclaredPreImageDemand::new(
+                [DeclaredPreImageLocus::from_field(
+                    AccountIdField::reference(),
+                )],
+                64,
+            )
+            .unwrap(),
         )
-        .unwrap()
     }
 
-    fn derive_inverse(
+    fn derive_correction(
         _: &RenameInput,
-        _: &impl ApplicationCorrectionPreImage<MutationSchema>,
+        _: ApplicationCorrectionSourceMaterial<'_, MutationSchema>,
     ) -> Result<RenameInput, ApplicationCorrectionDerivationDenial> {
         // This owner test exercises registration, not a domain inverse implementation.
         Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning)
@@ -114,8 +116,8 @@ fn contribution_correction_clause_registers_exact_binding_capture_and_dispatch()
         })
         .unwrap();
     assert_eq!(
-        contract.inverse_binding(),
-        Some(&DeclaredInverseBinding::of::<MutationSchema, Inverse>())
+        contract.correction_binding(),
+        Some(&DeclaredCorrectionBinding::of::<MutationSchema, Inverse>())
     );
     let Some(PortableCorrectionMechanism::RecordedInverse(inverse)) = contract.mechanism() else {
         panic!("the same clause installs capture demand")

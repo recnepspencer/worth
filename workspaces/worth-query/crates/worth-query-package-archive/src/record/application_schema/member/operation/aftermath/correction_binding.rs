@@ -1,5 +1,6 @@
+//! Portable encoding of the typed source and corrective action association.
 use worth_query_declaration::facade::application_aftermath::{
-    DeclaredInverseBinding, DeclaredInverseBindingParts,
+    DeclaredCorrectionBinding, DeclaredCorrectionBindingParts,
 };
 
 use super::super::super::mutation_description;
@@ -13,7 +14,7 @@ use crate::{binary_encoding::BinaryEncodingSink, binary_input::BinaryInput};
 
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
-    binding: &DeclaredInverseBinding,
+    binding: &DeclaredCorrectionBinding,
 ) -> Result<(), Denial> {
     write_type_identity(output, binding.identity())?;
     mutation_description::write(output, binding.source())?;
@@ -32,9 +33,9 @@ pub(super) fn write(
 pub(super) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
-) -> Result<DeclaredInverseBinding, Denial> {
-    Ok(DeclaredInverseBinding::from_untrusted_parts(
-        DeclaredInverseBindingParts {
+) -> Result<DeclaredCorrectionBinding, Denial> {
+    Ok(DeclaredCorrectionBinding::from_untrusted_parts(
+        DeclaredCorrectionBindingParts {
             identity: decode_type_identity(input)?,
             source: mutation_description::decode_description(input, budget)?,
             inverse: mutation_description::decode_description(input, budget)?,

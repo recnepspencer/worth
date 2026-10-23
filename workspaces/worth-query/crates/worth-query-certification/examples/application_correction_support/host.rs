@@ -32,6 +32,12 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
         setup.conditional::<super::calculation_readiness::Readiness>(())?;
         setup.handler::<edit::EditBinding, _>(edit::Handler)?;
         setup.handler::<other_edit::OtherBinding, _>(other_edit::Handler)?;
+        setup.handler::<super::compensation_movement::CreditBinding, _>(
+            super::compensation_movement::CreditHandler,
+        )?;
+        setup.handler::<super::compensation_movement::DebitBinding, _>(
+            super::compensation_movement::DebitHandler,
+        )?;
         setup.handler::<super::principal_status::Binding, _>(super::principal_status::Handler)
     }
 }

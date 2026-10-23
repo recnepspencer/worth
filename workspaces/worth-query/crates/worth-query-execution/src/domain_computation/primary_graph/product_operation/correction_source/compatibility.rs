@@ -19,6 +19,14 @@ where
     C: ApplicationCorrectionBinding<Schema>,
 {
     let interpretation = require_target_program::<Schema, C>(target, source, required_root)?;
+    if matches!(
+        super::material::mechanism(source)?,
+        worth_query_installation::facade::InstalledCorrectionMechanism::Compensation(_)
+    ) {
+        // Historical occurrence/input identify the effect. The declared compensating
+        // action admits current target eligibility through its fresh ordinary reads.
+        return Ok(interpretation);
+    }
     let facts = source
         .occurrence()
         .commit_evidence()

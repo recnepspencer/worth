@@ -8,8 +8,9 @@ mod correction_binding;
 pub use correction_binding::{
     dispatch_application_correction, ApplicationCorrectionBinding,
     ApplicationCorrectionDerivationDenial, ApplicationCorrectionDispatch,
-    ApplicationCorrectionPreImage, ApplicationCorrectionVisitor, ApplicationInverseBinding,
-    DeclaredInverseBinding, DeclaredInverseBindingParts,
+    ApplicationCorrectionPreImage, ApplicationCorrectionSourceMaterial,
+    ApplicationCorrectionVisitor, ApplicationInverseBinding, DeclaredCorrectionBinding,
+    DeclaredCorrectionBindingParts,
 };
 pub use correction_binding::{DeclaredCorrectionDisclosure, DeclaredCorrectionDisclosureParts};
 mod correction_authority;

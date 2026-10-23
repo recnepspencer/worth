@@ -96,7 +96,7 @@ macro_rules! worth_query_application_contribution {
                 $Schema,
             > {
                 let $builder = $body;
-                $($(let $builder = $builder.recorded_inverse::<$Correction>();)*)?
+                $($(let $builder = $builder.correction::<$Correction>();)*)?
                 $builder
             }
 
@@ -148,7 +148,7 @@ macro_rules! worth_query_application_contribution {
                 $Schema,
             > {
                 let $builder = $body;
-                $($(let $builder = $builder.recorded_inverse::<$Correction>();)*)?
+                $($(let $builder = $builder.correction::<$Correction>();)*)?
                 $builder
             }
 

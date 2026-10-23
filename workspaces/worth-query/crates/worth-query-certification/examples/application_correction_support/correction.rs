@@ -21,22 +21,27 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordedEdit {
     ) -> ApplicationOperationDefinitionBuilder<NumericSchema, EditNumber, Edit, true, false> {
         EditNumber::reference().definition().no_external_effect()
     }
-    fn preimage_demand() -> DeclaredPreImageDemand<NumericSchema> {
+    fn mechanism() -> DeclaredCorrectionMechanism<NumericSchema> {
         // Capture stores the binding's complete AspectValue representation.
         let encoded_width = U64ApplicationValueBinding::encode(&u64::MAX)
             .unwrap()
             .semantic_byte_width();
-        DeclaredPreImageDemand::new(
-            [DeclaredPreImageLocus::from_field(Primary::reference())],
-            encoded_width,
+        DeclaredCorrectionMechanism::recorded_inverse_binding::<Self>(
+            DeclaredPreImageDemand::new(
+                [DeclaredPreImageLocus::from_field(Primary::reference())],
+                encoded_width,
+            )
+            .unwrap(),
         )
-        .unwrap()
     }
-    fn derive_inverse(
+    fn derive_correction(
         original: &Edit,
-        preimage: &impl ApplicationCorrectionPreImage<NumericSchema>,
+        material: ApplicationCorrectionSourceMaterial<'_, NumericSchema>,
     ) -> Result<OtherEdit, ApplicationCorrectionDerivationDenial> {
         use ApplicationCorrectionDerivationDenial::{InvalidPreImage, MissingPreImage};
+        let ApplicationCorrectionSourceMaterial::RecordedInverse(preimage) = material else {
+            return Err(ApplicationCorrectionDerivationDenial::UnsupportedSourceMeaning);
+        };
         let value = match original.value {
             Value::Primary(_) => Value::Primary(
                 U64ApplicationValueBinding::decode(

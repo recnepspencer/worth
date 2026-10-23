@@ -94,7 +94,7 @@ where
     let bindings = descriptors
         .iter()
         .map(|(identity, descriptor)| {
-            let inverse = crate::application_aftermath::resolve_inverse_binding(
+            let inverse = crate::application_aftermath::resolve_correction_binding(
                 schema.installed_declaration().members(),
                 descriptor,
                 &descriptors,

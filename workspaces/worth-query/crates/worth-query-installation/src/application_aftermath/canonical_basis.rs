@@ -86,7 +86,7 @@ pub(super) fn prepare_aftermath_basis(
     builder.text("operation", operation_slot);
     builder.text("authority", authority_label(portable.authority()));
     push_correction_contract(&mut builder, portable, reconciliation);
-    if let Some(inverse) = portable.inverse_binding() {
+    if let Some(inverse) = portable.correction_binding() {
         for (field, value) in inverse.disclosure().canonical_fields() {
             builder.text(format!("inverse-disclosure-{field}"), value);
         }

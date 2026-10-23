@@ -31,7 +31,7 @@ pub(super) fn require_encoding_contract(
         return Err(Denial::new(Kind::NestingDepthBudgetExceeded));
     }
     if matches!(member, ApplicationSchemaMember::OperationAftermath { contract, .. }
-        if contract.inverse_binding().is_some())
+        if contract.correction_binding().is_some())
         && maximum_depth < 2
     {
         return Err(Denial::new(Kind::NestingDepthBudgetExceeded));
@@ -141,7 +141,7 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
         ApplicationSchemaMember::OperationExternalEffect { .. } => 17,
         ApplicationSchemaMember::OperationInboundOccurrence { .. } => 30,
         ApplicationSchemaMember::OperationAftermath { contract, .. }
-            if contract.inverse_binding().is_some() => 35,
+            if contract.correction_binding().is_some() => 35,
         ApplicationSchemaMember::OperationAftermath { .. } => 18,
         ApplicationSchemaMember::OperationBody { .. } => 32,
         ApplicationSchemaMember::Policy { .. } => 19,
