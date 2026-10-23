@@ -58,6 +58,14 @@ impl HistorySubsystem {
                         checkpoint.observation.target(),
                     )?;
                     if let Some(root) = readmitted_roots.get(&commit_id) {
+                        // Every cell's exact target binds the shared root, not
+                        // only the cell that first readmitted it.
+                        if root.descriptor() != Some(target.roots()) {
+                            return Err(format!(
+                                "durable branch-root image does not match target `{}`",
+                                commit_id.0
+                            ));
+                        }
                         Some(root.clone())
                     } else {
                         let partitions = root_partitions.remove(&commit_id).ok_or_else(|| {
