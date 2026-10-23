@@ -1,5 +1,8 @@
 use super::custom_rules::*;
 use super::validation_engine_fixtures::*;
+use structural_world::{candidate_lookups, StructuralWorld};
+
+mod structural_world;
 
 #[test]
 fn engine_executes_custom_invariant_packets() {
@@ -113,75 +116,23 @@ fn engine_executes_graph_composition_custom_invariant_packets() {
 fn engine_executes_custom_packets_against_real_structural_surfaces() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let schema = RelationalSchemaRegistry::new()
-        .register_entity_kind(EntityKindRegistration {
-            kind_id: KindId(1),
-            kind_name: "custom.entity".to_owned(),
-            schema_id: SchemaId("custom".to_owned()),
-            schema_version_id: SchemaVersionId(1),
-            aspect_contract_declarations: KindAspectContractDeclarations::default(),
-        })
-        .and_then(|schema| {
-            schema.register_relation_kind(RelationKindRegistration {
-                kind_id: KindId(2),
-                kind_name: "custom.relation".to_owned(),
-                schema_id: SchemaId("custom".to_owned()),
-                schema_version_id: SchemaVersionId(1),
-                cross_context_policy: CrossContextPolicy::AllowExplicit,
-                cascade_delete_policy: CascadeDeletePolicy::CascadeDeleteRelations,
-                aspect_contract_declarations: KindAspectContractDeclarations::default(),
-                relation_integrity: RelationIntegrityDeclarations::default(),
-            })
-        })
-        .expect("the structural fixture schema should register");
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(schema)
-        .custom_invariant(CustomInvariantRegistration::new(StructuralSurfaceRule).unwrap())
-        .custom_invariant(CustomInvariantRegistration::new(RejectsPlannedRelationRule).unwrap())
-        .build();
-    let source = create_entity_of_kind(execution, &runtime, KindId(1), "structural-source");
-    let target = create_entity_of_kind(execution, &runtime, KindId(1), "structural-target");
-    runtime.performance_access().reset_counters();
-    let plan = MergedCommitPlan {
-        transaction_id: TransactionId(3),
-        merged_intents: vec![
-            MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-                partition_id: PartitionId::main(),
-                kind_id: crate::facade::identity::KindId(1),
-                client_key: crate::symbols::data::ClientKey::raw("source"),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
-            })),
-            MutationIntent::Create(CreateIntent::Relation(RelationSpec {
-                partition_id: PartitionId::main(),
-                kind_id: crate::facade::identity::KindId(2),
-                client_key: crate::symbols::data::ClientKey::raw("edge"),
-                source: crate::transactions::data::EntityReference::Existing(source),
-                target: crate::transactions::data::EntityReference::Existing(target),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
-            })),
-            MutationIntent::Create(CreateIntent::Relation(RelationSpec {
-                partition_id: PartitionId::main(),
-                kind_id: crate::facade::identity::KindId(2),
-                client_key: crate::symbols::data::ClientKey::raw("edge-2"),
-                source: crate::transactions::data::EntityReference::Existing(source),
-                target: crate::transactions::data::EntityReference::Existing(target),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
-            })),
-        ],
+    let structural = || CustomInvariantRegistration::new(StructuralSurfaceRule).unwrap();
+    let rejects = || CustomInvariantRegistration::new(RejectsPlannedRelationRule).unwrap();
+    let shared = StructuralWorld::install(execution, [structural(), rejects()]);
+    // Each rule installed alone materializes every input it asks for. Sharing
+    // must answer exactly that demand, so the shared lookups equal their sum.
+    let alone = [
+        StructuralWorld::install(execution, [structural()]),
+        StructuralWorld::install(execution, [rejects()]),
+    ];
+    let lookups_alone = |worlds: &[StructuralWorld; 2]| {
+        worlds
+            .iter()
+            .map(|world| candidate_lookups(&world.evaluate().1))
+            .sum::<usize>()
     };
 
-    let results = InvariantEngine::new(&runtime).execute_fixture(
-        InvariantExecutionRequest::from_profile_with_contract(
-            InvariantRequestProfile::CommitBoundary,
-            &runtime,
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
-            Some(&plan),
-            None,
-        ),
-    );
-
+    let (results, counters) = shared.evaluate();
     assert_eq!(results.results().len(), 2);
     assert!(matches!(
         results.results()[0].verdict,
@@ -191,7 +142,6 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         results.results()[1].verdict,
         crate::validation::data::InvariantVerdict::Violation(_)
     ));
-    let counters = runtime.performance_access().counters();
     assert_eq!(counters.custom_invariant_preparation_count, 2);
     assert_eq!(counters.custom_invariant_execution_count, 2);
     assert_eq!(counters.custom_invariant_candidate_adjacency_gathers, 4);
@@ -201,34 +151,18 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         0
     );
     assert_eq!(counters.custom_invariant_candidate_entity_reads, 2);
-    assert_eq!(counters.custom_invariant_candidate_reuse_hits, 33);
+    assert_eq!(candidate_lookups(&counters), lookups_alone(&alone));
+    assert!(counters.custom_invariant_candidate_reuse_hits > 0);
     assert!(counters.custom_invariant_traversal_frontier_count >= 2);
 
-    create_relation_of_kind(
-        execution,
-        &runtime,
-        KindId(2),
-        source,
-        target,
-        "committed-edge",
-    );
-    runtime.performance_access().reset_counters();
-    let after_topology_change = InvariantEngine::new(&runtime).execute_fixture(
-        InvariantExecutionRequest::from_profile_with_contract(
-            InvariantRequestProfile::CommitBoundary,
-            &runtime,
-            InvariantObservation::committed(runtime.storage_access().current_edition()),
-            runtime.current_version_id(),
-            Some(&plan),
-            None,
-        ),
-    );
+    shared.commit_edge(execution);
+    alone.iter().for_each(|world| world.commit_edge(execution));
+    let (after_topology_change, changed_counters) = shared.evaluate();
     assert_eq!(after_topology_change.results().len(), 2);
     assert!(matches!(
         after_topology_change.results()[1].verdict,
         crate::validation::data::InvariantVerdict::Violation(_)
     ));
-    let changed_counters = runtime.performance_access().counters();
     assert_eq!(
         changed_counters.custom_invariant_candidate_relation_reads,
         1
@@ -237,7 +171,8 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         changed_counters.custom_invariant_candidate_adjacency_relation_ids,
         2
     );
-    assert_eq!(changed_counters.custom_invariant_candidate_reuse_hits, 45);
+    assert_eq!(candidate_lookups(&changed_counters), lookups_alone(&alone));
+    assert!(changed_counters.custom_invariant_candidate_reuse_hits > 0);
 }
 
 #[test]
