@@ -34,12 +34,21 @@ worth_query_mutation_binding!(
     field Key::reference(), value key,
 );
 pub struct Handler;
+static DECISIONS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+static CANDIDATES: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+pub fn handler_contacts() -> (usize, usize) {
+    (
+        DECISIONS.load(std::sync::atomic::Ordering::Relaxed),
+        CANDIDATES.load(std::sync::atomic::Ordering::Relaxed),
+    )
+}
 impl OperationHandler<NumericSchema, OtherBinding> for Handler {
     fn decide(
         &self,
         input: &OtherEdit,
         reader: &mut DecisionReader<'_, '_, '_, NumericSchema, OtherBinding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<NumericSchema, Number>, MissingValue> {
+        DECISIONS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let root = match reader.resolve_entity(Key::reference(), input.key.clone()) {
             Ok(root) => root,
             Err(error) => return HandlerResult::ExecutionDenied(error),
@@ -81,6 +90,7 @@ impl OperationHandler<NumericSchema, OtherBinding> for Handler {
         target: WorthQueryInvariantMutationTarget<NumericSchema, Number>,
         writer: &mut CandidateWriter<'_, NumericSchema, OtherBinding>,
     ) -> HandlerResult<Edited, MissingValue> {
+        CANDIDATES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let target = match writer.projected_entity(&target) {
             Ok(target) => target,
             Err(error) => {

@@ -9,6 +9,10 @@ use worth_query_declaration::facade::{
 };
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
 mod binding;
+mod required_output;
+pub use required_output::{
+    WorthQueryPreparedRequiredCorrection, WorthQueryRequiredCorrectionPreparation,
+};
 
 /// Preparation either retains an unpublished inverse candidate or returns existing
 /// command evidence and custody. A settled retry does not execute the inverse again.

@@ -117,7 +117,7 @@ where
         let identities = self.identities()?;
         // Only bind the original source proof. The retained native attempt owns
         // its original facts; pending_source must not author another candidate.
-        let prepared = <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission::prepare_selected(
+        let mut prepared = <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission::prepare_selected(
             phase,
             self,
             &identities,
@@ -125,6 +125,8 @@ where
             &selected,
         )?;
         if let Some(source) = source {
+            prepared.idempotency = source.bind_recovery_idempotency(
+                &worth_query_execution::publication_boundary::program_publication_access(), prepared.idempotency);
             application.validate_unpublished_required_source::<Root, Intent::Binding>(
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 &owner, source, prepared.idempotency, self.request.branch,

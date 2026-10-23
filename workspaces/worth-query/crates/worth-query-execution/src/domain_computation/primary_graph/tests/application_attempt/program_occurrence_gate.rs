@@ -285,6 +285,7 @@ fn a_required_output_source_on_an_unseeded_occurrence_is_gated_like_its_siblings
                     &presented,
                     program,
                     idempotency(72, 72),
+                    crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
                     crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
         })

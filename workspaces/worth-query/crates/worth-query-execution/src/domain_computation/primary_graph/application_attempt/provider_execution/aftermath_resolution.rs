@@ -17,7 +17,7 @@ pub(super) fn resolve_exact_committed_aftermath(
     receipt: &WorthQueryPrimaryGraphCommittedApplication,
 ) -> Result<Option<WorthQueryCommittedAftermathCausality>, WorthQueryCommittedAftermathMismatch> {
     let Some(pending) = pending else {
-        return Ok(None);
+        return Ok(receipt.aftermath_causality().cloned());
     };
     receipt
         .aftermath_causality()

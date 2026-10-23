@@ -28,6 +28,7 @@ pub(in crate::domain_computation::primary_graph) fn derive_correction_inverse<Sc
     key: &WorthQueryCorrectionCommandKey,
     maximum_history: Option<NonZeroUsize>,
     maximum_results: NonZeroUsize,
+    required_root: Option<crate::equality_type_id::EqualityTypeId>,
 ) -> Result<
     (
         ApplicationEncodedInput<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>,
@@ -51,8 +52,12 @@ where
         maximum_history,
         maximum_results,
     )?;
-    let interpretation =
-        super::compatibility::require_compatible_source::<Schema, C>(target, phase, source)?;
+    let interpretation = super::compatibility::require_compatible_source::<Schema, C>(
+        target,
+        phase,
+        source,
+        required_root,
+    )?;
     let retained = source
         .occurrence()
         .commit_evidence()
@@ -83,6 +88,7 @@ where
         &input,
         inverse.scope_binding(),
         interpretation,
+        required_root,
     )?;
     Ok((input, std::sync::Arc::new(prepared)))
 }

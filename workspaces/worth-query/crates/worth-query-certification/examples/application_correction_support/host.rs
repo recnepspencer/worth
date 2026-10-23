@@ -12,26 +12,58 @@ use worth_query_host::facade::{
 #[path = "../../tests/application_graph/document_retention_model/host/world_resources.rs"]
 mod world_resources;
 pub type Host = WorthQueryProgramApplicationRuntime<NumericSchema, Program>;
+pub type OutputHost =
+    WorthQueryProgramApplicationRuntime<NumericSchema, super::output_program::OutputProgram>;
 impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
     type Configuration = ();
+    fn contracts(
+        contracts: &mut WorthQueryApplicationContributionContracts<NumericSchema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        contracts.producer::<super::calculation::Producer>()?;
+        contracts.conditional::<super::calculation_readiness::Readiness>()?;
+        Ok(())
+    }
     fn configure(
         (): (),
         setup: &mut WorthQueryApplicationContributionSetup<'_, NumericSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        setup.handler::<super::calculation::Binding, _>(super::calculation::Handler)?;
+        setup.producer::<super::calculation::Producer>(super::calculation::Provider)?;
+        setup.conditional::<super::calculation_readiness::Readiness>(())?;
         setup.handler::<edit::EditBinding, _>(edit::Handler)?;
         setup.handler::<other_edit::OtherBinding, _>(other_edit::Handler)?;
         setup.handler::<super::principal_status::Binding, _>(super::principal_status::Handler)
     }
 }
 pub fn install() -> Host {
+    install_program(
+        validated::<Program>(),
+        roster().support(validated::<super::output_program::OutputProgram>()),
+    )
+}
+pub fn install_with_outputs() -> OutputHost {
+    install_program(
+        validated::<super::output_program::OutputProgram>(),
+        roster().support(validated::<Program>()),
+    )
+}
+fn roster() -> WorthQueryApplicationProgramRoster<'static, NumericSchema> {
+    WorthQueryApplicationProgramRoster::new()
+        .support(validated::<Successor>())
+        .support(validated::<ChangedInverse>())
+        .support(validated::<ChangedSource>())
+}
+fn install_program<P>(
+    program: ValidatedApplicationProgram<NumericSchema, P>,
+    roster: WorthQueryApplicationProgramRoster<'_, NumericSchema>,
+) -> WorthQueryProgramApplicationRuntime<NumericSchema, P>
+where
+    P: ApplicationProgramDefinition<NumericSchema, Contributions = (NumericContribution,)>,
+    P::Outputs: WorthQueryApplicationProgramRoots<NumericSchema>,
+{
     in_memory_rostered_program(
-        ApplicationProgramAuthoring::<NumericSchema, Program>::begin()
-            .validated_program()
-            .unwrap(),
-        WorthQueryApplicationProgramRoster::new()
-            .support(validated::<Successor>())
-            .support(validated::<ChangedInverse>())
-            .support(validated::<ChangedSource>()),
+        program,
+        roster,
         NumericSchema::declaration().unwrap(),
         ((),),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
@@ -69,7 +101,8 @@ pub fn install() -> Host {
                 .field(Primary::reference(), 5_u64)
                 .field(Secondary::reference(), 7_u64)
                 .field(ReadEnabled::reference(), true)
-                .field(Ceiling::reference(), 100_u64),
+                .field(Ceiling::reference(), 100_u64)
+                .field(Calculated::reference(), 0_u64),
             )?;
             super::adoption::seed(graph);
             Ok(())
@@ -150,11 +183,13 @@ fn edit_other(
         other => panic!("independent edit must publish: {other:?}"),
     }
 }
-pub fn read(host: &Host) -> Vec<query::Row> {
+pub fn read<P: ApplicationProgramDefinition<NumericSchema>>(
+    host: &WorthQueryProgramApplicationRuntime<NumericSchema, P>,
+) -> Vec<query::Row> {
     read_on(host, host.runtime().current_world())
 }
-pub fn read_on(
-    host: &Host,
+pub fn read_on<P: ApplicationProgramDefinition<NumericSchema>>(
+    host: &WorthQueryProgramApplicationRuntime<NumericSchema, P>,
     branch: worth_query_host::facade::product::WorthQueryProductBranch,
 ) -> Vec<query::Row> {
     let scope = request_scope();

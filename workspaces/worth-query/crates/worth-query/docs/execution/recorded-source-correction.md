@@ -89,6 +89,90 @@ derives and captures the inverse input, resolves its scope, admits the current
 caller and runs the installed handler to build a candidate. State changes when
 `publish()` succeeds. Dropping the candidate releases its preparation.
 
+## Required outputs and recovery
+
+When the inverse action delivers a required output root, use the typed performed
+entrance. The installed action must declare fixed delivery to that exact root,
+and its binding must implement the root connection's required-source contract.
+The [numeric output program](../../../worth-query-certification/examples/application_correction_support/output_program.rs)
+declares a calculation root whose producer computes `primary * 2 + 1`.
+
+```rust,ignore
+use worth_query_host::facade::application_entry::WorthQueryRequiredCorrectionPreparation;
+
+let preparation = request.corrections().reverse(&source)
+    .idempotency(client_key)
+    .limits(limits)
+    .prepare_performed::<RecordedEdit, OutputProgram, Root>(&application)?;
+
+match preparation {
+    WorthQueryRequiredCorrectionPreparation::Prepared(candidate) => {
+        handle_performed_outcome(candidate.publish()?);
+    }
+    WorthQueryRequiredCorrectionPreparation::Settled(outcome) => {
+        handle_performed_outcome(outcome);
+    }
+    WorthQueryRequiredCorrectionPreparation::PublicationPending => {
+        show_pending_publication();
+    }
+    WorthQueryRequiredCorrectionPreparation::ProductUnpublished(handle) => {
+        observe_pending_recovery(handle);
+    }
+}
+```
+
+Preparation derives output demand from the captured inverse input. Publication
+returns `WorthQueryApplicationPerformedMutationOutcome`, the ordinary required
+source outcome. Its variants determine which obligation the caller owns:
+
+| Outcome | Continue with |
+| --- | --- |
+| `Performed(source)` | `source.start_required_outputs(&application, &fresh_request, controls)`, then settle the returned output handle. |
+| `ProductUnpublished(recovery)` | Retain the owner and resume its source publication through fresh admission. |
+| `RequiredOutputDenied(failure)` | Retain the committed source and retry required-output retention through fresh admission. |
+| `CleanupRequired { cleanup, outcome }` | Retain the independent cleanup obligation and handle the enclosed source outcome. |
+| `NotPerformed(outcome)` | Handle the ordinary mutation outcome, including exact replay. |
+| `Blocked(owner)` | Retain its native custody and inspect its recovery posture. |
+
+A published source and its completed outputs are separate milestones. In the
+numeric example, correcting primary from `11` to `5` publishes authored state
+while the stored calculation remains `23`. Settling the original source's output
+owner regenerates the calculation to `11`. Secondary remains `19` throughout.
+
+An equivalent retry reports the original command's status while the caller keeps
+the original output or recovery owner. `AlreadyCommitted` supplies the same source
+receipt; the original owner supplies the one-use continuation.
+
+For an unpublished correction, resume with the original owner and a fresh request:
+
+```rust,ignore
+let progress = recovery.recover_recorded_correction(&application, &fresh_request)?;
+// When progress is Performed, promotion transfers the original output custody.
+let recovered = recovery.promote_recorded_correction(&application, &fresh_request)
+    .map_err(|(denial, owner)| retain_failed_recovery(denial, owner))?;
+let (outputs, initial_cause, performed, prior_cleanup) = recovered.into_parts();
+```
+
+The owner retains the captured inverse input and the key produced by
+`Correction::inverse_key`. Recovery freshly checks principal, scope, current
+authority and source identity, then continues the existing native attempt.
+Cancellation or admission refusal leaves the owner available for another fresh
+request. Promotion failures return the complete owner alongside the denial.
+
+`performed` preserves the publication, idempotency-read and cleanup results.
+Inspect these results and discharge their cleanup obligations alongside
+`prior_cleanup`. The returned `outputs` preparation starts the original required
+root under fresh request authority. A recovered correction receipt retains its
+causal link to the original source.
+
+For a committed source whose retention was refused, call
+`failure.retry_recorded_correction_retention(&application, &fresh_request)`.
+Success returns the original performed-source owner. Refusal returns the denial
+and the complete failure owner for another attempt.
+
+The [compiled recovery journey](../../../worth-query-certification/examples/application_correction_support/required_output_recovery.rs)
+shows publication recovery, explicit cleanup and native output settlement.
+
 ## Compatibility and current authority
 
 Eligibility compares the original operation's complete semantic dependencies

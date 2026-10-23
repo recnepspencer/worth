@@ -14,6 +14,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         presented: &WorthQueryPresentedProgram<'_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        causality: ApplicationCommitCausality<'_>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
@@ -33,12 +34,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Ok(program) => program,
             Err(denial) => return WorthQueryApplicationCommitOutcome::Denied(denial),
         };
-        self.compare_and_commit_application_with_output_observation(
+        self.compare_and_commit_application_with_causality(
             execution,
             phase,
             program,
             idempotency,
             true,
+            causality,
             allocation_policy,
         )
     }

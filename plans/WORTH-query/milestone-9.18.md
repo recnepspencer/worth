@@ -476,7 +476,9 @@ rather than replacing it.
 ### Phase 2: Composite compatibility, effects and recovery
 
 **In progress.** Retained-source correction across equivalent installed program
-adoption is implemented. Phases 3–4 remain held until this phase is certified.
+adoption and fixed-root required-output publication/recovery are implemented.
+Unpublished correction owners retain the actual inverse input and transformed
+key for fresh-authority recovery. Phases 3–4 remain held until this phase is certified.
 
 Extend that path to owner definition successors, program compatibility, required-output
 reconciliation, compensation, workflow/inbound dispositions and authored create/delete

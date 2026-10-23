@@ -54,7 +54,7 @@ impl ApplicationCorrectionBinding<NumericSchema> for RecordedEdit {
         })
     }
     fn inverse_key(key: &str) -> String {
-        key.to_owned()
+        format!("numeric-inverse:{key}")
     }
     fn visit<Visitor: ApplicationCorrectionVisitor<NumericSchema>>(
         dispatch: ApplicationCorrectionDispatch<NumericSchema, Self, Visitor>,

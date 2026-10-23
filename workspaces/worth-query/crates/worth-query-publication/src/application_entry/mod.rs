@@ -22,7 +22,8 @@ pub use correction::{
     WorthQueryApplicationCorrectionRequest, WorthQueryApplicationCorrections,
     WorthQueryCorrectionApplicability, WorthQueryCorrectionHistoryLimits,
     WorthQueryCorrectionValue, WorthQueryKeyedApplicationCorrection,
-    WorthQueryPreparedApplicationCorrection, WorthQuerySelectedCorrectionSource,
+    WorthQueryPreparedApplicationCorrection, WorthQueryPreparedRequiredCorrection,
+    WorthQueryRequiredCorrectionPreparation, WorthQuerySelectedCorrectionSource,
 };
 mod demand;
 mod denial;

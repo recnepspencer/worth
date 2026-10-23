@@ -12,12 +12,13 @@ pub(super) fn require_compatible_source<Schema, C>(
     target: &WorthQuerySelectedProductOperation<'_, Schema>,
     phase: &WorthQueryAdvancementPhase<'_>,
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
+    required_root: Option<crate::equality_type_id::EqualityTypeId>,
 ) -> Result<WorthQueryProgramSupportInterpretation, Denial>
 where
     Schema: ApplicationSchema,
     C: ApplicationCorrectionBinding<Schema>,
 {
-    let interpretation = require_target_program::<Schema, C>(target, source)?;
+    let interpretation = require_target_program::<Schema, C>(target, source, required_root)?;
     let facts = source
         .occurrence()
         .commit_evidence()
@@ -50,6 +51,7 @@ where
 fn require_target_program<Schema, C>(
     target: &WorthQuerySelectedProductOperation<'_, Schema>,
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
+    required_root: Option<crate::equality_type_id::EqualityTypeId>,
 ) -> Result<WorthQueryProgramSupportInterpretation, Denial>
 where
     Schema: ApplicationSchema,
@@ -75,7 +77,7 @@ where
         .action_inventory()
         .resolve_unique_binding::<Schema, ApplicationInverseBinding<Schema, C>>()
         .map_err(Denial::InverseAction)?;
-    record
+    let inverse_action = record
         .installed
         .action_inventory()
         .resolve_declared_action::<Schema, ApplicationInverseBinding<Schema, C>>(declared)
@@ -91,13 +93,26 @@ where
         return Err(Denial::ProgramMeaningChanged(Box::new(requirements)));
     }
     let original_binding = crate::equality_type_id::EqualityTypeId::of::<C::Source>();
-    if record.requires_output_source(original_binding) {
-        return Err(Denial::RequiredOutputReconciliation);
-    }
     let inverse =
         crate::equality_type_id::EqualityTypeId::of::<ApplicationInverseBinding<Schema, C>>();
-    if record.requires_output_source(inverse) {
+    if required_root.is_none()
+        && (record.requires_output_source(original_binding)
+            || record.requires_output_source(inverse))
+    {
         return Err(Denial::RequiredOutputReconciliation);
+    }
+    if let Some(root) = required_root {
+        let delivery = inverse_action
+            .delivery()
+            .and_then(|delivery| delivery.output());
+        if !delivery.is_some_and(|delivery| {
+            !delivery.is_discovered() && delivery.root_type() == root.into_external()
+        }) {
+            return Err(Denial::InverseAction(worth_query_installation::facade::WorthQueryActionResolutionDenial::DeliveryMismatch));
+        }
+        if !record.root_graph_types.contains(&root) || !record.requires_output_source(inverse) {
+            return Err(Denial::UnsupportedTargetProgram);
+        }
     }
     if !record.declares_action(inverse) {
         return Err(Denial::UnsupportedTargetProgram);

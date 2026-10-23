@@ -9,12 +9,30 @@ use crate::application_entry::mutation::{
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 use worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionInputSelection;
 
-type Inverse<S, C> = ApplicationInverseBinding<S, C>;
+pub(super) type Inverse<S, C> = ApplicationInverseBinding<S, C>;
+
+pub(super) enum NativePreparation<'a, S: ApplicationSchema, B: ApplicationMutationBinding<S>> {
+    Prepared(super::super::publication::PreparedInverse<'a, S, B>),
+    Settled(crate::application_entry::WorthQueryApplicationMutationOutcome<B::Denial, B::Result>),
+    PublicationPending,
+    ProductUnpublished(worth_runtime_world::facade::ProductUnpublishedRecoveryHandle),
+}
 
 impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
-    pub(super) fn prepare<C, Admission>(
+    pub(super) fn candidate<C, Admission>(
         self,
-    ) -> Result<WorthQueryApplicationCorrectionPreparation<'a>, WorthQueryApplicationCorrectionDenial>
+        derive: impl FnOnce(
+            &worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<'_, Schema>,
+            &worth_query_execution::publication_boundary::WorthQueryProgramPublicationAccess,
+            &worth_query_execution::publication_boundary::recorded_correction::WorthQueryCorrectionCommandKey,
+        ) -> Result<(
+            ApplicationEncodedInput<<Inverse<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>,
+            std::sync::Arc<worth_query_execution::publication_boundary::recorded_correction::WorthQueryPreparedCorrectionSource>,
+        ), WorthQueryApplicationCorrectionDenial>,
+    ) -> Result<
+        NativePreparation<'a, Schema, Inverse<Schema, C>>,
+        WorthQueryApplicationCorrectionDenial,
+    >
     where
         C: ApplicationCorrectionBinding<Schema>,
         Admission: WorthQueryBindingAdmission<Schema, Inverse<Schema, C>>,
@@ -26,8 +44,8 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
                 <Inverse<Schema, C> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
             >,
     {
+        use NativePreparation as Preparation;
         use WorthQueryApplicationCorrectionDenial as Denial;
-        use WorthQueryApplicationCorrectionPreparation as Preparation;
         let correction = self.request.correction;
         let request = correction.request;
         let phase = self.phase;
@@ -60,10 +78,7 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
             .map_err(Denial::Derivation)?;
         let (input, source, intent) = match selected {
             WorthQueryCorrectionInputSelection::FirstUse(_) => {
-                let (input, source) = target.derive_correction_inverse::<C>(&access, phase,
-                    request.principal, request.scope, correction.source, &command_key,
-                    self.request.limits.maximum_ancestors, self.request.limits.maximum_disclosure_results)
-                    .map_err(Denial::Derivation)?;
+                let (input, source) = derive(&target, &access, &command_key)?;
                 let intent = source.intent();
                 (input, Some(source), intent)
             }
@@ -105,10 +120,7 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
                 .resolve_idempotency(phase, &prepared.admission, prepared.idempotency)
                 .map_err(Denial::Mutation)?
                 .ok_or(Denial::RecordedOutcomeUnavailable)?;
-            return Ok(Preparation::Settled(super::super::outcome::erase::<
-                Schema,
-                Inverse<Schema, C>,
-            >(outcome)));
+            return Ok(Preparation::Settled(outcome));
         };
         let owner = request
             .application
@@ -132,30 +144,71 @@ impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
             )
             .map_err(Denial::Mutation)?;
         match candidate {
-            CandidatePreparation::Settled(outcome) => {
-                Ok(Preparation::Settled(super::super::outcome::erase::<
-                    Schema,
-                    Inverse<Schema, C>,
-                >(outcome)))
-            }
+            CandidatePreparation::Settled(outcome) => Ok(Preparation::Settled(outcome)),
             CandidatePreparation::Prepared(PreparedCandidate {
                 program, result, ..
             }) => Ok(Preparation::Prepared(
-                super::super::publication::WorthQueryPreparedApplicationCorrection {
-                    publication: Box::new(super::super::publication::PreparedInverse::<
-                        Schema,
-                        Inverse<Schema, C>,
-                    > {
-                        application: request.application,
-                        owner,
-                        program,
-                        identities,
-                        result,
-                        source,
-                    }),
+                super::super::publication::PreparedInverse::<Schema, Inverse<Schema, C>> {
+                    application: request.application,
+                    owner,
+                    program,
+                    identities,
+                    result,
+                    source,
                 },
             )),
         }
+    }
+}
+
+impl<'a, Schema: ApplicationSchema> Prepare<'a, '_, '_, '_, '_, '_, Schema> {
+    pub(super) fn prepare<C, Admission>(
+        self,
+    ) -> Result<WorthQueryApplicationCorrectionPreparation<'a>, WorthQueryApplicationCorrectionDenial>
+    where
+        C: ApplicationCorrectionBinding<Schema>,
+        Admission: WorthQueryBindingAdmission<Schema, Inverse<Schema, C>>,
+        <Inverse<Schema, C> as ApplicationMutationBinding<Schema>>::Input:
+            Clone + Send + Sync + ApplicationMutationInputScope<Schema, Inverse<Schema, C>>,
+        <Inverse<Schema, C> as ApplicationMutationBinding<Schema>>::ScopeBinding:
+            ApplicationMutationScopeResolution<
+                Schema,
+                <Inverse<Schema, C> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
+            >,
+    {
+        let principal = self.request.correction.request.principal;
+        let scope = self.request.correction.request.scope;
+        let source = self.request.correction.source;
+        let limits = self.request.limits;
+        let phase = self.phase;
+        let prepared = self.candidate::<C, Admission>(|target, access, key| {
+            target
+                .derive_correction_inverse::<C>(
+                    access,
+                    phase,
+                    principal,
+                    scope,
+                    source,
+                    key,
+                    limits.maximum_ancestors,
+                    limits.maximum_disclosure_results,
+                )
+                .map_err(WorthQueryApplicationCorrectionDenial::Derivation)
+        })?;
+        use WorthQueryApplicationCorrectionPreparation as Public;
+        Ok(match prepared {
+            NativePreparation::Prepared(prepared) => Public::Prepared(
+                super::super::publication::WorthQueryPreparedApplicationCorrection {
+                    publication: Box::new(prepared),
+                },
+            ),
+            NativePreparation::Settled(outcome) => Public::Settled(super::super::outcome::erase::<
+                Schema,
+                Inverse<Schema, C>,
+            >(outcome)),
+            NativePreparation::PublicationPending => Public::PublicationPending,
+            NativePreparation::ProductUnpublished(handle) => Public::ProductUnpublished(handle),
+        })
     }
 }
 

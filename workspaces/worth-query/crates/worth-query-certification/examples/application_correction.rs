@@ -11,16 +11,28 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::primary_graph::WorthQueryCorrectionDerivationDenial;
 
 fn main() {
-    std::thread::Builder::new()
+    let (done, completion) = std::sync::mpsc::channel();
+    let worker = std::thread::Builder::new()
         .name("application-correction".to_owned())
         .stack_size(64 * 1024 * 1024)
-        .spawn(run)
-        .expect("start the application thread")
+        .spawn(move || {
+            run();
+            let _ = done.send(());
+        })
+        .expect("start the application thread");
+    if let Err(std::sync::mpsc::RecvTimeoutError::Timeout) =
+        completion.recv_timeout(std::time::Duration::from_secs(60))
+    {
+        panic!("the application correction runtime court stalled");
+    }
+    worker
         .join()
         .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
 }
 
 fn run() {
+    application_correction_support::required_output_recovery::run();
+    application_correction_support::required_output_courts::run();
     application_correction_support::adoption_courts::run();
     selected_source_after_disjoint_edit();
     independent_semantic_dependency();

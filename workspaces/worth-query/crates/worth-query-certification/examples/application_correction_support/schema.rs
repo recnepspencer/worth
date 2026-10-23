@@ -16,7 +16,7 @@ worth_query_application_contribution! {
         identity: "numeric-correction.application.v1",
         corrections: [RecordedEdit],
         members: |schema| {
-            super::adoption::declare(schema).entity(ExternalMapping::reference()).entity(Principal::reference()).entity(Number::reference())
+            super::calculation::declare(super::adoption::declare(schema)).entity(ExternalMapping::reference()).entity(Principal::reference()).entity(Number::reference())
                 .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
                 .aspect(Principal::reference(), PrincipalFacts::reference()).aspect(Number::reference(), NumberFacts::reference())
                 .field(ExternalMapping::reference(), ExternalIdentityField::reference()).field(ExternalMapping::reference(), MappingStatusField::reference())
@@ -24,9 +24,12 @@ worth_query_application_contribution! {
                 .field(Number::reference(), Key::reference()).field(Number::reference(), Primary::reference())
                 .field(Number::reference(), Secondary::reference()).field(Number::reference(), ReadEnabled::reference())
                 .field(Number::reference(), Ceiling::reference())
+                .field(Number::reference(), Calculated::reference())
                 .relation(MappingTarget::reference(), ExternalMapping::reference(), Principal::reference())
                 .principal_binding(ActorBinding::reference())
                 .application_query(query::definition())
+                .application_query(super::calculation_query::definition())
+                .application_query_binding::<super::calculation_query::Binding>()
                 .operation(other_edit::EditOther::reference().definition().no_external_effect().no_aftermath().finish())
                 .operation_projection_work_budget(other_edit::EditOther::reference(), 8)
                 .operation_read_field(other_edit::EditOther::reference(), Key::reference())
@@ -62,6 +65,7 @@ worth_query_field!(pub Primary for NumericSchema, Number, NumberFacts: u64 => U6
 worth_query_field!(pub Secondary for NumericSchema, Number, NumberFacts: u64 => U64ApplicationValueBinding, read_write, equality);
 worth_query_field!(pub ReadEnabled for NumericSchema, Number, NumberFacts: bool => BoolApplicationValueBinding, read_write, equality);
 worth_query_field!(pub Ceiling for NumericSchema, Number, NumberFacts: u64 => U64ApplicationValueBinding, read_write, equality);
+worth_query_field!(pub Calculated for NumericSchema, Number, NumberFacts: u64 => U64ApplicationValueBinding, read_write, equality);
 worth_query_relation!(pub MappingTarget in NumericSchema, ExternalMapping => Principal; integrity = same_context_unbounded_retain_dangling);
 worth_query_principal_binding!(pub ActorBinding in NumericSchema, mapping ExternalMapping {
     identity: ExternalIdentityField, status: MappingStatusField,

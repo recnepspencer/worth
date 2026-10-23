@@ -125,6 +125,7 @@ fn features<
 >() -> Vec<ApplicationFeatureSpec> {
     vec![
         ApplicationFeatureSpec::root::<NumericSchema, NumericFeature>()
+            .conditional_operation::<super::calculation::CalculateNumber>()
             .action::<EditBinding, S>()
             .finish_action()
             .action::<OtherBinding, D>()

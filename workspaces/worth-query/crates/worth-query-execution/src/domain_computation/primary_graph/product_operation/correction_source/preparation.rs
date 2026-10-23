@@ -22,6 +22,7 @@ pub struct WorthQueryPreparedCorrectionSource {
     target_parent: RelationalCommitReceipt,
     target_branch: BranchId,
     intent: WorthQueryCorrectionIntent,
+    required_root: Option<crate::equality_type_id::EqualityTypeId>,
     target_program: crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation,
 }
 
@@ -37,6 +38,7 @@ impl WorthQueryPreparedCorrectionSource {
         input: &ApplicationEncodedInput<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>,
         scope: <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::ScopeBinding,
         target_program: crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation,
+        required_root: Option<crate::equality_type_id::EqualityTypeId>,
     ) -> Result<Self, WorthQueryCorrectionDerivationDenial>
     where
         <ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::ScopeBinding:
@@ -64,6 +66,7 @@ impl WorthQueryPreparedCorrectionSource {
         Ok(Self {
             ancestry,
             target_program,
+            required_root,
             material: source.occurrence().clone(),
             runtime: target.application().runtime.authority_identity(),
             actor: actor.principal_entity_id(),
@@ -102,6 +105,12 @@ impl WorthQueryPreparedCorrectionSource {
     pub(crate) fn matches_input(&self, identity: &[u8; 32]) -> bool {
         self.inverse_input == *identity
     }
+    pub(crate) fn requires_root(
+        &self,
+        root: Option<crate::equality_type_id::EqualityTypeId>,
+    ) -> bool {
+        self.required_root == root
+    }
 
     pub(crate) fn matches_admission<Schema, Operation, Input, Scope>(
         &self,
@@ -130,6 +139,7 @@ impl std::fmt::Debug for WorthQueryPreparedCorrectionSource {
 impl PartialEq for WorthQueryPreparedCorrectionSource {
     fn eq(&self, other: &Self) -> bool {
         self.runtime == other.runtime
+            && self.required_root == other.required_root
             && self.target_program.same_support_as(&other.target_program)
             && self.actor == other.actor
             && self.scope == other.scope

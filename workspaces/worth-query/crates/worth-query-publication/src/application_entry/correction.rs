@@ -8,7 +8,8 @@ pub use inspection::{WorthQueryApplicationCorrection, WorthQueryCorrectionApplic
 pub use outcome::{WorthQueryApplicationCorrectionOutcome, WorthQueryCorrectionValue};
 pub use preparation::{
     WorthQueryApplicationCorrectionPreparation, WorthQueryApplicationCorrectionRequest,
-    WorthQueryKeyedApplicationCorrection,
+    WorthQueryKeyedApplicationCorrection, WorthQueryPreparedRequiredCorrection,
+    WorthQueryRequiredCorrectionPreparation,
 };
 pub use publication::WorthQueryPreparedApplicationCorrection;
 use std::num::NonZeroUsize;
@@ -50,6 +51,7 @@ pub enum WorthQueryApplicationCorrectionDenial {
     SourceBindingUnavailable,
     RecordedOutcomeUnavailable,
     Mutation(super::WorthQueryApplicationRequestMutationDenial),
+    RequiredOutputs(super::WorthQueryPerformedMutationExecutionDenial),
     ProgramOwner(worth_query_execution::facade::application_installation::WorthQuerySelectedProgramOwnerDenial),
     ExecutionRequest(WorthQueryAdvancementDenial),
     ProductSelection(WorthQueryProductBranchAdmissionDenial),

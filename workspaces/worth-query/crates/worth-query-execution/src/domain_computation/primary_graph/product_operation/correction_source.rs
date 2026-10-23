@@ -20,6 +20,7 @@ mod intent;
 mod key;
 mod preparation;
 mod replay;
+mod required_output;
 pub use intent::WorthQueryCorrectionIntent;
 pub use key::WorthQueryCorrectionCommandKey;
 pub use preparation::WorthQueryPreparedCorrectionSource;
@@ -135,6 +136,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             key,
             maximum_history,
             maximum_results,
+            None,
         )
     }
 
