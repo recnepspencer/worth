@@ -295,9 +295,15 @@ impl CanonicalCommitEnvelope {
             lease,
             context,
         )?;
+        // Recorded in the canonical frame, like the envelope's branch cell (D11).
+        let recorded_basis = basis.descriptor().in_canonical_frame().map_err(|denial| {
+            crate::mvcc::origin_denial(format!(
+                "output basis cannot be recorded in the canonical frame: {denial:?}"
+            ))
+        })?;
         self.required_output_origin = Some(std::sync::Arc::new(CanonicalRequiredOutputOrigin {
             commit: self.commit.clone(),
-            basis: basis.descriptor().clone(),
+            basis: recorded_basis,
             producer: producer.to_owned(),
             dependency_identity,
             outputs,

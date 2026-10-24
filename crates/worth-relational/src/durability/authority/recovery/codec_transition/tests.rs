@@ -1,5 +1,6 @@
 //! Native same-carrier adoption preserves raw authority and replaces index bytes.
 mod activation_admission;
+mod canonical_neutrality;
 mod destination_admission;
 mod fences;
 mod fixture;

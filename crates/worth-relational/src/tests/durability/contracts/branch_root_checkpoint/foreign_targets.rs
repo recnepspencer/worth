@@ -105,6 +105,16 @@ fn replace_checkpoint_target(
     checkpoint: &mut crate::branch::RelationalBranchCellCheckpoint,
     target: worth_foundational::FoundationalBranchTarget<crate::branch::RelationalBranchTarget>,
 ) {
+    // The substitute is moved into the image's own runtime frame: a live
+    // checkpoint cell and a canonical envelope's cell record different frames.
+    let target = match target {
+        worth_foundational::FoundationalBranchTarget::Basis(target) => {
+            worth_foundational::FoundationalBranchTarget::basis(
+                target.rebind_runtime_instance_id(checkpoint.runtime_instance_id),
+            )
+        }
+        empty => empty,
+    };
     checkpoint.observation = crate::branch::relational_branch_observation(
         checkpoint.runtime_instance_id,
         &checkpoint.branch_id.0,

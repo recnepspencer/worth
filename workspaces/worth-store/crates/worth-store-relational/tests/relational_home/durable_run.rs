@@ -62,11 +62,9 @@ pub(crate) fn apply(
     acknowledged
 }
 
-/// Require the home to hold exactly the commits the durable run itself
-/// acknowledged (`acknowledged`, byte-identical canonical artifacts), and the
-/// reference's record states after that many commits. Artifacts embed the
-/// producing runtime's process-local identity, so they compare against the
-/// durable run's own; record states compare against the reference.
+/// Require the home to hold exactly the commits the durable run acknowledged
+/// (`acknowledged`), each byte-identical to the reference's artifact at its
+/// position (D11), and the reference's record states after that many commits.
 pub(crate) fn assert_holds(home: &RelationalStoreHome, script: &Script, acknowledged: &[Vec<u8>]) {
     let artifacts = workload::artifacts_of(home.runtime());
     let commits = acknowledged.len();
@@ -74,15 +72,31 @@ pub(crate) fn assert_holds(home: &RelationalStoreHome, script: &Script, acknowle
     for (index, (found, expected)) in artifacts.iter().zip(acknowledged).enumerate() {
         assert!(
             found == expected,
-            "artifact at position {} differs",
+            "artifact at position {} differs from the acknowledged one",
             index + 1
         );
     }
+    assert_reference_artifacts(&artifacts, script, "held");
     assert_eq!(
         workload::states_of(home.runtime(), &script.records),
         script.states[commits],
         "branch states after {commits} commits"
     );
+}
+
+/// Require every artifact to equal the reference's at its position.
+pub(crate) fn assert_reference_artifacts(artifacts: &[Vec<u8>], script: &Script, case: &str) {
+    assert!(
+        artifacts.len() <= script.artifacts.len(),
+        "{case}: more artifacts than the reference"
+    );
+    for (index, (found, reference)) in artifacts.iter().zip(&script.artifacts).enumerate() {
+        assert!(
+            found == reference,
+            "{case}: artifact at position {} differs from the reference's",
+            index + 1
+        );
+    }
 }
 
 /// The steps that follow the `commits`-th commit (and any checkpoint after it).

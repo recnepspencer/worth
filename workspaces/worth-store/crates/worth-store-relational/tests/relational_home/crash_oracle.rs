@@ -1,11 +1,12 @@
 //! What a recovered home must hold after its previous incarnation stopped
 //! with at most one commit in flight, and what it must do next.
 //!
-//! The recovered artifacts are the stopped run's own acknowledged artifacts,
-//! byte for byte, plus at most the one in-flight commit; the journal's
-//! `resolve` agrees with that; record states equal the reference after the
-//! recovered count; the rest of the script then runs to completion on the
-//! reference states; and a fresh recovery reaches the same history.
+//! The recovered artifacts are the stopped run's acknowledged artifacts plus
+//! at most the one in-flight commit, each byte-identical to the reference's
+//! at its position (D11); the journal's `resolve` agrees with that; record
+//! states equal the reference after the recovered count; the rest of the
+//! script then runs to completion on the reference states; and a fresh
+//! recovery reaches the same history.
 
 use std::path::Path;
 
@@ -17,7 +18,7 @@ use worth_relational::facade::publication::PatchStreamPosition;
 use worth_store_relational::RelationalStoreCommitFate;
 use worth_store_relational::RelationalStoreHome;
 
-use super::durable_run::{apply, assert_holds, open, steps_after};
+use super::durable_run::{apply, assert_holds, assert_reference_artifacts, open, steps_after};
 use super::identity_safety;
 use super::workload::{self, Script};
 
@@ -58,6 +59,7 @@ pub(crate) fn assert_recovered(
     for (index, (found, expected)) in recovered.iter().zip(acknowledged).enumerate() {
         assert!(found == expected, "{case}: artifact {} differs", index + 1);
     }
+    assert_reference_artifacts(&recovered, script, case);
     let extra = recovered.len() - held;
     assert!(
         extra <= 1,

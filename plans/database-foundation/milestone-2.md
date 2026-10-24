@@ -145,11 +145,20 @@ hidden doors run the production admission path. Relational's own durability
 tests use a `cfg(test)` in-crate medium; that is not a second durable path.
 
 **D11. Canonical artifacts are runtime-neutral.** A canonical artifact's bytes
-depend only on durable history, never on which process produced it. Branch cell
-state carried in an envelope (`branch_cell_checkpoint`, including fork
-provenance) is recorded in a runtime-neutral form. Recovery rebinds it to the
-recovering runtime, as it already does for checkpointed cells. Re-executing the
-same operations in any process produces byte-identical artifacts.
+depend only on durable history, never on which process produced it. Every
+runtime identity an envelope records is recorded in one canonical runtime
+frame: a reserved runtime instance id that no live runtime is issued, with the
+same text width as live ids. That covers the branch cell state
+(`branch_cell_checkpoint`, including fork provenance), a required output's
+producer basis and a codec retirement's source basis. A recorded basis
+descriptor also omits its process-local root identity, which is a per-process
+allocation rather than durable history. Envelope checks that compare recorded
+identities with each other compare within the frame; a check against live
+state first moves the live side into the frame. Recovery rebinds recorded cells
+to the recovering runtime, as it already does for checkpointed cells.
+Checkpoint images stay runtime-affine: they are derived, not canonical.
+Re-executing the same operations in any process, recovered or not, produces
+byte-identical artifacts.
 
 ## Durable artifacts
 
