@@ -39,6 +39,21 @@ impl AdmittedRecoveryFilesystemMedia {
         })
     }
 
+    /// Requires `checkpoint.current` to be absent, for a recovery that
+    /// selected no checkpoint, and names the coordinate cleanup revalidates.
+    pub fn observe_absent_checkpoint_for_residue(
+        &self,
+    ) -> Result<ArtifactTreeFile, ArtifactTreeFailure> {
+        let artifact = ArtifactTreeDirectory::families()
+            .file("checkpoint.current")
+            .map_err(|_| ArtifactTreeFailure::recovery_damaged())?;
+        match self.parts.artifact_tree().read_bounded(&artifact, 1) {
+            Err(failure) if failure.kind() == ArtifactTreeFailureKind::Absent => Ok(artifact),
+            Err(failure) => Err(failure),
+            Ok(_) => Err(ArtifactTreeFailure::recovery_damaged()),
+        }
+    }
+
     /// Reads the exact candidate named by `selected_sequence + 1` under the
     /// already admitted recovery media owner. Absence is the only no-op case;
     /// oversized or unreadable media is a typed denial.

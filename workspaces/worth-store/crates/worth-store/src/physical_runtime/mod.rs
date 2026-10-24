@@ -278,8 +278,8 @@ pub use recovery_coordination::{
     RecoveryStagingSynchronizationAction, RecoveryStagingSynchronizationOccurrence,
     RecoveryStagingWriteAction, RecoveryStagingWriteOccurrence, RecoveryWalArtifactView,
     RecoveryWalDiscoveryFailureView, RecoveryWalReadFailureView,
-    SelectedCheckpointInstallationDenial, SharedCheckpointAdmissionDenial,
-    SharedRecoveryCheckpoint,
+    SelectedCheckpointInstallationDenial, SelectedCheckpointPublicationDenial,
+    SharedCheckpointAdmissionDenial, SharedRecoveryCheckpoint,
 };
 #[cfg(feature = "recovery-runtime-owner")]
 pub use recovery_freshness::{

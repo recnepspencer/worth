@@ -31,7 +31,9 @@ pub(crate) fn execute(
         }
         _ => {}
     }
-    match super::obligation_discharge::discharge(&reopened) {
+    let settled_checkpoint =
+        super::checkpoint_obligation::SettledCheckpointResidue::after_residue_stage(&reopened);
+    match super::obligation_discharge::discharge(&reopened, settled_checkpoint) {
         Err(super::obligation_discharge::DischargeFailure::Damaged) => {
             return super::residue_failure::damaged(reopened);
         }

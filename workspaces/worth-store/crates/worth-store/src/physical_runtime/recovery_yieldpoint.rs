@@ -22,6 +22,9 @@ pub enum PhysicalRecoveryYieldpointStage {
     FreshReopenExactBinding,
     CleanupFreshnessRead,
     CleanupRemoval,
+    /// After recovery adjudicated the dead runtime's obligations and made the
+    /// selected checkpoint's publication durable, before it discharges any.
+    ObligationDischarge,
 }
 
 impl PhysicalRecoveryYieldpointStage {
@@ -38,6 +41,7 @@ impl PhysicalRecoveryYieldpointStage {
             "fresh-reopen-exact-binding" => Self::FreshReopenExactBinding,
             "cleanup-freshness-read" => Self::CleanupFreshnessRead,
             "cleanup-removal" => Self::CleanupRemoval,
+            "obligation-discharge" => Self::ObligationDischarge,
             _ => return None,
         })
     }
@@ -55,6 +59,7 @@ impl PhysicalRecoveryYieldpointStage {
             Self::FreshReopenExactBinding => "fresh-reopen-exact-binding",
             Self::CleanupFreshnessRead => "cleanup-freshness-read",
             Self::CleanupRemoval => "cleanup-removal",
+            Self::ObligationDischarge => "obligation-discharge",
         }
     }
 }

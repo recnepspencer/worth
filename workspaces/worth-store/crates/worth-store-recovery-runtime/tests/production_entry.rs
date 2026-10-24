@@ -72,24 +72,24 @@ mod canonical_journal;
 #[path = "production_entry/canonical_journal_oracle.rs"]
 mod canonical_journal_oracle;
 #[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/physical_checkpoint_oracle.rs"]
+mod physical_checkpoint_oracle;
+#[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/staging_residue_recovery.rs"]
 mod staging_residue_recovery;
 
 #[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/accumulator_only_pending_wal.rs"]
+mod accumulator_only_pending_wal;
+#[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/published_above_checkpoint.rs"]
 mod published_above_checkpoint;
-
-#[cfg(feature = "certification-test-authority")]
-#[path = "production_entry/three_batch_fold.rs"]
-mod three_batch_fold;
-
 #[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/selected_tag7_pruned_wal.rs"]
 mod selected_tag7_pruned_wal;
-
 #[cfg(feature = "certification-test-authority")]
-#[path = "production_entry/accumulator_only_pending_wal.rs"]
-mod accumulator_only_pending_wal;
+#[path = "production_entry/three_batch_fold.rs"]
+mod three_batch_fold;
 
 #[path = "production_entry/historical_release_only.rs"]
 mod historical_release_only;

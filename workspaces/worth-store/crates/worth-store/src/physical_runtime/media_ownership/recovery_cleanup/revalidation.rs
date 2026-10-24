@@ -13,6 +13,10 @@ pub struct RecoveryCleanupArtifactRevalidationProgress {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecoveryCleanupArtifactRevalidationDenial {
     CheckpointRead(ArtifactTreeFailure),
+    /// Recovery selected no checkpoint, but one is now published.
+    CheckpointPresent {
+        observed_bytes: u64,
+    },
     CheckpointLengthMismatch {
         expected_bytes: u64,
         observed_bytes: u64,
@@ -66,6 +70,9 @@ impl From<BackendRecoveryCleanupArtifactRevalidationDenial>
             BackendRecoveryCleanupArtifactRevalidationDenial::CheckpointRead(failure) => {
                 Self::CheckpointRead(failure)
             }
+            BackendRecoveryCleanupArtifactRevalidationDenial::CheckpointPresent {
+                observed_bytes,
+            } => Self::CheckpointPresent { observed_bytes },
             BackendRecoveryCleanupArtifactRevalidationDenial::CheckpointLengthMismatch {
                 expected_bytes,
                 observed_bytes,

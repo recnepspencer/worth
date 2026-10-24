@@ -127,9 +127,29 @@ store that recovered but could not serve. Recovery now settles each case:
   recovery's WAL admission. Namespace, catalog, synchronization and range
   obligations are settled only by recovery's own root-protocol publication,
   and ranges and synchronizations only for artifacts recovery rewrote or the
-  recovered root does not reach. Removal, checkpoint and WAL-reclamation
-  obligations, records that do not admit, and records of more than one
-  incarnation are retained and still require inspection.
+  recovered root does not reach. Removal and WAL-reclamation obligations,
+  records that do not admit, and records of more than one incarnation are
+  retained and still require inspection.
+- Store checkpoint obligations are judged against the checkpoint recovery
+  selected through its own admission (sequence `s`, or 0 when it observed
+  `checkpoint.current` absent), never discharged wholesale. One for candidate
+  `s + 1` is settled by recovery's residue stage, which found
+  `checkpoint.current` still holding `s` (or still absent) and removed the
+  candidate or observed it absent; the removal is revalidated against the
+  same slot at unlink. One for `s` itself (candidate creation, append,
+  synchronization, replacement or namespace synchronization) is settled by
+  the selection: recovery requires `checkpoint.current` to be byte-identical
+  to what it admitted, synchronizes the checkpoint namespace, and only then
+  discharges. A removal of candidate `s` and any other sequence are retained.
+- WAL-reclamation and artifact-removal obligations stay retained: recovery
+  observes no evidence that proves a removal's outcome (an absent segment may
+  have been reclaimed or never written, and WAL admission does not yet prove
+  it lay below the selected checkpoint's retained tail). Neither the Store nor
+  the home checkpoint sweep produces one.
+- Discharge plans every verdict before its first effect. Recovery may be
+  killed at the `obligation-discharge` yieldpoint, after the namespace
+  synchronization and before any discharge; the synchronization and every
+  discharge are repeatable, so the next recovery settles to the same state.
 - Recovery republishes the selected root, verified against what it admitted,
   when its catalog lags the selectors after an interrupted replacement or when
   obligations need its own publication. A catalog that is not the previous
@@ -157,8 +177,15 @@ Location: `worth-store-recovery-runtime` `production_entry` tests.
 - **Real process lane.** A child is killed before and above a checkpoint and at
   each publication seam (before the WAL append through root replacement); the
   durable-WAL seams roll forward exactly once.
-- **Recovery interruption.** Recovery itself is killed at each of nine stages;
-  the next recovery settles to the same journal.
+- **Recovery interruption.** Recovery itself is killed at each of ten stages,
+  including obligation discharge; the next recovery settles to the same
+  journal.
+- **Checkpoint sweep.** Every media operation of a first and of a replacing
+  fuzzy Store checkpoint above journal entries is faulted once with each
+  directive. Recovery must serve without inspection, keep every entry, publish
+  the next one and recover identically again; for an interrupted candidate
+  synchronization or replacement, a first recovery is also killed at
+  obligation discharge.
 
 ## Completion
 

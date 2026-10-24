@@ -27,7 +27,7 @@ const ROLE_ENV: &str = "WORTH_JOURNAL_CHILD_ROLE";
 const MARKER_ENV: &str = "WORTH_JOURNAL_CHILD_MARKER";
 const CHILD_TEST: &str = "canonical_journal::canonical_journal_child";
 #[path = "canonical_journal/recovery_interruption.rs"]
-mod recovery_interruption;
+pub(crate) mod recovery_interruption;
 
 const ENTRIES: u64 = 12;
 const CHECKPOINT_AFTER: u64 = 7;

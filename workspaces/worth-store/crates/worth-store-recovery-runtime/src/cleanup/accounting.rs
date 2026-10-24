@@ -256,6 +256,7 @@ impl RecoveryCleanupAccounting {
             Some(
                 RecoveryCleanupArtifactRevalidationDenial::LengthMismatch { .. }
                 | RecoveryCleanupArtifactRevalidationDenial::DigestMismatch { .. }
+                | RecoveryCleanupArtifactRevalidationDenial::CheckpointPresent { .. }
                 | RecoveryCleanupArtifactRevalidationDenial::CheckpointLengthMismatch { .. }
                 | RecoveryCleanupArtifactRevalidationDenial::CheckpointDigestMismatch { .. },
             ) => {
