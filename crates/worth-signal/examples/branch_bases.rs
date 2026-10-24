@@ -19,7 +19,7 @@ use worth_signal::facade::{SignalGraph, SignalRuntime};
 
 type ExampleRuntime = SignalRuntime<(), (), (), (), ()>;
 
-fn main() {
+pub fn main() {
     // A `SignalRuntime` is a large value and Windows gives a debug binary's main
     // thread a 1 MiB stack, so this example runs its workflow on a thread with
     // room for one. That is a build accommodation, not part of the owner

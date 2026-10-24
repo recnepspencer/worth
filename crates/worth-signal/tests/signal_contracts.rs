@@ -2,6 +2,8 @@
 //! scenario files, which stay in tests/ with their own module trees.
 //! Support modules several scenarios share are compiled once here.
 
+#[path = "../examples/branch_bases.rs"]
+mod branch_bases_example;
 #[path = "branch_basis_contract.rs"]
 mod branch_basis_contract;
 #[path = "branch_operation_contract.rs"]
@@ -28,3 +30,9 @@ mod phase_2a_signal_boundaries;
 mod phase_5_policy_boundaries;
 #[path = "signal_owner_services.rs"]
 mod signal_owner_services;
+
+/// The documented owner workflow runs whole, exactly as the example binary.
+#[test]
+fn branch_bases_owner_workflow_runs_as_documented() {
+    branch_bases_example::main();
+}

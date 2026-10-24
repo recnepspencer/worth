@@ -417,9 +417,9 @@ the main-thread stack a doctest binary gets.
 
 The workflow they narrate, and the exact totals they assert, are executed by
 [`examples/branch_bases.rs`](./examples/branch_bases.rs), which also covers the
-retained readmission lane. The crate manifest declares that example a test
-target, so it runs as part of an ordinary package test run and of a
-workspace-wide one:
+retained readmission lane. The `signal_contracts` suite compiles the example
+file as a module and runs its `main`, so it runs as part of an ordinary package
+test run and of a workspace-wide one:
 
 ```text
 cargo test -p worth-signal
