@@ -7,7 +7,9 @@ use crate::filesystem_media::{
 };
 use crate::{BackendQueueExecutionAdaptation, BackendQueueExecutionCompletion};
 
+mod expectation;
 mod revalidation;
+pub use expectation::{BackendRecoveryArtifactExpectation, BackendRecoveryCheckpointExpectation};
 pub use revalidation::{
     BackendRecoveryCleanupArtifactRevalidationDenial,
     BackendRecoveryCleanupArtifactRevalidationProgress,
@@ -47,18 +49,6 @@ pub enum BackendRecoveryCleanupRemovalDenialCause {
     Removal(ArtifactTreeFailure),
 }
 
-/// Exact physical bytes expected at one recovery artifact coordinate.
-///
-/// This is descriptive input, not removal authority. The cleanup execution
-/// capability separately binds the complete request to one admitted media
-/// owner before C.4 will perform any reread or unlink.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BackendRecoveryArtifactExpectation {
-    artifact: ArtifactTreeFile,
-    byte_count: u64,
-    digest: [u8; 32],
-}
-
 /// Pure C.4 request for revalidating and durably removing one exact recovery
 /// artifact. It is deliberately physical: the Store recovery owner validates
 /// whether the selected checkpoint permits removing this artifact before the
@@ -68,7 +58,7 @@ pub struct BackendRecoveryCleanupRemovalRequest {
     store: StableStoreIdentity,
     session: [u8; 16],
     cleanup_plan: [u8; 32],
-    checkpoint: BackendRecoveryArtifactExpectation,
+    checkpoint: BackendRecoveryCheckpointExpectation,
     artifact: BackendRecoveryArtifactExpectation,
     admission: [u8; 32],
 }
@@ -304,6 +294,44 @@ impl BackendRecoveryCleanupRemovalRequest {
         artifact: BackendRecoveryArtifactExpectation,
         admission: [u8; 32],
     ) -> Option<Self> {
+        Self::with_checkpoint_expectation(
+            store,
+            session,
+            cleanup_plan,
+            BackendRecoveryCheckpointExpectation::Selected(checkpoint),
+            artifact,
+            admission,
+        )
+    }
+
+    /// A request for a store whose recovery selected no checkpoint:
+    /// `checkpoint` must still be absent when the removal is revalidated.
+    pub fn without_selected_checkpoint(
+        store: StableStoreIdentity,
+        session: [u8; 16],
+        cleanup_plan: [u8; 32],
+        checkpoint: ArtifactTreeFile,
+        artifact: BackendRecoveryArtifactExpectation,
+        admission: [u8; 32],
+    ) -> Option<Self> {
+        Self::with_checkpoint_expectation(
+            store,
+            session,
+            cleanup_plan,
+            BackendRecoveryCheckpointExpectation::Absent(checkpoint),
+            artifact,
+            admission,
+        )
+    }
+
+    fn with_checkpoint_expectation(
+        store: StableStoreIdentity,
+        session: [u8; 16],
+        cleanup_plan: [u8; 32],
+        checkpoint: BackendRecoveryCheckpointExpectation,
+        artifact: BackendRecoveryArtifactExpectation,
+        admission: [u8; 32],
+    ) -> Option<Self> {
         (session != [0; 16] && cleanup_plan != [0; 32] && admission != [0; 32]).then_some(Self {
             store,
             session,
@@ -330,12 +358,8 @@ impl BackendRecoveryCleanupRemovalRequest {
         self.checkpoint.artifact()
     }
 
-    pub const fn checkpoint_bytes(&self) -> u64 {
-        self.checkpoint.byte_count()
-    }
-
-    pub const fn checkpoint_digest(&self) -> [u8; 32] {
-        self.checkpoint.digest()
+    pub const fn checkpoint_expectation(&self) -> &BackendRecoveryCheckpointExpectation {
+        &self.checkpoint
     }
 
     pub const fn artifact(&self) -> &ArtifactTreeFile {
@@ -352,40 +376,5 @@ impl BackendRecoveryCleanupRemovalRequest {
 
     pub const fn admission(&self) -> [u8; 32] {
         self.admission
-    }
-}
-
-impl BackendRecoveryArtifactExpectation {
-    pub fn new(artifact: ArtifactTreeFile, byte_count: u64, digest: [u8; 32]) -> Option<Self> {
-        (byte_count != 0).then_some(Self {
-            artifact,
-            byte_count,
-            digest,
-        })
-    }
-
-    /// Preserves the exact bounded checkpoint-residue observation, including
-    /// an interrupted zero-byte candidate. This does not grant unlink authority.
-    #[cfg(feature = "recovery-runtime-owner")]
-    pub fn from_checkpoint_observation(
-        observation: &super::ObservedRecoveryCheckpointArtifact,
-    ) -> Self {
-        Self {
-            artifact: observation.artifact().clone(),
-            byte_count: observation.byte_count(),
-            digest: observation.digest(),
-        }
-    }
-
-    pub const fn artifact(&self) -> &ArtifactTreeFile {
-        &self.artifact
-    }
-
-    pub const fn byte_count(&self) -> u64 {
-        self.byte_count
-    }
-
-    pub const fn digest(&self) -> [u8; 32] {
-        self.digest
     }
 }

@@ -193,7 +193,8 @@ pub use crate::recovery_media::filesystem_observation_limit_for_test;
 pub use crate::recovery_media::{
     execute_recovery_cleanup_removal, BackendCompletedRecoveryCleanupRemoval,
     BackendDeniedRecoveryCleanupRemoval, BackendIndeterminateRecoveryCleanupRemoval,
-    BackendRecoveryArtifactExpectation, BackendRecoveryCleanupArtifactRevalidationDenial,
+    BackendRecoveryArtifactExpectation, BackendRecoveryCheckpointExpectation,
+    BackendRecoveryCleanupArtifactRevalidationDenial,
     BackendRecoveryCleanupArtifactRevalidationProgress, BackendRecoveryCleanupRemovalDenialCause,
     BackendRecoveryCleanupRemovalOutcome, BackendRecoveryCleanupRemovalRequest,
     ObservedRecoveryCheckpointArtifact, RecoveryPhysicalWorkRecord,

@@ -23,7 +23,7 @@ const RECOVERY_MARKERS_ENV: &str = "WORTH_JOURNAL_RECOVERY_MARKERS";
 const RECOVERY_CHILD: &str =
     "canonical_journal::recovery_interruption::recovery_interruption_child";
 
-const STAGES: [PhysicalRecoveryYieldpointStage; 9] = [
+const STAGES: [PhysicalRecoveryYieldpointStage; 10] = [
     PhysicalRecoveryYieldpointStage::StagingMaterialization,
     PhysicalRecoveryYieldpointStage::StagingSynchronization,
     PhysicalRecoveryYieldpointStage::CandidateMaterialization,
@@ -33,11 +33,12 @@ const STAGES: [PhysicalRecoveryYieldpointStage; 9] = [
     PhysicalRecoveryYieldpointStage::FreshReopenCurrentSelector,
     PhysicalRecoveryYieldpointStage::FreshReopenExactBinding,
     PhysicalRecoveryYieldpointStage::CleanupRemoval,
+    PhysicalRecoveryYieldpointStage::ObligationDischarge,
 ];
 
 /// Runs recovery in a child armed at `stage`, killing it once it parks there.
 /// Returns whether the stage was reached before recovery finished.
-fn kill_recovery_at(root: &Path, stage: PhysicalRecoveryYieldpointStage) -> bool {
+pub(crate) fn kill_recovery_at(root: &Path, stage: PhysicalRecoveryYieldpointStage) -> bool {
     let markers = tempfile::tempdir().unwrap();
     let mut child = Command::new(std::env::current_exe().unwrap())
         .args(["--exact", RECOVERY_CHILD, "--nocapture", "--test-threads=1"])

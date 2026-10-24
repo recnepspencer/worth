@@ -1,6 +1,8 @@
 mod admitted;
 mod ceiling;
 #[cfg(all(feature = "recovery-runtime-owner", feature = "store-runtime-owner"))]
+mod checkpoint_publication;
+#[cfg(all(feature = "recovery-runtime-owner", feature = "store-runtime-owner"))]
 mod checkpoint_residue;
 #[cfg(feature = "store-runtime-owner")]
 mod cleanup;
@@ -28,7 +30,8 @@ pub use checkpoint_residue::ObservedRecoveryCheckpointArtifact;
 pub use cleanup::{
     execute_recovery_cleanup_removal, BackendCompletedRecoveryCleanupRemoval,
     BackendDeniedRecoveryCleanupRemoval, BackendIndeterminateRecoveryCleanupRemoval,
-    BackendRecoveryArtifactExpectation, BackendRecoveryCleanupArtifactRevalidationDenial,
+    BackendRecoveryArtifactExpectation, BackendRecoveryCheckpointExpectation,
+    BackendRecoveryCleanupArtifactRevalidationDenial,
     BackendRecoveryCleanupArtifactRevalidationProgress, BackendRecoveryCleanupRemovalDenialCause,
     BackendRecoveryCleanupRemovalOutcome, BackendRecoveryCleanupRemovalRequest,
 };

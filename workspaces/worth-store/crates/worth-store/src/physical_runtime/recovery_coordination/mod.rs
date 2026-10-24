@@ -1,4 +1,5 @@
 mod capacity;
+mod checkpoint_publication;
 mod checkpoint_residue;
 mod cleanup;
 mod effect;
@@ -19,6 +20,7 @@ mod staging;
 mod wal_admission;
 
 pub use capacity::PhysicalRecoveryCoordinationCapacity;
+pub use checkpoint_publication::SelectedCheckpointPublicationDenial;
 pub use checkpoint_residue::{RecoveryCheckpointResidueDenial, RecoveryCheckpointResidueOutcome};
 pub(in crate::physical_runtime) use cleanup::PhysicalRecoveryCleanupRemovalCommand;
 pub use cleanup::{
