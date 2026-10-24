@@ -24,7 +24,6 @@ pub(super) struct PreparedPublicationPhase {
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
     pub(super) artifacts: crate::storage::overlay::PublicationArtifacts,
     pub(super) changed_records: Vec<crate::transactions::data::RecordRef>,
-    pub(super) append_authority: crate::durability::authority::DurableAppendAuthority,
     pub(super) version_id: VersionId,
     pub(super) previous_branch_head_version: Option<VersionId>,
     pub(super) commit_id: CommitId,
@@ -51,7 +50,6 @@ pub(super) struct PreparedPublicationCompletion {
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
     pub(super) artifacts: crate::storage::overlay::PublicationArtifacts,
     pub(super) changed_records: Vec<crate::transactions::data::RecordRef>,
-    pub(super) append_authority: crate::durability::authority::DurableAppendAuthority,
     pub(super) version_id: VersionId,
     pub(super) previous_branch_head_version: Option<VersionId>,
     pub(super) commit_id: CommitId,
@@ -109,7 +107,6 @@ impl PreparedPublicationPhase {
             lineage_nodes: self.lineage_nodes,
             artifacts: self.artifacts,
             changed_records: self.changed_records,
-            append_authority: self.append_authority,
             version_id: self.version_id,
             previous_branch_head_version: self.previous_branch_head_version,
             commit_id: self.commit_id,
@@ -257,13 +254,6 @@ pub(super) fn prepare_publication_phase(
             ))
             .with_commit_log(commit_log.clone())
         })?;
-    let append_authority = crate::durability::authority::DurableAppendAuthority::from_commit(
-        super::CommitDurableAppendAdmission::new(
-            runtime.runtime_instance_id(),
-            commit_id,
-            &branch_id,
-        ),
-    );
     runtime
         .validate_reserved_lineage_events(canonical_commit_envelope.lineage_events())
         .map_err(|detail| {
@@ -299,7 +289,6 @@ pub(super) fn prepare_publication_phase(
         lineage_nodes,
         artifacts,
         changed_records,
-        append_authority,
         version_id,
         previous_branch_head_version,
         commit_id,

@@ -1,11 +1,8 @@
 use super::super::rejection::elapsed_micros;
 use super::preparation::PreparedPublicationCompletion;
-use crate::authority::commit::phases::publication::append_durable_commit;
-use crate::history::data::{BranchId, CommitId};
+use crate::history::data::CommitId;
 use crate::runtime::RelationalRuntime;
-use crate::transactions::data::{
-    CommitLog, CommitPhase, CommitPhaseTiming, TransactionCommitError,
-};
+use crate::transactions::data::{CommitLog, CommitPhase, CommitPhaseTiming};
 use std::sync::Arc;
 
 mod finalization;
@@ -15,7 +12,6 @@ use finalization::{finalize_published_commit, FinalizationInput};
 pub(super) struct FinalizedPublicationPhase {
     positioned_commit: Arc<crate::history::data::PositionedCanonicalCommit>,
     changed_records: Vec<crate::transactions::data::RecordRef>,
-    durability_error: Option<TransactionCommitError>,
 }
 
 impl FinalizedPublicationPhase {
@@ -24,37 +20,31 @@ impl FinalizedPublicationPhase {
     ) -> (
         Arc<crate::history::data::PositionedCanonicalCommit>,
         Vec<crate::transactions::data::RecordRef>,
-        Option<TransactionCommitError>,
     ) {
-        (
-            self.positioned_commit,
-            self.changed_records,
-            self.durability_error,
-        )
+        (self.positioned_commit, self.changed_records)
     }
 }
 
-pub(super) struct DurableAppendPhaseInput<'a> {
+pub(super) struct CanonicalLogPhaseInput<'a> {
     pub(super) commit_log: &'a mut CommitLog,
     pub(super) phase_timing: &'a mut CommitPhaseTiming,
     pub(super) positioned_commit: &'a crate::history::data::PositionedCanonicalCommit,
-    pub(super) append_authority: crate::durability::authority::DurableAppendAuthority,
     pub(super) commit_id: CommitId,
-    pub(super) branch_id: &'a BranchId,
 }
 
-pub(super) fn append_durable_commit_phase(
+/// Record the settled commit in the runtime's own canonical log. A durable
+/// medium already holds the commit, so this step has no failure to report.
+pub(super) fn record_canonical_log_phase(
     runtime: &RelationalRuntime,
-    input: DurableAppendPhaseInput<'_>,
-) -> Result<(), TransactionCommitError> {
-    let DurableAppendPhaseInput {
+    input: CanonicalLogPhaseInput<'_>,
+) {
+    let CanonicalLogPhaseInput {
         commit_log,
         phase_timing,
         positioned_commit,
-        append_authority,
         commit_id,
-        branch_id,
     } = input;
+    let branch_id = &positioned_commit.envelope().commit.branch_id;
     commit_log.begin_phase(CommitPhase::DurableAppend);
     let phase_started = std::time::Instant::now();
     commit_log.record_durable_append_prepared(
@@ -62,11 +52,11 @@ pub(super) fn append_durable_commit_phase(
         &branch_id.0,
         positioned_commit.position(),
     );
-    append_durable_commit(runtime, append_authority, positioned_commit)
-        .map_err(|error| error.with_commit_log(commit_log.clone()))?;
+    runtime
+        .durability_authority()
+        .append_commit(positioned_commit);
     commit_log.complete_phase(CommitPhase::DurableAppend);
     phase_timing.durable_append_micros = elapsed_micros(phase_started);
-    Ok(())
 }
 
 pub(super) fn finalize_publication_phase(
@@ -76,7 +66,7 @@ pub(super) fn finalize_publication_phase(
     prepared: PreparedPublicationCompletion,
     published_snapshot_basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
     published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
-) -> Result<FinalizedPublicationPhase, TransactionCommitError> {
+) -> FinalizedPublicationPhase {
     let PreparedPublicationCompletion {
         clone_mode,
         committed_partitions,
@@ -85,7 +75,6 @@ pub(super) fn finalize_publication_phase(
         lineage_nodes,
         artifacts,
         changed_records,
-        append_authority,
         version_id,
         previous_branch_head_version,
         commit_id,
@@ -100,18 +89,15 @@ pub(super) fn finalize_publication_phase(
         .positioned_canonical_commit(commit_id)
         .expect("performed publication must expose its positioned canonical commit");
     commit_log.record_publication_position(positioned_commit.position());
-    let durability_error = append_durable_commit_phase(
+    record_canonical_log_phase(
         runtime,
-        DurableAppendPhaseInput {
+        CanonicalLogPhaseInput {
             commit_log,
             phase_timing,
             positioned_commit: positioned_commit.as_ref(),
-            append_authority,
             commit_id,
-            branch_id: &branch_id,
         },
-    )
-    .err();
+    );
     runtime.lineage_authority().install_published_lineage(
         validated_lineage_events,
         commit_id,
@@ -162,9 +148,8 @@ pub(super) fn finalize_publication_phase(
     phase_timing.publication_post_commit_consumer_micros =
         publication_phase_timing.post_commit_consumer_micros;
 
-    Ok(FinalizedPublicationPhase {
+    FinalizedPublicationPhase {
         positioned_commit,
         changed_records,
-        durability_error,
-    })
+    }
 }

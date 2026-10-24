@@ -1,10 +1,8 @@
 use super::artifact_execution::AssembledCommitExecution;
 
-mod durable_append_admission;
 mod phase;
 mod preparation;
 
-pub(crate) use durable_append_admission::CommitDurableAppendAdmission;
 use phase::finalize_publication_phase;
 use preparation::{
     prepare_publication_phase, PreparePublicationPhaseInput, PreparedPublicationCompletion,
@@ -143,13 +141,7 @@ pub(crate) fn publish_commit_execution(
     runtime: &crate::runtime::RelationalRuntime,
     prepared: PreparedCommitPublicationCompletion,
     published_snapshot_basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
-) -> Result<
-    (
-        PublishedCommitExecution,
-        Option<crate::transactions::data::TransactionCommitError>,
-    ),
-    crate::transactions::data::TransactionCommitError,
-> {
+) -> PublishedCommitExecution {
     let PreparedCommitPublicationCompletion {
         mut admitted,
         public_structural_summary,
@@ -174,9 +166,9 @@ pub(crate) fn publish_commit_execution(
             publication,
             published_snapshot_basis,
             published_snapshot_slot,
-        )?
+        )
     };
-    let (positioned_commit, changed_records, durability_error) = finalized.into_parts();
+    let (positioned_commit, changed_records) = finalized.into_parts();
     if let Some(prepared_indexes) = prepared_indexes {
         prepared_indexes.publish(runtime);
     }
@@ -195,28 +187,21 @@ pub(crate) fn publish_commit_execution(
             accounting.emitted_mutation_intents,
         );
     }
-    let durability_error = durability_error.map(|error| {
-        let (_, _, _, _, commit_log, _) = admitted.phase_view().into_parts();
-        error.with_commit_log(commit_log.clone())
-    });
-    Ok((
-        PublishedCommitExecution {
-            admitted,
-            public_structural_summary,
-            invariant_executions,
-            version_id,
-            created_entities,
-            created_relations,
-            history,
-            canonical_commit_envelope,
-            patch_position,
-            changed_records,
-            publication_snapshot,
-            aspect_evaluation_traces,
-            aspect_emission_traces,
-        },
-        durability_error,
-    ))
+    PublishedCommitExecution {
+        admitted,
+        public_structural_summary,
+        invariant_executions,
+        version_id,
+        created_entities,
+        created_relations,
+        history,
+        canonical_commit_envelope,
+        patch_position,
+        changed_records,
+        publication_snapshot,
+        aspect_evaluation_traces,
+        aspect_emission_traces,
+    }
 }
 
 fn publish_prepared_trace_diagnostics(

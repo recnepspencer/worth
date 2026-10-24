@@ -1,10 +1,10 @@
 use crate::history::data::{CommitId, RelationalCommitReceipt};
-use crate::publication::data::{DeferredPublicationSettlement, DeferredPublicationSettlementError};
+use crate::publication::data::PublicationSettlementRepairError;
 use crate::tests::support::*;
 use crate::transactions::data::{CommitResult, TransactionCommitError};
 
 type SettlementPort = crate::facade::mvcc::RelationalSettlementPort;
-type RepairOutcome = Result<RelationalCommitReceipt, DeferredPublicationSettlementError>;
+type RepairOutcome = Result<RelationalCommitReceipt, PublicationSettlementRepairError>;
 
 /// The settlement contract is a shared-borrow contract. Coercing each governed
 /// operation to a function pointer whose first parameter is a shared reference
@@ -16,8 +16,6 @@ fn phase3_settlement_receivers_take_a_shared_borrow() {
         crate::mvcc::PerformedRelationalCommit,
     ) -> Result<CommitResult, TransactionCommitError> =
         RelationalRuntime::settle_performed_publication;
-    let _repair_route: fn(&RelationalRuntime, &DeferredPublicationSettlement) -> RepairOutcome =
-        RelationalRuntime::repair_deferred_publication_settlement;
     let _repair_identity: fn(&RelationalRuntime, CommitId) -> RepairOutcome =
         RelationalRuntime::repair_pending_publication_settlement;
     let _commit: fn(
@@ -32,8 +30,6 @@ fn phase3_settlement_receivers_take_a_shared_borrow() {
         crate::mvcc::PerformedRelationalCommit,
     ) -> Result<CommitResult, TransactionCommitError> =
         SettlementPort::settle_performed_publication;
-    let _port_repair_route: fn(&SettlementPort, &DeferredPublicationSettlement) -> RepairOutcome =
-        SettlementPort::repair_deferred_publication_settlement;
     let _port_repair_identity: fn(&SettlementPort, CommitId) -> RepairOutcome =
         SettlementPort::repair_pending_publication_settlement;
 }
@@ -114,7 +110,7 @@ fn phase3_settlement_port_denies_after_its_runtime_owner_closes() {
     assert!(!settlement.retains_pending_settlement(commit_id));
     assert!(matches!(
         settlement.repair_pending_publication_settlement(commit_id),
-        Err(DeferredPublicationSettlementError::OwnerUnavailable {
+        Err(PublicationSettlementRepairError::OwnerUnavailable {
             runtime_instance_id: observed,
         }) if observed == runtime_instance_id
     ));
@@ -165,33 +161,17 @@ fn phase3_settlement_port_settles_a_performed_publication_from_another_thread() 
     release_test_commit_snapshot(&runtime, &child);
 }
 
-/// A deferred durable append is repaired through the same shared-borrow
-/// service, by exact route and by commit identity, without the runtime ever
-/// being borrowed exclusively.
+/// A performed publication whose witness was lost is settled through the same
+/// shared-borrow service by commit identity, without the runtime ever being
+/// borrowed exclusively, and is recorded in the canonical log exactly once.
 #[test]
-fn phase3_settlement_port_repairs_a_deferred_append_by_route_and_by_identity() {
+fn phase3_settlement_port_repairs_a_lost_witness_by_identity() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "phase3-repair-anchor");
     let settlement = runtime.settlement_port();
-
-    let performed = perform_write(execution, &runtime, "main", "phase3-route-repair-write");
-    let route_commit_id = performed.canonical_commit().commit.commit_id;
-    runtime.durability.arm_append_failure_for_test();
-    let deferred_error = settlement
-        .settle_performed_publication(performed)
-        .expect_err("the injected append fault defers settlement after performance");
-    let deferred = deferred_error
-        .deferred_settlement()
-        .expect("the caller receives exact settlement repair authority");
-    assert!(settlement.retains_pending_settlement(route_commit_id));
-    let repaired = settlement
-        .repair_deferred_publication_settlement(deferred)
-        .expect("the service retries the exact missing durable append");
-    assert_eq!(repaired.commit_id, route_commit_id);
-    assert!(!settlement.retains_pending_settlement(route_commit_id));
 
     let abandoned = perform_write(execution, &runtime, "main", "phase3-identity-repair-write");
     let identity_commit_id = abandoned.canonical_commit().commit.commit_id;
@@ -210,13 +190,10 @@ fn phase3_settlement_port_repairs_a_deferred_append_by_route_and_by_identity() {
             .durability()
             .durable_log()
             .iter()
-            .filter(|entry| {
-                let commit_id = entry.envelope().commit.commit_id;
-                commit_id == route_commit_id || commit_id == identity_commit_id
-            })
+            .filter(|entry| entry.envelope().commit.commit_id == identity_commit_id)
             .count(),
-        2,
-        "each repaired settlement appends exactly once",
+        1,
+        "the repaired settlement is recorded exactly once",
     );
     release_test_commit_snapshot(&runtime, &child);
 }
@@ -363,6 +340,3 @@ fn perform_prepared(
         outcome => panic!("an uncontended candidate performs: {outcome:?}"),
     }
 }
-
-#[path = "owner_service_phase3/foreign_repair.rs"]
-mod foreign_repair;

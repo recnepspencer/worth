@@ -1,5 +1,4 @@
 pub(crate) use recovery::{AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody};
-mod append_authority;
 mod authority_continuity;
 mod checkpoint_capture;
 mod checkpoint_image;
@@ -14,11 +13,9 @@ use crate::branch::AdmittedRelationalBranchBasis;
 use crate::history::data::BranchId;
 use crate::runtime::RelationalRuntime;
 
-pub(crate) use append_authority::DurableAppendAuthority;
 pub use checkpoint_transition::{
-    DeferredRecoveredCheckpointTransition, RecoveredCheckpointTransition,
-    RecoveredCheckpointTransitionDenial, RecoveredCheckpointTransitionError,
-    RecoveredCheckpointTransitionRepairError, RefusedRecoveredCheckpointTransition,
+    RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
+    RecoveredCheckpointTransitionError, RefusedRecoveredCheckpointTransition,
 };
 
 pub struct DurabilityAuthority<'runtime> {

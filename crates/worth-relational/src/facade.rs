@@ -85,9 +85,8 @@ pub mod durability {
     };
     pub use crate::durability::migration::ReadmittedCanonicalCommit;
     pub use crate::durability::{
-        DeferredRecoveredCheckpointTransition, RecoveredCheckpointTransition,
-        RecoveredCheckpointTransitionDenial, RecoveredCheckpointTransitionError,
-        RecoveredCheckpointTransitionRepairError, RecoveredRelationalBranchBasis,
+        RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
+        RecoveredCheckpointTransitionError, RecoveredRelationalBranchBasis,
         RecoveredRelationalRuntimeAuthority, RefusedRecoveredCheckpointTransition,
     };
     pub use crate::runtime::RelationalCanonicalPositionAdmissionDenial;
@@ -275,9 +274,8 @@ pub mod publication {
         SubscriberStreamFailureClass,
     };
     pub use crate::publication::data::{
-        DeferredPublicationSettlement, DeferredPublicationSettlementError,
         PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot, PublicationError,
-        PublicationObservationSnapshot,
+        PublicationObservationSnapshot, PublicationSettlementRepairError,
     };
     pub use crate::publication::patch::data::{
         PatchDetail, PatchFragmentBudget, PatchOrdering, PatchPublicationMode, PatchStreamBatch,

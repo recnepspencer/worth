@@ -98,10 +98,6 @@ pub(super) fn commit_error_to_harness_error(
         crate::facade::transactions::TransactionCommitError::PublicationFailed {
             failure, ..
         } => RelationalHarnessError(failure.detail().to_owned()),
-        crate::facade::transactions::TransactionCommitError::PerformedButDurabilityDeferred {
-            error,
-            ..
-        } => RelationalHarnessError(error.detail),
         error @ crate::facade::transactions::TransactionCommitError::DurabilityUnresolved {
             ..
         } => RelationalHarnessError(error.detail()),

@@ -7,8 +7,8 @@ use crate::history::data::CommitId;
 mod record;
 
 pub(crate) use record::{
-    DeferredRelationalSettlement, PendingRelationalPublicationSettlement,
-    PerformedRelationalSettlement, RelationalSettlementClaim, ReservedRelationalSettlement,
+    PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
+    RelationalSettlementClaim, ReservedRelationalSettlement,
 };
 
 /// Why one publication attempt could not install its pending-settlement record

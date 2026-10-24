@@ -1,4 +1,3 @@
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use crate::durability::data::DurableCheckpoint;
@@ -16,7 +15,6 @@ use state::DurabilityState;
 #[derive(Debug, Default)]
 pub(crate) struct DurabilitySubsystem {
     state: RuntimeOwnedState<DurabilityState>,
-    fail_next_append: AtomicBool,
     /// The durable medium every commit is published to before it becomes
     /// live. A forked runtime is a speculative copy and never inherits it.
     medium: Option<Arc<RelationalDurableMediumBinding>>,
@@ -87,15 +85,6 @@ impl DurabilitySubsystem {
     pub(crate) fn latest_checkpoint(&self) -> Option<Arc<DurableCheckpoint>> {
         self.state.read().checkpoints.last().map(Arc::clone)
     }
-
-    pub(crate) fn arm_append_failure_for_test(&self) {
-        self.fail_next_append.store(true, Ordering::Release);
-    }
-
-    pub(crate) fn take_armed_append_failure_for_test(&self) -> bool {
-        self.fail_next_append.load(Ordering::Acquire)
-            && self.fail_next_append.swap(false, Ordering::AcqRel)
-    }
 }
 
 impl RuntimeSubsystem for DurabilitySubsystem {
@@ -104,7 +93,6 @@ impl RuntimeSubsystem for DurabilitySubsystem {
     fn new(_config: &Self::Config) -> Self {
         Self {
             state: RuntimeOwnedState::new(DurabilityState::default()),
-            fail_next_append: AtomicBool::new(false),
             medium: None,
         }
     }
@@ -112,7 +100,6 @@ impl RuntimeSubsystem for DurabilitySubsystem {
     fn fork(&self) -> Self {
         Self {
             state: self.state.detached(),
-            fail_next_append: AtomicBool::new(self.fail_next_append.load(Ordering::Acquire)),
             medium: None,
         }
     }

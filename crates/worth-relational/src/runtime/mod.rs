@@ -1,6 +1,5 @@
 pub mod builder;
 mod construction;
-mod durability_fault_injection;
 mod field_text;
 mod guided;
 mod initial_schema_installation;
@@ -85,9 +84,9 @@ pub(crate) use state::{
     StorageSubsystem, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
 };
 pub(crate) use state::{
-    DeferredRelationalSettlement, PendingRelationalPublicationSettlement,
-    PerformedRelationalSettlement, RelationalPendingSettlementReservation,
-    RelationalSettlementClaim, RelationalSettlementReservationDenial, ReservedRelationalSettlement,
+    PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
+    RelationalPendingSettlementReservation, RelationalSettlementClaim,
+    RelationalSettlementReservationDenial, ReservedRelationalSettlement,
 };
 
 pub use crate::visibility::materialization::read_records::BoundedFrontierReadStop;

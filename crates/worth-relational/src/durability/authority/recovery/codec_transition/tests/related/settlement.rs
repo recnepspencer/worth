@@ -1,4 +1,4 @@
-//! The complete relation closure keeps original refusal and exact repair custody.
+//! The complete relation closure keeps its original refusal for an exact retry.
 use super::{
     super::fixture::{activation, activation_proof, basis, capture, protected_payload},
     fixture::*,
@@ -74,7 +74,7 @@ fn closed_relation_insufficient_funding_preserves_source_for_fresh_funded_retry(
 }
 
 #[test]
-fn closed_relation_cancellation_refuses_before_effects_then_exact_retry_can_defer_and_repair() {
+fn closed_relation_cancellation_refuses_before_effects_then_exact_retry_settles() {
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let world = world(execution);
@@ -112,23 +112,12 @@ fn closed_relation_cancellation_refuses_before_effects_then_exact_retry_can_defe
         None,
     )
     .unwrap();
-    target.durability.arm_append_failure_for_test();
-    let RecoveredCheckpointTransitionError::DurabilityDeferred(deferred) = target
+    let acknowledged = target
         .durability_recovery()
         .commit_checkpoint_transition(execution, recovered, candidate)
-        .unwrap_err()
-    else {
-        panic!("performed successor keeps settlement custody")
-    };
+        .unwrap();
     let successor = basis(&target).descriptor().clone();
     let commits = target.history().immutable_commit_count();
-    assert!(target
-        .readmit_recovered_initial_schema_installation(receipt.clone())
-        .is_err());
-    let repaired = target
-        .durability_recovery()
-        .repair_checkpoint_transition(*deferred)
-        .unwrap();
     target
         .readmit_recovered_initial_schema_installation(receipt)
         .unwrap();
@@ -138,5 +127,9 @@ fn closed_relation_cancellation_refuses_before_effects_then_exact_retry_can_defe
         protected_payload(&target, world.authored),
         protected_payload(&world.runtime, world.authored)
     );
-    repaired.into_parts().1.admit_basis(basis(&target)).unwrap();
+    acknowledged
+        .into_parts()
+        .1
+        .admit_basis(basis(&target))
+        .unwrap();
 }
