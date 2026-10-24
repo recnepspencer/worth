@@ -83,8 +83,11 @@ fn pending_roots_are_identity_ordered_and_result_limited_before_projection() {
 /// estimate or ceiling.
 #[test]
 fn guarded_frontier_reads_without_a_caller_work_ceiling() {
-    let fixture =
-        over_budget_discovery_world_with_role("pending-guard-unbudgeted", 265, CustomerRole::Approver);
+    let fixture = over_budget_discovery_world_with_role(
+        "pending-guard-unbudgeted",
+        265,
+        CustomerRole::Approver,
+    );
     let actor = fixture.authenticate();
     let result = fixture
         .world
