@@ -80,3 +80,36 @@ fn controlled_child_inherits_policy_and_exact_minimum_deadline_without_parent_mu
     );
     assert!(!unrestricted.deadline_elapsed());
 }
+
+#[test]
+fn controlled_child_made_inside_a_descendant_worker_descends_from_that_worker() {
+    let _serial = TEST_LOCK.lock().unwrap();
+    let parent = authority().request_lease(request(1, 4096, 100)).unwrap();
+    let call = parent.controlled_child(CancellationToken::new(), None);
+    let (charged, _) = crate::ExecutionRequest::leased(&call)
+        .run(crate::ExecutionWorkCeiling::new(None), |_| {
+            // An attempt made from the caller's lease while the call's worker
+            // runs: beside that worker it would refuse as an unrelated lease.
+            let attempt = parent.controlled_child(CancellationToken::new(), None);
+            assert_eq!(attempt.lineage_depth(), call.lineage_depth() + 1);
+            assert_eq!(attempt.policy(), parent.policy());
+            ExecutionAllocationPolicy::Execution(&attempt)
+                .check_live()
+                .unwrap();
+            let before = parent.charged_memory_bytes();
+            let mut builder = ExecutionArrayBuilder::<u64>::allocate(
+                1,
+                ExecutionAllocationPolicy::Execution(&attempt),
+            )
+            .unwrap();
+            builder.push(5).unwrap();
+            let array = builder.seal().unwrap();
+            assert_eq!(array.elements(), &[5]);
+            parent.charged_memory_bytes() - before
+        })
+        .unwrap();
+    assert_eq!(charged, 8, "the attempt's charge reaches the caller's lease");
+    // Outside any worker the child still descends from the lease itself.
+    let outside = parent.controlled_child(CancellationToken::new(), None);
+    assert_eq!(outside.lineage_depth(), parent.lineage_depth() + 1);
+}

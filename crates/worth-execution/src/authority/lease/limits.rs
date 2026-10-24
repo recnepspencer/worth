@@ -51,12 +51,16 @@ impl<'a> ExecutionResourceLease<'a> {
     /// Creates an independently controlled child with this lease's exact policy.
     /// The parent remains unchanged; its cancellation and earlier deadline still
     /// constrain the child, and memory reservations charge the same lineage.
+    /// While a worker descending from this lease runs on this thread, the child
+    /// descends from that worker: a child beside it could never be used there.
     pub fn controlled_child(
         &self,
         cancellation: CancellationToken,
         deadline: Option<Instant>,
     ) -> Self {
-        self.child_from_validated_request(LeaseRequest {
+        let active = self.current_descendant();
+        let parent = active.as_ref().unwrap_or(self);
+        parent.child_from_validated_request(LeaseRequest {
             policy: self.policy,
             deadline,
             cancellation,
