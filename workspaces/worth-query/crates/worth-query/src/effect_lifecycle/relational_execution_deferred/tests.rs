@@ -139,14 +139,55 @@ fn leased_execution_is_typed_at_the_effect_boundary() {
     ));
 }
 
+/// The allocation owner classifies its own refusals: a cancelled lease is a
+/// control stop and exhausted memory is resource pressure. Accounting loss
+/// never arrives on this lane; its real lane is `stop_conversion.rs`.
 #[test]
-fn accounting_unavailable_uses_the_effect_allocation_resource_lane() {
-    let class = worth_execution::ExecutionAllocationDenialClass::Request(
-        worth_execution::WorkCeilingDenial::Stopped(
-            worth_execution::MapKernelStop::AccountingUnavailable,
+fn owner_allocation_denials_split_control_from_resource_pressure() {
+    let request = |memory, cancellation| worth_execution::LeaseRequest {
+        policy: worth_foundational::ExecutionRequestPolicy::new(
+            worth_foundational::ExecutionPosture::Serial,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, memory, None),
         ),
-    );
-    // The allocation owner cannot currently emit this class. Exercise the
-    // exhaustive classification here without fabricating an owner denial.
-    assert_eq!(allocation_control_stop(class), None);
+        deadline: None,
+        cancellation,
+    };
+    let owner = crate::test_execution_authority::authority();
+    let source = worth_execution::CancellationSource::new();
+    let cancelled = owner.request_lease(request(None, source.token())).unwrap();
+    source.cancel();
+    let denial = worth_execution::ExecutionByteBuffer::allocate(
+        1,
+        worth_execution::ExecutionAllocationPolicy::Execution(&cancelled),
+    )
+    .unwrap_err();
+    assert!(matches!(
+        allocation_failure(&denial),
+        RelationalEffectExecutionFailure::ControlStopped {
+            kind: crate::effect_lifecycle::EffectExecutionControlStopKind::Cancelled,
+            ..
+        }
+    ));
+
+    let bounded = owner
+        .request_lease(request(Some(64), worth_execution::CancellationToken::new()))
+        .unwrap();
+    let denial = worth_execution::ExecutionByteBuffer::allocate(
+        65,
+        worth_execution::ExecutionAllocationPolicy::Execution(&bounded),
+    )
+    .unwrap_err();
+    assert!(matches!(
+        allocation_failure(&denial),
+        RelationalEffectExecutionFailure::Denied {
+            kind: EffectExecutionDenialKind::TransactionAllocationDenied {
+                kind: worth_execution::ExecutionAllocationDenialKind::Lease(
+                    worth_execution::LeaseDenial::MemoryExhausted(_)
+                ),
+                requested_payload_bytes: Some(65),
+            },
+            ..
+        }
+    ));
 }

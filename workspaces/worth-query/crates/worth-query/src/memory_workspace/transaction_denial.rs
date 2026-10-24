@@ -215,16 +215,53 @@ fn control_kind(
 #[cfg(test)]
 mod tests {
     use super::*;
+    /// The allocation owner classifies its own refusals: a cancelled lease
+    /// is a control stop and exhausted memory is resource pressure.
+    /// Accounting loss never arrives on this lane; its real lane is
+    /// `stop_conversion.rs`.
     #[test]
-    fn accounting_unavailable_uses_the_workspace_allocation_resource_lane() {
-        let class = worth_execution::ExecutionAllocationDenialClass::Request(
-            worth_execution::WorkCeilingDenial::Stopped(
-                worth_execution::MapKernelStop::AccountingUnavailable,
+    fn owner_allocation_denials_split_control_from_resource_pressure() {
+        let request = |memory, cancellation| worth_execution::LeaseRequest {
+            policy: worth_foundational::ExecutionRequestPolicy::new(
+                worth_foundational::ExecutionPosture::Serial,
+                worth_foundational::DeterminismContract::CanonicalBitwise,
+                worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, memory, None),
             ),
+            deadline: None,
+            cancellation,
+        };
+        let owner = crate::test_execution_authority::authority();
+        let source = worth_execution::CancellationSource::new();
+        let cancelled = owner.request_lease(request(None, source.token())).unwrap();
+        source.cancel();
+        let denial = worth_execution::ExecutionByteBuffer::allocate(
+            1,
+            worth_execution::ExecutionAllocationPolicy::Execution(&cancelled),
+        )
+        .unwrap_err();
+        use worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind as Control;
+        assert_eq!(
+            allocation_kind(&denial),
+            WorthQueryWorkspaceErrorKind::ExecutionControlStopped(Control::Cancelled)
         );
-        // The allocation owner cannot currently emit this class. Exercise the
-        // exhaustive classification here without fabricating an owner denial.
-        assert_eq!(allocation_control_stop(class), None);
+
+        let bounded = owner
+            .request_lease(request(Some(64), worth_execution::CancellationToken::new()))
+            .unwrap();
+        let denial = worth_execution::ExecutionByteBuffer::allocate(
+            65,
+            worth_execution::ExecutionAllocationPolicy::Execution(&bounded),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            allocation_kind(&denial),
+            WorthQueryWorkspaceErrorKind::TransactionAllocationDenied {
+                kind: worth_execution::ExecutionAllocationDenialKind::Lease(
+                    worth_execution::LeaseDenial::MemoryExhausted(_)
+                ),
+                requested_payload_bytes: Some(65),
+            }
+        ));
     }
 
     #[test]
