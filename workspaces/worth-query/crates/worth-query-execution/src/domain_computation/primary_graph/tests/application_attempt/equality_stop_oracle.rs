@@ -16,6 +16,17 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
 struct Policy(Placement, Option<worth_foundational::ExecutionBudget>);
+/// How a stopped comparison left the public commit door.
+#[derive(Debug, PartialEq)]
+enum Stop {
+    /// The fresh read-set owner kept the original request's control outcome.
+    Cancelled,
+    /// A refusal, with its stage and execution cause.
+    Denied(
+        WorthQueryApplicationCommitDenialStage,
+        Option<Result<Session, Control>>,
+    ),
+}
 impl Drop for Policy {
     fn drop(&mut self) {
         place(self.0);
@@ -27,28 +38,58 @@ fn equality_stop_oracle_at_the_public_commit_door() {
     let (count, _) = run(None, None, None);
     assert!(count > 1, "entry-only observation cannot prove the read");
     println!("equality commit door: {count} consults");
+    // The fresh read-set comparison runs first and reports the request's own
+    // cancellation; once the commit-time recompare is reached, its consults keep
+    // the ProviderCommit denial with the same cancellation cause.
+    let mut recompared = false;
     for k in 1..=count {
         let (seen, stop) = run(Some(k), None, None);
         assert!(seen >= k);
-        assert_eq!(stop, Some(Err(Control::Cancelled)), "cancel at consult {k}");
+        match stop {
+            Some(Stop::Cancelled) => {
+                assert!(
+                    !recompared,
+                    "cancel at consult {k} returned to the fresh read set"
+                );
+            }
+            Some(Stop::Denied(stage, cause)) => {
+                assert!(
+                    k > 1,
+                    "the first equality consult belongs to the fresh read set"
+                );
+                assert_eq!(
+                    (stage, cause),
+                    (
+                        WorthQueryApplicationCommitDenialStage::ProviderCommit,
+                        Some(Err(Control::Cancelled))
+                    ),
+                    "cancel at consult {k}"
+                );
+                recompared = true;
+            }
+            None => panic!("cancel at consult {k} was not observed"),
+        }
         let (seen, stop) = run(None, None, Some(k));
         assert!(seen >= k, "work stop must reach equality consult {k}");
-        assert_eq!(stop, Some(Ok(Session::ExecutionResource {
+        let Some(Stop::Denied(_, cause)) = stop else {
+            panic!("a work stop at equality consult {k} is a denial: {stop:?}");
+        };
+        assert_eq!(cause, Some(Ok(Session::ExecutionResource {
             denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted,
             partition_identity: None, policy_ancestor: None,
         })), "inner work stop at equality consult {k}");
     }
     // A write cannot publish under a caller's zero-work request.
     let (_, stop) = run(None, Some(0), None);
-    assert!(matches!(stop, Some(Ok(Session::ExecutionResource {
+    assert!(matches!(stop, Some(Stop::Denied(_, Some(Ok(Session::ExecutionResource {
         denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted, ..
-    }))));
+    }))))));
 }
 fn run(
     cancel_at: Option<usize>,
     work: Option<u64>,
     work_at: Option<usize>,
-) -> (usize, Option<Result<Session, Control>>) {
+) -> (usize, Option<Stop>) {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
@@ -111,8 +152,13 @@ fn run(
         ));
         None
     } else {
-        let WorthQueryApplicationCommitOutcome::Denied(denial) = result else {
-            panic!("a stopped comparison cannot publish: {result:?}");
+        let stop = if matches!(result, WorthQueryApplicationCommitOutcome::Cancelled) {
+            Stop::Cancelled
+        } else {
+            let WorthQueryApplicationCommitOutcome::Denied(denial) = result else {
+                panic!("a stopped comparison cannot publish: {result:?}");
+            };
+            Stop::Denied(denial.stage(), denial.execution_denial_cause())
         };
         assert_eq!(
             world
@@ -121,7 +167,7 @@ fn run(
                 .published_application_commit_count(),
             0
         );
-        denial.execution_denial_cause()
+        Some(stop)
     };
     (probe.consults(), stop)
 }
