@@ -2,7 +2,7 @@
 //! The separate public court supplies the genuine workflow/checkpoint journey.
 use super::super::super::fixture::{
     prepare_relational_mutation_on_application, release_test_commit_snapshot, AccountIdentity,
-    AccountLabel, AccountMembershipTag, AccountStatus,
+    AccountLabel, AccountMembershipTag, AccountStatus, AuthorizationWorld,
 };
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as Publication;
@@ -36,6 +36,22 @@ fn payer(cancellation: &CancellationSource) -> ExecutionResourceLease<'static> {
         cancellation: cancellation.token(),
     })
     .unwrap()
+}
+
+// Admission borrows the installed host entry; its owned result outlives it.
+// An unrelated root payer cannot fund work inside that entry's member.
+fn admitted(
+    world: &AuthorizationWorld,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+) -> Admission {
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request();
+            let principal = authenticated_principal(&host, world, request);
+            admitted_capability_operation(&host, world, &principal, request)
+        })
+        .expect("genuine installed fixture host scope")
 }
 
 // Only the five actual admitted encoder outputs and native principal/grant/scope
@@ -100,78 +116,80 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
     let baseline = payer.charged_memory_bytes();
     assert_eq!(baseline, 0);
     let request = live_scope();
-    let (batch, carriers, expected, label_locator) = world
-        .application
-        .with_host_advancement(|phase| {
-            let host = phase.test_host_request();
-            let principal = authenticated_principal(&host, &world, &request);
-            let admission = admitted_capability_operation(&host, &world, &principal, &request);
-            let execution = ExecutionRequest::leased(&payer);
-            let meaning = meaning(&admission, &execution);
-            let expected = originals(&meaning); // Oracle copies precede native admission.
-            let selected = world.selected_product(&host);
-            let (_, product, _) = selected.into_parts();
-            let basis = product.relational_basis();
-            let graph = world.application.runtime.primary_graph().unwrap();
-            let handle = graph.integration_handle();
-            let retained_layout = graph.layout();
-            let layout = retained_layout.workflow();
-            let admitted_text = handle.with_runtime(&execution, |runtime| {
-                WorkflowApprovalFieldText::admit(runtime, &execution, basis, &meaning).unwrap()
-            });
-            let all_fields =
-                workflow_approval_fields(layout, &meaning, basis, &admitted_text).unwrap();
-            let locators = locators(layout);
-            // Account is the existing valid native fixture carrier. These are
-            // transport labels, never incomplete platform approval records.
-            let identity = AccountIdentity::reference();
-            let status = AccountStatus::reference();
-            let membership = AccountMembershipTag::reference();
-            let label = AccountLabel::reference();
-            let field = |entity, aspect, name| {
-                retained_layout
-                    .field_locator(entity, aspect, name)
-                    .unwrap()
-                    .clone()
+    let (batch, carriers, expected, label_locator) = {
+        let admission = admitted(&world, &request);
+        // The payer is an unrelated root lease, so it funds the encoders
+        // only after the installed host entry has ended.
+        let execution = ExecutionRequest::leased(&payer);
+        let meaning = meaning(&admission, &execution);
+        let expected = originals(&meaning); // Oracle copies precede native admission.
+        let selected = world
+            .application
+            .select_product_branch(
+                &execution,
+                world.application.product_runtime().default_branch(),
+            )
+            .expect("the fixture product branch remains admitted");
+        let (_, product, _) = selected.into_parts();
+        let basis = product.relational_basis();
+        let graph = world.application.runtime.primary_graph().unwrap();
+        let handle = graph.integration_handle();
+        let retained_layout = graph.layout();
+        let layout = retained_layout.workflow();
+        let admitted_text = handle.with_runtime(&execution, |runtime| {
+            WorkflowApprovalFieldText::admit(runtime, &execution, basis, &meaning).unwrap()
+        });
+        let all_fields = workflow_approval_fields(layout, &meaning, basis, &admitted_text).unwrap();
+        let locators = locators(layout);
+        // Account is the existing valid native fixture carrier. These are
+        // transport labels, never incomplete platform approval records.
+        let identity = AccountIdentity::reference();
+        let status = AccountStatus::reference();
+        let membership = AccountMembershipTag::reference();
+        let label = AccountLabel::reference();
+        let field = |entity, aspect, name| {
+            retained_layout
+                .field_locator(entity, aspect, name)
+                .unwrap()
+                .clone()
+        };
+        let identity_locator = field(identity.entity(), identity.aspect(), identity.field());
+        let status_locator = field(status.entity(), status.aspect(), status.field());
+        let membership_locator =
+            field(membership.entity(), membership.aspect(), membership.field());
+        let label_locator = field(label.entity(), label.aspect(), label.field());
+        let account_kind = retained_layout.entity_kind(label.entity()).unwrap();
+        let text = |value: &str| AspectValue::String(InternedString::Raw(value.to_owned()));
+        let mut carriers = Vec::with_capacity(5);
+        let mut batch = WorkerIntentBatch::new("five-envelope-transport");
+        for (index, source_locator) in locators.iter().enumerate() {
+            let key = format!("five-envelope-transport-{index}");
+            let fields = BTreeMap::from([
+                (identity_locator.clone(), text(&key)),
+                (status_locator.clone(), text("active")),
+                (membership_locator.clone(), text("open")),
+                (
+                    label_locator.clone(),
+                    all_fields.get(*source_locator).unwrap().clone(),
+                ),
+            ]);
+            let created = CreatedEntityRef {
+                partition_id: PartitionId::main(),
+                kind_id: account_kind,
+                client_key: ClientKey::raw(key),
             };
-            let identity_locator = field(identity.entity(), identity.aspect(), identity.field());
-            let status_locator = field(status.entity(), status.aspect(), status.field());
-            let membership_locator =
-                field(membership.entity(), membership.aspect(), membership.field());
-            let label_locator = field(label.entity(), label.aspect(), label.field());
-            let account_kind = retained_layout.entity_kind(label.entity()).unwrap();
-            let text = |value: &str| AspectValue::String(InternedString::Raw(value.to_owned()));
-            let mut carriers = Vec::with_capacity(5);
-            let mut batch = WorkerIntentBatch::new("five-envelope-transport");
-            for (index, source_locator) in locators.iter().enumerate() {
-                let key = format!("five-envelope-transport-{index}");
-                let fields = BTreeMap::from([
-                    (identity_locator.clone(), text(&key)),
-                    (status_locator.clone(), text("active")),
-                    (membership_locator.clone(), text("open")),
-                    (
-                        label_locator.clone(),
-                        all_fields.get(*source_locator).unwrap().clone(),
-                    ),
-                ]);
-                let created = CreatedEntityRef {
-                    partition_id: PartitionId::main(),
-                    kind_id: account_kind,
-                    client_key: ClientKey::raw(key),
-                };
-                batch = batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-                    partition_id: created.partition_id,
-                    kind_id: created.kind_id,
-                    client_key: created.client_key.clone(),
-                    fields: AspectFieldPatch::from(fields),
-                })));
-                carriers.push(created);
-            }
-            // End the installed host entry before running native publication
-            // under the original, independently retained text payer.
-            (batch, carriers, expected, label_locator)
-        })
-        .expect("genuine installed fixture host scope");
+            batch = batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+                partition_id: created.partition_id,
+                kind_id: created.kind_id,
+                client_key: created.client_key.clone(),
+                fields: AspectFieldPatch::from(fields),
+            })));
+            carriers.push(created);
+        }
+        // Release the admission and encoder owners before running native
+        // publication under the original, independently retained text payer.
+        (batch, carriers, expected, label_locator)
+    };
     let execution = ExecutionRequest::leased(&payer);
     let handle = world
         .application
@@ -261,21 +279,35 @@ fn original_cancellation_reaches_query_native_receiving_before_any_dictionary_or
     let cancellation = CancellationSource::new();
     let payer = payer(&cancellation);
     let request = live_scope();
-    world.application.with_host_advancement(|phase| {
-        let host = phase.test_host_request();
-        let principal = authenticated_principal(&host, &world, &request);
-        let admission = admitted_capability_operation(&host, &world, &principal, &request);
+    let admission = admitted(&world, &request);
+    {
+        // Both unrelated root leases fund work only outside the host entry.
+        let live = self::payer(&CancellationSource::new());
+        let observer = ExecutionRequest::leased(&live);
         let execution = ExecutionRequest::leased(&payer);
         let meaning = meaning(&admission, &execution);
         let expected = originals(&meaning);
-        assert!(expected.iter().all(|text| !text.is_empty()), "ALL five original encoders succeeded before cancellation");
+        assert!(
+            expected.iter().all(|text| !text.is_empty()),
+            "ALL five original encoders succeeded before cancellation"
+        );
         let charge = payer.charged_memory_bytes();
         assert!(charge > 0);
-        let selected = world.selected_product(&host);
+        let selected = world
+            .application
+            .select_product_branch(
+                &observer,
+                world.application.product_runtime().default_branch(),
+            )
+            .expect("the fixture product branch remains admitted");
         let (_, product, _) = selected.into_parts();
         let basis = product.relational_basis();
-        let observer = host.borrowed_request_for_test();
-        let handle = world.application.runtime.primary_graph().unwrap().integration_handle();
+        let handle = world
+            .application
+            .runtime
+            .primary_graph()
+            .unwrap()
+            .integration_handle();
         // Open the real receiver while live. Cancellation occurs inside, with
         // no intervening outer with_runtime check or new callback/test control.
         handle.with_runtime_mut(&execution, |runtime| {
@@ -311,5 +343,5 @@ fn original_cancellation_reaches_query_native_receiving_before_any_dictionary_or
                 matches!(fields.get(*locator), Some(AspectValue::String(InternedString::Symbol(_))))
             }));
         });
-    }).expect("genuine installed fixture host scope");
+    }
 }
