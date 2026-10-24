@@ -147,15 +147,18 @@ fn fresh_readmission_reconstructs_retirement_meaning_and_required_authority() {
             WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(parts),
         )
         .unwrap_err();
-        assert_eq!(
-            denied,
-            if corrupt == "read" {
-                ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency
-            } else {
-                ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency
-            },
-            "{corrupt}"
-        );
+        let denied_operation = match &denied {
+            ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency {
+                operation,
+                ..
+            } if corrupt == "read" => operation,
+            ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency {
+                operation,
+                ..
+            } if corrupt != "read" => operation,
+            other => panic!("{corrupt}: {other:?}"),
+        };
+        assert_eq!(denied_operation, "SetRetention", "{corrupt}");
     }
 }
 #[test]
