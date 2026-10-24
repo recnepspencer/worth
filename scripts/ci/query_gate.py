@@ -41,6 +41,7 @@ import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from check_trybuild_test_group import session_tests
 from query_gate_artifacts import test_binaries
 from query_gate_diagnostics import failed_tests, report_failed_command
 from query_gate_environment import environment
@@ -125,6 +126,14 @@ PROCESS_WIDE_PROBES = (
     "read_set::source_facts::merging::",
     "tests::application_attempt::predecode_admission::",
 )
+
+# Tests that open a trybuild session. trybuild builds every crate's cases in
+# one shared project under target/tests/trybuild, and its cross-process lock
+# does not hold on Windows: two chunks running sessions at once overwrite each
+# other's generated manifest, so a should-fail case builds from another case's
+# source and passes. They run in the serial lane, as nextest's trybuild-project
+# group runs them; check_trybuild_test_group.py owns which tests those are.
+TRYBUILD_SESSIONS = session_tests()[0]
 
 # Binaries whose every case gets its own process, as nextest gives it. Topology
 # cases touch process-global providers, counters or ledgers. Execution's unit
@@ -322,7 +331,9 @@ class Gate:
                 if FIXTURE_CPU_EXCLUSIVE in names:
                     exclusive.append((binary, [FIXTURE_CPU_EXCLUSIVE], ()))
                 continue
-            probes = [n for n in names if any(mark in n for mark in PROCESS_WIDE_PROBES)]
+            probes = [n for n in names
+                      if any(mark in n for mark in PROCESS_WIDE_PROBES)
+                      or n.rsplit("::", 1)[-1] in TRYBUILD_SESSIONS]
             rest = [n for n in names if n not in set(probes)]
             shared += [(binary, rest[at:at + size], ()) for at in range(0, len(rest), size)]
             if probes:
