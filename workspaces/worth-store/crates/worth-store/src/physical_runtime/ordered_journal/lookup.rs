@@ -3,16 +3,16 @@ use worth_store_physical_format::{PersistedRecordIdentity, RecordAnchor};
 
 use super::frame::{JournalRecordHeader, MAXIMUM_HEADER_BYTES};
 use super::{
-    CanonicalCommitEntry, CanonicalCommitJournal, CanonicalCommitPayload,
-    CanonicalCommitReadFailure, CanonicalCommitResolution,
+    OrderedJournal, OrderedJournalEntry, OrderedJournalPayload, OrderedJournalReadFailure,
+    OrderedJournalResolution,
 };
 use crate::physical_runtime::{
     PhysicalRecordId, PhysicalRecordReader, RecordByteLimit, RecordReadLimits,
 };
 
-impl CanonicalCommitJournal<'_> {
+impl OrderedJournal<'_> {
     /// The newest durable entry, or `None` for an empty journal.
-    pub fn head(&self) -> Result<Option<CanonicalCommitEntry>, CanonicalCommitReadFailure> {
+    pub fn head(&self) -> Result<Option<OrderedJournalEntry>, OrderedJournalReadFailure> {
         let reader = self.reader()?;
         match self.head_anchor(&reader) {
             None => Ok(None),
@@ -27,24 +27,29 @@ impl CanonicalCommitJournal<'_> {
         &self,
         position: u64,
         payload_sha256: [u8; 32],
-    ) -> Result<CanonicalCommitResolution, CanonicalCommitReadFailure> {
-        let unresolved = self.runtime.canonical_journal_state().unresolved;
+    ) -> Result<OrderedJournalResolution, OrderedJournalReadFailure> {
+        let unresolved = self
+            .runtime
+            .ordered_journal_state()
+            .unresolved
+            .get(&self.name)
+            .copied();
         let reader = self.reader()?;
         let head = self
             .head_anchor(&reader)
             .map_or(0, RecordAnchor::generation);
         if position == 0 || position > head {
             return Ok(if unresolved == Some(position) {
-                CanonicalCommitResolution::Unresolved
+                OrderedJournalResolution::Unresolved
             } else {
-                CanonicalCommitResolution::NotCommitted { head }
+                OrderedJournalResolution::NotCommitted { head }
             });
         }
         let entry = self.locate(&reader, position)?;
         Ok(if entry.payload_sha256 == payload_sha256 {
-            CanonicalCommitResolution::Committed(entry)
+            OrderedJournalResolution::Committed(entry)
         } else {
-            CanonicalCommitResolution::Conflict(entry)
+            OrderedJournalResolution::Conflict(entry)
         })
     }
 
@@ -53,23 +58,23 @@ impl CanonicalCommitJournal<'_> {
         &self,
         position: u64,
         maximum_payload_bytes: u64,
-    ) -> Result<CanonicalCommitPayload, CanonicalCommitReadFailure> {
+    ) -> Result<OrderedJournalPayload, OrderedJournalReadFailure> {
         let reader = self.reader()?;
         let entry = self.locate(&reader, position)?;
         if entry.payload_bytes > maximum_payload_bytes {
-            return Err(CanonicalCommitReadFailure::LimitExceeded {
+            return Err(OrderedJournalReadFailure::LimitExceeded {
                 payload_bytes: entry.payload_bytes,
             });
         }
         let limit = MAXIMUM_HEADER_BYTES as u64 + entry.payload_bytes;
         let bytes = read_record(&reader, persisted(entry.record), limit)?;
         let header = JournalRecordHeader::decode(&bytes, self.name, Some(bytes.len() as u64))
-            .map_err(|_| CanonicalCommitReadFailure::Damaged)?;
+            .map_err(|_| OrderedJournalReadFailure::Damaged)?;
         let payload = bytes[header.encoded_bytes()..].to_vec();
         if header.position != position || header.verify_payload(&payload).is_err() {
-            return Err(CanonicalCommitReadFailure::Damaged);
+            return Err(OrderedJournalReadFailure::Damaged);
         }
-        Ok(CanonicalCommitPayload {
+        Ok(OrderedJournalPayload {
             entry,
             bytes: payload,
         })
@@ -81,7 +86,7 @@ impl CanonicalCommitJournal<'_> {
         &self,
         at_or_below: u64,
         limit: usize,
-    ) -> Result<Vec<CanonicalCommitEntry>, CanonicalCommitReadFailure> {
+    ) -> Result<Vec<OrderedJournalEntry>, OrderedJournalReadFailure> {
         let reader = self.reader()?;
         let head = self
             .head_anchor(&reader)
@@ -102,19 +107,19 @@ impl CanonicalCommitJournal<'_> {
                 .spine
                 .first()
                 .filter(|previous| previous.position + 1 == entry.position)
-                .ok_or(CanonicalCommitReadFailure::Damaged)?;
+                .ok_or(OrderedJournalReadFailure::Damaged)?;
             entry = self.entry_from(&reader, previous.record, previous.position)?;
         }
     }
 
-    pub(super) fn reader(&self) -> Result<PhysicalRecordReader, CanonicalCommitReadFailure> {
+    pub(super) fn reader(&self) -> Result<PhysicalRecordReader, OrderedJournalReadFailure> {
         self.runtime
             .records()
-            .map_err(CanonicalCommitReadFailure::Protection)
+            .map_err(OrderedJournalReadFailure::Protection)
     }
 
     pub(super) fn head_anchor(&self, reader: &PhysicalRecordReader) -> Option<RecordAnchor> {
-        reader.selected_record_anchors().get(self.name)
+        reader.selected_record_anchors().get(self.name.anchor())
     }
 
     /// Finds `target` by descending jump pointers from the head.
@@ -122,11 +127,11 @@ impl CanonicalCommitJournal<'_> {
         &self,
         reader: &PhysicalRecordReader,
         target: u64,
-    ) -> Result<CanonicalCommitEntry, CanonicalCommitReadFailure> {
+    ) -> Result<OrderedJournalEntry, OrderedJournalReadFailure> {
         let head = self.head_anchor(reader);
         let head_position = head.map_or(0, RecordAnchor::generation);
         let Some(head) = head.filter(|_| target >= 1 && target <= head_position) else {
-            return Err(CanonicalCommitReadFailure::NotFound {
+            return Err(OrderedJournalReadFailure::NotFound {
                 head: head_position,
             });
         };
@@ -137,10 +142,10 @@ impl CanonicalCommitJournal<'_> {
         loop {
             let next = header
                 .descend_toward(target)
-                .ok_or(CanonicalCommitReadFailure::Damaged)?;
+                .ok_or(OrderedJournalReadFailure::Damaged)?;
             let next_header = read_header(reader, self, next.record)?;
             if next_header.position != next.position {
-                return Err(CanonicalCommitReadFailure::Damaged);
+                return Err(OrderedJournalReadFailure::Damaged);
             }
             if next.position == target {
                 return Ok(entry(next.record, &next_header));
@@ -154,12 +159,12 @@ impl CanonicalCommitJournal<'_> {
         reader: &PhysicalRecordReader,
         anchor: RecordAnchor,
         position: u64,
-    ) -> Result<CanonicalCommitEntry, CanonicalCommitReadFailure> {
+    ) -> Result<OrderedJournalEntry, OrderedJournalReadFailure> {
         let entry = self.entry_from(reader, anchor.record(), position)?;
         let limit = MAXIMUM_HEADER_BYTES as u64 + entry.payload_bytes;
         let bytes = read_record(reader, anchor.record(), limit)?;
         if <[u8; 32]>::from(Sha256::digest(&bytes)) != anchor.record_payload_sha256() {
-            return Err(CanonicalCommitReadFailure::Damaged);
+            return Err(OrderedJournalReadFailure::Damaged);
         }
         Ok(entry)
     }
@@ -169,17 +174,17 @@ impl CanonicalCommitJournal<'_> {
         reader: &PhysicalRecordReader,
         record: PersistedRecordIdentity,
         position: u64,
-    ) -> Result<CanonicalCommitEntry, CanonicalCommitReadFailure> {
+    ) -> Result<OrderedJournalEntry, OrderedJournalReadFailure> {
         let header = read_header(reader, self, record)?;
         if header.position != position {
-            return Err(CanonicalCommitReadFailure::Damaged);
+            return Err(OrderedJournalReadFailure::Damaged);
         }
         Ok(entry(record, &header))
     }
 }
 
-fn entry(record: PersistedRecordIdentity, header: &JournalRecordHeader) -> CanonicalCommitEntry {
-    CanonicalCommitEntry {
+fn entry(record: PersistedRecordIdentity, header: &JournalRecordHeader) -> OrderedJournalEntry {
+    OrderedJournalEntry {
         position: header.position,
         record: PhysicalRecordId::from_persisted(record),
         payload_sha256: header.payload_sha256,
@@ -195,23 +200,23 @@ fn persisted(record: PhysicalRecordId) -> PersistedRecordIdentity {
 /// Reads and validates only the header of a journal record.
 pub(super) fn read_header(
     reader: &PhysicalRecordReader,
-    journal: &CanonicalCommitJournal<'_>,
+    journal: &OrderedJournal<'_>,
     record: PersistedRecordIdentity,
-) -> Result<JournalRecordHeader, CanonicalCommitReadFailure> {
+) -> Result<JournalRecordHeader, OrderedJournalReadFailure> {
     let mut session = open(reader, record)?;
     let mut buffer = vec![0; MAXIMUM_HEADER_BYTES];
     let mut filled = 0;
     while filled < buffer.len() {
         let read = session
             .read_next(&mut buffer[filled..])
-            .map_err(CanonicalCommitReadFailure::Stream)?;
+            .map_err(OrderedJournalReadFailure::Stream)?;
         if read == 0 {
             break;
         }
         filled += read;
     }
     JournalRecordHeader::decode(&buffer[..filled], journal.name, None)
-        .map_err(|_| CanonicalCommitReadFailure::Damaged)
+        .map_err(|_| OrderedJournalReadFailure::Damaged)
 }
 
 /// Reads a whole record, refusing one longer than its header declared.
@@ -219,19 +224,19 @@ fn read_record(
     reader: &PhysicalRecordReader,
     record: PersistedRecordIdentity,
     maximum_bytes: u64,
-) -> Result<Vec<u8>, CanonicalCommitReadFailure> {
+) -> Result<Vec<u8>, OrderedJournalReadFailure> {
     let mut session = open(reader, record)?;
     let mut bytes = Vec::new();
     let mut chunk = vec![0; 64 * 1024];
     loop {
         let read = session
             .read_next(&mut chunk)
-            .map_err(CanonicalCommitReadFailure::Stream)?;
+            .map_err(OrderedJournalReadFailure::Stream)?;
         if read == 0 {
             return Ok(bytes);
         }
         if bytes.len() as u64 + read as u64 > maximum_bytes {
-            return Err(CanonicalCommitReadFailure::Damaged);
+            return Err(OrderedJournalReadFailure::Damaged);
         }
         bytes.extend_from_slice(&chunk[..read]);
     }
@@ -240,9 +245,9 @@ fn read_record(
 fn open(
     reader: &PhysicalRecordReader,
     record: PersistedRecordIdentity,
-) -> Result<crate::physical_runtime::RecordReadSession, CanonicalCommitReadFailure> {
+) -> Result<crate::physical_runtime::RecordReadSession, OrderedJournalReadFailure> {
     let limit = RecordReadLimits::new(RecordByteLimit::new(u32::MAX).expect("nonzero limit"));
     reader
         .open(PhysicalRecordId::from_persisted(record), limit)
-        .map_err(CanonicalCommitReadFailure::Open)
+        .map_err(OrderedJournalReadFailure::Open)
 }

@@ -21,7 +21,7 @@ const RECOVERY_ROLE_ENV: &str = "WORTH_JOURNAL_RECOVERY_ROLE";
 const RECOVERY_ROOT_ENV: &str = "WORTH_JOURNAL_RECOVERY_ROOT";
 const RECOVERY_MARKERS_ENV: &str = "WORTH_JOURNAL_RECOVERY_MARKERS";
 const RECOVERY_CHILD: &str =
-    "canonical_journal::recovery_interruption::recovery_interruption_child";
+    "ordered_journals::canonical_journal::recovery_interruption::recovery_interruption_child";
 
 const STAGES: [PhysicalRecoveryYieldpointStage; 10] = [
     PhysicalRecoveryYieldpointStage::StagingMaterialization,

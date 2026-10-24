@@ -10,6 +10,8 @@
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{PersistedRecordIdentity, RecordAnchorName};
 
+use super::OrderedJournalName;
+
 const MAGIC: [u8; 8] = *b"WSCJREC1";
 const FIXED_HEADER_BYTES: usize = 8 + 32 + 8 + 32 + 8 + 8;
 const SPINE_ENTRY_BYTES: usize = 8 + 16 + 8;
@@ -27,7 +29,7 @@ pub(super) struct SpineEntry {
 /// The decoded header of one journal record.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct JournalRecordHeader {
-    pub(super) journal: RecordAnchorName,
+    pub(super) journal: OrderedJournalName,
     pub(super) position: u64,
     pub(super) payload_sha256: [u8; 32],
     pub(super) payload_bytes: u64,
@@ -73,7 +75,7 @@ impl JournalRecordHeader {
     /// the header must also account for the record's exact length.
     pub(super) fn decode(
         bytes: &[u8],
-        journal: RecordAnchorName,
+        journal: OrderedJournalName,
         record_bytes: Option<u64>,
     ) -> Result<Self, JournalFrameDenial> {
         if bytes.len() < FIXED_HEADER_BYTES {
@@ -84,7 +86,7 @@ impl JournalRecordHeader {
         }
         let mut name = [0; 32];
         name.copy_from_slice(&bytes[8..40]);
-        if RecordAnchorName::new(trimmed(&name)?) != Some(journal) {
+        if RecordAnchorName::new(trimmed(&name)?) != Some(journal.anchor()) {
             return Err(JournalFrameDenial::WrongJournal);
         }
         let position = u64::from_le_bytes(bytes[40..48].try_into().expect("fixed field"));
@@ -139,7 +141,7 @@ impl JournalRecordHeader {
 
     /// The header of the record that follows this head at `position + 1`.
     pub(super) fn successor(
-        journal: RecordAnchorName,
+        journal: OrderedJournalName,
         head: Option<(&Self, PersistedRecordIdentity)>,
         payload: &[u8],
     ) -> Option<Self> {

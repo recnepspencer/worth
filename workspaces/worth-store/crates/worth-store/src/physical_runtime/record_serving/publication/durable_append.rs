@@ -2,7 +2,7 @@
 //! classified.
 //!
 //! Every Store-owned door that writes records on an owner's behalf (the
-//! canonical commit journal, anchored records and their members) publishes
+//! ordered journals, anchored records and their members) publishes
 //! through exactly this path: a built batch, a door-specific idempotency
 //! material, platform durability and the ordinary durable append. The doors
 //! differ only in what the batch holds and how they name the answer.

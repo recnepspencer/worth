@@ -16,7 +16,7 @@ use std::path::Path;
 
 use worth_store::physical_runtime::certification::{MediaFaultDirective, MediaOperationRole};
 use worth_store::physical_runtime::{
-    CanonicalCommitPublication, PhysicalRecoveryYieldpointStage, ServingPhysicalRuntime,
+    OrderedJournalPublication, PhysicalRecoveryYieldpointStage, ServingPhysicalRuntime,
 };
 
 use super::canonical_journal::recovery_interruption::kill_recovery_at;
@@ -47,7 +47,7 @@ fn publish(serving: &ServingPhysicalRuntime, position: u64) {
     serving
         .canonical_commits()
         .expect("journal access")
-        .publish(CanonicalCommitPublication::new(
+        .publish(OrderedJournalPublication::new(
             position,
             payload(position),
             placement(),

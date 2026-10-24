@@ -31,14 +31,16 @@
 //! back only an unselected pending append. A member of a current value was
 //! selected in a generation before its anchor's, so it stays reachable.
 //!
-//! The canonical commit journal is also anchored, but it keeps its own door:
-//! its name is reserved and cannot be named here.
+//! The ordered journals are also anchored, but they keep their own door:
+//! every ordered-journal name is reserved and cannot be named here, so the
+//! two doors share the anchor table but never an anchor.
 
 use std::collections::BTreeSet;
 
 use worth_store_physical_format::RecordAnchorName;
 
-use crate::physical_runtime::{ServingPhysicalRuntime, RELATIONAL_CANONICAL_COMMITS};
+use crate::physical_runtime::ordered_journal::is_ordered_journal_name;
+use crate::physical_runtime::ServingPhysicalRuntime;
 
 mod failure;
 mod frame;
@@ -73,15 +75,15 @@ pub struct AnchoredRecordName(RecordAnchorName);
 pub enum AnchoredRecordNameDenial {
     /// Not 1 to 32 bytes of `[a-z0-9.-]`.
     Malformed,
-    /// The name belongs to the canonical commit journal.
-    ReservedForCanonicalJournal,
+    /// The name belongs to an ordered journal.
+    ReservedForOrderedJournal,
 }
 
 impl AnchoredRecordName {
     pub fn new(name: &str) -> Result<Self, AnchoredRecordNameDenial> {
         let anchor = RecordAnchorName::new(name).ok_or(AnchoredRecordNameDenial::Malformed)?;
-        if anchor.as_str() == RELATIONAL_CANONICAL_COMMITS {
-            return Err(AnchoredRecordNameDenial::ReservedForCanonicalJournal);
+        if is_ordered_journal_name(anchor) {
+            return Err(AnchoredRecordNameDenial::ReservedForOrderedJournal);
         }
         Ok(Self(anchor))
     }

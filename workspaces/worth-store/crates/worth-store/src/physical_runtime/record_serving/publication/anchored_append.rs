@@ -1,7 +1,7 @@
 //! One record that advances one root anchor, submitted as one durable root
 //! decision.
 //!
-//! Every Store-owned anchored door (the canonical commit journal and the
+//! Every Store-owned anchored door (the ordered journals and the
 //! anchored-record door) commits exactly this shape: a single framed record,
 //! the anchor advance naming it and expecting the generation the door observed,
 //! a door-specific idempotency material, and the ordinary durable append path.

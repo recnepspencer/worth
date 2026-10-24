@@ -66,11 +66,10 @@ mod anchored_records;
 #[path = "production_entry/anchored_records_oracle.rs"]
 mod anchored_records_oracle;
 #[cfg(feature = "certification-test-authority")]
-#[path = "production_entry/canonical_journal.rs"]
-mod canonical_journal;
+#[path = "production_entry/ordered_journals.rs"]
+mod ordered_journals;
 #[cfg(feature = "certification-test-authority")]
-#[path = "production_entry/canonical_journal_oracle.rs"]
-mod canonical_journal_oracle;
+use ordered_journals::{canonical_journal, canonical_journal_oracle};
 #[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/physical_checkpoint_oracle.rs"]
 mod physical_checkpoint_oracle;
