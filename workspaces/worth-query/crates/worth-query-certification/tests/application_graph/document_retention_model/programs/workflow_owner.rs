@@ -1,6 +1,7 @@
 //! Separate action meaning leaves canonical P0 and its cold artifact unchanged.
 use super::super::{
     assessment_output::PublishRetentionAssessment,
+    correctable_retention::CorrectableRetentionBinding,
     programs::{DocumentRetentionFeature, RetentionCompletion, RetentionProgramP0},
     retention_entry::*,
     schema::*,
@@ -84,6 +85,8 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for WorkflowOwnerProg
                 .action::<SetRetentionBinding, SavedSourceDelivery>()
                 .finish_action()
                 .action::<ExplicitReviewedSetRetentionBinding, RetentionCompletion>()
+                .finish_action()
+                .action::<CorrectableRetentionBinding, RetentionCompletion>()
                 .finish_action()
                 .action::<ReviewRequirementBinding, RetentionCompletion>()
                 .finish_action()
