@@ -267,6 +267,11 @@ counted SHA-256 (boundary-check denies the raw hasher outside tests), and the
 resize trace writes each submitted frame's counts. Budget tests over the
 deterministic glyph, byte, and insert counts, not wall-clock timings, gate per-frame work while this
 milestone develops; timings are qualified once, at the end.
+Digested bytes also count work the presenting thread does for the
+application's own threads, such as a late startup Query observation, which a
+loaded machine can delay into a measured step. The offscreen drag repeats each
+budgeted transition, and the byte budget holds the lesser of the two identical
+frames.
 
 Acceptance commits those prepared results and retires predecessor resources only
 after physical completion. Pre-effect rejection preserves accepted application
