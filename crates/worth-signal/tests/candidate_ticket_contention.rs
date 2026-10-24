@@ -1,5 +1,9 @@
-//! A competing host reservation after evaluator admission cannot steal the
-//! candidate lookup memory that the same graph epoch already owns.
+//! A competing host reservation taken while an evaluator runs is met with a
+//! typed refusal, never a partial publication. Since `20a4797833` a checked
+//! epoch admits its callback results, apply map and candidate lookup map
+//! from actual measured bytes after the callback returns, so host room taken
+//! during the callback stops the epoch before anything is published, and the
+//! same evaluation succeeds once the room is released.
 //!
 //! The competitor fills the whole process memory, so this test owns its
 //! process and its authority: no other test can starve beside it.
@@ -11,7 +15,7 @@ use std::thread::JoinHandle;
 
 use worth_execution::{
     CancellationToken, ExecutionAuthority, ExecutionAuthorityConfig, ExecutionMap, LeaseDenial,
-    LeaseRequest, MapPartition, PreparedExecutionMap,
+    LeaseRequest, MapPartition, MemoryLimitDenial, MemoryLimitLevel, PreparedExecutionMap,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
@@ -21,7 +25,8 @@ use worth_foundational::{
 use worth_signal::facade::adapters::NodeContract;
 use worth_signal::facade::{
     Aspect, AspectVersion, BoundedSignalInputs, ChangedRegion, DeclaredSignalInput, DependencyEdge,
-    NodeEvaluationResult, PartitionSubscription, RunMode, ScopePath, SignalGraph,
+    NodeEvaluationResult, PartitionSubscription, RunMode, ScopePath, SignalError,
+    SignalExecutionStopReason, SignalGraph, SignalLeaseDenial, SignalPublicationDisposition,
 };
 
 const VALUE: Aspect = Aspect::new(0);
@@ -96,8 +101,7 @@ fn hold_remaining_host_memory(release: mpsc::Receiver<()>, ready: mpsc::Sender<b
         }
     }
     let held = competing_ticket(low).expect("the measured host capacity remains stable");
-    // With the host saturated, a late candidate map would fail admission.
-    // The selected graph epoch has already retained its own ticket.
+    // With the host saturated, any later admission, even an empty map, fails.
     let late_map_denied = competing_ticket(0).is_err();
     ready
         .send(late_map_denied)
@@ -107,7 +111,7 @@ fn hold_remaining_host_memory(release: mpsc::Receiver<()>, ready: mpsc::Sender<b
 }
 
 #[test]
-fn candidate_publication_uses_its_pre_callback_host_reservation() {
+fn host_contention_during_the_callback_refuses_the_epoch_before_publication() {
     let mut graph = SignalGraph::new();
     let producer = graph
         .node()
@@ -140,39 +144,78 @@ fn candidate_publication_uses_its_pre_callback_host_reservation() {
         )
         .unwrap();
     assert_eq!(graph.subscribers_of(producer).unwrap(), &[consumer]);
+    let before = graph.node_aspect_version(producer).unwrap().get(VALUE);
 
     let lease = authority().request_lease(request(2, 2_000_000)).unwrap();
     let calls = AtomicUsize::new(0);
     let blocker = Mutex::<Option<(mpsc::Sender<()>, JoinHandle<()>)>>::new(None);
-    let result = graph.evaluate_checked(
-        &[producer],
-        RunMode::Default,
-        &(),
-        &|_| {
-            calls.fetch_add(1, Ordering::SeqCst);
-            let (ready_tx, ready_rx) = mpsc::channel();
-            let (release_tx, release_rx) = mpsc::channel();
-            let thread =
-                std::thread::spawn(move || hold_remaining_host_memory(release_rx, ready_tx));
-            assert!(
-                ready_rx
-                    .recv()
-                    .expect("host reservation arrives before callback returns"),
-                "the competitor must exhaust host memory for an unprepared map"
-            );
-            *blocker.lock().unwrap() = Some((release_tx, thread));
-            Ok(
-                NodeEvaluationResult::from_version(AspectVersion::zero().with(VALUE, 7))
-                    .with_changed_aspect_region(VALUE, ChangedRegion::new("desk")),
-            )
-        },
-        worth_execution::ExecutionRequest::leased(&lease),
-    );
+    let evaluate = |graph: &mut SignalGraph| {
+        graph.evaluate_checked(
+            &[producer],
+            RunMode::Default,
+            &(),
+            &|_| {
+                // Only the first evaluation meets a saturated host.
+                if calls.fetch_add(1, Ordering::SeqCst) == 0 {
+                    let (ready_tx, ready_rx) = mpsc::channel();
+                    let (release_tx, release_rx) = mpsc::channel();
+                    let thread = std::thread::spawn(move || {
+                        hold_remaining_host_memory(release_rx, ready_tx)
+                    });
+                    assert!(
+                        ready_rx
+                            .recv()
+                            .expect("host reservation arrives before callback returns"),
+                        "the competitor must exhaust host memory for any later admission"
+                    );
+                    *blocker.lock().unwrap() = Some((release_tx, thread));
+                }
+                Ok(
+                    NodeEvaluationResult::from_version(AspectVersion::zero().with(VALUE, 7))
+                        .with_changed_aspect_region(VALUE, ChangedRegion::new("desk")),
+                )
+            },
+            worth_execution::ExecutionRequest::leased(&lease),
+        )
+    };
+    let contended = evaluate(&mut graph);
     let (release, thread) = blocker.lock().unwrap().take().expect("callback ran once");
     release.send(()).unwrap();
     thread.join().unwrap();
-    let report = result.expect("prepared candidate ticket survives host contention");
+    let error = contended.expect_err("measured results are admitted after the callback");
+    let SignalError::ExecutionStopped(stop) = error else {
+        panic!("host contention is a typed execution stop: {error:?}");
+    };
+    let SignalExecutionStopReason::Admission(SignalLeaseDenial::MemoryExhausted(memory)) =
+        stop.reason()
+    else {
+        panic!(
+            "host contention refuses memory admission: {:?}",
+            stop.reason()
+        );
+    };
+    assert!(
+        matches!(
+            memory,
+            MemoryLimitDenial::Capacity { requested, admitted, level: MemoryLimitLevel::Process }
+                if requested > admitted
+        ),
+        "{memory:?}"
+    );
+    assert_eq!(
+        stop.disposition(),
+        SignalPublicationDisposition::WorkerLocal
+    );
+    assert_eq!(stop.publication_progress().completed_tasks(), 0);
     assert_eq!(calls.load(Ordering::SeqCst), 1);
+    assert_eq!(
+        graph.node_aspect_version(producer).unwrap().get(VALUE),
+        before
+    );
+
+    // The refusal published nothing, so the released host admits the same epoch.
+    let report = evaluate(&mut graph).expect("released host memory admits the epoch");
+    assert_eq!(calls.load(Ordering::SeqCst), 2);
     assert_eq!(report.tasks_executed, 1);
     assert_eq!(graph.node_aspect_version(producer).unwrap().get(VALUE), 7);
 }

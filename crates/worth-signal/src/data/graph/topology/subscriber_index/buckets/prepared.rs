@@ -1,4 +1,5 @@
-//! A selected epoch's candidate lookup map is admitted before its evaluators.
+//! A selected epoch's candidate lookup map is admitted after its evaluators
+//! return, sized by their measured result bytes, and before publication.
 //! Canonical deltas later select which of its finite aspect slots do work.
 
 use worth_execution::{
