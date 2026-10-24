@@ -366,8 +366,8 @@ fn healthy_fixture_completes_both_leased_preparations() {
 #[cfg(test)]
 mod custom_kernels;
 #[cfg(test)]
-mod nested_leases;
+mod index_request_memory;
 #[cfg(test)]
-mod result_ceiling;
+mod nested_leases;
 
 mod request_control;

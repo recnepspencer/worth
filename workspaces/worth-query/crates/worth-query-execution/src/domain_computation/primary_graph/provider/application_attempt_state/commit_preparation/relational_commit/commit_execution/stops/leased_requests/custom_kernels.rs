@@ -9,6 +9,11 @@ use worth_relational::facade::runtime::{
     InvariantExecutionPoint, InvariantFailureEffect, InvariantGroup, InvariantGroupSet,
 };
 
+/// The probe lease's policy memory.
+const POLICY: u64 = 32 * 1024 * 1024;
+/// A scratch claim beyond the probe lease's policy, within the authority's.
+const SCRATCH_CLAIM: u64 = 48 * 1024 * 1024;
+
 #[derive(Clone, Copy)]
 enum Probe {
     Unchecked,
@@ -60,7 +65,7 @@ impl CustomInvariantRule for Probe {
             Self::Scratch => {
                 // Claim before allocating; a refusal must survive an owner's
                 // successful return, not depend on the owner returning an error.
-                assert!(!budget.claim_scratch(u64::MAX));
+                assert!(!budget.claim_scratch(SCRATCH_CLAIM));
                 Some(Ok(()))
             }
             Self::Nested => {
@@ -98,7 +103,7 @@ fn commit_probe(probe: Probe) -> Outcome {
         .schema_registry(schema())
         .custom_invariant(CustomInvariantRegistration::new(probe).unwrap())
         .build();
-    let mut lease_request = request(32 * 1024 * 1024, 1_000_000);
+    let mut lease_request = request(POLICY, 1_000_000);
     if matches!(probe, Probe::Unchecked) {
         // Unchecked kernels are lawful on serial backing; this refusal needs
         // a request that can actually dispatch more than one worker.
@@ -164,9 +169,18 @@ fn scratch_through_public_commit() {
     in_isolated_process(
         concat!(module_path!(), "::scratch_through_public_commit"),
         || {
-            assert_eq!(
-                resource(commit_probe(Probe::Scratch)),
-                Resource::ScratchCapacityExceeded
+            // The request's own policy refuses the claim, quoting at least it.
+            let denial = resource(commit_probe(Probe::Scratch));
+            assert!(
+                matches!(
+                    denial,
+                    Resource::MemoryLimit {
+                        requested,
+                        admitted,
+                        level: Level::Policy,
+                    } if requested >= SCRATCH_CLAIM && admitted <= POLICY
+                ),
+                "the request policy refuses the scratch claim: {denial:?}"
             );
         },
     );

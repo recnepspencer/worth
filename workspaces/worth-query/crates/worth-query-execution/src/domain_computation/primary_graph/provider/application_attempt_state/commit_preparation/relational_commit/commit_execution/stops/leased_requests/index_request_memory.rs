@@ -1,4 +1,5 @@
-//! A real index result ceiling retains its cause at the application boundary.
+//! An index build beyond its request's memory retains the request's quote at
+//! the application boundary.
 use super::*;
 use worth_foundational::facade::{
     aspects, AspectFieldLocator, AspectIdentity, AspectKey, AspectValue, CanonicalFieldPath,
@@ -10,14 +11,14 @@ use worth_relational::facade::{
 };
 
 #[test]
-fn index_result_capacity_reaches_application_caller() {
+fn index_request_memory_refusal_reaches_application_caller() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     in_isolated_process(
         concat!(
             module_path!(),
-            "::index_result_capacity_reaches_application_caller"
+            "::index_request_memory_refusal_reaches_application_caller"
         ),
         || {
             let key = AspectKey::new("name").unwrap();
@@ -96,10 +97,11 @@ fn index_result_capacity_reaches_application_caller() {
                 .build_for_commit(execution, build_request.clone());
             assert!(baseline.execution_denial.is_none());
             let published = baseline.generations[0].generation_id;
-            // The existing large-index oracle uses one worker and 64 KiB:
-            // admission fits, then Arc-backed rows reach the 8 KiB result ceiling.
+            // One worker and 64 KiB cannot hold 128 indexed rows: the request's
+            // own policy refuses the build, quoting more than it holds.
+            const POLICY: u64 = 64 * 1024;
             let lease = authority()
-                .request_lease(request(64 * 1024, 1_000_000))
+                .request_lease(request(POLICY, 1_000_000))
                 .unwrap();
             let build = runtime.index_authority().build_for_commit(
                 &worth_execution::ExecutionRequest::leased(&lease),
@@ -108,15 +110,23 @@ fn index_result_capacity_reaches_application_caller() {
             assert!(build.generations.is_empty());
             let denial = build
                 .execution_denial
-                .expect("index result ceiling refused");
+                .expect("index request memory refused");
             let DerivedIndexExecutionDenialKind::Cause(cause) = denial.kind;
             let stop = super::super::relational_execution_stop(cause, denial.partition_identity);
             let Stop::PreEffectDenied(failure) = stop else {
-                panic!("result ceiling must reach pre-effect refusal");
+                panic!("request memory must reach pre-effect refusal");
             };
-            assert_eq!(
-                resource(provider_compare_denied(Compare::ProviderSession(failure))),
-                Resource::ResultCapacityExceeded
+            let denial = resource(provider_compare_denied(Compare::ProviderSession(failure)));
+            assert!(
+                matches!(
+                    denial,
+                    Resource::MemoryLimit {
+                        requested,
+                        admitted,
+                        level: Level::Policy,
+                    } if admitted <= POLICY && requested > admitted
+                ),
+                "the request policy refuses with its quote: {denial:?}"
             );
             assert_eq!(
                 runtime

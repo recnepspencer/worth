@@ -1,6 +1,8 @@
 //! Bootstrap's seams consume real execution refusals; production has no lease injector.
 use super::*;
-use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
+use crate::domain_computation::primary_graph::{
+    WorthQueryManagedComputationResourceDenial as Resource, WorthQueryMemoryLimitLevel,
+};
 use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind as Control,
     WorthQueryProviderSessionDenialKind as QueryKind,
@@ -67,7 +69,7 @@ pub(in crate::domain_computation::primary_graph) fn request() -> LeaseRequest {
 }
 
 /// `None` has no request-memory ceiling; only an explicitly finite caller
-/// policy declares the result capacity that a scan can exceed.
+/// policy has memory that a build can exceed.
 fn request_with_memory(charged_memory_bytes: Option<u64>) -> LeaseRequest {
     LeaseRequest {
         policy: ExecutionRequestPolicy::new(
@@ -99,31 +101,42 @@ fn refused_index_build(
     )
 }
 #[test]
-fn result_refusal_is_typed_with_partition_identity() {
+fn request_memory_refusal_is_typed_with_its_quote() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     {
         isolated(
             concat!(
                 module_path!(),
-                "::result_refusal_is_typed_with_partition_identity"
+                "::request_memory_refusal_is_typed_with_its_quote"
             ),
             || {
-                let build = refused_index_build(execution, request_with_memory(Some(64 * 1024)));
+                const POLICY: u64 = 64 * 1024;
+                let build = refused_index_build(execution, request_with_memory(Some(POLICY)));
                 let refusal = build.execution_denial.expect("real execution refusal");
-                assert!(refusal.partition_identity.is_some());
-                assert_eq!(
-                    refusal.kind,
-                    DerivedIndexExecutionDenialKind::Cause(Cause::ResultCapacityExceeded)
-                );
+                // The caller's own 64 KiB policy refuses the build, quoting
+                // more than it holds; no stage keeps a share of its own.
+                let DerivedIndexExecutionDenialKind::Cause(Cause::PolicyMemoryExhausted {
+                    requested,
+                    admitted,
+                    ancestor,
+                }) = refusal.kind
+                else {
+                    panic!("the request policy must refuse: {refusal:?}");
+                };
+                assert!(admitted <= POLICY && requested > admitted);
                 let denied = identity_indexes_built(build, 1).unwrap_err();
                 assert_eq!(
                     denied.kind(),
                     WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
                         kind: QueryKind::ExecutionResource {
-                            denial: Resource::ResultCapacityExceeded,
+                            denial: Resource::MemoryLimit {
+                                requested,
+                                admitted,
+                                level: WorthQueryMemoryLimitLevel::Policy,
+                            },
                             partition_identity: refusal.partition_identity,
-                            policy_ancestor: None,
+                            policy_ancestor: Some(ancestor),
                         },
                     }
                 );
