@@ -10,7 +10,7 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryPartitionedComputationRunForTest as Run,
 };
 
-use super::super::region_output::{arm_own_write, OwnWrite};
+use super::super::own_write::{arm_own_write, OwnWrite};
 use super::*;
 
 pub(super) mod alphabet;

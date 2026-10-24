@@ -27,17 +27,17 @@ fn judge(
     history: &mut Reference,
     prior: &mut Option<Model>,
     last_facts: &mut Option<Model>,
-    write: Option<super::super::super::region_output::OwnWrite>,
+    write: Option<super::super::super::own_write::OwnWrite>,
     cause: Option<Cause>,
 ) -> Vec<OracleRun> {
     let fresh = history.install::<false, TOTALS_WORK, 1, 2>(Default::default(), |g, m| m.seed(g));
     let (scope, principal) = authenticate(app);
     let (fs, fp) = authenticate(&fresh);
-    super::super::super::region_output::arm_own_write(write);
+    super::super::super::own_write::arm_own_write(write);
     let (contacts, kept) = demand(&app.request(&principal, &scope), app);
-    super::super::super::region_output::arm_own_write(write);
+    super::super::super::own_write::arm_own_write(write);
     let (_, reference) = demand(&fresh.request(&fp, &fs), &fresh);
-    super::super::super::region_output::arm_own_write(None);
+    super::super::super::own_write::arm_own_write(None);
     let executes = last_facts.as_ref() != Some(model) || cause.is_some();
     let writes = executes && model.completes() && write.is_some_and(|w| !model.holds(w));
     let decisions = usize::from(executes) + usize::from(writes);

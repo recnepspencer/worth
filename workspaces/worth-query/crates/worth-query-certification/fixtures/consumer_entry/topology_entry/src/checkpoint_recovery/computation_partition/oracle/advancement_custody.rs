@@ -1,5 +1,5 @@
 //! The real caller loop refreshes a Ready whose producer changed a gathered fact.
-use super::super::region_output::{arm_own_write, OwnWrite, OwnWriteRead};
+use super::super::own_write::{arm_own_write, OwnWrite, OwnWriteRead};
 use super::*;
 use worth_query_host::facade::primary_graph::{
     advancement_requests_on_this_thread_for_test as reports,

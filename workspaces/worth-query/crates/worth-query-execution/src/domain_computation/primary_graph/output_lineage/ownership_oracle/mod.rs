@@ -38,6 +38,22 @@ mod facts {
 mod readiness {
     include!("../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/readiness/source.rs");
 }
+/// The oracle's region outputs never arm an own write: their decisions write
+/// no entry fact.
+mod own_write {
+    use super::*;
+    pub(super) fn decide<Schema: TopologyModelBinding>(
+        _: &mut region_output::Decision<'_, '_, '_, Schema>,
+    ) -> Result<
+        Option<(
+            WorthQueryInvariantMutationTarget<Schema, facts::SetEntry>,
+            u64,
+        )>,
+        HandlerExecutionDenial,
+    > {
+        Ok(None)
+    }
+}
 include!("../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/producer/resources.rs");
 mod admission;
 mod birth;

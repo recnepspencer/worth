@@ -42,7 +42,7 @@ fn judge(
     prior: &mut Option<Model>,
     kept: &[OracleRun],
     fresh: &[OracleRun],
-    write: Option<super::super::super::region_output::OwnWrite>,
+    write: Option<super::super::super::own_write::OwnWrite>,
 ) {
     assert_eq!(
         kept.iter().map(|run| &run.outcome).collect::<Vec<_>>(),
@@ -131,10 +131,10 @@ fn seeded_branch_alphabet_has_exact_counts_on_forks_switches_and_deletion() {
                     let step = models[index].step(kind, &mut rng);
                     apply(&kept, branches[index], &step.changes, &mut command);
                     apply(&fresh, full_branches[index], &step.changes, &mut command);
-                    super::super::super::region_output::arm_own_write(step.own_write);
+                    super::super::super::own_write::arm_own_write(step.own_write);
                     let (contacts, a) = run(&kept, branches[index]);
                     let (_, b) = run(&fresh, full_branches[index]);
-                    super::super::super::region_output::arm_own_write(None);
+                    super::super::super::own_write::arm_own_write(None);
                     let executes = kind != Kind::NoOp;
                     let written = executes
                         && models[index].completes()

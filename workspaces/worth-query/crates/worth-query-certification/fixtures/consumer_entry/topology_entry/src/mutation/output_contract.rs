@@ -35,7 +35,7 @@ pub struct PlanarOutputs;
 /// whose outputs are [`PlanarOutputs`].
 pub struct PlanarAnchorOutput<Schema>(PhantomData<fn() -> Schema>);
 
-impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRole for PlanarAnchorOutput<Schema> {
+impl<Schema: TopologyModelBinding> WorthQueryApplicationOutputRole for PlanarAnchorOutput<Schema> {
     type Schema = Schema;
     type Contract = PlanarOutputs;
     type Entity = Body;
@@ -47,7 +47,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRole for PlanarAn
 /// The bodies a planar mutation creates, one member per created vertex.
 pub struct PlanarCreatedOutputs<Schema>(PhantomData<fn() -> Schema>);
 
-impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRoleFamily
+impl<Schema: TopologyModelBinding> WorthQueryApplicationOutputRoleFamily
     for PlanarCreatedOutputs<Schema>
 {
     type Schema = Schema;
@@ -59,7 +59,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputRoleFamily
     const MINIMUM: usize = 0;
 }
 
-impl<Schema: TopologySchemaBinding> ApplicationMutationOutputContract<Schema> for PlanarOutputs {
+impl<Schema: TopologyModelBinding> ApplicationMutationOutputContract<Schema> for PlanarOutputs {
     const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] =
         &[<PlanarAnchorOutput<Schema> as WorthQueryApplicationDeclaredOutputRole>::DESCRIPTOR];
     const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[

@@ -66,6 +66,8 @@ pub use source_adjustment::*;
 
 mod base_model;
 pub use base_model::*;
+mod schema_binding;
+pub use schema_binding::TopologySchemaBinding;
 
 worth_query_application_contribution! {
     pub contribution TopologyContribution for Schema: TopologySchemaBinding {

@@ -23,12 +23,11 @@ use worth_query_host::facade::primary_graph::partitioned_computation_runs_on_thi
 use super::demand::RegionTotalsDemandBinding;
 use super::entry_edit::{EntryEdit, EntryEditBinding, EntryEditHandler};
 use super::facts::{self, Entry, EntryData, Graph, InputDenial, Reader, RegionEntry, Set};
-use super::output_producer::{
-    RegionOutputDemand, RegionOutputProducer, RegionOutputProvider, RegionOutputReadiness,
-};
+use super::output_producer::{RegionOutputProducer, RegionOutputProvider, RegionOutputReadiness};
 use super::region_output::{
     RegionOutputBinding, RegionOutputHandler, TotalRegionOutput, LARGEST_SET,
 };
+use super::region_output_demand::RegionOutputDemand;
 use super::*;
 
 mod absence;

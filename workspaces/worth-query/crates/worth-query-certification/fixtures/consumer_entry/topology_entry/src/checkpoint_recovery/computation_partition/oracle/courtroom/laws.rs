@@ -1,6 +1,6 @@
 //! The literal table is exercised through admitted edits, with shape assertions in the model.
 use super::*;
-use crate::checkpoint_recovery::computation_partition::region_output::arm_own_write;
+use crate::checkpoint_recovery::computation_partition::own_write::arm_own_write;
 #[test]
 fn named_edit_laws_have_the_declared_occurrences_and_exact_calls() {
     let _guard = checkpoint_recovery_test_guard();

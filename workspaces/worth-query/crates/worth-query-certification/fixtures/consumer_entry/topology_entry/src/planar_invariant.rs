@@ -9,7 +9,7 @@ pub const INVARIANT_PROBE_STANDARD: usize = 0;
 pub const INVARIANT_PROBE_UNDECLARED_ACCESS: usize = 1;
 pub const INVARIANT_PROBE_EVALUATION_EXPANSION: usize = 2;
 
-pub(crate) fn resolve_rule<Schema: TopologySchemaBinding>(
+pub(crate) fn resolve_rule<Schema: TopologyModelBinding>(
     resolver: &WorthQueryApplicationInvariantSchemaResolver<'_, Schema>,
     probe: Arc<AtomicUsize>,
     mode: Arc<AtomicUsize>,
@@ -51,7 +51,7 @@ pub(crate) fn resolve_rule<Schema: TopologySchemaBinding>(
     })
 }
 
-pub struct PositiveTurnRule<Schema: TopologySchemaBinding> {
+pub struct PositiveTurnRule<Schema: TopologyModelBinding> {
     successor: WorthQueryApplicationInvariantRelationBinding<Schema, PlanarSuccessor, Body, Body>,
     undeclared:
         WorthQueryApplicationInvariantRelationBinding<Schema, UndeclaredPlanarRelation, Body, Body>,
@@ -61,7 +61,7 @@ pub struct PositiveTurnRule<Schema: TopologySchemaBinding> {
     mode: Arc<AtomicUsize>,
 }
 
-impl<Schema: TopologySchemaBinding> WorthQueryApplicationInvariantRule<Schema>
+impl<Schema: TopologyModelBinding> WorthQueryApplicationInvariantRule<Schema>
     for PositiveTurnRule<Schema>
 {
     type Refusal = ();
@@ -113,7 +113,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationInvariantRule<Schema>
     }
 }
 
-impl<Schema: TopologySchemaBinding> PositiveTurnRule<Schema> {
+impl<Schema: TopologyModelBinding> PositiveTurnRule<Schema> {
     fn prepare_with_budget(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
@@ -268,7 +268,7 @@ fn insert_distinct<T: PartialEq>(
     Ok(())
 }
 
-fn claim_triangle<Schema: TopologySchemaBinding>(
+fn claim_triangle<Schema: TopologyModelBinding>(
     budget: Option<&dyn CustomInvariantLeaseBudget>,
 ) -> Result<(), WorthQueryApplicationInvariantPreparationError> {
     let bytes =
@@ -305,7 +305,7 @@ fn evaluation_checkpoint(
     Ok(())
 }
 
-fn exactly_one<Schema: TopologySchemaBinding>(
+fn exactly_one<Schema: TopologyModelBinding>(
     relations: Vec<WorthQueryApplicationInvariantRelation<Schema, PlanarSuccessor, Body, Body>>,
     direction: &str,
 ) -> Result<
@@ -326,7 +326,7 @@ fn exactly_one<Schema: TopologySchemaBinding>(
     Ok(relation)
 }
 
-fn required_field<Schema: TopologySchemaBinding>(
+fn required_field<Schema: TopologyModelBinding>(
     view: &WorthQueryApplicationInvariantReadView<'_, Schema>,
     field: &WorthQueryApplicationInvariantFieldBinding<Schema, Body, PositiveLength>,
     entity: &WorthQueryApplicationInvariantEntity<Schema, Body>,

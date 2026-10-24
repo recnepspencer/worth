@@ -1,31 +1,18 @@
 //! Shared topology meaning used by the consumer and native owner fixture.
 use super::fixture_values::PositiveLength;
-use super::runtime_api::application_contribution::{
-    WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract,
-};
 use worth_query_decl::facade::{
     application_schema::*, worth_query_aspect, worth_query_entity, worth_query_field,
     worth_query_unit, worth_query_value_binding,
 };
 
-pub trait TopologySchemaBinding: ApplicationSchema {
-    /// Isolated consumer variants can require the real planar producer binding
-    /// to belong to their application program; existing schemas keep their policy.
-    const PLANAR_REQUIRES_APPLICATION_PROGRAM: bool = false;
-    const PLANAR_EDIT_PROJECTION_WORK: Option<usize> = Some(8_192);
+/// What the shared topology model asks of the schema that declares it. A
+/// program's own schema policy, such as the consumer fixture's
+/// `TopologySchemaBinding`, stays with that program.
+pub trait TopologyModelBinding: ApplicationSchema {
+    /// The work the checked planar invariant may spend.
     fn planar_invariant_work() -> u64 {
         super::planar_topology::PLANAR_CHECKED_WORK
     }
-    const ROOT_INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
-        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
-            WorthQueryDecisionContextDependencies::NONE,
-        ));
-    /// The final producer's decision-reuse declaration is part of each installed
-    /// fixture schema, so opt-out journeys use the ordinary production installer.
-    const FINAL_INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
-        Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
-            WorthQueryDecisionContextDependencies::NONE,
-        ));
 }
 
 worth_query_value_binding! {
@@ -39,19 +26,19 @@ worth_query_value_binding! {
     }
 }
 
-worth_query_entity!(pub Body for Schema: TopologySchemaBinding);
-worth_query_unit!(pub Metre(()) for Schema: TopologySchemaBinding);
+worth_query_entity!(pub Body for Schema: TopologyModelBinding);
+worth_query_unit!(pub Metre(()) for Schema: TopologyModelBinding);
 worth_query_aspect!(
-    pub Geometry for Schema: TopologySchemaBinding, Body;
+    pub Geometry for Schema: TopologyModelBinding, Body;
     identity = AspectIdentity(0x9174_1001),
     revision = AspectContractRevision(1),
 );
 worth_query_field!(
-    pub Length for Schema: TopologySchemaBinding, Body, Geometry:
+    pub Length for Schema: TopologyModelBinding, Body, Geometry:
     PositiveLength => TopologyLengthBinding, unit Metre, read_write, equality
 );
 
-pub(super) fn declare<Schema: TopologySchemaBinding>(
+pub(super) fn declare<Schema: TopologyModelBinding>(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     use super::*;

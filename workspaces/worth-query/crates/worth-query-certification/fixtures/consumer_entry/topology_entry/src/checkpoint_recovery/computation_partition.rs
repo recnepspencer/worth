@@ -36,10 +36,13 @@ mod execution;
 mod facts;
 mod oracle;
 mod output_producer;
+mod own_write;
 mod owner;
 mod probe;
 mod refusal;
 mod region_output;
+mod region_output_demand;
+mod region_output_modes;
 mod worker_axis;
 
 /// A set of entries, each tagged with the region it lies in. An owner reads

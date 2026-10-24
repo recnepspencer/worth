@@ -36,7 +36,7 @@ worth_query_portable_type!(PlanarSuccessorSlot => "worth.query.certification.pla
 worth_query_portable_type!(SuccessorPositionYSlot => "worth.query.certification.successor-position-y-slot.v1");
 worth_query_portable_type!(SecondSuccessorSlot => "worth.query.certification.second-successor-slot.v1");
 worth_query_portable_type!(SecondSuccessorPositionYSlot => "worth.query.certification.second-successor-position-y-slot.v1");
-impl<Schema: TopologySchemaBinding> ApplicationQueryMarkerIdentity<Schema> for PlanarQuery {
+impl<Schema: TopologyModelBinding> ApplicationQueryMarkerIdentity<Schema> for PlanarQuery {
     type ParameterBinding = PlanarReadParametersBinding;
     type ResultBinding = PlanarReadResultBinding;
     type Scope = Body;
@@ -44,7 +44,7 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryMarkerIdentity<Schema> for P
     const QUERY_TYPE_NAME: &'static str = "worth.query.certification.planar-query.v1";
     const SCOPE_TYPE_NAME: &'static str = "Body";
 }
-pub fn planar_query_definition<Schema: TopologySchemaBinding>(
+pub fn planar_query_definition<Schema: TopologyModelBinding>(
 ) -> ApplicationQueryDefinition<Schema, PlanarQuery, PlanarReadParameters, PlanarReadResult, Body> {
     let second_successor_shape = ApplicationQueryResultShapeBuilder::<
         Schema,
@@ -92,7 +92,7 @@ pub fn planar_query_definition<Schema: TopologySchemaBinding>(
     .build()
     .expect("planar query is canonical")
 }
-fn successor_position_y_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
+fn successor_position_y_result<Schema: TopologyModelBinding>() -> ApplicationQueryResultFieldRef<
     PlanarQuery,
     SuccessorPositionYSlot,
     Schema,
@@ -106,7 +106,7 @@ fn successor_position_y_result<Schema: TopologySchemaBinding>() -> ApplicationQu
 > {
     ApplicationQueryResultFieldRef::new("successor_y", PositionY::reference())
 }
-fn planar_successor_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultRelationRef<
+fn planar_successor_result<Schema: TopologyModelBinding>() -> ApplicationQueryResultRelationRef<
     PlanarQuery,
     PlanarSuccessorSlot,
     Schema,
@@ -118,7 +118,7 @@ fn planar_successor_result<Schema: TopologySchemaBinding>() -> ApplicationQueryR
 > {
     ApplicationQueryResultRelationRef::forward_one("successor", PlanarSuccessor::reference())
 }
-fn second_successor_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultRelationRef<
+fn second_successor_result<Schema: TopologyModelBinding>() -> ApplicationQueryResultRelationRef<
     PlanarQuery,
     SecondSuccessorSlot,
     Schema,
@@ -130,7 +130,7 @@ fn second_successor_result<Schema: TopologySchemaBinding>() -> ApplicationQueryR
 > {
     ApplicationQueryResultRelationRef::forward_one("second_successor", PlanarSuccessor::reference())
 }
-fn second_successor_position_y_result<Schema: TopologySchemaBinding>(
+fn second_successor_position_y_result<Schema: TopologyModelBinding>(
 ) -> ApplicationQueryResultFieldRef<
     PlanarQuery,
     SecondSuccessorPositionYSlot,
@@ -145,7 +145,7 @@ fn second_successor_position_y_result<Schema: TopologySchemaBinding>(
 > {
     ApplicationQueryResultFieldRef::new("second_successor_y", PositionY::reference())
 }
-fn position_y_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
+fn position_y_result<Schema: TopologyModelBinding>() -> ApplicationQueryResultFieldRef<
     PlanarQuery,
     PositionYSlot,
     Schema,
@@ -159,7 +159,7 @@ fn position_y_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultF
 > {
     ApplicationQueryResultFieldRef::new("y", PositionY::reference())
 }
-impl<Schema: TopologySchemaBinding> WorthQueryApplicationProjection<Schema, PlanarQuery>
+impl<Schema: TopologyModelBinding> WorthQueryApplicationProjection<Schema, PlanarQuery>
     for PlanarReadResult
 {
     fn project(
@@ -171,7 +171,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProjection<Schema, Plan
         })
     }
 }
-fn body_key_result<Schema: TopologySchemaBinding>() -> ApplicationQueryResultFieldRef<
+fn body_key_result<Schema: TopologyModelBinding>() -> ApplicationQueryResultFieldRef<
     PlanarQuery,
     BodyKeySlot,
     Schema,
@@ -195,7 +195,7 @@ pub type PlanarReadScope<Schema> = ApplicationQueryFieldScope<
     ReadOnly,
     NoApplicationUnit,
 >;
-impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema> for PlanarReadBinding<Schema> {
+impl<Schema: TopologyModelBinding> ApplicationQueryBinding<Schema> for PlanarReadBinding<Schema> {
     type Input = PlanarRead;
     type InputBinding = PlanarReadInputBinding;
     type Query = PlanarQuery;
@@ -232,7 +232,7 @@ impl<Schema: TopologySchemaBinding> ApplicationQueryBinding<Schema> for PlanarRe
         ConsumerPrincipalBinding::reference()
     }
 }
-impl<Schema: TopologySchemaBinding> ApplicationQueryIntent<Schema> for PlanarRead {
+impl<Schema: TopologyModelBinding> ApplicationQueryIntent<Schema> for PlanarRead {
     type Binding = PlanarReadBinding<Schema>;
     fn parameters(&self) -> ApplicationQueryParameterSet<PlanarQuery> {
         ApplicationQueryParameterSet::new()

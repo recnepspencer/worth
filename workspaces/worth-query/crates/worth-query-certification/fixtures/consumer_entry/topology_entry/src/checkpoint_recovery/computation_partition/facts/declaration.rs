@@ -4,25 +4,25 @@ use worth_query_decl::facade::application_schema::{
     StringApplicationValueBinding, U64ApplicationValueBinding,
 };
 use worth_query_decl::facade::{worth_query_aspect, worth_query_entity, worth_query_field};
-worth_query_entity!(pub(super) EntrySet for Schema: TopologySchemaBinding);
-worth_query_entity!(pub(super) SetEntry for Schema: TopologySchemaBinding);
+worth_query_entity!(pub(super) EntrySet for Schema: TopologyModelBinding);
+worth_query_entity!(pub(super) SetEntry for Schema: TopologyModelBinding);
 worth_query_aspect!(
-    pub(super) EntrySetFacts for Schema: TopologySchemaBinding, EntrySet;
+    pub(super) EntrySetFacts for Schema: TopologyModelBinding, EntrySet;
     identity = AspectIdentity(0x9174_1031),
     revision = AspectContractRevision(1),
 );
 worth_query_aspect!(
-    pub(super) SetEntryFacts for Schema: TopologySchemaBinding, SetEntry;
+    pub(super) SetEntryFacts for Schema: TopologyModelBinding, SetEntry;
     identity = AspectIdentity(0x9174_1032),
     revision = AspectContractRevision(1),
 );
 worth_query_field!(
-    pub(super) EntrySetKey for Schema: TopologySchemaBinding, EntrySet, EntrySetFacts:
+    pub(super) EntrySetKey for Schema: TopologyModelBinding, EntrySet, EntrySetFacts:
     String => StringApplicationValueBinding, read_only, equality
 );
 // A float's bits a set lends some of its regions.
 worth_query_field!(
-    pub(super) EntrySetWeight for Schema: TopologySchemaBinding, EntrySet, EntrySetFacts:
+    pub(super) EntrySetWeight for Schema: TopologyModelBinding, EntrySet, EntrySetFacts:
     u64 => U64ApplicationValueBinding, read_write, equality
 );
 
@@ -32,7 +32,7 @@ worth_query_field!(
 macro_rules! entry_facts {
     ($posture:ident: $($field:ident),+) => {$(
         worth_query_field!(
-            pub(super) $field for Schema: TopologySchemaBinding, SetEntry, SetEntryFacts:
+            pub(super) $field for Schema: TopologyModelBinding, SetEntry, SetEntryFacts:
             u64 => U64ApplicationValueBinding, $posture, equality
         );
     )+};
@@ -44,7 +44,7 @@ entry_facts!(read_write: EntryNumber, EntryRegion, EntryValueBits, EntryFault);
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct EntrySetMember;
 impl EntrySetMember {
-    pub(super) fn reference<Schema: TopologySchemaBinding>(
+    pub(super) fn reference<Schema: TopologyModelBinding>(
     ) -> ApplicationRelationRef<Schema, Self, EntrySet, SetEntry> {
         ApplicationRelationRef::from_schema_identifiers(
             "EntrySetMember",
@@ -55,7 +55,7 @@ impl EntrySetMember {
     }
 }
 
-pub(super) fn declare<Schema: TopologySchemaBinding>(
+pub(super) fn declare<Schema: TopologyModelBinding>(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
     schema

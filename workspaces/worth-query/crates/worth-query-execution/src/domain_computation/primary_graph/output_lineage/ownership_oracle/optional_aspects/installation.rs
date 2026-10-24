@@ -7,11 +7,11 @@ use std::sync::{atomic::AtomicUsize, Arc};
 use worth_foundational::facade::ApplicationBuildIdentity;
 worth_query_decl::facade::worth_query_application! { pub(super) OptionalSchema { owner: "worth.query.test.optional-aspects", version: (1, 0), contributions: [Members], } }
 worth_query_decl::facade::worth_query_application! { pub(super) RequiredSchema { owner: "worth.query.test.required-aspects", version: (1, 0), contributions: [Members], } }
-impl TopologySchemaBinding for OptionalSchema {}
+impl TopologyModelBinding for OptionalSchema {}
 impl BirthSchema for OptionalSchema {
     const REQUIRED: bool = false;
 }
-impl TopologySchemaBinding for RequiredSchema {}
+impl TopologyModelBinding for RequiredSchema {}
 impl BirthSchema for RequiredSchema {
     const REQUIRED: bool = true;
 }
@@ -44,7 +44,7 @@ impl<Schema: BirthSchema> WorthQueryApplicationContribution<Schema> for Members 
                 planar_invariant::resolve_rule(
                     resolver,
                     Arc::new(AtomicUsize::new(0)),
-                    Arc::new(AtomicUsize::new(0)),
+                    Arc::new(AtomicUsize::new(planar_invariant::INVARIANT_PROBE_STANDARD)),
                 )
             },
         )?;

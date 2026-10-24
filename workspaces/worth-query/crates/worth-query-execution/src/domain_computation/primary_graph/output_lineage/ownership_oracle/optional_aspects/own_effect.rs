@@ -17,8 +17,8 @@ worth_query_decl::facade::worth_query_application! {
 worth_query_decl::facade::worth_query_application! {
     pub(super) ClearingSchema { owner: "worth.query.test.optional-own-clear", version: (1, 0), contributions: [installation::Members], }
 }
-impl TopologySchemaBinding for MaterializingSchema {}
-impl TopologySchemaBinding for ClearingSchema {}
+impl TopologyModelBinding for MaterializingSchema {}
+impl TopologyModelBinding for ClearingSchema {}
 impl BirthSchema for MaterializingSchema {
     const REQUIRED: bool = false;
     const SOURCE_WRITE: SourceWrite = SourceWrite::Materialize;

@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 
 use super::super::super::entry_edit::EntryFact;
 use super::super::super::facts::RegionFault;
-use super::super::super::region_output::{OwnWrite, OwnWriteRead};
+use super::super::super::own_write::{OwnWrite, OwnWriteRead};
 use super::*;
 
 /// The entries a sequence seeds, spread over this many regions, and the

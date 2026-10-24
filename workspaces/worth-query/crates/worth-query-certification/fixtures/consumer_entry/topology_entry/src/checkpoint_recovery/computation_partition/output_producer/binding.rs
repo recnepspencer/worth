@@ -1,15 +1,16 @@
 // The producer of a region output: a demand for one scope's output runs the
 // region output operation over the set the scope's ordinate names, first to
-// create the output and then to keep it.
+// create the output and then to keep it. The fixture's courts make that demand
+// through `region_output_demand`.
 
 use std::marker::PhantomData;
 
 use super::fixture_values::PositiveLength;
 use super::runtime_api::application_contribution::{
-    self, WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
-    WorthQueryApplicationProducerProvider, WorthQueryProducerApplicability,
-    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
-    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
+    self, WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
+    WorthQueryProducerApplicability, WorthQueryProducerInputReuseContract,
+    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+    WorthQueryProducerOutputFamily,
 };
 
 use super::region_output::{RegionOutputBinding, RegionOutputInput, TotalRegionOutput};
@@ -27,7 +28,7 @@ const APPLICABILITY: &[WorthQueryProducerApplicability] = &[
 ];
 
 pub(super) struct RegionOutputFamily;
-impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema> for RegionOutputFamily {
+impl<Schema: TopologyModelBinding> WorthQueryProducerOutputFamily<Schema> for RegionOutputFamily {
     type Source = PlanarReadBinding<Schema>;
     type Entity = Body;
     const IDENTITY: &'static str = "worth.query.certification.region-output-family.v1";
@@ -37,26 +38,12 @@ impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema> for R
     }
 }
 
-/// A demand for the region output of the scope it names.
-#[derive(Clone)]
-pub(super) struct RegionOutputDemand(pub(super) String);
-impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputDemand<Schema>
-    for RegionOutputDemand
-{
-    type OutputFamily = RegionOutputFamily;
-    fn source_intent(&self) -> PlanarRead {
-        PlanarRead {
-            body_key: self.0.clone(),
-        }
-    }
-}
-
 const PRODUCER: &str = "worth.query.certification.region-output-producer.v1";
 
 pub(super) struct RegionOutputProducer<Schema, const REUSE: bool = false, const MODE: u8 = 0>(
     PhantomData<fn() -> Schema>,
 );
-impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
+impl<Schema: TopologyModelBinding, const REUSE: bool, const MODE: u8>
     WorthQueryApplicationProducerBinding<Schema> for RegionOutputProducer<Schema, REUSE, MODE>
 {
     type Operation = RegionOutputBinding<Schema>;
@@ -80,7 +67,7 @@ impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
 /// The scope's ordinate names the set its output totals: an even ordinate
 /// the even set, an odd one the odd set.
 pub(super) struct RegionOutputProvider<const MODE: u8 = 0>;
-impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
+impl<Schema: TopologyModelBinding, const REUSE: bool, const MODE: u8>
     WorthQueryApplicationProducerProvider<Schema, RegionOutputProducer<Schema, REUSE, MODE>>
     for RegionOutputProvider<MODE>
 {

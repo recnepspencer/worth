@@ -11,23 +11,23 @@ use worth_query_decl::facade::application_schema::{
 };
 use worth_query_decl::facade::{worth_query_aspect, worth_query_field};
 
-use super::{Body, Metre, TopologyLengthBinding, TopologySchemaBinding};
+use super::{Body, Metre, TopologyLengthBinding, TopologyModelBinding};
 
 worth_query_aspect!(
-    pub PlanarPosition for Schema: TopologySchemaBinding, Body;
+    pub PlanarPosition for Schema: TopologyModelBinding, Body;
     identity = AspectIdentity(0x9174_1011),
     revision = AspectContractRevision(1),
 );
 worth_query_field!(
-    pub BodyKey for Schema: TopologySchemaBinding, Body, PlanarPosition:
+    pub BodyKey for Schema: TopologyModelBinding, Body, PlanarPosition:
     String => worth_query_decl::facade::application_schema::StringApplicationValueBinding, read_only, equality
 );
 worth_query_field!(
-    pub PositionX for Schema: TopologySchemaBinding, Body, PlanarPosition:
+    pub PositionX for Schema: TopologyModelBinding, Body, PlanarPosition:
     PositiveLength => TopologyLengthBinding, unit Metre, read_write, equality
 );
 worth_query_field!(
-    pub PositionY for Schema: TopologySchemaBinding, Body, PlanarPosition:
+    pub PositionY for Schema: TopologyModelBinding, Body, PlanarPosition:
     PositiveLength => TopologyLengthBinding, unit Metre, read_write, equality
 );
 
@@ -37,7 +37,7 @@ pub struct PlanarSuccessor;
 impl PlanarSuccessor {
     pub const fn reference<Schema>() -> ApplicationRelationRef<Schema, Self, Body, Body>
     where
-        Schema: TopologySchemaBinding,
+        Schema: TopologyModelBinding,
     {
         ApplicationRelationRef::from_schema_identifiers(
             "PlanarSuccessor",
@@ -68,7 +68,7 @@ pub struct PlanarDiscoverySource;
 impl PlanarDiscoverySource {
     pub const fn reference<Schema>() -> ApplicationRelationRef<Schema, Self, Body, Body>
     where
-        Schema: TopologySchemaBinding,
+        Schema: TopologyModelBinding,
     {
         ApplicationRelationRef::from_schema_identifiers(
             "PlanarDiscoverySource",
@@ -86,7 +86,7 @@ impl PlanarDiscoverySource {
 impl UndeclaredPlanarRelation {
     pub const fn reference<Schema>() -> ApplicationRelationRef<Schema, Self, Body, Body>
     where
-        Schema: TopologySchemaBinding,
+        Schema: TopologyModelBinding,
     {
         ApplicationRelationRef::from_schema_identifiers(
             "UndeclaredPlanarRelation",
@@ -106,7 +106,7 @@ pub struct PositivePlanarTurn;
 
 impl<Schema> ApplicationInvariantMarkerIdentity<Schema> for PositivePlanarTurn
 where
-    Schema: TopologySchemaBinding,
+    Schema: TopologyModelBinding,
 {
     const IDENTIFIER: &'static str = "PositivePlanarTurn";
     const MAJOR: u16 = 1;
@@ -127,7 +127,7 @@ pub(crate) const PLANAR_CHECKED_WORK: u64 = PLANAR_CHECKED_HEADROOM
 
 pub fn planar_turn_invariant<Schema>() -> ApplicationInvariantDefinition<Schema, PositivePlanarTurn>
 where
-    Schema: TopologySchemaBinding,
+    Schema: TopologyModelBinding,
 {
     ApplicationInvariantDefinition::new(
         PositivePlanarTurn::reference(),

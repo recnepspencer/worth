@@ -112,10 +112,10 @@ pub(super) fn reinstallation_requested() -> bool {
 }
 
 fn with_own_write<T>(
-    write: Option<super::super::region_output::OwnWrite>,
+    write: Option<super::super::own_write::OwnWrite>,
     run: impl FnOnce() -> T,
 ) -> T {
-    use super::super::region_output::arm_own_write;
+    use super::super::own_write::arm_own_write;
     struct Reset;
     impl Drop for Reset {
         fn drop(&mut self) {

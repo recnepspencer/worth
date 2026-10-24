@@ -1,6 +1,6 @@
 //! Another writer supersedes the caller's actual publication between passes.
 use super::super::super::entry_edit::EntryFact;
-use super::super::super::region_output::{arm_own_write, OwnWrite, OwnWriteRead};
+use super::super::super::own_write::{arm_own_write, OwnWrite, OwnWriteRead};
 use super::super::differential::alphabet::Lcg;
 use super::*;
 use std::sync::Arc;
