@@ -39,7 +39,7 @@ impl WorthQueryRetainedQueryDependencies {
             })
             .unwrap();
         let refusal = retain_descriptors(
-            self.sources.elements().iter(),
+            std::iter::once(self.sources.elements()),
             count,
             &worth_execution::ExecutionRequest::leased(&narrowed),
         )
@@ -50,7 +50,8 @@ impl WorthQueryRetainedQueryDependencies {
         );
         assert_eq!(self.sources.len(), count);
         let retained =
-            retain_descriptors(self.sources.elements().iter(), count, &execution).unwrap();
+            retain_descriptors(std::iter::once(self.sources.elements()), count, &execution)
+                .unwrap();
         assert_eq!(retained.sources.len(), count);
         assert_eq!(retained.sources.charged_payload_bytes(), Some(quote));
         let serial_stop = CancellationSource::new();
@@ -62,7 +63,7 @@ impl WorthQueryRetainedQueryDependencies {
         let stopped_parts =
             std::iter::once(self.sources.elements()).inspect(|_| serial_stop.cancel());
         let refused = retain_descriptors(
-            stopped_parts.flatten(),
+            stopped_parts,
             count,
             &worth_execution::ExecutionRequest::serial(&serial),
         )
@@ -81,7 +82,7 @@ impl WorthQueryRetainedQueryDependencies {
             None,
         );
         let serial_retained = retain_descriptors(
-            self.sources.elements().iter(),
+            std::iter::once(self.sources.elements()),
             count,
             &worth_execution::ExecutionRequest::serial(&fresh_serial),
         )

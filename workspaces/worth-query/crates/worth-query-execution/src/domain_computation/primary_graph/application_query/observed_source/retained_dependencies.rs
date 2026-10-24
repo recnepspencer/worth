@@ -177,11 +177,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 self.validate_dependency(&source.source, false)?;
             }
         }
-        retain_descriptors(
-            parts.flat_map(|part| part.sources.elements().iter()),
-            count,
-            &execution,
-        )
+        // Backing traversal checks the request at each part, like count and
+        // validation, so a stop between groups never pulls the next group.
+        retain_descriptors(parts.map(|part| part.sources.elements()), count, &execution)
     }
 
     fn validate_dependency<Query>(
@@ -219,17 +217,23 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
 
 // Only validated native descriptors reach this storage owner. Original complete
 // owners stay borrowed throughout the exact allocation and each fallible move.
-fn retain_descriptors<'a>(
-    sources: impl Iterator<Item = &'a RetainedQuerySource>,
+fn retain_descriptors<'a, Part>(
+    parts: impl IntoIterator<Item = Part>,
     count: usize,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<WorthQueryRetainedQueryDependencies, WorthQueryRequiredSetCurrentnessDenial> {
+) -> Result<WorthQueryRetainedQueryDependencies, WorthQueryRequiredSetCurrentnessDenial>
+where
+    Part: IntoIterator<Item = &'a RetainedQuerySource>,
+{
     check_request(execution)?;
     let policy = execution.allocation_policy();
     let mut array = ExecutionArrayBuilder::allocate(count, policy).map_err(storage)?;
-    for source in sources {
+    for part in parts {
         check_request(execution)?;
-        array.push(source.shared()).map_err(storage)?;
+        for source in part {
+            check_request(execution)?;
+            array.push(source.shared()).map_err(storage)?;
+        }
     }
     check_request(execution)?;
     Ok(WorthQueryRetainedQueryDependencies {
