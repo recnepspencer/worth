@@ -108,6 +108,7 @@ pub(in crate::physical_runtime::record_serving) fn plan_manifest_residue_cleanup
     .segment_root(projected.root.segment_root())
     .free_space_root(successor_free.root())
     .tier_epoch_anchor(projected.root.tier_epoch_anchor())
+    .record_anchors(projected.root.record_anchors())
     .latest_blob_publication(projected.root.latest_blob_publication())
     .latest_blob_quarantine(projected.root.latest_blob_quarantine())
     .derived_family_directory(projected.root.derived_family_directory())

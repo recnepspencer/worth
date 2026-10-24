@@ -126,12 +126,12 @@ fn head_root_schema_preserves_legacy_and_roundtrips_head_frontier() {
         format(),
         8,
         &encoded[48..],
-        11,
+        12,
     );
     assert!(matches!(
         DurablePhysicalRootManifest::decode(&unknown, 200),
         Err(crate::RootManifestDenial::Frame(
-            crate::DurableFrameDenial::UnsupportedSchema(11)
+            crate::DurableFrameDenial::UnsupportedSchema(12)
         ))
     ));
     let mut reserved = encoded[48..].to_vec();

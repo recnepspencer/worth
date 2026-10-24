@@ -39,6 +39,17 @@ pub(super) fn validate_blob_semantic(
     }
     let payload_kind = payload_kind.map(|(kind, _)| kind);
     let binding = match projection.operation() {
+        PersistedPhysicalRecoveryOperation::RecordAnchorAdvanced(anchored) => {
+            let advance = anchored.advance();
+            if bytes.starts_with(b"WRC11IDX")
+                || payload_kind.is_some()
+                || (identity == advance.record()
+                    && advance.record_payload_sha256() != <[u8; 32]>::from(Sha256::digest(bytes)))
+            {
+                return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
+            }
+            return Ok(());
+        }
         PersistedPhysicalRecoveryOperation::None => {
             if bytes.starts_with(b"WRC11IDX") {
                 return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);

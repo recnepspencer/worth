@@ -331,6 +331,7 @@ fn build_new<'a>(
     .latest_blob_publication(base.latest_blob_publication())
     .latest_blob_quarantine(base.latest_blob_quarantine())
     .tier_epoch_anchor(base.tier_epoch_anchor())
+    .record_anchors(base.record_anchors())
     .derived_family_directory(base.derived_family_directory())
     .last_inline_record(
         final_inventory

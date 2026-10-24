@@ -23,6 +23,8 @@ pub(super) fn assemble(
             verified_drops,
             release_head_replay,
         )?;
+    let record_anchors =
+        super::record_anchors::projected_record_anchors(selection, pending, verified_drops)?;
     let selected = selection.page_facts().placements();
     let count = selected
         .len()
@@ -130,6 +132,7 @@ pub(super) fn assemble(
         latest_blob_publication,
         latest_blob_quarantine,
         tier_epoch_anchor: selection.root().selected().manifest().tier_epoch_anchor(),
+        record_anchors,
         derived_family_directory,
         selected_root_topology: allowance.into_box(topology)?,
         destination_generation: pending.staging_generation,

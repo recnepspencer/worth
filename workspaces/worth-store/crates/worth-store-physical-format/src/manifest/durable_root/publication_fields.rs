@@ -12,9 +12,11 @@ pub(super) fn decode(
 ) -> Result<DecodedPublicationFields, RootManifestDenial> {
     match schema {
         2 | 3 if payload.len() == LEGACY_ROOT_PAYLOAD_BYTES => Ok((None, None, None)),
-        4 | 5 | 6 | 7 | 9 | 10
+        4 | 5 | 6 | 7 | 9 | 10 | 11
             if payload.len()
-                == if schema == 10 {
+                == if schema == 11 {
+                    ANCHORED_ROOT_PAYLOAD_BYTES
+                } else if schema == 10 {
                     HEAD_BOUND_ROOT_PAYLOAD_BYTES
                 } else if schema == 9 {
                     TIER_ANCHORED_ROOT_PAYLOAD_BYTES
@@ -58,12 +60,7 @@ pub(super) fn decode(
             } else {
                 None
             };
-            if schema != 9
-                && schema != 10
-                && latest.is_none()
-                && directory.is_none()
-                && quarantine.is_none()
-            {
+            if schema < 9 && latest.is_none() && directory.is_none() && quarantine.is_none() {
                 return Err(RootManifestDenial::MalformedPrefix);
             }
             Ok((latest, directory, quarantine))

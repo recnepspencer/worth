@@ -163,6 +163,12 @@ impl RecordPublicationDirector {
                     ))?;
             self.verify_new_quarantine_claim(&batch, current_root.generation(), declaration)?;
         }
+        let anchor = super::record_anchor_planning::PlannedRecordAnchorRequest::capture(&batch)?;
+        if anchor.is_some() && prepared.blob_record_kind().is_some() {
+            return Err(RecordAppendError::Denied(
+                RecordAppendDenial::InvalidRecordAnchorAdvance,
+            ));
+        }
         let admitted = batch
             .admit(self.access)
             .map_err(RecordAppendError::Denied)?;
@@ -290,6 +296,9 @@ impl RecordPublicationDirector {
                     RecordAppendDenial::ReclaimFenceUnavailable,
                 ));
             }
+        }
+        if let Some(anchor) = anchor {
+            anchor.bind(&current_root, &mut root)?;
         }
         for (artifact, growth_bytes) in data.retained_growth() {
             self.root_owner

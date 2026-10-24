@@ -62,7 +62,8 @@ pub use publication::{
     PhysicalRecoveryPublicationCommand, PhysicalRecoveryPublicationCommandDenial,
     PhysicalRecoveryPublicationCommandDenialKind, PhysicalRecoveryPublicationCommandIndeterminate,
     PhysicalRecoveryPublicationCommandOutcome, PhysicalRecoveryPublicationCommandStage,
-    PhysicalRecoveryPublicationSettlementFailure,
+    PhysicalRecoveryPublicationSettlementFailure, RecoveryStagingResidueDenial,
+    RecoveryStagingResidueOutcome,
 };
 pub use reopen::{
     CompletedPhysicalRecoveryFreshReopen, PhysicalRecoveryFreshReopenCommand,

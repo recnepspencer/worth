@@ -65,6 +65,7 @@ pub(super) fn project(
     .segment_root(current.segment_root())
     .free_space_root(successor_free.root())
     .tier_epoch_anchor(current.tier_epoch_anchor())
+    .record_anchors(current.record_anchors())
     .latest_blob_publication(current.latest_blob_publication())
     .latest_blob_quarantine(current.latest_blob_quarantine())
     .derived_family_directory(current.derived_family_directory())

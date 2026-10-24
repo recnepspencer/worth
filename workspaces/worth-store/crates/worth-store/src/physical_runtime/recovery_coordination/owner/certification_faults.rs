@@ -224,5 +224,6 @@ const fn publication_stage(stage: PhysicalRecoveryPublicationCommandStage) -> u8
         PhysicalRecoveryPublicationCommandStage::CandidateSynchronization => 2,
         PhysicalRecoveryPublicationCommandStage::RootProtocolReplacement => 3,
         PhysicalRecoveryPublicationCommandStage::RecordNamespaceSynchronization => 4,
+        PhysicalRecoveryPublicationCommandStage::StagingResidueRemoval => 5,
     }
 }

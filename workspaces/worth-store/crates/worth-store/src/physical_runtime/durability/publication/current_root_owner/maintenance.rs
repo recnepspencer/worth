@@ -20,6 +20,7 @@ impl PhysicalCurrentRootOwner {
         if durable.transition.source_root() != &state.current_root
             || durable.candidate.source_root() != &state.current_root
             || candidate.tier_epoch_anchor() != state.current_root.tier_epoch_anchor()
+            || candidate.record_anchors() != state.current_root.record_anchors()
             || release.source_generation() != state.current_root.generation()
             || release.candidate_generation() != candidate.generation()
             || release.candidate_digest() != digest

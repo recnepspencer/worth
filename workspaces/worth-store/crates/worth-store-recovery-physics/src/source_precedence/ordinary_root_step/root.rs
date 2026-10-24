@@ -76,7 +76,17 @@ pub(super) fn root_matches(
             source.root.last_inline_segment(),
         )
     };
+    let anchors = match projection.operation() {
+        Semantic::RecordAnchorAdvanced(anchored) => {
+            match source.root.record_anchors().advanced(anchored.advance()) {
+                Ok(anchors) => anchors,
+                Err(_) => return false,
+            }
+        }
+        _ => source.root.record_anchors(),
+    };
     result.root.tree_identity() == source.root.tree_identity()
+        && result.root.record_anchors() == anchors
         && result.root.release_custody_head_root() == source.root.release_custody_head_root()
         && result.root.next_release_custody_head_block()
             == source.root.next_release_custody_head_block()

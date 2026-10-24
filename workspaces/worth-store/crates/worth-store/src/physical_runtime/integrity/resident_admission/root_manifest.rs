@@ -81,6 +81,7 @@ struct AdmittedRootManifestProjection {
     latest_blob_publication: Option<worth_store_physical_format::IndexedThroughBlobPublication>,
     latest_blob_quarantine: Option<worth_store_physical_format::PersistedRecordIdentity>,
     tier_epoch_anchor: Option<[u8; 32]>,
+    record_anchors: worth_store_physical_format::RecordAnchorTable,
     derived_family_directory:
         Option<worth_store_physical_format::DerivedFamilyRootDirectoryBinding>,
     last_inline_record: Option<worth_store_physical_format::PersistedRecordIdentity>,
@@ -256,6 +257,7 @@ impl AdmittedRootManifestProjection {
             latest_blob_publication: validated.latest_blob_publication(),
             latest_blob_quarantine: validated.latest_blob_quarantine(),
             tier_epoch_anchor: validated.tier_epoch_anchor(),
+            record_anchors: validated.record_anchors(),
             derived_family_directory: validated.derived_family_directory(),
             last_inline_record: validated.last_inline_record(),
             last_inline_segment: validated.last_inline_segment(),
@@ -281,6 +283,7 @@ impl AdmittedRootManifestProjection {
         .latest_blob_publication(self.latest_blob_publication)
         .latest_blob_quarantine(self.latest_blob_quarantine)
         .tier_epoch_anchor(self.tier_epoch_anchor)
+        .record_anchors(self.record_anchors)
         .derived_family_directory(self.derived_family_directory)
         .last_inline_record(self.last_inline_record)
         .last_inline_segment(self.last_inline_segment)

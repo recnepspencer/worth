@@ -6,6 +6,8 @@ use super::pending::PendingProjectionBasis;
 mod base_image;
 #[path = "layout/derived_binding.rs"]
 mod derived_binding;
+#[path = "layout/record_anchors.rs"]
+mod record_anchors;
 mod source_artifacts;
 
 pub(super) fn assemble(

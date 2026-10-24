@@ -110,6 +110,13 @@ impl PhysicalRecordReader {
         self.current_root.latest_blob_publication()
     }
 
+    /// The record anchors selected by this reader's protected root.
+    pub(in crate::physical_runtime) const fn selected_record_anchors(
+        &self,
+    ) -> worth_store_physical_format::RecordAnchorTable {
+        self.current_root.record_anchors()
+    }
+
     pub(in crate::physical_runtime) const fn selected_latest_blob_quarantine(
         &self,
     ) -> Option<worth_store_physical_format::PersistedRecordIdentity> {

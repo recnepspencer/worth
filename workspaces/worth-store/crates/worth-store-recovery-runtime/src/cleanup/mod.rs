@@ -8,6 +8,7 @@ mod eligibility;
 mod execution;
 mod performed_removal;
 mod plan;
+mod staging_residue;
 
 pub(crate) use cancellation::{after_action, before_first};
 pub(crate) use execution::execute;

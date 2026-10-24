@@ -28,6 +28,7 @@ pub struct IntegrityValidatedRootManifest<'media> {
     latest_blob_publication: Option<IndexedThroughBlobPublication>,
     latest_blob_quarantine: Option<PersistedRecordIdentity>,
     tier_epoch_anchor: Option<[u8; 32]>,
+    record_anchors: worth_store_physical_format::RecordAnchorTable,
     derived_family_directory: Option<DerivedFamilyRootDirectoryBinding>,
     last_inline_record: Option<PersistedRecordIdentity>,
     last_inline_segment: Option<SegmentGenerationCell>,
@@ -76,6 +77,7 @@ impl<'media> IntegrityValidatedRootManifest<'media> {
             latest_blob_publication: manifest.latest_blob_publication(),
             latest_blob_quarantine: manifest.latest_blob_quarantine(),
             tier_epoch_anchor: manifest.tier_epoch_anchor(),
+            record_anchors: manifest.record_anchors(),
             derived_family_directory: manifest.derived_family_directory(),
             last_inline_record: manifest.last_inline_record(),
             last_inline_segment: manifest.last_inline_segment(),
@@ -154,6 +156,10 @@ impl<'media> IntegrityValidatedRootManifest<'media> {
     pub const fn latest_blob_quarantine(&self) -> Option<PersistedRecordIdentity> {
         self.latest_blob_quarantine
     }
+    pub const fn record_anchors(&self) -> worth_store_physical_format::RecordAnchorTable {
+        self.record_anchors
+    }
+
     pub const fn tier_epoch_anchor(&self) -> Option<[u8; 32]> {
         self.tier_epoch_anchor
     }

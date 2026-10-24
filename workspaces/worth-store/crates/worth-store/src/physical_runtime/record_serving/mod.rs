@@ -117,6 +117,7 @@ pub(in crate::physical_runtime) use planning::{
 };
 pub use publication::append::{RecordAppendDenial, RecordAppendError, RecordPlacementClass};
 pub use publication::append_observation::{RecordAppendObservation, RecordRootPlanningObservation};
+pub(in crate::physical_runtime) use publication::batch::RecordBatchAnchorAdvance;
 pub use publication::batch::{RecordAppendBatch, RecordAppendBatchBuilder};
 pub use publication::publication_residue::RecordPublicationResidueObservation;
 pub use publication::streaming::{

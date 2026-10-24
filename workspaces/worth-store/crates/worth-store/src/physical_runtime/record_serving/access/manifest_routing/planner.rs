@@ -175,6 +175,7 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
             .checked_add(rebuilt.inserted)
             .and_then(|count| count.checked_sub(rebuilt.removed))
             .ok_or(ManifestLookupFailure::Damaged)?;
+        let anchors = derived_updates.successor_record_anchors(current.record_anchors());
         let root = DurablePhysicalRootManifest::builder(
             successor_generation,
             current.tree_identity(),
@@ -215,6 +216,7 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
         ))
         .last_inline_record(last_inline_record)
         .last_inline_segment(last_inline_segment)
+        .record_anchors(anchors.ok_or(ManifestLookupFailure::Damaged)?)
         .admit()
         .ok_or(ManifestLookupFailure::Damaged)?;
         let root = if current.requires_maintenance_protocol() {
@@ -284,6 +286,7 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
         if routing_root.map(ManifestBlockReference::level) != packed_level {
             return Ok(None);
         }
+        let anchors = derived_updates.successor_record_anchors(self.current.record_anchors());
         let root = DurablePhysicalRootManifest::builder(
             successor_generation,
             self.current.tree_identity(),
@@ -323,6 +326,7 @@ impl ManifestUpdatePlanning<'_, '_, '_> {
         ))
         .last_inline_record(last_inline_record)
         .last_inline_segment(last_inline_segment)
+        .record_anchors(anchors.ok_or(ManifestLookupFailure::Damaged)?)
         .admit()
         .ok_or(ManifestLookupFailure::Damaged)?;
         let root = if self.current.requires_maintenance_protocol() {

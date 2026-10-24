@@ -2,6 +2,7 @@ mod admission;
 mod artifact_family;
 mod availability;
 mod blob;
+mod canonical_journal;
 #[cfg(feature = "certification-test-authority")]
 mod certification_input;
 mod diagnostics;
@@ -58,6 +59,13 @@ pub use blob::{
     BlobTerminalHeadRetirementFailure, BlobTerminalHeadRetirementReceipt,
     BlobTerminalHeadRetirementRequest, BlobTerminalLimits, BlobTerminalReceipt, PhysicalBlobFacade,
     PublishedBlobGeneration,
+};
+pub(in crate::physical_runtime) use canonical_journal::CanonicalJournalState;
+pub use canonical_journal::{
+    CanonicalCommitEntry, CanonicalCommitJournal, CanonicalCommitJournalDenial,
+    CanonicalCommitPayload, CanonicalCommitPublication, CanonicalCommitPublicationFailure,
+    CanonicalCommitPublished, CanonicalCommitReadFailure, CanonicalCommitResolution,
+    RELATIONAL_CANONICAL_COMMITS,
 };
 pub use diagnostics::{ProcessRuntimeCounterSnapshot, RuntimeCounterSnapshot};
 pub use durability::{
@@ -264,6 +272,7 @@ pub use recovery_coordination::{
     RecoveryPublicationCandidateSynchronizationAction,
     RecoveryPublicationCandidateSynchronizationOccurrence, RecoveryPublicationOccurrence,
     RecoveryRecordNamespaceSynchronizationAction, RecoveryRootProtocolReplacementAction,
+    RecoveryStagingResidueDenial, RecoveryStagingResidueOutcome,
     RecoveryStagingSynchronizationAction, RecoveryStagingSynchronizationOccurrence,
     RecoveryStagingWriteAction, RecoveryStagingWriteOccurrence, RecoveryWalArtifactView,
     RecoveryWalDiscoveryFailureView, RecoveryWalReadFailureView,

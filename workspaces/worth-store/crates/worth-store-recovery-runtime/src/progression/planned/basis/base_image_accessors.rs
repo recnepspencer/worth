@@ -14,6 +14,10 @@ impl RecoveryBaseImagePlan {
         self.tier_epoch_anchor
     }
 
+    pub(crate) const fn record_anchors(&self) -> worth_store_physical_format::RecordAnchorTable {
+        self.record_anchors
+    }
+
     pub(crate) const fn derived_family_directory(
         &self,
     ) -> Option<DerivedFamilyRootDirectoryBinding> {

@@ -146,7 +146,8 @@ fn tail_drop(
         | Operation::SessionAbandoned(_)
         | Operation::ChunkReused(_)
         | Operation::DedupeQuarantined(_)
-        | Operation::DerivedDirectory { .. } => Ok(None),
+        | Operation::DerivedDirectory { .. }
+        | Operation::RecordAnchorAdvanced(_) => Ok(None),
     }
 }
 

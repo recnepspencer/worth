@@ -17,6 +17,7 @@ mod refusal;
 mod reopen;
 #[cfg(feature = "recovery-runtime-owner")]
 mod staging;
+mod staging_residue;
 
 pub use admitted::{AdmittedRecoveryFilesystemMedia, RecoveryMediaHandleObservation};
 pub use ceiling::{ArtifactCeiling, FixedArtifact, PageAddress, StreamArtifact};

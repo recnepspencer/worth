@@ -22,6 +22,7 @@ impl DurablePhysicalRootManifest {
                 | QUARANTINE_BOUND_MAINTENANCE_ROOT_SCHEMA
                 | TIER_ANCHORED_MAINTENANCE_ROOT_SCHEMA
                 | 10
+                | 11
         );
         self
     }

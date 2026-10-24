@@ -22,6 +22,13 @@ pub(crate) fn execute(
     ) {
         return super::checkpoint_residue::failure(reopened, residue);
     }
+    if matches!(
+        super::staging_residue::prepare(&reopened),
+        worth_store::physical_runtime::RecoveryStagingResidueOutcome::DeniedBeforeEffect(_)
+            | worth_store::physical_runtime::RecoveryStagingResidueOutcome::Indeterminate
+    ) {
+        return super::staging_residue::failure(reopened);
+    }
     #[cfg(feature = "certification-test-authority")]
     crate::certification::before_cleanup_revalidation();
     let limits = reopened.state.authority.limits.declaration();

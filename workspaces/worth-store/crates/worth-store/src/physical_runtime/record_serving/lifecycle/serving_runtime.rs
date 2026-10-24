@@ -23,6 +23,7 @@ pub struct ServingPhysicalRuntime {
     scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner,
     blob_declarations: std::sync::Mutex<()>,
     blob_index_publications: std::sync::Mutex<()>,
+    canonical_journal: std::sync::Mutex<crate::physical_runtime::CanonicalJournalState>,
     parts: PhysicalStoreInstanceParts,
 }
 
@@ -35,6 +36,7 @@ impl ServingPhysicalRuntime {
                 scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner::new(),
                 blob_declarations: std::sync::Mutex::new(()),
                 blob_index_publications: std::sync::Mutex::new(()),
+                canonical_journal: std::sync::Mutex::new(Default::default()),
                 parts,
             }),
             Err(failure) => {
@@ -113,6 +115,31 @@ impl ServingPhysicalRuntime {
             return Err(crate::physical_runtime::BlobFacadeDenial::ServingRequiresInspection);
         }
         Ok(crate::physical_runtime::PhysicalBlobFacade::new(self))
+    }
+
+    /// Borrows the home's canonical commit journal.
+    pub fn canonical_commits(
+        &self,
+    ) -> Result<
+        crate::physical_runtime::CanonicalCommitJournal<'_>,
+        crate::physical_runtime::CanonicalCommitJournalDenial,
+    > {
+        if self.parts.work_runtime.health.requires_inspection() {
+            return Err(
+                crate::physical_runtime::CanonicalCommitJournalDenial::ServingRequiresInspection,
+            );
+        }
+        Ok(crate::physical_runtime::CanonicalCommitJournal::relational(
+            self,
+        ))
+    }
+
+    pub(in crate::physical_runtime) fn canonical_journal_state(
+        &self,
+    ) -> std::sync::MutexGuard<'_, crate::physical_runtime::CanonicalJournalState> {
+        self.canonical_journal
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
     /// Captures a protected selected root and opens Store-owned derived-index access.

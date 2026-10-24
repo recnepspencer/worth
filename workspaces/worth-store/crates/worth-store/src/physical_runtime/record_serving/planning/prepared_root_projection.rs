@@ -10,6 +10,8 @@ use worth_store_physical_format::{
 use super::inline_segment_plan::InlineSegmentAllocation;
 use crate::physical_runtime::record_serving::publication::append_observation::PublicationObservation;
 
+#[path = "prepared_root_projection/record_anchor.rs"]
+mod record_anchor;
 #[path = "prepared_root_projection/record_less.rs"]
 mod record_less;
 #[path = "prepared_root_projection/released_directory_rebinding.rs"]
@@ -75,6 +77,8 @@ pub(in crate::physical_runtime::record_serving) struct DerivedRootUpdates {
         Option<Option<PersistedRecordIdentity>>,
     pub(in crate::physical_runtime::record_serving) released_directory_rebinding:
         Option<crate::physical_runtime::record_serving::PreparedReleasedDirectoryRebinding>,
+    pub(in crate::physical_runtime::record_serving) record_anchor_advance:
+        Option<worth_store_physical_format::RecordAnchorAdvance>,
 }
 
 impl PreparedPhysicalRootProjection {

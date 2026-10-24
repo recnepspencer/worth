@@ -255,7 +255,8 @@ pub use manifest::{
     PhysicalRootManifest, PhysicalRootManifestRebuildRow, PhysicalRootManifestRebuildSource,
     PhysicalRootManifestRebuildWitness, PhysicalRootManifestVocabulary, PhysicalRootRoutingBlock,
     PhysicalRootRoutingBlockView, PhysicalSegmentMembershipBlock, PhysicalTierClass,
-    PhysicalTreeIdentity, ReclaimedByteInterpretation, RecordAllocationClass,
+    PhysicalTreeIdentity, ReclaimedByteInterpretation, RecordAllocationClass, RecordAnchor,
+    RecordAnchorAdvance, RecordAnchorAdvanceDenial, RecordAnchorName, RecordAnchorTable,
     RecordFreeSpaceManifestEntry, RecordFreeSpaceRegion, RecordSegmentPageManifestEntry,
     ReleaseCustodyHeadBlockReferenceV1, ReleaseCustodyHeadBlockV1, ReleaseCustodyHeadBlockViewV1,
     ReleaseCustodyHeadControlIdentityV1, ReleaseCustodyHeadDenial, ReleaseCustodyHeadEntryV1,
@@ -267,6 +268,7 @@ pub use manifest::{
     SegmentManifestEntry, SegmentManifestVocabulary, SegmentMembershipBlockDecodeLimits,
     SegmentMembershipBlockDenial, SegmentMembershipBlockScopeIdentity, SegmentPageKey,
     SegmentPageManifestEntry, SelectedRecordContentClass, SelectedRecordRouteMetadata,
+    MAXIMUM_RECORD_ANCHORS, RECORD_ANCHOR_NAME_BYTES,
 };
 pub use offline_verifier::{
     InMemoryModelLayoutObservation, InMemoryModelLayoutObservationSource, ManifestTraversalReport,
@@ -304,8 +306,8 @@ pub use recovery_projection::{
     PersistedInlineSegmentAllocation, PersistedPhysicalRecoveryFrame,
     PersistedPhysicalRecoveryManifest, PersistedPhysicalRecoveryOperation,
     PersistedPhysicalRecoveryPayload, PersistedPhysicalRecoveryProjection,
-    PersistedPhysicalRecoveryRootState, PersistedReleaseCustodyHeadEffectV1,
-    PersistedReleaseHeadClaim, PersistedReleaseHeadTreeClaim,
+    PersistedPhysicalRecoveryRootState, PersistedRecordAnchorAdvance,
+    PersistedReleaseCustodyHeadEffectV1, PersistedReleaseHeadClaim, PersistedReleaseHeadTreeClaim,
     PersistedReleasedDirectoryReplacementV1, PersistedTerminalReleaseHeadRetirementV1,
     PhysicalRecoveryDecodeFailure, PhysicalRecoveryDecodeStorage,
     PhysicalRecoveryProjectionDecodeLimits, PhysicalRecoveryProjectionDenial,

@@ -126,6 +126,20 @@ pub(super) fn recovery_projection(
                 .expect("classified directory retains its exact retired record set"),
             ),
         }
+    } else if let Some(advance) = root.recovery_record_anchor_advance() {
+        assert!(
+            blob_record_kind.is_none() && root.recovery_release_head_claim().is_none(),
+            "an anchored append carries no blob semantic or head effect"
+        );
+        PersistedPhysicalRecoveryOperation::RecordAnchorAdvanced(
+            worth_store_physical_format::PersistedRecordAnchorAdvance::new(
+                advance,
+                root.source_root_generation()
+                    .checked_add(1)
+                    .expect("successor generation"),
+            )
+            .expect("nonzero successor generation"),
+        )
     } else {
         blob_semantic(blob_record_kind, prepared_bytes, root)
     };

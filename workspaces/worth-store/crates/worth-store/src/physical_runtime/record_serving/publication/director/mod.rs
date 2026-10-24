@@ -36,6 +36,7 @@ mod manifest_residue;
 mod pre_seal_cancellation;
 mod publication_retention;
 pub(in crate::physical_runtime) use publication_retention::AdmittedPublicationRetention;
+mod record_anchor_planning;
 mod record_append_fingerprint;
 mod retirement;
 mod retirement_progression;

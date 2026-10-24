@@ -25,6 +25,12 @@ pub enum RecordAppendDenial {
     DerivedDirectoryRequiresStoreOwner,
     InvalidDerivedDirectory,
     DerivedDirectorySourceChanged,
+    /// The batch's anchor request names no record of the batch or cannot
+    /// advance.
+    InvalidRecordAnchorAdvance,
+    /// The anchor's current generation is not the one the request expected.
+    /// Refused before any WAL effect.
+    RecordAnchorConflict,
     BTreeNodeRequiresStoreOwner,
     InvalidBTreeNode,
     ReclaimFenceUnavailable,

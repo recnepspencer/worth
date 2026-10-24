@@ -265,6 +265,7 @@ fn admitted_schema(kind: DurableFrameKind, schema: u8) -> bool {
                     | QUARANTINE_BOUND_MAINTENANCE_ROOT_SCHEMA
                     | TIER_ANCHORED_MAINTENANCE_ROOT_SCHEMA
                     | 10
+                    | 11
             ))
 }
 

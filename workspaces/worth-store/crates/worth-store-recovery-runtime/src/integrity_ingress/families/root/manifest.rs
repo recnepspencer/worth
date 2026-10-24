@@ -45,6 +45,7 @@ impl<'media> IntegrityAdmittedRootManifest<'media> {
         .latest_blob_publication(self.validated.latest_blob_publication())
         .latest_blob_quarantine(self.validated.latest_blob_quarantine())
         .tier_epoch_anchor(self.validated.tier_epoch_anchor())
+        .record_anchors(self.validated.record_anchors())
         .derived_family_directory(self.validated.derived_family_directory())
         .last_inline_record(self.validated.last_inline_record())
         .last_inline_segment(self.validated.last_inline_segment())

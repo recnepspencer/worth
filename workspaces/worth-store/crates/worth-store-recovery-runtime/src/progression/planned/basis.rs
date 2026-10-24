@@ -120,6 +120,7 @@ pub struct RecoveryBaseImagePlan {
     latest_blob_publication: Option<IndexedThroughBlobPublication>,
     latest_blob_quarantine: Option<PersistedRecordIdentity>,
     tier_epoch_anchor: Option<[u8; 32]>,
+    record_anchors: worth_store_physical_format::RecordAnchorTable,
     derived_family_directory: Option<DerivedFamilyRootDirectoryBinding>,
     selected_root_topology: Box<[SelectedRootTopologyEntry]>,
     destination_generation: u64,
