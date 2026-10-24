@@ -19,21 +19,18 @@ pub fn run() {
 }
 
 fn exercise(application: &host::Host) {
-    let mut source = change(&application);
+    let mut source = change(application);
     assert_combined(&source);
-    deliver(&application, &mut source);
+    deliver(application, &mut source);
     assert_eq!(
-        host::read(&application),
+        host::read(application),
         [Row {
             primary: 23,
             secondary: 7
         }]
     );
     assert_eq!(
-        observe(
-            &application,
-            WorthQueryConditionalSignalDecision::Suppressed
-        ),
+        observe(application, WorthQueryConditionalSignalDecision::Suppressed),
         0,
         "the authored rejecting predicate suppresses the due wake"
     );
@@ -53,7 +50,7 @@ fn exercise(application: &host::Host) {
         panic!("combined correction prepares");
     };
     host::edit(
-        &application,
+        application,
         edit::Value::Secondary(19),
         "definition-disjoint",
     );
@@ -63,7 +60,7 @@ fn exercise(application: &host::Host) {
         "prepared composite must reject the moved target: {outcome:?}"
     );
     assert_eq!(
-        host::read(&application),
+        host::read(application),
         [Row {
             primary: 23,
             secondary: 19
@@ -97,13 +94,13 @@ fn exercise(application: &host::Host) {
         source.commit_reference()
     );
     assert_eq!(
-        host::read(&application),
+        host::read(application),
         [Row {
             primary: 5,
             secondary: 19
         }]
     );
-    let corrected = super::required_output_courts::head(&application);
+    let corrected = super::required_output_courts::head(application);
     let replay = request
         .corrections()
         .reverse(&selected)
@@ -143,15 +140,15 @@ fn exercise(application: &host::Host) {
         replayed.aftermath_causality().unwrap().recorded_source(),
         receipt.aftermath_causality().unwrap().recorded_source()
     );
-    assert_eq!(super::required_output_courts::head(&application), corrected);
-    deliver(&application, &mut receipt);
+    assert_eq!(super::required_output_courts::head(application), corrected);
+    deliver(application, &mut receipt);
     assert_eq!(
-        observe(&application, WorthQueryConditionalSignalDecision::Eligible),
+        observe(application, WorthQueryConditionalSignalDecision::Eligible),
         1,
         "the corrected provider permits the actual due operation"
     );
     assert_eq!(
-        host::read(&application)[0].secondary,
+        host::read(application)[0].secondary,
         99,
         "ordinary temporal re-entry committed its declared effect"
     );

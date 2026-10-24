@@ -77,8 +77,7 @@ fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roste
                     &phase,
                     installation::WorthQueryCheckpointCapturePolicy::Execution(&capture),
                 )
-                .err()
-                .expect("capture still unfunded");
+                .expect_err("capture still unfunded");
             assert!(pending.capture_denial().is_some());
             pending
                 .repair_to_checkpoint(
@@ -171,8 +170,9 @@ fn companion_deferred_append_cancel_and_funded_same_capsule_repair_keep_historic
     // The stopped caller lease funds the repair call, so it refuses at entry.
     let pending = pending
         .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&stopped))
-        .err()
-        .expect("early cancellation retains the original deferred successor and unconsumed fault");
+        .expect_err(
+            "early cancellation retains the original deferred successor and unconsumed fault",
+        );
     let Some(installation::WorthQueryCheckpointCaptureDenial::Execution(cause)) =
         pending.capture_denial()
     else {
@@ -193,8 +193,9 @@ fn companion_deferred_append_cancel_and_funded_same_capsule_repair_keep_historic
             installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
         )
     })
-    .err()
-    .expect("the still-armed actual append failure proves deferred custody survived cancellation");
+    .expect_err(
+        "the still-armed actual append failure proves deferred custody survived cancellation",
+    );
     assert!(
         pending.capture_denial().is_none(),
         "native settlement failure cannot keep a stale capture cause"

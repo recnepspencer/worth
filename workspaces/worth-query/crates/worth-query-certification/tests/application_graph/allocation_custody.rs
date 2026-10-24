@@ -144,7 +144,7 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
     let (refused, work) = request!(&refused_key)
         .execute_in_program_report(&host, Policy::Execution(&zero))
         .into_parts();
-    let admission = admission_quote(&refused.err().expect("zero lease cannot open the call"));
+    let admission = admission_quote(&refused.expect_err("zero lease cannot open the call"));
     assert_eq!(work, WorthQueryMutationHandlerWork::NotStarted);
     // The lease funds the whole call, and principal resolution's native query
     // completion reserves and releases a result bound larger than the scope

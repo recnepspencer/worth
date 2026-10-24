@@ -118,8 +118,7 @@ fn ordinary_attempt_refusal_cannot_be_swallowed_before_fact_completion() {
     );
     let denial = refused
         .completed
-        .err()
-        .expect("ignored observation failure cannot seal completed facts");
+        .expect_err("ignored observation failure cannot seal completed facts");
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationAttemptDenialKind::ValueDecode(
