@@ -7,6 +7,7 @@ pub use authority::{
     RecoveredCheckpointTransitionRepairError, RecoveredRelationalBranchBasis,
     RecoveredRelationalRuntimeAuthority, RefusedRecoveredCheckpointTransition,
 };
+pub(crate) mod canonical_commit_artifact;
 pub(crate) mod checkpoints;
 pub mod data;
 pub(crate) mod derived_index_artifacts;

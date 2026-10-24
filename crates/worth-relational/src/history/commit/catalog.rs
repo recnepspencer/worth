@@ -182,6 +182,14 @@ impl RelationalCommitCatalog {
         )
     }
 
+    /// Validate an envelope readmitted outside any catalog: with no prior
+    /// entry to compare, only its own commit-artifact invariants apply.
+    pub(crate) fn validate_detached_envelope(
+        envelope: &crate::history::data::CanonicalCommitEnvelope,
+    ) -> Result<(), RelationalCommitArtifactDenial> {
+        RelationalCommitArtifact::validate_envelope(envelope)
+    }
+
     pub(crate) fn validate_new_envelope(
         &self,
         envelope: &crate::history::data::CanonicalCommitEnvelope,

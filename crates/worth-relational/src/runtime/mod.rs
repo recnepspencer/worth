@@ -56,8 +56,8 @@ pub use schema_transition_admission::{
     RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
 };
 pub use state::{
-    RelationalBranchSharingCostCounters, RelationalPatchPositionReservationCounters,
-    RelationalPhase4ReferenceCostCounters,
+    RelationalBranchSharingCostCounters, RelationalCanonicalPositionAdmissionDenial,
+    RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
 };
 
 pub(crate) use crate::storage::overlay::{PartitionAccess, WorkingState};

@@ -47,6 +47,12 @@ pub(crate) struct CanonicalEnvelopeWire<'a> {
     descriptor_semantics_version: DescriptorSemanticsVersion,
 }
 impl CanonicalEnvelopeWire<'_> {
+    /// Commit identity as decoded, before any admission. An enclosing frame
+    /// compares it so disagreement refuses before text readmission runs.
+    pub(crate) fn commit_id(&self) -> CommitId {
+        self.commit.commit_id
+    }
+
     pub(crate) fn readmit(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

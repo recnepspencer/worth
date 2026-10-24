@@ -64,6 +64,12 @@ pub mod diagnostics {
 }
 
 pub mod durability {
+    pub use crate::durability::canonical_commit_artifact::{
+        RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactDigest,
+        RelationalCanonicalCommitArtifactEncodeDenial,
+        RelationalCanonicalCommitArtifactFrameRefusal, RelationalCanonicalCommitArtifactRefusal,
+        RelationalCanonicalCommitArtifacts,
+    };
     pub use crate::durability::data::{
         CheckpointCoverage, CheckpointRestoreWork, CompactionOutcome, CompactionPlan,
         CompactionPolicy, DurabilityError, DurabilityMode, DurableCheckpoint, DurableCheckpointId,
@@ -76,12 +82,14 @@ pub mod durability {
         RelationIntegrityContractFamily, RelationalNativeCheckpoint,
         RelationalNativeCheckpointCaptureDenial, RelationalRecoveryStop, SegmentRetentionClass,
     };
+    pub use crate::durability::migration::ReadmittedCanonicalCommit;
     pub use crate::durability::{
         DeferredRecoveredCheckpointTransition, RecoveredCheckpointTransition,
         RecoveredCheckpointTransitionDenial, RecoveredCheckpointTransitionError,
         RecoveredCheckpointTransitionRepairError, RecoveredRelationalBranchBasis,
         RecoveredRelationalRuntimeAuthority, RefusedRecoveredCheckpointTransition,
     };
+    pub use crate::runtime::RelationalCanonicalPositionAdmissionDenial;
 }
 
 pub mod errors {

@@ -5,7 +5,7 @@ use crate::durability::data::{DurabilityMode, RecoveryPlan, RecoveryVerification
 use crate::runtime::RelationalRuntime;
 
 pub struct DurabilityAccess<'runtime> {
-    runtime: &'runtime RelationalRuntime,
+    pub(in crate::durability) runtime: &'runtime RelationalRuntime,
 }
 
 impl<'runtime> DurabilityAccess<'runtime> {
