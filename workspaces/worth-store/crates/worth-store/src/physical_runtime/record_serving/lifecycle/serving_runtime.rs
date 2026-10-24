@@ -24,6 +24,7 @@ pub struct ServingPhysicalRuntime {
     blob_declarations: std::sync::Mutex<()>,
     blob_index_publications: std::sync::Mutex<()>,
     canonical_journal: std::sync::Mutex<crate::physical_runtime::CanonicalJournalState>,
+    anchored_records: std::sync::Mutex<crate::physical_runtime::AnchoredRecordState>,
     parts: PhysicalStoreInstanceParts,
 }
 
@@ -37,6 +38,7 @@ impl ServingPhysicalRuntime {
                 blob_declarations: std::sync::Mutex::new(()),
                 blob_index_publications: std::sync::Mutex::new(()),
                 canonical_journal: std::sync::Mutex::new(Default::default()),
+                anchored_records: std::sync::Mutex::new(Default::default()),
                 parts,
             }),
             Err(failure) => {
@@ -138,6 +140,28 @@ impl ServingPhysicalRuntime {
         &self,
     ) -> std::sync::MutexGuard<'_, crate::physical_runtime::CanonicalJournalState> {
         self.canonical_journal
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    /// Borrows the home's anchored records: named values replaced whole, one
+    /// generation at a time.
+    pub fn anchored_records(
+        &self,
+    ) -> Result<
+        crate::physical_runtime::AnchoredRecords<'_>,
+        crate::physical_runtime::AnchoredRecordsDenial,
+    > {
+        if self.parts.work_runtime.health.requires_inspection() {
+            return Err(crate::physical_runtime::AnchoredRecordsDenial::ServingRequiresInspection);
+        }
+        Ok(crate::physical_runtime::AnchoredRecords::new(self))
+    }
+
+    pub(in crate::physical_runtime) fn anchored_record_state(
+        &self,
+    ) -> std::sync::MutexGuard<'_, crate::physical_runtime::AnchoredRecordState> {
+        self.anchored_records
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }

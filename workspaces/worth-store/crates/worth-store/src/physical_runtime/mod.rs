@@ -1,4 +1,5 @@
 mod admission;
+mod anchored_records;
 mod artifact_family;
 mod availability;
 mod blob;
@@ -40,6 +41,7 @@ pub use admission::{
     AdmissionError, CancelledPhysicalRuntimeAdmission, DeclaredStoreRootDenialKind,
     PhysicalRuntimeAdmission, PhysicalStore,
 };
+pub use anchored_records::*;
 pub use availability::{CapabilityAvailability, InstalledCapabilityStatus, PhysicalCapability};
 pub use blob::{
     AdmittedBlobScope, BlobAppendFailure, BlobCheckpointLimit, BlobDeclarationDenial,

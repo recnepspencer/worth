@@ -12,6 +12,12 @@ recovery, and serves point and range reads. Its crash-consistency oracle is in
 `worth-store-recovery-runtime/tests/production_entry` (`canonical_journal*`).
 See the [Milestone 1 specification](../../plans/database-foundation/milestone-1.md).
 
+`ServingPhysicalRuntime::anchored_records()` is the generic anchored-record
+door (Milestone 2 D6): a named record holds one current value, replaced whole
+at `generation + 1` under the same durable root decision and fates as the
+journal, and read back verified against its anchor. Its oracle is
+`anchored_records*` beside the journal's.
+
 This workspace is the clean rebuild of Worth Store. It separates the semantic
 durability roadmap from the physical database foundation so the new store does
 not inherit the heap-shaped implementation boundary from the legacy crate.

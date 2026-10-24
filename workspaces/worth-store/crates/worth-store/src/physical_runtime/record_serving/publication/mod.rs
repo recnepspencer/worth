@@ -1,3 +1,4 @@
+pub(super) mod anchored_append;
 pub(super) mod append;
 pub(super) mod append_observation;
 pub(super) mod batch;
