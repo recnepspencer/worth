@@ -3203,35 +3203,19 @@ The following fixture deliberately coordinates native output custody through
 
 ---
 
-#### Invalidation byte ceilings
+#### Invalidation retention
 
-Pass `None` for preparation and retained bytes to
-`host::runtime::WorthQueryInvalidationResourceInstallation::new(None, None, positions)`
-when the host imposes no logical byte ceiling. `Some(bytes)` supplies a deliberate
-finite ceiling at either boundary; `Some(0)` remains an invalid installation.
-The existing `bounded(work, preparation, retained, positions)` constructor chooses
-finite work and byte ceilings. Ordinary Memory Workspace and Consumer Kit
-installations select no marking-work, preparation-byte or retained-byte ceiling.
-Other application hosts supply their own policies; this does not claim that every
-platform or application profile is uncapped. The retained-position window remains
-independent.
+`host::runtime::WorthQueryInvalidationResources::new()` (also `Default`) takes no
+policy: no marking-work, preparation-byte, retained-byte or retained-position
+ceiling. The subscription retains every delivered position, so no reader falls
+outside a window or reconstructs to catch up. The value carries only the
+receiver's differential verification controls.
 
-Absence does not disable admission accounting or authorize memory allocation.
-Preparation still checked-adds every original byte quote; retained tickets share
-one ledger and stay charged while current, historical, prepared or consumed-output
-owners hold them. Carried admissions retain the same original counters and
-optional ceilings. Only the final holder's drop refunds its ticket. Request
-cancellation and precommit atomicity are unchanged; real allocator refusals remain
-owned by their allocating operation. This installation does not bound aggregate
-process RSS or guarantee available RAM.
-
-`RetentionCounterOverflow` and `RetainedCompanionCounterOverflow` report an
-unrepresentable retained total with its original requested/retained operands.
-They are distinct from finite `RetentionCapacityExhausted` and
-`RetainedCompanionCapacityExhausted`, and do not trigger finite-capacity eviction.
-Preparation counter overflow likewise remains distinct from a supplied ceiling.
-Keep the returned original owner and its policy values on refusal; retry that
-owner with a fresh authorized request.
+No ceiling does not mean unaccounted memory. Preparation and retained backing
+are admitted at their allocating owners, and a real allocator refusal stays
+with the operation that allocated. Request cancellation and precommit atomicity
+are unchanged. This installation does not bound aggregate process RSS or
+guarantee available RAM.
 
 #### Producer publication diagnostics
 
@@ -5191,13 +5175,12 @@ obligations until final drop, including after owner close.
 
 `WorthQueryProductWorldResources::install` accepts nonzero finite installation
 values. `RuntimeWorldBudgetLimit::get()` returns `Some(maximum)` for a finite
-policy and `None` otherwise. Configure marking and retained positions with
-`WorthQueryInvalidationResourceInstallation::new(preparation, retained, positions)`.
-For `positions`, `None` keeps available history and `Some(positions)` selects a
-retention window.
-A reader outside that window reconstructs its state. Match the invalidation
-window to World commit history: installation rejects an unlimited window beside
-finite commit history. Output-lineage retention uses the same position policy.
+policy and `None` otherwise. `host::runtime::WorthQueryInvalidationResources::new()`
+takes no retention policy: the invalidation subscription retains every delivered
+position, so a reader never falls outside a window and never reconstructs its
+state to catch up. A long run of commits between two observations is delivered
+in order, and replacing a conditional runtime remains the explicit
+reinstallation path. Output-lineage retention reads the same subscription.
 
 Set optional published-snapshot, active-snapshot and prepared-candidate policies
 in `PublicationConfig`; `Some(amount)` selects a finite policy. Retain snapshots

@@ -1,9 +1,10 @@
-//! Real retained-subscription exhaustion cannot replace a failed terminal's engine or wake.
+//! A history longer than any former retained window cannot replace a failed
+//! terminal's engine or wake. The subscription retains every position
+//! (ee07da2b0e), so replacement is only the explicit reinstallation path.
 use super::*;
 use crate::schema::UnrelatedValueField;
 use crate::world::request_scope;
 use worth_query_host::facade::primary_graph::{
-    WorthQueryConditionalClockObservationFailureKind as ClockFailure,
     WorthQueryConditionalClockObservationOutcome as Outcome, WorthQueryPrincipalResolutionMode,
 };
 #[test]
@@ -50,8 +51,8 @@ fn lag_reconstruction_preserves_same_native_cleanup_before_and_after_fresh_relea
                 .relational_record_identity_parts()
         })
         .unwrap();
-    // The installed retained subscription holds 128 positions, as in the
-    // existing native-writer lag court. These are genuine ordinary commits.
+    // More genuine ordinary commits than the 128-position window this court
+    // once exhausted. No window remains, so none of them is lost.
     for value in 1..=130 {
         world
             .application
@@ -64,31 +65,15 @@ fn lag_reconstruction_preserves_same_native_cleanup_before_and_after_fresh_relea
             )
             .unwrap();
     }
-    // Select current truth so the lost subscription positions are within its
-    // actual commit ceiling. The old terminal stays in its original inactive binding.
+    // Replacing the engine after that history is still refused while the
+    // actual native terminal is pending.
+    assert_eq!(
+        world.reinstall_conditional_runtime().unwrap_err().kind(),
+        InstallationDenial::ManagedCleanupRetained(Failure::Native(Native::BridgeFinalization(
+            Bridge::SignalRuntimeThreadAffinityViolation
+        )))
+    );
     let mut port = world.conditional_clock();
-    world.clock_control.push(2, 11);
-    std::thread::scope(|threads| {
-        let port = &mut port;
-        threads
-            .spawn(move || {
-                let policy = crate::test_request_policy::serial_request();
-                let execution = worth_execution::ExecutionRequest::serial(&policy);
-                let Outcome::Failed(failure) = port.observe(&execution) else {
-                    panic!("pending native cleanup must refuse lag replacement");
-                };
-                assert_eq!(
-                    failure.kind(),
-                    ClockFailure::ReconstructionDenied(InstallationDenial::ManagedCleanupRetained(
-                        Failure::Native(Native::BridgeFinalization(
-                            Bridge::SignalRuntimeThreadAffinityViolation
-                        ))
-                    ))
-                );
-            })
-            .join()
-            .unwrap();
-    });
     assert_eq!(
         world
             .application
