@@ -83,6 +83,12 @@ worth-runtime-bridge.opt-level = 0
 worth-runtime-world.opt-level = 0
 worth-harness.opt-level = 0
 worth-schema-graph.opt-level = 0
+# Certification targets monomorphize the whole Query runtime once per
+# certification schema (native_operation_bodies alone has 33 const-generic
+# schemas). With line tables their CodeView symbol records reach 12.5 GB, past
+# the 4 GiB PDB symbol-stream limit, so rust-lld cannot link them on Windows.
+# Panic locations stay exact; backtraces name these frames without lines.
+worth-query-certification.debug = false
 
 [profile.test]
 opt-level = 0
@@ -98,6 +104,8 @@ worth-runtime-bridge.opt-level = 0
 worth-runtime-world.opt-level = 0
 worth-harness.opt-level = 0
 worth-schema-graph.opt-level = 0
+# Certification symbols exceed the PDB limit; see [profile.dev.package].
+worth-query-certification.debug = false
 
 [profile.perf]
 inherits = "dev"
