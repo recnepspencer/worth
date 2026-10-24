@@ -1,5 +1,7 @@
 use worth_foundational::LimitDimension;
-use worth_store_physical_backend::{ArtifactTreeReadAllocator, QualifiedFilesystemMedia, ReadGrant};
+use worth_store_physical_backend::{
+    ArtifactTreeReadAllocator, QualifiedFilesystemMedia, ReadGrant,
+};
 use worth_store_physical_format::RecordArtifactFile;
 
 fn addressed_read<D: LimitDimension, S: ArtifactTreeReadAllocator>(

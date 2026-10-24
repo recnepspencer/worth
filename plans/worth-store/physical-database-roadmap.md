@@ -16,7 +16,7 @@ C.11's remaining portfolio, C.12, C.13's broad campaign and S.10 through S.12
 are deferred after the working database to the capability triggers in that
 roadmap and [deferred work](../deferred-work.md#worth-store). They are not
 prerequisites that must close wholesale before database integration starts.
-Necessary physical prerequisites remain part of the consuming D milestone.
+Necessary physical prerequisites remain part of the consuming database milestone.
 
 The historical S sequence and physical capability specifications below remain
 design requirements for their respective owners. Their references to old

@@ -158,10 +158,10 @@ prerequisites or return dates.
 | S.11 encryption/key lifecycle and advanced trust | Store security owners | Before exposing those protected deployment and custody promises. Existing scope and integrity guarantees remain. |
 | Advanced replication, sync, pushdown, subscriptions, capsules and extensions | Respective semantic/physical owners | A successor roadmap after Milestone 5. |
 
-Necessary mechanisms are implemented in their consuming D milestone without
+Necessary mechanisms are implemented in their consuming database milestone without
 closing an entire deferred portfolio. Basic safe reclamation is required by
 Milestone 4; it is distinct from deferred tier movement. Deferred capabilities remain
-unreachable or honestly unavailable. No D milestone silently grants an S
+unreachable or honestly unavailable. No database milestone silently grants an S
 qualification, and no current claim cites unrebound formal models as evidence.
 
 Unmerged Store branches are preserved for a separate code-salvage assessment.

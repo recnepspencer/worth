@@ -15,7 +15,7 @@ lost-response/retry journey at Milestone 3.
 The C.11 remainder, C.12 formal rebinding and C.13's broad joined campaign are
 deferred under that roadmap's capability triggers. They do not gate the new
 database program as wholesale portfolios. Any physical mechanism needed for a
-D milestone must be completed at its owning boundary in that milestone.
+database milestone must be completed at its owning boundary in that milestone.
 
 The detailed reconstruction sections below retain their historical contracts,
 evidence and deferred design research. Old C.13/Part II sequencing and future
