@@ -61,10 +61,11 @@ typed and happens before service.
 
 **D4. Checkpoints are anchored Store records.** `home.checkpoint()` captures
 Relational's native checkpoint and publishes it as one record under the anchor
-`relational.checkpoint`, framed with its covered position and digest, in one
-root decision. Recovery is bounded by that checkpoint and the journal after it.
-The journal is retained in this milestone; covered-journal reclamation belongs
-to Milestone 4.
+`relational.checkpoint`, framed with its covered position, in one root
+decision. It then completes a Store physical checkpoint, so Store's own
+recovery replays only the WAL after it. Recovery is bounded by both
+checkpoints and the journal after the Relational one. The journal is retained
+in this milestone; covered-journal reclamation belongs to Milestone 4.
 
 **D5. Home identity is an anchored descriptor.** Initialization publishes
 `relational.home` (format version, runtime name, profile) once. Opening a home
@@ -105,10 +106,14 @@ data from Store (descriptor, checkpoint, journal) is fallible and typed and
 refuses service rather than skipping data.
 
 **D10. Interruption controls.** Store fault schedules use the existing
-certification authority. Relational's own durability tests use a `cfg(test)`
-in-crate medium; it is not a second durable path. Process-kill tests wrap the
-home's medium adapter in the test to abort between the durable answer and the
-live cutover. No Cargo feature is added outside Store's exemption.
+certification authority. The home crate forwards it as its own
+`certification-test-authority` feature (inside Store's one-build exemption),
+which adds two hidden doors: open a home on a Store the test opened with a
+fault schedule, and reach the home's Store to park a publication at a mutation
+seam. Both run the production admission path. Parking at
+`AfterRootReplacement` stops a commit after Store made it durable and before
+Relational installs it live. Relational's own durability tests use a
+`cfg(test)` in-crate medium; it is not a second durable path.
 
 ## Durable artifacts
 
@@ -167,9 +172,10 @@ Location: `worth-store-relational` tests.
   allocation and schema continuity.
 - **Media sweep.** Store fault schedules interrupt every media operation of a
   commit and of a checkpoint with `FailBefore` and `IndeterminateAfterEffect`.
-- **Real processes.** A child is killed before commitment, after durable
-  publication but before the live cutover, after the cutover before
-  settlement, during a checkpoint, and on both sides of the first checkpoint.
+- **Real processes.** A child is killed before commitment (before the WAL
+  append), at each later Store mutation seam including after root replacement
+  (durable, not yet live), during a checkpoint, and on both sides of the first
+  checkpoint.
 - **Recovery interruption.** Recovery is interrupted and repeated; a second and
   third recovery reach the same state.
 - **Refusals.** A stale candidate, a conflicting write and an invalid
