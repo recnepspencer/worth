@@ -126,6 +126,16 @@ PROCESS_WIDE_PROBES = (
     "tests::application_attempt::predecode_admission::",
 )
 
+# Binaries whose every case gets its own process, as nextest gives it. Topology
+# cases touch process-global providers, counters or ledgers. Execution's unit
+# cases construct the process-unique ExecutionAuthority, several with their own
+# configuration ("runs in its own process"), so two in one process race to
+# AlreadyConstructed and poison the shared test lock.
+PROCESS_PER_CASE = {
+    ("fixture", "worth-query-topology-entry"),
+    ("execution", "worth-execution"),
+}
+
 FIXTURE_CPU_EXCLUSIVE = (
     "checkpoint_recovery::parallel_history::matrix::table::required_wave_full_declared_matrix"
 )
@@ -306,8 +316,7 @@ class Gate:
                            if line.endswith(": test"))
             listing.append((binary["package"], binary["target"], len(names)))
             total += len(names)
-            if suite == "fixture" and binary["package"] == "worth-query-topology-entry":
-                # Every case can touch process-global providers, counters or ledgers.
+            if (suite, binary["package"]) in PROCESS_PER_CASE:
                 shared += [(binary, [name], ()) for name in names
                            if name != FIXTURE_CPU_EXCLUSIVE]
                 if FIXTURE_CPU_EXCLUSIVE in names:
