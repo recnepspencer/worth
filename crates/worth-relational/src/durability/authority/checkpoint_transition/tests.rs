@@ -4,20 +4,23 @@ use crate::facade::durability::{
 };
 use crate::facade::history::BranchId;
 use crate::mvcc::{PreparedRelationalCommitCandidate, RelationalPublicationOutcome};
-use crate::publication::data::DeferredPublicationSettlementError;
+use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::RelationalRuntime;
 use crate::tests::support::*;
 
 fn recovered_world(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> (RelationalRuntime, RecoveredRelationalRuntimeAuthority) {
-    let source = persisted_runtime_with_test_schema();
+    let source = durable_runtime_with_test_schema();
     create_entity(execution, &source, "checkpoint-predecessor");
     let checkpoint = source
         .durability_authority()
         .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
-    let mut target = persisted_runtime_with_test_schema();
+    // The restored runtime continues the source's medium, which already holds
+    // the history its checkpoint covers.
+    let mut target = durable_runtime_with_test_schema();
+    bind_durable_medium(&mut target, attached_test_medium(&source).shared());
     let (_, authority) = target
         .durability_recovery()
         .restore_native_checkpoint_with_authority(execution, &checkpoint)
@@ -200,74 +203,41 @@ fn moved_source_and_stale_candidate_cannot_extend_recovery_lineage() {
 }
 
 #[test]
-fn deferred_transition_retains_exact_repair_custody_across_foreign_refusal() {
+fn refused_durable_transition_returns_its_authority_and_moves_nothing() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut runtime, authority) = recovered_world(execution);
-    let prepared = candidate(execution, &runtime, "deferred-transition");
-    runtime.durability.arm_append_failure_for_test();
-    let TransitionError::DurabilityDeferred(pending) = runtime
+    let predecessor = main_basis(&runtime);
+    let count = runtime.history().immutable_commit_count();
+    let medium = attached_test_medium(&runtime);
+    medium.script_next_publication(ScriptedPublication::ProvenNoEffect);
+    let prepared = candidate(execution, &runtime, "refused-transition");
+    let TransitionError::Refused(refusal) = runtime
         .durability_recovery()
         .commit_checkpoint_transition(execution, authority, prepared)
         .unwrap_err()
     else {
-        panic!("the performed transition must retain its deferred native settlement")
+        panic!("a refused durable publication is a pre-effect transition refusal")
     };
-    let receipt = pending
-        .cause()
-        .deferred_settlement()
-        .unwrap()
-        .commit()
-        .clone();
-    let successor = main_basis(&runtime).descriptor().clone();
-    let count = runtime.history().immutable_commit_count();
-    assert_eq!(runtime.visibility.published_snapshot_handle_count(), 1);
-    let denial = runtime
-        .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap_err();
-    assert!(
-        matches!(denial, crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability(ref error) if error.class == crate::durability::data::RecoveryFailureClass::PerformedPublicationRequiresSettlement)
-    );
-    let mut foreign = persisted_runtime_with_test_schema();
-    let refusal = foreign
-        .durability_recovery()
-        .repair_checkpoint_transition(*pending)
-        .unwrap_err();
-    assert!(matches!(
-        refusal.cause(),
-        DeferredPublicationSettlementError::ForeignRuntime { .. }
-    ));
-    assert_eq!(foreign.history().immutable_commit_count(), 0);
-    let acknowledged = runtime
-        .durability_recovery()
-        .repair_checkpoint_transition(refusal.into_transition())
-        .unwrap();
-    assert_eq!(acknowledged.commit(), &receipt);
-    assert_eq!(main_basis(&runtime).descriptor(), &successor);
+    assert!(matches!(refusal.denial(), Denial::Publication(outcome)
+    if matches!(outcome.as_ref(), RelationalPublicationOutcome::Denied(
+        crate::mvcc::RelationalPublicationDenial::DurablePublicationRefused(_)
+    ))));
+    assert_eq!(main_basis(&runtime).descriptor(), predecessor.descriptor());
     assert_eq!(runtime.history().immutable_commit_count(), count);
     assert_eq!(runtime.visibility.published_snapshot_handle_count(), 0);
-    assert_eq!(
-        runtime
-            .preparation_runtime_snapshot()
-            .published_snapshot_count(),
-        0
-    );
-    assert_eq!(
-        runtime
-            .durability()
-            .durable_log()
-            .iter()
-            .filter(|entry| entry.envelope().commit.commit_id == receipt.commit_id)
-            .count(),
-        1
-    );
-    runtime
-        .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
-    assert!(acknowledged
+    assert_eq!(medium.head(), PatchStreamPosition(1));
+
+    let authority = refusal.into_authority();
+    let retried = candidate(execution, &runtime, "retried-transition");
+    let transition = runtime
+        .durability_recovery()
+        .commit_checkpoint_transition(execution, authority, retried)
+        .expect("the refused position was never consumed");
+    assert_eq!(medium.head(), PatchStreamPosition(2));
+    assert_eq!(runtime.history().immutable_commit_count(), count + 1);
+    assert!(transition
         .into_parts()
         .1
         .admit_basis(main_basis(&runtime))
@@ -275,38 +245,33 @@ fn deferred_transition_retains_exact_repair_custody_across_foreign_refusal() {
 }
 
 #[test]
-fn repair_carries_performed_successor_even_after_owner_repair_and_later_movement() {
+fn unresolved_durable_transition_installs_nothing_and_names_its_fate() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut runtime, authority) = recovered_world(execution);
-    let prepared = candidate(execution, &runtime, "captured-successor");
-    runtime.durability.arm_append_failure_for_test();
-    let TransitionError::DurabilityDeferred(pending) = runtime
+    let predecessor = main_basis(&runtime);
+    let count = runtime.history().immutable_commit_count();
+    let medium = attached_test_medium(&runtime);
+    medium.script_next_publication(ScriptedPublication::IndeterminateWithoutEffect);
+    let prepared = candidate(execution, &runtime, "unresolved-transition");
+    let TransitionError::Refused(refusal) = runtime
         .durability_recovery()
         .commit_checkpoint_transition(execution, authority, prepared)
         .unwrap_err()
     else {
-        panic!("append fault must retain a performed transition")
+        panic!("an unresolved durable publication installs no successor")
     };
-    let performed_basis = main_basis(&runtime);
-    let settlement = pending.cause().deferred_settlement().unwrap().clone();
-    let receipt = runtime
-        .repair_deferred_publication_settlement(&settlement)
-        .unwrap();
-    create_entity(execution, &runtime, "later-ordinary-movement");
-    let current = main_basis(&runtime);
-    assert_ne!(current.descriptor(), performed_basis.descriptor());
-    let count = runtime.history().immutable_commit_count();
-    let acknowledged = runtime
-        .durability_recovery()
-        .repair_checkpoint_transition(*pending)
-        .unwrap();
-    assert_eq!(acknowledged.commit(), &receipt);
+    let Denial::Publication(outcome) = refusal.denial() else {
+        panic!("the refusal names the publication outcome")
+    };
+    let RelationalPublicationOutcome::DurabilityUnresolved(fate) = outcome.as_ref() else {
+        panic!("the medium could not say whether the transition is durable")
+    };
+    let offered = medium.offered().pop().expect("the medium was asked first");
+    assert_eq!(fate.position(), offered.position());
+    assert_eq!(fate.digest(), offered.payload_digest());
+    assert_eq!(main_basis(&runtime).descriptor(), predecessor.descriptor());
     assert_eq!(runtime.history().immutable_commit_count(), count);
     assert_eq!(runtime.visibility.published_snapshot_handle_count(), 0);
-    // The retained route is acknowledged again, but ambient current state
-    // cannot silently receive the captured transition's recovery authority.
-    let (_, successor_authority) = acknowledged.into_parts();
-    assert!(successor_authority.admit_basis(current).is_err());
 }

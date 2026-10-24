@@ -6,7 +6,7 @@ fn durable_recovery_and_schema_mismatch_test() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     let _baseline = create_entity_outcome(execution, &runtime, "main-a");
 
     runtime.set_schema_registry_for_test(
@@ -42,10 +42,12 @@ fn durable_recovery_and_schema_mismatch_test() {
     .expect("test staging stays within configured resource budgets");
     let transitioned = txn.commit(execution, &runtime).unwrap();
 
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let live_schema_transition = transitioned.envelope().schema_transition.clone();
     let live_schema_continuation_descriptor = transitioned
         .envelope()
@@ -68,11 +70,7 @@ fn durable_recovery_and_schema_mismatch_test() {
             }
             .build_registry(),
         )
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path: unique_test_store_path("worth-relational-durable-recovery-schema-match"),
-            segment_commit_capacity: 2,
-        })
+        .durable_medium(TestDurableMedium::new())
         .build();
     let _outcome = recovered
         .durability_recovery()
@@ -164,12 +162,14 @@ fn durability_contract_failure_aspect_plan_mismatch_is_explicit() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime =
-        persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+        durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     create_entity_outcome(execution, &runtime, "main-a");
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let expected_registry =
         declared_aspect_schema_registry(CascadeDeletePolicy::CascadeDeleteRelations);
     let mismatched_registry = AspectSchemaFixture {
@@ -267,22 +267,20 @@ fn durability_contract_failure_relation_integrity_plan_mismatch_is_explicit() {
             })
         })
         .unwrap();
-    let store_layout = DurableStoreLayout {
-        root_path: unique_test_store_path("worth-relational-relation-integrity-mismatch"),
-        segment_commit_capacity: 2,
-    };
+    let medium = TestDurableMedium::new();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(base_registry)
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(store_layout.clone())
+        .durable_medium(medium.clone())
         .build();
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
     create_relation_outcome(execution, &runtime, source, target, "guarded");
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
 
     let mismatched_registry = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
@@ -324,8 +322,7 @@ fn durability_contract_failure_relation_integrity_plan_mismatch_is_explicit() {
         .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(mismatched_registry)
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(store_layout)
+        .durable_medium(medium)
         .build();
     let error = recovered
         .durability_recovery()

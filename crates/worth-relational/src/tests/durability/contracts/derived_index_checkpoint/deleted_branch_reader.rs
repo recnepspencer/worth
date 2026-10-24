@@ -6,7 +6,7 @@ fn deleted_branch_reader_retains_only_its_exact_scoped_generation() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let anchor = create_entity_outcome(execution, &runtime, "pinned-deleted-fork-anchor");
     let index = scoped_name_index(&runtime);
     release_test_commit_snapshot(&runtime, &anchor);
@@ -32,15 +32,14 @@ fn deleted_branch_reader_retains_only_its_exact_scoped_generation() {
         .is_some());
     assert_eq!(runtime.run_index_generation_reclamation_pass(), Some(0));
     assert!(runtime.indexes.generation(generation).is_some());
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)

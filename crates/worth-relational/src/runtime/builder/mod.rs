@@ -12,7 +12,6 @@ use crate::config::data::{
     RelationalRuntimeProfile, StorageLayoutConfig, VisibilityCachePolicy,
 };
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
-use crate::durability::data::{DurabilityMode, DurableStoreLayout};
 use crate::runtime::{RelationalRuntime, RelationalRuntimeConfig, RuntimeExtensions};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::symbols::data::ClientKeySymbolPolicy;
@@ -85,11 +84,6 @@ impl RelationalRuntimeBuilder {
 
     pub fn runtime_name(mut self, runtime_name: impl Into<String>) -> Self {
         self.overrides.execution.runtime_name = Some(runtime_name.into());
-        self
-    }
-
-    pub fn durability_mode(mut self, durability_mode: DurabilityMode) -> Self {
-        self.overrides.durability.mode = Some(durability_mode);
         self
     }
 
@@ -200,11 +194,6 @@ impl RelationalRuntimeBuilder {
 
     pub fn durability_policy(mut self, durability_policy: DurabilityPolicy) -> Self {
         self.overrides.durability.policy = Some(durability_policy);
-        self
-    }
-
-    pub fn durable_store_layout(mut self, durable_store_layout: DurableStoreLayout) -> Self {
-        self.overrides.durability.store_layout = Some(durable_store_layout);
         self
     }
 

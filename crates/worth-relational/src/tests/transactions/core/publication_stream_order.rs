@@ -149,7 +149,7 @@ fn checkpoint_tail_recovery_follows_publication_order_with_exact_reserved_identi
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "recovery-order-anchor");
     fork_publication_branch(&mut runtime, "prepared-first");
     fork_publication_branch(&mut runtime, "published-first");
@@ -171,9 +171,7 @@ fn checkpoint_tail_recovery_follows_publication_order_with_exact_reserved_identi
         .settle_performed_publication(published_first)
         .expect("B settles before the checkpoint");
     release_test_commit_snapshot(&runtime, &committed_b);
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
+    crate::tests::support::checkpoint_durably(execution, &runtime)
         .expect("checkpoint covers B by performed stream position");
 
     let prepared_first = match runtime
@@ -193,17 +191,20 @@ fn checkpoint_tail_recovery_follows_publication_order_with_exact_reserved_identi
         .expect("A settles after the checkpoint");
     release_test_commit_snapshot(&runtime, &committed_a);
 
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     assert_eq!(plan.tail_log.len(), 1);
     assert_eq!(plan.tail_log[0].position(), prepared_first_position);
     assert_eq!(
         plan.tail_log[0].envelope().commit.commit_id,
         prepared_first_id
     );
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).shared());
     recovered
         .durability_recovery()
         .recover(execution, plan)

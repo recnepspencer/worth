@@ -14,7 +14,6 @@ pub enum RecoveryFailureClass {
     ProfileMismatch,
     RuntimeNameMismatch,
     CorruptCheckpoint,
-    CorruptSegment,
     /// A canonical commit artifact a medium returned did not readmit.
     CorruptCanonicalArtifact,
     /// A medium's tail skipped or repeated a position after the checkpoint.
@@ -223,7 +222,6 @@ impl DurabilityError {
                 ErrorOperation::WriteDurableStore
             }
             RecoveryFailureClass::CorruptCheckpoint
-            | RecoveryFailureClass::CorruptSegment
             | RecoveryFailureClass::CorruptCanonicalArtifact
             | RecoveryFailureClass::NonContiguousCanonicalTail
             | RecoveryFailureClass::UnsupportedLegacySemantics

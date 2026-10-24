@@ -1,5 +1,4 @@
 use super::*;
-use crate::capabilities::RuntimeConfigSource;
 use crate::facade::durability::RelationalCanonicalCommitArtifact as Artifact;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
 
@@ -64,9 +63,9 @@ fn every_retained_commit_readmits_from_its_artifact_unchanged() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host_request);
     let runtime = memory_runtime_with_mixed_history(execution);
-    assert_eq!(
-        runtime.runtime_config().durability.policy.mode,
-        DurabilityMode::InMemoryCanonical
+    assert!(
+        runtime.durability.medium().is_none(),
+        "the artifacts come from a memory-only runtime's own history"
     );
     let originals = runtime.history.positioned_canonical_commits_snapshot();
     assert!(originals.len() >= 5, "creates, edit, relation, transition");

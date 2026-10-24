@@ -15,13 +15,10 @@ fn partition_alias_wire_requires_current_layout_and_omits_envelope_index_cache()
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let committed = create_entity_outcome(execution, &runtime, "borrowed-checkpoint-wire");
     release_test_commit_snapshot(&runtime, &committed);
-    let mut checkpoint = runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    let mut checkpoint = crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     let envelope = checkpoint.envelopes[0].envelope_mut_for_test();
     envelope.derived_index_artifacts = DerivedIndexArtifacts::new(vec![DerivedIndexGeneration {
         generation_id: DerivedIndexGenerationId(9_001),
@@ -90,7 +87,7 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "partition-alias-seed");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
@@ -121,10 +118,7 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
     let on_main = create_entity_outcome(execution, &runtime, "main-only");
     release_test_commit_snapshot(&runtime, &on_main);
 
-    let checkpoint = runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    let checkpoint = crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     assert_eq!(checkpoint.branch_roots.len(), 2);
     let wire =
         rmp_serde::to_vec_named(&PersistedDurableCheckpointFileRef::new(&checkpoint)).unwrap();
@@ -166,12 +160,14 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
         2
     );
 
-    let mut plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let mut plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     plan.checkpoint = Some(restored.checkpoint);
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -196,12 +192,9 @@ fn partition_alias_wire_rejects_unknown_or_inconsistent_aliases() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "partition-alias-corruption");
-    let checkpoint = runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    let checkpoint = crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     let wire =
         rmp_serde::to_vec_named(&PersistedDurableCheckpointFileRef::new(&checkpoint)).unwrap();
     let stored = rmp_serde::from_slice::<PersistedDurableCheckpointFile>(&wire).unwrap();
@@ -268,18 +261,15 @@ fn native_capture_sections_count_exact_written_values_without_changing_wire() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "section-seed");
-    let checkpoint = runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let (bytes, sections) = super::super::native_file_codec::encode_checkpoint(
+    let checkpoint = crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let (bytes, sections) = super::super::native_checkpoint_codec::encode_checkpoint(
         &checkpoint,
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .unwrap();
-    let mut expected = super::super::native_file_codec::CHECKPOINT_MAGIC.to_vec();
+    let mut expected = super::super::native_checkpoint_codec::CHECKPOINT_MAGIC.to_vec();
     expected.extend(
         rmp_serde::to_vec_named(&PersistedDurableCheckpointFileRef::new(&checkpoint)).unwrap(),
     );

@@ -19,10 +19,12 @@ where
         .canonical_commit_envelope(merge.commit.commit.commit_id)
         .expect("canonical merge envelope");
     let truth_bundle = capture_aspect_truth_bundle(execution, runtime, &[], &[], &[]);
-    let direct_rebuild_plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::AuditRecoveryVerification)
-        .unwrap();
+    let direct_rebuild_plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::AuditRecoveryVerification,
+    )
+    .unwrap();
     runtime
         .rebuild_runtime_from_plan(execution, direct_rebuild_plan)
         .unwrap_or_else(|error| panic!("direct replay rebuild failed: {error:?}"));

@@ -38,6 +38,15 @@ pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
     /// may not have become durable; only the medium's own recovery can tell.
     fn publish(&self, artifact: &RelationalCanonicalCommitArtifact)
         -> RelationalDurablePublication;
+
+    /// The in-crate test medium behind this binding, so Relational's own
+    /// durability tests can recover from the medium a runtime publishes to.
+    /// Exists only in this crate's unit-test build.
+    #[cfg(test)]
+    #[doc(hidden)]
+    fn in_crate_test_medium(&self) -> Option<&crate::tests::support::TestDurableMedium> {
+        None
+    }
 }
 
 /// A medium's answer to one publication.

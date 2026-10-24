@@ -69,7 +69,7 @@ pub(super) struct BranchReasoningEvidence {
 pub(super) fn run_merge_ready_history_shape_certification(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> MergeReadyHistoryCertificationBundle {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let root = create_entity_outcome(execution, &runtime, "root");
     let linear = create_entity_outcome(execution, &runtime, "linear");
     create_branch_from_main(&runtime, "feature");
@@ -98,7 +98,7 @@ pub(super) fn run_merge_ready_history_shape_certification(
     let replay = replay_merge_ready_commit(execution, &runtime, merge.commit.commit_id);
 
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
     let post_merge_inspection = recovered.history().inspect_merge(
         &BranchId("feature".to_string()),
         &BranchId("main".to_string()),

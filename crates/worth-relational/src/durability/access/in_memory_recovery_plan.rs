@@ -2,9 +2,7 @@ use crate::capabilities::{DurabilityRead, RuntimeConfigSource};
 use crate::durability::access::{
     authority_continuity_for_envelopes, descriptor_semantics_version_for_envelopes,
 };
-use crate::durability::data::{
-    RecoveryCursor, RecoveryIntegrityReport, RecoveryPlan, RecoveryVerificationMode,
-};
+use crate::durability::data::{RecoveryPlan, RecoveryVerificationMode};
 use crate::runtime::RelationalRuntime;
 
 pub(super) fn in_memory_recovery_plan(
@@ -38,20 +36,8 @@ pub(super) fn in_memory_recovery_plan(
 
     RecoveryPlan::new(
         runtime.runtime_config().clone(),
-        runtime.durable_store().map(|store| store.as_ref().clone()),
-        None,
         checkpoint,
         tail_log,
-        RecoveryCursor {
-            checkpoint_id: None,
-            segment_ids: Vec::new(),
-        },
-        RecoveryIntegrityReport {
-            selected_checkpoint_id: None,
-            skipped_corrupt_checkpoints: Vec::new(),
-            verified_segment_ids: Vec::new(),
-            corrupt_segment_id: None,
-        },
         recovery_authority_continuity,
         verification_mode,
         descriptor_semantics_version,

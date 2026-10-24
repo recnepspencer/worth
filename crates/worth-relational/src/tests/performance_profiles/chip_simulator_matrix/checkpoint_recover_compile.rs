@@ -9,9 +9,8 @@ pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
         suite,
         "checkpoint_window_recover_compile_round_trip",
         || {
-            let runtime = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::ChipSimulation,
-            );
+            let runtime =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
             let source =
                 create_entity_in_partition(execution, &runtime, "persisted-driver", PartitionId(7));
             let targets = (0..12)
@@ -41,19 +40,18 @@ pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
             }
 
             let checkpoint_started_at = Instant::now();
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
+            crate::tests::support::checkpoint_durably(execution, &runtime)
                 .expect("chip checkpoint window");
             let checkpoint_micros = checkpoint_started_at.elapsed().as_micros();
 
-            let plan = runtime
-                .durability()
-                .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-                .unwrap();
-            let mut recovered = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::ChipSimulation,
-            );
+            let plan = crate::tests::support::recovery_plan_for(
+                execution,
+                &runtime,
+                RecoveryMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+            let mut recovered =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
             let recover_started_at = Instant::now();
             recovered
                 .durability_recovery()
@@ -98,7 +96,7 @@ pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
                     "recover_micros": recover_micros,
                     "compile_micros": compile_micros,
                     "adjacency_micros": adjacency_micros,
-                    "recovered_segment_count": recovered
+                    "recovered_durable_log_len": recovered
                         .durability()
                         .durable_log()
                         .len(),
@@ -123,7 +121,7 @@ pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
             ("recover_micros", &["recover_micros"]),
             ("compile_micros", &["compile_micros"]),
             ("adjacency_micros", &["adjacency_micros"]),
-            ("recovered_segment_count", &["recovered_segment_count"]),
+            ("recovered_durable_log_len", &["recovered_durable_log_len"]),
             ("outgoing_relation_count", &["outgoing_relation_count"]),
         ],
     );

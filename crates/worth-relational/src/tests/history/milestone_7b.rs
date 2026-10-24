@@ -9,15 +9,15 @@ use crate::facade::schema::{
     RelationalSchemaRegistry, SchemaId, SchemaVersionId,
 };
 use crate::tests::support::{
-    checkpoint_and_recover_with, create_branch_from_main, create_entity, entity_field_aspect,
-    persisted_runtime_with_test_schema, update_entity, update_entity_on_branch,
+    checkpoint_and_recover_with, create_branch_from_main, create_entity,
+    durable_runtime_with_test_schema, entity_field_aspect, update_entity, update_entity_on_branch,
 };
 use worth_foundational::facade::AspectKey;
 
 fn inspect_recovered_merge_planning_artifact(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> crate::facade::merge::MergePlanningArtifactCore {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     update_entity(execution, &runtime, shared, "shared-main");
@@ -42,7 +42,7 @@ fn inspect_recovered_merge_planning_artifact(
         .expect("live merge planning artifact");
 
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
     let recovered_artifact = recovered
         .merge()
         .inspect_planning_scope(

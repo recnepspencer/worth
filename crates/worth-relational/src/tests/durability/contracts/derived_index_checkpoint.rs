@@ -56,7 +56,7 @@ fn reclamation_and_checkpoint_keep_sibling_head_generation() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "sibling-index-first");
     let sibling = create_branch_from_main(&runtime, "index-sibling");
     let index = name_index(&runtime);
@@ -82,15 +82,14 @@ fn reclamation_and_checkpoint_keep_sibling_head_generation() {
     runtime.run_index_generation_reclamation_pass();
     assert!(runtime.indexes.generation(sibling_generation).is_some());
     assert!(runtime.indexes.generation(main_generation).is_some());
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -104,7 +103,7 @@ fn live_fork_scoped_generation_readmits_from_shared_basis() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let anchor = create_entity_outcome(execution, &runtime, "scoped-fork-checkpoint-anchor");
     let branch = create_branch_from_main(&runtime, "scoped-fork-checkpoint");
     let identity = runtime.branch_identity(&branch).unwrap();
@@ -123,15 +122,14 @@ fn live_fork_scoped_generation_readmits_from_shared_basis() {
     let generation = built.generations[0].generation_id;
     drop(basis);
     release_test_commit_snapshot(&runtime, &anchor);
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -144,7 +142,7 @@ fn repeated_edits_checkpoint_only_the_live_index_payload() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "checkpoint-size-0");
     let index = name_index(&runtime);
     build(execution, &runtime, index.index_id, &first);
@@ -159,10 +157,7 @@ fn repeated_edits_checkpoint_only_the_live_index_payload() {
         runtime.index_access().generations_snapshot(),
     );
     let legacy_bytes = rmp_serde::to_vec_named(&legacy_all).unwrap().len();
-    let checkpoint = runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    let checkpoint = crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     let retained_bytes =
         rmp_serde::to_vec_named(checkpoint.derived_index_checkpoint.as_ref().unwrap())
             .unwrap()
@@ -179,23 +174,22 @@ fn checkpoint_index_artifact_survives_tail_replay_without_envelope_caches() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "checkpoint-index-first");
     let index = name_index(&runtime);
     let first_generation = build(execution, &runtime, index.index_id, &first);
-    let checkpoint = runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    let checkpoint = crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     assert!(checkpoint.derived_index_artifacts.is_empty());
     assert_eq!(checkpoint.derived_index_checkpoint_format, 2);
     let second = create_entity_outcome(execution, &runtime, "checkpoint-index-tail");
     let unjournaled_cache = build(execution, &runtime, index.index_id, &second);
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -211,34 +205,35 @@ fn checkpoint_index_artifact_missing_payload_denies_before_recovery() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "checkpoint-missing-index-payload");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let mut plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let mut plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     plan.checkpoint.as_mut().unwrap().derived_index_checkpoint = None;
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)
         .unwrap_err();
     let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
-    let mut old_format = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let mut old_format = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     old_format
         .checkpoint
         .as_mut()
         .unwrap()
         .derived_index_checkpoint_format = 1;
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
         .recover(execution, old_format)
@@ -252,19 +247,18 @@ fn checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let commit = create_entity_outcome(execution, &runtime, "foreign-affinity-index");
     let index = name_index(&runtime);
     build(execution, &runtime, index.index_id, &commit);
     release_test_commit_snapshot(&runtime, &commit);
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let mut plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let mut plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let checkpoint = plan.checkpoint.as_mut().unwrap();
     let mut generation = checkpoint
         .derived_index_checkpoint
@@ -281,7 +275,7 @@ fn checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity() {
         ])
         .unwrap(),
     );
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -296,7 +290,7 @@ fn reclamation_keeps_a_pinned_old_reader_until_release() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "pinned-index-first");
     let index = name_index(&runtime);
     let first_generation = build(execution, &runtime, index.index_id, &first);
@@ -312,15 +306,14 @@ fn reclamation_keeps_a_pinned_old_reader_until_release() {
     assert!(runtime.indexes.generation(first_generation).is_some());
     assert!(runtime.indexes.generation(latest_generation).is_some());
     assert!(runtime.indexes.generation(middle_generation).is_none());
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -339,7 +332,7 @@ fn repeated_closed_branches_leave_no_latest_generation_residue() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let anchor = create_entity_outcome(execution, &runtime, "closed-index-anchor");
     let index = scoped_name_index(&runtime);
     release_test_commit_snapshot(&runtime, &anchor);

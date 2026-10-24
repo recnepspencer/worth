@@ -52,7 +52,6 @@ fn cdc_certification_concurrent_branch_merge_pressure_keeps_subscriber_order_sta
             runtime_mode: RuntimeHarnessMode::InMemory(RelationalRuntimeProfile::GeometryKernel),
             relation_pressure: true,
             durable_checkpoint_every: None,
-            durable_compact_every: None,
             retention_pass_every: Some(4),
             branch_pressure: true,
             replacement_pressure: true,

@@ -10,7 +10,6 @@ use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::{CommitLog, TransactionCommitError};
 
 pub(super) struct PreparedPublicationPhase {
-    pub(super) durable_bytes: Option<worth_execution::ExecutionImmutableBytes>,
     pub(super) record_allocations: crate::runtime::PendingRecordAllocations,
     pub(super) clone_mode: crate::storage::overlay::PartitionCloneMode,
     pub(super) committed_partitions: std::collections::BTreeMap<
@@ -39,7 +38,6 @@ pub(super) struct PreparedPublicationPhase {
 }
 
 pub(super) struct PreparedPublicationCompletion {
-    pub(super) durable_bytes: Option<worth_execution::ExecutionImmutableBytes>,
     pub(super) clone_mode: crate::storage::overlay::PartitionCloneMode,
     pub(super) committed_partitions: std::collections::BTreeMap<
         crate::identity::data::PartitionId,
@@ -104,7 +102,6 @@ impl PreparedPublicationPhase {
             self.canonical_publication_route,
         );
         let completion = PreparedPublicationCompletion {
-            durable_bytes: self.durable_bytes,
             clone_mode: self.clone_mode,
             committed_partitions: self.committed_partitions,
             prepared_history,
@@ -215,8 +212,6 @@ pub(super) fn prepare_publication_phase(
     } else {
         None
     };
-    let durable_bytes = prepare_durable_bytes(execution, runtime, &canonical_commit_envelope)
-        .map_err(|error| error.with_commit_log(commit_log.clone()))?;
     let canonical_commit_envelope = Arc::new(canonical_commit_envelope);
     let mut working_state = working_state;
     apply_adjacency_deltas(&mut working_state, &adjacency_deltas, version_id);
@@ -296,7 +291,6 @@ pub(super) fn prepare_publication_phase(
         })?;
 
     Ok(PreparedPublicationPhase {
-        durable_bytes,
         record_allocations,
         clone_mode,
         committed_partitions,
@@ -315,71 +309,5 @@ pub(super) fn prepare_publication_phase(
         merge_parent_branches,
         deferred_diagnostic_artifacts,
         canonical_publication_route,
-    })
-}
-
-/// Pre-movement bytes retain their ORIGINAL selected payer through settlement.
-fn prepare_durable_bytes(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
-    envelope: &crate::history::data::CanonicalCommitEnvelope,
-) -> Result<Option<worth_execution::ExecutionImmutableBytes>, TransactionCommitError> {
-    use crate::durability::data::{
-        DurabilityMode, RelationalNativeCheckpointCaptureDenial as Denial,
-    };
-    if runtime.config.durability.policy.mode != DurabilityMode::PersistedSegmentedLocalFs {
-        return Ok(None);
-    }
-    let publication_error = |detail| {
-        TransactionCommitError::publication(PublicationError::new(
-            PublicationStage::BundleAssembly,
-            detail,
-        ))
-    };
-    let layout = runtime
-        .config
-        .durability
-        .policy
-        .store_layout
-        .as_ref()
-        .ok_or_else(|| {
-            publication_error("persisted durability requires its native store layout".to_owned())
-        })?;
-    crate::durability::log::local_store::preflight_store(execution, layout).map_err(|stop| {
-        match stop {
-            crate::durability::data::RelationalRecoveryStop::Request(cause) => {
-                TransactionCommitError::execution(
-                    crate::transactions::data::CommitExecutionDenial {
-                        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
-                        partition_identity: None,
-                    },
-                )
-            }
-            crate::durability::data::RelationalRecoveryStop::Durability(error) => {
-                publication_error(error.detail)
-            }
-            crate::durability::data::RelationalRecoveryStop::Allocation(denial) => {
-                crate::execution::allocation_commit_error(TransactionCommitError::conflict(
-                    crate::transactions::data::CommitConflict::new(
-                        crate::transactions::data::ConflictClass::ExecutionAllocationDenied {
-                            denial,
-                        },
-                    ),
-                ))
-            }
-        }
-    })?;
-    crate::durability::log::native_file_codec::encode_payload(
-        envelope,
-        execution.allocation_policy(),
-    )
-    .map(Some)
-    .map_err(|denial| match denial {
-        Denial::Allocation(denial) => crate::execution::allocation_commit_error(
-            TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(
-                crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial },
-            )),
-        ),
-        Denial::Durability(error) => publication_error(error.detail),
     })
 }

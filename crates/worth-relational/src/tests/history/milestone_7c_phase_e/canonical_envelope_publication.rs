@@ -2,7 +2,7 @@ use crate::facade::diagnostics::DiagnosticCode;
 use crate::facade::history::BranchId;
 use crate::tests::support::{
     create_branch_from_main, create_entity_outcome, create_entity_outcome_on_branch,
-    persisted_runtime_with_test_schema,
+    durable_runtime_with_test_schema,
 };
 
 use super::fixtures::execute_feature_into_main_merge;
@@ -62,7 +62,7 @@ fn execute_prepared_merge_preserves_reserved_summary_when_optional_diagnostics_b
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     runtime.configure_diagnostics_for_test(|profile| profile.max_entries_per_artifact = 0);
     create_entity_outcome(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");

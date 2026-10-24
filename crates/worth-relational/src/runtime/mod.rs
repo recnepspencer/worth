@@ -1,5 +1,4 @@
 pub mod builder;
-mod configuration;
 mod construction;
 mod durability_fault_injection;
 mod field_text;

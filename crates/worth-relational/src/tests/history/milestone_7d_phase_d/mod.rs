@@ -31,9 +31,9 @@ use crate::tests::support::{
     capture_aspect_truth_bundle, changed_entities, checkpoint_and_recover_with,
     create_branch_from_main, create_entity, create_relation_in_partition_on_branch, delete_entity,
     delete_entity_on_branch, delete_relation_on_branch, diagnostic_field,
-    diagnostic_field_optional, entity_field_aspect, entity_i64_field_aspect,
-    entity_summary_struct_aspect, field_key, persisted_runtime_with_test_schema,
-    read_entity_aspect_field, unique_test_store_path, update_entity,
+    diagnostic_field_optional, durable_runtime_with_test_schema, entity_field_aspect,
+    entity_i64_field_aspect, entity_summary_struct_aspect, field_key, read_entity_aspect_field,
+    update_entity,
 };
 use worth_foundational::facade::AspectKey;
 
@@ -118,17 +118,13 @@ fn topology_identity_registry() -> crate::facade::schema::RelationalSchemaRegist
         .expect("topology identity registry")
 }
 
-fn persisted_runtime_with_topology_identity_registry(
-    root_path: std::path::PathBuf,
+fn durable_runtime_with_topology_identity_registry(
+    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
 ) -> crate::facade::runtime::RelationalRuntime {
     crate::facade::runtime::RelationalRuntimeApi::builder()
         .profile(crate::tests::support::RelationalRuntimeProfile::CertificationCore)
         .schema_registry(topology_identity_registry())
-        .durability_mode(crate::tests::support::DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(crate::tests::support::DurableStoreLayout {
-            root_path,
-            segment_commit_capacity: 2,
-        })
+        .durable_medium(medium)
         .build()
 }
 use crate::{

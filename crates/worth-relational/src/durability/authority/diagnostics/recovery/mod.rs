@@ -7,7 +7,8 @@ use crate::durability::authority::diagnostics::recovery::authority_continuity_fi
     recovery_authority_continuity_evaluated_fields, recovery_checkpoint_selected_fields,
     recovery_range_replayed_fields,
 };
-use crate::durability::data::{DurableCheckpointId, DurableSegmentId, RecoveryPlan};
+use crate::durability::data::RecoveryPlan;
+use crate::publication::patch::data::PatchStreamPosition;
 
 pub(in crate::durability::authority) fn recovery_authority_continuity_evaluated(
     plan: &RecoveryPlan,
@@ -20,23 +21,21 @@ pub(in crate::durability::authority) fn recovery_authority_continuity_evaluated(
 }
 
 pub(in crate::durability::authority) fn recovery_checkpoint_selected(
-    checkpoint_id: Option<DurableCheckpointId>,
-    skipped_corrupt_checkpoints: &[DurableCheckpointId],
+    checkpoint_covered_position: Option<PatchStreamPosition>,
 ) -> RelationalDiagnosticsEntry {
     RelationalDiagnosticsEntry::new(
         DiagnosticCode::RecoveryCheckpointSelected,
         "recovery checkpoint selected",
-        recovery_checkpoint_selected_fields(checkpoint_id, skipped_corrupt_checkpoints),
+        recovery_checkpoint_selected_fields(checkpoint_covered_position),
     )
 }
 
 pub(in crate::durability::authority) fn recovery_range_replayed(
-    segment_ids: &[DurableSegmentId],
     tail_commits: usize,
 ) -> RelationalDiagnosticsEntry {
     RelationalDiagnosticsEntry::new(
         DiagnosticCode::RecoveryRangeReplayed,
         "durable tail replayed",
-        recovery_range_replayed_fields(segment_ids, tail_commits),
+        recovery_range_replayed_fields(tail_commits),
     )
 }

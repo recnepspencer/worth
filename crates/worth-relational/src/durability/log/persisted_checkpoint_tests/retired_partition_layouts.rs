@@ -1,6 +1,6 @@
 //! Valid MessagePack/current framing must not shelter retired inner partition layouts.
 use super::*;
-use crate::durability::log::native_file_codec::{decode_checkpoint, CHECKPOINT_MAGIC};
+use crate::durability::log::native_checkpoint_codec::{decode_checkpoint, CHECKPOINT_MAGIC};
 
 pub(super) fn assert_retired_partition_layouts_refuse(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -132,7 +132,7 @@ impl serde::Serialize for LayoutCheckpoint<'_, '_> {
 
 #[test]
 fn borrowed_native_checkpoint_refuses_v4_before_reading_its_body() {
-    use crate::durability::log::native_file_codec::{decode_checkpoint, CHECKPOINT_MAGIC};
+    use crate::durability::log::native_checkpoint_codec::{decode_checkpoint, CHECKPOINT_MAGIC};
     #[derive(serde::Serialize)]
     struct PriorHeader {
         checkpoint_protocol_version: u16,

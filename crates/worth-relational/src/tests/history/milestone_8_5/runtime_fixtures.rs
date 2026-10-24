@@ -17,7 +17,9 @@ impl CommitStrategyExecutor for DeterministicFailureExecutor {
     }
 }
 
-pub(super) fn persisted_strategy_runtime(root_path: std::path::PathBuf) -> RelationalRuntime {
+pub(super) fn persisted_strategy_runtime(
+    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
+) -> RelationalRuntime {
     let intent_descriptor = IntentReconciliationStrategy::descriptor(
         crate::facade::commit_strategies::CommitStrategyId(801),
     );
@@ -33,11 +35,7 @@ pub(super) fn persisted_strategy_runtime(root_path: std::path::PathBuf) -> Relat
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(strategy_schema_registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path,
-            segment_commit_capacity: 2,
-        })
+        .durable_medium(medium)
         .commit_strategy(
             crate::facade::commit_strategies::CommitStrategyRegistration::new(
                 intent_descriptor.clone(),
@@ -80,7 +78,7 @@ pub(super) fn persisted_strategy_runtime(root_path: std::path::PathBuf) -> Relat
 }
 
 pub(super) fn persisted_replacement_strategy_runtime(
-    root_path: std::path::PathBuf,
+    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
 ) -> RelationalRuntime {
     let replacement_descriptor = EntityReplacementReconciliationStrategy::descriptor(
         crate::facade::commit_strategies::CommitStrategyId(804),
@@ -88,11 +86,7 @@ pub(super) fn persisted_replacement_strategy_runtime(
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(strategy_schema_registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path,
-            segment_commit_capacity: 2,
-        })
+        .durable_medium(medium)
         .commit_strategy(
             crate::facade::commit_strategies::CommitStrategyRegistration::new(
                 replacement_descriptor.clone(),
@@ -108,7 +102,7 @@ pub(super) fn persisted_replacement_strategy_runtime(
 }
 
 pub(super) fn persisted_strategy_runtime_without_executors(
-    root_path: std::path::PathBuf,
+    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
 ) -> RelationalRuntime {
     let intent_descriptor = IntentReconciliationStrategy::descriptor(
         crate::facade::commit_strategies::CommitStrategyId(801),
@@ -125,11 +119,7 @@ pub(super) fn persisted_strategy_runtime_without_executors(
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(strategy_schema_registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path,
-            segment_commit_capacity: 2,
-        })
+        .durable_medium(medium)
         .commit_strategy(
             CommitStrategyRegistration::new(intent_descriptor).expect("intent registration"),
         )
@@ -147,7 +137,7 @@ pub(super) fn persisted_strategy_runtime_without_executors(
 }
 
 pub(super) fn persisted_strategy_runtime_with_failing_intent_executor(
-    root_path: std::path::PathBuf,
+    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
 ) -> RelationalRuntime {
     let intent_descriptor = IntentReconciliationStrategy::descriptor(
         crate::facade::commit_strategies::CommitStrategyId(801),
@@ -164,11 +154,7 @@ pub(super) fn persisted_strategy_runtime_with_failing_intent_executor(
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(strategy_schema_registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path,
-            segment_commit_capacity: 2,
-        })
+        .durable_medium(medium)
         .commit_strategy(
             CommitStrategyRegistration::new(intent_descriptor.clone())
                 .expect("intent registration"),

@@ -17,8 +17,6 @@ pub(super) use crate::commit_strategies::strategies::{
     IntentReconciliationInput, IntentReconciliationStrategy, ReplicaConvergenceInput,
     ReplicaConvergenceStrategy,
 };
-pub(super) use crate::durability::data::DurableStoreLayout;
-pub(super) use crate::facade::durability::DurabilityMode;
 pub(super) use crate::facade::history::BranchId;
 pub(super) use crate::facade::merge::{MergeIntent, MergePlanningRequest};
 pub(super) use crate::facade::replay::{
@@ -34,7 +32,7 @@ pub(super) use crate::snapshots::data::SnapshotHandle;
 pub(super) use crate::symbols::data::ClientKey;
 pub(super) use crate::tests::support::{
     changed_entities, entity_field_aspect, entity_u64_field_aspect, lifecycle_aspect,
-    read_entity_name, unique_test_store_path, AspectSchemaFixture,
+    read_entity_name, AspectSchemaFixture,
 };
 pub(super) use crate::transactions::data::AspectFieldPatch;
 pub(super) use crate::transactions::data::{EntitySpec, TransactionCommitError};
@@ -162,17 +160,13 @@ impl CommitStrategyExecutor for DeterministicFailureExecutor {
 }
 
 pub(crate) fn persisted_intent_runtime(
-    root_path: std::path::PathBuf,
+    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
     include_executor: bool,
 ) -> crate::facade::runtime::RelationalRuntime {
     let descriptor = IntentReconciliationStrategy::descriptor(CommitStrategyId(161));
     let mut builder = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path,
-            segment_commit_capacity: 2,
-        })
+        .durable_medium(medium)
         .commit_strategy(
             CommitStrategyRegistration::new(descriptor.clone())
                 .expect("intent strategy registration"),
@@ -186,16 +180,12 @@ pub(crate) fn persisted_intent_runtime(
 }
 
 pub(super) fn persisted_intent_runtime_with_failing_executor(
-    root_path: std::path::PathBuf,
+    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
 ) -> crate::facade::runtime::RelationalRuntime {
     let descriptor = IntentReconciliationStrategy::descriptor(CommitStrategyId(161));
     RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path,
-            segment_commit_capacity: 2,
-        })
+        .durable_medium(medium)
         .commit_strategy(
             CommitStrategyRegistration::new(descriptor.clone())
                 .expect("intent strategy registration"),

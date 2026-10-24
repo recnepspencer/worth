@@ -15,7 +15,7 @@ fn fork_checkpoint(
     DerivedIndexId,
     crate::indexes::data::DerivedIndexGenerationId,
 ) {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let anchor = create_entity_outcome(execution, &runtime, NAME);
     let entity = changed_entities(&anchor)[0];
     let branch = create_branch_from_main(&runtime, FORK);
@@ -41,17 +41,13 @@ fn fork_checkpoint(
     let generation = built.generations[0].generation_id;
     drop(basis);
     release_test_commit_snapshot(&runtime, &anchor);
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     (plan, entity, index.index_id, generation)
 }
 
@@ -76,7 +72,7 @@ fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (plan, entity, index, generation) = fork_checkpoint(execution);
-    let mut restored = persisted_runtime_with_test_schema();
+    let mut restored = durable_runtime_with_test_schema();
     restored
         .durability_recovery()
         .recover(execution, plan)
@@ -166,7 +162,7 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
     assert_eq!(decoded[0].applicability.branch_id, foreign);
     checkpoint.derived_index_checkpoint = Some(artifact);
 
-    let mut target = persisted_runtime_with_test_schema();
+    let mut target = durable_runtime_with_test_schema();
     let retained = create_entity_outcome(execution, &target, "target-must-remain");
     let entity = changed_entities(&retained)[0];
     let index = scoped_name_index(&target);

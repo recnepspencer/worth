@@ -3,9 +3,9 @@ use super::*;
 pub(super) fn run_strategy_merge_certification(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> StrategyCertificationBundle {
-    let root_path = unique_test_store_path("worth-relational-strategy-cert");
-    let recovered_root = root_path.clone();
-    let runtime = persisted_strategy_runtime(root_path);
+    let medium = crate::tests::support::TestDurableMedium::new();
+    let recovered_root = medium.clone();
+    let runtime = persisted_strategy_runtime(medium);
     let entity = create_entity(execution, &runtime, "service");
     let aspect_overlap_entity = create_entity(execution, &runtime, "aspect-overlap");
     let aspect_disjoint_entity = create_entity(execution, &runtime, "aspect-disjoint");

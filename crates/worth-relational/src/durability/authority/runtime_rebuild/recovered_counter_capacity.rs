@@ -38,7 +38,7 @@ pub(super) fn validate_tail_lineage_allocator_capacity<'a>(
         .any(|event| event.event_id() >= u64::MAX - 1)
     {
         return Err(DurabilityError::new(
-            RecoveryFailureClass::CorruptSegment,
+            RecoveryFailureClass::CorruptCanonicalArtifact,
             "recovery tail lineage event id exhausted the allocator",
         ));
     }
@@ -50,7 +50,7 @@ pub(super) fn validate_tail_lineage_allocator_capacity<'a>(
         .any(|lineage_id| lineage_id.0 >= u64::MAX - 1)
     {
         return Err(DurabilityError::new(
-            RecoveryFailureClass::CorruptSegment,
+            RecoveryFailureClass::CorruptCanonicalArtifact,
             "recovery tail lineage id exhausted the allocator",
         ));
     }

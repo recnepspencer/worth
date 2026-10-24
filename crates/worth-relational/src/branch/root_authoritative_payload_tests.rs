@@ -11,10 +11,8 @@ fn strategy_artifacts_are_bound_into_the_committed_root() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = crate::commit_strategies::facade::persisted_intent_runtime(
-        unique_test_store_path("root-strategy-artifact"),
-        true,
-    );
+    let mut runtime =
+        crate::commit_strategies::facade::persisted_intent_runtime(TestDurableMedium::new(), true);
     let entity = create_entity(execution, &runtime, "strategy-before");
     let outcome = crate::commit_strategies::facade::execute_persisted_intent_strategy_commit(
         execution,
@@ -69,7 +67,7 @@ fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "schema-before");
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {

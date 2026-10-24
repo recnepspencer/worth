@@ -13,17 +13,17 @@ fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let source = persisted_runtime_with_test_schema();
+    let source = durable_runtime_with_test_schema();
     let committed = create_entity_outcome(execution, &source, "reuse-root-mirror");
     release_test_commit_snapshot(&source, &committed);
-    let checkpoint = source.durability_authority().checkpoint(execution).unwrap();
+    let checkpoint = crate::tests::support::checkpoint_durably(execution, &source).unwrap();
     assert_eq!(checkpoint.branch_roots.len(), 1);
     assert_eq!(
         checkpoint.branch_roots[0].partition_images,
         checkpoint.partition_images
     );
 
-    let mut restored = persisted_runtime_with_test_schema();
+    let mut restored = durable_runtime_with_test_schema();
     let mut work = crate::durability::data::CheckpointRestoreWork::default();
     let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
     let mirror = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap();
@@ -36,7 +36,7 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let source = persisted_runtime_with_test_schema();
+    let source = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &source, "work-seed");
     let small = source
         .durability_authority()
@@ -65,11 +65,14 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
         native.captured_sections().unwrap().envelopes
             > grown.captured_sections().unwrap().envelopes
     );
-    let decoded =
-        crate::durability::log::native_file_codec::decode_checkpoint(execution, native.bytes())
-            .unwrap()
-            .checkpoint;
-    let mut recovered = persisted_runtime_with_test_schema();
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+        execution,
+        native.bytes(),
+    )
+    .unwrap()
+    .checkpoint;
+    let mut recovered = durable_runtime_with_test_schema();
+    bind_durable_medium(&mut recovered, attached_test_medium(&source).shared());
     let outcome = recovered
         .durability_recovery()
         .restore_native_checkpoint(execution, &native)
@@ -121,14 +124,17 @@ fn shared_restored_substrate_keeps_a_pinned_reader_exact_after_next_write() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let source = persisted_runtime_with_test_schema();
+    let source = durable_runtime_with_test_schema();
     create_entity(execution, &source, "reuse-reader-seed");
-    source.durability_authority().checkpoint(execution).unwrap();
-    let plan = source
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    crate::tests::support::checkpoint_durably(execution, &source).unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &source,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
+    bind_durable_medium(&mut recovered, attached_test_medium(&source).shared());
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -165,7 +171,7 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let source = persisted_runtime_with_test_schema();
+    let source = durable_runtime_with_test_schema();
     create_entity(execution, &source, "reuse-sibling-seed");
     let sibling = create_branch_from_main(&source, "reuse-sibling");
     let sibling_commit =
@@ -173,10 +179,10 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
     release_test_commit_snapshot(&source, &sibling_commit);
     let main_commit = create_entity_outcome(execution, &source, "reuse-main-only");
     release_test_commit_snapshot(&source, &main_commit);
-    let checkpoint = source.durability_authority().checkpoint(execution).unwrap();
+    let checkpoint = crate::tests::support::checkpoint_durably(execution, &source).unwrap();
     assert_eq!(checkpoint.branch_roots.len(), 2);
 
-    let mut restored = persisted_runtime_with_test_schema();
+    let mut restored = durable_runtime_with_test_schema();
     let mut work = crate::durability::data::CheckpointRestoreWork::default();
     let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
     let mirror = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap();
@@ -188,12 +194,15 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
     assert!(shares_first_generation(&mirror, main_root));
     assert!(!shares_first_generation(&mirror, sibling_root));
 
-    let mut plan = source
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let mut plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &source,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     plan.checkpoint = Some(checkpoint);
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
+    bind_durable_medium(&mut recovered, attached_test_medium(&source).shared());
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -218,7 +227,7 @@ fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let source = persisted_runtime_with_test_schema();
+    let source = durable_runtime_with_test_schema();
     let main_entity = create_entity(execution, &source, "partial-mirror-main");
     let mut transaction = test_owner_begin_transaction_for_main(&source);
     transaction
@@ -249,7 +258,7 @@ fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
         "cross-partition",
         PartitionId(31),
     );
-    let mut checkpoint = source.durability_authority().checkpoint(execution).unwrap();
+    let mut checkpoint = crate::tests::support::checkpoint_durably(execution, &source).unwrap();
     let main_image = checkpoint
         .partition_images
         .iter_mut()
@@ -257,7 +266,7 @@ fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
         .unwrap();
     main_image.entity_arena.snapshot_pins[0] += 1;
 
-    let mut restored = persisted_runtime_with_test_schema();
+    let mut restored = durable_runtime_with_test_schema();
     let mut work = crate::durability::data::CheckpointRestoreWork::default();
     let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
     let mirror = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap();
@@ -282,7 +291,7 @@ fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let source = persisted_runtime_with_test_schema();
+    let source = durable_runtime_with_test_schema();
     let seed = create_entity_outcome(execution, &source, "catalog-relink-seed");
     release_test_commit_snapshot(&source, &seed);
     let sibling = create_branch_from_main(&source, "catalog-relink-sibling");
@@ -291,13 +300,16 @@ fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
     release_test_commit_snapshot(&source, &sibling_commit);
     let main_commit = create_entity_outcome(execution, &source, "catalog-relink-main");
     release_test_commit_snapshot(&source, &main_commit);
-    source.durability_authority().checkpoint(execution).unwrap();
+    crate::tests::support::checkpoint_durably(execution, &source).unwrap();
 
-    let plan = source
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &source,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
+    bind_durable_medium(&mut recovered, attached_test_medium(&source).shared());
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -324,16 +336,16 @@ fn equal_image_cannot_bypass_global_contract_readmission() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let source = persisted_runtime_with_test_schema();
+    let source = durable_runtime_with_test_schema();
     create_entity(execution, &source, "reuse-contract-corruption");
-    let mut checkpoint = source.durability_authority().checkpoint(execution).unwrap();
+    let mut checkpoint = crate::tests::support::checkpoint_durably(execution, &source).unwrap();
     assert_eq!(
         checkpoint.branch_roots[0].partition_images,
         checkpoint.partition_images
     );
     checkpoint.aspect_contracts.clear();
 
-    let mut restored = persisted_runtime_with_test_schema();
+    let mut restored = durable_runtime_with_test_schema();
     let mut work = crate::durability::data::CheckpointRestoreWork::default();
     let roots = restore_branch_root_images(&mut restored, &checkpoint, &mut work).unwrap();
     let error = prepare_partitions(&mut restored, &checkpoint, &roots, &mut work).unwrap_err();

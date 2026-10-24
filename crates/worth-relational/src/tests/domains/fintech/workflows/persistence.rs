@@ -4,7 +4,6 @@ use crate::facade::diagnostics::DiagnosticCode;
 use crate::facade::query::PlannedQueryPacket;
 use crate::facade::replay::ReplayFailureClass;
 use crate::tests::domains::fintech::fixture::FintechCaseRole;
-use crate::tests::support::{field_key, read_entity_field};
 
 #[test]
 fn fintech_persisted_workflow_recovers_checkpoint_tail_and_keeps_queryable_portfolio_state() {
@@ -17,11 +16,12 @@ fn fintech_persisted_workflow_recovers_checkpoint_tail_and_keeps_queryable_portf
     let _checkpoint = checkpoint_world(execution, &mut world).unwrap();
     let _correction = correct_seeded_trade_candidate(execution, &mut world, analysis);
     let expected = {
-        let plan = world
-            .runtime
-            .durability()
-            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-            .unwrap();
+        let plan = crate::tests::support::recovery_plan_for(
+            execution,
+            &world.runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
+        .unwrap();
         let mut recovered = FintechWorld::setup_persisted_world(execution).runtime;
         let outcome = recovered
             .durability_recovery()
@@ -175,14 +175,7 @@ fn fintech_failure_injection_helpers_cover_savepoints_replay_and_checkpoint_corr
 
     let mut persisted = setup_world_for(execution, FintechScenario::PersistedSmokeBook);
     checkpoint_world(execution, &mut persisted).unwrap();
-    let path = corrupt_latest_checkpoint_file(
-        &persisted
-            .runtime
-            .durability()
-            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-            .unwrap(),
-    );
-    assert!(path.is_some());
+    assert!(damage_filed_checkpoint(&persisted.runtime));
 }
 
 #[test]
@@ -216,7 +209,7 @@ fn fintech_complexity_hooks_measure_seeded_workflows() {
 }
 
 #[test]
-fn fintech_persisted_workflow_supports_compaction_after_checkpoint() {
+fn fintech_persisted_workflow_recovers_from_its_filed_checkpoint() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -224,20 +217,19 @@ fn fintech_persisted_workflow_supports_compaction_after_checkpoint() {
     let analysis = open_analysis_branch(&mut world);
     let _shock = shock_market_on_branch(execution, &mut world, analysis);
     checkpoint_world(execution, &mut world).unwrap();
-    let pre_compaction_probe = capture_case_truth_probe(
+    let pre_recovery_probe = capture_case_truth_probe(
         execution,
         &world,
         FintechCaseRole::BaselinePortfolio,
         ProbeStage::PostMutation,
     );
 
-    let compaction = compact_world_store(&mut world).unwrap();
     let (recovered, outcome) = recover_persisted_world(execution, &world).unwrap();
     let recovered_probe = capture_recovery_probe(&recovered, &outcome);
 
     assert!(
-        !compaction.removed_segments.is_empty() || !compaction.retained_segments.is_empty(),
-        "compaction should report at least one segment decision"
+        outcome.coverage.checkpoint_covered_position.is_some(),
+        "recovery starts from the checkpoint the medium filed"
     );
     assert_eq!(
         recovered
@@ -274,7 +266,7 @@ fn fintech_persisted_workflow_supports_compaction_after_checkpoint() {
         .map(|read| read.outcome)
         .expect("executed recovered portfolio query")
         .result;
-    assert_eq!(result.entities.len(), pre_compaction_probe.entity_count);
+    assert_eq!(result.entities.len(), pre_recovery_probe.entity_count);
     assert!(recovered_probe.latest_commit_id.is_some());
 }
 

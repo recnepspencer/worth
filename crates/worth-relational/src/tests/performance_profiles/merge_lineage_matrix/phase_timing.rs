@@ -8,7 +8,7 @@ pub(super) fn certify_merge_execute_phase_timing_feature_adoption(
         suite,
         "merge_execute_phase_timing_feature_adoption",
         || {
-            let runtime = persisted_runtime_with_test_schema();
+            let runtime = durable_runtime_with_test_schema();
             create_entity(execution, &runtime, "main-anchor");
             create_branch_from_main(&runtime, "feature");
             let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(

@@ -5,7 +5,7 @@ fn derived_index_contract_relation_field_equals_persisted_recovery_preserves_par
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_index_field_aspects();
+    let runtime = durable_runtime_with_index_field_aspects();
     let source = create_entity_outcome(execution, &runtime, "source");
     let target = create_entity_outcome(execution, &runtime, "target");
     let relation = create_relation_outcome(
@@ -70,7 +70,7 @@ fn derived_index_contract_relation_field_equals_persisted_recovery_preserves_par
     let (_recovery, recovered) = checkpoint_and_recover_with(
         execution,
         &runtime,
-        persisted_runtime_with_index_field_aspects,
+        durable_runtime_with_index_field_aspects,
     );
     let recovered_snapshot = recovered.visibility_authority().snapshot();
     let recovered_context = recovered
@@ -108,7 +108,7 @@ fn derived_index_contract_persisted_recovery_preserves_entity_field_equals_parit
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_index_field_aspects();
+    let runtime = durable_runtime_with_index_field_aspects();
     let alpha = create_entity_outcome(execution, &runtime, "alpha");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
@@ -165,7 +165,7 @@ fn derived_index_contract_persisted_recovery_preserves_entity_field_equals_parit
     let (_recovery, recovered) = checkpoint_and_recover_with(
         execution,
         &runtime,
-        persisted_runtime_with_index_field_aspects,
+        durable_runtime_with_index_field_aspects,
     );
     let recovered_snapshot = recovered.visibility_authority().snapshot();
     let recovered_context = recovered

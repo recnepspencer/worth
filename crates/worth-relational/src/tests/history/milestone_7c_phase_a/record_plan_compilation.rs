@@ -15,9 +15,9 @@ use crate::merge::data::{
     MergeValueMaterialization,
 };
 use crate::tests::support::{
-    create_branch_from_main, create_entity, create_entity_outcome_on_branch, entity_field_aspect,
-    field_key, persisted_runtime_with_test_schema, read_entity_field, update_entity,
-    update_entity_on_branch, CascadeDeletePolicy, CrossContextPolicy,
+    create_branch_from_main, create_entity, create_entity_outcome_on_branch,
+    durable_runtime_with_test_schema, entity_field_aspect, field_key, read_entity_field,
+    update_entity, update_entity_on_branch, CascadeDeletePolicy, CrossContextPolicy,
 };
 use worth_foundational::facade::AspectKey;
 
@@ -26,7 +26,7 @@ fn prepare_merge_execution_compiles_source_addition_record_plan() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(

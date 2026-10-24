@@ -55,10 +55,12 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
         .into_parts();
     recovered.admit_basis(basis(&target)).unwrap();
     let saved = capture(&target);
-    let decoded =
-        crate::durability::log::native_file_codec::decode_checkpoint(execution, saved.bytes())
-            .unwrap()
-            .checkpoint;
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+        execution,
+        saved.bytes(),
+    )
+    .unwrap()
+    .checkpoint;
     let mut hidden_write = decoded
         .envelopes
         .iter()
@@ -115,7 +117,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
                 .collect();
         }
         assert!(entry.codec_retirement_headers_valid());
-        let (bytes, _) = crate::durability::log::native_file_codec::encode_checkpoint(
+        let (bytes, _) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
             &changed,
             execution.allocation_policy(),
         )
@@ -197,10 +199,12 @@ pub(super) fn cold_retired_route(
         crate::history::data::CanonicalOutputPublication::BirthAfterCodecRetirement { .. }
     ));
 
-    let decoded =
-        crate::durability::log::native_file_codec::decode_checkpoint(execution, saved.bytes())
-            .unwrap()
-            .checkpoint;
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+        execution,
+        saved.bytes(),
+    )
+    .unwrap()
+    .checkpoint;
     let foreign = decoded
         .envelopes
         .iter()
@@ -228,7 +232,7 @@ pub(super) fn cold_retired_route(
         } else {
             event.publication = foreign;
         }
-        let (bytes, _) = crate::durability::log::native_file_codec::encode_checkpoint(
+        let (bytes, _) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
             &changed,
             execution.allocation_policy(),
         )

@@ -5,7 +5,7 @@ fn deleted_on_both_sides_merge_commit_has_replay_and_recovery_parity() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     delete_entity(execution, &runtime, entity);
@@ -65,7 +65,7 @@ fn deleted_on_both_sides_merge_commit_has_replay_and_recovery_parity() {
     );
 
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
     let recovered_envelope = recovered
         .replay()
         .canonical_commit_envelope(merge.commit.commit.commit_id)

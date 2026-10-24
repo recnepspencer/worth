@@ -1,7 +1,3 @@
-use std::fs;
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
 pub(super) use worth_harness::facade::{
     DiagnosticsHarnessAdapter, HarnessAdapter, ReplayHarnessAdapter,
 };
@@ -15,7 +11,6 @@ pub(super) use crate::facade::config::{
 pub(super) use crate::facade::diagnostics::{
     DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope,
 };
-pub(super) use crate::facade::durability::{DurabilityMode, DurableStoreLayout};
 pub(super) use crate::facade::harness::RelationalHarnessAdapter;
 pub(super) use crate::facade::history::{
     AspectHistoryCommitSpan, AspectHistoryEntry, AspectResolutionContext, BranchId,
@@ -58,11 +53,12 @@ pub(super) use worth_foundational::facade::AspectKey;
 
 // Test helper index:
 // - `schema`: baseline schema builders plus declared-aspect fixtures
-// - `runtime`: runtime builders, persisted-runtime builders, and store paths
+// - `runtime`: runtime builders, including durable runtimes on the test medium
 // - `records`: common entity/relation verbs and branch-aware mutation helpers
 // - `history`: aspect/history digest helpers and small read utilities
 // - `inspection`: canonical inspection request builders and historical read helpers
-// - `durability`: branch/recovery helpers for persisted round trips
+// - `durability`: branch/recovery helpers for durable round trips
+// - `durable_medium`: the in-crate test medium durable runtimes publish to
 // - `relation_integrity`: schema fixtures and scenario helpers for milestone-4 legality work
 // - `savepoint`: hostile savepoint residue assertions for patch/subscriber surfaces
 //
@@ -71,6 +67,7 @@ pub(super) use worth_foundational::facade::AspectKey;
 mod aspect_field_patches;
 #[path = "support/durability.rs"]
 mod durability;
+mod durable_medium;
 #[path = "support/history.rs"]
 mod history;
 #[path = "support/inspection.rs"]
@@ -90,6 +87,7 @@ mod transaction_authority;
 
 pub(crate) use aspect_field_patches::*;
 pub(crate) use durability::*;
+pub(crate) use durable_medium::*;
 pub(crate) use history::*;
 pub(crate) use inspection::*;
 pub(crate) use records::*;

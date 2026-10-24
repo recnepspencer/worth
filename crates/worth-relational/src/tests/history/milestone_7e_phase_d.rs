@@ -8,11 +8,11 @@ use crate::facade::merge::{
     RelationalMergeSchemaReconciliationPosture, RelationalMergeScope,
     RelationalMergeTopologyIntent,
 };
-use crate::tests::support::persisted_runtime_with_test_schema;
+use crate::tests::support::durable_runtime_with_test_schema;
 
 #[test]
 fn foundational_lowering_preserves_exact_relational_request_truth() {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let normalized = normalized_request("main", "feature");
 
     let lowered = runtime
@@ -59,7 +59,7 @@ fn foundational_lowering_preserves_exact_relational_request_truth() {
 
 #[test]
 fn foundational_lowering_does_not_collapse_distinct_relational_meanings() {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let main_to_feature = normalized_request("main", "feature");
     let release_to_hotfix = normalized_request("release", "hotfix");
 
@@ -100,7 +100,7 @@ fn execution_authoring_and_explicit_normalization_lower_identically() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     crate::tests::support::create_entity_outcome(execution, &runtime, "merge-seed");
     runtime
         .history_authority()
@@ -157,7 +157,7 @@ fn normalized_request(
 
 #[test]
 fn foundational_lowering_uses_foundational_admission_vocabulary() {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let normalized = normalized_request("main", "feature");
 
     let lowered = runtime

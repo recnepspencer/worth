@@ -9,14 +9,10 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
         CascadeDeletePolicy::CascadeDeleteRelations,
     )
     .build_registry();
-    let store_layout = DurableStoreLayout {
-        root_path: unique_test_store_path("worth-relational-root-schema-interpretation"),
-        segment_commit_capacity: 2,
-    };
+    let medium = TestDurableMedium::new();
     let mut runtime = RelationalRuntimeApi::builder()
         .schema_registry(v1_registry)
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(store_layout)
+        .durable_medium(medium)
         .build();
     let old = create_entity_outcome(execution, &runtime, "old-contract");
     let old_entity = changed_entities(&old)[0];
@@ -68,17 +64,14 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
         "legacy-v1-before-recovery",
         BranchId("legacy-schema".to_owned()),
     );
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
+    crate::tests::support::checkpoint_durably(execution, &runtime)
         .expect("checkpoint retains both exact root schema carriers");
-    let plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
 
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(v2_registry)

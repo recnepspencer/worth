@@ -2,7 +2,7 @@ use crate::facade::history::BranchId;
 use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
 use crate::facade::transactions::{CreateIntent, MutationIntent, WorkerIntentBatch};
 use crate::tests::support::{
-    changed_entities, create_branch_from_main, create_entity, persisted_runtime_with_test_schema,
+    changed_entities, create_branch_from_main, create_entity, durable_runtime_with_test_schema,
     update_entity, update_entity_on_branch,
 };
 
@@ -11,7 +11,7 @@ fn complexity_budget_merge_planning_reports_request_shaped_work() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     update_entity(execution, &runtime, shared, "main-value");
@@ -82,7 +82,7 @@ fn complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutati
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "main-anchor");
     create_branch_from_main(&runtime, "feature");
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(

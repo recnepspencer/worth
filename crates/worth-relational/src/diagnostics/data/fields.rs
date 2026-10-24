@@ -5,7 +5,6 @@ use worth_foundational::facade::{
     CanonicalBasisReadyArtifact, CanonicalFieldPath, DiagnosticMask, FieldKey, StructAspectValue,
 };
 
-use crate::durability::data::{DurableCheckpointId, DurableSegmentId};
 use crate::history::data::BranchId;
 use crate::history::data::CommitId;
 use crate::identity::data::{EntityId, KindId, LineageId, PartitionId, RelationId, VersionId};
@@ -77,8 +76,6 @@ pub enum RelationalDiagnosticValue {
     CommitId(CommitId),
     BranchId(BranchId),
     SnapshotId(SnapshotId),
-    DurableCheckpointId(DurableCheckpointId),
-    DurableSegmentId(DurableSegmentId),
     DerivedIndexId(DerivedIndexId),
     DerivedIndexGenerationId(DerivedIndexGenerationId),
     // Retained as durable vocabulary for 9.16.1.1 lineage diagnostics.

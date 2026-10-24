@@ -256,29 +256,12 @@ fn apply_durability_overrides(
 ) {
     let section = &override_tree.durability;
     insert_override_provenance(provenance, "durability.policy", section.policy.is_some());
-    insert_override_provenance(provenance, "durability.mode", section.mode.is_some());
     insert_override_provenance(provenance, "durability.log", section.log.is_some());
-    insert_override_provenance(
-        provenance,
-        "durability.store_layout",
-        section.store_layout.is_some(),
-    );
     if let Some(policy) = &section.policy {
         config.durability.policy = policy.clone();
     }
-    if let Some(mode) = section.mode {
-        config.durability.policy.mode = mode;
-    }
     if let Some(log) = &section.log {
         config.durability.policy.log = log.clone();
-        config
-            .durability
-            .policy
-            .checkpoints
-            .compact_after_checkpoint = log.compact_after_checkpoint;
-    }
-    if let Some(store_layout) = &section.store_layout {
-        config.durability.policy.store_layout = Some(store_layout.clone());
     }
 }
 

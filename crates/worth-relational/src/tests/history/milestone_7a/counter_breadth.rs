@@ -8,7 +8,7 @@ fn merge_ready_history_shape_reports_counter_breadth_explicitly() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let _root = create_entity_outcome(execution, &runtime, "root");
     let _linear = create_entity_outcome(execution, &runtime, "linear");
     create_branch_from_main(&runtime, "feature");
@@ -51,11 +51,13 @@ fn merge_ready_history_shape_reports_counter_breadth_explicitly() {
     assert!(runtime_counters.merge_history_replay_planning_nodes_visited >= 4);
     assert!(runtime_counters.merge_history_replay_parent_checks >= 4);
 
-    let recovery_plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let recovery_plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, recovery_plan)

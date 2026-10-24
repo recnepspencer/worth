@@ -23,7 +23,7 @@ fn phase3b_owner_drop_during_off_thread_settlement_completes() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "phase3b-detached-anchor");
     let (reached, release, control) = settlement_pause();
     let performed = perform_write_with_control(
@@ -96,7 +96,7 @@ fn phase3b_settlement_admitted_after_owner_drop_is_denied() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "phase3b-close-window-anchor");
     fork_from_main(&runtime, "phase3b-paused");
     fork_from_main(&runtime, "phase3b-late");
@@ -170,7 +170,7 @@ fn phase3b_recovery_replacement_closes_the_prior_runtimes_ports() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     let seeded = create_entity_outcome(execution, &runtime, "phase3b-recovery-anchor");
     let seeded_commit_id = seeded.commit.commit_id;
     release_test_commit_snapshot(&runtime, &seeded);
@@ -178,10 +178,12 @@ fn phase3b_recovery_replacement_closes_the_prior_runtimes_ports() {
     let replaced_instance_id = runtime.runtime_instance_id();
     assert_eq!(port.runtime_instance_id(), replaced_instance_id);
 
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     runtime
         .durability_recovery()
         .recover(execution, plan)

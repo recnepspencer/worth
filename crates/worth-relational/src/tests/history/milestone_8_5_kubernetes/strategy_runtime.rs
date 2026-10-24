@@ -18,7 +18,9 @@ pub(super) fn strategy_schema_registry() -> crate::schema::data::RelationalSchem
     .build_registry()
 }
 
-pub(super) fn persisted_strategy_runtime(root_path: std::path::PathBuf) -> RelationalRuntime {
+pub(super) fn persisted_strategy_runtime(
+    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
+) -> RelationalRuntime {
     let intent_descriptor = IntentReconciliationStrategy::descriptor(
         crate::facade::commit_strategies::CommitStrategyId(881),
     );
@@ -28,11 +30,7 @@ pub(super) fn persisted_strategy_runtime(root_path: std::path::PathBuf) -> Relat
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(strategy_schema_registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path,
-            segment_commit_capacity: 2,
-        })
+        .durable_medium(medium)
         .commit_strategy(
             crate::facade::commit_strategies::CommitStrategyRegistration::new(
                 intent_descriptor.clone(),

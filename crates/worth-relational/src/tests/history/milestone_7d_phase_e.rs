@@ -12,9 +12,9 @@ use crate::schema::data::{
 use crate::tests::support::{
     create_branch_from_main, create_entity, create_relation,
     create_relation_in_partition_on_branch, delete_entity_on_branch, delete_relation_on_branch,
-    persisted_runtime_with_test_schema, relation_field_aspect, relation_source_aspect,
-    relation_target_aspect, unique_test_store_path, update_entity, CascadeDeletePolicy,
-    CrossContextPolicy, KindId, PartitionId, RelationalRuntime, RelationalSchemaRegistry,
+    durable_runtime_with_test_schema, relation_field_aspect, relation_source_aspect,
+    relation_target_aspect, update_entity, CascadeDeletePolicy, CrossContextPolicy, KindId,
+    PartitionId, RelationalRuntime, RelationalSchemaRegistry,
 };
 use worth_foundational::facade::AspectKey;
 
@@ -23,7 +23,7 @@ fn inspection_input_round_trips_deleted_vs_modified_without_host_projection() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     update_entity(execution, &runtime, entity, "main-modified");
@@ -75,9 +75,8 @@ fn execution_surface_preserves_topology_region_conflict_authority_rows() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_topology_identity_registry(unique_test_store_path(
-        "worth-relational-7d-phase-e-topology-inspection",
-    ));
+    let runtime =
+        runtime_with_topology_identity_registry(crate::tests::support::TestDurableMedium::new());
     let source = create_entity(execution, &runtime, "source");
     let target_a = create_entity(execution, &runtime, "target-a");
     let target_b = create_entity(execution, &runtime, "target-b");
@@ -149,7 +148,9 @@ fn execution_surface_preserves_topology_region_conflict_authority_rows() {
         .all(|row| { row.admission() == RelationalMergeInspectionAdmission::ExecutionDenied }));
 }
 
-fn runtime_with_topology_identity_registry(root_path: std::path::PathBuf) -> RelationalRuntime {
+fn runtime_with_topology_identity_registry(
+    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
+) -> RelationalRuntime {
     let label_key = AspectKey::new("label").unwrap();
     let registry = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
@@ -186,10 +187,6 @@ fn runtime_with_topology_identity_registry(root_path: std::path::PathBuf) -> Rel
 
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .durability_mode(crate::tests::support::DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(crate::tests::support::DurableStoreLayout {
-            root_path,
-            segment_commit_capacity: 2,
-        })
+        .durable_medium(medium)
         .build()
 }

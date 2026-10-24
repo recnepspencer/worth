@@ -8,14 +8,15 @@ use crate::facade::merge::{
 use crate::facade::schema::{SchemaReconciliationClassification, SchemaReconciliationPolicy};
 use crate::tests::support::{
     checkpoint_and_recover_with, create_branch_from_main, create_entity, create_relation,
-    create_relation_in_partition_on_branch, delete_relation_on_branch, unique_test_store_path,
+    create_relation_in_partition_on_branch, delete_relation_on_branch,
 };
 
 use fixtures::{
-    additive_row, create_named_entity_on_branch, denied_narrowing_row, merge_planning_request,
-    merge_request, persisted_runtime_with_schema_declared_entity_policy, published_merge_authority,
-    runtime_with_relation_identity_registry, runtime_with_schema_declared_entity_policy,
-    structural_incompatible_row, synthetic_witness, type_incompatible_row,
+    additive_row, create_named_entity_on_branch, denied_narrowing_row,
+    durable_runtime_with_schema_declared_entity_policy, merge_planning_request, merge_request,
+    published_merge_authority, runtime_with_relation_identity_registry,
+    runtime_with_schema_declared_entity_policy, structural_incompatible_row, synthetic_witness,
+    type_incompatible_row,
 };
 use serde_support::{row_payloads, witness_payload};
 
@@ -133,7 +134,7 @@ fn retained_schema_reconciliation_witness_preserves_runtime_additive_truth_acros
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime =
-        persisted_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher);
+        durable_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher);
     create_named_entity_on_branch(
         execution,
         &runtime,
@@ -167,7 +168,7 @@ fn retained_schema_reconciliation_witness_preserves_runtime_additive_truth_acros
         .expect("executed merge");
     let live_authority = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
     let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
-        persisted_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher)
+        durable_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher)
     });
     let recovered_authority =
         published_merge_authority(&recovered, outcome.commit.commit.commit_id);
@@ -310,9 +311,8 @@ fn retained_schema_reconciliation_witness_keeps_runtime_structural_denial_typed(
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = runtime_with_relation_identity_registry(unique_test_store_path(
-        "worth-relational-7e-phase-h-topology",
-    ));
+    let runtime =
+        runtime_with_relation_identity_registry(crate::tests::support::TestDurableMedium::new());
     let source = create_entity(execution, &runtime, "source");
     let target_a = create_entity(execution, &runtime, "target-a");
     let target_b = create_entity(execution, &runtime, "target-b");

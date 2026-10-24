@@ -52,7 +52,7 @@ impl DurabilityRecoveryAuthority<'_> {
                 detail,
             )
         })?;
-        let checkpoint = crate::durability::log::native_file_codec::decode_checkpoint(
+        let checkpoint = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
             execution,
             native.bytes(),
         )?

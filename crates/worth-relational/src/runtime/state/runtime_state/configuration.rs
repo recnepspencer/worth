@@ -1,6 +1,5 @@
 use std::sync::{Arc, RwLock};
 
-use crate::durability::data::DurabilityMode;
 use crate::runtime::{RelationalRuntimeConfig, SchemaContractRuntimeSubsystem};
 
 /// The configuration one relational runtime is operating under, together with
@@ -62,11 +61,6 @@ impl RelationalRuntimeConfiguration {
         self.read().clone()
     }
 
-    pub(in crate::runtime) fn set_durability_mode(&self, mode: DurabilityMode) {
-        let mut state = self.write();
-        Arc::make_mut(&mut state.config).durability.policy.mode = mode;
-    }
-
     /// Owner-side configuration edit reserved for runtime test support.
     #[cfg(test)]
     pub(in crate::runtime) fn update(&self, edit: impl FnOnce(&mut RelationalRuntimeConfig)) {
@@ -80,6 +74,7 @@ impl RelationalRuntimeConfiguration {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
+    #[cfg(test)]
     fn write(&self) -> std::sync::RwLockWriteGuard<'_, RelationalRuntimeConfigurationSnapshot> {
         self.state
             .write()

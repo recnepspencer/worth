@@ -6,17 +6,16 @@ fn tail_created_lineage_allocator_exhaustion_denies_before_replay() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "lineage-overflow-checkpoint");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     create_entity_outcome(execution, &runtime, "lineage-overflow-tail");
-    let mut plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let mut plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     plan.tail_log[0]
         .envelope_mut_for_test()
         .published_lineage_mut_for_test()
@@ -26,14 +25,14 @@ fn tail_created_lineage_allocator_exhaustion_denies_before_replay() {
         .envelope_mut_for_test()
         .rebuild_lineage_basis_for_test();
 
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)
         .expect_err("tail lineage allocator exhaustion must deny");
     let error = crate::tests::support::expect_durability_failure(error);
 
-    assert_eq!(error.class, RecoveryFailureClass::CorruptSegment);
+    assert_eq!(error.class, RecoveryFailureClass::CorruptCanonicalArtifact);
     assert!(error.detail.contains("tail lineage id exhausted"));
     assert_eq!(recovered.history().immutable_commit_count(), 0);
 }
@@ -43,7 +42,7 @@ fn live_lineage_allocator_exhaustion_denies_before_public_effects() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let baseline = create_entity_outcome(execution, &runtime, "lineage-exhaustion-baseline");
     let baseline_entities = runtime.storage_access().storage_stats().live_entities;
     let (_, event_frontier) = runtime.lineage.identity_frontiers();

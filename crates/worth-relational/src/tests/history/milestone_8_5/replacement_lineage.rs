@@ -3,9 +3,9 @@ use super::*;
 pub(super) fn run_replacement_strategy_certification(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> ReplacementCertificationBundle {
-    let root_path = unique_test_store_path("worth-relational-strategy-replacement-cert");
-    let recovered_root = root_path.clone();
-    let runtime = persisted_replacement_strategy_runtime(root_path);
+    let medium = crate::tests::support::TestDurableMedium::new();
+    let recovered_root = medium.clone();
+    let runtime = persisted_replacement_strategy_runtime(medium);
     let replacement_entity = create_entity(execution, &runtime, "replace-target");
     let replacement_start_lineage = runtime
         .lineage_access()

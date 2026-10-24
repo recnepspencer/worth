@@ -17,7 +17,7 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
     const RECORDS: usize = 8_192;
     const DIGEST_SAMPLES: usize = 16;
 
-    let source = persisted_runtime_with_test_schema();
+    let source = durable_runtime_with_test_schema();
     let names = (0..RECORDS)
         .map(|index| format!("restore-bench-{index:04}"))
         .collect::<Vec<_>>();
@@ -51,7 +51,7 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
         release_test_commit_snapshot(&source, &committed);
     }
 
-    let image = source.durability_authority().checkpoint(execution).unwrap();
+    let image = crate::tests::support::checkpoint_durably(execution, &source).unwrap();
     let roots = &image.branch_roots[0].partition_images;
     let encoded_bytes = rmp_serde::to_vec(roots).unwrap().len();
     let buffered_started = Instant::now();
@@ -74,7 +74,7 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
         .durability_authority()
         .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
     let restore_started = Instant::now();
     recovered
         .durability_recovery()

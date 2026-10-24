@@ -22,20 +22,8 @@ pub(in crate::replay) fn replay_recovery_plan_for_chain(
     );
     RecoveryPlan::new(
         source.runtime_config().clone(),
-        source.durable_store().map(|store| store.as_ref().clone()),
-        None,
         checkpoint,
         tail_log,
-        crate::durability::data::RecoveryCursor {
-            checkpoint_id: None,
-            segment_ids: Vec::new(),
-        },
-        crate::durability::data::RecoveryIntegrityReport {
-            selected_checkpoint_id: None,
-            skipped_corrupt_checkpoints: Vec::new(),
-            verified_segment_ids: Vec::new(),
-            corrupt_segment_id: None,
-        },
         authority_continuity,
         replay_verification_mode_to_recovery_mode(verification_mode),
         target_descriptor_semantics_version(source, chain),

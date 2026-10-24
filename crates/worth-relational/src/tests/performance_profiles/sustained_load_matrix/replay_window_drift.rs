@@ -6,7 +6,7 @@ pub(super) fn certify_replay_window_drift_stability(
 ) {
     let replay_window_drift_samples =
         capture_perf_samples(suite, "replay_window_drift_stability", || {
-            let runtime = persisted_runtime_with_test_schema_profile(
+            let runtime = durable_runtime_with_test_schema_profile(
                 RelationalRuntimeProfile::CertificationCore,
             );
             const HISTORY_DEPTH: usize = 48;

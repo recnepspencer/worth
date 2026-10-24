@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::durability::data::{DurableCheckpoint, DurableStore};
+use crate::durability::data::DurableCheckpoint;
 use crate::history::data::{CommitId, PositionedCanonicalCommit};
-use crate::runtime::RelationalRuntimeConfig;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct CheckpointEnvelopeLocation {
@@ -13,35 +12,17 @@ pub(super) struct CheckpointEnvelopeLocation {
 
 /// The durability subsystem's authoritative contents.
 ///
-/// Envelopes, checkpoints, and the store are held by shared ownership so a
-/// reader can carry them out of the subsystem lock without copying them and
-/// without holding the lock across durability I/O.
+/// Envelopes and checkpoints are held by shared ownership so a reader can
+/// carry them out of the subsystem lock without copying them.
 #[derive(Debug, Clone, Default)]
 pub(crate) struct DurabilityState {
     pub(super) log: Vec<Arc<PositionedCanonicalCommit>>,
     pub(super) checkpoints: Vec<Arc<DurableCheckpoint>>,
     log_commit_index: HashMap<CommitId, usize>,
     checkpoint_commit_index: HashMap<CommitId, CheckpointEnvelopeLocation>,
-    pub(super) store: Option<Arc<DurableStore>>,
 }
 
 impl DurabilityState {
-    pub(super) fn build_from_config(config: &RelationalRuntimeConfig) -> Self {
-        Self {
-            log: Vec::new(),
-            checkpoints: Vec::new(),
-            log_commit_index: HashMap::new(),
-            checkpoint_commit_index: HashMap::new(),
-            store: config.durability.policy.store_layout.clone().map(|layout| {
-                Arc::new(DurableStore {
-                    layout,
-                    segments: Vec::new(),
-                    checkpoints: Vec::new(),
-                })
-            }),
-        }
-    }
-
     pub(super) fn push_log_envelope(&mut self, commit: PositionedCanonicalCommit) {
         let commit_id = commit.envelope().commit.commit_id;
         self.log_commit_index.insert(commit_id, self.log.len());

@@ -30,12 +30,9 @@ fn durable_source_subscriber_stream_matches_recovered_runtime_patch_stream() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "a");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     let _second = create_entity_outcome(execution, &runtime, "b");
     let _third = create_entity_outcome(execution, &runtime, "c");
 
@@ -51,11 +48,13 @@ fn durable_source_subscriber_stream_matches_recovered_runtime_patch_stream() {
         ))
         .unwrap();
 
-    let recovery_plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let recovery_plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, recovery_plan)
@@ -76,12 +75,9 @@ fn subscriber_stream_keeps_patch_parity_when_later_retained_envelope_is_missing(
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let _first = create_entity_outcome(execution, &runtime, "a");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     let second = create_entity_outcome(execution, &runtime, "b");
     let _third = create_entity_outcome(execution, &runtime, "c");
 

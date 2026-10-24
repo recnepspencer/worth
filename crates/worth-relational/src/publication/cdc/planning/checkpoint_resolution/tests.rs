@@ -11,12 +11,9 @@ fn subscriber_stream_recovers_from_durable_canonical_envelopes_when_patch_stream
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "a");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     let _second = create_entity_outcome(execution, &runtime, "b");
 
     assert!(runtime

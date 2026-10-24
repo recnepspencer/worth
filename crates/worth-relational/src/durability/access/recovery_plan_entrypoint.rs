@@ -1,7 +1,6 @@
-use crate::capabilities::{DurabilityRead, RuntimeConfigSource};
+use crate::capabilities::DurabilityRead;
 use crate::durability::access::in_memory_recovery_plan::in_memory_recovery_plan;
-use crate::durability::access::persisted_recovery_plan::persisted_recovery_plan;
-use crate::durability::data::{DurabilityMode, RecoveryPlan, RecoveryVerificationMode};
+use crate::durability::data::{RecoveryPlan, RecoveryVerificationMode};
 use crate::runtime::RelationalRuntime;
 
 pub struct DurabilityAccess<'runtime> {
@@ -13,6 +12,9 @@ impl<'runtime> DurabilityAccess<'runtime> {
         Self { runtime }
     }
 
+    /// Plan a reconstruction from this runtime's own in-memory canonical log
+    /// and checkpoints. A home whose history lives in a durable medium
+    /// recovers through [`Self::recovery_plan_from_source`] instead.
     pub fn recovery_plan(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -21,14 +23,7 @@ impl<'runtime> DurabilityAccess<'runtime> {
         execution.check_live().map_err(|stop| {
             crate::durability::data::RelationalRecoveryStop::Request(stop.into())
         })?;
-        match self.runtime.runtime_config().durability.policy.mode {
-            DurabilityMode::InMemoryCanonical => {
-                Ok(in_memory_recovery_plan(self.runtime, verification_mode))
-            }
-            DurabilityMode::PersistedSegmentedLocalFs => {
-                persisted_recovery_plan(execution, self.runtime, verification_mode)
-            }
-        }
+        Ok(in_memory_recovery_plan(self.runtime, verification_mode))
     }
 
     /// Readmit what a durable medium recovered for this home and plan its

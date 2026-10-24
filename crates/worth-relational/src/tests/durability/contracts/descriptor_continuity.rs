@@ -6,12 +6,14 @@ fn durability_contract_failure_schema_mismatch_is_explicit() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "main-a");
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let mismatched_registry = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(3),
@@ -48,10 +50,12 @@ fn durability_contract_failure_descriptor_semantics_version_mismatch_is_explicit
 
     let runtime = runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "main-a");
-    let mut plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let mut plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     plan.descriptor_semantics_version = DescriptorSemanticsVersion(99);
 
     let mut recovered = runtime_with_test_schema();
@@ -78,23 +82,21 @@ fn durability_recovery_plan_preserves_explicit_verification_mode() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "main-a");
 
-    let normal = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    let audit = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::AuditRecoveryVerification,
-        )
-        .unwrap();
+    let normal = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let audit = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::AuditRecoveryVerification,
+    )
+    .unwrap();
 
     assert_eq!(
         normal.verification_mode(),
@@ -111,33 +113,22 @@ fn durability_recovery_plan_reports_descriptor_version_mismatch_before_recovery(
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "main-a");
     runtime.performance_access().reset_counters();
-    let store = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap()
-        .store
-        .unwrap();
-    let segment_path = store
-        .segments
-        .last()
-        .expect("persisted segment after commit")
-        .path
-        .clone();
-    let mut file =
-        crate::durability::log::native_file_codec::read_segment_file(execution, &segment_path)
-            .unwrap();
-    file.entries[0]
-        .envelope_mut_for_test()
-        .descriptor_semantics_version = DescriptorSemanticsVersion(99);
-    crate::durability::log::native_file_codec::write_segment_file(execution, &segment_path, &file)
-        .unwrap();
+    attached_test_medium(&runtime).rewrite_artifact_envelope(
+        execution,
+        crate::facade::publication::PatchStreamPosition(1),
+        |envelope| envelope.descriptor_semantics_version = DescriptorSemanticsVersion(99),
+    );
 
     let plan = runtime
         .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .recovery_plan_from_source(
+            execution,
+            durable_recovery_source(&runtime),
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
 
     assert_eq!(
@@ -174,7 +165,7 @@ fn durability_contract_failure_descriptor_canonical_basis_version_mismatch_is_ex
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     let _ = create_entity_outcome(execution, &runtime, "main-a");
 
     runtime.set_schema_registry_for_test(
@@ -210,33 +201,23 @@ fn durability_contract_failure_descriptor_canonical_basis_version_mismatch_is_ex
     .expect("test staging stays within configured resource budgets");
     txn.commit(execution, &runtime).unwrap();
 
-    let segment_path = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap()
-        .store
-        .unwrap()
-        .segments
-        .last()
-        .expect("persisted segment after transition")
-        .path
-        .clone();
-    let mut file =
-        crate::durability::log::native_file_codec::read_segment_file(execution, &segment_path)
-            .unwrap();
-    if let Some(descriptor) = file.entries[1]
-        .envelope_mut_for_test()
-        .schema_continuation_descriptor
-        .as_mut()
-    {
-        descriptor.bridge.canonical_basis_version = DescriptorCanonicalBasisVersion(99);
-    }
-    crate::durability::log::native_file_codec::write_segment_file(execution, &segment_path, &file)
-        .unwrap();
+    attached_test_medium(&runtime).rewrite_artifact_envelope(
+        execution,
+        crate::facade::publication::PatchStreamPosition(2),
+        |envelope| {
+            if let Some(descriptor) = envelope.schema_continuation_descriptor.as_mut() {
+                descriptor.bridge.canonical_basis_version = DescriptorCanonicalBasisVersion(99);
+            }
+        },
+    );
 
     let plan = runtime
         .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .recovery_plan_from_source(
+            execution,
+            durable_recovery_source(&runtime),
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
 
     assert_eq!(
@@ -266,14 +247,16 @@ fn durability_recovery_emits_authority_continuity_diagnostic_before_execution() 
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "main-a");
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
 
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
     let _ = recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -301,15 +284,17 @@ fn durability_certification_recovery_authority_continuity_is_explained_and_count
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "main-a");
     runtime.performance_access().reset_counters();
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
 
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
     let _ = recovered
         .durability_recovery()
         .recover(execution, plan)

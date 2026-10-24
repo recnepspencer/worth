@@ -9,14 +9,12 @@ pub(super) fn certify_persisted_recovery_replay_round_trip(
         suite,
         "persisted_recovery_replay_round_trip",
         || {
-            let runtime = persisted_runtime_with_test_schema();
+            let runtime = durable_runtime_with_test_schema();
             let source_created = create_entity_outcome(execution, &runtime, "recovery-source");
             let source = changed_entities(&source_created)[0];
 
             let checkpoint_started_at = Instant::now();
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
+            crate::tests::support::checkpoint_durably(execution, &runtime)
                 .expect("workflow checkpoint");
             let checkpoint_micros = checkpoint_started_at.elapsed().as_micros();
 
@@ -25,13 +23,15 @@ pub(super) fn certify_persisted_recovery_replay_round_trip(
             let target = changed_entities(&target_created)[0];
             let post_checkpoint_commit_micros =
                 post_checkpoint_commit_started_at.elapsed().as_micros();
-            let recovery_plan = runtime
-                .durability()
-                .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-                .unwrap();
+            let recovery_plan = crate::tests::support::recovery_plan_for(
+                execution,
+                &runtime,
+                RecoveryMode::NormalRecoveryVerification,
+            )
+            .unwrap();
             let tail_commit_id = target_created.commit.commit_id;
 
-            let mut recovered = persisted_runtime_with_test_schema();
+            let mut recovered = durable_runtime_with_test_schema();
             recovered.performance_access().reset_counters();
             let recover_started_at = Instant::now();
             let recovery_outcome = recovered
@@ -89,7 +89,10 @@ pub(super) fn certify_persisted_recovery_replay_round_trip(
                     "checkpoint_commit_count": recovery_outcome.coverage.checkpoint_commits,
                     "tail_commit_count": recovery_outcome.coverage.replayed_tail_commits,
                     "recovered_commits": recovery_outcome.recovered_commits,
-                    "selected_checkpoint": recovery_outcome.cursor.checkpoint_id.is_some(),
+                    "selected_checkpoint": recovery_outcome
+                        .coverage
+                        .checkpoint_covered_position
+                        .is_some(),
                     "replay_failure": replay_outcome.failure.as_ref().map(|failure| format!("{failure:?}")),
                     "replay_mismatch_count": replay_outcome.mismatches.len(),
                     "query_entities": query_outcome.result.entities.len(),

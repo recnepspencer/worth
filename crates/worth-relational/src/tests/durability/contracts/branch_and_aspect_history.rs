@@ -6,7 +6,7 @@ fn durability_contract_recovery_rebuilds_branch_heads_and_latest_commit() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let main = create_entity_outcome(execution, &runtime, "main-a");
     create_branch_from_main(&runtime, "feature");
     let feature = create_entity_outcome_on_branch(
@@ -16,7 +16,7 @@ fn durability_contract_recovery_rebuilds_branch_heads_and_latest_commit() {
         BranchId("feature".to_string()),
     );
     let (outcome, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
 
     assert_eq!(outcome.recovered_commits, 2);
     assert_eq!(outcome.latest_commit, Some(feature.commit.clone()));
@@ -40,7 +40,7 @@ fn durability_contract_recovery_preserves_aspect_bearing_patch_truth_and_history
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime =
-        persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+        durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&created)[0];
     let updated = update_entity(execution, &runtime, entity, "after");
@@ -57,7 +57,7 @@ fn durability_contract_recovery_preserves_aspect_bearing_patch_truth_and_history
         .canonical_commit_envelope(updated.commit.commit_id)
         .unwrap();
     let (outcome, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
-        persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations)
+        durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations)
     });
 
     let recovered_history =
@@ -93,7 +93,7 @@ fn durability_contract_recovery_preserves_relation_aspect_history_for_retained_a
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime =
-        persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
+        durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
     let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "r-audit");
@@ -108,7 +108,7 @@ fn durability_contract_recovery_preserves_relation_aspect_history_for_retained_a
         .relation_aspect_history_with_trace(&BranchId("main".to_string()), relation, None)
         .aspect_history_digest();
     let (outcome, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
-        persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit)
+        durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit)
     });
 
     let recovered_history =
@@ -175,14 +175,10 @@ fn durability_contract_recovery_preserves_branch_local_endpoint_deletion_retirem
             })
         })
         .unwrap();
-    let store_layout = DurableStoreLayout {
-        root_path: unique_test_store_path("worth-relational-endpoint-retirement-recovery"),
-        segment_commit_capacity: 2,
-    };
+    let medium = TestDurableMedium::new();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry.clone())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(store_layout.clone())
+        .durable_medium(medium.clone())
         .cascade_delete_policy(CascadeDeletePolicy::RetainDanglingForAudit)
         .build();
     let source = create_entity(execution, &runtime, "source");
@@ -246,18 +242,16 @@ fn durability_contract_recovery_preserves_branch_local_endpoint_deletion_retirem
         )
         .expect("read request remains live");
 
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(store_layout)
+        .durable_medium(medium)
         .cascade_delete_policy(CascadeDeletePolicy::RetainDanglingForAudit)
         .build();
     let outcome = recovered

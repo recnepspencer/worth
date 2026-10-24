@@ -14,8 +14,7 @@ use crate::facade::schema::{
 use crate::merge::data::PreparedMergeExecution;
 use crate::tests::support::{
     aspect_key, create_branch_from_main, create_entity, entity_field_aspect, field_key,
-    string_aspect_field_patch, unique_test_store_path, CascadeDeletePolicy, CrossContextPolicy,
-    DurabilityMode, DurableStoreLayout,
+    string_aspect_field_patch, CascadeDeletePolicy, CrossContextPolicy,
 };
 use crate::transactions::data::{MergeExecutionSummary, PublishedMergeExecutionAuthority};
 
@@ -63,11 +62,7 @@ pub(super) fn runtime_with_collaboration_merge_history() -> RelationalRuntime {
         .expect("phase 13 schema registry");
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path: unique_test_store_path("worth-relational-7e-phase-m-certification"),
-            segment_commit_capacity: 2,
-        })
+        .durable_medium(crate::tests::support::TestDurableMedium::new())
         .build()
 }
 

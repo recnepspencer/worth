@@ -143,8 +143,8 @@ proptest! {
             &head,
         );
 
-        world.runtime.durability_authority().checkpoint(execution).unwrap();
-        let recovery_plan = world.runtime.durability().recovery_plan(execution, RecoveryMode::NormalRecoveryVerification).unwrap();
+        crate::tests::support::checkpoint_durably(execution, &world.runtime).unwrap();
+        let recovery_plan = crate::tests::support::recovery_plan_for(execution, &world.runtime, RecoveryMode::NormalRecoveryVerification).unwrap();
         let mut recovered = build_property_runtime(RuntimeHarnessMode::Persisted);
         recovered.durability_recovery().recover(execution, recovery_plan).unwrap();
         let recovered_patch_stream = collect_patch_stream_from_head(&recovered, 4096);

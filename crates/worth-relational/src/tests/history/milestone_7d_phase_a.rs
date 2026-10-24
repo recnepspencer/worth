@@ -5,7 +5,7 @@ use crate::facade::merge::{
 use crate::facade::transactions::RecordRef;
 use crate::tests::support::{
     create_branch_from_main, create_entity, create_entity_outcome_on_branch, delete_entity,
-    delete_entity_on_branch, persisted_runtime_with_test_schema, update_entity,
+    delete_entity_on_branch, durable_runtime_with_test_schema, update_entity,
     update_entity_on_branch,
 };
 
@@ -15,7 +15,7 @@ fn merge_planning_conflict_classification_carries_target_view_visibility_evidenc
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     update_entity(execution, &runtime, entity, "same");
@@ -77,7 +77,7 @@ fn merge_planning_conflict_classification_carries_base_window_evidence_for_targe
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     update_entity_on_branch(
@@ -141,7 +141,7 @@ fn merge_planning_conflict_classification_carries_target_lookup_evidence_for_sou
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
@@ -230,7 +230,7 @@ fn merge_planning_digest_basis_carries_visibility_evidence_rows() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -284,7 +284,7 @@ fn merge_planning_policy_surface_is_explicitly_runtime_owned_before_lowering() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     update_entity(execution, &runtime, entity, "same");
@@ -321,7 +321,7 @@ fn merge_planning_digest_basis_carries_policy_ownership_surface_rows() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(

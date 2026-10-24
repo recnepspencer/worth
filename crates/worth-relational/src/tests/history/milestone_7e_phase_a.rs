@@ -8,7 +8,7 @@ use crate::facade::runtime::RelationalRuntime;
 use crate::history::data::{MergeBaseSelectionRule, RelationalMergeBranchBasis, VersionNode};
 use crate::tests::support::{
     checkpoint_and_recover_with, create_branch_from_main, create_entity,
-    create_entity_outcome_on_branch, persisted_runtime_with_test_schema,
+    create_entity_outcome_on_branch, durable_runtime_with_test_schema,
 };
 use crate::transactions::data::MergeExecutionSummary;
 
@@ -17,7 +17,7 @@ fn merge_branch_basis_matches_planning_artifact_and_history_scope_authority() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -62,7 +62,7 @@ fn merge_branch_basis_denial_happens_before_planning_for_missing_or_disconnected
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     let main_branch = BranchId("main".to_string());
     let missing_branch = BranchId("missing".to_string());
@@ -126,7 +126,7 @@ fn merge_branch_basis_survives_published_merge_outcome_and_durability_recovery()
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -158,7 +158,7 @@ fn merge_branch_basis_survives_published_merge_outcome_and_durability_recovery()
         .expect("live merge authority");
 
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
     let recovered_envelope = recovered
         .replay()
         .canonical_commit_envelope(merge.commit.commit.commit_id)
@@ -228,7 +228,7 @@ fn graft_disconnected_branch_head(
     runtime: &RelationalRuntime,
     branch_id: &BranchId,
 ) {
-    let disconnected = persisted_runtime_with_test_schema();
+    let disconnected = durable_runtime_with_test_schema();
     create_entity(execution, &disconnected, "orphan-root");
 
     let source_head = disconnected

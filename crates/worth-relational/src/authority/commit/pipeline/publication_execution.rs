@@ -268,12 +268,6 @@ pub(crate) struct PreparedCommitPublicationCompletion {
     prepared_indexes: Option<crate::indexes::PreparedCandidateIndexPublication>,
 }
 
-impl PreparedCommitPublicationCompletion {
-    pub(crate) fn durable_bytes(&self) -> Option<worth_execution::ExecutionImmutableBytes> {
-        self.publication.durable_bytes.clone()
-    }
-}
-
 impl PreparedCommitPublicationExecution {
     pub(crate) fn descriptive_touches(
         &self,

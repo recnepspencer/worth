@@ -1,7 +1,6 @@
 use crate::commit_strategies::data::CommitStrategyRegistration;
 use crate::config::data::*;
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
-use crate::durability::data::DurabilityMode;
 use crate::history::data::{BranchId, HistoryRetentionClass, VersionGraphPolicy};
 use crate::schema::data::{
     runtime_descriptor_canonical_basis_policy, runtime_descriptor_semantics_policy,
@@ -107,16 +106,11 @@ pub(super) fn default_profile_config(profile: RelationalRuntimeProfile) -> Relat
                 recent_version_window: 32,
             },
             DurabilityPolicy {
-                mode: DurabilityMode::InMemoryCanonical,
                 log: DurableLogPolicy {
                     retention_mode: DurableLogRetentionMode::RetainAllInMemory,
                     max_in_memory_envelopes: 4_096,
                     compact_after_checkpoint: false,
                 },
-                checkpoints: CheckpointPolicy {
-                    compact_after_checkpoint: false,
-                },
-                store_layout: None,
             },
             AdjacencyPolicy {
                 backend: AdjacencyBackend::InlineSmallDegreeAdjacency,
@@ -166,16 +160,11 @@ pub(super) fn default_profile_config(profile: RelationalRuntimeProfile) -> Relat
                 recent_version_window: 2,
             },
             DurabilityPolicy {
-                mode: DurabilityMode::InMemoryCanonical,
                 log: DurableLogPolicy {
                     retention_mode: DurableLogRetentionMode::CompactAfterCheckpoint,
                     max_in_memory_envelopes: 2_048,
                     compact_after_checkpoint: true,
                 },
-                checkpoints: CheckpointPolicy {
-                    compact_after_checkpoint: true,
-                },
-                store_layout: None,
             },
             AdjacencyPolicy {
                 backend: AdjacencyBackend::InlineSmallDegreeAdjacency,
@@ -225,16 +214,11 @@ pub(super) fn default_profile_config(profile: RelationalRuntimeProfile) -> Relat
                 recent_version_window: 2,
             },
             DurabilityPolicy {
-                mode: DurabilityMode::InMemoryCanonical,
                 log: DurableLogPolicy {
                     retention_mode: DurableLogRetentionMode::CompactAfterCheckpoint,
                     max_in_memory_envelopes: 1_024,
                     compact_after_checkpoint: true,
                 },
-                checkpoints: CheckpointPolicy {
-                    compact_after_checkpoint: true,
-                },
-                store_layout: None,
             },
             AdjacencyPolicy {
                 backend: AdjacencyBackend::CompressedFanoutAdjacency,
@@ -284,16 +268,11 @@ pub(super) fn default_profile_config(profile: RelationalRuntimeProfile) -> Relat
                 recent_version_window: 16,
             },
             DurabilityPolicy {
-                mode: DurabilityMode::InMemoryCanonical,
                 log: DurableLogPolicy {
                     retention_mode: DurableLogRetentionMode::CompactAfterCheckpoint,
                     max_in_memory_envelopes: 1_024,
                     compact_after_checkpoint: true,
                 },
-                checkpoints: CheckpointPolicy {
-                    compact_after_checkpoint: true,
-                },
-                store_layout: None,
             },
             AdjacencyPolicy {
                 backend: AdjacencyBackend::InlineSmallDegreeAdjacency,

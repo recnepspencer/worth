@@ -5,9 +5,9 @@ fn unrelated_relation_additions_do_not_inflate_topology_region_detection_counter
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_topology_identity_registry(unique_test_store_path(
-        "worth-relational-7d-topology-unrelated-breadth",
-    ));
+    let runtime = durable_runtime_with_topology_identity_registry(
+        crate::tests::support::TestDurableMedium::new(),
+    );
     let source = create_entity(execution, &runtime, "source");
     let target_a = create_entity(execution, &runtime, "target-a");
     let target_b = create_entity(execution, &runtime, "target-b");

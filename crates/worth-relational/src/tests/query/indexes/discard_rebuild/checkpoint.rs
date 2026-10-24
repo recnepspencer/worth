@@ -38,7 +38,11 @@ fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds()
         .durability_authority()
         .native_checkpoint(ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
-    let mut restored = persisted_runtime_with_index_field_aspects();
+    let mut restored = durable_runtime_with_index_field_aspects();
+    crate::tests::support::bind_durable_medium(
+        &mut restored,
+        crate::tests::support::attached_test_medium(&runtime).shared(),
+    );
     let recovered = restored
         .durability_recovery()
         .restore_native_checkpoint(execution, &checkpoint)

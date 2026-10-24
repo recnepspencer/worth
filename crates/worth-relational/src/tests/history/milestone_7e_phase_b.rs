@@ -6,7 +6,7 @@ use crate::history::data::{
 };
 use crate::tests::support::{
     checkpoint_and_recover_with, create_branch_from_main, create_entity,
-    create_entity_outcome_on_branch, persisted_runtime_with_test_schema,
+    create_entity_outcome_on_branch, durable_runtime_with_test_schema,
 };
 use crate::transactions::data::PublishedMergeExecutionAuthority;
 use worth_foundational::{
@@ -134,7 +134,7 @@ fn foundational_current_basis_lowering_rejects_published_historical_basis_in_liv
     let live_authority = published_merge_authority(&runtime, merge.commit.commit.commit_id);
 
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
     let recovered_authority = published_merge_authority(&recovered, merge.commit.commit.commit_id);
 
     assert_historical_summary_basis_denies_as_current(&runtime, &live_authority);
@@ -182,7 +182,7 @@ fn foundational_current_basis_lowering_rejects_stale_relational_basis_before_pub
 }
 
 fn merge_ready_runtime(execution: &worth_execution::ExecutionRequest<'_, '_>) -> RelationalRuntime {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(

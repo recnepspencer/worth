@@ -202,7 +202,7 @@ fn perf_index_parity_matrix() {
 
     let persisted_recovery_samples =
         capture_perf_samples(suite, "persisted_recovery_generation_parity", || {
-            let runtime = persisted_runtime_with_test_schema();
+            let runtime = durable_runtime_with_test_schema();
             let alpha = create_entity_outcome(execution, &runtime, "alpha");
             let index = runtime.index_authority().register(DerivedIndexDefinition {
                 index_id: DerivedIndexId(0),
@@ -244,11 +244,8 @@ fn perf_index_parity_matrix() {
                 .expect("original persisted query outcome");
 
             let recover_started_at = Instant::now();
-            let (_recovery, recovered) = checkpoint_and_recover_with(
-                execution,
-                &runtime,
-                persisted_runtime_with_test_schema,
-            );
+            let (_recovery, recovered) =
+                checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
             let recover_micros = recover_started_at.elapsed().as_micros();
             let recovered_snapshot = recovered.visibility_authority().snapshot();
 

@@ -6,7 +6,7 @@ fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "global-duplicate-first");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
@@ -57,10 +57,7 @@ fn repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root() {
     assert!(runtime.indexes.generation(selected_pinned).is_some());
     assert!(runtime.indexes.generation(current).is_some());
 
-    let checkpoint = runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    let checkpoint = crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     let saved = checkpoint
         .derived_index_checkpoint
         .unwrap()

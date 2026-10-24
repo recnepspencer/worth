@@ -6,7 +6,7 @@ fn durability_contract_recovery_rebuilds_branch_head_root_obligations() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let source = create_entity_outcome(execution, &runtime, "source");
     let source_entity = changed_entities(&source)[0];
     let target = create_entity_outcome(execution, &runtime, "target");
@@ -21,15 +21,14 @@ fn durability_contract_recovery_rebuilds_branch_head_root_obligations() {
         )
         .unwrap();
     let _deleted = delete_entity(execution, &runtime, source_entity);
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -60,7 +59,7 @@ fn durability_contract_recovery_preserves_inspection_truth_bundle() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
     runtime
@@ -92,10 +91,7 @@ fn durability_contract_recovery_preserves_inspection_truth_bundle() {
         .expect("test staging stays within configured resource budgets");
         txn.commit(execution, &runtime).unwrap()
     };
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     let expected = capture_inspection_truth_bundle(
         execution,
         &runtime,
@@ -104,11 +100,13 @@ fn durability_contract_recovery_preserves_inspection_truth_bundle() {
         created.version_id,
     );
 
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -129,7 +127,7 @@ fn durability_contract_branch_heads_do_not_mutate_legacy_record_pins() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
     let inspection = runtime.inspect_what_happened();
@@ -186,94 +184,4 @@ fn durability_contract_branch_heads_do_not_mutate_legacy_record_pins() {
             .branch_pins,
         0
     );
-}
-
-#[test]
-fn invalid_store_path_does_not_relabel_performed_in_memory_publication() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let root_path = unique_test_store_path("worth-relational-bad-store");
-    std::fs::write(&root_path, b"not-a-directory").unwrap();
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(test_schema_registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path: root_path.clone(),
-            segment_commit_capacity: 2,
-        })
-        .build();
-
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    txn.push_batch(
-        batch_create("fail-closed"),
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("test staging stays within configured resource budgets");
-    let candidate = runtime
-        .prepare_branch_transaction(execution, txn)
-        .expect("store availability does not refuse funded in-memory preparation");
-    assert_eq!(runtime.history().immutable_commit_count(), 0);
-    assert!(runtime
-        .history()
-        .branch_head(&BranchId("main".to_owned()))
-        .is_none());
-    assert!(runtime.publication().latest_bundle().is_none());
-    assert_eq!(std::fs::read(&root_path).unwrap(), b"not-a-directory");
-    let durability_deferred = runtime
-        .publish_prepared_candidate(execution, candidate)
-        .expect_err("the performed movement is not falsely acknowledged as durable");
-    match &durability_deferred {
-        TransactionCommitError::PerformedButDurabilityDeferred { error, .. } => {
-            assert_eq!(
-                error.stage,
-                crate::publication::bundle::PublicationStage::DurableAppend
-            );
-            assert!(!error.detail.is_empty());
-        }
-        error => panic!("performed durability fault has the exact typed posture: {error:?}"),
-    }
-    assert!(!durability_deferred
-        .commit_log()
-        .events()
-        .iter()
-        .any(|event| {
-            matches!(
-                event,
-                crate::transactions::data::CommitTraceEvent::CommitRejected { .. }
-            )
-        }));
-
-    let performed_commit = durability_deferred
-        .performed_commit()
-        .expect("deferred error carries exact performed receipt");
-    assert_eq!(
-        runtime
-            .history()
-            .immutable_commit_receipt(performed_commit.commit_id),
-        Some(performed_commit.clone())
-    );
-    assert_eq!(
-        runtime.history().branch_head(&BranchId("main".to_owned())),
-        Some(performed_commit.clone())
-    );
-    let basis = crate::tests::support::test_owner_main_basis(&runtime)
-        .expect("the performed branch basis remains admissible");
-    let truth = runtime
-        .read_truth()
-        .read_observation(execution, &basis.observation())
-        .expect("read request remains live")
-        .expect("the finalized performed root is readable");
-    assert_eq!(truth.entities().len(), 1);
-    assert_eq!(
-        runtime
-            .publication()
-            .latest_bundle()
-            .expect("in-memory publication finalization installs the bundle")
-            .commit
-            .commit_id,
-        performed_commit.commit_id
-    );
-    assert_eq!(runtime.retention().inspect_plan().branch_pinned_entities, 0);
-    assert_eq!(std::fs::read(&root_path).unwrap(), b"not-a-directory");
 }

@@ -1,6 +1,6 @@
 //! Genuine native installation, performed publication and raw protected oracle.
 use crate::branch::AdmittedRelationalBranchBasis;
-use crate::durability::data::{DurabilityMode, RelationalNativeCheckpoint};
+use crate::durability::data::RelationalNativeCheckpoint;
 use crate::identity::data::{EntityId, KindId, PartitionId};
 use crate::indexes::data::{
     DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind,
@@ -45,7 +45,6 @@ pub(super) fn installed_with(
     let mut runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
         .profile(crate::config::data::RelationalRuntimeProfile::CertificationCore)
         .schema_registry(registry)
-        .durability_mode(DurabilityMode::InMemoryCanonical)
         .build();
     let receipt = runtime
         .prepare_initial_schema_installation()

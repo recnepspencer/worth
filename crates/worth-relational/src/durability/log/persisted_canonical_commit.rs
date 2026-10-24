@@ -7,7 +7,7 @@ use crate::publication::patch::data::PatchStreamPosition;
 
 pub(super) const CANONICAL_PROTOCOL_VERSION: u16 = 6;
 
-/// Raw native-file vocabulary. Decoding this type never grants current
+/// Raw native checkpoint-entry vocabulary. Decoding this type never grants current
 /// canonical authority; callers must pass it through owner readmission.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub(crate) struct PersistedCanonicalCommit {
@@ -92,17 +92,6 @@ impl PersistedCanonicalCommit {
         }
     }
 
-    pub(crate) fn from_parts(
-        position: PatchStreamPosition,
-        canonical: CanonicalCommitEnvelope,
-    ) -> Self {
-        Self {
-            canonical_protocol_version: CANONICAL_PROTOCOL_VERSION,
-            position,
-            canonical,
-        }
-    }
-
     /// Checkpoint envelopes carry canonical history, not rebuildable index
     /// caches. The versioned checkpoint artifact carries retained generations.
     #[cfg(test)]
@@ -110,11 +99,6 @@ impl PersistedCanonicalCommit {
         let mut persisted = Self::from_positioned(commit);
         persisted.canonical.derived_index_artifacts = Default::default();
         persisted
-    }
-
-    #[cfg(test)]
-    pub(crate) fn envelope_mut_for_test(&mut self) -> &mut CanonicalCommitEnvelope {
-        &mut self.canonical
     }
 
     pub(crate) fn readmit(
@@ -142,14 +126,14 @@ mod tests {
     };
     use crate::history::data::{CheckpointCanonicalEnvelopeRef, PositionedCanonicalCommit};
     use crate::publication::patch::data::PatchStreamPosition;
-    use crate::tests::support::{create_entity_outcome, persisted_runtime_with_test_schema};
+    use crate::tests::support::{create_entity_outcome, runtime_with_test_schema};
 
     #[test]
-    fn current_segment_and_checkpoint_readmit_exact_touches_and_refuse_prior_format() {
+    fn current_checkpoint_entries_readmit_exact_touches_and_refuse_prior_format() {
         let host_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-        let runtime = persisted_runtime_with_test_schema();
+        let runtime = runtime_with_test_schema();
         let committed = create_entity_outcome(execution, &runtime, "touch-wire");
         let envelope = runtime
             .replay()
@@ -165,7 +149,7 @@ mod tests {
             canonical: crate::history::data::CanonicalCommitEnvelope,
         }
         for bytes in [
-            rmp_serde::to_vec_named(&persisted).expect("segment map"),
+            rmp_serde::to_vec_named(&persisted).expect("owned entry map"),
             rmp_serde::to_vec_named(&PersistedCheckpointCommitRef::from_positioned(&positioned))
                 .expect("checkpoint map"),
         ] {

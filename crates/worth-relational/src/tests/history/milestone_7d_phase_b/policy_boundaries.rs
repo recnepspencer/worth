@@ -6,7 +6,7 @@ use crate::facade::merge::{
 use crate::facade::transactions::RecordRef;
 use crate::tests::support::{
     create_branch_from_main, create_entity, delete_entity_on_branch,
-    persisted_runtime_with_test_schema, update_entity, update_entity_on_branch,
+    durable_runtime_with_test_schema, update_entity, update_entity_on_branch,
 };
 
 use super::fixtures::runtime_with_name_merge_policy;
@@ -16,7 +16,7 @@ fn lowered_plan_carries_explicit_manual_resolution_policy_boundary_for_generic_d
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));

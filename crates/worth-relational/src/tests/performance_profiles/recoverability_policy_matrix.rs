@@ -12,9 +12,8 @@ fn perf_recoverability_policy_matrix() {
         suite,
         "geometry_hot_truth_vs_deferred_trace_policy",
         || {
-            let runtime = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::GeometryKernel,
-            );
+            let runtime =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
 
             let source = create_entity_outcome(execution, &runtime, "policy-geometry-source");
@@ -49,17 +48,16 @@ fn perf_recoverability_policy_matrix() {
                 .clone();
             let hot_artifacts = runtime.publication().diagnostics_since(diagnostics_start);
 
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
+            crate::tests::support::checkpoint_durably(execution, &runtime)
                 .expect("policy geometry checkpoint");
-            let plan = runtime
-                .durability()
-                .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-                .unwrap();
-            let mut recovered = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::GeometryKernel,
-            );
+            let plan = crate::tests::support::recovery_plan_for(
+                execution,
+                &runtime,
+                RecoveryMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+            let mut recovered =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
             recovered
                 .durability_recovery()
                 .recover(execution, plan)
@@ -143,9 +141,8 @@ fn perf_recoverability_policy_matrix() {
         suite,
         "chip_compile_reconstructable_policy",
         || {
-            let mut runtime = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::ChipSimulation,
-            );
+            let mut runtime =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
             runtime.configure_diagnostics_for_test(|profile| {
                 profile.detailed_traces_enabled = false;
                 profile.max_entries_per_artifact = 0;
@@ -203,17 +200,16 @@ fn perf_recoverability_policy_matrix() {
                 .expect("policy hot chip compile");
             let hot_compile_micros = hot_compile_started_at.elapsed().as_micros();
 
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
+            crate::tests::support::checkpoint_durably(execution, &runtime)
                 .expect("policy chip checkpoint");
-            let plan = runtime
-                .durability()
-                .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-                .unwrap();
-            let mut recovered = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::ChipSimulation,
-            );
+            let plan = crate::tests::support::recovery_plan_for(
+                execution,
+                &runtime,
+                RecoveryMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+            let mut recovered =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
             recovered
                 .durability_recovery()
                 .recover(execution, plan)

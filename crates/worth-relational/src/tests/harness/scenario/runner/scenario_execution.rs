@@ -179,20 +179,8 @@ fn run_periodic_authority_work(
         .map(|interval| (step + 1).is_multiple_of(interval))
         .unwrap_or(false)
     {
-        runtime
-            .durability_authority()
-            .checkpoint(execution)
-            .unwrap();
+        crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
         operations.push(ScenarioOperation::DurableCheckpoint);
-    }
-
-    if config
-        .durable_compact_every
-        .map(|interval| (step + 1).is_multiple_of(interval))
-        .unwrap_or(false)
-    {
-        let _ = runtime.durability_authority().compact_store().unwrap();
-        operations.push(ScenarioOperation::CompactDurableStore);
     }
 
     if config
