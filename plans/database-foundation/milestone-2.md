@@ -427,8 +427,10 @@ Milestone 2 is complete when:
    tests show that untouched partitions and history are not loaded, and that
    read failures are typed refusals.
 5. The oracle's generated sequences pass.
-6. Relational, World, Query and Store owner lanes, boundary-check,
-   agent-context, formatting and line caps pass with no new failures against
-   the base commit.
+6. Every lane is green, not merely free of new failures: Relational, World,
+   Signal, Bridge, Server, Query (library, integration and examples), the bank
+   world and Store, plus boundary-check, agent-context, clippy, formatting and
+   line caps. Failures that existed before this milestone are fixed honestly,
+   in the product or the test, never by deleting or ignoring a test.
 7. An independent reviewer certifies the work against this specification and
    the roadmap.
