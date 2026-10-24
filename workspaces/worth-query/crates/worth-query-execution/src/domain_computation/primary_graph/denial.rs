@@ -197,7 +197,10 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
 pub struct WorthQueryPrimaryGraphInstallationDenial {
     kind: WorthQueryPrimaryGraphInstallationDenialKind,
     subject: String,
-    readiness: Option<super::application_contribution::WorthQueryOutputReadinessContractDenial>,
+    /// Boxed: only a readiness refusal carries it, and every installation
+    /// result would otherwise reserve its bytes inline.
+    readiness:
+        Option<Box<super::application_contribution::WorthQueryOutputReadinessContractDenial>>,
 }
 
 impl WorthQueryPrimaryGraphInstallationDenial {
@@ -246,7 +249,7 @@ impl WorthQueryPrimaryGraphInstallationDenial {
     pub fn readiness_denial(
         &self,
     ) -> Option<&super::application_contribution::WorthQueryOutputReadinessContractDenial> {
-        self.readiness.as_ref()
+        self.readiness.as_deref()
     }
 }
 
@@ -259,7 +262,7 @@ impl From<super::application_contribution::WorthQueryOutputReadinessContractDeni
         Self {
             kind: WorthQueryPrimaryGraphInstallationDenialKind::ReadinessContractRejected,
             subject: cause.to_string(),
-            readiness: Some(cause),
+            readiness: Some(Box::new(cause)),
         }
     }
 }
