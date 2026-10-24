@@ -453,8 +453,10 @@ These are the complete sets the Runtime World composition owner must match on.
 
 `TransactionCommitError`: `Conflict`, `Publication`, `Preparation`,
 `Interrupted`, `PublicationDenied`, `PublicationDeferred`, `PublicationFailed`,
-and `PerformedButDurabilityDeferred`. Only the last carries performed work; it
-supplies the `DeferredPublicationSettlement` carrier for repair.
+`DurabilityUnresolved`, and `PerformedButDurabilityDeferred`. Only the last
+carries performed work; it supplies the `DeferredPublicationSettlement` carrier
+for repair. `DurabilityUnresolved` installed nothing; its fate is decided by
+reopening from the durable medium.
 
 `RelationalBranchRetentionTerminalOutcome`: `Released`, `OwnerUnavailable`.
 
@@ -522,11 +524,15 @@ Milestone 9.17.2 may not:
 ## Memory and durability boundary
 
 Relational branch cells, roots, owner admission, the pending-settlement
-registry, and retention accounting are memory-resident. Canonical history and
-durability settlement remain Relational-owned, but restart durability for this
-branch-owner model is deferred to Worth Store integration. The pending-settlement
-registry makes no restart-recovery claim: it recovers a lost in-process
-capability, not a lost process. The composite owner must preserve this posture
+registry, and retention accounting are memory-resident. Canonical history is
+Relational-owned. A runtime built with `durable_medium(..)` publishes each
+commit's canonical artifact to that medium before the live cutover; the medium
+(Worth Store's Relational home) makes it durable and, on reopen, hands back a
+`RelationalDurableRecoverySource` that `recovery_plan_from_source(..)` readmits.
+A refused publication is `PublicationDenied(DurablePublicationRefused)`; a
+publication of unknown fate is `DurabilityUnresolved` and blocks the runtime
+until it is reopened. The pending-settlement registry makes no restart-recovery
+claim: it recovers a lost in-process capability, not a lost process. The composite owner must preserve this posture
 rather than inventing a serialized owner token or hidden persistence abstraction.
 
 Signal's corresponding port is documented in

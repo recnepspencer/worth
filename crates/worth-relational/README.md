@@ -141,9 +141,38 @@ If you find yourself reaching into crate internals instead of
 [`facade`](./src/facade.rs), you are probably leaving the intended public
 surface.
 
-The owner catalog, branch cells, roots, and retention accounting are currently
-memory-resident. Restart durability for this branch-owner model is deferred to
-Worth Store integration.
+## Durability
+
+A runtime is memory-only by default: its canonical history lives in an
+in-memory log and `durability().recovery_plan(..)` reconstructs from it.
+
+A durable runtime is built with `durable_medium(medium)`, where `medium`
+implements `RelationalDurableMedium` (Worth Store's Relational home is the
+production implementation). Every commit is durable before it is live: the
+positioned commit is encoded as its `RelationalCanonicalCommitArtifact` and
+published to the medium inside the patch-position reservation, and only a
+`Committed` answer lets the cutover install the new head.
+
+- `ProvenNoEffect` is a pre-effect denial:
+  `TransactionCommitError::PublicationDenied` with
+  `RelationalPublicationDenial::DurablePublicationRefused`. Nothing moves and
+  the position is not consumed.
+- `Indeterminate` returns `TransactionCommitError::DurabilityUnresolved` with
+  the position, commit id and artifact digest. Nothing is installed, and the
+  runtime refuses every later publication the same way until it is reopened.
+
+To reopen, the medium's owner hands back its checkpoint and journal tail as a
+`RelationalDurableRecoverySource`; a fresh runtime built with the same medium
+calls `durability().recovery_plan_from_source(..)` and then
+`durability_recovery().recover(..)`. Every artifact is readmitted, the tail
+must continue exactly from the checkpoint's covered position, and any damage,
+gap or misfiled checkpoint refuses with a typed `RecoveryFailureClass` before
+service. Recovery binds the medium only after replay, so replay never
+republishes. A recovered runtime publishes its next commit at the next
+position. These types are in `worth_relational::facade::durability`.
+
+The owner catalog, branch cells, roots, and retention accounting stay
+memory-resident working state derived from that history.
 
 ## Validated transitions before recovered installation
 
@@ -178,8 +207,10 @@ receipt and recovery authority for the performed successor. Ordinary commits
 do not refresh recovery authority. Relational attests native lineage; the
 application still owns predecessor selection and target migration validation.
 
-Refusal returns the original authority. A durable append failure returns a
-linear deferred transition, which grants no successor authority. Pass it to
+Refusal returns the original authority; a durable medium's refusal or unknown
+answer is such a refusal, because nothing was installed. A settlement failure
+after the cutover returns a linear deferred transition, which grants no
+successor authority. Pass it to
 `repair_checkpoint_transition(...)` to repair the existing native settlement
 route without publishing another commit. Failed repair returns the same custody
 for retry; successful repair carries the performed successor, even if current

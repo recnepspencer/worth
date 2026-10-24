@@ -26,6 +26,8 @@ The normal setup shape is:
 - optionally shape grouped setup sections
 - provide a schema registry through `schema_setup(...)`
 - add storage / durability / strategy setup only when you actually need them
+- runtimes are memory-only unless built with `durable_medium(...)`, which makes
+  every commit durable before it is live
 - `build()`
 
 ## 2. Write truth
