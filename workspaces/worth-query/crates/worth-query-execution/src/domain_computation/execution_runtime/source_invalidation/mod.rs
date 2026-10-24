@@ -7,15 +7,24 @@ pub(in crate::domain_computation) struct InvalidationOracleReceiver {
     pub(in crate::domain_computation) oracle_guards: AtomicU64,
     pub(in crate::domain_computation) oracle_checks: AtomicU64,
 }
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct WorthQueryInvalidationResources {
     oracle: Arc<InvalidationOracleReceiver>,
 }
+impl Default for WorthQueryInvalidationResources {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl WorthQueryInvalidationResources {
     pub fn new() -> Self {
-        Self {
+        let resources = Self {
             oracle: Arc::default(),
-        }
+        };
+        // Law 2: construction may finish on a worker after resource installation,
+        // so the receiver joins this thread's construction factory here.
+        resources.attach_runtime_observations();
+        resources
     }
     pub(in crate::domain_computation) fn attach_runtime_observations(&self) {
         crate::domain_computation::invalidation_equivalence_control::attach_constructed_receiver(
