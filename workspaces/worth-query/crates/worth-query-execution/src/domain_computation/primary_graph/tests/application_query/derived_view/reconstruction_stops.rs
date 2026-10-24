@@ -14,7 +14,7 @@ use worth_query_declaration::facade::application_query::{
 };
 
 #[test]
-fn reconstruction_missing_predicate_snapshot_keeps_its_field_subject() {
+fn reconstruction_missing_predicate_snapshot_names_its_query_projection() {
     check(0);
 }
 #[test]
@@ -190,11 +190,13 @@ fn check(case: usize) {
                     panic!("native snapshot loss must reach reconstruction: {actual:?}");
                 };
                 assert_eq!(refused, root.entity_id());
+                // A one-predicate read selects its root without an index, so
+                // the lost snapshot is the query's projection, not a predicate.
                 assert_eq!(
                     denial.kind(),
-                    WorthQueryApplicationOneShotDenialKind::PredicateIndexUnavailable
+                    WorthQueryApplicationOneShotDenialKind::ProjectionUnavailable
                 );
-                assert_eq!(denial.subject(), "AccountStatus");
+                assert_eq!(denial.subject(), second_query.name());
             }
         })
         .unwrap();

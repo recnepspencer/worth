@@ -22,7 +22,7 @@ fn pin_panic_does_not_poison_the_owner_mutex() {
     check(Case::Panic);
 }
 #[test]
-fn continuation_pin_distinguishes_a_missing_predicate_from_its_own_index() {
+fn continuation_reads_a_scoped_predicate_without_its_equality_index() {
     missing_door_index(false, true);
 }
 #[test]
@@ -234,20 +234,22 @@ fn missing_door_index(live: bool, predicate_missing: bool) {
                 } else {
                     read_continuation_page(runtime, &request, &layout, &plan, None).map(|_| ())
                 };
-                match outcome {
-                    Err(denial) => denial.kind(),
-                    Ok(_) => panic!("uninstalled index was read"),
-                }
+                outcome.map_err(|denial| denial.kind())
             });
+            if predicate_missing {
+                // A scoped predicate reads its one root's guard field, not an
+                // equality index, so the page reads without that index.
+                assert_eq!(actual, Ok(()), "the scoped predicate needs no index");
+                return;
+            }
             assert_eq!(
                 actual,
-                if predicate_missing {
-                    ReadKind::PredicateIndexUnavailable
-                } else if live {
+                Err(if live {
                     ReadKind::TargetIdentityIndexUnavailable
                 } else {
                     ReadKind::ContinuationIndexUnavailable
-                }
+                }),
+                "uninstalled index was read"
             );
         })
         .unwrap();
