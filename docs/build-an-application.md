@@ -1862,15 +1862,25 @@ When installation belongs to an already admitted execution attempt, borrow its
 `ExecutionRequest` through `host::application_contribution::with_bootstrap_advancement_from_request`
 and pass the resulting phase to
 `host::application_installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement`.
-This variant takes the existing transition arguments with the phase first and no
-independent capture policy. It borrows the original cancellation/deadline and
+This variant takes the existing transition arguments with the phase first and a
+required capture policy. It borrows the original cancellation/deadline and
 remaining cumulative work through construction, roster admission, native transition,
 final assembly and capture. Native nested scopes charge the original parent; they
-do not renew its allowance. Capture derives allocation from that same leased backing.
+do not renew its allowance. Capture is capped by the caller-named policy, which must
+be `Execution(&lease)` for the funding lease itself or a lease descending from it,
+for example a child with its own smaller memory limit; there is no default and no
+silent inheritance. Entry checks that descent before any work or charge: a sibling,
+a parent, another lineage's lease or `SystemAllocation` refuses with
+`ExecutionDenied(ExecutionResource { NestedLeaseMisuse })`. A capture child that runs
+out after the native ACK returns the acknowledged capsule with the child's own
+refusal (`Policy { ancestor: 0 }`) for repair.
 A bare serial backing has no admitted capture allocation policy and refuses before
 effects with `ExecutionDenied(ResourceEnvelopeMismatch)`, rather than falling back
 to SystemAllocation. The ordinary convenience constructor retains its explicit
-owned-request/policy contract.
+owned-request/policy contract. Its `Execution(&lease)` policy funds the whole
+transition: the bootstrap runs on that lease, as if borrowed through
+`with_bootstrap_advancement_from_request`, so the lease carries the transition's
+work as well as the captured frame.
 
 The bootstrap phase cannot escape its callback or stand in for an installed-runtime
 phase. `OpeningCustody` still refuses a second Query opening from a host advancement
@@ -1884,7 +1894,9 @@ the same capsule, including on entry cancellation or exhausted work. Its typed
 `capture_denial()` may contain `Execution` with the original Query execution cause;
 the original `finalization_denial()` remains distinct. Fresh-request retry repairs
 the same successor without reauthoring. The existing phase/policy repair method
-remains available for its explicit contract. The runnable
+remains available for its explicit contract; its `Execution(&lease)` must be the
+caller lease that funds the call or one of its ancestors, and any other lease
+refuses `UnrelatedNestedLease`. The runnable
 [original request fixture](../workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/original_request.rs)
 uses the real nonempty native transition; its
 [deferred repair companion](../workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission.rs)
