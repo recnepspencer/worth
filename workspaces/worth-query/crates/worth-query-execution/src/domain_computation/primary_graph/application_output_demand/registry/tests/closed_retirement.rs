@@ -81,7 +81,9 @@ fn a_reclaim_keeps_a_superseded_row_whose_claim_did_not_move() {
         // The newest row is no required member: the claim has no key to move to.
         state.required_keys.clear();
     }
-    registry.drain_closed_cleanup_admitted().unwrap();
+    // A refused observation asks the registry for an unheld row. The superseded
+    // row's claim cannot move, so it is passed over and nothing is reclaimed.
+    assert!(!registry.reclaim_unheld_observation().unwrap());
     {
         let state = registry.state.lock().unwrap();
         assert_eq!(state.records[&old].framework_required_count, 1);
@@ -89,6 +91,7 @@ fn a_reclaim_keeps_a_superseded_row_whose_claim_did_not_move() {
     }
     // The dependent's own retirement releases the claim on a row still there.
     drop(interest);
+    while registry.reclaim_unheld_observation().unwrap() {}
     registry.drain_closed_cleanup_admitted().unwrap();
     let state = registry.state.lock().unwrap();
     assert!(!state.records.contains_key(&dependent));
