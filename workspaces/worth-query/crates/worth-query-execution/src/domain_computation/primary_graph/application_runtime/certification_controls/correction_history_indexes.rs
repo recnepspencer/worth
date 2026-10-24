@@ -26,12 +26,13 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
     }
 
     /// Uses the existing native reconstruction owner against an exactly selected basis.
+    /// The native refusal is boxed so that the control's result stays small.
     #[doc(hidden)]
     pub fn rebuild_correction_history_indexes_for_test(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branch: crate::basis::WorthQueryProductBranch,
-    ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceDenial> {
+    ) -> Result<DerivedIndexMaintenanceOutcome, Box<DerivedIndexMaintenanceDenial>> {
         let execution = phase
             .execution_request_for(self.product_runtime())
             .expect("control uses its receiver's phase");
@@ -56,5 +57,6 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 branch_id: basis.identity().branch_id().clone(), index_ids,
             }, basis, None, crate::domain_computation::primary_graph::index_maintenance_budget::cold_index_reconstruction_budget(), &execution,
         ))
+        .map_err(Box::new)
     }
 }
