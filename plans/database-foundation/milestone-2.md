@@ -111,15 +111,45 @@ value. An identity that was never durable or acknowledged was never authority,
 so its loss on process death is not unsafe reuse. A committed or deleted
 identity is never reissued; the oracle checks this after every crash.
 
-**D8. Branch lifecycle transitions are durable before live.** Fork, archive and
-delete each produce a Relational branch transition artifact. It names the
-transition, the branch, its source and source commit, and the patch position
-the transition follows. The artifact is published to the medium before the
-transition becomes live, under the D2 fates. Recovery replays transitions in
-order, interleaved with the commit tail by the position each follows. A
-transition the medium refused or left unresolved is not live. Milestone 4 adds
-fork-by-sharing at scale, retained readers of deleted branches and retention;
-this milestone makes every acknowledged transition survive a crash.
+**D8. Branch lifecycle transitions are durable before live.** Fork, archive,
+deletion-requested and delete each produce a runtime-neutral
+`RelationalBranchTransitionArtifact`. It is framed like the canonical commit
+artifact and carries:
+
+- its own contiguous transition sequence;
+- the patch position it follows;
+- for a fork, the source branch's generation, truth version and selected head;
+- for archive and delete, the branch's prior generation and truth version.
+
+The design keeps transitions apart from commits:
+
+- **Own sequence.** Transitions do not consume patch positions, so the commit
+  stream and its tail rules stay contiguous.
+- **Own journal.** They are stored in a second ordered journal,
+  `relational.branch-transitions`, the fourth anchor. Store's journal is
+  generalized to a named journal with per-name unresolved state.
+- **Durable step.** A transition publishes inside the patch-position
+  reservation with D2 waiting, after every fallible preparation step and before
+  any live effect. Its fates are those of D2.
+- **One blocking slot.** An unresolved transition and an unresolved commit
+  share one slot that blocks both kinds until reopen. This is required: a later
+  commit must not overtake an unresolved delete.
+- **Typed stop.** Fork, archive and delete return
+  `RelationalBranchTransitionStop<Denial>`, either `Denied` (including
+  `DurablePublicationRefused`) or `DurabilityUnresolved`.
+- **Resolution.** The home resolves a transition's fate by sequence and digest.
+
+Checkpoints record the transitions they cover, every branch's lifecycle
+posture and the retired branch names. Recovery restores all three and no
+longer clears retired names, so an archive, a deletion or a retired name
+survives a crash.
+
+Recovery merges the transition tail into the commit tail: before replaying
+commit q it applies every transition that follows a position below q. Each
+replayed transition is validated against the live registry. A fork is the only
+source of a branch's existence, so a commit carrying the cell of an unknown
+branch is refused. Milestone 4 adds fork-by-sharing at scale, retained readers
+of deleted branches and retention.
 
 **D9. Committed data is read on demand behind residency guards.** Reopen
 loads the checkpoint manifest and replays the tail. Partition regions, mirror
