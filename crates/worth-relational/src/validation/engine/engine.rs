@@ -127,19 +127,7 @@ impl<'runtime> InvariantEngine<'runtime> {
         };
         crate::execution::admit_read_only_packet_order(&packets)
             .map_err(crate::execution::PacketExecutionStop::Admission)?;
-        let has_custom = packets.iter().any(|packet| !matches!(
-            packet.value.registration,
-            crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::Native(_)
-        ));
-        let ordered_lease = lease
-            .filter(|lease| {
-                has_custom
-                    && lease.resolved_posture() != worth_foundational::ExecutionPosture::Serial
-            })
-            .map(super::ordered_rules::ordered_child)
-            .transpose()?;
-        let dispatch_lease = ordered_lease.as_ref().or(lease);
-        let envelopes = if let Some(lease) = dispatch_lease {
+        let envelopes = if let Some(lease) = lease {
             crate::execution::execute_read_only_packets_with_budget(
                 packets,lease,runtime.commit_work_budget.as_ref(),
                 |packet,context|crate::validation::execution::evaluate_invariant_packet_checked(

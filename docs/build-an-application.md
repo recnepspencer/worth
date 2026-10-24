@@ -3555,9 +3555,10 @@ maximum; it is not a domain violation. Cancellation and deadlines retain the
 original request's control outcome. The adapter admits the maximum retained refusal bytes against the original
 evaluation meter before encoding, including ordinary serial rule hooks.
 
-Rules at the same execution point evaluate in installation binding order,
-including under a multiworker policy. The original publication result carries the first violation in that
-order. Its `WorthQueryApplicationCommitDenial` exposes
+Under a multiworker policy, rules at the same execution point may evaluate
+concurrently and finish in any order. The original publication result carries
+the first violation in installation binding order, whatever the worker count or
+completion order. Its `WorthQueryApplicationCommitDenial` exposes
 `decode_invariant_refusal::<YourRefusalBinding>()`; a mismatched binding returns
 `WorthQueryInvariantRefusalDecodeDenial::TypeMismatch` before decoding. The
 unchanged canonical bytes are also available through `invariant_refusal_bytes()`.

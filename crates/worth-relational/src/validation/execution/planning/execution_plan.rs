@@ -61,14 +61,7 @@ fn plan_invariant_execution_inner<'state>(
     } else {
         packet_partition_scope(request.merged_plan())
     };
-    let proof_kind = if registrations
-        .iter()
-        .any(|registration| !matches!(registration, InvariantPacketRegistration::Native(_)))
-    {
-        PreparationProofKind::RequiresSerial
-    } else {
-        proof_kind_for_runtime(lease)
-    };
+    let proof_kind = proof_kind_for_runtime(lease);
     let strategy = preparation_strategy_for_runtime(lease, registrations.len(), proof_kind);
     let packets = invariant_work_packets(
         request,
