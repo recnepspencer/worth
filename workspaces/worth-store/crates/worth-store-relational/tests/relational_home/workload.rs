@@ -12,7 +12,6 @@ use worth_execution::{
     SerialRequest,
 };
 use worth_relational::facade::history::BranchId;
-use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::mvcc::RelationalTransactionIntent;
 use worth_relational::facade::runtime::{
     RelationalRuntime, RelationalRuntimeApi, RelationalRuntimeBuilder,
@@ -106,7 +105,7 @@ impl Script {
         let mut generator = Xorshift(seed | 1);
         let main = BranchId("main".to_owned());
         let fork = BranchId("feature".to_owned());
-        let mut live: BTreeMap<String, Vec<EntityId>> = BTreeMap::new();
+        let mut live: BTreeMap<String, batches::BranchLive> = BTreeMap::new();
         let mut steps = Vec::new();
         let mut records = Vec::new();
         let fork_at = commits / 3;
@@ -127,27 +126,29 @@ impl Script {
             } else {
                 main.clone()
             };
-            let entities = live.entry(branch.0.clone()).or_default();
+            let branch_live = live.entry(branch.0.clone()).or_default();
             let (next, creates) = if step == transition_at {
                 let batch = batches::create(step);
                 (Step::Transition { branch, batch }, true)
             } else {
-                let (batch, creates) = batches::next(&mut generator, entities, step);
+                let (batch, creates) = batches::next(&mut generator, branch_live, step);
                 (Step::Commit { branch, batch }, creates)
             };
             let outcome = next
                 .commit(&runtime, &execution)
                 .unwrap_or_else(|error| panic!("reference commit {step}: {error:?}"));
             if creates {
-                entities.extend(
-                    outcome
-                        .changed_records
-                        .iter()
-                        .filter_map(|record| match record {
-                            RecordRef::Entity(entity) => Some(*entity),
-                            _ => None,
-                        }),
-                );
+                branch_live
+                    .entities
+                    .extend(
+                        outcome
+                            .changed_records
+                            .iter()
+                            .filter_map(|record| match record {
+                                RecordRef::Entity(entity) => Some(*entity),
+                                _ => None,
+                            }),
+                    );
             }
             records.extend(outcome.changed_records.iter().cloned());
             steps.push(next);

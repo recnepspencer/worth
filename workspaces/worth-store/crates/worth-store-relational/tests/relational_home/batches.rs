@@ -1,7 +1,7 @@
 //! The ordinary transactions a script is made of: creates, field updates,
 //! relations between live entities, and deletes, over a two-kind schema.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use worth_foundational::facade::{
     aspects, AspectFieldLocator, AspectIdentity, AspectKey, AspectValue, CanonicalFieldPath,
@@ -24,27 +24,41 @@ use worth_relational::facade::{
 
 use super::workload::Xorshift;
 
-/// The next batch for a branch whose live entities are `live`, and whether it
-/// creates an entity. A delete removes its entity from `live`.
+/// What one branch holds that the generator must respect: its live entities,
+/// and the entity pairs it already relates (a pair relates at most once).
+#[derive(Clone, Debug, Default)]
+pub(super) struct BranchLive {
+    pub(super) entities: Vec<EntityId>,
+    related: BTreeSet<(EntityId, EntityId)>,
+}
+
+/// The next batch for a branch, and whether it creates an entity. A delete
+/// removes its entity from the branch; a relation records its pair, and a
+/// pair already related becomes an update instead.
 pub(super) fn next(
     generator: &mut Xorshift,
-    live: &mut Vec<EntityId>,
+    live: &mut BranchLive,
     step: usize,
 ) -> (WorkerIntentBatch, bool) {
-    let choice = if live.len() < 2 {
+    let entities = &mut live.entities;
+    let choice = if entities.len() < 2 {
         0
     } else {
         generator.next() % 8
     };
     let batch = match choice {
         0..=2 => create(step),
-        3..=4 => update(live[generator.index(live.len())], step),
-        5..=6 => relate(
-            live[generator.index(live.len())],
-            live[generator.index(live.len())],
-            step,
-        ),
-        _ => delete(live.swap_remove(generator.index(live.len()))),
+        3..=4 => update(entities[generator.index(entities.len())], step),
+        5..=6 => {
+            let source = entities[generator.index(entities.len())];
+            let target = entities[generator.index(entities.len())];
+            if live.related.insert((source, target)) {
+                relate(source, target, step)
+            } else {
+                update(source, step)
+            }
+        }
+        _ => delete(entities.swap_remove(generator.index(entities.len()))),
     };
     (batch, choice <= 2)
 }

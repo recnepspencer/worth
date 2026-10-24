@@ -58,3 +58,11 @@ fn a_fork_committed_after_a_checkpoint_recovers() {
     assert_holds(&home, &script, &everything);
     home.close();
 }
+
+#[test]
+fn the_reference_script_generates_for_every_seed() {
+    for seed in 0x5eed_0400..0x5eed_0440_u64 {
+        let outcome = std::panic::catch_unwind(|| Script::generate(seed, COMMITS, 5));
+        assert!(outcome.is_ok(), "seed {seed:#x} does not generate");
+    }
+}
