@@ -180,6 +180,39 @@ impl ContinuationTestContext {
             .kind()
     }
 
+    /// Resumes and executes one page; returns its row count and basis release.
+    pub(super) fn readmit_page(
+        &self,
+        phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+        continuation: TestContinuation,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        page_width: usize,
+    ) -> (usize, bool) {
+        let access = WorthQueryApplicationQueryAccessContext::new(&self.principal, &self.account);
+        let phase = phase_custody.phase_for_application(&self.world.application);
+        let plan = self
+            .world
+            .application
+            .readmit_application_query_continuation(
+                &phase,
+                &self.query,
+                &access,
+                parameters("account-1"),
+                continuation,
+                WorthQueryApplicationQueryResumeControls::new(
+                    NonZeroUsize::new(page_width).unwrap(),
+                    request,
+                ),
+            )
+            .expect("a resume carries no work forecast to exhaust");
+        let page = self
+            .world
+            .application
+            .execute_application_query_continuation_page(&phase, plan)
+            .expect("the admitted resume reads its page");
+        (page.rows().len(), page.receipt().basis_released())
+    }
+
     pub(super) fn basis_acquisitions(&self) -> usize {
         self.world
             .application

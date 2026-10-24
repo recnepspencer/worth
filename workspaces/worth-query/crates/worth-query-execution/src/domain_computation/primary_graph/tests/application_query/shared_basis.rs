@@ -78,15 +78,14 @@ fn shared_basis_promotion_refuses_before_allocation_and_returns_exclusive_custod
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
         .expect("the fixture read owns its installed host call");
     let identity = selected.application_basis().identity().clone();
-
-    let (selected, stop) = match selected.prepare_shared_query_basis() {
-        Ok(_) => panic!("zero preparation bytes cannot fund the new final owner"),
-        Err(denial) => denial,
+    // ee07da2b0e removed the work/byte forecast from promotion, so promotion
+    // has no quota refusal. Before promotion the exclusive owner still refuses
+    // every identity copy without allocating a shared owner.
+    let stop = match selected.application_basis().retain_shared() {
+        Ok(_) => panic!("exclusive custody cannot be copied before promotion"),
+        Err(stop) => stop,
     };
-    assert!(matches!(
-        stop,
-        CompanionPreflightStop::PreparationMemoryExhausted { maximum: 0, .. }
-    ));
+    assert_eq!(stop, CompanionPreflightStop::SelectedSourceMismatch);
 
     let (_, product, basis) = selected.into_parts();
     drop(product);
@@ -123,31 +122,25 @@ fn denied_identity_copy_and_foreign_owner_leave_no_hidden_shared_custody() {
         .retain_selected_query_basis_admitted(&shared)
         .unwrap();
 
-    let error = match world
+    assert_eq!(observer.observe().active(), before.active() + 1);
+    // ee07da2b0e removed the work/byte forecasts from identity copies: a
+    // further copy is admitted and shares the one native owner.
+    let (copy_product, copy) = match world
         .application
         .retain_selected_query_basis_admitted(&shared)
     {
-        Ok(_) => panic!("one Work visit short must refuse before the identity copy"),
-        Err(error) => error,
+        Ok(copy) => copy,
+        Err(error) => panic!("an identity copy carries no quota forecast: {error:?}"),
     };
-    assert!(matches!(
-        error,
-        SelectedQueryBasisRetentionStop::Admission(CompanionPreflightStop::WorkExhausted { .. })
-    ));
-
-    let error = match world
-        .application
-        .retain_selected_query_basis_admitted(&shared)
-    {
-        Ok(_) => panic!("one byte short must refuse the identity copy"),
-        Err(error) => error,
-    };
-    assert!(matches!(
-        error,
-        SelectedQueryBasisRetentionStop::Admission(
-            CompanionPreflightStop::PreparationMemoryExhausted { .. }
-        )
-    ));
+    assert_eq!(copy.identity(), basis.identity());
+    assert_eq!(observer.observe().active(), before.active() + 1);
+    drop(copy_product);
+    let copied = copy.release();
+    assert!(!copied.released());
+    assert_eq!(
+        copied.outcome(),
+        WorthQueryApplicationBasisReleaseOutcome::SharedCustodyRetained
+    );
 
     let error = match foreign
         .application
@@ -161,7 +154,7 @@ fn denied_identity_copy_and_foreign_owner_leave_no_hidden_shared_custody() {
     drop(product);
     assert!(
         basis.release().released(),
-        "failed clones retained no extra share"
+        "the released copy and refused foreign owner retained no extra share"
     );
     assert_eq!(observer.observe().active(), before.active());
 }
