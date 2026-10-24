@@ -81,26 +81,6 @@ pub(super) fn request_stop(denial: &Request) -> Option<Denial> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{request_stop, Denial, Interruption, Request};
-    use worth_query_execution::facade::primary_graph::{
-        WorthQueryApplicationCommitOutcome as Outcome,
-        WorthQuerySignedCreationPreparationDenial as Signing,
-    };
-    #[test]
-    fn signing_lifecycle_observation_does_not_hide_native_request_stops() {
-        for (outcome, expected) in [
-            (Outcome::Cancelled, Interruption::Cancelled),
-            (Outcome::TimedOut, Interruption::DeadlineExceeded),
-        ] {
-            let denial = Request::SignedCreation(Signing::LifecycleObservation(Box::new(outcome)));
-            assert!(
-                matches!(request_stop(&denial), Some(Denial::Interrupted(actual)) if actual == expected)
-            );
-        }
-    }
-}
 pub(super) fn authorization_interruption(cause: Authorization) -> Option<Denial> {
     match cause {
         Authorization::Stopped(stop) => execution_stop(stop),
@@ -138,5 +118,26 @@ fn execution_stop(cause: Result<Execution, Control>) -> Option<Denial> {
         | Ok(Execution::TokenNotMintedForPlan)
         | Ok(Execution::EmptyPhysicalSessionIdentity)
         | Ok(Execution::SessionIdentityExhausted) => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{request_stop, Denial, Interruption, Request};
+    use worth_query_execution::facade::primary_graph::{
+        WorthQueryApplicationCommitOutcome as Outcome,
+        WorthQuerySignedCreationPreparationDenial as Signing,
+    };
+    #[test]
+    fn signing_lifecycle_observation_does_not_hide_native_request_stops() {
+        for (outcome, expected) in [
+            (Outcome::Cancelled, Interruption::Cancelled),
+            (Outcome::TimedOut, Interruption::DeadlineExceeded),
+        ] {
+            let denial = Request::SignedCreation(Signing::LifecycleObservation(Box::new(outcome)));
+            assert!(
+                matches!(request_stop(&denial), Some(Denial::Interrupted(actual)) if actual == expected)
+            );
+        }
     }
 }

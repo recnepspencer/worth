@@ -43,6 +43,43 @@ fn checkpoint(cause: MapKernelStop, stage_identity: Option<String>) -> WorkflowF
     }
 }
 
+pub(super) fn scope(cause: WorkCeilingDenial) -> WorkflowFrontierFailure {
+    match cause {
+        WorkCeilingDenial::Admission(cause) => admission(cause),
+        WorkCeilingDenial::Stopped(cause) => checkpoint(cause, None),
+        WorkCeilingDenial::Panicked => WorkflowFrontierFailure::Denied(Denial::ComputationPanic {
+            stage_identity: None,
+        }),
+    }
+}
+pub(super) fn map(
+    cause: MapStop<WorthQueryWorkflowStageComputed>,
+    stage_identity: Option<String>,
+) -> WorkflowFrontierFailure {
+    match cause {
+        MapStop::Admission(cause) => admission(cause),
+        MapStop::Allocation(cause) => {
+            WorkflowFrontierFailure::Denied(Denial::ComputationAllocation {
+                stage_identity,
+                cause,
+            })
+        }
+        MapStop::WorkExhausted { .. } => checkpoint(MapKernelStop::WorkCeiling, stage_identity),
+        MapStop::Failure { cause, .. } => match cause {
+            MapKernelFailure::Stop(cause) => checkpoint(cause, stage_identity),
+            MapKernelFailure::Domain(result) => WorkflowFrontierFailure::Domain(result),
+            MapKernelFailure::Panic => {
+                WorkflowFrontierFailure::Denied(Denial::ComputationPanic { stage_identity })
+            }
+            MapKernelFailure::ResultCapacityExceeded => {
+                WorkflowFrontierFailure::Denied(Denial::ComputationResultCapacity {
+                    stage_identity,
+                })
+            }
+        },
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -85,41 +122,5 @@ mod tests {
                 stage_identity: None
             })
         ));
-    }
-}
-pub(super) fn scope(cause: WorkCeilingDenial) -> WorkflowFrontierFailure {
-    match cause {
-        WorkCeilingDenial::Admission(cause) => admission(cause),
-        WorkCeilingDenial::Stopped(cause) => checkpoint(cause, None),
-        WorkCeilingDenial::Panicked => WorkflowFrontierFailure::Denied(Denial::ComputationPanic {
-            stage_identity: None,
-        }),
-    }
-}
-pub(super) fn map(
-    cause: MapStop<WorthQueryWorkflowStageComputed>,
-    stage_identity: Option<String>,
-) -> WorkflowFrontierFailure {
-    match cause {
-        MapStop::Admission(cause) => admission(cause),
-        MapStop::Allocation(cause) => {
-            WorkflowFrontierFailure::Denied(Denial::ComputationAllocation {
-                stage_identity,
-                cause,
-            })
-        }
-        MapStop::WorkExhausted { .. } => checkpoint(MapKernelStop::WorkCeiling, stage_identity),
-        MapStop::Failure { cause, .. } => match cause {
-            MapKernelFailure::Stop(cause) => checkpoint(cause, stage_identity),
-            MapKernelFailure::Domain(result) => WorkflowFrontierFailure::Domain(result),
-            MapKernelFailure::Panic => {
-                WorkflowFrontierFailure::Denied(Denial::ComputationPanic { stage_identity })
-            }
-            MapKernelFailure::ResultCapacityExceeded => {
-                WorkflowFrontierFailure::Denied(Denial::ComputationResultCapacity {
-                    stage_identity,
-                })
-            }
-        },
     }
 }

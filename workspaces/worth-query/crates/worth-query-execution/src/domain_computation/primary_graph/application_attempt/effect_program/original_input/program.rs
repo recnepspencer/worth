@@ -14,10 +14,10 @@ impl<Schema, Operation, Input, Scope>
         revision: &ApplicationProgramRevision,
     ) -> Result<Self, WorthQueryApplicationCommitDenial> {
         let admission = &mut self.read_set.admission;
-        if !admission
+        if admission
             .allowed_graph_contract()
             .aftermath()
-            .is_some_and(|contract| contract.correction_disclosure().is_some())
+            .is_none_or(|contract| contract.correction_disclosure().is_none())
         {
             return Ok(self);
         }
