@@ -2,8 +2,9 @@
 /// refused.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
+    /// Boxed: every other kind would otherwise reserve its bytes inline.
     Readiness(
-        super::super::super::application_contribution::WorthQueryOutputReadinessContractDenial,
+        Box<super::super::super::application_contribution::WorthQueryOutputReadinessContractDenial>,
     ),
     ReadExecution(
         Result<
@@ -11,8 +12,9 @@ pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
             crate::domain_computation::WorthQueryProviderSessionControlStopKind,
         >,
     ),
-    /// Bridge retained the native conditional or Signal refusal.
-    BridgeConditional(worth_runtime_bridge::facade::BridgeConditionalDenialKind),
+    /// Bridge retained the native conditional or Signal refusal, boxed as in
+    /// the output-demand kind: every other kind would reserve its bytes inline.
+    BridgeConditional(Box<worth_runtime_bridge::facade::BridgeConditionalDenialKind>),
     ManagedTemporal(worth_runtime_bridge::facade::BridgeManagedTemporalDenialKind),
     /// The application schema or runtime publication was rejected.
     PrimaryGraphPublication,
@@ -61,9 +63,10 @@ impl From<super::super::super::application_contribution::WorthQueryOutputReadine
     fn from(
         cause: super::super::super::application_contribution::WorthQueryOutputReadinessContractDenial,
     ) -> Self {
+        let subject = cause.to_string();
         Self::new(
-            WorthQueryConditionalRuntimeInstallationDenialKind::Readiness(cause.clone()),
-            cause.to_string(),
+            WorthQueryConditionalRuntimeInstallationDenialKind::Readiness(Box::new(cause)),
+            subject,
         )
     }
 }
