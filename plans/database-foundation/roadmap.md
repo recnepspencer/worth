@@ -5,10 +5,81 @@ host. Preserve the [Store vision](../worth-store/worth_store_vision.md):
 canonical commits, structural deltas, branch history, lineage, schema evolution
 and retention remain meaningful across crashes and restarts.
 
-The milestones build on one another. Milestone 3 delivers the first durable
+Milestones are verification boundaries, not sequential build phases.
+Implementation may proceed across several milestones at once. A milestone
+closes when the crash-consistency oracle and its completion requirements cover
+its behavior on the final code. Milestone 3 delivers the first durable
 application journey. Milestone 4 makes the database suitable for sustained use
 with data larger than memory. Milestone 5 completes recovery of the supported
 application runtime.
+
+The shared requirements apply to every milestone. The crash-consistency oracle
+comes first, because it decides whether the implementation it judges is
+correct.
+
+## Shared requirements
+
+**Canonical artifact ownership**
+
+- Relational's canonical commit envelope is the durable semantic authority for
+  graph commits. Store persists the envelope Relational produces. It does not
+  define a parallel envelope, a second codec or its own reading of commit
+  meaning.
+- Relational owns the envelope's format, versioning and readmission. Bytes
+  Store recovers become authority only after Relational readmits them under the
+  schema boundary they record.
+- Store owns what it adds: journal ordering, physical placement, the binding
+  between a commit and its selected physical state, integrity and checkpoint
+  coverage.
+- World, Query and Signal follow the same rule for the facts they persist
+  through Store. Each owner defines and readmits its own durable artifacts.
+- Store tests may use a narrow payload only for purely physical claims such as
+  byte integrity, allocation or journal ordering. Semantic publication and
+  recovery claims use real owner artifacts.
+
+**One durable lifecycle owner**
+
+- One component owns the durable commit decision and recovery sequencing for
+  an application home: when a commit becomes durable, the order in which owners
+  recover and when service may begin. Owners never coordinate durability with
+  each other directly.
+- Applications open a home through one Query host call. They never construct,
+  open or synchronize a Store runtime themselves.
+- The Store vision's durable mode places this ownership in Store, with the
+  runtime inside it. Milestone 3's host-opened composition places the Query
+  host on top. Milestone 1 records which component owns open, commit and
+  recovery sequencing, and how the other reaches it, before implementation
+  depends on either. The first implementation must not decide this implicitly.
+
+**Crash-consistency oracle**
+
+- Build a differential crash harness before the durable implementation it
+  judges. Each milestone extends its coverage; no milestone closes on
+  hand-picked crash points alone.
+- The reference is the memory-only runtime executing the same operation
+  sequence, and its committed history is the expected result. The oracle
+  disputes persistence and recovery, not graph or application semantics, so
+  sharing the semantic engine does not make it self-certifying.
+- Interrupt at every durable I/O boundary an operation crosses, including each
+  write, flush, rename and checkpoint step. After recovery, observed state must
+  equal the reference state at a committed prefix containing every
+  acknowledged commit.
+- Retries after recovery resolve to original occurrences. An unresolved
+  submission stays unresolved until its owner establishes its fate. Recovery
+  never manufactures a committed receipt or repeats an effect.
+- Interrupt recovery itself. A second or third crash must reach the same
+  conclusion as the first.
+- Interrupt at a media boundary for breadth, and kill real processes on real
+  filesystem media for the durability claim. A substituted media adapter
+  narrows what a run can claim; it does not replace the filesystem lane.
+- Generate seeded, reproducible operation sequences alongside the fixed
+  journeys. A failing seed must reproduce deterministically.
+- Interruption controls follow the repository's control rules: `cfg(test)`
+  hooks or sealed owned handles, never Cargo features. They must not change
+  production semantics or composition.
+- Run cheap seeds in focused lanes and broad campaigns in scheduled lanes with
+  stated resource budgets. The harness is ordinary test infrastructure, not a
+  proof ledger.
 
 ## Milestone 1: Canonical durable commits
 
@@ -20,8 +91,9 @@ or a replacement for semantic transaction validation.
 
 **Canonical artifacts and their physical representation**
 
-- Persist canonical commit envelopes, structural deltas and the selected
-  successor together with their stable identities and schema/format versions.
+- Persist Relational's canonical commit envelope, its structural deltas and
+  the selected successor as Relational produced them, together with their
+  stable identities and schema/format versions.
 - Preserve explicit parent ordering, lineage and schema-boundary references.
   Durable representation must retain the meaning needed for later history,
   reconstruction and replication.
@@ -95,6 +167,11 @@ can expose an incorrect binding. Unsupported or damaged artifacts must refuse
 before serving. A caller must be able to resolve a prior submission without
 submitting its effect again.
 
+Publication and recovery claims use real Relational canonical envelopes. The
+crash-consistency oracle runs against single-commit publication, the
+first-checkpoint boundary and interrupted recovery. The lifecycle-ownership
+decision is recorded before Milestone 2 or 3 code depends on it.
+
 ## Milestone 2: Relational cutover to Store
 
 Relational uses Store for durable committed state while retaining graph
@@ -167,8 +244,12 @@ and reads use this integration directly.
 
 **Cutover**
 
-- Replace Relational's independent segmented-filesystem persistence and
-  recovery path with Store.
+- Replace Relational's segmented-filesystem log, checkpoint storage and
+  recovery path with Store. Keep the canonical envelope codec and readmission:
+  they define the artifact Store persists.
+- Carry Relational's existing durability contract tests forward as oracle
+  cases where their behavior still applies. Delete tests that only exercise
+  the retired storage.
 - Remove obsolete filesystem implementations, configuration and examples as
   their callers cut over. There must be one supported durable publication
   and recovery path for the converted runtime.
@@ -188,6 +269,9 @@ Recovered state must support another ordinary edit and safe allocation.
 Retained observations must remain stable across later commits. A stale
 candidate, unavailable required read or invalid transaction must not publish.
 The retired filesystem path must no longer be an alternative durable engine.
+
+The oracle runs generated Relational transaction sequences, including the
+supported branch and schema operations, against the memory-only reference.
 
 ## Milestone 3: Production host and original-result retry
 
@@ -282,8 +366,10 @@ The decisive journey starts at the real production host on filesystem media:
 4. Return the original occurrence and exact branch state without invoking
    the mutation again or producing a duplicate domain effect.
 
-Also interrupt before commitment, after durable publication, between owner
-effects and product movement, and before response delivery. Check the distinct
+The oracle then runs generated host operation sequences with idempotency keys
+and response loss, interrupting at every durable boundary. These include
+before commitment, after durable publication, between owner effects and
+product movement, and before response delivery. Check the distinct
 no-effect, committed and unresolved outcomes rather than expecting a committed
 receipt for an attempt that never committed.
 
@@ -392,6 +478,10 @@ Cold and warm access must agree. Independent branches must make progress, and
 real exhaustion or interrupted access must preserve typed outcomes and
 committed truth.
 
+The oracle runs generated fork, edit, delete, checkpoint and reclamation
+sequences, comparing cold and warm reads against the reference, and interrupts
+reclamation as well as publication.
+
 ## Milestone 5: Complete runtime recovery
 
 The supported application runtime resumes authored state, history and mandatory
@@ -495,13 +585,15 @@ working, rather than merely display saved data.
 
 Extend the production host journey to mixed-owner publication, a deferred
 settlement, a workflow mid-run, ambiguous external completion and correction
-on a divergent branch. Interrupt at the consequential owner boundaries and
-reopen in a fresh process.
+on a divergent branch. The oracle runs generated sequences mixing these
+operations, interrupting at every durable boundary and reopening in a fresh
+process.
 
 Recover original occurrences and custody without repeating performed effects.
-Then edit a dependency and advance the original owner. Repeat with derived
-state discarded and with a changed application build identity; authored
-meaning, references and mandatory obligations must remain correct.
+Then edit a dependency and advance the original owner. Discarded derived state
+and a changed application build identity are oracle dimensions, not single
+cases; authored meaning, references and mandatory obligations must remain
+correct under both.
 
 This milestone closes the runtime database cutover. Advanced replication,
 backup/PITR, security lifecycle, bulk ingest and broader platform qualification
