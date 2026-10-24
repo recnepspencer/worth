@@ -38,15 +38,12 @@ use blob_scope_admission::admitted_blob_scope;
 #[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/certified_release_serving.rs"]
 mod certified_release_serving;
-
-#[cfg(feature = "certification-test-authority")]
-#[path = "production_entry/pending_wal_world.rs"]
-mod pending_wal_world;
-
 #[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/pending_wal_fold.rs"]
 mod pending_wal_fold;
-
+#[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/pending_wal_world.rs"]
+mod pending_wal_world;
 #[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/selected_batch_multi_pending.rs"]
 mod selected_batch_multi_pending;
@@ -59,6 +56,9 @@ mod pending_successor_above_history;
 #[path = "production_entry/before_first_checkpoint.rs"]
 mod before_first_checkpoint;
 
+#[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/anchored_record_members.rs"]
+mod anchored_record_members;
 #[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/anchored_records.rs"]
 mod anchored_records;

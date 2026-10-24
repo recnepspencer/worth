@@ -11,6 +11,7 @@ pub(in crate::physical_runtime) use director::extent_copy::{
 pub use director::extent_copy::{
     PhysicalExtentCopyPhase, PhysicalExtentCopyProgress, PhysicalExtentCopyResolutionProgress,
 };
+pub(super) mod durable_append;
 mod durable_data_plan;
 mod durable_preparation;
 pub(super) mod extent_publication;

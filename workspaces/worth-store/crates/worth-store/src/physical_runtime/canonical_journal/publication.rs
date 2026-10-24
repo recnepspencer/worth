@@ -7,7 +7,7 @@ use super::{
     CanonicalCommitEntry, CanonicalCommitJournal, CanonicalCommitPublication,
     CanonicalCommitPublicationFailure, CanonicalCommitPublished,
 };
-use crate::physical_runtime::record_serving::{AnchoredRecordAppend, AnchoredRecordAppendFailure};
+use crate::physical_runtime::record_serving::{AnchoredRecordAppend, DurableRecordAppendFailure};
 use crate::physical_runtime::PhysicalRecordId;
 
 type Failure = CanonicalCommitPublicationFailure;
@@ -90,14 +90,14 @@ impl CanonicalCommitJournal<'_> {
 }
 
 /// The journal's name for each anchored-append failure.
-fn journal_failure(failure: AnchoredRecordAppendFailure) -> Failure {
+fn journal_failure(failure: DurableRecordAppendFailure) -> Failure {
     match failure {
-        AnchoredRecordAppendFailure::Batch(denial) => Failure::Batch(denial),
-        AnchoredRecordAppendFailure::Idempotency(denial) => Failure::Idempotency(denial),
-        AnchoredRecordAppendFailure::Preparation(outcome) => Failure::Preparation(outcome),
-        AnchoredRecordAppendFailure::ProvenNoEffect(fate) => Failure::ProvenNoEffect(fate),
-        AnchoredRecordAppendFailure::Indeterminate(fate) => Failure::Indeterminate(fate),
-        AnchoredRecordAppendFailure::CompletedWithoutRecord => Failure::CompletedWithoutRecord,
+        DurableRecordAppendFailure::Batch(denial) => Failure::Batch(denial),
+        DurableRecordAppendFailure::Idempotency(denial) => Failure::Idempotency(denial),
+        DurableRecordAppendFailure::Preparation(outcome) => Failure::Preparation(outcome),
+        DurableRecordAppendFailure::ProvenNoEffect(fate) => Failure::ProvenNoEffect(fate),
+        DurableRecordAppendFailure::Indeterminate(fate) => Failure::Indeterminate(fate),
+        DurableRecordAppendFailure::CompletedWithoutRecords => Failure::CompletedWithoutRecord,
     }
 }
 

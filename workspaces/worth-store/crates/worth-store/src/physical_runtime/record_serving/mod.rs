@@ -3,7 +3,7 @@ mod access_policy;
 mod admission;
 mod arena;
 pub(in crate::physical_runtime) use arena::{
-    ReleasedControlArenaPlacement, ReleasedControlArenaReservations,
+    arena_range_budget, ReleasedControlArenaPlacement, ReleasedControlArenaReservations,
 };
 mod canonical_read_execution;
 mod evidence;
@@ -115,12 +115,13 @@ pub use planning::SettledRootProjectionMergeDenial;
 pub(in crate::physical_runtime) use planning::{
     PreparedPhysicalRootProjection, RejectedSettledRootProjections,
 };
-pub(in crate::physical_runtime) use publication::anchored_append::{
-    AnchoredRecordAppend, AnchoredRecordAppendFailure,
-};
+pub(in crate::physical_runtime) use publication::anchored_append::AnchoredRecordAppend;
 pub use publication::append::{RecordAppendDenial, RecordAppendError, RecordPlacementClass};
 pub use publication::append_observation::{RecordAppendObservation, RecordRootPlanningObservation};
 pub use publication::batch::{RecordAppendBatch, RecordAppendBatchBuilder};
+pub(in crate::physical_runtime) use publication::durable_append::{
+    DurableRecordAppend, DurableRecordAppendFailure,
+};
 pub use publication::publication_residue::RecordPublicationResidueObservation;
 pub use publication::streaming::{
     RecordStreamFailure, RecordStreamFailureKind, RecordWriteSource, RecordWriteSourceError,

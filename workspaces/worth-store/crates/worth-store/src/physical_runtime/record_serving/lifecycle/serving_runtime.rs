@@ -25,6 +25,7 @@ pub struct ServingPhysicalRuntime {
     blob_index_publications: std::sync::Mutex<()>,
     canonical_journal: std::sync::Mutex<crate::physical_runtime::CanonicalJournalState>,
     anchored_records: std::sync::Mutex<crate::physical_runtime::AnchoredRecordState>,
+    anchored_membership: std::sync::Mutex<crate::physical_runtime::AnchoredMembershipCache>,
     parts: PhysicalStoreInstanceParts,
 }
 
@@ -39,6 +40,7 @@ impl ServingPhysicalRuntime {
                 blob_index_publications: std::sync::Mutex::new(()),
                 canonical_journal: std::sync::Mutex::new(Default::default()),
                 anchored_records: std::sync::Mutex::new(Default::default()),
+                anchored_membership: std::sync::Mutex::new(Default::default()),
                 parts,
             }),
             Err(failure) => {
@@ -164,6 +166,23 @@ impl ServingPhysicalRuntime {
         self.anchored_records
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    /// The verified member tables of current anchored values. Held only to
+    /// look up or replace one entry, never across I/O.
+    pub(in crate::physical_runtime) fn anchored_membership_cache(
+        &self,
+    ) -> std::sync::MutexGuard<'_, crate::physical_runtime::AnchoredMembershipCache> {
+        self.anchored_membership
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    /// The record access policy this runtime admits batches under.
+    pub(in crate::physical_runtime) const fn record_access_policy(
+        &self,
+    ) -> crate::physical_runtime::record_serving::AdmittedRecordAccessPolicy {
+        self.parts.access
     }
 
     /// Captures a protected selected root and opens Store-owned derived-index access.

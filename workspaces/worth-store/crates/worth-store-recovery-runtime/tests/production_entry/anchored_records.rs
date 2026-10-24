@@ -138,7 +138,7 @@ fn an_anchored_record_is_replaced_one_generation_at_a_time() {
     let retry = publish(serving, world.placement(), checkpoint, 0, value(1, 700)).unwrap();
     assert_eq!(
         retry,
-        AnchoredRecordPublished::AlreadyPublished(first.version())
+        AnchoredRecordPublished::AlreadyPublished(first.membership().clone())
     );
     assert!(matches!(
         publish(serving, world.placement(), checkpoint, 0, value(2, 700)),

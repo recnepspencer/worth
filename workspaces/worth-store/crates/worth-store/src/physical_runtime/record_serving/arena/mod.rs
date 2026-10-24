@@ -14,6 +14,7 @@ pub(in crate::physical_runtime::record_serving) use evacuation::ArenaEvacuationL
 #[cfg(test)]
 mod tests;
 pub(in crate::physical_runtime::record_serving) use geometry::qualified_arena_alignment;
+pub(in crate::physical_runtime) use reconstruction::arena_range_budget;
 pub(in crate::physical_runtime::record_serving) use reconstruction::reconstruct;
 pub(in crate::physical_runtime) use released_controls::{
     ReleasedControlArenaPlacement, ReleasedControlArenaReservations,

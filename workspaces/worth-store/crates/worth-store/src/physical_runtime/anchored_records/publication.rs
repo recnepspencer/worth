@@ -1,24 +1,108 @@
+//! Publishing one anchored value with its members.
+//!
+//! Phases, in order: admission of the request (payload, member keys and
+//! sizes), reading the current anchor and value (identical retry, generation,
+//! anchor table, carried membership), planning every batch, and only then the
+//! effects: new member batches, each its own durable root generation, and
+//! finally the anchored record with its anchor advance, the single commit
+//! point. Every refusal before the first member batch has no effect.
+
 use sha2::{Digest, Sha256};
-use worth_store_physical_format::{RecordAnchor, MAXIMUM_RECORD_ANCHORS};
 
 use super::frame::AnchoredRecordHeader;
-use super::read::version;
+use super::membership::{SelectedRecord, ValueMembership};
 use super::{
-    AnchoredRecordName, AnchoredRecordPublication, AnchoredRecordPublicationFailure,
-    AnchoredRecordPublished, AnchoredRecordVersion, AnchoredRecords,
+    AnchoredRecordMember, AnchoredRecordMemberLocator, AnchoredRecordMembership,
+    AnchoredRecordName, AnchoredRecordPublicationFailure, AnchoredRecordVersion, AnchoredRecords,
 };
-use crate::physical_runtime::record_serving::{AnchoredRecordAppend, AnchoredRecordAppendFailure};
-use crate::physical_runtime::PhysicalRecordId;
+use crate::physical_runtime::record_serving::{AnchoredRecordAppend, DurableRecordAppendFailure};
+use crate::physical_runtime::{
+    AdmittedRecordPlacementPolicy, PhysicalMutationDeadline, RecordAppendDenial,
+};
+
+mod admission;
+mod batch_capacity;
+mod current;
+mod member_writes;
+
+use admission::AdmittedMembers;
+use batch_capacity::BatchCapacity;
+use current::{CurrentDecision, RequestedPayload};
+use member_writes::MemberWritePlan;
 
 type Failure = AnchoredRecordPublicationFailure;
 
+/// One requested replacement: the value at `expected_generation` (zero when
+/// the record is absent) becomes `payload` with `members` at the next
+/// generation.
+pub struct AnchoredRecordPublication {
+    name: AnchoredRecordName,
+    expected_generation: u64,
+    payload: Vec<u8>,
+    members: Vec<AnchoredRecordMember>,
+    placement: AdmittedRecordPlacementPolicy,
+    deadline: PhysicalMutationDeadline,
+}
+
+impl AnchoredRecordPublication {
+    /// A value with no members.
+    pub fn new(
+        name: AnchoredRecordName,
+        expected_generation: u64,
+        payload: Vec<u8>,
+        placement: AdmittedRecordPlacementPolicy,
+        deadline: PhysicalMutationDeadline,
+    ) -> Self {
+        Self {
+            name,
+            expected_generation,
+            payload,
+            members: Vec::new(),
+            placement,
+            deadline,
+        }
+    }
+
+    /// The value's members, in the order the value lists them.
+    pub fn with_members(mut self, members: Vec<AnchoredRecordMember>) -> Self {
+        self.members = members;
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AnchoredRecordPublished {
+    /// This call made the value durable.
+    Published(AnchoredRecordMembership),
+    /// The identical value and member contents were already durable at the
+    /// requested generation; nothing was written.
+    AlreadyPublished(AnchoredRecordMembership),
+}
+
+impl AnchoredRecordPublished {
+    pub const fn membership(&self) -> &AnchoredRecordMembership {
+        match self {
+            Self::Published(membership) | Self::AlreadyPublished(membership) => membership,
+        }
+    }
+    pub const fn version(&self) -> AnchoredRecordVersion {
+        self.membership().version
+    }
+    /// Every member's locator, in the caller's order.
+    pub fn members(&self) -> &[AnchoredRecordMemberLocator] {
+        &self.membership().members
+    }
+}
+
 impl AnchoredRecords<'_> {
-    /// Makes `payload` the value of its name at `expected_generation + 1` in
-    /// one durable root decision, or reports why not.
+    /// Makes `payload` and its members the value of its name at
+    /// `expected_generation + 1` in one durable root decision, or reports why
+    /// not.
     ///
     /// Publications are serialized across names. Every refusal before the
-    /// append has no effect. A retry of a value that is already durable at the
-    /// requested generation writes nothing and answers `AlreadyPublished`.
+    /// first member batch has no effect. A retry of a value whose payload and
+    /// member contents are already durable at the requested generation
+    /// writes nothing and answers `AlreadyPublished`.
     pub fn publish(
         &self,
         publication: AnchoredRecordPublication,
@@ -31,38 +115,49 @@ impl AnchoredRecords<'_> {
         if publication.payload.is_empty() {
             return Err(Failure::EmptyPayload);
         }
-        let reader = self.reader().map_err(Failure::Read)?;
-        let anchors = reader.selected_record_anchors();
-        drop(reader);
-        let current = anchors.get(name.anchor());
-        let current_generation = current.map_or(0, RecordAnchor::generation);
-        let Some(target) = publication.expected_generation.checked_add(1) else {
-            return Err(Failure::GenerationConflict {
-                current: current_generation,
-            });
+        let capacity = BatchCapacity::of(self.runtime, publication.placement);
+        let members = AdmittedMembers::admit(publication.members, capacity)?;
+        let payload = RequestedPayload {
+            sha256: Sha256::digest(&publication.payload).into(),
+            bytes: publication.payload.len() as u64,
         };
-        let header = AnchoredRecordHeader::describe(name.anchor(), target, &publication.payload);
-        if let Some(anchor) = current.filter(|anchor| {
-            anchor.generation() == target
-                && anchor.record_payload_sha256() == header.record_sha256(&publication.payload)
-        }) {
-            return Ok(AnchoredRecordPublished::AlreadyPublished(version(
-                name, anchor, &header,
-            )));
+        let target = match self.decide_against_current(
+            name,
+            publication.expected_generation,
+            payload,
+            &members,
+        )? {
+            CurrentDecision::AlreadyPublished(membership) => {
+                return Ok(AnchoredRecordPublished::AlreadyPublished(membership))
+            }
+            CurrentDecision::Replace { target } => target,
+        };
+        let header = AnchoredRecordHeader::describe(
+            name.anchor(),
+            target,
+            &publication.payload,
+            members.len(),
+        );
+        if header.record_bytes() > capacity.bytes {
+            return Err(Failure::Batch(RecordAppendDenial::BatchByteLimitExceeded));
         }
-        if current_generation != publication.expected_generation {
-            return Err(Failure::GenerationConflict {
-                current: current_generation,
-            });
-        }
-        if current.is_none() && anchors.iter().count() == MAXIMUM_RECORD_ANCHORS {
-            return Err(Failure::AnchorTableFull);
-        }
-        let record = AnchoredRecordAppend {
-            record: header.encode_record(&publication.payload),
+        let content = members.content_digest(name, target, payload.sha256);
+        let incarnation = self.runtime.runtime_identity().get();
+        let (plan, resolution) =
+            MemberWritePlan::plan(members, name, target, content, incarnation, capacity)?;
+        let written = plan.write(
+            &self.runtime.record_submission(),
+            publication.placement,
+            publication.deadline,
+        )?;
+        let locators = resolution.resolve(&written);
+        let record = header.encode_record(&locators, &publication.payload);
+        let record_sha256: [u8; 32] = Sha256::digest(&record).into();
+        let persisted = AnchoredRecordAppend {
+            record,
             anchor: name.anchor(),
             expected_generation: publication.expected_generation,
-            idempotency: material(name, target, header.payload_sha256),
+            idempotency: material(name, target, record_sha256, incarnation),
             placement: publication.placement,
             deadline: publication.deadline,
         }
@@ -73,37 +168,46 @@ impl AnchoredRecords<'_> {
             }
             door_failure(failure)
         })?;
-        Ok(AnchoredRecordPublished::Published(AnchoredRecordVersion {
-            name,
+        let selected = SelectedRecord {
+            record: persisted,
+            record_sha256,
             generation: target,
-            record: PhysicalRecordId::from_persisted(record),
-            payload_sha256: header.payload_sha256,
-            payload_bytes: header.payload_bytes,
-        }))
+        };
+        let value = self.remember(name, ValueMembership::new(selected, header, locators));
+        Ok(AnchoredRecordPublished::Published(value.described(name)))
     }
 }
 
 /// This door's name for each anchored-append failure.
-fn door_failure(failure: AnchoredRecordAppendFailure) -> Failure {
+fn door_failure(failure: DurableRecordAppendFailure) -> Failure {
     match failure {
-        AnchoredRecordAppendFailure::Batch(denial) => Failure::Batch(denial),
-        AnchoredRecordAppendFailure::Idempotency(denial) => Failure::Idempotency(denial),
-        AnchoredRecordAppendFailure::Preparation(outcome) => Failure::Preparation(outcome),
-        AnchoredRecordAppendFailure::ProvenNoEffect(fate) => Failure::ProvenNoEffect(fate),
-        AnchoredRecordAppendFailure::Indeterminate(fate) => Failure::Indeterminate(fate),
-        AnchoredRecordAppendFailure::CompletedWithoutRecord => Failure::CompletedWithoutRecord,
+        DurableRecordAppendFailure::Batch(denial) => Failure::Batch(denial),
+        DurableRecordAppendFailure::Idempotency(denial) => Failure::Idempotency(denial),
+        DurableRecordAppendFailure::Preparation(outcome) => Failure::Preparation(outcome),
+        DurableRecordAppendFailure::ProvenNoEffect(fate) => Failure::ProvenNoEffect(fate),
+        DurableRecordAppendFailure::Indeterminate(fate) => Failure::Indeterminate(fate),
+        DurableRecordAppendFailure::CompletedWithoutRecords => Failure::CompletedWithoutRecord,
     }
 }
 
-/// Idempotency material, domain-separated from the journal's: a retry of the
-/// same value at the same generation in one incarnation resolves to the
-/// original attempt; a different value at that generation is a new attempt.
-fn material(name: AnchoredRecordName, generation: u64, payload_sha256: [u8; 32]) -> [u8; 32] {
+/// Idempotency material of the anchored record, domain-separated from the
+/// journal's and the members': a retry of the same record bytes at the same
+/// generation in one runtime incarnation resolves to the original attempt;
+/// different bytes, or another incarnation, are a new attempt. After a
+/// reopen, durable state (the anchor) answers a retry, never an earlier
+/// incarnation's binding, whose fate may still read as unresolved.
+fn material(
+    name: AnchoredRecordName,
+    generation: u64,
+    record_sha256: [u8; 32],
+    incarnation: u64,
+) -> [u8; 32] {
     let mut sha = Sha256::new();
-    sha.update(b"worth.store.anchored-record.publication.v1");
+    sha.update(b"worth.store.anchored-record.publication.v2");
+    sha.update(incarnation.to_le_bytes());
     sha.update([name.as_str().len() as u8]);
     sha.update(name.as_str().as_bytes());
     sha.update(generation.to_le_bytes());
-    sha.update(payload_sha256);
+    sha.update(record_sha256);
     sha.finalize().into()
 }
