@@ -132,8 +132,11 @@ fn registry_binding_reader_resolves_completed_custody_note() {
         assert_eq!(visible(&b), visible(&a), "seed {seed}");
         assert!(b.custody_prunable(&completed_commit));
         assert!(b.pending_custody_prune());
-        // Its owner's drain then reclaims it without the binding's help.
-        b.drain_completed_custody();
+        // Its production owner, the foreign-cleanup drain admission runs,
+        // then reclaims it without the binding's help.
+        b.drain_next_foreign_custody();
+        assert!(!b.source_custody.contains_key(&completed_commit));
+        assert!(!b.pending_custody_prune());
         assert_eq!(b.source_custody.len(), a.source_custody.len());
 
         assert!(b.records.is_empty());
