@@ -63,11 +63,17 @@ pub(in crate::domain_computation::primary_graph) fn authority() -> &'static Exec
 }
 
 pub(in crate::domain_computation::primary_graph) fn request() -> LeaseRequest {
+    request_with_memory(None)
+}
+
+/// `None` has no request-memory ceiling; only an explicitly finite caller
+/// policy declares the result capacity that a scan can exceed.
+fn request_with_memory(charged_memory_bytes: Option<u64>) -> LeaseRequest {
     LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(1_000_000)),
+            ExecutionBudget::new(NonZeroUsize::MIN, charged_memory_bytes, Some(1_000_000)),
         ),
         cancellation: CancellationToken::new(),
         deadline: None,
@@ -103,7 +109,7 @@ fn result_refusal_is_typed_with_partition_identity() {
                 "::result_refusal_is_typed_with_partition_identity"
             ),
             || {
-                let build = refused_index_build(execution, request());
+                let build = refused_index_build(execution, request_with_memory(Some(64 * 1024)));
                 let refusal = build.execution_denial.expect("real execution refusal");
                 assert!(refusal.partition_identity.is_some());
                 assert_eq!(
