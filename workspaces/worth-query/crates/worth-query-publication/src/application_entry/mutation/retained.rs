@@ -81,6 +81,22 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
+        if let Some(outcome) =
+            self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
+                if request
+                    .request
+                    .application
+                    .requires_application_program::<Intent::Binding>()
+                {
+                    return Err(
+                        WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired,
+                    );
+                }
+                super::authorization::prepare(phase, request, identities, staged)
+            })
+        {
+            return Ok(WorthQueryApplicationRetainedMutationOutcome::Other(outcome));
+        }
         let request_scope = self.request_scope().clone();
         let runtime = self.request.application;
         runtime
@@ -137,6 +153,16 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
+        if let Some(outcome) =
+            self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
+                let selected = request.select_program_owner(phase, application)?.selected;
+                super::authorization::prepare_selected(
+                    phase, request, identities, staged, &selected,
+                )
+            })
+        {
+            return Ok(WorthQueryApplicationRetainedMutationOutcome::Other(outcome));
+        }
         let request_scope = self.request_scope().clone();
         let runtime = self.request.application;
         runtime
@@ -145,27 +171,11 @@ where
                 allocation_policy,
                 |active_phase| {
                     let phase = &active_phase;
-
-                    if !std::ptr::eq(application.runtime(), self.request.application) {
-                        return Err(
-                            WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch,
-                        );
-                    }
-                    let selected = self
-                        .request
-                        .application
-                        .on_branch(self.request.branch)
-                        .select(phase)
-                        .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
-                    let owner = application
-                        .selected_program_owner(&selected)
-                        .map_err(super::selected_program::map_selected_program_owner_denial)?;
-                    let selected_owns_action = owner.contains_action::<Intent::Binding>();
-                    if !selected_owns_action && !application.contains_action::<Intent::Binding>() {
-                        return Err(
-                            WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired,
-                        );
-                    }
+                    let super::selected_program::SelectedProgram {
+                        selected,
+                        owner,
+                        selected_owns_action,
+                    } = self.select_program_owner(phase, application)?;
                     self.execute_retained_with_commit(
                         phase,
                         move |request, identities, staged| {

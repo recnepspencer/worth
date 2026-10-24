@@ -178,6 +178,22 @@ where
             WorthQueryApplicationRequestMutationDenial,
         >,
     > {
+        if let Some(outcome) =
+            self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
+                if request
+                    .request
+                    .application
+                    .requires_application_program::<Intent::Binding>()
+                {
+                    return Err(
+                        WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired,
+                    );
+                }
+                super::authorization::prepare(phase, request, identities, staged)
+            })
+        {
+            return super::WorthQueryApplicationMutationAttemptReport::new(Ok(outcome), worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
+        }
         let scope = self.request_scope().clone();
         let runtime = self.request.application;
         runtime.with_funded_application_advancement(&scope, allocation_policy, |phase| {

@@ -1,14 +1,13 @@
 //! Shared occurrence selection and candidate preparation; authorization is a typed caller closure.
 use super::super::WorthQueryApplicationMutationAttemptReport;
 use super::{
-    map_selected_program_owner_denial, AdvancementPhase, ApplicationMutationBinding,
-    ApplicationMutationIntent, ApplicationMutationScopeResolution, ApplicationProgramDefinition,
-    ApplicationSchema, CandidatePreparation, ExecutionAllocationPolicy,
+    AdvancementPhase, ApplicationMutationBinding, ApplicationMutationIntent,
+    ApplicationMutationScopeResolution, ApplicationProgramDefinition, ApplicationSchema,
+    CandidatePreparation, ExecutionAllocationPolicy,
     WorthQueryApplicationMutationRequestWithIdempotency,
     WorthQueryApplicationProgramMutationPreparation, WorthQueryApplicationRequestMutationDenial,
     WorthQueryPreparedProgramMutation, WorthQueryProgramApplicationRuntime,
 };
-use worth_query_execution::facade::application_installation::WorthQueryProgramOwner;
 
 impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
     WorthQueryApplicationMutationRequestWithIdempotency<
@@ -73,6 +72,16 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
+        if let Some(outcome) =
+            self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
+                let selected = request.select_program_owner(phase, application)?.selected;
+                super::super::authorization::prepare_selected(
+                    phase, request, identities, staged, &selected,
+                )
+            })
+        {
+            return WorthQueryApplicationMutationAttemptReport::new(Ok(WorthQueryApplicationProgramMutationPreparation::Settled(outcome)), worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
+        }
         let scope = self.request_scope().clone();
         let runtime = self.request.application;
         runtime
@@ -162,22 +171,11 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
-        if !std::ptr::eq(application.runtime(), self.request.application) {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch);
-        }
-        let selected = self
-            .request
-            .application
-            .on_branch(self.request.branch)
-            .select(phase)
-            .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
-        let owner = application
-            .selected_program_owner(&selected)
-            .map_err(map_selected_program_owner_denial)?;
-        let selected_owns_action = owner.contains_action::<Intent::Binding>();
-        if !selected_owns_action && !application.contains_action::<Intent::Binding>() {
-            return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
-        }
+        let super::super::selected_program::SelectedProgram {
+            selected,
+            owner,
+            selected_owns_action,
+        } = self.select_program_owner(phase, application)?;
         match self.prepare_candidate(
             phase,
             move |request, identities, staged| prepare(request, identities, staged, &selected),

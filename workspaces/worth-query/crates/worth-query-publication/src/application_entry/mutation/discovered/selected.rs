@@ -60,6 +60,24 @@ where
         RootConnection<Schema, Root>:
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
     {
+        if let Some(outcome) =
+            self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
+                let (selected, _) = request.select_performed_owner::<Program, Root>(phase, application)?;
+                RootConnection::<Schema, Root>::discovery_from_source(request.request.intent.input())
+                    .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
+                <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission::prepare_selected(phase, request, identities, staged, &selected)
+                    .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)
+            })
+        {
+            let discovery =
+                RootConnection::<Schema, Root>::discovery_from_source(self.request.intent.input())
+                    .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
+            return Ok(discovered_outcome(
+                discovery,
+                outcome,
+                crate::application_entry::mutation::performed_source::PerformedSourceCommit::default(),
+            ));
+        }
         let scope = self.request_scope().clone();
         let runtime = self.request.application;
         runtime.with_funded_application_advancement(&scope, allocation_policy, |phase| {
@@ -83,30 +101,7 @@ where
         RootConnection<Schema, Root>:
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
     {
-        crate::application_entry::mutation::performed_source::require_program_output_root::<
-            Schema,
-            Program,
-            Root,
-        >(self.request.application, application)?;
-        let selected = self
-            .request
-            .application
-            .on_branch(self.request.branch)
-            .select(phase, )
-            .map_err(|selection| {
-                WorthQueryPerformedMutationExecutionDenial::Mutation(
-                    WorthQueryApplicationRequestMutationDenial::ProductSelection(selection),
-                )
-            })?;
-        let owner = application.selected_program_owner(&selected).map_err(|denial| {
-            WorthQueryPerformedMutationExecutionDenial::Mutation(
-                crate::application_entry::mutation::selected_program::map_selected_program_owner_denial(denial),
-            )
-        })?;
-        if let Some(declared) = self.compiled_action {
-            owner.resolve_declared_action::<Intent::Binding>(declared)
-                .map_err(WorthQueryPerformedMutationExecutionDenial::Action)?;
-        }
+        let (selected, owner) = self.select_performed_owner::<Program, Root>(phase, application)?;
         let discovery =
             RootConnection::<Schema, Root>::discovery_from_source(self.request.intent.input())
                 .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;

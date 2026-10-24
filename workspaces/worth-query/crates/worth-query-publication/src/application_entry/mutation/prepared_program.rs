@@ -14,7 +14,6 @@ use worth_query_installation::facade::ApplicationSchema;
 use super::{
     commit_binding::WorthQueryMutationCommitBinding,
     preparation::{CandidatePreparation, PreparedCandidate},
-    selected_program::map_selected_program_owner_denial,
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequestWithIdempotency,
 };
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;

@@ -7,11 +7,16 @@
 use std::cell::RefCell;
 use std::sync::Arc;
 
+use worth_query_declaration::facade::application_operation::ApplicationMutationIntent;
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
-use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
+use worth_query_execution::facade::application_installation::{
+    WorthQueryProgramApplicationRuntime, WorthQuerySelectedProgramOwner,
+};
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
     WorthQueryApplicationReadObservation, WorthQueryPreparedRequiredOutputSource,
@@ -20,8 +25,10 @@ use worth_query_execution::facade::primary_graph::{
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
+    WorthQueryApplicationMutationRequestWithIdempotency,
     WorthQueryPerformedMutationExecutionDenial, WorthQueryRequiredOutputPreparationDenial,
 };
+use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 
 mod blocked;
 pub(super) mod recovery;
@@ -58,6 +65,68 @@ where
         return Err(WorthQueryPerformedMutationExecutionDenial::UndeclaredOutputRoot);
     }
     Ok(())
+}
+
+impl<'application, Schema, Intent, SourcePreparation>
+    WorthQueryApplicationMutationRequestWithIdempotency<
+        'application,
+        '_,
+        '_,
+        '_,
+        Schema,
+        Intent,
+        SourcePreparation,
+    >
+where
+    Schema: ApplicationSchema,
+    Intent: ApplicationMutationIntent<Schema>,
+{
+    /// The one selection check of every performed lane: the program and its
+    /// `Root`, the branch's selection, the selected program's installed owner,
+    /// and the compiled action that owner must still declare.
+    pub(in crate::application_entry) fn select_performed_owner<Program, Root>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+    ) -> Result<
+        (
+            WorthQuerySelectedProductOperation<'application, Schema>,
+            WorthQuerySelectedProgramOwner<'application, Schema>,
+        ),
+        WorthQueryPerformedMutationExecutionDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+        Root: ApplicationOutputGraphShape<Schema>,
+    {
+        require_program_output_root::<Schema, Program, Root>(
+            self.request.application,
+            application,
+        )?;
+        let selected = self
+            .request
+            .application
+            .on_branch(self.request.branch)
+            .select(phase)
+            .map_err(|selection| {
+                WorthQueryPerformedMutationExecutionDenial::Mutation(
+                    WorthQueryApplicationRequestMutationDenial::ProductSelection(selection),
+                )
+            })?;
+        let owner = application
+            .selected_program_owner(&selected)
+            .map_err(|denial| {
+                WorthQueryPerformedMutationExecutionDenial::Mutation(
+                    super::selected_program::map_selected_program_owner_denial(denial),
+                )
+            })?;
+        if let Some(declared) = self.compiled_action {
+            owner
+                .resolve_declared_action::<Intent::Binding>(declared)
+                .map_err(WorthQueryPerformedMutationExecutionDenial::Action)?;
+        }
+        Ok((selected, owner))
+    }
 }
 
 /// What one source commit handed back beside its commit outcome.

@@ -30,6 +30,12 @@ where
     ) -> Result<WorthQueryApplicationProgramMutationPreparation<'request, 'application, Schema, Intent::Binding, Program>, WorthQueryApplicationRequestMutationDenial>
     where Program: ApplicationProgramDefinition<Schema>,
     {
+        if let Some(outcome) = self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
+            let selected = request.select_program_owner(phase, application)?.selected;
+            super::super::authorization::prepare_capability_selected(phase, request, identities, staged, &selected)
+        }) {
+            return Ok(WorthQueryApplicationProgramMutationPreparation::Settled(outcome));
+        }
         let scope = self.request_scope().clone();
         let runtime = self.request.application;
         runtime.with_funded_application_advancement(&scope, allocation_policy, |phase| {
