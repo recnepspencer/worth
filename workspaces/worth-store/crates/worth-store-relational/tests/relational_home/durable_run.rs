@@ -8,14 +8,26 @@ use worth_store_relational::{
     RelationalStoreHome, RelationalStoreHomeOpenRefusal, RelationalStoreHomeRequest,
 };
 
+use worth_relational::facade::schema::SchemaVersionId;
+
+use super::schema_transition;
 use super::workload::{self, Script, Step};
 
 pub(crate) fn open(
     location: &Path,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<RelationalStoreHome, RelationalStoreHomeOpenRefusal> {
+    open_declaring(location, schema_transition::SOURCE, execution)
+}
+
+/// Open the home with a runtime that declares the schema registry at `schema`.
+pub(crate) fn open_declaring(
+    location: &Path,
+    schema: SchemaVersionId,
+    execution: &ExecutionRequest<'_, '_>,
+) -> Result<RelationalStoreHome, RelationalStoreHomeOpenRefusal> {
     RelationalStoreHome::open(
-        RelationalStoreHomeRequest::new(location, workload::runtime_builder()),
+        RelationalStoreHomeRequest::new(location, workload::runtime_builder(schema)),
         execution,
     )
 }
@@ -29,8 +41,8 @@ pub(crate) fn apply(
     let mut acknowledged = 0;
     for step in steps {
         match step {
-            Step::Commit { branch, batch } => {
-                workload::commit(home.runtime(), execution, branch, batch.clone())
+            Step::Commit { .. } | Step::Transition { .. } => {
+                step.commit(home.runtime(), execution)
                     .unwrap_or_else(|error| panic!("durable commit {acknowledged}: {error:?}"));
                 acknowledged += 1;
             }
@@ -80,7 +92,7 @@ pub(crate) fn steps_after(script: &Script, commits: usize) -> &[Step] {
         if seen == commits && !matches!(step, Step::Checkpoint) {
             return &script.steps[index..];
         }
-        if matches!(step, Step::Commit { .. }) {
+        if step.is_commit() {
             seen += 1;
         }
     }

@@ -8,5 +8,9 @@ mod batches;
 mod durable_run;
 #[path = "relational_home/journeys.rs"]
 mod journeys;
+#[path = "relational_home/schema_recovery.rs"]
+mod schema_recovery;
+#[path = "relational_home/schema_transition.rs"]
+mod schema_transition;
 #[path = "relational_home/workload.rs"]
 mod workload;

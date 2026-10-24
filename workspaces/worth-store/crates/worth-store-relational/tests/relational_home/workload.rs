@@ -15,11 +15,12 @@ use worth_relational::facade::mvcc::RelationalTransactionIntent;
 use worth_relational::facade::runtime::{
     RelationalRuntime, RelationalRuntimeApi, RelationalRuntimeBuilder,
 };
+use worth_relational::facade::schema::SchemaVersionId;
 use worth_relational::facade::transactions::{
     CommitResult, RecordRef, TransactionCommitError, WorkerIntentBatch,
 };
 
-use super::batches;
+use super::{batches, schema_transition};
 
 /// One operation of a script.
 #[derive(Clone, Debug)]
@@ -28,10 +29,36 @@ pub(crate) enum Step {
         branch: BranchId,
         batch: WorkerIntentBatch,
     },
+    /// A commit that also moves its branch from schema v1 to v2.
+    Transition {
+        branch: BranchId,
+        batch: WorkerIntentBatch,
+    },
     Fork {
         target: BranchId,
     },
     Checkpoint,
+}
+
+impl Step {
+    pub(crate) fn is_commit(&self) -> bool {
+        matches!(self, Self::Commit { .. } | Self::Transition { .. })
+    }
+
+    /// Execute a commit step on `runtime`. Panics on a fork or checkpoint.
+    pub(crate) fn commit(
+        &self,
+        runtime: &RelationalRuntime,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<CommitResult, TransactionCommitError> {
+        match self {
+            Self::Commit { branch, batch } => commit(runtime, execution, branch, batch.clone()),
+            Self::Transition { branch, batch } => {
+                schema_transition::commit(runtime, execution, branch, batch.clone())
+            }
+            Self::Fork { .. } | Self::Checkpoint => panic!("not a commit step"),
+        }
+    }
 }
 
 /// Every branch's records, rendered: for each identity the script ever
@@ -50,13 +77,14 @@ pub(crate) struct Script {
 
 pub(crate) const RUNTIME_NAME: &str = "relational-home-oracle";
 
-pub(crate) fn runtime_builder() -> RelationalRuntimeBuilder {
+/// The oracle runtime, declaring the schema registry at `schema`.
+pub(crate) fn runtime_builder(schema: SchemaVersionId) -> RelationalRuntimeBuilder {
     RelationalRuntimeApi::builder()
         .runtime_setup(|runtime| {
             runtime.runtime_name(RUNTIME_NAME);
         })
-        .schema_setup(|schema| {
-            schema.schema_registry(batches::schema_registry());
+        .schema_setup(move |setup| {
+            setup.schema_registry(schema_transition::registry(schema));
         })
 }
 
@@ -74,7 +102,7 @@ impl Script {
     pub(crate) fn generate(seed: u64, commits: usize, checkpoint_every: usize) -> Self {
         let request = serial_request();
         let execution = ExecutionRequest::serial(&request);
-        let runtime = runtime_builder().build();
+        let runtime = runtime_builder(schema_transition::SOURCE).build();
         let mut generator = Xorshift(seed | 1);
         let main = BranchId("main".to_owned());
         let fork = BranchId("feature".to_owned());
@@ -82,8 +110,11 @@ impl Script {
         let mut steps = Vec::new();
         let mut records = Vec::new();
         let fork_at = commits / 3;
+        let transition_at = 2 * commits / 3;
         for step in 0..commits {
-            let branch = if step == fork_at {
+            let branch = if step == transition_at {
+                main.clone()
+            } else if step == fork_at {
                 fork_branch(&runtime, &main, &fork);
                 steps.push(Step::Fork {
                     target: fork.clone(),
@@ -97,8 +128,15 @@ impl Script {
                 main.clone()
             };
             let entities = live.entry(branch.0.clone()).or_default();
-            let (batch, creates) = batches::next(&mut generator, entities, step);
-            let outcome = commit(&runtime, &execution, &branch, batch.clone())
+            let (next, creates) = if step == transition_at {
+                let batch = batches::create(step);
+                (Step::Transition { branch, batch }, true)
+            } else {
+                let (batch, creates) = batches::next(&mut generator, entities, step);
+                (Step::Commit { branch, batch }, creates)
+            };
+            let outcome = next
+                .commit(&runtime, &execution)
                 .unwrap_or_else(|error| panic!("reference commit {step}: {error:?}"));
             if creates {
                 entities.extend(
@@ -112,7 +150,7 @@ impl Script {
                 );
             }
             records.extend(outcome.changed_records.iter().cloned());
-            steps.push(Step::Commit { branch, batch });
+            steps.push(next);
             if checkpoint_every > 0 && (step + 1) % checkpoint_every == 0 {
                 steps.push(Step::Checkpoint);
             }
@@ -141,12 +179,12 @@ impl Script {
 fn replay_states(steps: &[Step], records: &[RecordRef]) -> Vec<BranchStates> {
     let request = serial_request();
     let execution = ExecutionRequest::serial(&request);
-    let runtime = runtime_builder().build();
+    let runtime = runtime_builder(schema_transition::SOURCE).build();
     let mut states = vec![states_of(&runtime, records)];
     for step in steps {
         match step {
-            Step::Commit { branch, batch } => {
-                commit(&runtime, &execution, branch, batch.clone())
+            Step::Commit { .. } | Step::Transition { .. } => {
+                step.commit(&runtime, &execution)
                     .expect("the replayed reference commit");
                 states.push(states_of(&runtime, records));
             }

@@ -49,7 +49,7 @@ pub(super) fn next(
     (batch, choice <= 2)
 }
 
-fn create(step: usize) -> WorkerIntentBatch {
+pub(super) fn create(step: usize) -> WorkerIntentBatch {
     let name = format!("entity-{step}");
     WorkerIntentBatch::new(format!("create-{step}")).push(MutationIntent::Create(
         CreateIntent::Entity(EntitySpec {
@@ -90,13 +90,15 @@ fn delete(entity_id: EntityId) -> WorkerIntentBatch {
     )))
 }
 
-pub(super) fn schema_registry() -> RelationalSchemaRegistry {
+/// The oracle schema at `version`. Every version has the same executable
+/// meaning; a schema transition moves a branch between versions.
+pub(super) fn schema_registry(version: SchemaVersionId) -> RelationalSchemaRegistry {
     RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
             kind_name: "oracle.entity".to_string(),
             schema_id: SchemaId("oracle".to_string()),
-            schema_version_id: SchemaVersionId(1),
+            schema_version_id: version,
             aspect_contract_declarations: KindAspectContractDeclarations::new(vec![
                 DeclaredAspectContractBinding {
                     binding: AspectBinding::EntityField {
@@ -111,7 +113,7 @@ pub(super) fn schema_registry() -> RelationalSchemaRegistry {
                 kind_id: KindId(2),
                 kind_name: "oracle.relation".to_string(),
                 schema_id: SchemaId("oracle".to_string()),
-                schema_version_id: SchemaVersionId(1),
+                schema_version_id: version,
                 cross_context_policy: CrossContextPolicy::AllowExplicit,
                 cascade_delete_policy: CascadeDeletePolicy::CascadeDeleteRelations,
                 aspect_contract_declarations: KindAspectContractDeclarations::new(vec![
@@ -141,7 +143,7 @@ fn field_patch(label: &str, value: &str) -> AspectFieldPatch {
     AspectFieldPatch::from(fields)
 }
 
-fn field_key(label: &str) -> FieldKey {
+pub(super) fn field_key(label: &str) -> FieldKey {
     FieldKey::new(label).expect("oracle field key")
 }
 
