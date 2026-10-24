@@ -1,6 +1,21 @@
 //! Authored source selection through the ordinary request and a real performed receipt.
 #![recursion_limit = "256"]
 mod application_correction_support;
+// The support shares these modules with the application graph court, which
+// loads them at the same paths; the court owns and lints them, and the
+// example uses a part.
+#[allow(dead_code, unused_imports)]
+mod document_retention_model {
+    #[path = "../../tests/application_graph/document_retention_model/operator_identity.rs"]
+    pub mod operator_identity;
+    pub mod host {
+        #[path = "../../../tests/application_graph/document_retention_model/host/world_resources.rs"]
+        pub(crate) mod world_resources;
+    }
+}
+#[allow(dead_code)]
+#[path = "../tests/support/execution_policy.rs"]
+mod test_request_policy;
 use application_correction_support::publication_courts::*;
 use application_correction_support::{authentication::*, edit::Value, host, query::Row};
 use std::num::NonZeroUsize;

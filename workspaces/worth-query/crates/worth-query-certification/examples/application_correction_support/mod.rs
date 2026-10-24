@@ -41,7 +41,4 @@ pub mod source_output_model;
 pub mod tree_controls;
 pub mod tree_reapplication;
 
-// The application graph court owns and lints this identity model; the example uses a part.
-#[allow(dead_code, unused_imports)]
-#[path = "../../tests/application_graph/document_retention_model/operator_identity.rs"]
-pub mod authentication;
+pub use crate::document_retention_model::operator_identity as authentication;

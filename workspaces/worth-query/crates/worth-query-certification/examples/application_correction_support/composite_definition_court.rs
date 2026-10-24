@@ -3,13 +3,12 @@ use super::{
     authentication::*, composite_definition_model::*, composite_definition_runtime::Conditional,
     edit, host, query::Row,
 };
+use crate::test_request_policy as observation_request;
 use worth_query_host::facade::{
     application_entry::*,
     primary_graph::*,
     runtime::{self, ExecutionAllocationPolicy},
 };
-#[path = "../../tests/support/execution_policy.rs"]
-mod observation_request;
 
 pub fn run() {
     let mut application = host::install();

@@ -4,7 +4,7 @@ pub const ACTIVE_WORLD_OBSERVATIONS: u64 = 128;
 
 pub const WORKFLOW_DEFINITION_BYTES: u32 = 16 * 1024 * 1024;
 
-pub(super) fn world_resources(
+pub(crate) fn world_resources(
     commits: u64,
     metadata_bytes: u64,
     pins: u64,
