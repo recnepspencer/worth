@@ -12,6 +12,8 @@ mod durable_run;
 mod identity_safety;
 #[path = "relational_home/journeys.rs"]
 mod journeys;
+#[path = "relational_home/killed_child.rs"]
+mod killed_child;
 #[path = "relational_home/media_case.rs"]
 mod media_case;
 #[path = "relational_home/media_faults.rs"]
@@ -20,6 +22,10 @@ mod media_faults;
 mod media_sweep;
 #[path = "relational_home/prepared_home.rs"]
 mod prepared_home;
+#[path = "relational_home/process_kill.rs"]
+mod process_kill;
+#[path = "relational_home/recovery_interruption.rs"]
+mod recovery_interruption;
 #[path = "relational_home/schema_recovery.rs"]
 mod schema_recovery;
 #[path = "relational_home/schema_transition.rs"]
