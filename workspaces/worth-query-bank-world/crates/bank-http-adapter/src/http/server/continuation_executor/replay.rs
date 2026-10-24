@@ -40,27 +40,6 @@ where
     Ok(())
 }
 
-/// Test-only replay-read faults, keyed by request id so parallel courts stay
-/// apart. An armed fault replaces the next revalidation read's result.
-#[cfg(test)]
-pub(in crate::http::server) mod fault {
-    use std::sync::Mutex;
-
-    use super::BankHttpDenial;
-
-    static ARMED: Mutex<Vec<(String, BankHttpDenial)>> = Mutex::new(Vec::new());
-
-    pub(in crate::http::server) fn fail_next_replay_read(request_id: &str, denial: BankHttpDenial) {
-        ARMED.lock().unwrap().push((request_id.to_owned(), denial));
-    }
-
-    pub(super) fn take(request_id: &str) -> Option<BankHttpDenial> {
-        let mut armed = ARMED.lock().unwrap();
-        let index = armed.iter().position(|(id, _)| id == request_id)?;
-        Some(armed.remove(index).1)
-    }
-}
-
 pub(super) async fn fail_resume(
     registry: &SharedContinuationRegistry,
     token: &str,
@@ -87,4 +66,25 @@ pub(super) async fn fail_resume(
     })
     .await;
     outcome
+}
+
+/// Test-only replay-read faults, keyed by request id so parallel courts stay
+/// apart. An armed fault replaces the next revalidation read's result.
+#[cfg(test)]
+pub(in crate::http::server) mod fault {
+    use std::sync::Mutex;
+
+    use super::BankHttpDenial;
+
+    static ARMED: Mutex<Vec<(String, BankHttpDenial)>> = Mutex::new(Vec::new());
+
+    pub(in crate::http::server) fn fail_next_replay_read(request_id: &str, denial: BankHttpDenial) {
+        ARMED.lock().unwrap().push((request_id.to_owned(), denial));
+    }
+
+    pub(super) fn take(request_id: &str) -> Option<BankHttpDenial> {
+        let mut armed = ARMED.lock().unwrap();
+        let index = armed.iter().position(|(id, _)| id == request_id)?;
+        Some(armed.remove(index).1)
+    }
 }
