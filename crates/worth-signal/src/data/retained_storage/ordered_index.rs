@@ -63,13 +63,18 @@ pub(crate) fn ordered_index_charge<K, V>(entries: usize) -> Result<Charge, Denia
     node.checked_mul(entries.checked_add(1).ok_or(Denial::ChargeOverflow)?)
 }
 
-/// Upper bound for one copy-on-write im OrdMap key edit. An edited search
-/// path has at most bit_length(entries + 1) levels (minimum branching two);
-/// a split can allocate two nodes per level plus a new root. The value and
-/// selected key payload are charged by the map owner.
+/// Upper bound for one copy-on-write im OrdMap key edit. im 15.1 splits a full
+/// 64-key node into two 32-key halves and, before removing below a child with
+/// fewer than 32 keys, steals into or merges it, so non-root nodes keep at
+/// least 31 keys (32 child edges), as `im_btree_lookup_steps` also relies on.
+/// Every charged map starts empty and changes only by insert and remove. The
+/// edited path therefore has at most `minimum_fill_height(entries + 1, 32)`
+/// levels; copying it and splitting every level allocates two nodes per level
+/// plus a new root. The value and selected key payload are charged by the map
+/// owner.
 pub(crate) fn ordered_edit_growth_charge<K, V>(entries: usize) -> Result<Charge, Denial> {
     let length = entries.checked_add(1).ok_or(Denial::ChargeOverflow)?;
-    let levels = (usize::BITS as usize - length.leading_zeros() as usize)
+    let levels = minimum_fill_height(length, 32)
         .checked_add(1)
         .ok_or(Denial::ChargeOverflow)?;
     ordered_index_charge::<K, V>(0)?
