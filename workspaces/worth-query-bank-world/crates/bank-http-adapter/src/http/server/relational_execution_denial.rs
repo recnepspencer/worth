@@ -21,6 +21,7 @@ pub(super) fn denial(cause: Cause) -> BankHttpDenial {
         | Cause::UnrelatedNestedLease
         | Cause::NoActiveExecutionScope
         | Cause::EquivalenceContractUnavailable
+        | Cause::AccountingUnavailable
         | Cause::WorkCounterOverflow
         | Cause::WorkerFailed
         | Cause::UncheckedCustomKernel

@@ -123,7 +123,8 @@ fn execution_request_denial(
                 | Resource::NestedAdvancementOpening
                 | Resource::ForeignAdvancementPhase
                 | Resource::NoActiveExecutionScope
-                | Resource::EquivalenceContractUnavailable,
+                | Resource::EquivalenceContractUnavailable
+                | Resource::AccountingUnavailable,
             ..
         }
         | Session::ExecutionWorkerPanicked { .. }

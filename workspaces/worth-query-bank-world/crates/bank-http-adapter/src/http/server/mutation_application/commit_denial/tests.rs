@@ -62,6 +62,11 @@ fn preparation_and_pending_execution_next_actions_are_explicit_per_cause() {
             Operator,
         ),
         (
+            "AccountingUnavailable",
+            Resource::AccountingUnavailable,
+            Operator,
+        ),
+        (
             "WorkCounterOverflow",
             Resource::WorkCounterOverflow,
             Operator,

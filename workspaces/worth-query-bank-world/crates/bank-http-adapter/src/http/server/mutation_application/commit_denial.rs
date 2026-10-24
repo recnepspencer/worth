@@ -160,7 +160,8 @@ pub(in crate::http::server) fn execution_resource(denial: Resource) -> BankHttpD
         | Resource::ChargedBytesOverflow
         | Resource::NestedLeaseMisuse
         | Resource::NoActiveExecutionScope
-        | Resource::EquivalenceContractUnavailable => (
+        | Resource::EquivalenceContractUnavailable
+        | Resource::AccountingUnavailable => (
             BankHttpDenialKind::InternalDenied,
             BankHttpNextAction::ContactOperator,
         ),
