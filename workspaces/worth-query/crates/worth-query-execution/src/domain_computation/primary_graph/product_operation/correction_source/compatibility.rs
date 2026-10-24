@@ -155,7 +155,7 @@ where
             original.revision(),
             inspection.revision(),
         )
-        .map_err(Denial::ProgramComparison)?;
+        .map_err(|denial| Denial::ProgramComparison(Box::new(denial)))?;
     if !requirements.semantically_equivalent() {
         return Err(Denial::ProgramMeaningChanged(Box::new(requirements)));
     }
