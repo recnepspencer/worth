@@ -17,22 +17,32 @@ use crate::record::frame::{RecordFrameEncoding, WorthQueryPackageArchiveRecordDe
 fn complete_operation_contract_round_trips_every_payload_family_with_exact_work() {
     let record = fixture::complete_record();
     let bytes = encode_untrusted(&record, WorthQueryPackageArchiveLimits::DEFAULT);
-    let original = decode_hex(include_str!("tests/application_operation_contract_v6.hex").trim());
-    let mut old_decoder =
-        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
-    let denial = old_decoder.decode_frame(&original).unwrap_err();
-    assert_eq!(denial.kind(), Kind::UnsupportedRecordVersion);
-    assert_eq!(denial.compatibility().unwrap().observed_version(), 6);
-    assert_eq!(
-        old_decoder.work(),
-        WorthQueryPackageArchiveDecodeWork::default()
-    );
-    assert_eq!(
-        original,
-        decode_hex(include_str!("tests/application_operation_contract_v6.hex").trim())
-    );
-    let frozen_hex = include_str!("tests/application_operation_contract_v7.hex").trim();
+    // Displaced protocols are refused before payload decoding; protocol10 is current.
+    for (version, displaced_hex) in [
+        (
+            6_u16,
+            include_str!("tests/application_operation_contract_v6.hex"),
+        ),
+        (
+            7_u16,
+            include_str!("tests/application_operation_contract_v7.hex"),
+        ),
+    ] {
+        let original = decode_hex(displaced_hex.trim());
+        let mut old_decoder =
+            WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
+        let denial = old_decoder.decode_frame(&original).unwrap_err();
+        assert_eq!(denial.kind(), Kind::UnsupportedRecordVersion);
+        assert_eq!(denial.compatibility().unwrap().observed_version(), version);
+        assert_eq!(
+            old_decoder.work(),
+            WorthQueryPackageArchiveDecodeWork::default()
+        );
+        assert_eq!(original, decode_hex(displaced_hex.trim()));
+    }
+    let frozen_hex = include_str!("tests/application_operation_contract_v10.hex").trim();
     assert_eq!(encode_hex(&bytes), frozen_hex);
+    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 10);
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 12);
     let mut decoder =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
