@@ -16,6 +16,10 @@ fn admit_redo_keeps_the_prior_redo_read_stop_at_every_consult() {
         .application
         .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
         .unwrap();
+    // The shared real handle binding commits its own fixture once per process.
+    // That commit is not this door's read, so it settles before the counted
+    // runs rather than inside the first one's Work bound and consult count.
+    let _ = WorthQueryRecoveryHandleBindingAxisProbe::real();
     let charged_work = crate::test_read_stops::every_advancement_consult_with_door(
         |counted| {
             let proved = WorthQueryProvedUndo::axis_probe_with_product_publication(
