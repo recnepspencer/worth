@@ -35,13 +35,7 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
     }
     let directory = wal_directory();
     let tree = media.artifact_tree();
-    if !tree
-        .directory_exists(&directory)
-        .map_err(PhysicalWalOpenFailure::Media)?
-    {
-        tree.create_directory(&directory)
-            .map_err(PhysicalWalOpenFailure::Media)?;
-    }
+    paths::ensure_wal_directory(&tree, &directory)?;
     let inventory_limit = usize::try_from(policy.segment_inventory_limit().get().get())
         .map_err(|_| PhysicalWalOpenFailure::InventoryLimitExceeded)?;
     let names = tree
@@ -60,6 +54,10 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
         .collect::<Result<Vec<_>, _>>()?;
     segments.sort_unstable();
     let trailing_empty = trailing_empty_segment::separate(&tree, &directory, &mut segments)?;
+    if segments.is_empty() {
+        trailing_empty.map(|origin| origin.remove_durably(&tree)).transpose()?;
+        return empty_inventory(&directory, cutoff, record_format);
+    }
 
     let byte_limit = policy.segment_byte_limit().get().get();
     let active_identity = *segments

@@ -5,6 +5,7 @@ mod effect;
 mod funded_observation;
 mod funded_wal_read;
 mod owner;
+mod physical_work_discharge;
 mod publication;
 mod reopen;
 mod selected_checkpoint;
@@ -56,6 +57,7 @@ pub use owner::{
     PhysicalRecoveryCoordination, PhysicalRecoveryCoordinationAdmissionError,
     PhysicalRecoveryQuiescenceObservation, PhysicalRecoveryRejoinResidentAdmissionDenial,
 };
+pub use physical_work_discharge::RecoveryPhysicalWorkDischarge;
 pub use publication::{
     CompletedPhysicalRecoveryPublicationCandidate, CompletedPhysicalRecoveryPublicationCommand,
     PhysicalRecoveryPublicationCandidate, PhysicalRecoveryPublicationCandidateMaterialization,

@@ -10,6 +10,22 @@ use crate::progression::ReopenedPhysicalRecovery;
 /// population is evidence for inspection, not residue.
 const MAXIMUM_STALE_CANDIDATES: usize = 48;
 
+/// The bound on prior-runtime obligation records one recovery reads.
+const MAXIMUM_PRIOR_OBLIGATIONS: usize = 1024;
+
+/// Discharges the physical-work obligations of the dead runtime that this
+/// recovery has adjudicated. A media failure leaves the namespace unproven.
+pub(super) fn discharge_obligations(
+    reopened: &ReopenedPhysicalRecovery,
+) -> Result<worth_store::physical_runtime::RecoveryPhysicalWorkDischarge, ()> {
+    reopened
+        .state
+        .coordination
+        .owner()
+        .discharge_prior_physical_work(&reopened.state.authority.media, MAXIMUM_PRIOR_OBLIGATIONS)
+        .map_err(|_| ())
+}
+
 /// Removes root-protocol candidates a killed runtime left in record staging,
 /// after recovery's own publication is namespace durable.
 pub(super) fn prepare(reopened: &ReopenedPhysicalRecovery) -> RecoveryStagingResidueOutcome {

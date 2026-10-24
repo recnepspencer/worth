@@ -9,6 +9,21 @@ pub(super) fn wal_directory() -> ArtifactTreeDirectory {
         .expect("the Store-owned WAL directory is portable")
 }
 
+/// Creates the WAL directory of a store that has never appended.
+pub(super) fn ensure_wal_directory(
+    tree: &worth_store_physical_backend::ArtifactTreeMedia<'_>,
+    directory: &ArtifactTreeDirectory,
+) -> Result<(), PhysicalWalOpenFailure> {
+    if !tree
+        .directory_exists(directory)
+        .map_err(PhysicalWalOpenFailure::Media)?
+    {
+        tree.create_directory(directory)
+            .map_err(PhysicalWalOpenFailure::Media)?;
+    }
+    Ok(())
+}
+
 pub(super) fn artifact(
     directory: &ArtifactTreeDirectory,
     identity: WalSegmentArtifactIdentity,

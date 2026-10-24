@@ -7,6 +7,7 @@ mod cleanup;
 mod discovery;
 mod generation;
 mod grant;
+mod physical_work_residue;
 mod profile;
 #[cfg(feature = "recovery-runtime-owner")]
 mod publication;
@@ -46,6 +47,7 @@ pub use generation::PhysicalRecoveryMediaGeneration;
 #[cfg(test)]
 pub(crate) use grant::for_test as grant_for_test;
 pub use grant::{GrantOverrun, ReadGrant, ReadGranted, Uncharged, UnchargedReadAuthority};
+pub use physical_work_residue::RecoveryPhysicalWorkRecord;
 pub use profile::QualifiedPhysicalBackendProfile;
 #[cfg(feature = "recovery-runtime-owner")]
 pub use publication::{RecoveryRootProtocolPublicationDenial, RecoveryRootProtocolPublicationPlan};

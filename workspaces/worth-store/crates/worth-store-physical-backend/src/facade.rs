@@ -196,7 +196,7 @@ pub use crate::recovery_media::{
     BackendRecoveryArtifactExpectation, BackendRecoveryCleanupArtifactRevalidationDenial,
     BackendRecoveryCleanupArtifactRevalidationProgress, BackendRecoveryCleanupRemovalDenialCause,
     BackendRecoveryCleanupRemovalOutcome, BackendRecoveryCleanupRemovalRequest,
-    ObservedRecoveryCheckpointArtifact,
+    ObservedRecoveryCheckpointArtifact, RecoveryPhysicalWorkRecord,
 };
 #[cfg(feature = "recovery-runtime-owner")]
 pub use crate::recovery_media::{

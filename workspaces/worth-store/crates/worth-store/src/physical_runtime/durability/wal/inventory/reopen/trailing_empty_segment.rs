@@ -1,5 +1,5 @@
 use worth_store_physical_backend::{ArtifactTreeDirectory, ArtifactTreeFile, ArtifactTreeMedia};
-use worth_store_wal::{WalSegmentArtifactIdentity, WalTopologyDenialKind};
+use worth_store_wal::{WalSegmentArtifactIdentity, WalTopologyDenialKind, WAL_ORIGIN};
 
 use super::{artifact, PhysicalWalOpenFailure};
 
@@ -22,11 +22,20 @@ pub(super) fn separate(
     if trailing_bytes != 0 {
         return Ok(None);
     }
+    if segments.len() == 1 {
+        // The origin segment was created but no frame reached it: the WAL
+        // holds nothing, exactly as if the segment were absent. Any other
+        // sole empty segment has lost the segments before it.
+        if trailing != WAL_ORIGIN.artifact() {
+            return Err(PhysicalWalOpenFailure::EmptySegment);
+        }
+        segments.pop();
+        return Ok(Some(TrailingEmptySegment {
+            artifact: trailing_artifact,
+        }));
+    }
 
-    let previous = segments
-        .get(segments.len().saturating_sub(2))
-        .copied()
-        .ok_or(PhysicalWalOpenFailure::EmptySegment)?;
+    let previous = segments[segments.len() - 2];
     if trailing.generation() != previous.generation() {
         return Err(PhysicalWalOpenFailure::Topology(
             WalTopologyDenialKind::WrongGeneration,

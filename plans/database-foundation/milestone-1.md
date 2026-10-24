@@ -43,11 +43,11 @@ Before recovery completes, the existing in-process fates (`Completed`,
 authoritative and are not subject to idempotency-binding expiry, so resolution
 never expires while the commit is retained.
 
-**D5. Heads are root-referenced anchors.** A record anchor table, referenced from
-the durable root manifest, maps a fixed anchor name to (record identity,
-expected generation). A record batch may carry anchor advances; they publish in
-the batch's root generation and are checked against the expected generation
-under the anchor's lock. The canonical journal is the first anchor
+**D5. Heads are root-referenced anchors.** The durable root manifest holds a
+small record anchor table mapping a fixed anchor name to (record identity,
+generation). A record batch may carry one anchor advance; it publishes in the
+batch's root generation and is checked against the expected generation before
+any WAL effect. The canonical journal is the first anchor
 (`relational.canonical-commits`). World and Query reuse the mechanism in
 Milestone 3.
 
@@ -68,94 +68,88 @@ no new Cargo feature and no production behavior.
 | Artifact | Classification | Owner |
 |---|---|---|
 | `RelationalCanonicalCommitArtifact` bytes | Authoritative | Relational (format, readmission) |
-| Journal record (Store frame: owner tag, position, artifact digest, spine, payload) | Authoritative | Store |
-| Record anchor table and its root-manifest reference | Authoritative | Store |
+| Journal record (Store frame: journal name, position, payload digest and length, spine, payload) | Authoritative | Store |
+| Record anchor table inside the root manifest | Authoritative | Store |
 
 ## Relational: canonical commit artifact
 
 - Frame: magic, artifact version, `PatchStreamPosition`, `CommitId`, SHA-256
-  of the payload, then the authoritative envelope payload
-  (`encode_authoritative_payload`, excluding diagnostics and derived index
-  lanes).
-- `RelationalCanonicalCommitArtifact::from_positioned(&PositionedCanonicalCommit)`
-  encodes; `readmit(bytes, ExecutionRequest)` verifies frame, version and
-  digest, decodes, runs the existing envelope readmission chain and returns a
-  readmitted positioned commit. Unknown versions, digest mismatch and
-  header/envelope disagreement refuse; nothing falls back.
-- `RelationalRuntime` exposes the retained positioned commits in position order
-  as artifacts, so callers obtain real envelopes without reaching into history
-  internals.
-- The segmented local-filesystem path is untouched here; Milestone 2 deletes it.
+  of the payload and its length, then the payload `{position, canonical}`: the
+  position under the digest and every authoritative envelope field in the
+  existing named-map codec. Diagnostics and derived index lanes carry no
+  entries.
+- `readmit(bytes, ExecutionRequest)` checks the frame, decodes, requires the
+  header to agree with the payload, runs the existing envelope and positioned
+  commit admission, and requires the payload to be exactly the admitted
+  commit's canonical encoding, so one commit has one digest. Every refusal is
+  typed; nothing falls back.
+- `runtime.durability().canonical_commit_artifacts(policy)` yields the
+  retained commits in position order.
+- The segmented local-filesystem path is untouched; Milestone 2 deletes it.
 
 ## Store: anchors
 
-- `worth-store-physical-format`: an anchor table block (versioned, checksummed,
-  bounded by the declared anchor names) and a new root-manifest layout that
-  references it. Stores without the layout are refused; there is no
-  compatibility decode for earlier development stores.
-- Every successor-root construction path (ordinary publication, group
-  publication, checkpoint, recovery staging and publication, maintenance and
-  retirement) carries the anchor table reference forward unchanged unless the
-  publishing batch advances an anchor.
-- Anchor advances join `RecordAppendBatch` submission. Preparation takes anchor
-  locks in name order, checks expected generations, and holds them until root
-  publication or a pre-effect refusal. Two advances on one anchor never share a
-  publication group.
-- A publication failure after WAL append leaves the anchor unsettled: further
-  advances and reads of that anchor refuse until recovery.
-- Recovery redo carries anchor advances; a recovered root exposes the anchor
-  table it selected.
+- Root manifest schema 11 is the head-bound layout plus an inline table of at
+  most four anchors (name, routed record, record digest, generation). A root
+  without anchors keeps its existing layout. An anchor must name a record its
+  root routes.
+- Every successor-root builder carries the table forward; maintenance and
+  residue publications must leave it unchanged.
+- A record batch may request one anchor advance. Planning checks it against the
+  source root before the WAL append (`RecordAnchorConflict`), and the request is
+  part of the idempotency fingerprint. A group merge refuses two advances.
+- The WAL recovery projection records the advance (`RecordAnchorAdvanced`).
+  Recovery replays it into the staged root, refuses a verified drop of an
+  anchored record, and validates published roots against it.
 
 ## Store: canonical commit journal
 
 `ServingPhysicalRuntime::canonical_commits()` returns `CanonicalCommitJournal`:
 
-- `publish(CanonicalCommitPublication) -> fate`: owner payload bytes (streamed),
-  position, artifact digest, durability request. Builds one journal record with
-  the spine from the current head, submits it with the anchor advance as one
-  record batch, and returns the existing typed mutation fates.
-- `head()`: the selected position and record identity, or empty.
-- `resolve(position, digest)`: D4.
-- `read(position, limits)`: point access returning a bounded payload session.
-- `range(from, to, limits)`: descending bounded iteration, resumable by
-  position.
-- Allocation, cancellation, deadline and barrier failures keep their existing
-  effect posture; a position gap, stale head or unsettled anchor refuses before
-  effects.
+- `publish(CanonicalCommitPublication)` admits only `head + 1`, writes one
+  journal record carrying its spine, advances the anchor in the same root
+  generation and returns the existing typed mutation fates. Publications are
+  serialized; an indeterminate one blocks further publication until reopen.
+  An identical retry answers `AlreadyCommitted` and writes nothing.
+- `head()`, `resolve(position, digest)` (D4), `read(position, limit)` with
+  digest verification, and `range_descending(at_or_below, limit)`.
 
-## Recovery and checkpoints
+## Recovery adjudication
 
-- Recovery before and after the first checkpoint selects the journal anchor from
-  the recovered root; the journal is readable without scanning history.
-- A second crash during recovery reaches the same journal head and the same
-  `resolve` answers.
-- WAL reclamation and checkpoint coverage keep every journal record reachable
-  from the anchor; retention of journal records is unconditional in this
-  milestone.
+The oracle showed that a crash at several ordinary media operations left a
+store that recovered but could not serve. Recovery now settles each case:
+
+- Root-protocol candidates a killed runtime left in record staging are removed
+  after recovery's own publication.
+- Physical-work obligations of the dead runtime that recovery adjudicated (WAL
+  intervals, record ranges, artifact, catalog and namespace synchronization,
+  record removal) are discharged. Checkpoint and WAL reclamation obligations
+  and undecodable records remain and still require inspection.
+- A root-protocol replacement interrupted after its selectors but before its
+  catalog is completed by republishing the selected root.
+- A never-written WAL origin segment is an empty WAL, and an empty successor
+  root is a torn, unpublished candidate that staging completes only from an
+  exact prefix.
 
 ## Crash-consistency oracle
 
-Location: `worth-store-certification` tests (already a dev-dependent of
-`worth-relational`).
+Location: `worth-store-recovery-runtime` `production_entry` tests.
 
-- **Reference.** A memory-only Relational runtime executes a seeded, generated
-  sequence of transactions (record creates and edits, relations, aspect writes,
-  a schema transition) and yields its positioned commits as artifacts.
-- **Media sweep.** For each media operation ordinal reached while publishing
-  the sequence (and while checkpointing at seeded points), run a fresh home with
-  `FailBefore`, `IndeterminateAfterEffect` and `PanicAfter` at that ordinal,
-  drop the runtime, recover, and check:
-  - the journal is exactly a prefix of the reference containing every
-    acknowledged commit, byte-equal and readmitted by Relational;
-  - `resolve` agrees with the prefix for every reference position;
-  - publishing the remaining suffix succeeds and the final journal equals the
-    reference.
-- **Recovery interruption.** Repeat recovery with a recovery yieldpoint crash and
-  a second recovery; conclusions must match the first.
-- **Real process lane.** A child process publishes a seeded sequence and is
-  killed at seeded points; a fresh process recovers and applies the same checks.
-- Cheap seeds run in the owner lane; the full sweep runs in the scheduled
-  process-scenario lane through `store-test-runner`.
+- **Reference.** A memory-only Relational runtime executes a seeded sequence of
+  creates, edits, relations and deletes; its artifacts are the expected
+  journal. Relational's own tests cover schema transitions.
+- **Media sweep.** For the first and a later publication, every identified media
+  operation of every role is counted, then rerun once per ordinal with
+  `FailBefore` and `IndeterminateAfterEffect`. Each case abandons the runtime,
+  recovers through the production path and requires an exact reference prefix
+  containing every acknowledged entry, Relational readmission of every entry,
+  `resolve` agreement, publication of the suffix and an identical second
+  recovery.
+- **Real process lane.** A child is killed before and above a checkpoint and at
+  each publication seam (before the WAL append through root replacement); the
+  durable-WAL seams roll forward exactly once.
+- **Recovery interruption.** Recovery itself is killed at each of nine stages;
+  the next recovery settles to the same journal.
 
 ## Completion
 
@@ -164,11 +158,12 @@ Milestone 1 is complete when:
 1. Relational exports the artifact and readmission door with refusal tests.
 2. The anchor table and journal publish, recover and serve point/range access
    through the production entry and recovery facade.
-3. The oracle's media sweep, recovery interruption and real-process lanes pass
-   with real Relational envelopes, covering the first-checkpoint boundary,
-   publication before acknowledgment and interrupted recovery.
+3. The media sweep, real-process lane and recovery interruption pass with real
+   Relational envelopes, covering the first-checkpoint boundary, publication
+   before acknowledgment and interrupted recovery.
 4. `resolve` answers every reference position correctly after every
    interruption, and a retry never publishes a second record for a committed
    position.
-5. Store and Relational owner lanes, the Store UI and process-scenario lanes,
-   boundary-check, agent-context, formatting and line caps pass.
+5. Store and Relational owner lanes, the Store process-scenario lane,
+   boundary-check, agent-context, formatting and line caps pass, with no new
+   failures against the base commit.

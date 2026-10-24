@@ -30,6 +30,8 @@ worth-store-offline-verifier.workspace = true
 worth-store-offline-integrity-observer.workspace = true
 worth-store-security.workspace = true
 worth-store-test-support = { workspace = true, features = ["recovery-runtime-fixtures"] }
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-relational = { path = "../../../../crates/worth-relational" }
 
 [features]
 certification-test-authority = ["worth-store/certification-test-authority"]

@@ -83,6 +83,12 @@ impl PublicationState {
         )
     }
 
+    pub(super) const fn media(
+        &self,
+    ) -> &worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia {
+        &self.authority.media
+    }
+
     pub(super) const fn planned_effects(&self) -> u64 {
         self.quiescence.publication_commands()
     }

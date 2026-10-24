@@ -29,6 +29,9 @@ pub(crate) fn execute(
     ) {
         return super::staging_residue::failure(reopened);
     }
+    if super::staging_residue::discharge_obligations(&reopened).is_err() {
+        return super::staging_residue::failure(reopened);
+    }
     #[cfg(feature = "certification-test-authority")]
     crate::certification::before_cleanup_revalidation();
     let limits = reopened.state.authority.limits.declaration();

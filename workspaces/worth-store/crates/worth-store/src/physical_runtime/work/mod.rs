@@ -79,6 +79,7 @@ pub use progression::{
     AdmittedPhysicalWork, BlockedPhysicalWork, DispatchedPhysicalWork, PhysicalWorkReadiness,
     ReadyPhysicalWork, ResourceAdmittedPhysicalWork, SettledPhysicalWork,
 };
+pub(in crate::physical_runtime) use recovery::admit_recovered_obligation;
 pub use recovery::PhysicalCheckpointRecoveryAction;
 pub use recovery::PhysicalRecoveryJournalCounters;
 pub(in crate::physical_runtime) use recovery::{

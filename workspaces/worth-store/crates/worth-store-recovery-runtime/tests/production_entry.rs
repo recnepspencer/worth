@@ -63,6 +63,9 @@ mod before_first_checkpoint;
 #[path = "production_entry/canonical_journal.rs"]
 mod canonical_journal;
 #[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/canonical_journal_oracle.rs"]
+mod canonical_journal_oracle;
+#[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/staging_residue_recovery.rs"]
 mod staging_residue_recovery;
 

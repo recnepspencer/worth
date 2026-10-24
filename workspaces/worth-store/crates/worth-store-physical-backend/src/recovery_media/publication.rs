@@ -93,6 +93,38 @@ impl AdmittedRecoveryFilesystemMedia {
         )
     }
 
+    /// Reads one root-protocol artifact (the catalog, a selector or a root
+    /// manifest), at most `maximum_bytes`. `None` when it is absent.
+    pub fn read_recovery_root_protocol_artifact(
+        &self,
+        artifact: RecordArtifactFile,
+        maximum_bytes: u64,
+    ) -> Result<Option<Box<[u8]>>, ArtifactTreeFailure> {
+        if !matches!(
+            artifact,
+            RecordArtifactFile::BootstrapCatalog
+                | RecordArtifactFile::CurrentRootSelector
+                | RecordArtifactFile::PreviousRootSelector
+                | RecordArtifactFile::RootManifest { .. }
+        ) {
+            return Err(structural_denial());
+        }
+        let file = super::discovery::record_artifact(artifact).map_err(|_| structural_denial())?;
+        match self
+            .parts
+            .artifact_tree()
+            .read_bounded(&file, maximum_bytes)
+        {
+            Ok(bytes) => Ok(Some(bytes.into())),
+            Err(failure)
+                if failure.kind() == crate::filesystem_media::ArtifactTreeFailureKind::Absent =>
+            {
+                Ok(None)
+            }
+            Err(failure) => Err(failure),
+        }
+    }
+
     /// Makes the completed root-protocol replacement namespace durable. The
     /// records directory is the common parent of all three destinations.
     pub fn synchronize_recovery_record_namespace_scheduled(

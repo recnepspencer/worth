@@ -6,6 +6,7 @@ use worth_store::physical_runtime::{
 use crate::entry::{PhysicalRecoveryOutcome, PhysicalRecoveryPublicationSettlement};
 use crate::progression::{NamespaceDurablePhysicalRecovery, StagedPhysicalRecovery};
 
+mod catalog_repair;
 mod counters;
 mod state;
 
@@ -18,17 +19,27 @@ pub(crate) fn publish_recovery(
     let (state, publication) = PublicationState::from_staged(staged);
     let planned_effects = state.planned_effects();
     let (expectation, candidates) = publication.into_command_parts();
-    let Some(candidates) = materialize_candidates(candidates) else {
+    let Some(mut candidates) = materialize_candidates(candidates) else {
         return Err(state.block_invalid());
     };
+    let mut protocol = expectation.root_protocol();
+    let mut staging_generation = expectation.staging_generation();
     if candidates.is_empty() {
-        return state.publish_preexisting(expectation);
+        match catalog_repair::plan(state.media(), &expectation) {
+            Ok(None) => return state.publish_preexisting(expectation),
+            Ok(Some(repair)) => {
+                candidates = repair.candidates;
+                protocol = repair.protocol;
+                staging_generation = repair.generation;
+            }
+            Err(()) => return Err(state.block_invalid()),
+        }
     }
     let Some(command) = PhysicalRecoveryPublicationCommand::new(
         expectation.plan_identity(),
-        expectation.staging_generation(),
+        staging_generation,
         candidates,
-        expectation.root_protocol(),
+        protocol,
     ) else {
         return Err(state.block_invalid());
     };
