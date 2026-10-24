@@ -26,7 +26,8 @@ worth-proof = { path = "../worth-proof" }
 worth-foundational = { path = "../worth-foundational" }
 worth-execution = { path = "../worth-execution" }
 sha2 = "0.10"
-im = { version = "15.1", features = ["serde"] }
+# Retained-storage charges describe im 15.1 nodes; ordered_index courts drift.
+im = { version = "=15.1.0", features = ["serde"] }
 arc-swap = "1"
 
 [dev-dependencies]
