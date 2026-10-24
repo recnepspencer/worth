@@ -41,18 +41,34 @@ fn candidate_normalization_matches_ordered_set_and_denies_before_mutation() {
 
 #[test]
 fn candidate_growth_denies_overflow_and_exhaustion_before_reserving_storage() {
+    // An unrepresentable charge is a typed overflow under every ceiling,
+    // including an absent one; a representable charge above the ceiling is
+    // exhaustion. Neither reserves storage or consumes work.
     let mut candidates = vec![NodeId::new(3, 2)];
     let capacity = candidates.capacity();
-    for count in [10, usize::MAX] {
-        let mut work = Preparation::new(Some(0));
-        assert!(matches!(
-            reserve_additional(
-                &mut candidates,
-                count,
-                &mut EvaluationWork::Conditional(&mut work)
-            ),
-            Err(SignalError::ConditionalEvaluationWorkExhausted { maximum_visits: 0 })
-        ));
+    let cases = [
+        (10, Some(0), Some(0)),
+        (usize::MAX, Some(0), None),
+        (usize::MAX, None, None),
+    ];
+    for (count, ceiling, exhausted_at) in cases {
+        let mut work = Preparation::new(ceiling);
+        let denied = reserve_additional(
+            &mut candidates,
+            count,
+            &mut EvaluationWork::Conditional(&mut work),
+        );
+        match exhausted_at {
+            Some(maximum_visits) => assert!(matches!(
+                denied,
+                Err(SignalError::ConditionalEvaluationWorkExhausted { maximum_visits: observed })
+                    if observed == maximum_visits
+            )),
+            None => assert!(matches!(
+                denied,
+                Err(SignalError::RetainedStorageChargeOverflow)
+            )),
+        }
         assert_eq!(candidates, [NodeId::new(3, 2)]);
         assert_eq!(candidates.capacity(), capacity);
         assert_eq!(work.visits(), 0);

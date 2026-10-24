@@ -168,17 +168,19 @@ fn stale_candidates_consume_work_and_pruning_stays_in_the_draft() {
     assert!(baseline_work.visits() > without_stale.visits());
 }
 
+/// Since `facc9d1197` an unrepresentable charge is `ChargeOverflow`, not a
+/// ceiling report: a request without a work ceiling has no maximum to name.
 #[test]
 fn waiter_sequence_overflow_denies_without_consuming_or_wrapping_work() {
-    let mut work = Work::new(Some(100));
-    work.reserve_visits(7).unwrap();
-    assert!(matches!(
-        preparation_work::sequence_growth(&mut work, usize::MAX, 1),
-        Err(PendingRevalidationPreparationDenial::Storage(
-            RetainedStoragePreparationDenial::WorkExhausted {
-                maximum_visits: 100
-            }
-        ))
-    ));
-    assert_eq!(work.visits(), 7);
+    for ceiling in [Some(100), None] {
+        let mut work = Work::new(ceiling);
+        work.reserve_visits(7).unwrap();
+        assert!(matches!(
+            preparation_work::sequence_growth(&mut work, usize::MAX, 1),
+            Err(PendingRevalidationPreparationDenial::Storage(
+                RetainedStoragePreparationDenial::ChargeOverflow
+            ))
+        ));
+        assert_eq!(work.visits(), 7);
+    }
 }
