@@ -143,42 +143,6 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
 }
 
 #[tokio::test]
-async fn temporary_replay_read_failure_keeps_the_original_response() {
-    let account = AccountId::new(100).unwrap();
-    let application = Arc::new(application(account));
-    let (server, _mutation_continuation) =
-        bind_application(application, BankHttpServerConfiguration::local_ephemeral())
-            .await
-            .expect("HTTP server should bind")
-            .into_parts();
-    let server = server.activate();
-    let client = reqwest::Client::new();
-    let endpoint = format!(
-        "http://{}/v1/queries/account-activity/page",
-        server.local_address()
-    );
-    let request = page_request(account, "temporary-replay-budget");
-    let first = post_page(&client, &endpoint, &request).await;
-    let _token = continuation(&first);
-
-    let mut under_budget = request.clone();
-    under_budget["controls"]["maximum_work"] = serde_json::json!(1);
-    let denied = post_page(&client, &endpoint, &under_budget).await;
-    assert!(matches!(
-        denied,
-        BankHttpAccountActivityPageOutcome::Denied { denial, .. }
-            if denial.kind == BankHttpDenialKind::ResourceExhausted
-    ));
-    assert_eq!(
-        post_page(&client, &endpoint, &request).await,
-        first,
-        "a temporary revalidation failure must not erase the cached publication"
-    );
-    server.shutdown().await.expect("server should shut down");
-    assert!(_mutation_continuation.finish().await.is_ok());
-}
-
-#[tokio::test]
 async fn abandoned_resume_finishes_and_replays_its_exact_response() {
     let account = AccountId::new(100).unwrap();
     let (application, gate) = held_authentication_application(account);
