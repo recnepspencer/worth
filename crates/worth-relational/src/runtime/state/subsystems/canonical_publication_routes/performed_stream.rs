@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use arc_swap::ArcSwapOption;
@@ -7,7 +7,11 @@ use arc_swap::ArcSwapOption;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonicalCommit};
 use crate::publication::patch::data::PatchStreamPosition;
 
-use super::CanonicalPublicationRoute;
+use super::patch_position_reservation::{
+    PatchPositionReservation, PatchPositionReservationAdmission,
+    RelationalPatchPositionReservationCounters,
+};
+use super::{CanonicalPublicationRecordError, CanonicalPublicationRoute};
 use crate::durability::medium::RelationalDurableStepStop as DurableStepStop;
 
 #[derive(Default)]
@@ -34,35 +38,6 @@ struct PerformedPublicationIndex {
     by_patch: BTreeMap<PatchStreamPosition, Arc<PerformedPublicationNode>>,
     by_commit: BTreeMap<CommitId, PatchStreamPosition>,
     indexed_head: Option<Arc<PerformedPublicationNode>>,
-}
-
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct RelationalPatchPositionReservationCounters {
-    pub contacts: u64,
-    pub deferrals: u64,
-    pub assignments: u64,
-    pub overflows: u64,
-}
-
-pub(super) enum PerformedPublicationRecordError {
-    ReservationContended,
-    PositionCapacityExhausted,
-    /// The durable step did not make the positioned commit durable, so the
-    /// position was not consumed and nothing was installed.
-    Durable(DurableStepStop),
-}
-
-#[derive(Default)]
-struct PatchPositionReservation {
-    contacts: AtomicU64,
-    deferrals: AtomicU64,
-    assignments: AtomicU64,
-    overflows: AtomicU64,
-    active: AtomicBool,
-}
-
-struct PatchPositionReservationGuard<'reservation> {
-    reservation: &'reservation PatchPositionReservation,
 }
 
 impl PerformedPublicationStream {
@@ -97,10 +72,11 @@ impl PerformedPublicationStream {
     pub(super) fn record_with_cutover(
         &self,
         route: Arc<CanonicalPublicationRoute>,
+        admission: PatchPositionReservationAdmission<'_, '_, '_>,
         durable: impl FnOnce(&PositionedCanonicalCommit) -> Result<(), DurableStepStop>,
         cutover: impl FnOnce(PatchStreamPosition),
-    ) -> Result<Arc<PositionedCanonicalCommit>, PerformedPublicationRecordError> {
-        let _reservation = self.reservation.try_enter()?;
+    ) -> Result<Arc<PositionedCanonicalCommit>, CanonicalPublicationRecordError> {
+        let _reservation = self.reservation.enter(admission)?;
         let current = self.head.load_full();
         let prior_position = current
             .as_ref()
@@ -109,7 +85,7 @@ impl PerformedPublicationStream {
             .max(self.recovered_position_floor.load(Ordering::Acquire));
         let Some(next_position) = prior_position.checked_add(1) else {
             self.reservation.overflows.fetch_add(1, Ordering::Relaxed);
-            return Err(PerformedPublicationRecordError::PositionCapacityExhausted);
+            return Err(CanonicalPublicationRecordError::PositionCapacityExhausted);
         };
         let positioned = Arc::new(PositionedCanonicalCommit::admit(
             super::CanonicalPositionAdmission::performed(
@@ -119,7 +95,7 @@ impl PerformedPublicationStream {
         ));
         // Durable before live: the position is assigned only once the medium
         // holds it, and the cutover below runs only after that.
-        durable(&positioned).map_err(PerformedPublicationRecordError::Durable)?;
+        durable(&positioned).map_err(CanonicalPublicationRecordError::Durable)?;
         let node = Arc::new(PerformedPublicationNode {
             positioned: Arc::clone(&positioned),
             route: Arc::clone(&route),
@@ -140,7 +116,7 @@ impl PerformedPublicationStream {
     ) -> Result<(), &'static str> {
         let _reservation = self
             .reservation
-            .try_enter()
+            .enter(PatchPositionReservationAdmission::DeferWhenHeld)
             .map_err(|_| "recovered canonical stream reservation is unexpectedly contended")?;
         let current = self.head.load_full();
         if current
@@ -293,37 +269,5 @@ fn same_head(
         (Some(left), Some(right)) => Arc::ptr_eq(left, right),
         (None, None) => true,
         _ => false,
-    }
-}
-
-impl PatchPositionReservation {
-    fn try_enter(
-        &self,
-    ) -> Result<PatchPositionReservationGuard<'_>, PerformedPublicationRecordError> {
-        self.contacts.fetch_add(1, Ordering::Relaxed);
-        if self
-            .active
-            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-            .is_err()
-        {
-            self.deferrals.fetch_add(1, Ordering::Relaxed);
-            return Err(PerformedPublicationRecordError::ReservationContended);
-        }
-        Ok(PatchPositionReservationGuard { reservation: self })
-    }
-
-    fn counters(&self) -> RelationalPatchPositionReservationCounters {
-        RelationalPatchPositionReservationCounters {
-            contacts: self.contacts.load(Ordering::Relaxed),
-            deferrals: self.deferrals.load(Ordering::Relaxed),
-            assignments: self.assignments.load(Ordering::Relaxed),
-            overflows: self.overflows.load(Ordering::Relaxed),
-        }
-    }
-}
-
-impl Drop for PatchPositionReservationGuard<'_> {
-    fn drop(&mut self) {
-        self.reservation.active.store(false, Ordering::Release);
     }
 }
