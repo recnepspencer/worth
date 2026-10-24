@@ -266,7 +266,7 @@ pub(crate) fn application_checkpoint_denies_corrupt_incompatible_and_forged_byte
             unsupported_version,
             Kind::UnsupportedCheckpointFormat {
                 observed: u16::MAX,
-                supported: 10,
+                supported: 13,
             },
             "format 65535 is unsupported",
         ),
