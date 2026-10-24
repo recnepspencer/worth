@@ -150,7 +150,7 @@ fn provider_identity_exhaustion_denies_before_relational_installation() {
 }
 
 #[test]
-fn an_invalidation_window_past_the_world_history_is_refused_at_installation() {
+fn invalidation_keeps_no_window_so_a_finite_world_history_installs() {
     crate::domain_computation::primary_graph::with_test_advancement(|active_phase| {
         let phase = &active_phase;
         use crate::domain_computation::execution_runtime::product_world::{
@@ -177,28 +177,28 @@ fn an_invalidation_window_past_the_world_history_is_refused_at_installation() {
             .installed_packages()
             .bind_application_schema(declaration)
             .unwrap();
-        // One rule bounds both windows: invalidation keeps no position the World
-        // no longer keeps a commit for.
-        let (budgets, clock, defaults, execution) = test_product_world_resources().into_parts();
-        let commits = budgets
-            .retained_composite_commits()
-            .get()
-            .expect("explicit finite history policy");
+        // Invalidation keeps no position the World no longer keeps a commit for.
+        // Since ee07da2b0e it keeps no retention window at all, so even the
+        // shortest finite World history admits it; nothing is refused.
+        let (budgets, clock, _defaults, execution) = test_product_world_resources().into_parts();
+        assert!(
+            budgets.retained_composite_commits().get().is_some(),
+            "explicit finite history policy"
+        );
         let invalidation = WorthQueryInvalidationResources::new();
         let resources =
             WorthQueryProductWorldResources::new(budgets, clock, invalidation, execution.policy);
-        let denial = authority
-            .prepare_primary_graph(&phase.bootstrap_for_test(), &runtime, &schema, resources)
-            .err()
-            .unwrap();
-
-        assert_eq!(
-            denial.kind(),
-            WorthQueryPrimaryGraphInstallationDenialKind::InvalidationWindowExceedsHistory {
-                retained_positions: Some(commits + 1),
-                retained_commits: commits,
-            }
-        );
+        if let Err(denial) = authority.prepare_primary_graph(
+            &phase.bootstrap_for_test(),
+            &runtime,
+            &schema,
+            resources,
+        ) {
+            panic!(
+                "a windowless invalidation fits any history: {:?}",
+                denial.kind()
+            );
+        }
     });
 }
 
