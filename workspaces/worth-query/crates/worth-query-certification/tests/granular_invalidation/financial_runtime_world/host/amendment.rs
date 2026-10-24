@@ -187,79 +187,82 @@ impl FinancialCourtroomWorld {
             .into_parts()
             })
             .expect("installed host call opens");
-        let reads = self
+        let finished = self
             .application
             .with_host_advancement(|host_phase| {
-                self
-            .application
-            .begin_projected_application_read_attempt(
-                &host_phase, admission,
-                projection,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap()
+                let reads = self
+                    .application
+                    .begin_projected_application_read_attempt(
+                        &host_phase,
+                        admission,
+                        projection,
+                        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap();
+                let mut effects = reads
+                    .complete_projected_dependencies(
+                        &host_phase,
+                        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap()
+                    .begin_effect_program();
+                let record = effects.existing_entity(&record).unwrap();
+                effects
+                    .write_field(
+                        &record,
+                        MarketRevisionField::reference(),
+                        amendment.revision,
+                    )
+                    .unwrap();
+                effects
+                    .write_field(
+                        &record,
+                        MarketDueField::reference(),
+                        11 + u64::from(self.amendment_ordinal),
+                    )
+                    .unwrap();
+                effects
+                    .write_field(
+                        &record,
+                        MarketLifecycleField::reference(),
+                        "active".to_owned(),
+                    )
+                    .unwrap();
+                effects
+                    .write_field(
+                        &record,
+                        MarketInputField::reference(),
+                        amendment.risk_value.to_string(),
+                    )
+                    .unwrap();
+                if let Some(value) = amendment.curve_rate {
+                    effects
+                        .write_field(&record, CurveZeroRateField::reference(), value)
+                        .unwrap();
+                }
+                if let Some(value) = amendment.quote_mid {
+                    effects
+                        .write_field(&record, QuoteMidField::reference(), value)
+                        .unwrap();
+                }
+                if let Some(value) = amendment.portfolio_value {
+                    effects
+                        .write_field(&record, PortfolioValueField::reference(), value)
+                        .unwrap();
+                }
+                if let Some(value) = amendment.portfolio_desk {
+                    effects
+                        .write_field(&record, PortfolioDeskField::reference(), value)
+                        .unwrap();
+                }
+                if let Some(value) = amendment.portfolio_rank {
+                    effects
+                        .write_field(&record, PortfolioRankField::reference(), value)
+                        .unwrap();
+                }
+                effects.finish().unwrap()
             })
             .expect("installed host call opens");
-        let mut effects = self.application.with_host_advancement(|host_phase| reads
-            .complete_projected_dependencies(
-                &host_phase, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap()
-            .begin_effect_program()).expect("installed host call opens");
-        let record = effects.existing_entity(&record).unwrap();
-        effects
-            .write_field(
-                &record,
-                MarketRevisionField::reference(),
-                amendment.revision,
-            )
-            .unwrap();
-        effects
-            .write_field(
-                &record,
-                MarketDueField::reference(),
-                11 + u64::from(self.amendment_ordinal),
-            )
-            .unwrap();
-        effects
-            .write_field(
-                &record,
-                MarketLifecycleField::reference(),
-                "active".to_owned(),
-            )
-            .unwrap();
-        effects
-            .write_field(
-                &record,
-                MarketInputField::reference(),
-                amendment.risk_value.to_string(),
-            )
-            .unwrap();
-        if let Some(value) = amendment.curve_rate {
-            effects
-                .write_field(&record, CurveZeroRateField::reference(), value)
-                .unwrap();
-        }
-        if let Some(value) = amendment.quote_mid {
-            effects
-                .write_field(&record, QuoteMidField::reference(), value)
-                .unwrap();
-        }
-        if let Some(value) = amendment.portfolio_value {
-            effects
-                .write_field(&record, PortfolioValueField::reference(), value)
-                .unwrap();
-        }
-        if let Some(value) = amendment.portfolio_desk {
-            effects
-                .write_field(&record, PortfolioDeskField::reference(), value)
-                .unwrap();
-        }
-        if let Some(value) = amendment.portfolio_rank {
-            effects
-                .write_field(&record, PortfolioRankField::reference(), value)
-                .unwrap();
-        }
         self.amendment_ordinal = self.amendment_ordinal.saturating_add(1);
         let idempotency =
             primary_graph::WorthQueryApplicationIdempotencyBinding::for_host_commit::<
@@ -270,7 +273,7 @@ impl FinancialCourtroomWorld {
             >(&self.amendment_ordinal, &self.amendment_ordinal)
             .unwrap();
         match self.application.compare_and_commit_application(
-            effects.finish().unwrap(),
+            finished,
             idempotency,
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         ) {
