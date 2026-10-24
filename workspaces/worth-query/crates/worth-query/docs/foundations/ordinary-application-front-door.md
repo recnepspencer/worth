@@ -393,6 +393,10 @@ payload charge with the candidate. Publication takes a fresh policy for its
 provider comparison. An admitted idempotent replay returns before new allocation.
 Request cancellation and deadlines constrain a child lease without changing the
 caller's parent policy or shortening payload custody to the request's lifetime.
+Under `Execution(&lease)` each lane opens its host call as a controlled child of
+that lease (`with_funded_application_advancement`), so the lease funds the call's
+work and charges as one budget; a lease the call's workers do not descend from
+would refuse `UnrelatedNestedLease`.
 
 ### Observing installed mutation work
 
@@ -1109,6 +1113,17 @@ and retains that one charge until its last Query or embedded native byte owner
 drops. Neither mode charges native codec temporaries, decoded rows or allocator
 metadata. There is no fallback from an exhausted or stopped lease to system
 allocation.
+
+An `Execution(&lease)` lease is the call's one budget. Its workers must descend
+from it, so open an installed runtime's capture with
+`with_funded_host_advancement(policy, ..)`; the convenience transition runs its
+bootstrap on the lease itself, and `repair_to_checkpoint_with_request` repairs
+under the original request. A phase/policy repair or capture may name the
+caller lease that funds the call or one of its ancestors. Any other lease,
+including a caller lease inside `with_host_advancement`, whose workers descend
+from the World's placement, refuses with the typed allocation cause
+`UnrelatedNestedLease` before reserving. The lease therefore carries the call's
+work and transient worker charges as well as the retained frame.
 
 `WorthQueryCheckpointCaptureDenial` preserves either the native durability
 error or the typed physical allocation refusal and its available payload quote.

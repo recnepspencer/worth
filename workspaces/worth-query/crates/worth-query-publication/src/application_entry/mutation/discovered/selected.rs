@@ -62,7 +62,7 @@ where
     {
         let scope = self.request_scope().clone();
         let runtime = self.request.application;
-        runtime.with_application_advancement(&scope, |phase| {
+        runtime.with_funded_application_advancement(&scope, allocation_policy, |phase| {
             self.execute_performed_discovered_in_advancement(&phase, application, allocation_policy)
         }).map_err(|cause| WorthQueryPerformedMutationExecutionDenial::Mutation(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
     }

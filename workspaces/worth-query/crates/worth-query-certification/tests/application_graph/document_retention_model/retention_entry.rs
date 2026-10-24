@@ -37,6 +37,9 @@ use super::schema::{
 
 #[path = "retention_entry/candidate_tracking.rs"]
 mod candidate_tracking;
+#[path = "retention_entry/decision_hold.rs"]
+mod decision_hold;
+pub use decision_hold::with_decision_hold;
 pub use candidate_tracking::{
     assessment_counts, candidate_count, decision_count, ordinary_counts, reset_candidate_count,
     reset_decision_count, reset_ordinary_counts,

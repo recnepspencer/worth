@@ -97,6 +97,8 @@ mod workflow_vocabulary;
 #[path = "application_graph/source_bound_replay.rs"]
 mod source_bound_replay;
 
+#[path = "application_graph/lease_quote.rs"]
+mod lease_quote;
 #[path = "application_graph/native_staging_allocation.rs"]
 mod native_staging_allocation;
 

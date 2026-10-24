@@ -111,7 +111,7 @@ where
         let runtime = self.application.runtime();
         let work = self.candidate.decision_work;
         runtime
-            .with_application_advancement(&scope, |phase| {
+            .with_funded_application_advancement(&scope, allocation_policy, |phase| {
                 self.commit_report_in_advancement(&phase, allocation_policy)
             })
             .unwrap_or_else(|cause| {

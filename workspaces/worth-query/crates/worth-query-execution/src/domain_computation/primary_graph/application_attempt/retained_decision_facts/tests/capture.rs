@@ -1,6 +1,6 @@
 //! Real installed projection exercises the retained-key owner. No commit or
 //! downstream heap-closure claim is made by this proof.
-use super::custody::{authority, isolated, request, SERIAL};
+use super::custody::{authority, isolated, SERIAL};
 use crate::domain_computation::primary_graph::{
     tests::{
         application_attempt::{authenticated_principal, resolved_account},
@@ -8,11 +8,28 @@ use crate::domain_computation::primary_graph::{
             installed_authorization_world, live_scope, AccountStatus, TouchAccountOperation,
         },
     },
-    WorthQueryInvariantProjectionDenialKind,
+    WorthQueryInvariantProjectionDenialKind, WorthQueryValueDecodeDenial,
 };
 use worth_execution::{
-    ExecutionAllocationDenialKind, ExecutionAllocationPolicy as Policy, LeaseDenial,
+    ExecutionAllocationDenialKind, ExecutionAllocationPolicy as Policy, LeaseDenial, LeaseRequest,
 };
+
+/// A caller lease funds the whole host call it opens, including its work.
+fn funding(bytes: u64) -> LeaseRequest {
+    LeaseRequest {
+        policy: worth_foundational::ExecutionRequestPolicy::new(
+            worth_foundational::ExecutionPosture::Serial,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                Some(bytes),
+                Some(16_000_000),
+            ),
+        ),
+        deadline: None,
+        cancellation: worth_execution::CancellationToken::new(),
+    }
+}
 
 #[test]
 fn installed_absence_projection_refuses_before_retention_and_releases_snapshot() {
@@ -58,28 +75,54 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let zero = authority().request_lease(request(0)).unwrap();
-    let denial = world
-        .application
-        .with_host_advancement(|phase| {
-            match world.invariant.project_admitted_operation(
-                &phase,
-                &admission,
-                |reader, _| {
-                    // Ignoring the local error must not seal a partial/empty projection.
-                    let _ = reader.decision_select_entities(
-                        AccountStatus::reference(),
-                        "unseen-retained-key".to_owned(),
-                        2,
-                    );
-                },
-                Policy::Execution(&zero),
-            ) {
-                Err(denial) => denial,
-                Ok(_) => panic!("nonempty canonical key requires backing"),
+    const PAYLOAD: u64 = 4 * 1024 * 1024;
+    let exhausted = authority().request_lease(funding(PAYLOAD)).unwrap();
+    // The read's decode scope also charges the lease before any key is
+    // retained; its own refusal quotes that share (MENTALITY §7).
+    let mut keep = 0;
+    let denial = (0..8)
+        .find_map(|_| {
+            let denial = world
+                .application
+                .with_funded_host_advancement(Policy::Execution(&exhausted), |phase| {
+                    // The call is open; its lease keeps only the decode scope's quote.
+                    let room = exhausted.available_memory_bytes().unwrap();
+                    let _held = exhausted.reserve_memory(room - keep).unwrap();
+                    match world.invariant.project_admitted_operation(
+                        &phase,
+                        &admission,
+                        |reader, _| {
+                            // Ignoring the local error must not seal a partial/empty projection.
+                            let _ = reader.decision_select_entities(
+                                AccountStatus::reference(),
+                                "unseen-retained-key".to_owned(),
+                                2,
+                            );
+                        },
+                        Policy::Execution(&exhausted),
+                    ) {
+                        Err(denial) => denial,
+                        Ok(_) => panic!("nonempty canonical key requires backing"),
+                    }
+                })
+                .expect("the fixture read owns its installed host call");
+            match denial.invariant_denial().map(|denial| denial.kind()) {
+                Some(WorthQueryInvariantProjectionDenialKind::ValueDecode(
+                    WorthQueryValueDecodeDenial::Scope(worth_execution::WorkCeilingDenial::Admission(
+                        LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
+                            requested,
+                            admitted,
+                            ..
+                        }),
+                    )),
+                )) => {
+                    keep += requested - admitted;
+                    None
+                }
+                _ => Some(denial),
             }
         })
-        .expect("the fixture read owns its installed host call");
+        .expect("the read reaches key retention under a learned keep");
     let retained = denial.invariant_denial().unwrap();
     assert_eq!(
         retained.kind(),
@@ -87,24 +130,27 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
     );
     assert_eq!(retained.projection_work().unwrap().equality_lookups(), 1);
     let allocation = retained.allocation_denial().unwrap();
+    assert!(allocation.requested_payload_bytes().is_some());
     assert_eq!(
         allocation.kind(),
         ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
             worth_execution::MemoryLimitDenial::Capacity {
                 requested: allocation.requested_payload_bytes().unwrap(),
                 admitted: 0,
-                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
+                // The attempt's control child sits under the call's child of
+                // the lease; the lease's held room refuses it.
+                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 2 }
             }
         ))
     );
     assert!(allocation.requested_payload_bytes().unwrap() > 0);
-    drop(zero);
-    const PAYLOAD: u64 = 4 * 1024 * 1024;
-    let parent = authority().request_lease(request(PAYLOAD)).unwrap();
-    let child = parent.child(request(PAYLOAD)).unwrap();
+    assert_eq!(exhausted.charged_memory_bytes(), 0);
+    drop(exhausted);
+    let parent = authority().request_lease(funding(PAYLOAD)).unwrap();
+    let child = parent.child(funding(PAYLOAD)).unwrap();
     let (_, snapshot, work) = world
         .application
-        .with_host_advancement(|phase| {
+        .with_funded_host_advancement(Policy::Execution(&child), |phase| {
             world
                 .invariant
                 .project_admitted_operation(

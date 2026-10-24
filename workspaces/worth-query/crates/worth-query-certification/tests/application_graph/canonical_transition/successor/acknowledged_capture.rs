@@ -8,8 +8,8 @@ use worth_query_host::facade::application_installation::ApplicationBuildIdentity
 use worth_query_host::facade::{
     primary_graph,
     runtime::{
-        CancellationToken, ExecutionAllocationDenialKind, LeaseDenial, LeaseRequest,
-        MemoryLimitDenial, MemoryLimitLevel,
+        CancellationToken, ExecutionAllocationDenialKind, LeaseDenial, MemoryLimitDenial,
+        MemoryLimitLevel,
     },
 };
 
@@ -29,35 +29,37 @@ fn acknowledged_codec_successor_keeps_exact_capture_cause_and_repairs_without_re
         &super::super::host::program().revision().to_string(),
     )
     .unwrap();
-    let lease = primary_graph::query_test_execution_authority_for_test()
-        .request_lease(LeaseRequest {
-            policy: ExecutionRequestPolicy::new(
-                ExecutionPosture::Serial,
-                DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(0), Some(1)),
-            ),
-            deadline: None,
-            cancellation: CancellationToken::new(),
-        })
+    // The funding lease pays for authoring, the commit and its ACK; the
+    // capture child it names admits no capture memory at all.
+    let funding = primary_graph::query_test_execution_authority_for_test()
+        .request_lease(super::super::capture_child::funding(
+            CancellationToken::new(),
+            None,
+        ))
         .unwrap();
+    let capture = super::super::capture_child::exhausted(&funding);
     let mut callbacks = 0;
     output::reset_decodes();
-    let denial = installation::in_memory_rostered_program_from_checkpoint_with_transition(
-        host::program(),
-        installation::WorthQueryApplicationProgramRoster::new(),
-        schema::CanonicalSchema::declaration().unwrap(),
-        ((),),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        host::limits(),
-        checkpoint,
-        predecessor,
-        installation::WorthQueryCheckpointTransitionResources::bounded(4096, 32, 16384).unwrap(),
-        CapturePolicy::Execution(&lease),
-        |_, _| {
-            callbacks += 1;
-            Ok(())
-        },
-    )
+    let denial = super::super::capture_child::funded_by(&funding, |phase| {
+        installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
+            phase,
+            host::program(),
+            installation::WorthQueryApplicationProgramRoster::new(),
+            schema::CanonicalSchema::declaration().unwrap(),
+            ((),),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+            host::limits(),
+            checkpoint,
+            predecessor,
+            installation::WorthQueryCheckpointTransitionResources::bounded(4096, 32, 16384)
+                .unwrap(),
+            CapturePolicy::Execution(&capture),
+            |_, _| {
+                callbacks += 1;
+                Ok(())
+            },
+        )
+    })
     .err()
     .expect("zero capture memory must stop after the actual native acknowledgment");
     let installation::WorthQueryInMemoryApplicationDenial::CheckpointTransitionCaptureStopped(

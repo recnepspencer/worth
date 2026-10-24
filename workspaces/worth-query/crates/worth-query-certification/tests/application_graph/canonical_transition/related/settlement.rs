@@ -2,7 +2,6 @@
 use super::*;
 use crate::document_retention_model::operator_identity::request_scope;
 use std::num::NonZeroUsize;
-use worth_execution::LeaseRequest;
 use worth_foundational::{ExecutionBudget, ExecutionRequestPolicy};
 use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 use worth_query_host::facade::{
@@ -19,40 +18,41 @@ fn related_acknowledged_successor_repairs_capture_without_reauthoring_or_old_dec
     let scope = request_scope();
     let mut callbacks = 0;
     successor::output::reset_decodes();
-    // The existing native serial backing owns only this capture allowance.
-    // It grants no source, snapshot or transition authority, and stays outside
-    // bootstrap advancement: opening another bootstrap inside a live phase denies.
-    let capture = worth_execution::ExecutionResourceLease::serial(LeaseRequest {
-        policy: ExecutionRequestPolicy::new(
-            worth_foundational::ExecutionPosture::Serial,
-            worth_foundational::DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, Some(0), Some(1)),
-        ),
-        cancellation: scope.cancellation().execution_token(),
-        deadline: scope.deadline(),
-    })
-    .unwrap();
-    let denied = installation::in_memory_rostered_program_from_checkpoint_with_transition(
-        successor::host::program(),
-        installation::WorthQueryApplicationProgramRoster::new().support(
-            successor::companion::host::program::<successor::companion::program::TargetProgram>(),
-        ),
-        successor::schema::CanonicalSchema::declaration().unwrap(),
-        ((),),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        successor::host::limits(),
-        checkpoint,
-        installation::WorthQueryCheckpointProgramPredecessor::new(
-            &host::program().revision().to_string(),
+    // The funding lease pays for authoring, the commit and its ACK; the
+    // capture child it names admits no capture memory at all.
+    let funding =
+        worth_execution::ExecutionResourceLease::serial(super::super::capture_child::funding(
+            scope.cancellation().execution_token(),
+            scope.deadline(),
+        ))
+        .unwrap();
+    let capture = super::super::capture_child::exhausted(&funding);
+    let denied = super::super::capture_child::funded_by(&funding, |phase| {
+        installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
+            phase,
+            successor::host::program(),
+            installation::WorthQueryApplicationProgramRoster::new()
+                .support(successor::companion::host::program::<
+                    successor::companion::program::TargetProgram,
+                >()),
+            successor::schema::CanonicalSchema::declaration().unwrap(),
+            ((),),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+            successor::host::limits(),
+            checkpoint,
+            installation::WorthQueryCheckpointProgramPredecessor::new(
+                &host::program().revision().to_string(),
+            )
+            .unwrap(),
+            installation::WorthQueryCheckpointTransitionResources::bounded(8192, 32, 65_536)
+                .unwrap(),
+            installation::WorthQueryCheckpointCapturePolicy::Execution(&capture),
+            |_, _| {
+                callbacks += 1;
+                Ok(())
+            },
         )
-        .unwrap(),
-        installation::WorthQueryCheckpointTransitionResources::bounded(8192, 32, 65_536).unwrap(),
-        installation::WorthQueryCheckpointCapturePolicy::Execution(&capture),
-        |_, _| {
-            callbacks += 1;
-            Ok(())
-        },
-    )
+    })
     .err()
     .expect("zero capture memory stops after native acknowledgement");
     let installation::WorthQueryInMemoryApplicationDenial::CheckpointTransitionCaptureStopped(

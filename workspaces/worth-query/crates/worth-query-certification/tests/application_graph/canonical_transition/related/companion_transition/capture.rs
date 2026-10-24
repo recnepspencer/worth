@@ -13,20 +13,21 @@ fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roste
     let held = checkpoint.clone();
     let bytes = checkpoint.bytes().to_vec();
     let scope = request_scope();
-    let capture = worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
-        policy: ExecutionRequestPolicy::new(
-            ExecutionPosture::Serial,
-            DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(0), Some(1)),
+    // The funding lease pays for authoring, the commit and its ACK; the
+    // capture child it names admits no capture memory at all.
+    let funding = worth_execution::ExecutionResourceLease::serial(
+        super::super::super::capture_child::funding(
+            scope.cancellation().execution_token(),
+            scope.deadline(),
         ),
-        cancellation: scope.cancellation().execution_token(),
-        deadline: scope.deadline(),
-    })
+    )
     .unwrap();
+    let capture = super::super::super::capture_child::exhausted(&funding);
     successor::output::reset_decodes();
     let mut callbacks = 0;
-    let denied = transition_counted(
+    let denied = transition_funded(
         checkpoint,
+        &funding,
         installation::WorthQueryCheckpointCapturePolicy::Execution(&capture),
         &mut callbacks,
     )
@@ -167,24 +168,25 @@ fn companion_deferred_append_cancel_and_funded_same_capsule_repair_keep_historic
     })
     .unwrap();
     cancel.cancel();
-    let pending = repair(|phase| {
-        pending.repair_to_checkpoint(
-            phase,
-            installation::WorthQueryCheckpointCapturePolicy::Execution(&stopped),
-        )
-    })
-    .err()
-    .expect("early cancellation retains the original deferred successor and unconsumed fault");
-    let Some(installation::WorthQueryCheckpointCaptureDenial::Allocation(cause)) =
+    // The stopped caller lease funds the repair call, so it refuses at entry.
+    let pending = pending
+        .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&stopped))
+        .err()
+        .expect("early cancellation retains the original deferred successor and unconsumed fault");
+    let Some(installation::WorthQueryCheckpointCaptureDenial::Execution(cause)) =
         pending.capture_denial()
     else {
         panic!("exact cancellation cause retained")
     };
-    assert_eq!(
-        cause.kind(),
-        worth_query_host::facade::runtime::ExecutionAllocationDenialKind::Cancelled
+    assert!(
+        matches!(
+            cause.kind(),
+            worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::ExecutionControlStopped {
+                kind: worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled
+            }
+        ),
+        "{cause:?}"
     );
-    assert_eq!(cause.requested_payload_bytes(), None);
     let pending = repair(|phase| {
         pending.repair_to_checkpoint(
             phase,

@@ -26,7 +26,7 @@ pub(super) fn request(cancellation: CancellationToken) -> LeaseRequest {
         cancellation,
     }
 }
-type Target = application_installation::WorthQueryProgramApplicationRuntime<
+pub(super) type Target = application_installation::WorthQueryProgramApplicationRuntime<
     TemporalHostSchema,
     TemporalInstallationProgram,
 >;
@@ -43,7 +43,9 @@ pub(super) fn transition_original(
         application_installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
             &phase, validated_program(), application_installation::WorthQueryApplicationProgramRoster::new(),
             TemporalHostSchema::declaration().unwrap(), configuration(), ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(), checkpoint::checkpoint_limits(),
-            checkpoint, predecessor, Resources::bounded(512, 32, 4096).unwrap(), author)
+            checkpoint, predecessor, Resources::bounded(512, 32, 4096).unwrap(),
+            // The original request's own lease caps the capture it funds.
+            phase.execution_request().allocation_policy(), author)
     }).expect("the original native request enters without another Query opening")
 }
 pub(super) fn assert_cancelled(cause: &primary_graph::WorthQueryPrimaryGraphInstallationDenial) {
@@ -72,7 +74,7 @@ fn original_request_funded_native_transition_reads_and_reopens_target() {
     )
     .unwrap();
     let checkpoint = target
-        .with_host_advancement(|phase| {
+        .with_funded_host_advancement(CapturePolicy::Execution(&lease), |phase| {
             target
                 .capture_application_checkpoint(&phase, CapturePolicy::Execution(&lease))
                 .unwrap()
@@ -114,7 +116,7 @@ fn original_request_cancelled_author_domain_rejection_cannot_win_and_fresh_retry
     )
     .unwrap();
     let checkpoint = repaired
-        .with_host_advancement(|phase| {
+        .with_funded_host_advancement(CapturePolicy::Execution(&fresh), |phase| {
             repaired
                 .capture_application_checkpoint(&phase, CapturePolicy::Execution(&fresh))
                 .unwrap()

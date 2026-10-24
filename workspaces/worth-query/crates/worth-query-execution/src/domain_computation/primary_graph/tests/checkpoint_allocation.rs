@@ -18,13 +18,15 @@ use crate::domain_computation::primary_graph::{
 };
 
 static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
+const LIMIT: u64 = 8 * 1024 * 1024;
 
+/// A caller lease funds the whole host call it opens, including its work.
 fn request(bytes: u64) -> LeaseRequest {
     LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(bytes), Some(1)),
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(bytes), Some(16_000_000)),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -55,13 +57,16 @@ fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen_
         .application
         .with_host_advancement(|phase| resolve_alice(&(phase).test_host_request(), &world, 1))
         .expect("fixture host admits the identity read");
-    let zero = authority.request_lease(request(0)).unwrap();
+    let exhausted = authority.request_lease(request(LIMIT)).unwrap();
     let refusal = world
         .application
-        .with_host_advancement(|phase| {
+        .with_funded_host_advancement(Policy::Execution(&exhausted), |phase| {
+            // The call is open; its lease has no room left for the frame.
+            let room = exhausted.available_memory_bytes().unwrap();
+            let _held = exhausted.reserve_memory(room).unwrap();
             world
                 .application
-                .capture_application_checkpoint(&phase, Policy::Execution(&zero))
+                .capture_application_checkpoint(&phase, Policy::Execution(&exhausted))
         })
         .expect("installed host call opens")
         .unwrap_err();
@@ -74,19 +79,20 @@ fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen_
             worth_execution::MemoryLimitDenial::Capacity {
                 requested: refusal.requested_payload_bytes().unwrap(),
                 admitted: 0,
-                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 }
+                // The capture charges the call's controlled child of the lease.
+                level: worth_execution::MemoryLimitLevel::Policy { ancestor: 1 }
             }
         ))
     );
     assert!(refusal.requested_payload_bytes().unwrap() > 0);
-    drop(zero);
+    assert_eq!(exhausted.charged_memory_bytes(), 0);
+    drop(exhausted);
 
-    const LIMIT: u64 = 8 * 1024 * 1024;
     let parent = authority.request_lease(request(LIMIT)).unwrap();
     let lease = parent.child(request(LIMIT)).unwrap();
     let (checkpoint, sections) = world
         .application
-        .with_host_advancement(|phase| {
+        .with_funded_host_advancement(Policy::Execution(&lease), |phase| {
             world
                 .application
                 .capture_application_checkpoint_with_sections(&phase, Policy::Execution(&lease))

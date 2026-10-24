@@ -25,6 +25,80 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 
+    /// Runs one host call funded as `allocation_policy` says. Under
+    /// `Execution(lease)` the call's budget is a controlled child of `lease`,
+    /// so every worker descends from it and the caller's charges stay inside
+    /// one budget; any other lease is unrelated to those workers and refuses
+    /// `UnrelatedNestedLease`. `SystemAllocation` uses the World's placement.
+    pub fn with_funded_host_advancement<R>(
+        &self,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        self.open_funded(
+            allocation_policy,
+            worth_execution::CancellationToken::new(),
+            None,
+            body,
+        )
+    }
+
+    /// [`Self::with_application_advancement`] funded as `allocation_policy`
+    /// says, under the request's cancellation and deadline. A lane that takes
+    /// the caller's allocation policy opens through this, so `Execution(lease)`
+    /// is the call's one budget rather than a second one inside the World's.
+    pub fn with_funded_application_advancement<R>(
+        &self,
+        request: &WorthQueryRequestScope,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        match allocation_policy {
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation => {
+                self.with_application_advancement(request, body)
+            }
+            worth_execution::ExecutionAllocationPolicy::Execution(_) => self.open_funded(
+                allocation_policy,
+                request.cancellation().execution_token(),
+                request.deadline(),
+                body,
+            ),
+        }
+    }
+
+    fn open_funded<R>(
+        &self,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        cancellation: worth_execution::CancellationToken,
+        deadline: Option<std::time::Instant>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        let _custody = OpeningCustody::enter()?;
+        let world = std::sync::Arc::clone(&self.product_runtime.owner);
+        let execution = match allocation_policy {
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation => {
+                QueryRequestExecution::open_control(
+                    world.execution_placement(),
+                    cancellation,
+                    deadline,
+                )
+            }
+            worth_execution::ExecutionAllocationPolicy::Execution(lease) => {
+                QueryRequestExecution::under_lease(lease, cancellation, deadline)
+            }
+        };
+        execution.run_advancement(
+            Some(world.owner_identity()),
+            Some(
+                self.product_runtime
+                    .source
+                    .authoritative_source_profile()
+                    .runtime_instance_id(),
+            ),
+            body,
+        )
+    }
+
     /// Checks borrowed advancement custody before a Publication entry reader.
     pub fn validate_application_advancement(
         &self,

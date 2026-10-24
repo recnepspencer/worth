@@ -1,25 +1,6 @@
 //! An uncharged resident table still needs a genuine metered capture grant.
 use super::*;
-use worth_execution::{
-    CancellationToken, ExecutionAllocationDenialKind, ExecutionResourceLease, LeaseDenial,
-    LeaseRequest,
-};
-use worth_foundational::{
-    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
-};
-
-fn lease(bytes: u64) -> ExecutionResourceLease<'static> {
-    ExecutionResourceLease::serial(LeaseRequest {
-        policy: ExecutionRequestPolicy::new(
-            ExecutionPosture::Serial,
-            DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(bytes), None),
-        ),
-        cancellation: CancellationToken::new(),
-        deadline: None,
-    })
-    .unwrap()
-}
+use worth_execution::{ExecutionAllocationDenialKind, ExecutionResourceLease, LeaseDenial};
 
 pub(super) fn assert_full_capture_funding(
     provider: &WorthQueryPrimaryGraphProvider,
@@ -27,18 +8,22 @@ pub(super) fn assert_full_capture_funding(
     authority: &WorthQuerySessionReadAuthority<'_>,
     request: &WorthQueryRequestScope,
     table: &crate::domain_computation::primary_graph::ApplicationFactTable,
+    caller: &ExecutionResourceLease<'_>,
 ) {
     // The actual registered fixture selected SystemAllocation. Its complete
     // original-fact path must retain the quote independently of that policy.
     assert!(table.closed_prefix().is_none());
     let bytes = table.full_capture_bytes().unwrap();
     assert!(bytes > 0);
-    let tight = lease(bytes - 1);
+    // `caller` funds the open call; leave it one byte short of the quote.
+    let room = caller.available_memory_bytes().unwrap();
+    let tight = caller.reserve_memory(room - (bytes - 1)).unwrap();
+    let working = caller.charged_memory_bytes();
     let refused = provider
         .capture_application_read_set(
             execution,
             authority,
-            StorageControl::new(ExecutionAllocationPolicy::Execution(&tight), Some(request)),
+            StorageControl::new(ExecutionAllocationPolicy::Execution(caller), Some(request)),
         )
         .err()
         .expect("original-fact capture must admit its full copy quote first");
@@ -48,18 +33,19 @@ pub(super) fn assert_full_capture_funding(
         refusal.kind(),
         ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(_))
     ));
-    assert_eq!(tight.charged_memory_bytes(), 0);
+    assert_eq!(caller.charged_memory_bytes(), working);
+    drop(tight);
 
-    let funded = lease(64 << 20);
+    let working = caller.charged_memory_bytes();
     let receipt = provider
         .capture_application_read_set(
             execution,
             authority,
-            StorageControl::new(ExecutionAllocationPolicy::Execution(&funded), Some(request)),
+            StorageControl::new(ExecutionAllocationPolicy::Execution(caller), Some(request)),
         )
         .unwrap();
     assert_eq!(receipt.fact_count(), table.len());
-    assert!(funded.charged_memory_bytes() >= bytes);
+    assert!(caller.charged_memory_bytes() >= working + bytes);
     drop(receipt);
-    assert_eq!(funded.charged_memory_bytes(), 0);
+    assert_eq!(caller.charged_memory_bytes(), working);
 }

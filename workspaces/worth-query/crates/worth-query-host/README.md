@@ -272,7 +272,10 @@ charge survive Query clones and embedded native-region ownership. The last
 byte owner frees the backing before releasing its charge; imports and native
 codec temporaries remain uncharged. No exhausted or stopped lease falls back
 to system allocation. Typed capture denials retain native durability errors or
-the lower physical refusal and available checked payload quote.
+the lower physical refusal and available checked payload quote. An
+`Execution(&lease)` lease is the call's one budget: open capture with
+`with_funded_host_advancement`, and a lease the call's workers do not descend
+from refuses `UnrelatedNestedLease`.
 
 Every consuming `repair_to_checkpoint(policy)` attempt selects its policy anew.
 An early stopped policy preserves the unpublished native settlement phase.

@@ -76,7 +76,7 @@ where
         let scope = self.request_scope().clone();
         let runtime = self.request.application;
         runtime
-            .with_application_advancement(&scope, |phase| {
+            .with_funded_application_advancement(&scope, allocation_policy, |phase| {
                 let mut decision_work =
             worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted;
                 let outcome = self.prepare_in_program_with_work(

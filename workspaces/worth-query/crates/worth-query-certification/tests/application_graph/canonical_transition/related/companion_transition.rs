@@ -57,6 +57,40 @@ fn transition_counted(
         },
     )
 }
+/// The same transition inside a phase `funding` opens, with its capture
+/// capped by the caller-named `capture` policy.
+fn transition_funded(
+    checkpoint: installation::WorthQueryApplicationCheckpoint,
+    funding: &worth_execution::ExecutionResourceLease<'_>,
+    capture: installation::WorthQueryCheckpointCapturePolicy<'_, '_>,
+    callbacks: &mut usize,
+) -> Result<Target, installation::WorthQueryInMemoryApplicationDenial> {
+    super::super::capture_child::funded_by(funding, |phase| {
+        installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
+            phase,
+            new::host::program::<new::program::TargetProgram>(),
+            installation::WorthQueryApplicationProgramRoster::new(),
+            successor::schema::CanonicalSchema::declaration().unwrap(),
+            ((),),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+            successor::host::limits(),
+            checkpoint,
+            installation::WorthQueryCheckpointProgramPredecessor::new(
+                &old::host::program::<old::program::SourceProgram>()
+                    .revision()
+                    .to_string(),
+            )
+            .unwrap(),
+            installation::WorthQueryCheckpointTransitionResources::bounded(65_536, 32, 65_536)
+                .unwrap(),
+            capture,
+            |_, _| {
+                *callbacks += 1;
+                Ok(())
+            },
+        )
+    })
+}
 fn companion_ids(
     settled: &OriginalSettlement,
 ) -> [worth_relational::facade::identity::EntityId; 2] {
@@ -271,6 +305,8 @@ fn companion_mixed_native_output_is_not_partially_promoted_or_discarded() {
 }
 #[path = "companion_transition/capture.rs"]
 mod capture;
+#[path = "companion_transition/capture_lineage.rs"]
+mod capture_lineage;
 
 fn assert_cached_companion(
     original: &Original,

@@ -91,6 +91,46 @@ impl WorthQueryBootstrapAdvancementPhase<'_> {
         }
         Ok(self.request.allocation_policy())
     }
+
+    /// Admits the capture policy a caller named for this request. Capture is
+    /// capped by that lease, which must be the request's funding lease or
+    /// descend from it; a sibling or another lineage's lease refuses here,
+    /// before any work or charge, rather than inside the capture after ACK.
+    pub(in crate::domain_computation::primary_graph) fn admit_capture_policy<
+        'policy,
+        'authority,
+    >(
+        &self,
+        capture: worth_execution::ExecutionAllocationPolicy<'policy, 'authority>,
+    ) -> Result<
+        worth_execution::ExecutionAllocationPolicy<'policy, 'authority>,
+        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+    > {
+        use crate::domain_computation::primary_graph::{
+            WorthQueryManagedComputationResourceDenial as Resource,
+            WorthQueryPrimaryGraphInstallationDenial as D,
+            WorthQueryPrimaryGraphInstallationDenialKind as K,
+        };
+        use worth_execution::ExecutionAllocationPolicy as Policy;
+        let funding = self.funded_capture_policy()?;
+        match (funding, capture) {
+            (Policy::Execution(funding), Policy::Execution(lease))
+                if lease.descends_from(funding) =>
+            {
+                Ok(capture)
+            }
+            _ => Err(D::new(
+                K::ExecutionDenied {
+                    kind: crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
+                        denial: Resource::NestedLeaseMisuse,
+                        partition_identity: None,
+                        policy_ancestor: None,
+                    },
+                },
+                "checkpoint capture requires a lease descending from the transition's funding lease",
+            )),
+        }
+    }
 }
 
 impl<'scope> WorthQueryBootstrapAdvancementPhase<'scope> {

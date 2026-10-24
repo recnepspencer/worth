@@ -180,7 +180,7 @@ where
     > {
         let scope = self.request_scope().clone();
         let runtime = self.request.application;
-        runtime.with_application_advancement(&scope, |phase| {
+        runtime.with_funded_application_advancement(&scope, allocation_policy, |phase| {
         if let Err(denial) = self.require_workflow_transition() {
             return super::WorthQueryApplicationMutationAttemptReport::new(Err(denial),
                 worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);

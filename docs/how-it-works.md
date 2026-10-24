@@ -874,8 +874,11 @@ Native owners retain effect, custody and unresolved-publication authority.
 
 **Native substrate.** Every lane takes an `ExecutionAllocationPolicy`
 (`worth_query_host::facade::runtime`): `SystemAllocation` or
-`Execution(&lease)`. The caller chooses; there is no default. The program lanes
-take the installed program runtime first.
+`Execution(&lease)`. The caller chooses; there is no default. Under
+`Execution(&lease)` the lane opens its host call as a controlled child of that
+lease, so its workers descend from it and the lease is the call's one budget
+(see **Execution authority** below). The program lanes take the installed
+program runtime first.
 
 | Lane | Use it when |
 |---|---|

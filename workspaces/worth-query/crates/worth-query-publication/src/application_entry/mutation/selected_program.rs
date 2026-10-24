@@ -90,7 +90,7 @@ where
         let scope = self.request_scope().clone();
         let runtime = self.request.application;
         runtime
-            .with_application_advancement(&scope, |phase| {
+            .with_funded_application_advancement(&scope, allocation_policy, |phase| {
                 self.execute_selected_program_report(&phase, application, allocation_policy)
             })
             .unwrap_or_else(|cause| {
@@ -218,58 +218,62 @@ where
         let request_scope = self.request_scope().clone();
         let runtime = self.request.application;
         runtime
-            .with_application_advancement(&request_scope, |active_phase| {
-                let phase = &active_phase;
+            .with_funded_application_advancement(
+                &request_scope,
+                allocation_policy,
+                |active_phase| {
+                    let phase = &active_phase;
 
-                if !std::ptr::eq(application.runtime(), self.request.application) {
-                    return Err(
-                        WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch,
-                    );
-                }
-                let selected = self
-                    .request
-                    .application
-                    .on_branch(self.request.branch)
-                    .select(phase)
-                    .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
-                let owner = application
-                    .selected_program_owner(&selected)
-                    .map_err(map_selected_program_owner_denial)?;
-                let selected_owns_action = owner.contains_action::<Intent::Binding>();
-                if !selected_owns_action && !application.contains_action::<Intent::Binding>() {
-                    return Err(
-                        WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired,
-                    );
-                }
-                self.execute_with_preparation_and_commit(
-                    phase,
-                    move |request, identities, staged| {
-                        super::authorization::prepare_capability_selected(
-                            phase, request, identities, staged, &selected,
-                        )
-                    },
-                    |_, program, binding| {
-                        if selected_owns_action {
-                            owner.commit_program_action_in_advancement(
-                                phase,
-                                program,
-                                binding.identities(),
-                                |idempotency| binding.extension().apply(idempotency),
-                                allocation_policy,
+                    if !std::ptr::eq(application.runtime(), self.request.application) {
+                        return Err(
+                            WorthQueryApplicationRequestMutationDenial::ApplicationProgramMismatch,
+                        );
+                    }
+                    let selected = self
+                        .request
+                        .application
+                        .on_branch(self.request.branch)
+                        .select(phase)
+                        .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
+                    let owner = application
+                        .selected_program_owner(&selected)
+                        .map_err(map_selected_program_owner_denial)?;
+                    let selected_owns_action = owner.contains_action::<Intent::Binding>();
+                    if !selected_owns_action && !application.contains_action::<Intent::Binding>() {
+                        return Err(
+                            WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired,
+                        );
+                    }
+                    self.execute_with_preparation_and_commit(
+                        phase,
+                        move |request, identities, staged| {
+                            super::authorization::prepare_capability_selected(
+                                phase, request, identities, staged, &selected,
                             )
-                        } else {
-                            application.commit_program_action_in_advancement(
-                                phase,
-                                program,
-                                binding.identities(),
-                                |idempotency| binding.extension().apply(idempotency),
-                                allocation_policy,
-                            )
-                        }
-                    },
-                    allocation_policy,
-                )
-            })
+                        },
+                        |_, program, binding| {
+                            if selected_owns_action {
+                                owner.commit_program_action_in_advancement(
+                                    phase,
+                                    program,
+                                    binding.identities(),
+                                    |idempotency| binding.extension().apply(idempotency),
+                                    allocation_policy,
+                                )
+                            } else {
+                                application.commit_program_action_in_advancement(
+                                    phase,
+                                    program,
+                                    binding.identities(),
+                                    |idempotency| binding.extension().apply(idempotency),
+                                    allocation_policy,
+                                )
+                            }
+                        },
+                        allocation_policy,
+                    )
+                },
+            )
             .map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?
     }
 }

@@ -5,6 +5,10 @@ use worth_foundational::{
 };
 use worth_query_execution::facade::provider_session::WorthQueryDecisionReadSetDenialKind;
 use worth_query_host::facade::{
+    application_contribution::{
+        WorthQueryAdvancementDenial as Advancement,
+        WorthQueryManagedComputationResourceDenial as Resource, WorthQueryMemoryLimitLevel,
+    },
     application_entry::{
         WorthQueryApplicationMutationOutcome as Outcome,
         WorthQueryApplicationProgramMutationPreparation as Preparation,
@@ -27,11 +31,12 @@ use crate::document_retention_model::{
     host::{publish_on_first_program, SEED_RETENTION},
     operator_identity::{authenticate_operator, request_scope},
     readback::{observe_head, read_retention},
-    retention_entry::{SetRetentionIntent, DOCUMENT_IDENTITY},
+    retention_entry::{with_decision_hold, SetRetentionIntent, DOCUMENT_IDENTITY},
     schema::SetRetentionInput,
 };
 
-const PAYLOAD_BUDGET: u64 = 64 * 1024;
+/// The parent lease funds the whole ordinary call, not only its payload.
+const PAYLOAD_BUDGET: u64 = crate::lease_quote::DECLARED_BUDGET;
 const RETENTION: u64 = 9;
 
 fn lease_request(memory: u64, cancellation: CancellationToken) -> LeaseRequest {
@@ -39,30 +44,56 @@ fn lease_request(memory: u64, cancellation: CancellationToken) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(memory), Some(1)),
+            // The lease funds the whole call, so its work admits the handler.
+            ExecutionBudget::new(
+                NonZeroUsize::new(1).unwrap(),
+                Some(memory),
+                Some(16_000_000),
+            ),
         ),
         deadline: None,
         cancellation,
     }
 }
 
-fn assert_memory_refusal(cause: &ExecutionAllocationDenial) {
-    assert_eq!(
-        cause.kind(),
-        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
-            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
-                requested: cause.requested_payload_bytes().unwrap(),
-                admitted: 0,
-                level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 }
-            }
-        )),
-    );
+/// Asserts the owner's own lease refusal and returns the room it was admitted.
+fn assert_memory_refusal(cause: &ExecutionAllocationDenial) -> u64 {
     // Preserve the owner's checked Layout quote. Private completed-fact counts
     // are not exposed here, so this court does not invent a byte/cardinality oracle.
     let quote = cause
         .requested_payload_bytes()
         .expect("checked owner quote survives");
     assert!(quote > 0);
+    let ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
+        worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
+            requested,
+            admitted,
+            // The charging worker sits two controlled levels below the
+            // child that funds the whole call, three below the lease.
+            level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 3 },
+        },
+    )) = cause.kind()
+    else {
+        panic!("the owner's own quote refuses at the lease: {cause:?}")
+    };
+    assert_eq!(requested, quote);
+    assert!(admitted < requested, "{cause:?}");
+    admitted
+}
+
+/// A lease too small to open the call refuses before any read; its quote is
+/// what the call's own admission charges to the lease.
+fn admission_quote(denial: &RequestDenial) -> u64 {
+    let RequestDenial::ExecutionRequest(Advancement::Resource(Resource::MemoryLimit {
+        requested,
+        admitted: 0,
+        level: WorthQueryMemoryLimitLevel::Policy,
+    })) = denial
+    else {
+        panic!("a zero lease must refuse the call's own admission: {denial:?}")
+    };
+    assert!(*requested > 0);
+    *requested
 }
 
 fn assert_all_budget_available(lease: &ExecutionResourceLease<'_>) {
@@ -113,6 +144,41 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
     let (refused, work) = request!(&refused_key)
         .execute_in_program_report(&host, Policy::Execution(&zero))
         .into_parts();
+    let admission = admission_quote(&refused.err().expect("zero lease cannot open the call"));
+    assert_eq!(work, WorthQueryMutationHandlerWork::NotStarted);
+    // The lease funds the whole call, and principal resolution's native query
+    // completion reserves and releases a result bound larger than the scope
+    // predicate's retention before the handler. So the lease funds every
+    // owner before the handler in full, and the decision holds all of its
+    // room but what the projection keeps; each owner refusing before the
+    // retention quotes its share of that keep (MENTALITY §7).
+    let ((refused, work, admitted_only), _) = crate::lease_quote::learn(
+        0,
+        |keep| {
+            let lease = authority
+                .request_lease(lease_request(
+                    crate::lease_quote::DECLARED_BUDGET,
+                    CancellationToken::new(),
+                ))
+                .unwrap();
+            let (refused, work) =
+                with_decision_hold(crate::lease_quote::keep_at_decision(&lease, keep), || {
+                    request!(&refused_key)
+                        .execute_in_program_report(&host, Policy::Execution(&lease))
+                        .into_parts()
+                });
+            (refused, work, lease)
+        },
+        |(refused, _, _)| match refused.as_ref().err()? {
+            RequestDenial::Handler(MutationHandlerExecutionDenial::Projection(denial))
+                if denial.kind()
+                    != ProjectionKind::InvariantAdmission(InvariantKind::SourceRetentionDenied) =>
+            {
+                crate::lease_quote::allocation_shortfall(denial.allocation_denial()?)
+            }
+            _ => None,
+        },
+    );
     let denial = match refused {
         Err(RequestDenial::Handler(MutationHandlerExecutionDenial::Projection(denial))) => denial,
         Err(denial) => panic!("zero payload budget refused at an unexpected owner: {denial:?}"),
@@ -122,7 +188,11 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
         denial.kind(),
         ProjectionKind::InvariantAdmission(InvariantKind::SourceRetentionDenied)
     );
-    assert_memory_refusal(denial.allocation_denial().expect("original physical cause"));
+    // The decision holds all but the learned keep, so the retention has none.
+    assert_eq!(
+        assert_memory_refusal(denial.allocation_denial().expect("original physical cause")),
+        0
+    );
     let invariant = denial
         .invariant_denial()
         .expect("full scope retention refusal");
@@ -141,6 +211,7 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
         original.selected_commit()
     );
     assert_all_budget_available(&parent);
+    assert_eq!(admitted_only.charged_memory_bytes(), 0);
 
     let retained_key = 0xa110_0002;
     let mut retained_request = request!(&retained_key);
@@ -179,11 +250,56 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
         Preparation::Settled(_) => panic!("fresh System key must prepare"),
     };
     assert_all_budget_available(&parent);
+    // The commit call charges the same admission: a zero lease cannot open it.
     let Outcome::Commit(WorthQueryApplicationUncommitted::Denied(denial)) =
         candidate.commit(Policy::Execution(&zero))
     else {
-        panic!("provider backing refusal must remain public Uncommitted::Denied");
+        panic!("an unfunded commit call must remain public Uncommitted::Denied");
     };
+    assert_eq!(denial.stage(), CommitStage::ResourceAdmission);
+    assert!(
+        matches!(
+            denial.kind(),
+            CommitKind::ExecutionResource {
+                denial: Resource::MemoryLimit { requested, admitted: 0, level: WorthQueryMemoryLimitLevel::Policy },
+                ..
+            } if requested == admission
+        ),
+        "{denial:?}"
+    );
+    // The commit likewise charges its admission and provider plan before the
+    // read set; exactly those leave the read set no room. The commit runs no
+    // handler, so it runs on a tracked child whose owners charge what they
+    // keep rather than a share of the declared budget.
+    let ((denial, admitted_only), _) = crate::lease_quote::learn(
+        admission,
+        |funded| {
+            let lease = authority
+                .request_lease(lease_request(
+                    crate::lease_quote::DECLARED_BUDGET,
+                    CancellationToken::new(),
+                ))
+                .unwrap();
+            let mut system_retry = request!(&commit_key);
+            let candidate = match system_retry
+                .prepare_in_program(&host, Policy::SystemAllocation)
+                .expect("an unopened commit keeps the key fresh")
+            {
+                Preparation::Prepared(candidate) => candidate,
+                Preparation::Settled(_) => panic!("a refused commit call must not settle the key"),
+            };
+            let call = crate::lease_quote::tracked(&lease);
+            let Outcome::Commit(WorthQueryApplicationUncommitted::Denied(denial)) =
+                crate::lease_quote::with_room(&lease, funded, || {
+                    candidate.commit(Policy::Execution(&call))
+                })
+            else {
+                panic!("provider backing refusal must remain public Uncommitted::Denied");
+            };
+            (denial, lease)
+        },
+        |(denial, _)| crate::lease_quote::commit_shortfall(denial),
+    );
     assert_eq!(denial.kind(), CommitKind::ProviderRejected);
     assert_eq!(denial.stage(), CommitStage::DecisionReadSet);
     let failure = denial
@@ -193,6 +309,8 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
         failure.kind(),
         WorthQueryDecisionReadSetDenialKind::AllocationDenied
     );
+    // Earlier owners release their transient peaks before the read set, which
+    // refuses its own quote with the room they left.
     assert_memory_refusal(
         failure
             .allocation_denial()
@@ -204,13 +322,15 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
         original.selected_commit()
     );
     assert_all_budget_available(&parent);
+    assert_eq!(admitted_only.charged_memory_bytes(), 0);
 
     let committed_key = 0xa110_0004;
     let (committed, work) = request!(&committed_key)
         .execute_in_program_report(&host, Policy::Execution(&parent))
         .into_parts();
-    let Outcome::Committed { receipt, .. } = committed.expect("ordinary leased execution") else {
-        panic!("fresh lawful retention must commit");
+    let committed = committed.expect("ordinary leased execution");
+    let Outcome::Committed { receipt, .. } = committed else {
+        panic!("fresh lawful retention must commit: {committed:?}");
     };
     assert!(matches!(work, WorthQueryMutationHandlerWork::Captured(_)));
     assert_eq!(read_retention(runtime, branch), RETENTION);

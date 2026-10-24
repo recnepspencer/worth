@@ -32,6 +32,7 @@ pub use test_placement::{
     place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
     WorthQueryExecutionPlacementForTest,
 };
+mod caller_lease;
 mod serial_placement;
 mod test_authority;
 pub use test_authority::query_test_execution_authority_for_test;
@@ -128,22 +129,6 @@ impl<'a> QueryRequestExecution<'a> {
             declared_work,
             certified_seed: test_placement::certifying(),
             form,
-        }
-    }
-
-    /// The request's cancellation or elapsed deadline, if either happened.
-    pub(in crate::domain_computation::primary_graph) fn interruption(
-        &self,
-    ) -> Option<WorthQueryManagedComputationInterruption> {
-        if self.cancellation.is_cancelled() {
-            Some(WorthQueryManagedComputationInterruption::Cancelled)
-        } else if self
-            .deadline
-            .is_some_and(|deadline| std::time::Instant::now() >= deadline)
-        {
-            Some(WorthQueryManagedComputationInterruption::DeadlineExceeded)
-        } else {
-            None
         }
     }
 

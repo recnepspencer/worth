@@ -122,7 +122,7 @@ where
     {
         let scope = self.request_scope().clone();
         let runtime = self.request.application;
-        runtime.with_application_advancement(&scope, |phase| {
+        runtime.with_funded_application_advancement(&scope, allocation_policy, |phase| {
         let mut decision_work =
             worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted;
         let outcome = self.execute_performed_with_work::<Program, Root>(&phase,

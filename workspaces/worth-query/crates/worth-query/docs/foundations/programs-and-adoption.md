@@ -243,7 +243,8 @@ let outcome = host
 
 - The second argument is the request's `ExecutionAllocationPolicy`
   (`worth_query_host::facade::runtime`): `SystemAllocation` or
-  `Execution(&lease)`. There is no default.
+  `Execution(&lease)`. There is no default. Under `Execution(&lease)` the lane
+  runs as a controlled child of that lease, its one budget.
 - `execute_in_program` resolves the commit owner from the program carried by
   the request's exact branch. No caller-supplied revision or activation receipt
   takes part in selection.

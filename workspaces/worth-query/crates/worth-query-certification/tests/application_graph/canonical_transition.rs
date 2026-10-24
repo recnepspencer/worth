@@ -8,6 +8,8 @@
     reason = "this fixture compiles the authored grammar and declarations under its distinct transition schema"
 )]
 mod binding;
+#[path = "canonical_transition/capture_child.rs"]
+mod capture_child;
 #[path = "canonical_transition/derived_query.rs"]
 mod derived_query;
 #[path = "canonical_transition/edit.rs"]
