@@ -253,39 +253,78 @@ where
             .integration_handle();
         let candidate = handle.with_query_runtime_mut(&execution, |runtime, layout| {
             let workflow = layout.workflow();
-            let membership = runtime
-                .read_truth()
-                .visible_relations_of_kind(
-                    &execution,
-                    workflow.definition_node_relation,
-                    application_basis.snapshot_handle().version_id(),
-                )
-                .expect("certification fixture read request remains live")
+            let version = application_basis.snapshot_handle().version_id();
+            let published = |kind| {
+                runtime
+                    .read_truth()
+                    .visible_relations_of_kind(&execution, kind, version)
+                    .expect("certification fixture read request remains live")
+            };
+            let membership = published(workflow.definition_node_relation)
                 .into_iter()
                 .find(|relation| relation.source == definition.entity_id())
                 .expect("the published definition retains a node membership");
+            let lineage = published(workflow.lineage_definition_relation)
+                .into_iter()
+                .find(|relation| relation.target == definition.entity_id())
+                .expect("the published definition retains its lineage");
             let source = CreatedEntityRef {
                 partition_id: membership.target.partition_id,
                 kind_id: workflow.definition.entity_kind,
                 client_key: ClientKey::raw("workflow-new-definition-attachment"),
             };
-            let batch = WorkerIntentBatch::new("workflow-existing-node-attachment")
-                .push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
-                    partition_id: source.partition_id,
-                    kind_id: source.kind_id,
-                    client_key: source.client_key.clone(),
+            let start = CreatedEntityRef {
+                partition_id: membership.target.partition_id,
+                kind_id: workflow.node.entity_kind,
+                client_key: ClientKey::raw("workflow-new-definition-start"),
+            };
+            let relation = |name: &str, kind_id, source, target| {
+                MutationIntent::Create(CreateIntent::Relation(RelationSpec {
+                    partition_id: membership.relation_id.partition_id,
+                    kind_id,
+                    client_key: ClientKey::raw(name),
+                    source,
+                    target,
                     fields: AspectFieldPatch::default(),
-                })))
-                .push(MutationIntent::Create(CreateIntent::Relation(
-                    RelationSpec {
-                        partition_id: membership.relation_id.partition_id,
-                        kind_id: workflow.definition_node_relation,
-                        client_key: ClientKey::raw("workflow-existing-node-attachment"),
-                        source: EntityReference::Created(source),
-                        target: EntityReference::Existing(membership.target),
-                        fields: AspectFieldPatch::default(),
-                    },
-                )));
+                }))
+            };
+            // The new definition is otherwise well formed: it has a lineage
+            // and its own start member. Attaching the published node is then
+            // the only relation-integrity defect the commit can refuse.
+            let mut batch = WorkerIntentBatch::new("workflow-existing-node-attachment");
+            for created in [&source, &start] {
+                batch = batch.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+                    partition_id: created.partition_id,
+                    kind_id: created.kind_id,
+                    client_key: created.client_key.clone(),
+                    fields: AspectFieldPatch::default(),
+                })));
+            }
+            let batch = batch
+                .push(relation(
+                    "workflow-new-definition-lineage",
+                    workflow.lineage_definition_relation,
+                    EntityReference::Existing(lineage.source),
+                    EntityReference::Created(source.clone()),
+                ))
+                .push(relation(
+                    "workflow-new-definition-start-member",
+                    workflow.definition_node_relation,
+                    EntityReference::Created(source.clone()),
+                    EntityReference::Created(start.clone()),
+                ))
+                .push(relation(
+                    "workflow-new-definition-start",
+                    workflow.definition_start_relation,
+                    EntityReference::Created(source.clone()),
+                    EntityReference::Created(start),
+                ))
+                .push(relation(
+                    "workflow-existing-node-attachment",
+                    workflow.definition_node_relation,
+                    EntityReference::Created(source),
+                    EntityReference::Existing(membership.target),
+                ));
             let mut transaction = runtime
                 .begin_branch_transaction(
                     product.relational_basis(),
