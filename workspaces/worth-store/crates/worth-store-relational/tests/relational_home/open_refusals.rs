@@ -10,7 +10,7 @@ use worth_execution::ExecutionRequest;
 use worth_relational::facade::runtime::RelationalRuntimeApi;
 use worth_store::physical_runtime::{
     AdmittedPhysicalRecordFormat, AdmittedRecordPlacementPolicy, AnchoredRecordName,
-    AnchoredRecordPublication, CanonicalCommitPublication, ManifestEntryCapacity,
+    AnchoredRecordPublication, ManifestEntryCapacity, OrderedJournalPublication,
     PhysicalMutationDeadline, PhysicalRecordFormatDeclaration, PhysicalRecordPlacementPolicy,
 };
 use worth_store_relational::{
@@ -278,7 +278,7 @@ fn a_journal_entry_store_accepts_but_relational_cannot_readmit_refuses() {
     home.certification_serving()
         .canonical_commits()
         .unwrap()
-        .publish(CanonicalCommitPublication::new(
+        .publish(OrderedJournalPublication::new(
             6,
             bytes,
             home_placement(),
