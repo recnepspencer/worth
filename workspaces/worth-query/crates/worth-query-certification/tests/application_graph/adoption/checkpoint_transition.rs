@@ -12,6 +12,11 @@ use worth_query_host::facade::application_installation::ApplicationBuildIdentity
 use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 use worth_query_host::facade::{application_installation as installation, primary_graph};
 
+// These courts judge target laws, not selection cost. Selection revalidates
+// every recovered relation as well as every entity (3eb00a6dc4), so its work
+// grows with the fixture's rows times its kinds; the ceiling is headroom.
+const SELECTION_WORK: usize = 65_536;
+
 #[test]
 fn checkpoint_transition_target_rule_rejects_retained_predecessor_only_value() {
     let host = publish_on_first_program();
@@ -47,7 +52,8 @@ fn checkpoint_transition_target_rule_rejects_retained_predecessor_only_value() {
         host_limits(),
         source.clone(),
         predecessor,
-        installation::WorthQueryCheckpointTransitionResources::bounded(512, 32, 8192).unwrap(),
+        installation::WorthQueryCheckpointTransitionResources::bounded(SELECTION_WORK, 32, 8192)
+            .unwrap(),
         CapturePolicy::SystemAllocation,
         |writer, _| {
             authored = true;
@@ -112,7 +118,8 @@ fn checkpoint_transition_target_rule_accepts_complete_retained_and_created_state
         host_limits(),
         source,
         predecessor,
-        installation::WorthQueryCheckpointTransitionResources::bounded(512, 32, 8192).unwrap(),
+        installation::WorthQueryCheckpointTransitionResources::bounded(SELECTION_WORK, 32, 8192)
+            .unwrap(),
         CapturePolicy::SystemAllocation,
         |writer, _| {
             writer.bind_entity(
