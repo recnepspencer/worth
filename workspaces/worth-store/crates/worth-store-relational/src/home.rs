@@ -31,6 +31,7 @@ use worth_store::physical_runtime::{CanonicalCommitResolution, ServingPhysicalRu
 
 use crate::home_descriptor::HomeDescriptor;
 use crate::journal_medium::StoreJournalMedium;
+use crate::physical_store::PhysicalOpening;
 use crate::recovered_history::RelationalStoreJournalRefusal;
 use crate::{checkpoint_record, home_descriptor, physical_store, recovered_history};
 
@@ -51,8 +52,16 @@ impl RelationalStoreHome {
         request: RelationalStoreHomeRequest,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, Refusal> {
+        Self::open_through(request, PhysicalOpening::production(), execution)
+    }
+
+    fn open_through(
+        request: RelationalStoreHomeRequest,
+        opening: PhysicalOpening,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Refusal> {
         let (location, builder) = request.into_parts();
-        let serving = open_physical_store(&location)?;
+        let serving = open_physical_store(&location, opening)?;
         Self::admit(serving, builder, execution)
     }
 
@@ -105,11 +114,14 @@ impl RelationalStoreHome {
     }
 }
 
-fn open_physical_store(location: &Path) -> Result<ServingPhysicalRuntime, Refusal> {
+fn open_physical_store(
+    location: &Path,
+    opening: PhysicalOpening,
+) -> Result<ServingPhysicalRuntime, Refusal> {
     if request::location_is_unused(location)? {
-        physical_store::initialize(location).map_err(Refusal::Physical)
+        physical_store::initialize(location, opening).map_err(Refusal::Physical)
     } else {
-        physical_store::recover(location).map_err(Refusal::Physical)
+        physical_store::recover(location, opening).map_err(Refusal::Physical)
     }
 }
 
