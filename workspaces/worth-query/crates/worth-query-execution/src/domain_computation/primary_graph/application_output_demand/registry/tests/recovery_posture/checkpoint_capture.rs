@@ -4,9 +4,17 @@ use crate::domain_computation::primary_graph::application_output_demand::WorthQu
 #[test]
 fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
+    // Accepted capture names the producing build (2296afc1a5): a Ready whose
+    // receipt carries none is not reusable and is never captured.
+    let implementation =
+        worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint(
+            [0x11; 16], [0x22; 32],
+        )
+        .unwrap();
     let idempotency = receipt
         .idempotency_binding()
-        .bind_source_partition(&[17; 32]);
+        .bind_source_partition(&[17; 32])
+        .bind_producing_implementation(implementation);
     let receipt = receipt.with_idempotency_binding_for_test(idempotency);
     let occurrence = receipt.product_branch().occurrence();
     let registry = WorthQueryOutputDemandRegistry::default();
@@ -64,6 +72,9 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     assert_eq!(accepted[1].producer.as_str(), "z-producer");
     assert_eq!(accepted[0].source, a_source);
     assert_eq!(accepted[1].source, z_source);
+    assert!(accepted
+        .iter()
+        .all(|identity| identity.implementation == implementation));
 }
 
 #[test]
