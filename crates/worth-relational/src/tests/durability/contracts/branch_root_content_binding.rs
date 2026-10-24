@@ -253,7 +253,7 @@ fn selected_main_checkpoint(
         .expect("production recovery plan selects the main branch cell")
 }
 
-fn basis_target(
+pub(super) fn basis_target(
     checkpoint: &crate::branch::RelationalBranchCellCheckpoint,
 ) -> crate::branch::RelationalBranchTarget {
     match checkpoint.observation.target() {
@@ -274,7 +274,7 @@ fn current_main_descriptor(
     }
 }
 
-fn replace_descriptor(
+pub(super) fn replace_descriptor(
     checkpoint: &mut crate::branch::RelationalBranchCellCheckpoint,
     descriptor: crate::branch::RelationalBranchRootDescriptor,
 ) {
@@ -294,7 +294,7 @@ fn replace_descriptor(
     .expect("descriptive corruption remains structurally well formed");
 }
 
-fn assert_corrupt_recovery_leaves_no_recovered_state(
+pub(super) fn assert_corrupt_recovery_leaves_no_recovered_state(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     plan: RecoveryPlan,
     detail: &str,

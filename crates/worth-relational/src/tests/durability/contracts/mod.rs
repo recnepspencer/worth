@@ -3,6 +3,7 @@ mod branch_and_aspect_history;
 mod branch_root_checkpoint;
 mod branch_root_content_binding;
 mod branch_root_schema_binding;
+mod branch_root_shared_target_binding;
 mod checkpoint_recovery;
 mod derived_index_checkpoint;
 mod descriptor_continuity;
