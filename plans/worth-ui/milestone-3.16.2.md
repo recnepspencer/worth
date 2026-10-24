@@ -268,10 +268,14 @@ resize trace writes each submitted frame's counts. Budget tests over the
 deterministic glyph, byte, and insert counts, not wall-clock timings, gate per-frame work while this
 milestone develops; timings are qualified once, at the end.
 Digested bytes also count work the presenting thread does for the
-application's own threads, such as a late startup Query observation, which a
-loaded machine can delay into a measured step. The offscreen drag repeats each
-budgeted transition, and the byte budget holds the lesser of the two identical
-frames.
+application's own threads, such as presenting a Query observation. Pulse
+therefore reads its Query value and theme preference while it is prepared, as
+it already reads its source and intent input, so startup presents them on the
+host's own turns and settles with no observation work left on its threads. The
+offscreen drag fails if an application wake is posted once startup settles,
+rather than wait out a quiet window. It makes each budgeted transition twice
+and holds every count of both frames to the ceiling, and the repeat's digested
+bytes to the first frame's.
 
 Acceptance commits those prepared results and retires predecessor resources only
 after physical completion. Pre-effect rejection preserves accepted application

@@ -3,15 +3,16 @@
 //! the work the host does today: a change that does more fails, and a change
 //! that does less lowers the ceiling with it.
 //!
-//! Digested bytes also count work the presenting thread does for the
-//! application's own threads, such as a late startup Query observation
-//! (see `worth_ui_host_contract::presentation_work`). Startup settles on a
-//! quiet window, which a loaded machine can outlast, so that one-off work can
-//! land in a measured step. The drag therefore repeats both transitions, and
-//! the byte ceiling holds the lesser of the two identical frames: one-off
-//! work lands in at most one of them, while work every frame does stays in
-//! both. Glyph and insert counts are charged on the glyph path alone and are
-//! held on the first frame.
+//! Digested bytes count everything the presenting thread does between two
+//! frames, including work it does for the application's own threads, such as
+//! presenting a Query observation (see
+//! `worth_ui_host_contract::presentation_work`). The application observes its
+//! Query value and theme preference while it is prepared, so startup presents
+//! them before the host settles and none of that work can reach a measured
+//! step. The drag makes each transition twice, and every count of both
+//! frames is held to the ceiling. The second frame repeats the first, so its
+//! digested bytes may not exceed the first's: work that falls in only one of
+//! them is a defect to remove, not noise to discount.
 //!
 //! Milestone 3.16.2 lowers these ceilings. Block-level retained text takes a
 //! move-only frame to zero glyphs in every text stage, and a rewrap frame to
@@ -107,23 +108,31 @@ fn only_frame(step: &Step) -> &Counts {
     frame
 }
 
-/// Holds `first` to `ceiling`, except digested bytes, which hold the lesser
-/// of `first` and `repeat`, the same transition made again.
+/// Holds `first` and `repeat`, the same transition made again, each to
+/// `ceiling`, and the repeat's digested bytes to the first's.
 fn assert_within(first: &Step, repeat: &Step, ceiling: &Counts) {
     let frame = only_frame(first);
     let repeated = only_frame(repeat);
-    let mut counts = *frame;
-    counts[STAGES] = frame[STAGES].min(repeated[STAGES]);
-    let names = UiPresentationWorkStage::ALL
-        .iter()
-        .map(|stage| stage.name())
-        .chain(["digested bytes", "map inserts"]);
-    for ((name, count), ceiling) in names.zip(&counts).zip(ceiling) {
-        assert!(
-            count <= ceiling,
-            "{name}: {count} exceeds the ceiling {ceiling}; frame {frame:?}, repeat {repeated:?}"
-        );
+    for (which, counts) in [("first", frame), ("repeat", repeated)] {
+        let names = UiPresentationWorkStage::ALL
+            .iter()
+            .map(|stage| stage.name())
+            .chain(["digested bytes", "map inserts"]);
+        for ((name, count), ceiling) in names.zip(counts).zip(ceiling) {
+            assert!(
+                count <= ceiling,
+                "{which} {name}: {count} exceeds the ceiling {ceiling}; \
+                 frame {frame:?}, repeat {repeated:?}"
+            );
+        }
     }
+    assert!(
+        repeated[STAGES] <= frame[STAGES],
+        "the repeat digests {} bytes, more than the first frame's {}; \
+         frame {frame:?}, repeat {repeated:?}",
+        repeated[STAGES],
+        frame[STAGES]
+    );
 }
 
 #[test]
