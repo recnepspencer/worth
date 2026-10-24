@@ -2998,6 +2998,41 @@ prepares and writes the actual effects through the same typed mutation path.
 Source admission, output contracts, currentness and atomic publication remain
 enforced without a producer resource forecast.
 
+#### Typed producer domain denial
+
+Every provider declares `type DenialValue` in one of three forms:
+
+- a canonical readable scalar binding whose `Value` is exactly the operation's
+  `Denial`;
+- `WorthQueryProjectedProducerDenial<P>`, where `P` implements
+  `WorthQueryProducerDenialProjection<Denial>` with a binding and a `project`
+  from each denial onto that binding's value, for a denial wider than the value
+  its callers read. `project` returns `None` for a denial without such a value;
+- the explicit `WorthQueryUndeclaredProducerDenial`.
+
+A declared binding needs a finite wire maximum. Installation refuses one
+without it as `ProducerDenialValueUnbounded`.
+A foreign denial type declares its binding through the entry's delegated
+canonical contract, like a foreign invariant refusal.
+
+When the handler returns `HandlerResult::DomainDenied(denial)`, the
+`ProducerDomainDenied` demand denial carries the declared binding's canonical
+bytes next to `domain_reason()`. The caller decodes them with
+`decode_producer_denial::<Binding>()`. `producer_denial_bytes()` returns the
+exact bytes, and diagnostic clones keep them. Decoding never returns an empty or
+guessed value:
+
+- another binding returns `TypeMismatch` before its decoder runs;
+- an undeclared producer returns `Undeclared`;
+- a projection that gives this denial no value returns `Absent`;
+- other demand denials return `NotDomainDenied`;
+- if the declared binding could not encode this denial, for example because it
+  exceeds the wire maximum, the denial stays `ProducerDomainDenied` and decoding
+  returns `EncodingRefused` with the cause.
+
+The binding is the authority for the value. `domain_reason()` is diagnostic text
+only.
+
 Declare an artifact's output, locality, retention, succession, required posture,
 producer family, dependencies, reuse rule and stopped outcome through
 `ApplicationDerivedArtifact`. Current and restored output reuse checks original

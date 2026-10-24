@@ -70,7 +70,7 @@ pub struct RetentionAssessmentPublished {
     retention_days: u64,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, worth_foundational::facade::WorthValue)]
 pub enum RetentionAssessmentDenial {
     SourceChanged,
     NoRetentionPeriod,
@@ -81,6 +81,10 @@ worth_query_structured_value_binding!(pub RetentionAssessmentInputBinding for Re
 });
 worth_query_structured_value_binding!(pub RetentionAssessmentPublishedBinding for RetentionAssessmentPublished {
     identity: "worth.query.certification.retention-assessment.published.v1"
+});
+worth_query_decl::facade::worth_query_value_binding!(pub RetentionAssessmentDenialValue for RetentionAssessmentDenial {
+    identity: "worth.query.certification.retention-assessment.denial-value.v1", scalar: String,
+    canonical: worth_query_decl::facade::application_schema::ValueDecodeBounds::new(64, 32, 1, 2),
 });
 worth_query_structured_value_binding!(pub RetentionAssessmentDenialBinding for RetentionAssessmentDenial {
     identity: "worth.query.certification.retention-assessment.denial.v1"
@@ -315,6 +319,7 @@ impl WorthQueryApplicationProducerBinding<DocumentRetentionSchema> for Retention
 impl WorthQueryApplicationProducerProvider<DocumentRetentionSchema, RetentionAssessmentProducer>
     for RetentionAssessmentProvider
 {
+    type DenialValue = RetentionAssessmentDenialValue;
     const SEMANTIC_IDENTITY: &'static str =
         "worth.query.certification.retention-assessment.provider.v1";
 

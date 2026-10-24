@@ -294,6 +294,7 @@ fn terminal_owner(host: &Host, recover_source: bool) -> Terminal {
                     denial.domain_reason(),
                     Some("A zero-day source has no assessable retention period.")
                 );
+                assert_declared_domain_value(&denial);
                 assert_eq!(denial.recovery_posture(), worth_query_host::facade::primary_graph::WorthQueryOutputDemandRecoveryPosture::Terminal);
                 return operation;
             }
@@ -306,6 +307,35 @@ fn terminal_owner(host: &Host, recover_source: bool) -> Terminal {
             }
         }
     }
+}
+
+/// The real handler's typed refusal crosses the demand boundary as the
+/// provider's declared value: its binding decodes it exactly, a diagnostic
+/// copy keeps the same bytes, and any other binding is refused by identity.
+fn assert_declared_domain_value(
+    denial: &worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenial,
+) {
+    use crate::document_retention_model::assessment_output::{
+        RetentionAssessmentDenial, RetentionAssessmentDenialValue,
+    };
+    use worth_query_host::facade::primary_graph::WorthQueryProducerDenialDecodeDenial as Decode;
+    assert_eq!(
+        denial.decode_producer_denial::<RetentionAssessmentDenialValue>(),
+        Ok(RetentionAssessmentDenial::NoRetentionPeriod)
+    );
+    let bytes = denial
+        .producer_denial_bytes()
+        .expect("the declared value crosses as canonical bytes");
+    assert_eq!(denial.clone().producer_denial_bytes(), Some(bytes));
+    assert!(matches!(
+        denial.decode_producer_denial::<
+            worth_query_host::facade::declaration::application_schema::U64ApplicationValueBinding,
+        >(),
+        Err(Decode::TypeMismatch {
+            observed: "worth.query.certification.retention-assessment.denial-value.v1",
+            ..
+        })
+    ));
 }
 
 fn refuse_foreign_and_cancelled(host: &Host, terminal: Terminal) -> Terminal {

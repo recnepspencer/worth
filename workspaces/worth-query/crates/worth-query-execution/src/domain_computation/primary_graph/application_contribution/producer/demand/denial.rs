@@ -2,6 +2,7 @@ pub(super) mod cleanup_custody;
 mod diagnostic_copy;
 mod invariant_refusal;
 mod kind;
+mod producer_value;
 mod publication_stale;
 pub use kind::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture};
 pub(in crate::domain_computation::primary_graph) use publication_stale::ProducerPublicationStale;
@@ -20,6 +21,7 @@ pub struct WorthQueryOutputDemandDenial {
     cleanup: Option<cleanup_custody::DemandCleanupCustody>,
     pub(super) subject: std::borrow::Cow<'static, str>,
     pub(super) domain_reason: Option<&'static str>,
+    domain_value: Option<Box<super::super::WorthQueryProducerDenialValue>>,
     pub(in crate::domain_computation::primary_graph) readmission_failure: Option<&'static str>,
     pub(in crate::domain_computation::primary_graph) recovery_posture:
         WorthQueryOutputDemandRecoveryPosture,
@@ -298,6 +300,7 @@ impl WorthQueryOutputDemandDenial {
             evidence: None,
             cleanup: None,
             domain_reason: None,
+            domain_value: None,
             readmission_failure: None,
             subject: subject.into(),
             recovery_posture,
@@ -307,12 +310,14 @@ impl WorthQueryOutputDemandDenial {
     pub(in crate::domain_computation::primary_graph) fn producer_domain_denied(
         subject: impl Into<std::borrow::Cow<'static, str>>,
         reason: Option<&'static str>,
+        value: super::super::WorthQueryProducerDenialValue,
     ) -> Self {
         let mut denial = Self::new(
             WorthQueryOutputDemandDenialKind::ProducerDomainDenied,
             subject,
         );
         denial.domain_reason = reason;
+        denial.domain_value = Some(Box::new(value));
         denial
     }
 
@@ -372,6 +377,8 @@ impl worth_execution::ChargedBytes for WorthQueryOutputDemandDenial {
             std::borrow::Cow::Borrowed(_) => 0,
             std::borrow::Cow::Owned(text) => text.capacity() as u64,
         };
-        (std::mem::size_of_val(self.kind.as_ref()) as u64).saturating_add(text)
+        (std::mem::size_of_val(self.kind.as_ref()) as u64)
+            .saturating_add(text)
+            .saturating_add(self.producer_denial_value_charged_bytes())
     }
 }

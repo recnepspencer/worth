@@ -96,14 +96,19 @@ impl PreparedProducerExecutionOutcome {
 pub(super) fn completed_handler<Value, DomainDenial>(
     identity: &'static str,
     result: HandlerResult<Value, DomainDenial>,
-    domain_reason: impl FnOnce(&DomainDenial) -> Option<&'static str>,
+    declared_domain_denial: impl FnOnce(
+        &DomainDenial,
+    ) -> (
+        Option<&'static str>,
+        super::super::WorthQueryProducerDenialValue,
+    ),
 ) -> Result<Value, WorthQueryOutputDemandDenial> {
     match result {
         HandlerResult::Completed(value) => Ok(value),
         HandlerResult::DomainDenied(domain_denial) => {
+            let (reason, value) = declared_domain_denial(&domain_denial);
             Err(WorthQueryOutputDemandDenial::producer_domain_denied(
-                identity,
-                domain_reason(&domain_denial),
+                identity, reason, value,
             ))
         }
         HandlerResult::ExecutionDenied(error) => Err(handler_execution_failed(identity, error)),

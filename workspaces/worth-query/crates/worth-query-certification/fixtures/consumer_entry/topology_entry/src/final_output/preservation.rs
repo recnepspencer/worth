@@ -328,6 +328,7 @@ impl<Schema: TopologySchemaBinding>
     WorthQueryApplicationProducerProvider<Schema, PlanarFinalPreserveProducer<Schema>>
     for PlanarFinalOutputProvider
 {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str =
         "worth.query.certification.planar-final-preserve-provider.v1";
 

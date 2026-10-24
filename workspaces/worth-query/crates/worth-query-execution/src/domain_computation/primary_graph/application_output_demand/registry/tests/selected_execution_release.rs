@@ -57,6 +57,10 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
                 WorthQueryOutputDemandDenial::producer_domain_denied(
                     "the original producer".to_owned(),
                     Some("original domain refusal"),
+                    crate::domain_computation::primary_graph::WorthQueryProducerDenialValue::DeclaredValue {
+                        value_identity: "original.domain-refusal.v1",
+                        bytes: b"original".to_vec(),
+                    },
                 )
             } else {
                 WorthQueryOutputDemandDenial::new(kind.clone(), "the original producer".to_owned())

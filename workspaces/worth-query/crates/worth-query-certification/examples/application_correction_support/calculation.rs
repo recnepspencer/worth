@@ -190,6 +190,7 @@ impl WorthQueryApplicationProducerBinding<NumericSchema> for Producer {
     const REUSE_POLICY: &'static str = "exact-source";
 }
 impl WorthQueryApplicationProducerProvider<NumericSchema, Producer> for Provider {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str = "numeric-correction.calculation-provider.v1";
     fn operation_input(&self, row: &query::Row) -> Calculate {
         Calculate {

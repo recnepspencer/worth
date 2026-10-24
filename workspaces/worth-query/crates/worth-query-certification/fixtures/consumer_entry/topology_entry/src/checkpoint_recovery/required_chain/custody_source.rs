@@ -64,6 +64,7 @@ impl<Schema: TopologySchemaBinding>
     WorthQueryApplicationProducerProvider<Schema, ValueSourceProducer<Schema>>
     for ValueSourceProvider
 {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str =
         "worth.query.certification.consumed-value-source-provider.v1";
     fn operation_input(&self, source: &PlanarReadResult) -> ValueSourceInput {

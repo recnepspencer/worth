@@ -191,7 +191,7 @@ where
                         .into_outcome()
                         .map_err(|error| execution_failed(Binding::IDENTITY, error))?;
                     completed_handler(Binding::IDENTITY, result, |denial| {
-                        provider.domain_denial_reason(denial)
+                        declared_domain_denial::<Schema, Binding>(&provider, denial)
                     })
                     .map(|_| unreachable!("a refused preparation cannot produce a candidate"))
                     .map_err(ProducerExecutionStop::ExecutionStopped)
@@ -212,7 +212,7 @@ where
                         .map_err(|cause| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "producer completion phase"))?)
                     .into_outcome()
                     .map_err(|error| execution_failed(Binding::IDENTITY, error))?,
-                |denial| provider.domain_denial_reason(denial),
+                |denial| declared_domain_denial::<Schema, Binding>(&provider, denial),
             )?;
             let (mut program, _) = completed.into_parts(); // Retries bind the complete typed dependency set.
             let identity_execution = phase.execution_request_for(&runtime.product_runtime)
@@ -271,4 +271,27 @@ where
                 .map_err(ProducerExecutionStop::ExecutionStopped)
         },
     ).with_inputs(inputs))
+}
+
+/// The rejecting provider's diagnostic words beside the value its declared
+/// binding encodes; the binding, not the words, is the caller's authority.
+fn declared_domain_denial<Schema, Binding>(
+    provider: &Binding::Provider,
+    denial: &<Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Denial,
+) -> (
+    Option<&'static str>,
+    crate::domain_computation::primary_graph::WorthQueryProducerDenialValue,
+)
+where
+    Schema: ApplicationSchema + 'static,
+    Binding: WorthQueryApplicationProducerBinding<Schema>,
+{
+    use crate::domain_computation::primary_graph::WorthQueryProducerDenialDeclaration;
+    type Declaration<Schema, Binding> = <<Binding as WorthQueryApplicationProducerBinding<
+        Schema,
+    >>::Provider as WorthQueryApplicationProducerProvider<Schema, Binding>>::DenialValue;
+    (
+        provider.domain_denial_reason(denial),
+        Declaration::<Schema, Binding>::declared_value(denial),
+    )
 }

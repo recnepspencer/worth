@@ -37,6 +37,7 @@ impl WorthQueryApplicationProducerBinding<Schema> for Producer {
         ));
 }
 impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str = "courtroom-counted-dependent-provider";
     fn operation_input(
         &self,
