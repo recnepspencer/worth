@@ -45,6 +45,7 @@ pub(super) fn plan_group(
 > {
     let mut pending = admitted.into_iter();
     let mut planned = Vec::new();
+    let mut anchors = std::collections::BTreeSet::new();
     let mut first = true;
     while let Some((prepared, group)) = pending.next() {
         let disposition = if first {
@@ -59,6 +60,7 @@ pub(super) fn plan_group(
             next_lsn,
             artifact.clone(),
             disposition,
+            &mut anchors,
         ) {
             Ok(member) => {
                 frontier = member.mutation().resulting_frontier();
@@ -109,6 +111,7 @@ fn plan_member(
     start: LogSequenceNumber,
     artifact: ArtifactTreeFile,
     disposition: PhysicalWalFrameWriteDisposition,
+    anchors: &mut std::collections::BTreeSet<worth_store_physical_format::RecordAnchorName>,
 ) -> Result<
     WalBarrierMember<WalRangeReservedPhysicalMutation>,
     (
@@ -145,6 +148,22 @@ fn plan_member(
         mut root,
         context,
     } = prepared.into_parts();
+    if root
+        .recovery_record_anchor_advance()
+        .is_some_and(|advance| !anchors.insert(advance.name()))
+    {
+        let prepared = PreparedPhysicalMutation::from_planned_parts(PlannedPhysicalMutationParts {
+            admission,
+            batch,
+            data,
+            root,
+            context,
+        });
+        return Err((
+            AdmittedPhysicalDurabilityGroupMember::from_parts(prepared, group),
+            PhysicalWalReservationDenial::RecordAnchorConflict,
+        ));
+    }
     let data = match data.bind(lsn_range) {
         Ok(data) => data,
         Err((data, denial)) => {

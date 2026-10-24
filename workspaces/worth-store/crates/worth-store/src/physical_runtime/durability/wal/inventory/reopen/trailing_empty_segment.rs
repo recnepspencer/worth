@@ -54,6 +54,15 @@ pub(super) fn separate(
     }))
 }
 
+/// Removes a never-written origin segment once the empty inventory it leaves
+/// has been admitted.
+pub(super) fn remove_origin(
+    tree: &ArtifactTreeMedia<'_>,
+    origin: Option<TrailingEmptySegment>,
+) -> Result<(), PhysicalWalOpenFailure> {
+    origin.map_or(Ok(()), |origin| origin.remove_durably(tree))
+}
+
 impl TrailingEmptySegment {
     pub(super) fn remove_durably(
         self,

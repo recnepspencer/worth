@@ -6,8 +6,11 @@ mod command_basis;
 mod disposition;
 mod eligibility;
 mod execution;
+mod obligation_discharge;
 mod performed_removal;
 mod plan;
+pub(crate) use obligation_discharge::{requires_republication, MAXIMUM_PRIOR_OBLIGATIONS};
+mod residue_failure;
 mod staging_residue;
 
 pub(crate) use cancellation::{after_action, before_first};

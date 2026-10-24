@@ -61,7 +61,8 @@ impl CanonicalCommitJournal<'_> {
                 payload_bytes: entry.payload_bytes,
             });
         }
-        let bytes = read_record(&reader, persisted(entry.record))?;
+        let limit = MAXIMUM_HEADER_BYTES as u64 + entry.payload_bytes;
+        let bytes = read_record(&reader, persisted(entry.record), limit)?;
         let header = JournalRecordHeader::decode(&bytes, self.name, Some(bytes.len() as u64))
             .map_err(|_| CanonicalCommitReadFailure::Damaged)?;
         let payload = bytes[header.encoded_bytes()..].to_vec();
@@ -155,7 +156,8 @@ impl CanonicalCommitJournal<'_> {
         position: u64,
     ) -> Result<CanonicalCommitEntry, CanonicalCommitReadFailure> {
         let entry = self.entry_from(reader, anchor.record(), position)?;
-        let bytes = read_record(reader, anchor.record())?;
+        let limit = MAXIMUM_HEADER_BYTES as u64 + entry.payload_bytes;
+        let bytes = read_record(reader, anchor.record(), limit)?;
         if <[u8; 32]>::from(Sha256::digest(&bytes)) != anchor.record_payload_sha256() {
             return Err(CanonicalCommitReadFailure::Damaged);
         }
@@ -212,9 +214,11 @@ pub(super) fn read_header(
         .map_err(|_| CanonicalCommitReadFailure::Damaged)
 }
 
+/// Reads a whole record, refusing one longer than its header declared.
 fn read_record(
     reader: &PhysicalRecordReader,
     record: PersistedRecordIdentity,
+    maximum_bytes: u64,
 ) -> Result<Vec<u8>, CanonicalCommitReadFailure> {
     let mut session = open(reader, record)?;
     let mut bytes = Vec::new();
@@ -225,6 +229,9 @@ fn read_record(
             .map_err(CanonicalCommitReadFailure::Stream)?;
         if read == 0 {
             return Ok(bytes);
+        }
+        if bytes.len() as u64 + read as u64 > maximum_bytes {
+            return Err(CanonicalCommitReadFailure::Damaged);
         }
         bytes.extend_from_slice(&chunk[..read]);
     }

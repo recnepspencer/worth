@@ -89,6 +89,19 @@ impl PublicationState {
         &self.authority.media
     }
 
+    /// Whether the dead runtime left obligations that only recovery's own
+    /// root-protocol publication can settle. A damaged listing is reported by
+    /// cleanup, which refuses it.
+    pub(super) fn prior_effects_unproven(&self) -> bool {
+        self.coordination
+            .owner()
+            .prior_physical_work_obligations(
+                &self.authority.media,
+                crate::cleanup::MAXIMUM_PRIOR_OBLIGATIONS,
+            )
+            .is_ok_and(|obligations| crate::cleanup::requires_republication(&obligations))
+    }
+
     pub(super) const fn planned_effects(&self) -> u64 {
         self.quiescence.publication_commands()
     }

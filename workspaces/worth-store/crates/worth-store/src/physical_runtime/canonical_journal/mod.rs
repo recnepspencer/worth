@@ -145,6 +145,9 @@ pub enum CanonicalCommitPublicationFailure {
     ProvenNoEffect(crate::physical_runtime::ProvenNoEffectPhysicalMutation),
     /// The publication may or may not be durable.
     Indeterminate(crate::physical_runtime::IndeterminatePhysicalMutation),
+    /// The mutation completed but did not report exactly one record. It may
+    /// be durable; `resolve` establishes its fate after reopen.
+    CompletedWithoutRecord,
     /// Reading the current head failed before any effect.
     Read(CanonicalCommitReadFailure),
 }
@@ -176,6 +179,7 @@ impl std::fmt::Debug for CanonicalCommitPublicationFailure {
                 .debug_struct("Indeterminate")
                 .field("stage", &fate.stage())
                 .finish(),
+            Self::CompletedWithoutRecord => f.write_str("CompletedWithoutRecord"),
             Self::Read(failure) => f.debug_tuple("Read").field(failure).finish(),
         }
     }

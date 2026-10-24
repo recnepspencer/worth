@@ -25,7 +25,7 @@ pub(crate) fn publish_recovery(
     let mut protocol = expectation.root_protocol();
     let mut staging_generation = expectation.staging_generation();
     if candidates.is_empty() {
-        match catalog_repair::plan(state.media(), &expectation) {
+        match catalog_repair::plan(state.media(), &expectation, state.prior_effects_unproven()) {
             Ok(None) => return state.publish_preexisting(expectation),
             Ok(Some(repair)) => {
                 candidates = repair.candidates;

@@ -1,19 +1,26 @@
-//! Completion of a root-protocol replacement the dead runtime interrupted
-//! after its selectors but before its catalog.
+//! Republication of the selected root when recovery would otherwise publish
+//! nothing but the root protocol is unsettled.
 //!
 //! Recovery selects through the current selector; an ordinary open trusts the
-//! bootstrap catalog. When the selected root needs no new publication but the
-//! catalog still names an older generation, recovery republishes the selected
-//! root: the on-disk selectors verbatim and a catalog naming the selected
-//! generation, through its ordinary publication command.
+//! bootstrap catalog. Two states need recovery's own root-protocol publication
+//! even when no new root is due:
+//!
+//! - the dead runtime replaced its selectors but not its catalog, so the
+//!   catalog names the previous selector's generation; and
+//! - the dead runtime left physical-work obligations, so its renames and
+//!   synchronizations are unproven until recovery performs its own.
+//!
+//! The republication is the selected root manifest and both selectors exactly
+//! as recovery admitted them, and a catalog naming the selected generation,
+//! through recovery's ordinary publication command.
 
 use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::{
     PhysicalRecoveryPublicationCandidate, RecoveryRootProtocolPublicationPlan,
 };
 use worth_store_physical_format::{
-    BootstrapCatalog, CurrentRootCatalogEntry, CurrentRootCatalogGeneration, RecordArtifactFile,
-    RootSelectorRole,
+    BootstrapCatalog, CurrentRootCatalogEntry, CurrentRootCatalogGeneration,
+    DurablePhysicalRootManifest, DurableRootSelector, RecordArtifactFile, RootSelectorRole,
 };
 
 use crate::progression::RecoveryPublicationExpectation;
@@ -21,37 +28,60 @@ use crate::progression::RecoveryPublicationExpectation;
 /// A root-protocol artifact is one fixed frame; anything larger is damage.
 const MAXIMUM_PROTOCOL_ARTIFACT_BYTES: u64 = 4096;
 
-pub(super) struct CatalogRepair {
+pub(super) struct RootRepublication {
     pub(super) candidates: Box<[PhysicalRecoveryPublicationCandidate]>,
     pub(super) protocol: RecoveryRootProtocolPublicationPlan,
     /// The selected generation, republished exactly as it is on media.
     pub(super) generation: u64,
 }
 
-/// `Ok(None)` when the catalog already names the selected generation.
+/// `Ok(None)` when the catalog names the selected generation and nothing
+/// forces a republication. `Err` refuses an inconsistent root protocol.
 pub(super) fn plan(
     media: &worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia,
     expectation: &RecoveryPublicationExpectation,
-) -> Result<Option<CatalogRepair>, ()> {
+    unproven_effects: bool,
+) -> Result<Option<RootRepublication>, ()> {
     let read = |artifact| {
         media
             .read_recovery_root_protocol_artifact(artifact, MAXIMUM_PROTOCOL_ARTIFACT_BYTES)
             .map_err(|_| ())?
             .ok_or(())
     };
+    let store = media.store_identity();
     let catalog =
         BootstrapCatalog::decode(&read(RecordArtifactFile::BootstrapCatalog)?).map_err(|_| ())?;
-    let selected = expectation.recovered_root().generation();
+    let selected_root = expectation.recovered_root();
+    let selected = selected_root.generation();
     let cataloged = catalog.current_root().generation().get();
-    if cataloged == selected {
+    if catalog.store_identity() != store || cataloged > selected {
+        return Err(());
+    }
+    if cataloged == selected && !unproven_effects {
         return Ok(None);
     }
-    if cataloged > selected {
+    let root = read(RecordArtifactFile::RootManifest {
+        generation: selected,
+    })?;
+    let current = read(RecordArtifactFile::CurrentRootSelector)?;
+    let previous = read(RecordArtifactFile::PreviousRootSelector)?;
+    let admitted_root = DurablePhysicalRootManifest::decode(&root, u16::MAX)
+        .map(|(manifest, _)| manifest)
+        .map_err(|_| ())?;
+    let current_selector = DurableRootSelector::decode(&current).map_err(|_| ())?;
+    let previous_selector = DurableRootSelector::decode(&previous).map_err(|_| ())?;
+    // Republish only what recovery admitted; an interrupted replacement can
+    // only have left the catalog at the previous selector's generation.
+    if admitted_root != *selected_root
+        || current_selector != expectation.current_selector()
+        || previous_selector.store_identity() != store
+        || (cataloged != selected && previous_selector.root_generation() != cataloged)
+    {
         return Err(());
     }
     let publication = publication(expectation.plan_identity(), selected);
     let repaired = BootstrapCatalog::new(
-        catalog.store_identity(),
+        store,
         catalog.format(),
         CurrentRootCatalogEntry::new(CurrentRootCatalogGeneration::new(selected).ok_or(())?),
     )
@@ -61,23 +91,21 @@ pub(super) fn plan(
             RecordArtifactFile::RootManifest {
                 generation: selected,
             },
-            read(RecordArtifactFile::RootManifest {
-                generation: selected,
-            })?,
+            root,
         ),
         (
             RecordArtifactFile::RootSelectorCandidate {
                 role: RootSelectorRole::Previous,
                 publication,
             },
-            read(RecordArtifactFile::PreviousRootSelector)?,
+            previous,
         ),
         (
             RecordArtifactFile::RootSelectorCandidate {
                 role: RootSelectorRole::Current,
                 publication,
             },
-            read(RecordArtifactFile::CurrentRootSelector)?,
+            current,
         ),
         (
             RecordArtifactFile::CatalogCandidate { publication },
@@ -95,17 +123,17 @@ pub(super) fn plan(
         RecordArtifactFile::CatalogCandidate { publication },
     )
     .map_err(|_| ())?;
-    Ok(Some(CatalogRepair {
+    Ok(Some(RootRepublication {
         candidates: candidates.into_boxed_slice(),
         protocol,
         generation: selected,
     }))
 }
 
-/// A deterministic, nonzero publication identity for this plan's repair.
+/// A deterministic, nonzero publication identity for this plan's republication.
 fn publication(plan: [u8; 32], generation: u64) -> u64 {
     let digest = Sha256::new()
-        .chain_update(b"worth.store.recovery.catalog-repair.v1")
+        .chain_update(b"worth.store.recovery.root-republication.v1")
         .chain_update(plan)
         .chain_update(generation.to_le_bytes())
         .finalize();

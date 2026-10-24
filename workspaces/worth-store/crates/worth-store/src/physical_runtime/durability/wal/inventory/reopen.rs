@@ -55,8 +55,8 @@ pub(in crate::physical_runtime) fn reopen_wal_inventory(
     segments.sort_unstable();
     let trailing_empty = trailing_empty_segment::separate(&tree, &directory, &mut segments)?;
     if segments.is_empty() {
-        trailing_empty.map(|origin| origin.remove_durably(&tree)).transpose()?;
-        return empty_inventory(&directory, cutoff, record_format);
+        let inventory = empty_inventory(&directory, cutoff, record_format)?;
+        return trailing_empty_segment::remove_origin(&tree, trailing_empty).map(|()| inventory);
     }
 
     let byte_limit = policy.segment_byte_limit().get().get();

@@ -57,7 +57,7 @@ pub use owner::{
     PhysicalRecoveryCoordination, PhysicalRecoveryCoordinationAdmissionError,
     PhysicalRecoveryQuiescenceObservation, PhysicalRecoveryRejoinResidentAdmissionDenial,
 };
-pub use physical_work_discharge::RecoveryPhysicalWorkDischarge;
+pub use physical_work_discharge::RecoveryPriorObligation;
 pub use publication::{
     CompletedPhysicalRecoveryPublicationCandidate, CompletedPhysicalRecoveryPublicationCommand,
     PhysicalRecoveryPublicationCandidate, PhysicalRecoveryPublicationCandidateMaterialization,

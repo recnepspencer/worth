@@ -266,7 +266,7 @@ pub use recovery_coordination::{
     PhysicalRecoveryStagingMaterialization, PhysicalRecoveryStagingMaterializationEvidence,
     PhysicalResidencyDenial, RecoveryCheckpointResidueDenial, RecoveryCheckpointResidueOutcome,
     RecoveryCleanupRemovalAction, RecoveryCleanupRemovalOccurrence, RecoveryFreshReopenAction,
-    RecoveryFreshReopenOccurrence, RecoveryPhysicalEffectOccurrence, RecoveryPhysicalWorkDischarge,
+    RecoveryFreshReopenOccurrence, RecoveryPhysicalEffectOccurrence, RecoveryPriorObligation,
     RecoveryPublicationCandidateMaterializationAction,
     RecoveryPublicationCandidateMaterializationOccurrence, RecoveryPublicationCandidateOccurrence,
     RecoveryPublicationCandidateSynchronizationAction,

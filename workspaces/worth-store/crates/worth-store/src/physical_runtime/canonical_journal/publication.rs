@@ -118,7 +118,7 @@ impl CanonicalCommitJournal<'_> {
         };
         let [record] = completed.persisted_records() else {
             state.unresolved = Some(publication.position);
-            return Err(Failure::Read(super::CanonicalCommitReadFailure::Damaged));
+            return Err(Failure::CompletedWithoutRecord);
         };
         Ok(CanonicalCommitPublished::Committed(CanonicalCommitEntry {
             position: publication.position,

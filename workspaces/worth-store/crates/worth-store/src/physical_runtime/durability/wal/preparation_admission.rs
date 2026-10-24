@@ -17,9 +17,18 @@ pub enum PhysicalWalReservationDenial {
     DataPlanning(crate::physical_runtime::RecordAppendDenial),
     DataPlanBinding(crate::physical_runtime::durability::PhysicalDataPlanBindingDenial),
     FramePlanning(WalFramePlanningDenial),
-    GroupFrameBytesExceedSegmentLimit { admitted: u64, requested: u64 },
-    SegmentInventoryLimitReached { admitted: u32, retained: u32 },
+    GroupFrameBytesExceedSegmentLimit {
+        admitted: u64,
+        requested: u64,
+    },
+    SegmentInventoryLimitReached {
+        admitted: u32,
+        retained: u32,
+    },
     SegmentIdentityExhausted,
+    /// Two members of one group advance the same record anchor. Refused before
+    /// the group's WAL append.
+    RecordAnchorConflict,
 }
 
 pub(super) struct PhysicalWalPreparationAdmission {

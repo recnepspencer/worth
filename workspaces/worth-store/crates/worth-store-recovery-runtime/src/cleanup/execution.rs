@@ -22,15 +22,23 @@ pub(crate) fn execute(
     ) {
         return super::checkpoint_residue::failure(reopened, residue);
     }
-    if matches!(
-        super::staging_residue::prepare(&reopened),
-        worth_store::physical_runtime::RecoveryStagingResidueOutcome::DeniedBeforeEffect(_)
-            | worth_store::physical_runtime::RecoveryStagingResidueOutcome::Indeterminate
-    ) {
-        return super::staging_residue::failure(reopened);
+    match super::staging_residue::prepare(&reopened) {
+        worth_store::physical_runtime::RecoveryStagingResidueOutcome::DeniedBeforeEffect(_) => {
+            return super::residue_failure::damaged(reopened);
+        }
+        worth_store::physical_runtime::RecoveryStagingResidueOutcome::Indeterminate => {
+            return super::residue_failure::indeterminate(reopened);
+        }
+        _ => {}
     }
-    if super::staging_residue::discharge_obligations(&reopened).is_err() {
-        return super::staging_residue::failure(reopened);
+    match super::obligation_discharge::discharge(&reopened) {
+        Err(super::obligation_discharge::DischargeFailure::Damaged) => {
+            return super::residue_failure::damaged(reopened);
+        }
+        Err(super::obligation_discharge::DischargeFailure::Indeterminate) => {
+            return super::residue_failure::indeterminate(reopened);
+        }
+        Ok(()) => {}
     }
     #[cfg(feature = "certification-test-authority")]
     crate::certification::before_cleanup_revalidation();
