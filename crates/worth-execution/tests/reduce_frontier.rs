@@ -253,13 +253,17 @@ fn assert_ceiling_width_invariant(input: &ExecutionMap<u64, u64>, count: u64, ce
                 ceiling,
                 "count {count}, ceiling {ceiling}"
             );
+            let accounting = left
+                .metrics
+                .accounted_metrics()
+                .expect("a serial reduction stop carries accounting");
             assert_eq!(
-                left.metrics.charged_work + count,
+                accounting.charged_work + count,
                 ceiling,
                 "count {count}, ceiling {ceiling}"
             );
             assert_eq!(
-                left.metrics.charged_span, left.metrics.charged_work,
+                accounting.charged_span, accounting.charged_work,
                 "count {count}, ceiling {ceiling}"
             );
             assert_eq!(

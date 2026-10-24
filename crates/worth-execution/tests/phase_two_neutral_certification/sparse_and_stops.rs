@@ -262,7 +262,11 @@ fn sparse_decomposition_matches_independent_undecomposed_solver_across_widths() 
         assert_eq!(
             work,
             result.interior_report.charged_work()
-                + result.reduction_metrics.charged_work
+                + result
+                    .reduction_metrics
+                    .accounted_metrics()
+                    .expect("an accounted decomposition carries reduction accounting")
+                    .charged_work
                 + result.interface_report.unwrap().charged_work()
                 + result.back_report.unwrap().charged_work()
         );
