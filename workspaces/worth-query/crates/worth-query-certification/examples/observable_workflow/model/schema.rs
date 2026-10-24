@@ -40,6 +40,7 @@ worth_query_application! {
 worth_query_application_contribution! {
     pub contribution DocumentRetentionContribution in DocumentRetentionSchema {
         identity: "document_retention_courtroom.application_graph.v1",
+        corrections: [super::correctable_retention::RestoreReviewedRetention],
         members: |schema| {
             let schema = schema
                 .entity(ExternalMapping::reference())
@@ -72,9 +73,9 @@ worth_query_application_contribution! {
                 .application_query(document_retention_query_definition())
                 .application_query(document_retention_condition_query_definition())
                 .application_query(super::retention_days::document_retention_days_query_definition());
-            super::actor_generation::declare(super::program_adoption::declare(super::workflow::declare(super::assessment_output::declare(super::retention_days::declare(
+            super::correctable_retention::declare(super::actor_generation::declare(super::program_adoption::declare(super::workflow::declare(super::assessment_output::declare(super::retention_days::declare(
                 super::retention_entry::declare(schema),
-            )))))
+            ))))))
         }
     }
 }
