@@ -109,36 +109,6 @@ pub(super) fn aftermath_causality_create_intent(
 }
 
 impl WorthQueryPrimaryGraphProvider {
-    /// Test door: opens its own exact snapshot of `basis` for one read.
-    #[cfg(test)]
-    pub(in crate::domain_computation) fn resolve_aftermath_causality_at_basis(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-        pending: &WorthQueryPendingAftermathCausality,
-        outcome_identity: Option<WorthQueryApplicationCommitOutcomeIdentity>,
-    ) -> Result<Option<WorthQueryCommittedAftermathCausality>, WorthQueryAftermathCausalityReadDenial>
-    {
-        let layout = self.graph.layout.provider_aftermath_causality().clone();
-        self.graph.with_runtime_mut(execution, |runtime| {
-            self.graph
-                .ensure_primary_indexes_for_basis(execution, runtime, basis)
-                .map_err(aftermath_index_currency_denial)?;
-            let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis)
-                .map_err(|denial| aftermath_snapshot_denial(denial.into()))?;
-            let resolution = WorthQueryAftermathCausalityRead {
-                runtime,
-                snapshot: &snapshot,
-                layout: &layout,
-                pending,
-                outcome_identity,
-            }
-            .resolve(execution);
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            resolution
-        })
-    }
-
     /// Reads the co-committed relation through an already open snapshot of
     /// `basis`, as publication does once, before the commit's history may
     /// retire.
