@@ -36,6 +36,8 @@ use crate::document_retention_model::{
 };
 
 const RETENTION: u64 = 9;
+/// Room for a whole fresh call; no court here reads an owner's edge.
+const LEASE_MEMORY: u64 = 16 * 1024 * 1024;
 
 fn lease_request(memory: u64, cancellation: CancellationToken) -> LeaseRequest {
     LeaseRequest {
@@ -77,10 +79,7 @@ fn every_fresh_preparing_lane_replays_a_recorded_key_before_the_funded_opening()
     let authority =
         worth_query_host::facade::primary_graph::query_test_execution_authority_for_test();
     let funded = authority
-        .request_lease(lease_request(
-            crate::lease_quote::DECLARED_BUDGET,
-            CancellationToken::new(),
-        ))
+        .request_lease(lease_request(LEASE_MEMORY, CancellationToken::new()))
         .unwrap();
     // Live but holding no memory: any opening charged to it refuses.
     let zero = authority
@@ -88,10 +87,7 @@ fn every_fresh_preparing_lane_replays_a_recorded_key_before_the_funded_opening()
         .unwrap();
     let stopping = CancellationSource::new();
     let stopped = authority
-        .request_lease(lease_request(
-            crate::lease_quote::DECLARED_BUDGET,
-            stopping.token(),
-        ))
+        .request_lease(lease_request(LEASE_MEMORY, stopping.token()))
         .unwrap();
     stopping.cancel();
     assert_eq!(
@@ -181,17 +177,11 @@ fn a_miss_under_a_stopped_lease_keeps_the_funded_refusal_and_the_key_fresh() {
     let authority =
         worth_query_host::facade::primary_graph::query_test_execution_authority_for_test();
     let funded = authority
-        .request_lease(lease_request(
-            crate::lease_quote::DECLARED_BUDGET,
-            CancellationToken::new(),
-        ))
+        .request_lease(lease_request(LEASE_MEMORY, CancellationToken::new()))
         .unwrap();
     let stopping = CancellationSource::new();
     let stopped = authority
-        .request_lease(lease_request(
-            crate::lease_quote::DECLARED_BUDGET,
-            stopping.token(),
-        ))
+        .request_lease(lease_request(LEASE_MEMORY, stopping.token()))
         .unwrap();
     stopping.cancel();
     let zero = authority

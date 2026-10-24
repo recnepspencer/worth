@@ -44,12 +44,6 @@ pub(super) fn record_decision(retention_days: u64) {
 }
 
 fn record(retention_days: u64, stage: Stage) {
-    if matches!(
-        stage,
-        Stage::Decision | Stage::OrdinaryDecision | Stage::AssessmentDecision
-    ) {
-        super::decision_hold::take_decision_hold();
-    }
     *counts()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
