@@ -195,8 +195,6 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
     use worth_query_host::facade::application_entry::{
         WorthQueryOperationDeliveryDenial, WorthQueryOperationDeliveryPolicy as Policy,
     };
-    let one = NonZeroUsize::new(1).unwrap();
-
     let policy = Policy::default();
     let query_denial = settled
         .read_current_with_policy(&request, policy.query(NonZeroUsize::new(2).unwrap()))

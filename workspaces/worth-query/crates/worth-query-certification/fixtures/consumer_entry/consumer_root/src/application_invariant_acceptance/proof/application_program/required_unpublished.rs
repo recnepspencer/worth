@@ -231,7 +231,6 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     ));
     drop(observations);
     use worth_query_host::facade::application_entry::WorthQueryOperationDeliveryPolicy;
-    let one = NonZeroUsize::new(1).unwrap();
 
     let stopped_query = settled
         .read_current_with_policy(
