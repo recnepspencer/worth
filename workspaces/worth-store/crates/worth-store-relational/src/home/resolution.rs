@@ -5,7 +5,7 @@ use worth_relational::facade::durability::{
     RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactDigest,
 };
 use worth_relational::facade::publication::PatchStreamPosition;
-use worth_store::physical_runtime::{CanonicalCommitResolution, ServingPhysicalRuntime};
+use worth_store::physical_runtime::{OrderedJournalResolution, ServingPhysicalRuntime};
 
 use crate::recovered_history::RelationalStoreJournalRefusal;
 
@@ -43,11 +43,11 @@ pub(super) fn resolve(
     // The journal decides presence; its own digest covers the whole stored
     // payload, so the commit's identity is checked on the artifact itself.
     match journal.resolve(position.0, [0; 32]).map_err(unreadable)? {
-        CanonicalCommitResolution::NotCommitted { head } => {
+        OrderedJournalResolution::NotCommitted { head } => {
             return Ok(RelationalStoreCommitFate::NotCommitted { head });
         }
-        CanonicalCommitResolution::Unresolved => return Ok(RelationalStoreCommitFate::Unresolved),
-        CanonicalCommitResolution::Committed(_) | CanonicalCommitResolution::Conflict(_) => {}
+        OrderedJournalResolution::Unresolved => return Ok(RelationalStoreCommitFate::Unresolved),
+        OrderedJournalResolution::Committed(_) | OrderedJournalResolution::Conflict(_) => {}
     }
     let payload = journal
         .read(position.0, MAXIMUM_ARTIFACT_BYTES)

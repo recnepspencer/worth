@@ -17,9 +17,9 @@ use worth_store::physical_runtime::certification::{
     CertificationMediaFaultActivation, MediaFaultDirective, MediaOperationRole,
 };
 use worth_store::physical_runtime::{
-    AdmittedPhysicalRecordFormat, AdmittedRecordPlacementPolicy, CanonicalCommitPublication,
-    CanonicalCommitPublicationFailure, CanonicalCommitResolution, FilesystemAccessPosture,
-    FilesystemMediaAdmission, ManifestEntryCapacity, PhysicalRecordAccessPolicy,
+    AdmittedPhysicalRecordFormat, AdmittedRecordPlacementPolicy, FilesystemAccessPosture,
+    FilesystemMediaAdmission, ManifestEntryCapacity, OrderedJournalPublication,
+    OrderedJournalPublicationFailure, OrderedJournalResolution, PhysicalRecordAccessPolicy,
     PhysicalRecordFormatDeclaration, PhysicalRecordOpen, PhysicalRecordPlacementPolicy,
     PhysicalRuntimeAdmission, PhysicalStore, ServingPhysicalRuntime,
 };
@@ -55,11 +55,11 @@ fn publish(
     serving: &ServingPhysicalRuntime,
     position: u64,
     bytes: &[u8],
-) -> Result<(), CanonicalCommitPublicationFailure> {
+) -> Result<(), OrderedJournalPublicationFailure> {
     serving
         .canonical_commits()
-        .map_err(|_| CanonicalCommitPublicationFailure::EmptyPayload)?
-        .publish(CanonicalCommitPublication::new(
+        .map_err(|_| OrderedJournalPublicationFailure::EmptyPayload)?
+        .publish(OrderedJournalPublication::new(
             position,
             bytes.to_vec(),
             placement(),
@@ -162,10 +162,7 @@ fn assert_prefix(serving: &ServingPhysicalRuntime, reference: &RelationalReferen
         let digest: [u8; 32] = Sha256::digest(expected).into();
         let resolution = journal.resolve(position, digest).unwrap();
         if position <= head {
-            assert!(matches!(
-                resolution,
-                CanonicalCommitResolution::Committed(_)
-            ));
+            assert!(matches!(resolution, OrderedJournalResolution::Committed(_)));
             let read = journal.read(position, 1 << 24).unwrap();
             assert!(
                 read.bytes() == expected.as_slice(),
@@ -173,7 +170,7 @@ fn assert_prefix(serving: &ServingPhysicalRuntime, reference: &RelationalReferen
             );
             reference.assert_readmits(position, read.bytes());
         } else {
-            assert_eq!(resolution, CanonicalCommitResolution::NotCommitted { head });
+            assert_eq!(resolution, OrderedJournalResolution::NotCommitted { head });
         }
     }
 }
@@ -237,7 +234,7 @@ fn run_case(
         .map_or(0, |entry| entry.position());
     match &outcome {
         Ok(()) => assert_eq!(head, target, "{case}: acknowledged entry lost"),
-        Err(CanonicalCommitPublicationFailure::ProvenNoEffect(_)) => {
+        Err(OrderedJournalPublicationFailure::ProvenNoEffect(_)) => {
             assert_eq!(
                 head,
                 target - 1,

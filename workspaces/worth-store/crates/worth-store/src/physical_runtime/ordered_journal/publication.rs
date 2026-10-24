@@ -1,29 +1,33 @@
 use sha2::{Digest, Sha256};
-use worth_store_physical_format::RecordAnchor;
+use worth_store_physical_format::{RecordAnchor, MAXIMUM_RECORD_ANCHORS};
 
 use super::frame::JournalRecordHeader;
 use super::lookup::read_header;
 use super::{
-    CanonicalCommitEntry, CanonicalCommitJournal, CanonicalCommitPublication,
-    CanonicalCommitPublicationFailure, CanonicalCommitPublished,
+    OrderedJournal, OrderedJournalEntry, OrderedJournalName, OrderedJournalPublication,
+    OrderedJournalPublicationFailure, OrderedJournalPublished, OrderedJournalReadFailure,
 };
 use crate::physical_runtime::record_serving::{AnchoredRecordAppend, DurableRecordAppendFailure};
 use crate::physical_runtime::PhysicalRecordId;
 
-type Failure = CanonicalCommitPublicationFailure;
+type Failure = OrderedJournalPublicationFailure;
 
-impl CanonicalCommitJournal<'_> {
-    /// Makes one entry durable at the head plus one, or reports why not.
+impl OrderedJournal<'_> {
+    /// Makes one entry durable at this journal's head plus one, or reports
+    /// why not.
     ///
-    /// Publications are serialized per journal. A retry of an entry that is
-    /// already durable writes nothing and answers `AlreadyCommitted`.
+    /// Publications are serialized across journals. A retry of an entry that
+    /// is already durable writes nothing and answers `AlreadyCommitted`. An
+    /// indeterminate publication blocks this journal alone until reopen.
     pub fn publish(
         &self,
-        publication: CanonicalCommitPublication,
-    ) -> Result<CanonicalCommitPublished, Failure> {
-        let mut state = self.runtime.canonical_journal_state();
-        if let Some(position) = state.unresolved {
-            return Err(Failure::Unresolved { position });
+        publication: OrderedJournalPublication,
+    ) -> Result<OrderedJournalPublished, Failure> {
+        let mut state = self.runtime.ordered_journal_state();
+        if let Some(position) = state.unresolved.get(&self.name) {
+            return Err(Failure::Unresolved {
+                position: *position,
+            });
         }
         if publication.payload.is_empty() {
             return Err(Failure::EmptyPayload);
@@ -37,7 +41,7 @@ impl CanonicalCommitJournal<'_> {
                 .locate(&reader, publication.position)
                 .map_err(Failure::Read)?;
             return if entry.payload_sha256() == digest {
-                Ok(CanonicalCommitPublished::AlreadyCommitted(entry))
+                Ok(OrderedJournalPublished::AlreadyCommitted(entry))
             } else {
                 Err(Failure::PositionConflict(entry))
             };
@@ -47,6 +51,11 @@ impl CanonicalCommitJournal<'_> {
                 head: head_position,
                 requested: publication.position,
             });
+        }
+        let anchor_table_full =
+            reader.selected_record_anchors().iter().count() == MAXIMUM_RECORD_ANCHORS;
+        if head.is_none() && anchor_table_full {
+            return Err(Failure::AnchorTableFull);
         }
         let head_header = match head {
             Some(anchor) => Some((
@@ -64,23 +73,23 @@ impl CanonicalCommitJournal<'_> {
             &publication.payload,
         )
         .filter(|header| header.position == publication.position)
-        .ok_or(Failure::Read(super::CanonicalCommitReadFailure::Damaged))?;
+        .ok_or(Failure::Read(OrderedJournalReadFailure::Damaged))?;
         let record = AnchoredRecordAppend {
             record: header.encode_record(&publication.payload),
-            anchor: self.name,
+            anchor: self.name.anchor(),
             expected_generation: head_position,
-            idempotency: material(self.name.as_str(), publication.position, digest),
+            idempotency: material(self.name, publication.position, digest),
             placement: publication.placement,
             deadline: publication.deadline,
         }
         .submit(&self.runtime.record_submission())
         .map_err(|failure| {
             if failure.leaves_fate_unresolved() {
-                state.unresolved = Some(publication.position);
+                state.unresolved.insert(self.name, publication.position);
             }
             journal_failure(failure)
         })?;
-        Ok(CanonicalCommitPublished::Committed(CanonicalCommitEntry {
+        Ok(OrderedJournalPublished::Committed(OrderedJournalEntry {
             position: publication.position,
             record: PhysicalRecordId::from_persisted(record),
             payload_sha256: digest,
@@ -101,12 +110,15 @@ fn journal_failure(failure: DurableRecordAppendFailure) -> Failure {
     }
 }
 
-/// Idempotency material: a retry of the same entry in one incarnation resolves
-/// to the original attempt; a different payload at the same position conflicts.
-fn material(journal: &str, position: u64, digest: [u8; 32]) -> [u8; 32] {
+/// Idempotency material, domain-separated from the anchored-record door's: a
+/// retry of the same entry of the same journal in one incarnation resolves
+/// to the original attempt; a different payload at the same position, or the
+/// same position of another journal, is a different attempt.
+fn material(journal: OrderedJournalName, position: u64, digest: [u8; 32]) -> [u8; 32] {
     let mut sha = Sha256::new();
-    sha.update(b"worth.store.canonical-journal.publication.v1");
-    sha.update(journal.as_bytes());
+    sha.update(b"worth.store.ordered-journal.publication.v1");
+    sha.update([journal.as_str().len() as u8]);
+    sha.update(journal.as_str().as_bytes());
     sha.update(position.to_le_bytes());
     sha.update(digest);
     sha.finalize().into()

@@ -11,8 +11,8 @@ use worth_relational::facade::durability::{
     RelationalCanonicalCommitArtifact, RelationalDurableMedium, RelationalDurablePublication,
 };
 use worth_store::physical_runtime::{
-    AdmittedRecordPlacementPolicy, CanonicalCommitPublication, CanonicalCommitPublicationFailure,
-    CanonicalCommitPublished, PhysicalMutationDeadline, ServingPhysicalRuntime,
+    AdmittedRecordPlacementPolicy, OrderedJournalPublication, OrderedJournalPublicationFailure,
+    OrderedJournalPublished, PhysicalMutationDeadline, ServingPhysicalRuntime,
 };
 
 /// How long one journal publication may take before Store refuses it.
@@ -60,7 +60,7 @@ impl RelationalDurableMedium for StoreJournalMedium {
                 detail: "publication deadline is not representable".to_owned(),
             };
         };
-        let publication = CanonicalCommitPublication::new(
+        let publication = OrderedJournalPublication::new(
             artifact.position().0,
             artifact.as_bytes().to_vec(),
             self.placement,
@@ -68,8 +68,8 @@ impl RelationalDurableMedium for StoreJournalMedium {
         );
         match journal.publish(publication) {
             Ok(
-                CanonicalCommitPublished::Committed(_)
-                | CanonicalCommitPublished::AlreadyCommitted(_),
+                OrderedJournalPublished::Committed(_)
+                | OrderedJournalPublished::AlreadyCommitted(_),
             ) => RelationalDurablePublication::Committed,
             Err(failure) => publication_failure(failure),
         }
@@ -78,22 +78,23 @@ impl RelationalDurableMedium for StoreJournalMedium {
 
 /// Every journal failure either happened before any effect or leaves the fate
 /// to recovery; nothing in between is reported as durable.
-fn publication_failure(failure: CanonicalCommitPublicationFailure) -> RelationalDurablePublication {
+fn publication_failure(failure: OrderedJournalPublicationFailure) -> RelationalDurablePublication {
     let detail = format!("{failure:?}");
     match failure {
-        CanonicalCommitPublicationFailure::Indeterminate(_)
-        | CanonicalCommitPublicationFailure::CompletedWithoutRecord => {
+        OrderedJournalPublicationFailure::Indeterminate(_)
+        | OrderedJournalPublicationFailure::CompletedWithoutRecord => {
             RelationalDurablePublication::Indeterminate { detail }
         }
-        CanonicalCommitPublicationFailure::EmptyPayload
-        | CanonicalCommitPublicationFailure::PositionGap { .. }
-        | CanonicalCommitPublicationFailure::PositionConflict(_)
-        | CanonicalCommitPublicationFailure::Unresolved { .. }
-        | CanonicalCommitPublicationFailure::Batch(_)
-        | CanonicalCommitPublicationFailure::Idempotency(_)
-        | CanonicalCommitPublicationFailure::Preparation(_)
-        | CanonicalCommitPublicationFailure::ProvenNoEffect(_)
-        | CanonicalCommitPublicationFailure::Read(_) => {
+        OrderedJournalPublicationFailure::EmptyPayload
+        | OrderedJournalPublicationFailure::PositionGap { .. }
+        | OrderedJournalPublicationFailure::PositionConflict(_)
+        | OrderedJournalPublicationFailure::AnchorTableFull
+        | OrderedJournalPublicationFailure::Unresolved { .. }
+        | OrderedJournalPublicationFailure::Batch(_)
+        | OrderedJournalPublicationFailure::Idempotency(_)
+        | OrderedJournalPublicationFailure::Preparation(_)
+        | OrderedJournalPublicationFailure::ProvenNoEffect(_)
+        | OrderedJournalPublicationFailure::Read(_) => {
             RelationalDurablePublication::ProvenNoEffect { detail }
         }
         // A failure this build does not know cannot be proven harmless.

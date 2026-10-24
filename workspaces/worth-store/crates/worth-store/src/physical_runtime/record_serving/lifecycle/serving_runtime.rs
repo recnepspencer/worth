@@ -13,6 +13,7 @@ mod blob_claim;
 #[cfg(feature = "certification-test-authority")]
 #[path = "serving_runtime/certification/mod.rs"]
 mod certification;
+mod ordered_journals;
 mod physical_work;
 mod record_reader;
 mod retirement;
@@ -23,7 +24,8 @@ pub struct ServingPhysicalRuntime {
     scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner,
     blob_declarations: std::sync::Mutex<()>,
     blob_index_publications: std::sync::Mutex<()>,
-    canonical_journal: std::sync::Mutex<crate::physical_runtime::CanonicalJournalState>,
+    ordered_journals:
+        std::sync::Mutex<crate::physical_runtime::ordered_journal::OrderedJournalState>,
     anchored_records: std::sync::Mutex<crate::physical_runtime::AnchoredRecordState>,
     anchored_membership: std::sync::Mutex<crate::physical_runtime::AnchoredMembershipCache>,
     parts: PhysicalStoreInstanceParts,
@@ -38,7 +40,7 @@ impl ServingPhysicalRuntime {
                 scrub: crate::physical_runtime::integrity::PhysicalIntegrityScrubOwner::new(),
                 blob_declarations: std::sync::Mutex::new(()),
                 blob_index_publications: std::sync::Mutex::new(()),
-                canonical_journal: std::sync::Mutex::new(Default::default()),
+                ordered_journals: std::sync::Mutex::new(Default::default()),
                 anchored_records: std::sync::Mutex::new(Default::default()),
                 anchored_membership: std::sync::Mutex::new(Default::default()),
                 parts,
@@ -119,31 +121,6 @@ impl ServingPhysicalRuntime {
             return Err(crate::physical_runtime::BlobFacadeDenial::ServingRequiresInspection);
         }
         Ok(crate::physical_runtime::PhysicalBlobFacade::new(self))
-    }
-
-    /// Borrows the home's canonical commit journal.
-    pub fn canonical_commits(
-        &self,
-    ) -> Result<
-        crate::physical_runtime::CanonicalCommitJournal<'_>,
-        crate::physical_runtime::CanonicalCommitJournalDenial,
-    > {
-        if self.parts.work_runtime.health.requires_inspection() {
-            return Err(
-                crate::physical_runtime::CanonicalCommitJournalDenial::ServingRequiresInspection,
-            );
-        }
-        Ok(crate::physical_runtime::CanonicalCommitJournal::relational(
-            self,
-        ))
-    }
-
-    pub(in crate::physical_runtime) fn canonical_journal_state(
-        &self,
-    ) -> std::sync::MutexGuard<'_, crate::physical_runtime::CanonicalJournalState> {
-        self.canonical_journal
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
     /// Borrows the home's anchored records: named values replaced whole, one

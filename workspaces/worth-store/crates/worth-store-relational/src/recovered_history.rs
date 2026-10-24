@@ -7,7 +7,7 @@ use worth_relational::facade::durability::{
     RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactFrameRefusal,
 };
 use worth_store::physical_runtime::{
-    CanonicalCommitJournalDenial, CanonicalCommitReadFailure, ServingPhysicalRuntime,
+    OrderedJournalDenial, OrderedJournalReadFailure, ServingPhysicalRuntime,
 };
 
 /// The largest artifact one journal read admits. A larger record is refused
@@ -19,12 +19,12 @@ const MAXIMUM_ARTIFACT_BYTES: u64 = 256 << 20;
 #[non_exhaustive]
 pub enum RelationalStoreJournalRefusal {
     /// The serving Store would not lend its journal.
-    Unavailable(CanonicalCommitJournalDenial),
+    Unavailable(OrderedJournalDenial),
     /// The journal or one of its records could not be read or failed Store's
     /// own frame, linkage or digest checks.
     Unreadable {
         position: Option<u64>,
-        failure: CanonicalCommitReadFailure,
+        failure: OrderedJournalReadFailure,
     },
     /// A journal record's payload is not an intact Relational artifact frame.
     ArtifactFrame {

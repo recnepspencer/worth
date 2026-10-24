@@ -7,15 +7,15 @@ use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::{
     AdmittedRecordPlacementPolicy, AnchoredRecordName, AnchoredRecordNameDenial,
     AnchoredRecordPublication, AnchoredRecordPublicationFailure, AnchoredRecordPublished,
-    AnchoredRecordReadFailure, CanonicalCommitPublication, ServingPhysicalRuntime,
-    RELATIONAL_CANONICAL_COMMITS,
+    AnchoredRecordReadFailure, OrderedJournalPublication, ServingPhysicalRuntime,
+    RELATIONAL_BRANCH_TRANSITIONS, RELATIONAL_CANONICAL_COMMITS,
 };
 
 use super::canonical_journal_oracle::{placement, serve};
 use super::*;
 
 pub(crate) const CHECKPOINT: &str = "relational.checkpoint";
-const HOME: &str = "relational.home";
+pub(crate) const HOME: &str = "relational.home";
 const READ_LIMIT: u64 = 8 << 20;
 
 pub(crate) fn name(text: &str) -> AnchoredRecordName {
@@ -79,7 +79,7 @@ pub(crate) fn publish_journal_entry(
     serving
         .canonical_commits()
         .expect("journal access")
-        .publish(CanonicalCommitPublication::new(
+        .publish(OrderedJournalPublication::new(
             position,
             journal_payload(position),
             placement,
@@ -105,11 +105,13 @@ pub(crate) fn assert_journal(serving: &ServingPhysicalRuntime, head: u64) {
 }
 
 #[test]
-fn anchored_record_names_refuse_the_journal_and_malformed_names() {
-    assert_eq!(
-        AnchoredRecordName::new(RELATIONAL_CANONICAL_COMMITS),
-        Err(AnchoredRecordNameDenial::ReservedForCanonicalJournal)
-    );
+fn anchored_record_names_refuse_the_ordered_journals_and_malformed_names() {
+    for journal in [RELATIONAL_CANONICAL_COMMITS, RELATIONAL_BRANCH_TRANSITIONS] {
+        assert_eq!(
+            AnchoredRecordName::new(journal),
+            Err(AnchoredRecordNameDenial::ReservedForOrderedJournal)
+        );
+    }
     assert_eq!(
         AnchoredRecordName::new("Relational Home"),
         Err(AnchoredRecordNameDenial::Malformed)

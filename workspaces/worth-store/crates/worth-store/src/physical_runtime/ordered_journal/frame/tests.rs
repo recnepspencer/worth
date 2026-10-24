@@ -1,7 +1,7 @@
 use super::*;
 
-fn journal() -> RecordAnchorName {
-    RecordAnchorName::new("relational.canonical-commits").unwrap()
+fn journal() -> OrderedJournalName {
+    OrderedJournalName::relational_canonical_commits()
 }
 
 fn record(position: u64) -> PersistedRecordIdentity {
@@ -85,11 +85,6 @@ fn decoding_refuses_foreign_or_damaged_headers() {
     let header = &chain(6)[5];
     let bytes = header.encode_record(&6_u64.to_le_bytes());
     let length = Some(bytes.len() as u64);
-    let other = RecordAnchorName::new("world.occurrences").unwrap();
-    assert_eq!(
-        JournalRecordHeader::decode(&bytes, other, length),
-        Err(JournalFrameDenial::WrongJournal)
-    );
     let mut magic = bytes.clone();
     magic[0] = b'X';
     assert_eq!(
@@ -110,4 +105,39 @@ fn decoding_refuses_foreign_or_damaged_headers() {
         JournalRecordHeader::decode(&bytes[..40], journal(), length),
         Err(JournalFrameDenial::Truncated)
     );
+}
+
+#[test]
+fn a_record_of_one_journal_never_decodes_under_another() {
+    let commits = OrderedJournalName::relational_canonical_commits();
+    let transitions = OrderedJournalName::relational_branch_transitions();
+    for (owner, other) in [(commits, transitions), (transitions, commits)] {
+        let mut head: Option<(JournalRecordHeader, PersistedRecordIdentity)> = None;
+        for position in 1..=5_u64 {
+            let payload = position.to_le_bytes();
+            let header = JournalRecordHeader::successor(
+                owner,
+                head.as_ref().map(|(header, record)| (header, *record)),
+                &payload,
+            )
+            .unwrap();
+            let bytes = header.encode_record(&payload);
+            let length = Some(bytes.len() as u64);
+            assert_eq!(
+                JournalRecordHeader::decode(&bytes, owner, length).as_ref(),
+                Ok(&header)
+            );
+            // Same position and payload in both journals: the name alone
+            // separates them, for a whole record and for a header-only read.
+            assert_eq!(
+                JournalRecordHeader::decode(&bytes, other, length),
+                Err(JournalFrameDenial::WrongJournal)
+            );
+            assert_eq!(
+                JournalRecordHeader::decode(&bytes[..header.encoded_bytes()], other, None),
+                Err(JournalFrameDenial::WrongJournal)
+            );
+            head = Some((header, record(position)));
+        }
+    }
 }

@@ -14,9 +14,9 @@ use std::{
 use sha2::{Digest, Sha256};
 use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint;
 use worth_store::physical_runtime::{
-    AdmittedPhysicalRecordFormat, AdmittedRecordPlacementPolicy, CanonicalCommitPublication,
-    CanonicalCommitPublicationFailure, CanonicalCommitPublished, CanonicalCommitResolution,
-    ManifestEntryCapacity, PhysicalRecordFormatDeclaration, PhysicalRecordPlacementPolicy,
+    AdmittedPhysicalRecordFormat, AdmittedRecordPlacementPolicy, ManifestEntryCapacity,
+    OrderedJournalPublication, OrderedJournalPublicationFailure, OrderedJournalPublished,
+    OrderedJournalResolution, PhysicalRecordFormatDeclaration, PhysicalRecordPlacementPolicy,
     ServingPhysicalRuntime,
 };
 use worth_store_recovery_runtime::{PhysicalRecoveryOutcome, WorthStoreRecovery};
@@ -25,7 +25,7 @@ use super::*;
 
 const ROLE_ENV: &str = "WORTH_JOURNAL_CHILD_ROLE";
 const MARKER_ENV: &str = "WORTH_JOURNAL_CHILD_MARKER";
-const CHILD_TEST: &str = "canonical_journal::canonical_journal_child";
+const CHILD_TEST: &str = "ordered_journals::canonical_journal::canonical_journal_child";
 #[path = "canonical_journal/recovery_interruption.rs"]
 pub(crate) mod recovery_interruption;
 
@@ -58,11 +58,11 @@ fn publication(
     placement: AdmittedRecordPlacementPolicy,
     position: u64,
     bytes: Vec<u8>,
-) -> Result<CanonicalCommitPublished, CanonicalCommitPublicationFailure> {
+) -> Result<OrderedJournalPublished, OrderedJournalPublicationFailure> {
     serving
         .canonical_commits()
         .expect("journal access")
-        .publish(CanonicalCommitPublication::new(
+        .publish(OrderedJournalPublication::new(
             position,
             bytes,
             placement,
@@ -87,18 +87,18 @@ fn assert_journal_holds(serving: &ServingPhysicalRuntime, head: u64) {
         );
         assert!(matches!(
             journal.resolve(position, digest(&payload(position))).unwrap(),
-            CanonicalCommitResolution::Committed(entry) if entry.position() == position
+            OrderedJournalResolution::Committed(entry) if entry.position() == position
         ));
         assert!(matches!(
             journal.resolve(position, [0xee; 32]).unwrap(),
-            CanonicalCommitResolution::Conflict(_)
+            OrderedJournalResolution::Conflict(_)
         ));
     }
     assert_eq!(
         journal
             .resolve(head + 1, digest(&payload(head + 1)))
             .unwrap(),
-        CanonicalCommitResolution::NotCommitted { head }
+        OrderedJournalResolution::NotCommitted { head }
     );
     let range = journal
         .range_descending(head, usize::MAX)
@@ -115,7 +115,7 @@ fn the_journal_publishes_only_at_the_next_position_and_resolves_retries() {
     assert_journal_holds(serving, 0);
     assert!(matches!(
         publication(serving, world.placement(), 2, payload(2)),
-        Err(CanonicalCommitPublicationFailure::PositionGap {
+        Err(OrderedJournalPublicationFailure::PositionGap {
             head: 0,
             requested: 2
         })
@@ -123,17 +123,17 @@ fn the_journal_publishes_only_at_the_next_position_and_resolves_retries() {
     for position in 1..=ENTRIES {
         let published = publication(serving, world.placement(), position, payload(position))
             .expect("publication");
-        assert!(matches!(published, CanonicalCommitPublished::Committed(_)));
+        assert!(matches!(published, OrderedJournalPublished::Committed(_)));
         assert_eq!(published.entry().position(), position);
     }
     assert_journal_holds(serving, ENTRIES);
     assert!(matches!(
         publication(serving, world.placement(), 5, payload(5)),
-        Ok(CanonicalCommitPublished::AlreadyCommitted(entry)) if entry.position() == 5
+        Ok(OrderedJournalPublished::AlreadyCommitted(entry)) if entry.position() == 5
     ));
     assert!(matches!(
         publication(serving, world.placement(), 5, payload(6)),
-        Err(CanonicalCommitPublicationFailure::PositionConflict(entry)) if entry.position() == 5
+        Err(OrderedJournalPublicationFailure::PositionConflict(entry)) if entry.position() == 5
     ));
     assert!(matches!(
         publication(
@@ -142,7 +142,7 @@ fn the_journal_publishes_only_at_the_next_position_and_resolves_retries() {
             ENTRIES + 2,
             payload(ENTRIES + 2)
         ),
-        Err(CanonicalCommitPublicationFailure::PositionGap { .. })
+        Err(OrderedJournalPublicationFailure::PositionGap { .. })
     ));
     assert_journal_holds(serving, ENTRIES);
 }
