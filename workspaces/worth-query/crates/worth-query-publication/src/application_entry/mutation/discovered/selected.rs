@@ -1,5 +1,6 @@
 //! Discovered-output sources committed under the program their branch selected.
 use crate::application_entry::mutation::authorization::WorthQueryBindingAdmission;
+use crate::application_entry::mutation::recorded_replay::RecordedReplay;
 
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
@@ -60,23 +61,25 @@ where
         RootConnection<Schema, Root>:
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
     {
-        if let Some(outcome) =
-            self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
-                let (selected, _) = request.select_performed_owner::<Program, Root>(phase, application)?;
-                RootConnection::<Schema, Root>::discovery_from_source(request.request.intent.input())
-                    .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
-                <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission::prepare_selected(phase, request, identities, staged, &selected)
-                    .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)
-            })
-        {
-            let discovery =
-                RootConnection::<Schema, Root>::discovery_from_source(self.request.intent.input())
-                    .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
-            return Ok(discovered_outcome(
-                discovery,
-                outcome,
-                crate::application_entry::mutation::performed_source::PerformedSourceCommit::default(),
-            ));
+        match self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
+            let (selected, _) = request.select_performed_owner::<Program, Root>(phase, application)?;
+            RootConnection::<Schema, Root>::discovery_from_source(request.request.intent.input())
+                .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
+            <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission::prepare_selected(phase, request, identities, staged, &selected)
+                .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)
+        }) {
+            RecordedReplay::Replayed(outcome) => {
+                let discovery =
+                    RootConnection::<Schema, Root>::discovery_from_source(self.request.intent.input())
+                        .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
+                return Ok(discovered_outcome(
+                    discovery,
+                    outcome,
+                    crate::application_entry::mutation::performed_source::PerformedSourceCommit::default(),
+                ));
+            }
+            RecordedReplay::Refused(refusal) => return Err(refusal),
+            RecordedReplay::Miss => {}
         }
         let scope = self.request_scope().clone();
         let runtime = self.request.application;

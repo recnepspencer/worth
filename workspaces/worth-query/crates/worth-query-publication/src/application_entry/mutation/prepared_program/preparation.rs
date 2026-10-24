@@ -8,6 +8,7 @@ use super::{
     WorthQueryApplicationProgramMutationPreparation, WorthQueryApplicationRequestMutationDenial,
     WorthQueryPreparedProgramMutation, WorthQueryProgramApplicationRuntime,
 };
+use crate::application_entry::mutation::recorded_replay::RecordedReplay;
 
 impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
     WorthQueryApplicationMutationRequestWithIdempotency<
@@ -72,15 +73,19 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
-        if let Some(outcome) =
-            self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
-                let selected = request.select_program_owner(phase, application)?.selected;
-                super::super::authorization::prepare_selected(
-                    phase, request, identities, staged, &selected,
-                )
-            })
-        {
-            return WorthQueryApplicationMutationAttemptReport::new(Ok(WorthQueryApplicationProgramMutationPreparation::Settled(outcome)), worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
+        match self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
+            let selected = request.select_program_owner(phase, application)?.selected;
+            super::super::authorization::prepare_selected(
+                phase, request, identities, staged, &selected,
+            )
+        }) {
+            RecordedReplay::Replayed(outcome) => {
+                return WorthQueryApplicationMutationAttemptReport::new(Ok(WorthQueryApplicationProgramMutationPreparation::Settled(outcome)), worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
+            }
+            RecordedReplay::Refused(refusal) => {
+                return WorthQueryApplicationMutationAttemptReport::new(Err(refusal), worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
+            }
+            RecordedReplay::Miss => {}
         }
         let scope = self.request_scope().clone();
         let runtime = self.request.application;

@@ -1,3 +1,4 @@
+use crate::application_entry::mutation::recorded_replay::RecordedReplay;
 use std::cell::RefCell;
 use std::sync::Arc;
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
@@ -81,21 +82,21 @@ where
         >,
         WorthQueryApplicationRequestMutationDenial,
     > {
-        if let Some(outcome) =
-            self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
-                if request
-                    .request
-                    .application
-                    .requires_application_program::<Intent::Binding>()
-                {
-                    return Err(
-                        WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired,
-                    );
-                }
-                super::authorization::prepare(phase, request, identities, staged)
-            })
-        {
-            return Ok(WorthQueryApplicationRetainedMutationOutcome::Other(outcome));
+        match self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
+            if request
+                .request
+                .application
+                .requires_application_program::<Intent::Binding>()
+            {
+                return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
+            }
+            super::authorization::prepare(phase, request, identities, staged)
+        }) {
+            RecordedReplay::Replayed(outcome) => {
+                return Ok(WorthQueryApplicationRetainedMutationOutcome::Other(outcome));
+            }
+            RecordedReplay::Refused(refusal) => return Err(refusal),
+            RecordedReplay::Miss => {}
         }
         let request_scope = self.request_scope().clone();
         let runtime = self.request.application;
@@ -153,15 +154,15 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
-        if let Some(outcome) =
-            self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
-                let selected = request.select_program_owner(phase, application)?.selected;
-                super::authorization::prepare_selected(
-                    phase, request, identities, staged, &selected,
-                )
-            })
-        {
-            return Ok(WorthQueryApplicationRetainedMutationOutcome::Other(outcome));
+        match self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
+            let selected = request.select_program_owner(phase, application)?.selected;
+            super::authorization::prepare_selected(phase, request, identities, staged, &selected)
+        }) {
+            RecordedReplay::Replayed(outcome) => {
+                return Ok(WorthQueryApplicationRetainedMutationOutcome::Other(outcome));
+            }
+            RecordedReplay::Refused(refusal) => return Err(refusal),
+            RecordedReplay::Miss => {}
         }
         let request_scope = self.request_scope().clone();
         let runtime = self.request.application;

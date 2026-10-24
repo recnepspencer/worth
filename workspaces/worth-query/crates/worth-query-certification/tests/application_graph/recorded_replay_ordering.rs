@@ -253,6 +253,60 @@ fn a_miss_under_a_stopped_lease_keeps_the_funded_refusal_and_the_key_fresh() {
     assert_eq!(read_retention(runtime, branch), RETENTION);
 }
 
+/// The request's own refusal answers under any lease. The World-funded step
+/// returns it, so the funded call never opens and never prepares a second
+/// time: had it opened, the stopped lease would have answered
+/// `Interrupted(Cancelled)` and the zero one `Resource`, losing the refusal.
+#[test]
+fn the_requests_own_refusal_answers_before_the_funded_opening() {
+    let authority =
+        worth_query_host::facade::primary_graph::query_test_execution_authority_for_test();
+    let zero = authority
+        .request_lease(lease_request(0, CancellationToken::new()))
+        .unwrap();
+    let stopping = CancellationSource::new();
+    let stopped = authority
+        .request_lease(lease_request(LEASE_MEMORY, stopping.token()))
+        .unwrap();
+    stopping.cancel();
+    let host = publish_on_first_program();
+    let runtime = host.runtime();
+    let branch = host.current_world();
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let original = observe_head(runtime, branch);
+    let key = 0x5e91_0003;
+    for lease in [&zero, &stopped] {
+        // The binding is installed through a program, so the ordinary lane
+        // refuses it whatever the caller's lease could fund.
+        let (refused, work) = runtime
+            .request(&principal, &scope)
+            .on_branch(branch)
+            .advanced()
+            .mutate(SetRetentionIntent {
+                input: SetRetentionInput {
+                    identity: DOCUMENT_IDENTITY.to_owned(),
+                    retention_days: RETENTION,
+                },
+            })
+            .without_source()
+            .idempotency(&key)
+            .execute_report(Policy::Execution(lease))
+            .into_parts();
+        assert!(
+            matches!(refused, Err(RequestDenial::ApplicationProgramRequired)),
+            "the step's own refusal reaches the caller: {refused:?}"
+        );
+        assert_eq!(work, WorthQueryMutationHandlerWork::NotStarted);
+    }
+    assert_uncharged(&[&zero, &stopped]);
+    assert_eq!(read_retention(runtime, branch), SEED_RETENTION);
+    assert_eq!(
+        observe_head(runtime, branch).selected_commit(),
+        original.selected_commit()
+    );
+}
+
 const REPLAY_SAMPLES: usize = 15;
 
 /// A host whose history records `population` committed keys, the first of

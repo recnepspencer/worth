@@ -1,3 +1,4 @@
+use crate::application_entry::mutation::recorded_replay::RecordedReplay;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationIntent,
     ApplicationMutationScopeBinding, ApplicationMutationScopeResolution,
@@ -178,21 +179,23 @@ where
             WorthQueryApplicationRequestMutationDenial,
         >,
     > {
-        if let Some(outcome) =
-            self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
-                if request
-                    .request
-                    .application
-                    .requires_application_program::<Intent::Binding>()
-                {
-                    return Err(
-                        WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired,
-                    );
-                }
-                super::authorization::prepare(phase, request, identities, staged)
-            })
-        {
-            return super::WorthQueryApplicationMutationAttemptReport::new(Ok(outcome), worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
+        match self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
+            if request
+                .request
+                .application
+                .requires_application_program::<Intent::Binding>()
+            {
+                return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
+            }
+            super::authorization::prepare(phase, request, identities, staged)
+        }) {
+            RecordedReplay::Replayed(outcome) => {
+                return super::WorthQueryApplicationMutationAttemptReport::new(Ok(outcome), worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
+            }
+            RecordedReplay::Refused(refusal) => {
+                return super::WorthQueryApplicationMutationAttemptReport::new(Err(refusal), worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
+            }
+            RecordedReplay::Miss => {}
         }
         let scope = self.request_scope().clone();
         let runtime = self.request.application;

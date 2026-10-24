@@ -6,6 +6,7 @@ use super::{
     WorthQueryApplicationProgramMutationPreparation, WorthQueryApplicationRequestMutationDenial,
     WorthQueryProgramApplicationRuntime,
 };
+use crate::application_entry::mutation::recorded_replay::RecordedReplay;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_operation::{
@@ -30,11 +31,15 @@ where
     ) -> Result<WorthQueryApplicationProgramMutationPreparation<'request, 'application, Schema, Intent::Binding, Program>, WorthQueryApplicationRequestMutationDenial>
     where Program: ApplicationProgramDefinition<Schema>,
     {
-        if let Some(outcome) = self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
+        match self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
             let selected = request.select_program_owner(phase, application)?.selected;
             super::super::authorization::prepare_capability_selected(phase, request, identities, staged, &selected)
         }) {
-            return Ok(WorthQueryApplicationProgramMutationPreparation::Settled(outcome));
+            RecordedReplay::Replayed(outcome) => {
+                return Ok(WorthQueryApplicationProgramMutationPreparation::Settled(outcome));
+            }
+            RecordedReplay::Refused(refusal) => return Err(refusal),
+            RecordedReplay::Miss => {}
         }
         let scope = self.request_scope().clone();
         let runtime = self.request.application;

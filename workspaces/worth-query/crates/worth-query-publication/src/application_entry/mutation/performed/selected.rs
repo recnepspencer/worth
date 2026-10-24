@@ -1,4 +1,5 @@
 //! Performed sources committed under the program their branch selected.
+use crate::application_entry::mutation::recorded_replay::RecordedReplay;
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 
 use worth_query_declaration::facade::application_operation::{
@@ -120,34 +121,38 @@ where
         <<DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value:
             WorthQueryApplicationProjection<Schema, <DemandSource<Schema, Root> as ApplicationQueryBinding<Schema>>::Query> + Clone,
     {
-        if let Some(outcome) =
-            self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
-                let (selected, _) = request.select_performed_owner::<Program, Root>(phase, application)?;
-                <Intent::Binding as WorthQueryApplicationRequiredOutputSource<
-                    Schema,
-                    RootConnection<Schema, Root>,
-                >>::demand_from_source(request.request.intent.input())
-                .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
-                <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission::prepare_selected(phase, request, identities, staged, &selected)
-                    .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)
-            })
-        {
-            let outcome = <Intent::Binding as WorthQueryApplicationRequiredOutputSource<
+        match self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
+            let (selected, _) = request.select_performed_owner::<Program, Root>(phase, application)?;
+            <Intent::Binding as WorthQueryApplicationRequiredOutputSource<
                 Schema,
                 RootConnection<Schema, Root>,
-            >>::demand_from_source(self.request.intent.input())
-            .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)
-            .map(|demand| {
-                performed_outcome(
-                    demand,
+            >>::demand_from_source(request.request.intent.input())
+            .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)?;
+            <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission::prepare_selected(phase, request, identities, staged, &selected)
+                .map_err(WorthQueryPerformedMutationExecutionDenial::Mutation)
+        }) {
+            RecordedReplay::Replayed(outcome) => {
+                let outcome = <Intent::Binding as WorthQueryApplicationRequiredOutputSource<
+                    Schema,
+                    RootConnection<Schema, Root>,
+                >>::demand_from_source(self.request.intent.input())
+                .map_err(WorthQueryPerformedMutationExecutionDenial::Connection)
+                .map(|demand| {
+                    performed_outcome(
+                        demand,
+                        outcome,
+                        crate::application_entry::mutation::performed_source::PerformedSourceCommit::default(),
+                    )
+                });
+                return crate::application_entry::mutation::WorthQueryApplicationMutationAttemptReport::new(
                     outcome,
-                    crate::application_entry::mutation::performed_source::PerformedSourceCommit::default(),
-                )
-            });
-            return crate::application_entry::mutation::WorthQueryApplicationMutationAttemptReport::new(
-                outcome,
-                worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted,
-            );
+                    worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted,
+                );
+            }
+            RecordedReplay::Refused(refusal) => {
+                return crate::application_entry::mutation::WorthQueryApplicationMutationAttemptReport::new(Err(refusal), worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
+            }
+            RecordedReplay::Miss => {}
         }
         let scope = self.request_scope().clone();
         let runtime = self.request.application;
