@@ -2,11 +2,8 @@ use bank_server::{
     queries, BankApplicationOneShotDenialKind, BankApplicationQueryDenial, BankReadControls,
 };
 
-use super::advancement_custody::{least_admitting_work, with_work_ceiling};
 use super::fixture::{ordinary_read_world, over_budget_discovery_world, OWNER};
 use crate::support::request_scope;
-use worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial;
-use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind;
 
 #[test]
 fn discovery_and_account_reads_are_bounded_by_the_touched_neighborhood() {
@@ -102,53 +99,22 @@ fn account_discovery_result_limit_denies_before_projecting_an_oversized_union() 
     ));
 }
 
-/// Commit `ee07da2b0e` removed the caller's dynamic frontier work control; the
-/// installed policy's one work ceiling now bounds the root union (how-it-works:
-/// "The policy's work ceiling bounds the whole advancement"). The exact work
-/// that admits a one-account union stops a 250-account union with a typed
-/// request stop, while the installed policy admits the same read.
+/// Commit `ee07da2b0e` removed the caller's dynamic frontier work control.
+/// A 250-account root union reads in full with only a result limit: no caller
+/// supplies a work estimate or ceiling.
 #[test]
-fn account_discovery_root_union_stops_when_dynamic_frontier_work_exhausts() {
-    let small = over_budget_discovery_world("read-root-union-work-budget-small", 1);
-    let fixture = over_budget_discovery_world("read-root-union-work-budget", 250);
-    let small_actor = small.authenticate();
+fn account_discovery_root_union_reads_without_a_caller_work_ceiling() {
+    let fixture = over_budget_discovery_world("read-root-union-unbudgeted", 250);
     let actor = fixture.authenticate();
-    let small_read = || {
-        small
-            .world
-            .runtime
-            .query(queries::accounts())
-            .as_principal(&small_actor)
-            .controls(controls(250))
-            .execute()
-    };
-    let read = || {
-        fixture
-            .world
-            .runtime
-            .query(queries::accounts())
-            .as_principal(&actor)
-            .controls(controls(250))
-            .execute()
-    };
-    small_read().expect("the installed policy admits the one-account union");
-    read().expect("the installed policy admits the 250-account union");
-    let small_work = least_admitting_work(small_read);
-    let outcome = with_work_ceiling(small_work, read);
-
-    assert!(matches!(
-        outcome,
-        Err(BankApplicationQueryDenial::Execution(denial))
-            if matches!(
-                denial.kind(),
-                BankApplicationOneShotDenialKind::ExecutionRequest(
-                    WorthQueryProviderSessionDenialKind::ExecutionResource {
-                        denial: WorthQueryManagedComputationResourceDenial::WorkExhausted,
-                        ..
-                    }
-                )
-            )
-    ));
+    let result = fixture
+        .world
+        .runtime
+        .query(queries::accounts())
+        .as_principal(&actor)
+        .controls(controls(250))
+        .execute()
+        .expect("the 250-account union reads with no caller work ceiling");
+    assert_eq!(result.rows().len(), 250);
 }
 
 fn controls(maximum_results: usize) -> BankReadControls {

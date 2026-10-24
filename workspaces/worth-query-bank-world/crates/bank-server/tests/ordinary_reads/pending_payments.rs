@@ -3,14 +3,11 @@ use bank_server::{
     queries, BankApplicationOneShotDenialKind, BankApplicationQueryDenial, BankReadControls,
 };
 
-use super::advancement_custody::{least_admitting_work, with_work_ceiling};
 use super::fixture::{
     ordinary_read_world, ordinary_read_world_with_pending_payments,
     over_budget_discovery_world_with_role, APPROVER, OWNER, VIEWER,
 };
 use crate::support::request_scope;
-use worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial;
-use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind;
 
 #[test]
 fn fixed_role_and_status_guards_are_query_owned_and_receipted() {
@@ -80,58 +77,24 @@ fn pending_roots_are_identity_ordered_and_result_limited_before_projection() {
     ));
 }
 
-/// Commit `ee07da2b0e` removed the caller's dynamic work control; the
-/// installed policy's one work ceiling now bounds the guarded frontier
-/// (how-it-works: "The policy's work ceiling bounds the whole advancement").
-/// The exact work that admits a one-account frontier stops a 265-account one
-/// inside its frontier with a typed request stop, while the installed policy
-/// admits the same read.
+/// Commit `ee07da2b0e` removed the caller's dynamic work control. An
+/// approver's guarded frontier over 265 accounts with no pending payment reads
+/// to its empty result with only a result limit: no caller supplies a work
+/// estimate or ceiling.
 #[test]
-fn guarded_frontier_stops_when_dynamic_work_is_exhausted() {
-    let small = over_budget_discovery_world_with_role(
-        "pending-guard-work-small",
-        1,
-        CustomerRole::Approver,
-    );
+fn guarded_frontier_reads_without_a_caller_work_ceiling() {
     let fixture =
-        over_budget_discovery_world_with_role("pending-guard-work", 265, CustomerRole::Approver);
-    let small_actor = small.authenticate();
+        over_budget_discovery_world_with_role("pending-guard-unbudgeted", 265, CustomerRole::Approver);
     let actor = fixture.authenticate();
-    let small_read = || {
-        small
-            .world
-            .runtime
-            .query(queries::pending_payments())
-            .as_principal(&small_actor)
-            .controls(controls(1))
-            .execute()
-    };
-    let read = || {
-        fixture
-            .world
-            .runtime
-            .query(queries::pending_payments())
-            .as_principal(&actor)
-            .controls(controls(1))
-            .execute()
-    };
-    small_read().expect("the installed policy admits the one-account frontier");
-    read().expect("the installed policy admits the 265-account frontier");
-    let small_work = least_admitting_work(small_read);
-    match with_work_ceiling(small_work, read) {
-        Err(BankApplicationQueryDenial::Execution(denial))
-            if matches!(
-                denial.kind(),
-                BankApplicationOneShotDenialKind::ExecutionRequest(
-                    WorthQueryProviderSessionDenialKind::ExecutionResource {
-                        denial: WorthQueryManagedComputationResourceDenial::WorkExhausted,
-                        ..
-                    }
-                )
-            ) => {}
-        Err(other) => panic!("unexpected denial stage: {other:?}"),
-        Ok(_) => panic!("guarded frontier exceeded its admitted dynamic work"),
-    }
+    let result = fixture
+        .world
+        .runtime
+        .query(queries::pending_payments())
+        .as_principal(&actor)
+        .controls(controls(1))
+        .execute()
+        .expect("the 265-account guarded frontier reads with no caller work ceiling");
+    assert!(result.rows().is_empty());
 }
 
 fn controls(maximum_results: usize) -> BankReadControls {

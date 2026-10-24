@@ -240,47 +240,20 @@ fn caller_live_buffer_wider_than_the_removed_installed_ceiling_governs_the_queue
     }
 }
 
-/// Live controls carry no work field: the installed execution policy's one
-/// work ceiling bounds the subscription, and the same caller controls open
-/// only once that installed ceiling admits them.
+/// Live controls carry no work field and the installed live-work ceiling is
+/// gone (`ee07da2b0e`): the caller's controls open a subscription under the
+/// installed policy, which closes cleanly.
 #[test]
-fn caller_cannot_enlarge_the_installed_live_work_ceiling() {
-    use worth_query_host::facade::application_contribution::{
-        WorthQueryAdvancementDenial as Denial,
-        WorthQueryManagedComputationResourceDenial as Resource,
-    };
-    use worth_query_host::facade::primary_graph::bound_advancement_requests_on_this_thread_for_test as bound;
-    struct Restore(Option<worth_foundational::ExecutionBudget>);
-    impl Drop for Restore {
-        fn drop(&mut self) {
-            bound(self.0);
-        }
-    }
-    let fixture = ordinary_read_world("live-work-ceiling", 0);
+fn live_subscription_opens_without_a_caller_work_ceiling() {
+    let fixture = ordinary_read_world("live-work-unbudgeted", 0);
     let owner = fixture.authenticate(OWNER);
-    let subscribe = || {
-        fixture
-            .world
-            .runtime
-            .account_activity(fixture.personal_account)
-            .as_principal(&owner)
-            .subscribe(WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8).unwrap())
-    };
-    let restore = Restore(bound(Some(worth_foundational::ExecutionBudget::new(
-        std::num::NonZeroUsize::MIN,
-        Some(64 * 1_024 * 1_024),
-        Some(0),
-    ))));
-    let denial = match subscribe() {
-        Err(denial) => denial,
-        Ok(_) => panic!("caller controls cannot widen an exhausted installed work ceiling"),
-    };
-    assert!(matches!(
-        denial,
-        BankApplicationQueryDenial::ExecutionRequest(Denial::Resource(Resource::WorkExhausted))
-    ));
-    drop(restore);
-    let live = subscribe().expect("the installed policy admits the same caller controls");
+    let live = fixture
+        .world
+        .runtime
+        .account_activity(fixture.personal_account)
+        .as_principal(&owner)
+        .subscribe(WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8).unwrap())
+        .expect("the caller's controls open with no work ceiling");
     let BankApplicationLiveCloseOutcome::Completed = live.close() else {
         panic!("the admitted subscription closes cleanly")
     };
