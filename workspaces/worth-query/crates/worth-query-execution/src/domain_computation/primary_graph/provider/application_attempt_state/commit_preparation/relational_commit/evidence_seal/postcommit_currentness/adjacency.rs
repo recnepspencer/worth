@@ -169,21 +169,43 @@ mod tests {
         world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); graph.integration_handle().with_runtime(request_execution, |runtime| {
             let snapshot = selected.application_basis().snapshot_handle();
 
+            // A pair's native revision is one selected owner-index lookup.
             assert!(matches!(
                 rebase_decision_adjacency(&host_custody.borrowed_request_for_test(), runtime, snapshot, fact.clone()),
                 Fact::SourceAdjacencyRevision {
-                    comparison_work_limit: 64,
+                    comparison_work_limit: 1,
                     native_revision: Some(_),
                     ..
                 }
             ));
-            assert!(
-                matches!(
-                    super::super::rebase(&host_custody.borrowed_request_for_test(), runtime, snapshot, super::super::PreparedSourceFactRebase::admit(vec![fact], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &std::collections::BTreeSet::new(), true),
-                    super::super::RebasedSourceFacts::VerificationRequired { .. }
-                ),
-                "failed relation revision acquisition marks the entire output non-reusable"
-            );
+            // The admitted work is the decision's recorded limit; a stale
+            // anchor or a zero limit acquires no revision.
+            let mut stale_anchor = principal.entity_id();
+            stale_anchor.generation.0 += 1;
+            let unrevisable = [
+                Fact::Relation {
+                    relation_kind,
+                    from: stale_anchor,
+                    to: principal.entity_id(),
+                    matching_relations: Vec::new(),
+                },
+                Fact::Adjacency {
+                    relation_kind,
+                    anchor: principal.entity_id(),
+                    direction: DecisionDirection::Outgoing,
+                    maximum_work_units: 0,
+                    relations: Vec::new(),
+                },
+            ];
+            for fact in unrevisable {
+                assert!(
+                    matches!(
+                        super::super::rebase(&host_custody.borrowed_request_for_test(), runtime, snapshot, super::super::PreparedSourceFactRebase::admit(vec![fact], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &std::collections::BTreeSet::new(), true),
+                        super::super::RebasedSourceFacts::VerificationRequired { .. }
+                    ),
+                    "failed relation revision acquisition marks the entire output non-reusable"
+                );
+            }
             let stale_revision = Fact::SourceAdjacencyRevision {
                 relation_kind,
                 anchor: principal.entity_id(),
