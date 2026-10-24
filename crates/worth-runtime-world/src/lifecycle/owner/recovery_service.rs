@@ -258,68 +258,37 @@ where
                             record.settle_relational_recovery(state, result)
                         });
                     }
-                    Ok(_) => recovery.finish(|record, state| record.retain_identity_repair(state)),
-                    Err(error) => match error.deferred_settlement() {
-                        Some(settlement)
-                            if settlement.commit().commit_id
-                                == recovery.commit_identity().commit_id() =>
-                        {
-                            recovery.finish(|record, state| {
-                                record
-                                    .retain_pending_relational_settlement(state, settlement.clone())
-                            });
-                        }
-                        Some(_) | None => {
-                            recovery.finish(|record, state| record.retain_identity_repair(state))
-                        }
-                    },
+                    Ok(_) | Err(_) => {
+                        recovery.finish(|record, state| record.retain_identity_repair(state))
+                    }
                 }
             }
-            _ => match recovery.settlement().cloned() {
-                Some(settlement) => {
-                    let performed_result = settlement.performed_result().clone();
+            _ => {
+                if let Some(commit_identity) = recovery.take_identity_repair() {
                     match self
                         .state
                         .relational
                         .settlement_port()
-                        .repair_deferred_publication_settlement(&settlement)
+                        .repair_pending_publication_settlement(commit_identity.commit_id())
                     {
-                        Ok(receipt)
-                            if receipt == *settlement.commit()
-                                && performed_result.outcome().commit == receipt =>
-                        {
+                        Ok(receipt) if receipt.commit_id == commit_identity.commit_id() => {
                             recovery.finish(|record, state| {
-                                record.settle_relational_recovery(state, performed_result)
+                                record.settle_relational_recovery_with_receipt(state, receipt)
                             });
                         }
-                        Ok(_) | Err(_) => drop(recovery),
-                    }
-                }
-                _ => {
-                    if let Some(commit_identity) = recovery.take_identity_repair() {
-                        match self
-                            .state
-                            .relational
-                            .settlement_port()
-                            .repair_pending_publication_settlement(commit_identity.commit_id())
-                        {
-                            Ok(receipt) if receipt.commit_id == commit_identity.commit_id() => {
-                                recovery.finish(|record, state| {
-                                    record.settle_relational_recovery_with_receipt(state, receipt)
-                                });
-                            }
-                            Ok(_) | Err(_) => {
-                                recovery.restore_identity_repair();
-                                drop(recovery);
-                            }
+                        Ok(_) | Err(_) => {
+                            recovery.restore_identity_repair();
+                            drop(recovery);
                         }
-                    } else {
-                        drop(recovery);
-                        update.finish();
-                        return Err(crate::recovery::RuntimeWorldRecoveryDenial::SettlementEvidenceUnavailable);
                     }
+                } else {
+                    drop(recovery);
+                    update.finish();
+                    return Err(
+                        crate::recovery::RuntimeWorldRecoveryDenial::SettlementEvidenceUnavailable,
+                    );
                 }
-            },
+            }
         }
 
         let actions = record.next_actions().to_vec();

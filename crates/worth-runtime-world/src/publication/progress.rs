@@ -1,8 +1,8 @@
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::branch::RelationalForkOutcome;
+use worth_relational::facade::durability::RelationalDurabilityUnresolved;
 use worth_relational::facade::history::RelationalCommitIdentity;
 use worth_relational::facade::mvcc::PerformedRelationalCommit;
-use worth_relational::facade::publication::DeferredPublicationSettlement;
 use worth_relational::facade::transactions::CommitResult;
 use worth_signal::facade::branch::{SignalBranchAdvanceOutcome, SignalBranchForkOutcome};
 
@@ -29,7 +29,11 @@ pub enum RelationalAttemptProgressPosture {
     Prepared,
     Performed,
     SettlementRequired,
-    SettlementPending,
+    /// The Relational owner could not establish whether its commit became
+    /// durable. Nothing was installed live, but the commit may be durable, so
+    /// this is an owner effect, never no-effect; only reopening the owner
+    /// resolves it.
+    DurabilityUnresolved,
     Settled,
 }
 
@@ -40,11 +44,7 @@ pub(super) enum RelationalProgressEvidence {
         commit_identity: RelationalCommitIdentity,
         successor_basis: AdmittedRelationalBranchBasis,
     },
-    SettlementPending {
-        commit_identity: RelationalCommitIdentity,
-        successor_basis: AdmittedRelationalBranchBasis,
-        settlement: DeferredPublicationSettlement,
-    },
+    DurabilityUnresolved(RelationalDurabilityUnresolved),
     SettledReceipt {
         commit_identity: RelationalCommitIdentity,
         successor_basis: AdmittedRelationalBranchBasis,
@@ -75,22 +75,12 @@ impl RelationalAttemptProgress {
         }
     }
 
-    /// Record a performed Relational route after its owner consumed the
-    /// linear performed witness and returned a deferred settlement. The
-    /// successor basis is captured before that consuming owner call; the
-    /// deferred settlement is the remaining owner-issued repair authority.
-    pub(crate) fn settlement_pending(
-        commit_identity: RelationalCommitIdentity,
-        successor_basis: AdmittedRelationalBranchBasis,
-        settlement: DeferredPublicationSettlement,
-    ) -> Self {
+    /// Record a Relational publication whose durable fate the owner could not
+    /// establish. It carries no successor basis: nothing was installed live.
+    pub(crate) fn durability_unresolved(unresolved: RelationalDurabilityUnresolved) -> Self {
         Self {
-            posture: RelationalAttemptProgressPosture::SettlementPending,
-            evidence: Some(RelationalProgressEvidence::SettlementPending {
-                commit_identity,
-                successor_basis,
-                settlement,
-            }),
+            posture: RelationalAttemptProgressPosture::DurabilityUnresolved,
+            evidence: Some(RelationalProgressEvidence::DurabilityUnresolved(unresolved)),
             fork: None,
             fork_successor_basis: None,
         }
@@ -152,15 +142,13 @@ impl RelationalAttemptProgress {
             Some(RelationalProgressEvidence::SettlementRequired {
                 successor_basis, ..
             })
-            | Some(RelationalProgressEvidence::SettlementPending {
-                successor_basis, ..
-            })
             | Some(RelationalProgressEvidence::Settled {
                 successor_basis, ..
             }) => Some(successor_basis),
             Some(RelationalProgressEvidence::SettledReceipt {
                 successor_basis, ..
             }) => Some(successor_basis),
+            Some(RelationalProgressEvidence::DurabilityUnresolved(_)) => None,
             None => self.fork_successor_basis.as_ref(),
         }
     }

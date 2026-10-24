@@ -3,7 +3,6 @@ mod combined_race;
 mod faults;
 mod progress;
 mod races;
-mod settlement;
 use super::*;
 use std::{sync::mpsc, time::Duration};
 use worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest as Boundary;

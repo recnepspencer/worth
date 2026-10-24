@@ -1,7 +1,6 @@
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::branch::RelationalForkOutcome;
 use worth_relational::facade::history::RelationalCommitIdentity;
-use worth_relational::facade::publication::DeferredPublicationSettlement;
 use worth_relational::facade::transactions::CommitResult;
 
 use crate::history::CompositeComponentChangePosture;
@@ -37,10 +36,10 @@ enum CompositeRelationalOwnerResultKind {
         commit_identity: RelationalCommitIdentity,
         successor_basis: AdmittedRelationalBranchBasis,
     },
-    SettlementPending {
-        commit_identity: RelationalCommitIdentity,
-        successor_basis: AdmittedRelationalBranchBasis,
-        _settlement: DeferredPublicationSettlement,
+    /// The owner's durable publication fate is unknown. Nothing was installed
+    /// live, so there is no commit identity or successor basis to name.
+    DurabilityUnresolved {
+        _unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
     },
 }
 
@@ -134,23 +133,6 @@ impl CompositeOwnerExecutionResults {
         }
     }
 
-    pub(crate) fn with_relational_settlement_pending(
-        self,
-        commit_identity: RelationalCommitIdentity,
-        successor_basis: AdmittedRelationalBranchBasis,
-        settlement: DeferredPublicationSettlement,
-    ) -> Self {
-        let (_relational, signal) = self.into_parts();
-        Self {
-            relational: CompositeRelationalOwnerResult::settlement_pending(
-                commit_identity,
-                successor_basis,
-                settlement,
-            ),
-            signal,
-        }
-    }
-
     fn into_parts(self) -> (CompositeRelationalOwnerResult, CompositeSignalOwnerResult) {
         (self.relational, self.signal)
     }
@@ -162,7 +144,7 @@ impl CompositeOwnerExecutionResults {
             }
             CompositeRelationalOwnerResultKind::Published { .. }
             | CompositeRelationalOwnerResultKind::Forked { .. }
-            | CompositeRelationalOwnerResultKind::SettlementPending { .. }
+            | CompositeRelationalOwnerResultKind::DurabilityUnresolved { .. }
             | CompositeRelationalOwnerResultKind::SettlementRequired { .. } => {
                 CompositeComponentChangePosture::Published
             }
@@ -185,13 +167,11 @@ impl CompositeOwnerExecutionResults {
             CompositeRelationalOwnerResultKind::Published {
                 commit_identity, ..
             }
-            | CompositeRelationalOwnerResultKind::SettlementPending {
-                commit_identity, ..
-            }
             | CompositeRelationalOwnerResultKind::SettlementRequired {
                 commit_identity, ..
             } => Some(commit_identity.clone()),
-            CompositeRelationalOwnerResultKind::Forked { .. } => None,
+            CompositeRelationalOwnerResultKind::Forked { .. }
+            | CompositeRelationalOwnerResultKind::DurabilityUnresolved { .. } => None,
         }
     }
 
@@ -199,11 +179,9 @@ impl CompositeOwnerExecutionResults {
         &self,
     ) -> Option<&worth_relational::facade::branch::RelationalBranchBasisAdmissionIdentity> {
         match &self.relational.result {
-            CompositeRelationalOwnerResultKind::RetainedExact => None,
+            CompositeRelationalOwnerResultKind::RetainedExact
+            | CompositeRelationalOwnerResultKind::DurabilityUnresolved { .. } => None,
             CompositeRelationalOwnerResultKind::Published {
-                successor_basis, ..
-            }
-            | CompositeRelationalOwnerResultKind::SettlementPending {
                 successor_basis, ..
             }
             | CompositeRelationalOwnerResultKind::SettlementRequired {
@@ -223,7 +201,7 @@ impl CompositeOwnerExecutionResults {
             CompositeRelationalOwnerResultKind::RetainedExact
             | CompositeRelationalOwnerResultKind::Published { .. }
             | CompositeRelationalOwnerResultKind::SettlementRequired { .. }
-            | CompositeRelationalOwnerResultKind::SettlementPending { .. } => None,
+            | CompositeRelationalOwnerResultKind::DurabilityUnresolved { .. } => None,
         }
     }
 
@@ -234,7 +212,7 @@ impl CompositeOwnerExecutionResults {
             CompositeRelationalOwnerResultKind::Published { settlement, .. } => settlement.as_ref(),
             CompositeRelationalOwnerResultKind::RetainedExact
             | CompositeRelationalOwnerResultKind::Forked { .. }
-            | CompositeRelationalOwnerResultKind::SettlementPending { .. }
+            | CompositeRelationalOwnerResultKind::DurabilityUnresolved { .. }
             | CompositeRelationalOwnerResultKind::SettlementRequired { .. } => None,
         }
     }
@@ -244,7 +222,7 @@ impl CompositeOwnerExecutionResults {
             CompositeRelationalOwnerResultKind::Published { result, .. } => result.as_deref(),
             CompositeRelationalOwnerResultKind::RetainedExact
             | CompositeRelationalOwnerResultKind::Forked { .. }
-            | CompositeRelationalOwnerResultKind::SettlementPending { .. }
+            | CompositeRelationalOwnerResultKind::DurabilityUnresolved { .. }
             | CompositeRelationalOwnerResultKind::SettlementRequired { .. } => None,
         }
     }
@@ -259,7 +237,7 @@ impl CompositeOwnerExecutionResults {
             }
             CompositeRelationalOwnerResultKind::RetainedExact
             | CompositeRelationalOwnerResultKind::Forked { .. }
-            | CompositeRelationalOwnerResultKind::SettlementPending { .. }
+            | CompositeRelationalOwnerResultKind::DurabilityUnresolved { .. }
             | CompositeRelationalOwnerResultKind::SettlementRequired { .. } => None,
         }
     }
@@ -282,7 +260,6 @@ impl CompositeOwnerExecutionResults {
                     self.relational.result,
                     CompositeRelationalOwnerResultKind::Published { .. }
                         | CompositeRelationalOwnerResultKind::SettlementRequired { .. }
-                        | CompositeRelationalOwnerResultKind::SettlementPending { .. }
                 )
             }
             RelationalComponentPlanPosture::AdoptSettled => matches!(

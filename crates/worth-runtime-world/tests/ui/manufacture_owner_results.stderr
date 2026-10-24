@@ -12,18 +12,16 @@ error[E0624]: associated function `from_components` is private
   | |     ) -> Self {
   | |_____________- private associated function defined here
 
-error[E0624]: associated function `settlement_pending` is private
+error[E0624]: associated function `durability_unresolved` is private
  --> tests/ui/manufacture_owner_results.rs:4:45
   |
-4 |       let _ = CompositeRelationalOwnerResult::settlement_pending;
-  |                                               ^^^^^^^^^^^^^^^^^^ private associated function
+4 |       let _ = CompositeRelationalOwnerResult::durability_unresolved;
+  |                                               ^^^^^^^^^^^^^^^^^^^^^ private associated function
   |
  ::: src/publication/owner_results/relational.rs
   |
-  | /     pub(crate) fn settlement_pending(
-  | |         commit_identity: RelationalCommitIdentity,
-  | |         successor_basis: AdmittedRelationalBranchBasis,
-  | |         settlement: DeferredPublicationSettlement,
+  | /     pub(crate) fn durability_unresolved(
+  | |         unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
   | |     ) -> Self {
   | |_____________- private associated function defined here
 
