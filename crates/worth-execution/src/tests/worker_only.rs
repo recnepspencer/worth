@@ -281,8 +281,7 @@ fn worker_only_native_allocation_preserves_physical_layout_denial() {
                 usize::MAX,
                 crate::ExecutionAllocationPolicy::SystemAllocation,
             )
-            .err()
-            .expect("layout overflow");
+            .expect_err("layout overflow");
             assert!(matches!(
                 denial.classify(),
                 crate::ExecutionAllocationDenialClass::Physical(

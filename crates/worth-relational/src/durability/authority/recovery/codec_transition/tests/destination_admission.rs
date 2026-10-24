@@ -20,8 +20,7 @@ fn assert_destination_refused_unchanged(
     let error = target
         .durability_recovery()
         .restore_native_checkpoint_for_codec_transition_with_authority(execution, native)
-        .err()
-        .expect("bound destination must be refused");
+        .expect_err("bound destination must be refused");
     let RelationalRecoveryStop::Durability(error) = error else {
         panic!("destination refusal must retain its durability classification")
     };

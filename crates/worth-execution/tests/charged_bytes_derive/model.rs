@@ -7,6 +7,8 @@ pub struct ResidentValue {
     pub total: u64,
     pub labels: Vec<String>,
     #[serde(skip)]
+    // The box is the subject: the court charges the boxed Vec header too.
+    #[allow(clippy::box_collection)]
     pub resident_notes: Option<Box<Vec<String>>>,
 }
 
