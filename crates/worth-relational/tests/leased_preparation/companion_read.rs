@@ -6,8 +6,8 @@ use std::sync::{
 };
 use worth_relational::facade::{
     mvcc::{
-        CompanionBranchCell, CompanionCellEditStop, CompanionPreflightBudget,
-        CompanionPreflightStop, PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
+        CompanionBranchCell, CompanionCellEditStop, CompanionPreflightStop,
+        PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
         RelationalPublicationCompanion, RelationalPublicationDeferred,
         RelationalPublicationOutcome,
     },
@@ -79,15 +79,7 @@ fn install(
         edit_under_reservation: AtomicBool::new(false),
         refused_edits: AtomicUsize::new(0),
     });
-    let registration = pending
-        .activate(
-            publisher.clone(),
-            CompanionPreflightBudget {
-                maximum_work_visits: Some(1_000_000),
-                maximum_preparation_bytes: Some(32 * 1024 * 1024),
-            },
-        )
-        .unwrap();
+    let registration = pending.activate(publisher.clone()).unwrap();
     (registration, publisher, other)
 }
 

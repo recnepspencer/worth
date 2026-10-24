@@ -126,7 +126,7 @@ fn authored_body_input_snapshot_survives_preencoded_owned_and_clone_handoffs() {
     );
     assert_eq!(calls.load(Ordering::SeqCst), 1);
     let owned_calls = Arc::new(AtomicU64::new(0));
-    let owned = ApplicationOwnedMutationIdentities::<DocumentRetentionSchema<100>, BodyBinding<100>>::encode_admitted(key, SetRetentionInput { identity: DOCUMENT_IDENTITY.to_owned(), retention_days: 56, serialization_calls: Some(owned_calls.clone()) }, &mut |_| Ok::<(), ()>(())).unwrap();
+    let owned = ApplicationOwnedMutationIdentities::<DocumentRetentionSchema<100>, BodyBinding<100>>::encode(key, SetRetentionInput { identity: DOCUMENT_IDENTITY.to_owned(), retention_days: 56, serialization_calls: Some(owned_calls.clone()) }).unwrap();
     assert_eq!(
         owned
             .borrow()
