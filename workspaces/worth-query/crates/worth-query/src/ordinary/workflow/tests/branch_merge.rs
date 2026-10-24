@@ -12,7 +12,6 @@ use crate::harness::fixtures::effect_authorities::{
 };
 use crate::runtime::tests::support::{
     stateful_bridge_task_runtime, stateful_bridge_task_runtime_with_merge,
-    stateful_bridge_task_runtime_with_merge_durable_fault,
 };
 use crate::workflow::{
     synthetic_runtime_workflow_binding_scoped_for_branch_snapshot_binding_identity,
@@ -24,7 +23,7 @@ use crate::workflow::{
 use super::super::{
     branch_merge, declare_branch_merge, WorthQueryBranchMergeCompletion,
     WorthQueryBranchMergeDeclaration, WorthQueryBranchMergeDeclarationDenialKind,
-    WorthQueryBranchMergeNextAction, WorthQueryBranchMergeStopSource,
+    WorthQueryBranchMergeStopSource,
 };
 
 #[test]
@@ -62,81 +61,6 @@ fn branch_merge_runs_the_real_relational_effect_lifecycle() {
     assert!(completion.aftermath().commit_id() > 0);
     assert!(completion.aftermath().version_id() > 0);
     assert!(completion.diagnostics().is_some());
-}
-
-#[test]
-fn ordinary_branch_merge_preserves_settlement_from_its_real_backend_path() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let declaration = merge_declaration();
-    let (runtime, probe) = stateful_bridge_task_runtime_with_merge_durable_fault(request_execution);
-    let mut workspace = runtime
-        .workspace("ordinary-branch-merge-durable-fault")
-        .expect("workspace should open");
-    let context = branch_merge(request_execution, &workspace, &declaration)
-        .expect("merge authority should admit");
-
-    let outcome = declaration
-        .using(context)
-        .run(request_execution, &mut workspace);
-    let deferred = outcome
-        .settlement_deferred()
-        .expect("performed merge must return a settlement-deferred outcome");
-    assert_eq!(
-        deferred.next_action(),
-        WorthQueryBranchMergeNextAction::RepairDeferredBranchMergeSettlement
-    );
-    let commit_id = deferred.commit_id();
-    assert_eq!(
-        deferred.counters().lower_runtime_execution_attempt_count(),
-        1
-    );
-    assert_eq!(
-        deferred
-            .counters()
-            .lower_runtime_execution_completed_count(),
-        1
-    );
-    assert_eq!(deferred.counters().settlement_deferred_count(), 1);
-
-    let mut foreign_workspace = stateful_bridge_task_runtime_with_merge(request_execution)
-        .workspace("ordinary-branch-merge-foreign-settlement")
-        .expect("foreign workspace opens");
-    assert!(matches!(
-        foreign_workspace.repair_deferred_branch_merge_settlement(request_execution, deferred),
-        Err(crate::runtime::WorthQuerySettlementRepairError::Settlement(
-            worth_relational::facade::publication::DeferredPublicationSettlementError::ForeignRuntime {
-                ..
-            }
-        ))
-    ));
-    drop(outcome);
-
-    let repaired = workspace
-        .repair_pending_branch_merge_settlement(request_execution, commit_id)
-        .expect("public workspace owner repairs settlement after the token is dropped");
-    let repeated = workspace
-        .repair_pending_branch_merge_settlement(request_execution, commit_id)
-        .expect("public workspace settlement repair is idempotent");
-    assert_eq!(repaired.commit_id, commit_id);
-    assert_eq!(repeated, repaired);
-    assert_eq!(
-        probe.main_entity_count(request_execution),
-        2,
-        "settlement recovery must preserve the source-only entity on the target branch"
-    );
-
-    let child = declare_branch_merge("candidate", "main").expect("child merge declares");
-    let child_context =
-        branch_merge(request_execution, &workspace, &child).expect("child merge authority admits");
-    let child_outcome = child
-        .using(child_context)
-        .run(request_execution, &mut workspace);
-    assert!(
-        child_outcome.completed().is_some(),
-        "a subsequent public operation must proceed after repair"
-    );
 }
 
 #[test]
@@ -259,8 +183,13 @@ fn run_merge(
         crate::ordinary::workflow::WorthQueryBranchMergeOutcome::ControlStopped(stopped) => {
             panic!("branch merge control stopped: {}", stopped.message())
         }
-        crate::ordinary::workflow::WorthQueryBranchMergeOutcome::SettlementDeferred(deferred) => {
-            panic!("branch merge requires settlement: {}", deferred.message())
+        crate::ordinary::workflow::WorthQueryBranchMergeOutcome::DurabilityUnresolved(
+            unresolved,
+        ) => {
+            panic!(
+                "branch merge durability unresolved: {}",
+                unresolved.message()
+            )
         }
     }
 }

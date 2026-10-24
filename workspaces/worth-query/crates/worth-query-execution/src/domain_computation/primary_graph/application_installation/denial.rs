@@ -19,12 +19,11 @@ pub enum WorthQueryInMemoryApplicationDenial {
         checkpoint: super::super::WorthQueryApplicationCheckpoint,
         cause: Box<WorthQueryInMemoryApplicationDenial>,
     },
-    /// Native publication performed, but settlement stopped without repair custody.
-    /// No World or acknowledged successor was issued.
+    /// Native publication performed, but settlement refused its performed
+    /// witness. No World or acknowledged successor was issued.
     CheckpointTransitionSettlementFailed(
         Box<worth_relational::facade::transactions::TransactionCommitError>,
     ),
-    CheckpointTransitionDeferred(Box<super::WorthQueryCheckpointTransitionRecovery>),
     /// Native target settlement acknowledged, but checkpoint capture stopped.
     CheckpointTransitionCaptureStopped(Box<super::WorthQueryCheckpointTransitionRecovery>),
     /// Native settlement acknowledged; final installation refused with its
@@ -65,8 +64,7 @@ impl std::error::Error for WorthQueryInMemoryApplicationDenial {
             | Self::ProgramAdmissionIncomplete
             | Self::RequiredOutputSourceAction(_) => None,
             Self::WorkflowAuthorityRequiresProgram => None,
-            Self::CheckpointTransitionDeferred(_)
-            | Self::CheckpointTransitionCaptureStopped(_)
+            Self::CheckpointTransitionCaptureStopped(_)
             | Self::CheckpointTransitionFinalizationStopped(_)
             | Self::CheckpointTransitionSettlementFailed(_) => None,
             Self::CheckpointTransitionAcknowledged { cause, .. } => Some(cause.as_ref()),

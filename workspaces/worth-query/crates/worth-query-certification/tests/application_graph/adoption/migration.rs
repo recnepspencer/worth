@@ -7,7 +7,7 @@ mod unowned_binding;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationProgramAdoptionPreparationDenial,
     WorthQueryApplicationProgramMigrationPreparationOutcome, WorthQueryApplicationRequestExt,
-    WorthQueryBranchAdoptionPublicationOutcome, WorthQueryBranchAdoptionRecoveryOutcome,
+    WorthQueryBranchAdoptionPublicationOutcome,
 };
 use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 
@@ -16,10 +16,7 @@ use crate::document_retention_model::operator_identity::{authenticate_operator, 
 use crate::document_retention_model::presented_request::set_retention;
 use crate::document_retention_model::programs::RetentionProgramP1;
 use crate::document_retention_model::readback::read_retention;
-use crate::document_retention_model::retention_entry::{
-    candidate_count, reset_candidate_count, SetRetentionIntent, DOCUMENT_IDENTITY,
-    MIGRATION_CANDIDATE_PROBE_RETENTION,
-};
+use crate::document_retention_model::retention_entry::{SetRetentionIntent, DOCUMENT_IDENTITY};
 use crate::document_retention_model::schema::SetRetentionInput;
 use crate::document_retention_model::settled_verdict::{settle, RetentionVerdict};
 
@@ -205,110 +202,4 @@ fn migration_candidate_cannot_cross_the_source_product_head() {
         )
     ));
     assert_eq!(read_retention(host.runtime(), host.current_world()), 8);
-}
-
-#[test]
-fn unpublished_migration_recovery_never_reruns_candidate_authoring() {
-    let host_request = crate::test_request_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let host = publish_on_first_program();
-    let initial = host.current_world();
-    assert_eq!(
-        settle(set_retention(
-            &host,
-            initial,
-            P0_ONLY_RETENTION,
-            0x9175_2121,
-        )),
-        RetentionVerdict::Performed(P0_ONLY_RETENTION),
-    );
-    let branch = host.current_world();
-    let target = *host
-        .supported_program::<RetentionProgramP1>()
-        .expect("P1 is rostered")
-        .owned_revision();
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    reset_candidate_count(MIGRATION_CANDIDATE_PROBE_RETENTION);
-    let migration = match host
-        .runtime()
-        .with_application_advancement(&scope, |phase| {
-            host.runtime()
-                .request(&principal, &scope)
-                .on_branch(branch)
-                .advanced()
-                .mutate(SetRetentionIntent {
-                    input: SetRetentionInput {
-                        identity: DOCUMENT_IDENTITY.to_owned(),
-                        retention_days: MIGRATION_CANDIDATE_PROBE_RETENTION,
-                    },
-                })
-                .without_source()
-                .idempotency(&0x9175_2122)
-                .prepare_program_migration(
-                    &phase,
-                    &target,
-                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("migration prepares")
-        })
-        .expect("the installed host admits migration preparation")
-    {
-        WorthQueryApplicationProgramMigrationPreparationOutcome::Prepared(prepared) => prepared,
-        _ => panic!("migration must complete"),
-    };
-    assert_eq!(candidate_count(MIGRATION_CANDIDATE_PROBE_RETENTION), 1);
-    let programs = host
-        .runtime()
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .programs();
-    let requirements = programs.compare(&target).expect("comparison succeeds");
-    let prepared = programs
-        .adopt(&requirements)
-        .expect("declared adoption capability admits")
-        .migration(migration)
-        .prepare(64)
-        .expect("migration adoption prepares");
-
-    host.runtime()
-        .fail_next_durable_append_for_test(request_execution);
-    let unpublished = match prepared.publish(host.runtime(), &principal, &scope) {
-        WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
-            panic!("authorized adoption refused: {cause:?}")
-        }
-        WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, .. } => {
-            panic!("execution admission refused: {cause:?}")
-        }
-        WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
-            panic!("the declared host policy admits adoption: {cause:?}")
-        }
-        WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => unpublished,
-        _ => panic!("the injected durable append failure must retain custody"),
-    };
-    assert!(unpublished.migration().is_some());
-    let recovery = unpublished.into_recovery();
-    assert!(recovery.migration().is_some());
-    let outcome = host
-        .runtime()
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .programs()
-        .recover(recovery)
-        .unwrap_or_else(|_| panic!("the exact migration adoption must recover"));
-    let performed = match outcome {
-        WorthQueryBranchAdoptionRecoveryOutcome::Performed { adoption, cleanup } => {
-            cleanup.expect("recovery cleanup drains");
-            adoption
-        }
-        _ => panic!("settled migration adoption must perform"),
-    };
-    assert!(performed.migration().is_some());
-    assert_eq!(performed.relational_owner_contacts(), 0);
-    assert_eq!(candidate_count(MIGRATION_CANDIDATE_PROBE_RETENTION), 1);
-    assert_eq!(
-        read_retention(host.runtime(), host.current_world()),
-        MIGRATION_CANDIDATE_PROBE_RETENTION,
-    );
 }

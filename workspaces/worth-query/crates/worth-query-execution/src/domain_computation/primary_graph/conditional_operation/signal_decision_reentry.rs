@@ -189,27 +189,11 @@ pub(super) fn retained_decision_counts(
                 let _ = (evidence, kind);
                 counts.failed += 1;
             }
-            WorthQueryRetainedConditionalDecision::OperationSettlementExecutionDenied(
-                evidence,
-                deferred,
-                kind,
-            ) => {
-                let _ = (evidence, deferred, kind);
-                counts.deferred += 1;
-            }
             WorthQueryRetainedConditionalDecision::OperationRetryable(evidence, detail)
             | WorthQueryRetainedConditionalDecision::OperationIndeterminate(evidence, detail) => {
                 let _decision = evidence.signal().class();
                 let _failure_cause = detail;
                 counts.failed += 1;
-            }
-            WorthQueryRetainedConditionalDecision::OperationSettlementDeferred(
-                evidence,
-                deferred,
-            ) => {
-                let _decision = evidence.signal().class();
-                let _settlement = deferred.settlement();
-                counts.deferred += 1;
             }
             WorthQueryRetainedConditionalDecision::OperationCommitted(_)
             | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_) => {}

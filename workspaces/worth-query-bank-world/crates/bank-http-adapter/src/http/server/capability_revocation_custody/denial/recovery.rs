@@ -20,30 +20,6 @@ pub(super) fn managed(cause: WorthQueryManagedApplicationRecoveryDenial) -> Bank
     }
 }
 
-pub(super) fn settlement(cause: WorthQueryCommandSettlementDenial) -> BankHttpDenial {
-    use WorthQueryCommandSettlementDenial as D;
-    match cause {
-        D::Execution(cause) => advancement_denial::advancement(cause),
-        D::Authorization(cause) => authorization_denial::authorization_denial(cause.kind().into()),
-        D::ForeignAdmission | D::BindingMismatch => operator(),
-        D::Recovery(cause) => settlement_recovery(cause),
-    }
-}
-
-fn settlement_recovery(cause: WorthQueryApplicationSettlementRecoveryError) -> BankHttpDenial {
-    use WorthQueryApplicationSettlementRecoveryError as D;
-    match cause {
-        D::ExecutionDenied(cause) => mutation_application::pending_execution_stop(cause),
-        D::ActiveSnapshotCapacityExhausted { .. } | D::RetentionCapacityExhausted => unavailable(),
-        D::RetentionIdentityExhausted
-        | D::SnapshotIdentityExhausted
-        | D::Durability(_)
-        | D::Publication(_)
-        | D::IdempotencyAbsent
-        | D::IdempotencyDrift => operator(),
-    }
-}
-
 fn world(cause: RuntimeWorldRecoveryDenial) -> BankHttpDenial {
     use RuntimeWorldRecoveryDenial as D;
     match cause {

@@ -100,13 +100,16 @@ pub(super) fn transaction_commit_stop(
         Error::PublicationDeferred { deferred, .. } => {
             Stop::Deferred(publication_deferred(deferred))
         }
-        Error::PerformedButDurabilityDeferred {
-            settlement, error, ..
-        } => Stop::SettlementDeferred(
-            crate::domain_computation::WorthQueryProviderSessionSettlementDeferred::new(
-                error.detail,
-                settlement,
-            ),
+        // The durable medium may hold the commit, so it is never a pre-effect
+        // denial: the session requires commit recovery.
+        error @ Error::DurabilityUnresolved { .. } => Stop::Denied(
+            WorthQueryProviderSessionFailure::new(
+                crate::domain_computation::WorthQueryProviderSessionDenialKind::ProviderRejected,
+                WorthQueryProviderSessionProtocolStage::Commit,
+                error.detail(),
+                crate::domain_computation::WorthQueryProviderSessionProtocolCounters::default(),
+            )
+            .with_native_preparation_error(error),
         ),
         error @ (Error::Conflict { .. }
         | Error::Publication { .. }

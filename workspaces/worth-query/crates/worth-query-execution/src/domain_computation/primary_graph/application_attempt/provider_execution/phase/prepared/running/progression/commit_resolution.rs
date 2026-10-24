@@ -7,8 +7,7 @@ use crate::domain_computation::WorthQueryProviderCompareAndCommitOutcome;
 use crate::domain_computation::primary_graph::application_attempt::provider_recomparison::certify_provider_recomparison;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationCommitDeferred, WorthQueryApplicationSettlementDeferred,
-    WorthQueryApplicationStaleAttempt,
+    WorthQueryApplicationCommitDeferred, WorthQueryApplicationStaleAttempt,
     WorthQueryCommittedReceiptProjection,
     WorthQueryPendingApplicationCommitReceipt, WorthQueryApplicationCommitRecoveryKind,
     WorthQueryApplicationUnresolvedCommitEvidence,
@@ -159,23 +158,6 @@ pub(super) fn finish_authorized_compare(
         }
         WorthQueryProviderCompareAndCommitOutcome::ControlStopped(stopped) => {
             crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::control_stopped_outcome(stopped)
-        }
-        WorthQueryProviderCompareAndCommitOutcome::SettlementDeferred(deferred) => {
-            WorthQueryProviderProgressionOutcome::SettlementDeferred(
-                WorthQueryApplicationSettlementDeferred::from_provider_session(
-                    deferred,
-                    context.idempotency,
-                    context
-                        .product
-                        .observation()
-                        .basis()
-                        .relational_basis()
-                        .identity()
-                        .branch_id()
-                        .clone(),
-                    &context.product,
-                ),
-            )
         }
         WorthQueryProviderCompareAndCommitOutcome::Indeterminate(failure) => {
             resolve_indeterminate_commit(execution, context, failure)

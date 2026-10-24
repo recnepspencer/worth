@@ -109,7 +109,7 @@ asked to do:
 | Runtime Bridge | Installed correspondence and lawful lowering between Query and lower runtimes | Relational facts, Signal decisions, or application policy |
 | Signal | Policy evaluation, producer-local scoped invalidation, readiness and scheduling, performed execution receipts, component branch graph and bases, per-branch execution cells, weak owner services, local evaluation slots, and condition outcomes | Application capability admission, Query maintenance authority, composite product currentness, or relational mutation |
 | Runtime World | Memory-resident product branch references, immutable single-parent composite history, exact component-basis composition, coordinated publication, and bounded retained owner effects | Application authorization, component truth or settlement authority, durable restart, or Query public completion |
-| Query | Installed application meaning, authority composition, admission, typed progression, execution products, idempotency and outbox meaning, Query index publication, typed settlement recovery, runtime-local aftermath recovery, and consumer publication | Authentication truth, graph truth, policy truth, external completion, or Relational durability authority |
+| Query | Installed application meaning, authority composition, admission, typed progression, execution products, idempotency and outbox meaning, Query index publication, typed unresolved-durability outcomes, runtime-local aftermath recovery, and consumer publication | Authentication truth, graph truth, policy truth, external completion, or Relational durability authority |
 | Store | Durable persistence, journals, restart checkpoints, and reconstructive state | Ordinary Query admission, live recovery authority, or external completion |
 | External effect owner | Whether an escaping consequence was accepted or completed | Query commit, application authorization, or recovery authority |
 
@@ -214,12 +214,15 @@ a maintainer keeps when changing the facades.
   selection. The returned ordinary operation owns source publication,
   required-output delivery and close. Recovery products remain available through
   `primary_graph` and `publication::application_aftermath`.
-- **Settlement recovery stays opaque.** The host reaches it through
-  `WorthQueryApplicationSettlementDeferred` and
-  `WorthQueryPrimaryGraphApplicationRuntime::recover_deferred_application_settlement`.
-  The host never receives Relational's raw settlement capability. Recovery
-  finishes an already-performed commit and refreshes Query-owned publication;
-  it does not rerun the operation.
+- **Unresolved durability stays typed.** Relational publishes every commit to
+  its durable medium before the live cutover, so a performed commit has no
+  settlement left to repair. An unknown durable fate reaches the host as
+  `WorthQueryApplicationCommitOutcome::Indeterminate` (commit recovery
+  required) or, for a World-published commit, as `ProductUnpublished` with
+  `ProductUnpublishedCause::RelationalDurabilityUnresolved`. Nothing was
+  installed live; the Relational owner refuses later publications until it is
+  reopened, and reopening resolves the fate. The host never receives
+  Relational's raw unresolved-durability value and never reruns the operation.
 - **Product workflow enters through `primary_graph` and `application_entry`.**
   On the application runtime, `current_world()` returns the managed occurrence
   and `branches()` covers fork and reuse creation, bounded history, recovery
@@ -986,13 +989,12 @@ behind them:
   Even an operation with no domain mutation must commit its outbox and
   idempotency fact before a consequence escapes. The external owner decides
   completion; Query records what it observed.
-- `SettlementDeferred` means the branch moved but durability acknowledgement or
-  Query's derived publication did not finish. The typed deferred carrier is the
-  only legal retry input. Recovery repairs the performed publication, refreshes
-  Query indexes, proves the original commit is still in current ancestry, binds
-  the current Bridge head, and readmits idempotency when required, under the
-  application commit serialization boundary. It never reruns the mutation or
-  obtains a raw Relational settlement token. The outcome table is in
+- Relational publishes a commit to its durable medium before the live cutover,
+  so settlement after a performed commit cannot fail or defer. When the durable
+  fate is unknown, nothing was installed live but the commit may be durable:
+  the application outcome is `Indeterminate`, the Relational owner refuses
+  later publications until reopened, and reopening resolves the fate. The
+  caller never retries the mutation from that outcome. The outcome table is in
   [§11](../../../../../docs/how-it-works.md#11-outcomes-every-way-a-request-can-end).
 
 See [Provider Sessions And Decision Read-Sets](./domain-capabilities/provider-sessions-and-decision-read-sets.md),
@@ -1009,9 +1011,10 @@ publication recovery. Engine notes:
 - Relational savepoints and rollback discard provisional transaction work. They
   create no application authority, do not alter committed history, and are not
   a recorded inverse, compensation, reconciliation, or recovery.
-- Publication-settlement recovery comes before ordinary aftermath:
-  `WorthQueryApplicationSettlementDeferred` directs the host to
-  `WorthQueryApplicationSettlementNextAction::RecoverDeferredApplicationSettlement`.
+- An unresolved durable fate comes before ordinary aftermath: an
+  `Indeterminate` application outcome requires commit recovery, and no
+  aftermath handle opens until the Relational owner is reopened and the fate
+  is resolved.
 - Runtime-local recovery opens from the exact sealed commit receipt and stays
   bound to the originating runtime, operation, principal, action, scope,
   idempotency record, outbox observation, and currentness evidence. A wire
@@ -1241,12 +1244,12 @@ values (commit, aftermath posture, dispatch posture, recovery support) are
 weaker than execution authority: they cannot mint a recovery handle,
 redispatch, compensate, or resolve an indeterminate result.
 
-A performed-but-unsettled mutation returns opaque typed recovery authority.
-Generic effect paths use `EffectExecutionSettlementDeferred` or
-`EffectBatchSettlementDeferred` and repair with fresh owning
-`EffectExecutionAuthority`. Application and branch-merge paths wrap the same
-fact in their own carriers, so callers never reach the raw
-`DeferredPublicationSettlement`.
+A mutation whose durable fate is unknown returns a typed unresolved posture,
+never a denial. Generic effect paths use `EffectExecutionDurabilityUnresolved`
+or `EffectBatchDurabilityUnresolved`; branch merge uses
+`WorthQueryBranchMergeDurabilityUnresolved` with next action
+`ReopenRelationalOwner`; application paths surface `Indeterminate`. Nothing was
+installed live, and reopening the Relational owner resolves the fate.
 
 Downstream runtimes consume bound projections or publication receipts and never
 reach behind the facade. Transport adapts a published product to HTTP,
@@ -1312,8 +1315,8 @@ Use this table when deciding where a change belongs.
 | Which immutable root and exact observation does a branch reference select? | Relational |
 | Which branch cell linearizes a prepared candidate? | Relational, independently per branch |
 | Which exact Signal branch basis and execution cell govern component work? | Signal owner services, independently per branch |
-| Did canonical branch movement occur even though durability acknowledgement failed? | Relational performed-publication evidence |
-| May an already-performed application or merge publication be repaired through this facade? | Query typed settlement recovery over the owning Relational runtime |
+| Is a commit's durable fate unresolved? | Relational `DurabilityUnresolved`; reopening the Relational owner resolves it |
+| May a performed commit whose witness was lost be repaired? | Query pending-settlement repair by commit identity over the owning Relational runtime |
 | How does installed Query meaning correspond to lower-runtime structures? | Runtime Bridge |
 | Which installed semantic dependencies match one committed change? | Runtime Bridge candidate selection followed by Query admission |
 | Which scoped recomputation did the lower runtime actually perform? | Signal performed execution receipt |
@@ -1399,15 +1402,14 @@ Do not:
 - hide typed denial, stale, cancellation, or resource state inside a generic
   success or failure flag;
 - treat Relational rollback as an application-level authority transition;
-- retry an application mutation or merge after a settlement-deferred outcome;
+- retry an application mutation or merge after a durability-unresolved or
+  `Indeterminate` outcome;
 - keep a caller-held intent, idempotency key, and preconditions to hand-roll a
   retry or continuation wrapper for a performed or required-output mutation.
   [Milestone 9.17.6.4](../../../../../plans/WORTH-query/milestone-9.17.6.4.md)
   (planned) makes Query own the ordinary application's operation continuation;
   until it lands, use the existing documented recovery entrances and report
   any gap instead of building a wrapper;
-- expose, serialize, or repair from a raw `DeferredPublicationSettlement`
-  instead of the audience facade's opaque typed carrier;
 - let an opaque prepared Relational candidate publish itself or be reused after
   publication or discard.
 

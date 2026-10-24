@@ -151,12 +151,10 @@ pub(super) fn commit(
             _ => WorthQueryWorkspaceErrorKind::Unclassified,
         },
         Error::Interrupted { interruption, .. } => control_kind(interruption.interruption()),
-        Error::Preparation { .. }
-        | Error::Publication { .. }
-        | Error::PublicationDenied { .. }
-        | Error::PerformedButDurabilityDeferred { .. } => {
+        Error::Preparation { .. } | Error::Publication { .. } | Error::PublicationDenied { .. } => {
             WorthQueryWorkspaceErrorKind::Unclassified
         }
+        Error::DurabilityUnresolved { .. } => WorthQueryWorkspaceErrorKind::DurabilityUnresolved,
     };
     WorthQueryWorkspaceError::with_kind(
         kind,

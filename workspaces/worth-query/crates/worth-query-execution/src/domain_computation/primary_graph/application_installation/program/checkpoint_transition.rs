@@ -179,8 +179,7 @@ where
     // exact native custody. Otherwise the original request precedes ordinary errors.
     let result = match result {
         Err(
-            cause @ (WorthQueryInMemoryApplicationDenial::CheckpointTransitionDeferred(_)
-            | WorthQueryInMemoryApplicationDenial::CheckpointTransitionCaptureStopped(_)
+            cause @ (WorthQueryInMemoryApplicationDenial::CheckpointTransitionCaptureStopped(_)
             | WorthQueryInMemoryApplicationDenial::CheckpointTransitionFinalizationStopped(
                 _,
             )

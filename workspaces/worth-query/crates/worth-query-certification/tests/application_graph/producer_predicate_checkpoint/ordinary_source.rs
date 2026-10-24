@@ -228,8 +228,5 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
         .is_ok());
 }
 
-#[path = "ordinary_source/unpublished.rs"]
-mod unpublished;
-
 #[path = "ordinary_source/terminal_unavailable.rs"]
 mod terminal_unavailable;

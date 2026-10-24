@@ -250,9 +250,6 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     return request.application.recover_admitted_unpublished_source_operation(phase, &publication, recovery, &admission, idempotency)
                         .map(NativeCommandResult::Recovered).map_err(Denial::Recovery);
                 }
-                if let NativeCommandAction::Settle(deferred) = action {
-                    request.application.recover_deferred_application_settlement_in_advancement(phase, &publication, deferred, &admission, idempotency).map_err(Denial::Settlement)?;
-                }
                 let read = request.application.resolve_admitted_application_idempotency(phase, &admission, idempotency).map_err(Denial::Idempotency)?;
                 if !matches!(action, NativeCommandAction::Execute) { return Ok(NativeCommandResult::Resolved(read)); }
                 match read.into_resolution() {

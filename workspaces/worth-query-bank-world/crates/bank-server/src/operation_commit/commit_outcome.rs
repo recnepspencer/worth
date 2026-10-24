@@ -2,9 +2,8 @@
 
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationSettlementDeferred, WorthQueryApplicationUncommitted,
-    WorthQueryCustomInvariantDenial, WorthQueryProductStaleApplication,
-    WorthQueryProductUnpublishedApplication,
+    WorthQueryApplicationUncommitted, WorthQueryCustomInvariantDenial,
+    WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
 };
 use worth_query_host::facade::product::WorthQueryApplicationNoEffectCause;
 
@@ -40,7 +39,6 @@ pub enum BankMutationCommitOutcome {
     },
     Aborted,
     Deferred(WorthQueryApplicationCommitDeferred),
-    SettlementDeferred(WorthQueryApplicationSettlementDeferred),
     /// The commit's fate is unknown. The same retained Query evidence names
     /// which recovery the operator owes.
     Indeterminate(BankUnresolvedCommitEvidence),
@@ -100,9 +98,6 @@ impl From<WorthQueryApplicationCommitOutcome> for BankMutationCommitOutcome {
             }
             WorthQueryApplicationCommitOutcome::Aborted => Self::Aborted,
             WorthQueryApplicationCommitOutcome::Deferred(deferred) => Self::Deferred(deferred),
-            WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
-                Self::SettlementDeferred(deferred)
-            }
             WorthQueryApplicationCommitOutcome::Indeterminate(evidence) => {
                 Self::Indeterminate(BankUnresolvedCommitEvidence::from_execution(evidence))
             }

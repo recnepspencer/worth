@@ -111,7 +111,6 @@ where
             return (review_denied(Some(request_id), unavailable())).into();
         }
         BankEstateMandatoryReviewOutcome::Deferred(_)
-        | BankEstateMandatoryReviewOutcome::SettlementDeferred(_)
         | BankEstateMandatoryReviewOutcome::Indeterminate => {
             return (review_denied(Some(request_id), indeterminate())).into();
         }

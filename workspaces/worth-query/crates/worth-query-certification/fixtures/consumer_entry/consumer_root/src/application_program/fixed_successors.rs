@@ -2,11 +2,8 @@
 use super::*;
 pub(crate) struct UnchangedFixed;
 pub(crate) struct RemovedFixed;
-#[cfg(test)]
 pub(crate) struct ChangedFixed;
-#[cfg(test)]
 pub(crate) struct UnchangedNoProjection;
-#[cfg(test)]
 pub(crate) struct ChangedNoProjection;
 macro_rules! successor {
     ($ty:ty, $id:literal, $specs:expr) => {
@@ -35,7 +32,6 @@ successor!(
     features::consumer_feature_specs()
 );
 
-#[cfg(test)]
 successor!(
     ChangedFixed,
     "fixed-action-changed-contract-successor",
@@ -44,13 +40,11 @@ successor!(
 
 // The no-projection owner's successors: identical meaning, and the same
 // delivery under a changed declared contract. `RemovedFixed` removes either.
-#[cfg(test)]
 successor!(
     UnchangedNoProjection,
     "no-projection-action-unchanged-successor",
     features::source_delivery_specs::<super::no_projection::NoProjectionDelivery>()
 );
-#[cfg(test)]
 successor!(
     ChangedNoProjection,
     "no-projection-action-changed-contract-successor",

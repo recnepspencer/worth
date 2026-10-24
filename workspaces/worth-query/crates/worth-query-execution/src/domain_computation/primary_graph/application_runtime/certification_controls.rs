@@ -304,18 +304,6 @@ where
         Ok(candidate)
     }
 
-    #[doc(hidden)]
-    pub fn fail_next_durable_append_for_test(
-        &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) {
-        self.primary_provider
-            .graph
-            .with_runtime_mut(request_execution, |runtime| {
-                runtime.fail_next_durable_append_for_test()
-            });
-    }
-
     #[cfg(test)]
     pub(crate) fn provider_session_resource_count_for_test(&self) -> usize {
         self.primary_provider.application_attempt_resource_count()

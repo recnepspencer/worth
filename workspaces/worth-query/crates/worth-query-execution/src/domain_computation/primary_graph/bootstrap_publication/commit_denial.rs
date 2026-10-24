@@ -85,9 +85,11 @@ pub(in crate::domain_computation::primary_graph) fn map_bootstrap_commit_denial(
         Error::Preparation { .. }
         | Error::Conflict { .. }
         | Error::Publication { .. }
-        | Error::PublicationDenied { .. }
-        | Error::PerformedButDurabilityDeferred { .. } => {
+        | Error::PublicationDenied { .. } => {
             WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected
+        }
+        Error::DurabilityUnresolved { .. } => {
+            WorthQueryPrimaryGraphInstallationDenialKind::RelationalDurabilityUnresolved
         }
     };
     primary_graph_denial(

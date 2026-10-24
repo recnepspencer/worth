@@ -574,7 +574,7 @@ apart. These are the places the code enforces that separation.
 | **Resident is not current** | A retention lease keeps a basis available. It does not claim the basis is still current. |
 | **Proposed is not committed** | A prepared candidate moves nothing. Failed work is not a commit. |
 | **Admitted is not performed** | `Performed` is separate evidence from any admission. |
-| **Performed is not settled** | A moved branch reference still owes durable settlement and publication (`SettlementDeferred`). |
+| **Durable is not live** | A commit becomes live only after its durable medium accepted it. An unknown durable answer installs nothing yet may be durable (`Indeterminate`). |
 | **Committed is not externally complete** | A commit records an outbox entry. Delivery to the outside world has its own posture. |
 | **History is not authority** | History presence is not performed authority. A cloned receipt is descriptive. |
 | **Reporting is not authority** | Readiness reports, basis tokens, discovery answers, and diagnostics grant nothing. |
@@ -1618,20 +1618,20 @@ Inside `Commit(..)`, the commit outcome is one of:
 | `Denied(denial)` | The commit was denied, with a typed kind | Act on the kind |
 | `Deferred(..)` | A capacity or lifetime limit was reached, or a patch-position reservation was contended | Retry later; the kind names the cause |
 | `Cancelled`, `TimedOut`, `Aborted` | The attempt stopped | Nothing landed |
-| `SettlementDeferred(..)` | **The branch moved**, but durability or publication did not finish | Recover settlement ([section 14](#14-aftermath-and-recovery)) |
 | `Indeterminate(..)` | The landing is unresolved: *not* failed | Recover; `recovery()` says which way |
 
 `WorthQueryApplicationCommitOutcome::landed()` splits any commit outcome into
 `(receipt, is_replay)` or `WorthQueryApplicationUncommitted`. Note that
-`landed()` returns `Err` for `SettlementDeferred` even though the branch moved:
+`landed()` returns `Err` for `Indeterminate`, whose commit may have landed:
 "not a clean landing" is not the same as "nothing happened".
 
 The two most important rules:
 
 - **`Indeterminate` is not failure.** Do not retry blindly as if nothing
   happened. Recover.
-- **`SettlementDeferred` is performed but not settled.** The change happened.
-  Finish the settlement. Do not redo the change.
+- **An unknown durable answer is `Indeterminate`.** The commit was not
+  installed but may be durable. The Relational owner refuses further
+  publication until it is reopened, and reopening establishes the fate.
 
 ---
 
@@ -1882,20 +1882,17 @@ handle the typed outcome and let the user choose a currently supported action.
 See [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md)
 for binding declarations, complete caller examples, alternatives, retry and recovery.
 
-### 14.3 Settlement recovery
+### 14.3 Unresolved durability
 
-`SettlementDeferred` means the branch moved but durability or Query
-publication did not finish. Its `next_action()` is always the same:
-
-<!-- illustrative -->
-```rust,ignore
-// Illustrative: not compiled.
-runtime.recover_deferred_application_settlement(&deferred)
-```
-
-This returns the Relational commit receipt, or a typed recovery error. The
-deferred value's `relational_settlement_commit()` is diagnostic only. It
-cannot authorize dispatch or current-state reads.
+Relational makes a commit durable before it installs it live, so a performed
+commit always settles. When the durable medium cannot say whether a commit
+became durable, nothing is installed, the commit may still be durable, and the
+Relational owner refuses every later publication until it is reopened.
+Reopening reads the medium's recovered journal, which decides the commit's
+fate. Query reports this as `Indeterminate` (commit recovery required); a
+World publication retains it as `ProductUnpublished` with cause
+`RelationalDurabilityUnresolved`, whose only continuations are release,
+inspection and closing the owner. Never retry such a commit blindly.
 
 ### 14.4 External effects
 
@@ -2064,8 +2061,8 @@ to see the two facades used end to end.
   the ceiling, and admission enforces it.
 - Build every mutation from an observed source (`expect_source`) unless the
   binding declares none. Always pass an idempotency key.
-- Match every outcome variant. Treat `Indeterminate` and `SettlementDeferred`
-  as recovery, never as failure. Treat `Stale` as "re-read, then retry".
+- Match every outcome variant. Treat `Indeterminate` as recovery, never as
+  failure. Treat `Stale` as "re-read, then retry".
 - Use the [request and retained-operation guide](capability-index.md#use-requests-and-retained-operations)
   to submit, advance, recover and close application work.
 - Read touched records, external dispatch posture, and aftermath from the

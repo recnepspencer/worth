@@ -29,7 +29,8 @@ pub enum WorthQueryBranchMergeNextAction {
     UseOperationalReceipt,
     InspectDenial,
     RetryDeferredPublication,
-    RepairDeferredBranchMergeSettlement,
+    /// Reopen the Relational owner; reopening resolves the commit's durable fate.
+    ReopenRelationalOwner,
 }
 
 pub struct WorthQueryBranchMergeDeferred {
@@ -176,22 +177,25 @@ impl WorthQueryBranchMergeStop {
     }
 }
 
-pub struct WorthQueryBranchMergeSettlementDeferred {
+/// The merge commit's durable fate is unknown. Nothing was installed live, but
+/// the commit may be durable; the Relational owner refuses further publication
+/// until it is reopened.
+pub struct WorthQueryBranchMergeDurabilityUnresolved {
     message: String,
     counters: WorthQueryWorkflowCounters,
-    settlement: worth_relational::facade::publication::DeferredPublicationSettlement,
+    unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
 }
 
-impl WorthQueryBranchMergeSettlementDeferred {
+impl WorthQueryBranchMergeDurabilityUnresolved {
     pub(crate) fn new(
         message: String,
-        settlement: worth_relational::facade::publication::DeferredPublicationSettlement,
+        unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
         counters: WorthQueryWorkflowCounters,
     ) -> Self {
         Self {
             message,
-            counters: counters.settlement_deferred(),
-            settlement,
+            counters: counters.durability_unresolved(),
+            unresolved,
         }
     }
 
@@ -203,18 +207,19 @@ impl WorthQueryBranchMergeSettlementDeferred {
         &self.counters
     }
 
-    pub(crate) fn settlement(
+    /// The unresolved durable publication this outcome retains.
+    pub fn unresolved(
         &self,
-    ) -> &worth_relational::facade::publication::DeferredPublicationSettlement {
-        &self.settlement
+    ) -> &worth_relational::facade::durability::RelationalDurabilityUnresolved {
+        &self.unresolved
     }
 
     pub fn next_action(&self) -> WorthQueryBranchMergeNextAction {
-        WorthQueryBranchMergeNextAction::RepairDeferredBranchMergeSettlement
+        WorthQueryBranchMergeNextAction::ReopenRelationalOwner
     }
 
     pub fn commit_id(&self) -> worth_relational::facade::history::CommitId {
-        self.settlement.commit().commit_id
+        self.unresolved.commit_id()
     }
 }
 
@@ -332,7 +337,7 @@ pub enum WorthQueryBranchMergeOutcome {
     Stopped(WorthQueryBranchMergeStop),
     Deferred(WorthQueryBranchMergeDeferred),
     ControlStopped(WorthQueryBranchMergeControlStopped),
-    SettlementDeferred(WorthQueryBranchMergeSettlementDeferred),
+    DurabilityUnresolved(WorthQueryBranchMergeDurabilityUnresolved),
 }
 
 impl WorthQueryBranchMergeOutcome {
@@ -342,7 +347,7 @@ impl WorthQueryBranchMergeOutcome {
             Self::Stopped(_)
             | Self::Deferred(_)
             | Self::ControlStopped(_)
-            | Self::SettlementDeferred(_) => None,
+            | Self::DurabilityUnresolved(_) => None,
         }
     }
 
@@ -350,7 +355,7 @@ impl WorthQueryBranchMergeOutcome {
         match self {
             Self::Completed(_) => None,
             Self::Stopped(stop) => Some(stop),
-            Self::Deferred(_) | Self::ControlStopped(_) | Self::SettlementDeferred(_) => None,
+            Self::Deferred(_) | Self::ControlStopped(_) | Self::DurabilityUnresolved(_) => None,
         }
     }
 
@@ -360,7 +365,7 @@ impl WorthQueryBranchMergeOutcome {
             Self::Completed(_)
             | Self::Stopped(_)
             | Self::ControlStopped(_)
-            | Self::SettlementDeferred(_) => None,
+            | Self::DurabilityUnresolved(_) => None,
         }
     }
 
@@ -370,16 +375,16 @@ impl WorthQueryBranchMergeOutcome {
             Self::Completed(_)
             | Self::Stopped(_)
             | Self::Deferred(_)
-            | Self::SettlementDeferred(_) => None,
+            | Self::DurabilityUnresolved(_) => None,
         }
     }
 
-    pub fn settlement_deferred(&self) -> Option<&WorthQueryBranchMergeSettlementDeferred> {
+    pub fn durability_unresolved(&self) -> Option<&WorthQueryBranchMergeDurabilityUnresolved> {
         match self {
             Self::Completed(_) | Self::Stopped(_) | Self::Deferred(_) | Self::ControlStopped(_) => {
                 None
             }
-            Self::SettlementDeferred(deferred) => Some(deferred),
+            Self::DurabilityUnresolved(unresolved) => Some(unresolved),
         }
     }
 }

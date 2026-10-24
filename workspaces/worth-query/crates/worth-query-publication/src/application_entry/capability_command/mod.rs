@@ -13,8 +13,8 @@ use worth_query_execution::facade::{
     primary_graph::{
         WorthQueryAdmittedIdempotencyRead, WorthQueryApplicationCommitOutcome,
         WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyResolution,
-        WorthQueryApplicationSettlementDeferred, WorthQueryApplicationUncommitted,
-        WorthQueryManagedApplicationRecoveryOutcome, WorthQueryManagedApplicationRecoveryPerformed,
+        WorthQueryApplicationUncommitted, WorthQueryManagedApplicationRecoveryOutcome,
+        WorthQueryManagedApplicationRecoveryPerformed,
     },
     product::WorthQueryProductBranch,
 };
@@ -31,7 +31,6 @@ pub(super) enum NativeCommandAction<'a> {
     Execute,
     Resolve,
     Recover(&'a WorthQueryProductUnpublishedRecovery),
-    Settle(&'a WorthQueryApplicationSettlementDeferred),
 }
 pub(super) enum NativeCommandResult {
     Validated,

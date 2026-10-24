@@ -1,23 +1,6 @@
 use super::backend::StatefulBridgeRuntimeBackend;
 
 impl crate::runtime::WorthQuerySettlementRecoveryBackend for StatefulBridgeRuntimeBackend {
-    fn repair_deferred_branch_merge_settlement(
-        &mut self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-        deferred: &crate::ordinary::workflow::WorthQueryBranchMergeSettlementDeferred,
-    ) -> Result<
-        worth_relational::facade::history::RelationalCommitReceipt,
-        crate::runtime::WorthQuerySettlementRepairError,
-    > {
-        self.state
-            .borrow()
-            .relational_source
-            .with_runtime_mut(request_execution, |runtime| {
-                runtime.repair_deferred_publication_settlement(deferred.settlement())
-            })
-            .map_err(Into::into)
-    }
-
     fn repair_pending_branch_merge_settlement(
         &mut self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -4,8 +4,6 @@ mod active_attempts;
 mod independent_writers;
 #[path = "cost/live.rs"]
 mod live;
-#[path = "cost/retained_partials.rs"]
-mod retained_partials;
 #[path = "cost/timing.rs"]
 mod timing;
 #[path = "cost/touched_records.rs"]
@@ -19,7 +17,6 @@ pub(super) use active_attempts::assert_active_attempt_slopes;
 pub(super) use independent_writers::assert_independent_writer_slopes;
 pub(super) use independent_writers::assert_sibling_writer_progress_while_combined_is_parked;
 pub(super) use live::{assert_graph_work_capacity_bounds, assert_live_publication_slopes};
-pub(super) use retained_partials::assert_retained_partial_slopes;
 pub(super) use timing::run_scheduled_public_read_timings;
 pub(super) use touched_records::assert_touched_record_slopes;
 

@@ -346,6 +346,3 @@ fn source_version(request: &Request<'_>) -> u64 {
         .expect("the selected source basis remains readable");
     result.receipt().inspect().basis().version()
 }
-
-#[cfg(test)]
-mod suspension_recovery_read_stop;

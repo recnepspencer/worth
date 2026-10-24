@@ -50,8 +50,9 @@ pub use batch_admission::{
     EffectBatchIntentDraft, EffectBatchIntentDraftWithBasis,
 };
 pub use batch_execution::{
-    EffectBatchExecutionControlStopped, EffectBatchExecutionDeferred, EffectBatchExecutionDenial,
-    EffectBatchExecutionDenialKind, EffectBatchExecutionStop, EffectBatchSettlementDeferred,
+    EffectBatchDurabilityUnresolved, EffectBatchExecutionControlStopped,
+    EffectBatchExecutionDeferred, EffectBatchExecutionDenial, EffectBatchExecutionDenialKind,
+    EffectBatchExecutionStop,
 };
 pub use certification::{
     certify_effect_execution_pipeline, EffectExecutionCertificationBundle,
@@ -70,7 +71,7 @@ pub use envelope::{
 };
 pub use execution::{
     EffectExecutionAuthority, EffectExecutionControlStopped, EffectExecutionDeferred,
-    EffectExecutionDenial, EffectExecutionDenialKind, EffectExecutionSettlementDeferred,
+    EffectExecutionDenial, EffectExecutionDenialKind, EffectExecutionDurabilityUnresolved,
     EffectExecutionStop, ExecutedEffectAuthorityArtifact, ExecutedEffectPlan,
 };
 pub use execution_control_stop::EffectExecutionControlStopKind;
@@ -114,7 +115,7 @@ pub use receipt_transitions::{
     EffectReceiptTransitionRules,
 };
 pub use relational_execution_failure::{
-    RelationalEffectExecutionFailure, RelationalEffectSettlementDeferred,
+    RelationalEffectDurabilityUnresolved, RelationalEffectExecutionFailure,
 };
 pub use settlement_repair::EffectSettlementRepairError;
 pub use support_contract::{

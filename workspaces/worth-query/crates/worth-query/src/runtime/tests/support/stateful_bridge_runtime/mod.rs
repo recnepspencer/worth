@@ -18,32 +18,6 @@ use worth_relational::facade::history::BranchId;
 
 type SharedState = Rc<RefCell<StatefulBridgeState>>;
 
-pub(crate) struct StatefulBridgeMergeProbe {
-    state: SharedState,
-}
-
-impl StatefulBridgeMergeProbe {
-    pub(crate) fn main_entity_count(
-        &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> usize {
-        self.state
-            .borrow()
-            .relational_source
-            .with_runtime_mut(request_execution, |runtime| {
-                let snapshot = crate::harness::fixtures::effect_authorities::exact_branch_snapshot(
-                    runtime, "main",
-                );
-                let read = runtime
-                    .read_truth()
-                    .read_snapshot(&snapshot, request_execution)
-                    .expect("fixture read request remains live")
-                    .expect("merge probe reads the exact target branch snapshot");
-                read.entities().len()
-            })
-    }
-}
-
 pub(in crate::runtime::tests) fn custom_backend_without_primary_graph_transfer_builder(
 ) -> WorthQueryRuntimeBuilder {
     stateful_bridge_builder(["Task"], graph_test_support_profile(), test_product_root())
@@ -76,19 +50,6 @@ where
 pub(crate) fn stateful_bridge_task_runtime_with_merge(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryRuntime {
-    stateful_bridge_task_runtime_with_merge_posture(request_execution, false).0
-}
-
-pub(crate) fn stateful_bridge_task_runtime_with_merge_durable_fault(
-    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> (WorthQueryRuntime, StatefulBridgeMergeProbe) {
-    stateful_bridge_task_runtime_with_merge_posture(request_execution, true)
-}
-
-fn stateful_bridge_task_runtime_with_merge_posture(
-    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    fail_next_durable_append: bool,
-) -> (WorthQueryRuntime, StatefulBridgeMergeProbe) {
     let mut relational =
         crate::harness::fixtures::effect_authorities::relational_runtime_with_intent_strategy();
     crate::harness::fixtures::effect_authorities::create_entity(
@@ -109,9 +70,6 @@ fn stateful_bridge_task_runtime_with_merge_posture(
         "candidate-only",
         BranchId("candidate".to_string()),
     );
-    if fail_next_durable_append {
-        relational.fail_next_durable_append_for_test();
-    }
     let installed_collections = ["Task".to_string()].into_iter().collect();
     let product = test_product_root_with_runtime(relational);
     let state = Rc::new(RefCell::new(StatefulBridgeState::new(
@@ -119,10 +77,7 @@ fn stateful_bridge_task_runtime_with_merge_posture(
         product.bridge.clone(),
         product.source,
     )));
-    let probe = StatefulBridgeMergeProbe {
-        state: Rc::clone(&state),
-    };
-    let runtime = WorthQueryRuntime::builder(product.resources)
+    WorthQueryRuntime::builder(product.resources)
         .backend(StatefulBridgeRuntimeBackend::new(
             state,
             graph_test_support_profile(),
@@ -134,8 +89,7 @@ fn stateful_bridge_task_runtime_with_merge_posture(
         .aspect_contracts(stateful_bridge_aspect_contracts())
         .expect("stateful bridge aspect contracts should admit")
         .build(request_execution)
-        .expect("stateful bridge runtime with merge should build");
-    (runtime, probe)
+        .expect("stateful bridge runtime with merge should build")
 }
 
 pub(crate) fn stateful_bridge_task_runtime_without_writeback(

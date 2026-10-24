@@ -133,5 +133,4 @@ pub mod operation_input_capture {
 /// Native descriptive principal pin; no actor id or grant extraction.
 pub mod capability_command {
     pub use crate::domain_computation::primary_graph::authenticated_principal::WorthQueryCommandPrincipalPin;
-    pub use crate::domain_computation::primary_graph::settlement_repair::WorthQueryCommandSettlementDenial;
 }

@@ -39,8 +39,7 @@ pub use super::application_attempt::{
     WorthQueryApplicationNoEffectCause, WorthQueryApplicationOutputEntity,
     WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
     WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationReadAttempt,
-    WorthQueryApplicationRetainedCommitOutcome, WorthQueryApplicationSettlementDeferred,
-    WorthQueryApplicationSettlementNextAction, WorthQueryApplicationSourceAdjacencyEndpoints,
+    WorthQueryApplicationRetainedCommitOutcome, WorthQueryApplicationSourceAdjacencyEndpoints,
     WorthQueryApplicationStaleAttempt, WorthQueryApplicationTypedOutputCorrespondence,
     WorthQueryApplicationUncommitted, WorthQueryApplicationUnresolvedCommitEvidence,
     WorthQueryApprovedElevation, WorthQueryCapabilityRevocationProgram,
@@ -323,7 +322,6 @@ pub use super::resolution_denial::{
     WorthQueryPrincipalResolutionRefusalKind,
 };
 pub use super::root::{WorthQueryPrimaryGraph, WorthQueryPrimaryGraphIntegrationHandle};
-pub use super::settlement_repair::WorthQueryApplicationSettlementRecoveryError;
 pub use super::typed_bootstrap::{
     WorthQueryApplicationEntitySeed, WorthQueryApplicationRelationSeed,
 };

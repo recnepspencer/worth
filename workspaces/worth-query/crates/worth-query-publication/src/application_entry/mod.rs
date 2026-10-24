@@ -8,7 +8,6 @@ pub mod advanced {
     };
 }
 mod capability_command;
-pub use worth_query_execution::publication_boundary::capability_command::WorthQueryCommandSettlementDenial;
 mod capability_delegation;
 pub use capability_command::{
     WorthQueryCapabilityCommand, WorthQueryCapabilityCommandAdvance,

@@ -99,8 +99,7 @@ pub use compare_and_commit::{
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationCommitRecoveryKind,
     WorthQueryApplicationCommittedChanges, WorthQueryApplicationManagedCleanup,
     WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationNoEffect,
-    WorthQueryApplicationNoEffectCause, WorthQueryApplicationSettlementDeferred,
-    WorthQueryApplicationSettlementNextAction, WorthQueryApplicationStaleAttempt,
+    WorthQueryApplicationNoEffectCause, WorthQueryApplicationStaleAttempt,
     WorthQueryApplicationUncommitted, WorthQueryApplicationUnresolvedCommitEvidence,
     WorthQueryCommittedProductPublication,
 };

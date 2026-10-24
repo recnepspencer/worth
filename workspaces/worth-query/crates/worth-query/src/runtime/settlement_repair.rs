@@ -1,8 +1,7 @@
 use worth_relational::facade::history::RelationalCommitReceipt;
-use worth_relational::facade::publication::DeferredPublicationSettlementError;
+use worth_relational::facade::publication::PublicationSettlementRepairError;
 
 use super::{WorthQueryRuntime, WorthQueryWorkspace};
-use crate::ordinary::workflow::WorthQueryBranchMergeSettlementDeferred;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WorthQuerySettlementRepairError {
@@ -13,11 +12,11 @@ pub enum WorthQuerySettlementRepairError {
     PrimaryGraphIndexRefresh(
         worth_query_execution::facade::integration::WorthQueryPrimaryGraphIndexRefreshDenial,
     ),
-    Settlement(DeferredPublicationSettlementError),
+    Settlement(PublicationSettlementRepairError),
 }
 
-impl From<DeferredPublicationSettlementError> for WorthQuerySettlementRepairError {
-    fn from(error: DeferredPublicationSettlementError) -> Self {
+impl From<PublicationSettlementRepairError> for WorthQuerySettlementRepairError {
+    fn from(error: PublicationSettlementRepairError) -> Self {
         Self::Settlement(error)
     }
 }
@@ -42,15 +41,6 @@ impl std::fmt::Display for WorthQuerySettlementRepairError {
 impl std::error::Error for WorthQuerySettlementRepairError {}
 
 impl WorthQueryRuntime {
-    pub fn repair_deferred_branch_merge_settlement(
-        &mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        deferred: &WorthQueryBranchMergeSettlementDeferred,
-    ) -> Result<RelationalCommitReceipt, WorthQuerySettlementRepairError> {
-        self.backend
-            .repair_deferred_branch_merge_settlement(execution, deferred)
-    }
-
     pub fn repair_pending_branch_merge_settlement(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -62,15 +52,6 @@ impl WorthQueryRuntime {
 }
 
 impl WorthQueryWorkspace {
-    pub fn repair_deferred_branch_merge_settlement(
-        &mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        deferred: &WorthQueryBranchMergeSettlementDeferred,
-    ) -> Result<RelationalCommitReceipt, WorthQuerySettlementRepairError> {
-        self.runtime
-            .repair_deferred_branch_merge_settlement(execution, deferred)
-    }
-
     pub fn repair_pending_branch_merge_settlement(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

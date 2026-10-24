@@ -1,11 +1,9 @@
 pub(super) mod continuation;
 #[cfg(test)]
 mod currentness;
-pub(super) mod initial_unpublished;
 pub(super) mod publication_basis;
 pub(super) mod publication_lifecycle;
 pub(super) mod recovery;
-pub(super) mod unpublished;
 
 use crate::application_program::discovered_delivery::{
     Action, NoProjectionDelivery, Program, QueryDelivery,

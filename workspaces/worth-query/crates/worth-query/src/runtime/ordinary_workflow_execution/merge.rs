@@ -38,9 +38,9 @@ pub(crate) enum WorthQueryOrdinaryMergeExecutionError {
         kind: crate::effect_lifecycle::EffectExecutionControlStopKind,
         message: String,
     },
-    SettlementDeferred {
+    DurabilityUnresolved {
         message: String,
-        settlement: worth_relational::facade::publication::DeferredPublicationSettlement,
+        unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
     },
 }
 
@@ -72,13 +72,13 @@ impl WorthQueryOrdinaryMergeExecutionError {
                 kind,
                 message,
             } => Self::ControlStopped { kind, message },
-            crate::effect_lifecycle::RelationalEffectExecutionFailure::SettlementDeferred(
-                deferred,
+            crate::effect_lifecycle::RelationalEffectExecutionFailure::DurabilityUnresolved(
+                unresolved,
             ) => {
-                let (message, settlement) = deferred.into_parts();
-                Self::SettlementDeferred {
+                let (message, unresolved) = unresolved.into_parts();
+                Self::DurabilityUnresolved {
                     message,
-                    settlement,
+                    unresolved,
                 }
             }
         }

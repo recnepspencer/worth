@@ -171,7 +171,5 @@ fn product_transaction_refuses_zero_budgets_before_revalidation() {
     }
 }
 
-#[path = "advancement_custody/managed_recovery.rs"]
-mod managed_recovery;
 #[path = "advancement_custody/runtime_identity.rs"]
 mod runtime_identity;

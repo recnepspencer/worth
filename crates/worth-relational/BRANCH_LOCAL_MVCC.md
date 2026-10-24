@@ -66,7 +66,7 @@ branch reference cell is.
 | Preparation | `mvcc::RelationalPreparationPort` | `prepare_branch_transaction`, `discard_prepared_candidate` |
 | Fork | `branch::RelationalForkPort` | `observe_fork_source`, `fork_branch` |
 | Publication | `mvcc::RelationalPublicationPort` | `compare_and_publish` |
-| Settlement | `mvcc::RelationalSettlementPort` | `settle_performed_publication`, `repair_deferred_publication_settlement`, `repair_pending_publication_settlement` |
+| Settlement | `mvcc::RelationalSettlementPort` | `settle_performed_publication`, `repair_pending_publication_settlement` |
 
 Obtain them with `preparation_port()`, `fork_port()`, `publication_port()`, and
 `settlement_port()`. The rustdoc on `preparation_port` carries the compiled

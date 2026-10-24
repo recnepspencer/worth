@@ -135,7 +135,8 @@ pub(in crate::domain_computation::primary_graph) fn map_validation_failure(
         Error::Preparation { .. }
         | Error::Publication { .. }
         | Error::PublicationDenied { .. }
-        | Error::PerformedButDurabilityDeferred { .. } => return owner_failure(),
+        // Candidate validation stops before publication.
+        | Error::DurabilityUnresolved { .. } => return owner_failure(),
     };
     exhausted_failure(
         kind,

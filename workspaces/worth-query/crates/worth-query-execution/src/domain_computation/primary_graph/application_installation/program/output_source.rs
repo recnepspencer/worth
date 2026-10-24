@@ -182,7 +182,6 @@ where
                 ))
             }
             outcome @ (crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::ProductUnpublished(_)
-                | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::SettlementDeferred(_)
                 | crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Indeterminate(_)) => {
                 Ok((outcome, None, Some(pending)))
             }
@@ -191,7 +190,6 @@ where
                     crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::CleanupRequired(required)
                     if matches!(required.outcome(),
                         crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(_)
-                            | crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted::SettlementDeferred(_)
                             | crate::domain_computation::primary_graph::WorthQueryApplicationUncommitted::Indeterminate(_))) => {
                 // Cleanup and the pending source are independent original owners.
                 Ok((outcome, None, Some(pending)))

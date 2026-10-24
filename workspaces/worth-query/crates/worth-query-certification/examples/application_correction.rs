@@ -21,8 +21,6 @@ fn main() {
             match court.as_deref() {
                 None => run(),
                 Some("composite") => application_correction_support::composite_definition_court::run(),
-                Some("composite-recovery") => application_correction_support::composite_definition_recovery::run(),
-                Some("composite-unwind") => application_correction_support::composite_definition_recovery::unwind::run(),
                 Some("authored") => application_correction_support::authored_identity_courts::run(),
                 Some("race") => application_correction_support::correction_race_court::run(),
                 Some("tree-controls") => application_correction_support::tree_controls::run(),
@@ -34,11 +32,8 @@ fn main() {
                     application_correction_support::required_reapplication::run();
                     application_correction_support::history_reapplication::run();
                 }
-                Some("outputs") => {
-                    application_correction_support::required_output_recovery::run();
-                    application_correction_support::required_output_courts::run();
-                }
-                Some(other) => panic!("unknown correction court {other:?}; expected composite, composite-recovery, composite-unwind, authored, race, tree, tree-controls, tree-history, tree-outputs, outputs, or no argument for all"),
+                Some("outputs") => application_correction_support::required_output_courts::run(),
+                Some(other) => panic!("unknown correction court {other:?}; expected composite, authored, race, tree, tree-controls, tree-history, tree-outputs, outputs, or no argument for all"),
             }
             let _ = done.send(());
         })
@@ -61,11 +56,8 @@ fn run() {
     application_correction_support::correction_race_court::run();
     application_correction_support::authored_identity_courts::run();
     application_correction_support::composite_definition_court::run();
-    application_correction_support::composite_definition_recovery::run();
-    application_correction_support::composite_definition_recovery::unwind::run();
     application_correction_support::source_output_courts::run();
     application_correction_support::compensation_courts::run();
-    application_correction_support::required_output_recovery::run();
     application_correction_support::required_output_courts::run();
     application_correction_support::adoption_courts::run();
     selected_source_after_disjoint_edit();

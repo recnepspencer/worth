@@ -141,16 +141,6 @@ impl WorthQuerySessionPrepareOutcome<'_> {
                 WorthQueryProviderSessionProtocolStage::Commit,
                 self.counters,
             )),
-            Ok(Err(
-                super::super::super::super::WorthQueryProviderSessionCommitStop::SettlementDeferred(
-                    deferred,
-                ),
-            )) => {
-                WorthQuerySessionCommitOrAbortOutcome::CommitSettlementDeferred(deferred.at_stage(
-                    WorthQueryProviderSessionProtocolStage::Commit,
-                    self.counters,
-                ))
-            }
             Err(_) => WorthQuerySessionCommitOrAbortOutcome::CommitRecoveryRequired(
                 WorthQueryProviderSessionFailure::new(
                     WorthQueryProviderSessionDenialKind::ProviderPanicked,

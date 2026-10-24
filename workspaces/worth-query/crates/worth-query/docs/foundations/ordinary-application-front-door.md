@@ -823,8 +823,8 @@ landed commit. Match each of its variants:
 
 | `WorthQueryApplicationUncommitted` variant | Meaning |
 |---|---|
-| `ProductUnpublished`, `Deferred`, `SettlementDeferred` | Owner-specific recovery custody is retained. |
-| `Indeterminate` | The landing is unresolved, not failed; do not retry as though it failed. |
+| `ProductUnpublished`, `Deferred` | Owner-specific recovery custody is retained. |
+| `Indeterminate` | The landing is unresolved, not failed, including when the commit's durable fate is unknown; commit recovery is required, so do not retry as though it failed. |
 | `NoEffect`, `Stale`, `ProductStale`, `Cancelled`, `TimedOut`, `Denied`, `Aborted` | Distinct application decisions; nothing landed. |
 
 `require_committed()` is the receipt-only convenience: its error is the original
@@ -1073,10 +1073,6 @@ cleanup until a funded retry can discharge them. It returns the complete settled
 owner on refusal. A real post-recovery caller capability can block release, so
 observation custody and cleanup custody remain independent.
 
-The executable
-[`fixed partial-publication journey`](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/required_unpublished.rs)
-uses the actual append fault, fresh recovery, all four dependent settlements,
-World observation-capacity refusal and World caller-capability cleanup refusal.
 Fixed, discovered, source-only and guarded workflow actions use their ordinary
 owning entrances. Deliberate native adapters remain under `advanced()`.
 

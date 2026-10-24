@@ -4,25 +4,18 @@ use crate::domain_computation::primary_graph::{
     WorthQueryCheckpointCapturePolicy, WorthQueryPrimaryGraphIntegrationHandle,
     WorthQueryPrimaryGraphPublication,
 };
-use worth_relational::facade::durability::{
-    DeferredRecoveredCheckpointTransition, RecoveredRelationalRuntimeAuthority,
-};
+use worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority;
 
-enum Settlement {
-    Deferred(DeferredRecoveredCheckpointTransition),
-    Acknowledged(RecoveredRelationalRuntimeAuthority),
-}
-
-/// A performed transition awaiting native settlement or checkpoint capture.
-/// This capsule never exposes a World, including in its acknowledged phase.
-/// Consuming repair never reruns authoring or republishes. On acknowledgment it
-/// captures a target checkpoint for ordinary restore; a refusal returns this
-/// same capsule, including the exact native repair custody, for another attempt.
+/// An acknowledged transition awaiting checkpoint capture. This capsule never
+/// exposes a World. Consuming repair never reruns authoring or republishes: it
+/// captures a target checkpoint for ordinary restore, and a refusal returns
+/// this same capsule for another attempt.
 #[must_use = "repair the performed native transition or explicitly discard this unpublished installation"]
 pub struct WorthQueryCheckpointTransitionRecovery {
     graph: WorthQueryPrimaryGraphIntegrationHandle,
     publication: WorthQueryPrimaryGraphPublication,
-    settlement: Option<Settlement>,
+    /// The acknowledged successor authority this capsule keeps in custody.
+    _authority: RecoveredRelationalRuntimeAuthority,
     outputs: super::preserved_outputs::PreservedOutputs,
     detail: String,
     capture_denial: Option<WorthQueryCheckpointCaptureDenial>,
@@ -51,28 +44,10 @@ impl WorthQueryCheckpointTransitionRecovery {
         Self {
             graph,
             publication,
-            settlement: Some(Settlement::Acknowledged(authority)),
+            _authority: authority,
             outputs,
             detail: format!("acknowledged target checkpoint capture stopped: {denial:?}"),
             capture_denial: Some(denial),
-            finalization_denial: None,
-        }
-    }
-
-    pub(super) fn new(
-        graph: WorthQueryPrimaryGraphIntegrationHandle,
-        publication: WorthQueryPrimaryGraphPublication,
-        deferred: DeferredRecoveredCheckpointTransition,
-        outputs: super::preserved_outputs::PreservedOutputs,
-    ) -> Self {
-        let detail = format!("{:?}", deferred.cause());
-        Self {
-            graph,
-            publication,
-            settlement: Some(Settlement::Deferred(deferred)),
-            outputs,
-            detail,
-            capture_denial: None,
             finalization_denial: None,
         }
     }
@@ -91,7 +66,7 @@ impl WorthQueryCheckpointTransitionRecovery {
         Self {
             graph,
             publication,
-            settlement: Some(Settlement::Acknowledged(authority)),
+            _authority: authority,
             outputs,
             detail: format!("acknowledged target finalization stopped: {cause:?}"),
             capture_denial: None,
@@ -107,8 +82,7 @@ impl WorthQueryCheckpointTransitionRecovery {
         self.finalization_denial.as_deref()
     }
 
-    /// Exact capture refusal from this capsule's latest attempt, if capture
-    /// rather than native settlement stopped that attempt.
+    /// Exact capture refusal from this capsule's latest attempt.
     pub fn capture_denial(&self) -> Option<&WorthQueryCheckpointCaptureDenial> {
         self.capture_denial.as_ref()
     }
@@ -127,33 +101,6 @@ impl WorthQueryCheckpointTransitionRecovery {
         if let Err(error) = policy.check_live() {
             self.retain_capture_denial(error.into());
             return Err(self);
-        }
-        match self
-            .settlement
-            .take()
-            .expect("repair capsule always carries its phase")
-        {
-            Settlement::Deferred(deferred) => {
-                match self.graph.with_runtime_mut(execution, |runtime| {
-                    runtime
-                        .durability_recovery()
-                        .repair_checkpoint_transition(deferred)
-                }) {
-                    Ok(acknowledged) => {
-                        self.settlement =
-                            Some(Settlement::Acknowledged(acknowledged.into_parts().1))
-                    }
-                    Err(error) => {
-                        self.detail = format!("{:?}", error.cause());
-                        self.settlement = Some(Settlement::Deferred(error.into_transition()));
-                        let _ = self.consult_request(request);
-                        return Err(self);
-                    }
-                }
-            }
-            Settlement::Acknowledged(authority) => {
-                self.settlement = Some(Settlement::Acknowledged(authority))
-            }
         }
         if self.consult_request(request).is_err() {
             return Err(self);
@@ -210,7 +157,5 @@ impl WorthQueryCheckpointTransitionRecovery {
         self.capture_denial = Some(denial);
     }
 }
-
-mod certification_controls;
 
 mod request;

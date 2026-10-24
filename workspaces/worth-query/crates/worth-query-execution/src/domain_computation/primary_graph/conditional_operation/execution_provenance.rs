@@ -139,9 +139,6 @@ fn cause(
             })
         }
         Decision::OperationCommitRetryable(_, kind) => Some(Cause::ApplicationCommitDenied(*kind)),
-        Decision::OperationSettlementExecutionDenied(_, _, kind) => {
-            Some(Cause::SettlementExecutionDenied(*kind))
-        }
         Decision::OperationCleanupRequired(_, cleanup) => {
             Some(Cause::ManagedCleanupRequired(cleanup.kind()))
         }
@@ -202,7 +199,6 @@ fn cause(
         | Decision::Suppressed(_)
         | Decision::Deferred(_)
         | Decision::OperationProductUnpublished(_, _)
-        | Decision::OperationSettlementDeferred(_, _)
         | Decision::OperationCommitted(_)
         | Decision::OperationAlreadyCommitted(_) => None,
         Decision::OperationRetryable(_, cause) | Decision::OperationIndeterminate(_, cause) => {
@@ -332,10 +328,6 @@ fn terminal(
         }
         WorthQueryRetainedConditionalDecision::OperationNoEffect(_, _) => {
             WorthQueryConditionalExecutionTerminal::NoEffect
-        }
-        WorthQueryRetainedConditionalDecision::OperationSettlementExecutionDenied(_, _, _)
-        | WorthQueryRetainedConditionalDecision::OperationSettlementDeferred(_, _) => {
-            WorthQueryConditionalExecutionTerminal::DeferredRetained
         }
         WorthQueryRetainedConditionalDecision::OperationCommitted(_) => {
             WorthQueryConditionalExecutionTerminal::Committed

@@ -12,9 +12,8 @@ pub use declaration::{
 pub use outcome::{
     WorthQueryBranchMergeAftermath, WorthQueryBranchMergeCompletion,
     WorthQueryBranchMergeControlStopped, WorthQueryBranchMergeDeferred,
-    WorthQueryBranchMergeNextAction, WorthQueryBranchMergeOutcome,
-    WorthQueryBranchMergeSettlementDeferred, WorthQueryBranchMergeStop,
-    WorthQueryBranchMergeStopSource,
+    WorthQueryBranchMergeDurabilityUnresolved, WorthQueryBranchMergeNextAction,
+    WorthQueryBranchMergeOutcome, WorthQueryBranchMergeStop, WorthQueryBranchMergeStopSource,
 };
 
 pub struct WorthQueryBranchMergeRequest {

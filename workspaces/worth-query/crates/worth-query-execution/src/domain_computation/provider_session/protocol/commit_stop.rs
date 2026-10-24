@@ -4,14 +4,6 @@ use super::{
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct WorthQueryProviderSessionSettlementDeferred {
-    stage: WorthQueryProviderSessionProtocolStage,
-    detail: String,
-    counters: WorthQueryProviderSessionProtocolCounters,
-    settlement: worth_relational::facade::publication::DeferredPublicationSettlement,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryProviderSessionCommitDeferred {
     kind: WorthQueryProviderSessionCommitDeferredKind,
     stage: WorthQueryProviderSessionProtocolStage,
@@ -39,48 +31,6 @@ pub enum WorthQueryProviderSessionCommitDeferredKind {
     RequiredPrerequisitePending(
         crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind,
     ),
-}
-
-impl WorthQueryProviderSessionSettlementDeferred {
-    pub(in crate::domain_computation) fn new(
-        detail: impl Into<String>,
-        settlement: worth_relational::facade::publication::DeferredPublicationSettlement,
-    ) -> Self {
-        Self {
-            stage: WorthQueryProviderSessionProtocolStage::Commit,
-            detail: detail.into(),
-            counters: WorthQueryProviderSessionProtocolCounters::default(),
-            settlement,
-        }
-    }
-
-    pub fn stage(&self) -> WorthQueryProviderSessionProtocolStage {
-        self.stage
-    }
-
-    pub fn detail(&self) -> &str {
-        &self.detail
-    }
-
-    pub fn counters(&self) -> WorthQueryProviderSessionProtocolCounters {
-        self.counters
-    }
-
-    pub(in crate::domain_computation) fn settlement(
-        &self,
-    ) -> &worth_relational::facade::publication::DeferredPublicationSettlement {
-        &self.settlement
-    }
-
-    pub(in crate::domain_computation) fn at_stage(
-        mut self,
-        stage: WorthQueryProviderSessionProtocolStage,
-        counters: WorthQueryProviderSessionProtocolCounters,
-    ) -> Self {
-        self.stage = stage;
-        self.counters = counters;
-        self
-    }
 }
 
 impl WorthQueryProviderSessionCommitDeferred {
@@ -151,7 +101,6 @@ pub enum WorthQueryProviderSessionCommitStop {
     Denied(WorthQueryProviderSessionFailure),
     Deferred(WorthQueryProviderSessionCommitDeferred),
     ControlStopped(super::WorthQueryProviderSessionCommitControlStopped),
-    SettlementDeferred(WorthQueryProviderSessionSettlementDeferred),
 }
 
 impl From<WorthQueryProviderSessionFailure> for WorthQueryProviderSessionCommitStop {
