@@ -8,16 +8,61 @@ use worth_store_relational::{
     RelationalStoreHome, RelationalStoreHomeOpenRefusal, RelationalStoreHomeRequest,
 };
 
+use worth_relational::facade::durability::{
+    RecoveryAuthorityContinuityMismatch, RecoveryFailureClass, RelationalRecoveryStop,
+};
 use worth_relational::facade::schema::SchemaVersionId;
 
 use super::schema_transition;
 use super::workload::{self, Script, Step};
 
+/// Open the home declaring the schema it serves (D5): the script's source
+/// schema until its durable transition, the target after. A crash can leave
+/// the transition's fate to recovery, so when the home refuses the source
+/// because its recovered main head records the target, open declaring that.
 pub(crate) fn open(
     location: &Path,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<RelationalStoreHome, RelationalStoreHomeOpenRefusal> {
-    open_declaring(location, schema_transition::SOURCE, execution)
+    match open_declaring(location, schema_transition::SOURCE, execution) {
+        Err(refusal) if recorded_schema(&refusal) == Some(schema_transition::TARGET) => {
+            open_declaring(location, schema_transition::TARGET, execution)
+        }
+        opened => opened,
+    }
+}
+
+/// The schema a refused open's recovered main head records, when the refusal
+/// is that the declared schema differs from it.
+pub(crate) fn recorded_schema(refusal: &RelationalStoreHomeOpenRefusal) -> Option<SchemaVersionId> {
+    let RelationalStoreHomeOpenRefusal::Readmission(RelationalRecoveryStop::Durability(error)) =
+        refusal
+    else {
+        return None;
+    };
+    match (&error.class, &error.authority_continuity_mismatch) {
+        (
+            RecoveryFailureClass::DeclaredSchemaMismatch,
+            Some(RecoveryAuthorityContinuityMismatch::SchemaRegistryShape {
+                expected_primary_schema_version,
+                ..
+            }),
+        ) => Some(*expected_primary_schema_version),
+        _ => None,
+    }
+}
+
+/// The schema a cleanly closed home holding `steps` serves: the transition's
+/// target once the script's transition is among them, the source before.
+pub(crate) fn served_schema(steps: &[Step]) -> SchemaVersionId {
+    if steps
+        .iter()
+        .any(|step| matches!(step, Step::Transition { .. }))
+    {
+        schema_transition::TARGET
+    } else {
+        schema_transition::SOURCE
+    }
 }
 
 /// Open the home with a runtime that declares the schema registry at `schema`.

@@ -11,6 +11,10 @@ use crate::schema::data::{
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RecoveryFailureClass {
     SchemaMismatch,
+    /// The runtime declares a schema registry other than the one its
+    /// recovered main branch head records (D5). Only a durable schema
+    /// transition changes the schema a home serves.
+    DeclaredSchemaMismatch,
     ProfileMismatch,
     RuntimeNameMismatch,
     CorruptCheckpoint,
@@ -228,6 +232,7 @@ impl DurabilityError {
             | RecoveryFailureClass::MissingAuthoritativeParentClosure
             | RecoveryFailureClass::ReplayFailure
             | RecoveryFailureClass::SchemaMismatch
+            | RecoveryFailureClass::DeclaredSchemaMismatch
             | RecoveryFailureClass::ProfileMismatch
             | RecoveryFailureClass::RuntimeNameMismatch => ErrorOperation::Recover,
         };

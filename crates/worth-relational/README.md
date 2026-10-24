@@ -171,8 +171,13 @@ the same storage calls `durability().recovery_plan_from_source(..)` and then
 `durability_recovery().recover(..)`. Every artifact is readmitted, the tail
 must continue exactly from the checkpoint's covered position, and any damage,
 gap or misfiled checkpoint refuses with a typed `RecoveryFailureClass` before
-service. Recovery moves the medium into the rebuilt runtime only after
-replay, so replay never republishes. A recovered runtime publishes its next commit at the next
+service. A recovered runtime serves the schema its recovered main branch head
+records: the initial schema, or the target of the last durable schema
+transition. A runtime declaring any other registry, even identical contracts
+under another version label, refuses with
+`RecoveryFailureClass::DeclaredSchemaMismatch` before service. Recovery moves
+the medium into the rebuilt runtime only after replay, so replay never
+republishes. A recovered runtime publishes its next commit at the next
 position. These types are in `worth_relational::facade::durability`.
 
 The owner catalog, branch cells, roots, and retention accounting stay

@@ -7,13 +7,13 @@ use std::num::NonZeroU64;
 use std::path::Path;
 
 use worth_execution::ExecutionRequest;
+use worth_relational::facade::schema::SchemaVersionId;
 use worth_store::physical_runtime::certification::{
     CertificationMediaFaultActivation, MediaFaultDirective, MediaOperationRole,
 };
 use worth_store::physical_runtime::{FilesystemAccessPosture, FilesystemMediaAdmission};
 use worth_store_relational::{RelationalStoreHome, RelationalStoreHomeRequest};
 
-use super::schema_transition;
 use super::workload;
 
 /// One fault: the `nth` operation of `role` after arming meets `directive`.
@@ -32,10 +32,12 @@ pub(crate) fn directives() -> [MediaFaultDirective; 2] {
     [fail_before(), MediaFaultDirective::IndeterminateAfterEffect]
 }
 
-/// Open the closed home at `location` with one rule per fault. `None` when
-/// the schedule refuses a directive for its role.
+/// Open the closed home at `location`, declaring the `schema` it serves, with
+/// one rule per fault. `None` when the schedule refuses a directive for its
+/// role.
 pub(crate) fn open_with_faults(
     location: &Path,
+    schema: SchemaVersionId,
     faults: &[Fault],
     execution: &ExecutionRequest<'_, '_>,
 ) -> Option<(RelationalStoreHome, Vec<CertificationMediaFaultActivation>)> {
@@ -56,10 +58,7 @@ pub(crate) fn open_with_faults(
         })
         .collect();
     let schedule = authority.schedule(rules).ok()?;
-    let request = RelationalStoreHomeRequest::new(
-        location,
-        workload::runtime_builder(schema_transition::SOURCE),
-    );
+    let request = RelationalStoreHomeRequest::new(location, workload::runtime_builder(schema));
     let home = RelationalStoreHome::certification_open_with_media(
         request,
         admission.with_fault_schedule(schedule),

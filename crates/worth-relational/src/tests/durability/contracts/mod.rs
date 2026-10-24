@@ -6,6 +6,7 @@ mod branch_root_schema_binding;
 mod canonical_artifact_neutrality;
 mod canonical_commit_artifact;
 mod checkpoint_recovery;
+mod declared_schema_binding;
 mod derived_index_checkpoint;
 mod descriptor_continuity;
 mod fork_provenance_checkpoint;

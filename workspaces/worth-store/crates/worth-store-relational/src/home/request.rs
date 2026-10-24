@@ -8,7 +8,11 @@ use super::RelationalStoreHomeOpenRefusal;
 ///
 /// The builder declares everything about the runtime except its durable
 /// medium, which the home attaches. Opening an existing home with a builder
-/// whose runtime name or profile differs from the home's refuses.
+/// whose runtime name or profile differs from the home's refuses, and so does
+/// one whose declared schema registry is not the schema the home's recovered
+/// main head records (`Readmission` with
+/// `RecoveryFailureClass::DeclaredSchemaMismatch`). A home with no history
+/// serves the schema its first runtime declares.
 #[derive(Debug, Clone)]
 pub struct RelationalStoreHomeRequest {
     location: PathBuf,

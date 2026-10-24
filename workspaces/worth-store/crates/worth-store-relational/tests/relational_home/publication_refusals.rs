@@ -26,6 +26,7 @@ use worth_store_relational::{RelationalStoreHome, RelationalStoreJournalRefusal}
 use super::batches;
 use super::durable_run::open;
 use super::media_faults;
+use super::schema_transition::SOURCE;
 use super::workload;
 
 fn main() -> BranchId {
@@ -208,7 +209,8 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
     // The last positioned write of a commit happens after its WAL record is
     // durable: losing its answer leaves a durable commit of unknown fate.
     let (home, counters) =
-        media_faults::open_with_faults(&location, &media_faults::counters(), &execution).unwrap();
+        media_faults::open_with_faults(&location, SOURCE, &media_faults::counters(), &execution)
+            .unwrap();
     media_faults::arm(&counters);
     create(&home, 2, &execution);
     let writes = media_faults::counts(&counters)
@@ -223,7 +225,7 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
         worth_store::physical_runtime::certification::MediaFaultDirective::IndeterminateAfterEffect,
     );
     let (home, activations) =
-        media_faults::open_with_faults(&location, &[fault], &execution).unwrap();
+        media_faults::open_with_faults(&location, SOURCE, &[fault], &execution).unwrap();
     media_faults::arm(&activations);
     let unresolved = workload::commit(home.runtime(), &execution, &main(), batches::create(3));
     let fate = unresolved
