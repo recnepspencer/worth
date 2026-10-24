@@ -17,8 +17,7 @@ use std::marker::PhantomData;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 mod ordinary;
 pub(in crate::domain_computation::primary_graph::application_query) use ordinary::{
-    complete_one_shot, complete_one_shot_with_decode, finalize_one_shot,
-    finalize_one_shot_with_decode,
+    complete_one_shot, finalize_one_shot, finalize_one_shot_with_decode,
 };
 mod completed;
 pub(in crate::domain_computation::primary_graph::application_query) use completed::CompletedOneShotRead;

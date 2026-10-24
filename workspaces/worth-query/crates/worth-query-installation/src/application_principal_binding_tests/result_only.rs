@@ -1,5 +1,4 @@
 use super::*;
-use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 
 pub struct ResultOnlyInput;
 worth_query_structured_value_binding!(pub ResultOnlyInputBinding for ResultOnlyInput {
