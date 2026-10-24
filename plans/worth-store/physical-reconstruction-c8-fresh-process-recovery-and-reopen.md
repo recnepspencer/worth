@@ -609,6 +609,11 @@ that frontier. “First tail LSN” means the first selected complete frame, not
 necessarily the first frame in the physical segment that contains it; frames
 covered by the checkpoint remain physical evidence but are excluded from the
 logical recovery basis.
+Before the first checkpoint, when `checkpoint.current` is observed absent (never
+damaged or rejected), the basis is generation zero: the frontier is the
+canonical WAL origin (segment 1, generation 1, the origin LSN), nothing is
+covered, and the WAL must retain every frame from that origin, the origin
+frame included. An empty WAL is admitted only under root generation 1.
 
 Before effects, C.8 must prove:
 

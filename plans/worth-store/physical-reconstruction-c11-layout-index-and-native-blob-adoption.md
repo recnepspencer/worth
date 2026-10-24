@@ -1,10 +1,11 @@
 # C.11: Layout, Index, And Native Blob Adoption
 
-> **Scope cut (2026-10-06).** C.11 does not close before C.13. The
-> [fast track to runtime integration](physical-reconstruction-fast-track-to-runtime-integration.md) takes the
-> C.11 items Part II Milestones 1 to 3 need, including the Phase 8 cleanup that
-> C.13 owns. Every other item in this spec is deferred, and the fast track's
-> "Deferred Work" table names its owner and return point.
+> **Planning status.** The
+> [Database Foundation Roadmap](../database-foundation/roadmap.md) replaces
+> the C.13 fast-track order. This document retains C.11's implementation and
+> design reference; its remaining portfolio is deferred under the new
+> roadmap's capability triggers. A physical prerequisite needed by a D
+> milestone belongs in that milestone without reopening the full portfolio.
 
 ## Goal And Decision
 

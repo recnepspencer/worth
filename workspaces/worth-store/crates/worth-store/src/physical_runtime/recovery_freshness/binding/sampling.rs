@@ -2,7 +2,6 @@
 
 use crate::physical_runtime::PhysicalRecoveryCoordination;
 use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
-use worth_store_physical_integrity::VerifiedCheckpointFacts;
 
 pub(super) mod allocation;
 mod census;
@@ -27,6 +26,7 @@ use allocation::{
     StoreRecoveryBindingSampleAllocationDenial as AllocationDenial,
 };
 use census::SamplingCapacity;
+pub use source_basis::StoreRecoverySamplingBasis;
 use source_basis::{validate_source, SamplingSource};
 use storage::SamplingStorage;
 
@@ -34,16 +34,19 @@ pub(super) fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 
     covered: CheckpointCoveredMembers,
     coordination: &PhysicalRecoveryCoordination,
     media: &AdmittedRecoveryFilesystemMedia,
-    checkpoint: &VerifiedCheckpointFacts,
+    basis: StoreRecoverySamplingBasis<'_>,
     wal_frames: impl Iterator<Item = &'frame Frame> + Clone,
     maximum_operations: u64,
     maximum_redo: u64,
     cleanup_limit: u64,
 ) -> Result<StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleFailure> {
-    let source = validate_source(coordination, media, checkpoint, maximum_operations)?;
+    let source = validate_source(coordination, media, basis, maximum_operations)?;
     let allocation = SamplingAllocation::from_coordination(coordination)
         .map_err(|cause| source.allocation_failure(cause))?;
-    if !allocation.matches_checkpoint_basis(source.basis) {
+    if source
+        .basis
+        .is_some_and(|basis| !allocation.matches_checkpoint_basis(basis))
+    {
         return Err(source.allocation_failure(AllocationDenial::BackingMismatch));
     }
     let capacity = SamplingCapacity::census(

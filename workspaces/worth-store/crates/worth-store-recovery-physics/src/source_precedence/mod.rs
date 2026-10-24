@@ -96,8 +96,8 @@ pub use released_v3_inventory_transition::{
 };
 pub use residue::{PhysicalRecoveryResidue, PhysicalRecoveryResidueKind};
 pub use selection::{
-    select_physical_recovery_sources, PhysicalSourceSelection, PhysicalSourceSelectionDenial,
-    PhysicalSourceSelectionTrace,
+    checkpoint_wal_basis, select_physical_recovery_sources, PhysicalSourceSelection,
+    PhysicalSourceSelectionDenial, PhysicalSourceSelectionTrace,
 };
 pub use structured_observation::observe_structured_physical_root_candidate;
 pub use tier_custody::{

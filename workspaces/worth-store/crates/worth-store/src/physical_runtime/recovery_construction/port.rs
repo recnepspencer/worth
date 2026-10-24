@@ -4,6 +4,7 @@ use worth_store_recovery_physics::{
     VerifiedSelectedNoReleaseCustody, VerifiedSelectedTierEpochCustody,
 };
 
+use crate::physical_runtime::record_serving::RecoveredNoReleaseCustody;
 use crate::physical_runtime::{
     ClosedPhysicalRecoveryCleanup, CompletedPhysicalRecoveryFreshReopen,
     PhysicalRecoveryCoordination,
@@ -13,6 +14,8 @@ use super::{
     selected_rejoin, RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
 };
 mod binding;
+#[path = "port/generation_zero.rs"]
+mod generation_zero;
 #[path = "port/head_v2.rs"]
 mod head_v2;
 #[path = "port/historical.rs"]
@@ -114,7 +117,7 @@ impl PhysicalRecoveryConstructionPort {
             coordination,
             media,
             reopen,
-            Some(no_release),
+            Some(RecoveredNoReleaseCustody::Selected(no_release)),
             Some(tier),
             Some(selected_wal),
             Some(selected_controls),
@@ -169,7 +172,7 @@ impl PhysicalRecoveryConstructionPort {
                 &coordination,
                 media,
                 &reopen,
-                &no_release,
+                selected_rejoin::no_release::NoReleaseRejoinBasis::Selected(&no_release),
                 pause_before_final_reread,
             ) {
                 Ok(media) => media,
@@ -184,7 +187,7 @@ impl PhysicalRecoveryConstructionPort {
             coordination,
             media,
             reopen,
-            Some(no_release),
+            Some(RecoveredNoReleaseCustody::Selected(no_release)),
             None,
             Some(selected_wal),
             Some(selected_controls),
@@ -195,7 +198,7 @@ impl PhysicalRecoveryConstructionPort {
         coordination: PhysicalRecoveryCoordination,
         media: AdmittedRecoveryFilesystemMedia,
         reopen: CompletedPhysicalRecoveryFreshReopen,
-        no_release_custody: Option<VerifiedSelectedNoReleaseCustody>,
+        no_release_custody: Option<RecoveredNoReleaseCustody>,
         tier_custody: Option<VerifiedSelectedTierEpochCustody>,
         selected_wal: Option<selected_rejoin::SelectedWalMediaFingerprint>,
         selected_controls: Option<selected_rejoin::SelectedControlMediaFingerprint>,
@@ -206,13 +209,16 @@ impl PhysicalRecoveryConstructionPort {
         }
         let observed_root_sha256: [u8; 32] =
             Sha256::digest(reopen.fresh_reopen_occurrence().root().bytes()).into();
-        if no_release_custody.as_ref().is_some_and(|verified| {
-            let marker_digest: [u8; 32] = Sha256::digest(verified.marker().encode()).into();
-            verified.selected_root() != reopen.root()
-                || verified.selected_root_sha256() != observed_root_sha256
-                || verified.marker().checkpoint() != verified.checkpoint().source().identity()
-                || verified.marker().root_sha256() != verified.checkpoint_source_root_sha256()
-                || verified.marker_payload_sha256() != marker_digest
+        if no_release_custody.as_ref().is_some_and(|custody| {
+            custody.selected_root() != reopen.root()
+                || custody.selected_root_sha256() != observed_root_sha256
+                || custody.selected().is_some_and(|verified| {
+                    let marker_digest: [u8; 32] = Sha256::digest(verified.marker().encode()).into();
+                    verified.marker().checkpoint() != verified.checkpoint().source().identity()
+                        || verified.marker().root_sha256()
+                            != verified.checkpoint_source_root_sha256()
+                        || verified.marker_payload_sha256() != marker_digest
+                })
         }) || tier_custody.as_ref().is_some_and(|verified| {
             verified.selected_root() != reopen.root()
                 || verified.selected_root_sha256() != observed_root_sha256

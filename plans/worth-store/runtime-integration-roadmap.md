@@ -1,76 +1,25 @@
 # Worth Store Runtime And Query Integration Roadmap
 
-## Purpose
+## Status and use
 
-This is Part II of the active Worth Store program. It begins when the
-[Physical Foundation Reconstruction Roadmap](physical-foundation-reconstruction-roadmap.md)
-closes through C.13. That roadmap makes the physical runtime, media path,
-fresh-process recovery, and S.1-through-S.9 owners real, and its sealed handoff
-names the physical facade this roadmap binds to. The
-[Physical Database Roadmap](physical-database-roadmap.md) sequences S.10
-through S.12 run later, each before the Part II milestone that consumes it
-(see its Runtime Integration Entry Gate). Part II does not compensate for an
-incomplete reconstruction or a not-yet-run sequence with an integration-side
-backend or semantic persistence fallback: a capability the facade reports
-`Absent` stays absent until its owner ships it.
+The [Database Foundation Roadmap](../database-foundation/roadmap.md) replaces
+this document's implementation order, C.13 prerequisite and proposed parallel
+application facade. The public application entry remains
+`worth-query-host`; the durable composition joins existing semantic owners
+with one physical Store.
 
-Part II establishes the backend-neutral `worth-application-runtime` lifecycle
-facade and its concrete `worth-application-store` composition. That composition
-owns one Query participant, one physical Store instance, and their narrow
-bindings.
-Query owns semantic execution, Store owns physical execution, and the bindings
-translate only public contracts. The application facade is the product entry;
-Worth Query remains the domain language, Relational remains MVCC authority,
-semantic Signal remains derived-computation authority, Runtime Bridge remains
-the causal protocol layer, and Worth Store makes the joined system survive.
+The sections below retain design research and the inventory of advanced Store
+vision capabilities. They are historical proposals, not active milestone
+requirements, earned guarantees, type commitments or a second integration
+roadmap. References below to "Part II", "Milestone N", required handoffs and
+the old `worth-application-runtime` facade apply only to that historical
+proposal. A later specification must reconcile a capability against the
+current owners and Database Foundation handoff before implementation.
 
-The previous semantic Store roadmap is deleted. Its document structure,
-milestone numbering, implementation topology, and closeout claims are not
-migrated, preserved, or treated as earned compatibility. Concepts that still
-belong in the product are designed again against the real physical Store and
-the current Query/Relational/Signal architecture.
-
-## Roadmap Position
-
-```text
-Physical Foundation Reconstruction C.13 handoff
-  -> Milestone 1: Query integration readiness and backend contract refactor
-  -> Milestone 2: semantic-to-physical integration spine
-  -> Milestone 3: Store durability beneath canonical commit and publication
-  -> Milestone 4: basis-pinned Store reads, hydration, and access providers
-  -> Milestone 5: branch-aware concurrent MVCC over Store
-  -> Milestone 6: runtime residency, drainage, cleanup, and rehydration
-  -> Milestone 7: durable semantic identity and checkpoint basis
-  -> Physical Database Roadmap S.10
-  -> Milestone 8: bounded bootstrap, recovery, PITR, and readmission
-  -> Milestone 9: Store-backed Query execution and pushdown parity
-  -> Physical Database Roadmap S.11
-  -> Milestone 10: durable historical worlds, branches, previews, diff, and merge
-  -> Milestone 11: durable Query artifacts, saved queries, and continuations
-  -> Milestone 12: blob-backed Query delivery and large-object semantics
-  -> Milestone 13: durable live views and subscriptions
-  -> Physical Database Roadmap S.12
-  -> Milestone 14: deterministic bulk ingest, transform, and migration
-  -> Milestone 15: semantic retention, compaction, maintenance, and tiering
-  -> Milestone 16: compatibility, replication, and portable capsules
-  -> Milestone 17: extensible durable product artifacts
-  -> Milestone 18: global admission, operations, and trust integration
-  -> Physical Foundation Reconstruction C.12 (formal rebinding)
-  -> Milestone 19: joined runtime and Store certification
-```
-
-## Document Authority And Spec Names
-
-The active Store planning authority is exactly:
-
-- `physical-database-roadmap.md` for Part I
-- this document for Part II
-
-Fresh Part II milestone specs use the unambiguous
-`runtime-integration-m{number}.md` family. Existing `milestone-*.md`, closeout,
-or implementation-plan documents from the retired semantic roadmap are not
-children of this roadmap and provide no requirement, dependency, compatibility,
-or completion evidence for it.
+The active near-term milestones are Milestone 1 canonical durable publication, Milestone 2
+Relational cutover, Milestone 3 production host and original-result retry, Milestone 4 database
+scale/lifecycle, and Milestone 5 complete runtime recovery. S.10 through S.12 and
+the remaining C portfolios are deferred under the new roadmap.
 
 ## Governing Summaries
 
@@ -1785,7 +1734,7 @@ This scenario is mandatory for Milestones 8, 10 through 13, 16, 18, and 19.
 
 ## Critical Path And Parallel Work
 
-Milestones 1 through 12 are the non-negotiable integration path. They establish
+The historical Milestones 1 through 12 proposed a broad integration path. They described
 the Query contract refactor, the bidirectional semantic/physical spine, durable
 write publication, cold Store reads and hydration, real branch concurrency,
 bounded residency, checkpoint/recovery, ordinary and historical Query parity,

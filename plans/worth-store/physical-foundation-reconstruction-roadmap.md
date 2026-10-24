@@ -1,62 +1,26 @@
 # Worth Store Physical Foundation Reconstruction Roadmap
 
-## Purpose
+## Status and handoff
 
-This is the mandatory reconstruction program inside Part I of Worth Store.
-It reopens the physical-foundation claims currently attributed to `S.1`
-through `S.9`, repairs the development proof loop first, then joins the real
-physical mechanisms into one sealed production database runtime before `S.10`
-operational recovery continues.
+C.1 through C.10 are historical foundations. Preserve their guarantees through
+the affected integration boundaries without reopening their completed
+portfolios.
 
-This roadmap does not discard useful page, WAL, buffer-pool, integrity,
-isolation, scheduling, layout, blob, model, or certification work merely
-because the current composition is not a database. It also gives none of that
-work closure credit merely because its vocabulary, local tests, or isolated
-mechanisms are strong. Existing code is substrate to inspect and either admit,
-refactor, or delete. Only execution through the reconstructed production path
-earns a physical claim.
+The [Database Foundation Roadmap](../database-foundation/roadmap.md) replaces
+the remaining reconstruction-to-integration sequence. Its Milestone 1 through Milestone 5
+program starts from these physical owners and the current semantic runtimes,
+preserves canonical commit authority, and reaches the production-host
+lost-response/retry journey at Milestone 3.
 
-## Roadmap Position
+The C.11 remainder, C.12 formal rebinding and C.13's broad joined campaign are
+deferred under that roadmap's capability triggers. They do not gate the new
+database program as wholesale portfolios. Any physical mechanism needed for a
+database milestone must be completed at its owning boundary in that milestone.
 
-```text
-Physical Database Roadmap S.9 implementation state reopened
-  -> C.1 direct test execution and iteration cleanup
-  -> C.2 historical audit (retired; current inspection is phase-local)
-  -> C.3 sealed physical runtime authority and lifecycle
-  -> C.4 production media boundary and stable store namespace
-  -> C.5 durable page, segment, extent, and manifest path
-  -> C.5.1 physical Store instance and Signal-orchestrated work
-  -> C.6 buffer pool and bounded physical access join
-  -> C.7 WAL, checkpoint, root publication, and acknowledgment join
-  -> C.8 fresh-process recovery and reopen
-  -> C.9 physical integrity, corruption localization, and offline truth
-  -> C.10 stable reads, scheduled I/O, and maintenance interference
-  -> C.11 layout, index, and native blob adoption
-  -> C.13 physical facade integration and runtime-integration entry
-  -> Runtime And Query Integration Roadmap Milestone 1
-```
-
-C.12 (formal protocol rebinding) does not gate runtime integration. It grants
-no runtime authority and changes no facade or format, so it runs before Runtime
-Integration Milestone 19. Until it closes, no claim cites an S.9 model as
-evidence about the executable owners. S.10, S.11 and S.12 run before the
-Part II milestones that consume them (see the Physical Database Roadmap
-position section). Work deferred out of C.13 is recorded with its
-owner and returning milestone in the C.13 entry below and in
-`plans/deferred-work.md`. C.11 does not close before C.13. The
-[fast track to runtime integration](physical-reconstruction-fast-track-to-runtime-integration.md)
-names the C.11 items C.13 needs, and defers every other C.11 item with its
-owner and the Part II milestone it returns before.
-
-The `C.*` labels are reconstruction sequence numbers used only in planning,
-specification, evidence, and closeout. Production modules, types, functions,
-tests, scenarios, counters, and errors must use responsibility names rather
-than `C.*`, phase, cleanup, or roadmap provenance.
-
-No new `S.10` implementation receives closeout credit while this program is
-open. Work already present in `S.10` may be preserved as unadmitted substrate,
-but it must later bind to the reconstructed runtime and repeat its production-
-path proof.
+The detailed reconstruction sections below retain their historical contracts,
+evidence and deferred design research. Old C.13/Part II sequencing and future
+milestone references in those sections do not override the new roadmap.
+Production names remain semantic responsibilities rather than C/D numbers.
 
 ## Relationship To The Two Store Roadmaps
 

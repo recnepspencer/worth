@@ -1,6 +1,6 @@
 use super::*;
 use worth_store_physical_backend::ArtifactTreeDirectory;
-use worth_store_wal::{WalSegmentGeneration, WalSegmentId};
+use worth_store_wal::WAL_ORIGIN;
 
 pub(super) fn empty_inventory(
     directory: &ArtifactTreeDirectory,
@@ -10,12 +10,12 @@ pub(super) fn empty_inventory(
     if cutoff.lsn().is_some() {
         return Err(PhysicalWalOpenFailure::CheckpointCutoffOutsideRetainedWal);
     }
-    let segment = WalSegmentId::new(1).expect("the initial WAL segment is nonzero");
-    let generation = WalSegmentGeneration::new(1).expect("the initial WAL generation is nonzero");
+    let segment = WAL_ORIGIN.segment();
+    let generation = WAL_ORIGIN.generation();
     Ok(ReopenedPhysicalWalInventory {
         record_format,
         copy_obligations: Vec::new(),
-        checkpoint_cutoff: 0,
+        checkpoint_cutoff: WAL_ORIGIN.lsn().get(),
         frontier: WalAppendFrontier::empty(segment, generation),
         active_artifact: artifact(
             directory,

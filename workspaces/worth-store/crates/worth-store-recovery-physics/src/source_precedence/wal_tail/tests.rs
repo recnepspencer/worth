@@ -8,7 +8,8 @@ use super::*;
 
 #[test]
 fn generation_zero_without_checkpoint_or_wal_keeps_empty_origin() {
-    let selected = select_candidates(0, None, Vec::new()).unwrap();
+    let origin = worth_store_wal::WAL_ORIGIN.lsn().get();
+    let selected = select_candidates(origin, None, Vec::new()).unwrap();
     assert!(selected.segments().is_empty());
     assert!(selected.protected_checkpoint_covered().is_empty());
     assert_eq!(selected.frame_count(), 0);

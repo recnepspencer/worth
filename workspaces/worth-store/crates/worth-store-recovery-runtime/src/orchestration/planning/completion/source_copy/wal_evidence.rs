@@ -6,13 +6,7 @@ pub(super) fn verify(
     context: &PlanningContext,
     basis: &ResolvedPlanningBasis,
 ) -> Result<std::collections::BTreeSet<([u8; 32], u64)>, ()> {
-    let cutoff = context
-        .selection
-        .checkpoint()
-        .ok_or(())?
-        .checkpoint()
-        .compaction_cutover()
-        .wal_cutoff_lsn_exclusive();
+    let cutoff = context.selection.covered_wal_end_exclusive();
     let mut intents = std::collections::BTreeMap::new();
     for (range, payload) in basis.sample.extent_copy_frames() {
         if range.end_exclusive().get() != range.start().get().checked_add(1).ok_or(())? {
@@ -34,6 +28,10 @@ pub(super) fn verify(
                 }
             }
             PhysicalExtentCopyRecord::Resolved(resolution) => {
+                // A checkpoint covering both frames releases the copy
+                // obligation, so WAL reclamation may retire the Intent's
+                // segment while the covered Resolved stays in the retained
+                // first segment: only a covered orphan is skipped.
                 let Some((_, lsn, digest, prior)) = intents.get_mut(&resolution.operation()) else {
                     if range.end_exclusive().get() <= cutoff {
                         continue;

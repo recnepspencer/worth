@@ -184,6 +184,7 @@ Today no crate outside the Store workspace depends on it.
 
 Guides: [workspace README](workspaces/worth-store/README.md) and
 [facade README](workspaces/worth-store/crates/worth-store/README.md).
+Engineering sequence: [Database Foundation Roadmap](plans/database-foundation/roadmap.md).
 
 ### UI (`workspaces/worth-ui/`)
 

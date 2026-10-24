@@ -15,6 +15,7 @@ use crate::recovery_media::{
 pub(crate) struct QualifiedRecoveryParts {
     owner: FilesystemMediaOwner,
     observed_profile: super::FilesystemBackendProfile,
+    binding: super::qualification_basis::RootProfileBinding,
     backend_profile: QualifiedPhysicalBackendProfile,
     media_generation: PhysicalRecoveryMediaGeneration,
 }
@@ -25,6 +26,7 @@ pub struct AdmittedRecoveryParts {
     pub(crate) store_identity: StableStoreIdentity,
     pub(crate) media_generation: PhysicalRecoveryMediaGeneration,
     pub(crate) backend_profile: QualifiedPhysicalBackendProfile,
+    binding: super::qualification_basis::RootProfileBinding,
 }
 
 pub(crate) fn qualify_existing_recovery(
@@ -97,13 +99,14 @@ fn finish_existing_qualification(
         ));
     }
     let binding = super::profile_observation::profile_binding(&profile, access);
-    let report = RootProfileQualificationReport::new(binding);
+    let report = RootProfileQualificationReport::new(binding.clone());
     let media_generation = PhysicalRecoveryMediaGeneration::from_owner_attempt(
         owner.mutation_owner().attempt().bytes(),
     );
     Ok(QualifiedRecoveryParts {
         owner,
         observed_profile: profile,
+        binding,
         backend_profile: QualifiedPhysicalBackendProfile::from_report(&report),
         media_generation,
     })
@@ -141,6 +144,7 @@ impl QualifiedRecoveryParts {
             store_identity: identity.stable_identity(),
             media_generation: self.media_generation,
             backend_profile: self.backend_profile,
+            binding: self.binding,
         })
     }
 
@@ -298,6 +302,20 @@ mod tests {
 mod effect_tests;
 
 impl AdmittedRecoveryParts {
+    /// The durability admission basis ordinary open derives from this same
+    /// media, so a policy declared over it has the identity Serving binds.
+    #[cfg(feature = "recovery-runtime-owner")]
+    pub(crate) fn physical_durability_admission_basis(
+        &self,
+    ) -> Result<crate::PhysicalDurabilityAdmissionBasis, crate::BackendCapabilityAdmissionDenial>
+    {
+        super::durability_admission::durability_admission_basis(
+            self.store_identity,
+            &self.binding,
+            &self.execution_capability,
+        )
+    }
+
     #[cfg(feature = "recovery-runtime-owner")]
     pub(crate) fn artifact_tree(&self) -> crate::filesystem_media::ArtifactTreeMedia<'_> {
         crate::filesystem_media::ArtifactTreeMedia::for_recovery(

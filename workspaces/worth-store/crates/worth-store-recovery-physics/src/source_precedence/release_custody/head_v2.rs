@@ -24,7 +24,7 @@ mod controls;
 mod rebind;
 #[cfg(test)]
 #[path = "head_v2/tests.rs"]
-mod tests;
+pub(super) mod tests;
 use controls::verify_head_controls;
 pub use controls::AddressedReleaseHeadControlV2;
 

@@ -188,8 +188,8 @@ fn actual_absence_is_required_and_other_absent_locator_cannot_install_it() {
         .observed()
         .unwrap();
     assert_eq!(
-        coordination.install_absent_checkpoint(wrong),
-        Err(Denial::InvalidAbsence)
+        coordination.install_absent_checkpoint(wrong).err(),
+        Some(Denial::InvalidAbsence)
     );
     assert_eq!(
         coordination.require_observed_checkpoint(),
@@ -203,10 +203,11 @@ fn actual_absence_is_required_and_other_absent_locator_cannot_install_it() {
         crate::physical_runtime::recovery_coordination::observe_checkpoint_for_test(&mut discovery)
             .unwrap();
     let media = discovery.finish();
-    coordination.install_absent_checkpoint(absent).unwrap();
+    let witness = coordination.install_absent_checkpoint(absent).unwrap();
+    assert!(witness.binds(&coordination));
     assert_eq!(
-        coordination.install_absent_checkpoint(repeated),
-        Err(Denial::AlreadyInstalled)
+        coordination.install_absent_checkpoint(repeated).err(),
+        Some(Denial::AlreadyInstalled)
     );
     assert!(coordination.checkpoint().is_none());
     assert_eq!(

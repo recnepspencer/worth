@@ -19,7 +19,8 @@ pub(in crate::physical_runtime) use platform_basis_join::{
     ReopenedPhysicalDurabilityRuntimeOwner,
 };
 pub use policy::{
-    AdmittedPhysicalDurabilityPolicy, CheckpointMemoryLimit, GroupCommitDelay, GroupCommitLimit,
+    AdmittedPhysicalDurabilityPolicy, CheckpointMemoryLimit,
+    ConfiguredPhysicalDurabilityDeclaration, GroupCommitDelay, GroupCommitLimit,
     IdempotencyRetentionGenerations, LiveIdempotencyBindingLimit, PendingUnresolvedMutationLimit,
     PhysicalCheckpointPolicy, PhysicalDurabilityDeclaration, PhysicalDurabilityDeclarationBuilder,
     PhysicalDurabilityPolicyAdmissionOutcome, PhysicalDurabilityPolicyIdentity,

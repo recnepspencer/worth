@@ -1,9 +1,7 @@
 mod member_planning;
 
 use worth_proof::NonEmpty;
-use worth_store_wal::{
-    LogSequenceNumber, WalAppendFrontier, WalSegmentArtifactIdentity, WalSegmentId,
-};
+use worth_store_wal::{WalAppendFrontier, WalSegmentArtifactIdentity, WalSegmentId};
 
 use crate::physical_runtime::{
     AdmittedPhysicalDurabilityGroupMember, PhysicalDurabilityGroupMemberBinding,
@@ -54,7 +52,7 @@ impl PhysicalWalRuntimeOwner {
         let group_lsn_start = state
             .frontier
             .last_lsn_end()
-            .unwrap_or(LogSequenceNumber::new(LogSequenceNumber::GENESIS.get() + 1));
+            .unwrap_or(worth_store_wal::WAL_ORIGIN.lsn());
         let current = plan_group(
             admitted,
             state.frontier,

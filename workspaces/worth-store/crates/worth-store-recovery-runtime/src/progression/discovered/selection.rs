@@ -121,15 +121,8 @@ pub(super) fn select_sources(
             .with_integrity_trace(integrity_trace.clone())
             .with_integrity_observations(wal_integrity_observations.clone())
     })?;
-    let frontier = checkpoint
-        .as_ref()
-        .map_or(0, |checkpoint| checkpoint.wal_tail_begin_lsn());
-    let checkpoint_cutoff = checkpoint.as_ref().map(|checkpoint| {
-        checkpoint
-            .checkpoint()
-            .compaction_cutover()
-            .wal_cutoff_lsn_exclusive()
-    });
+    let (frontier, checkpoint_cutoff) =
+        worth_store_recovery_physics::checkpoint_wal_basis(checkpoint.as_ref());
     let (wal_tail, admitted_wal, wal_integrity_observations) = select_wal(
         &root,
         input.wal,
