@@ -60,6 +60,12 @@ mod pending_successor_above_history;
 mod before_first_checkpoint;
 
 #[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/anchored_records.rs"]
+mod anchored_records;
+#[cfg(feature = "certification-test-authority")]
+#[path = "production_entry/anchored_records_oracle.rs"]
+mod anchored_records_oracle;
+#[cfg(feature = "certification-test-authority")]
 #[path = "production_entry/canonical_journal.rs"]
 mod canonical_journal;
 #[cfg(feature = "certification-test-authority")]

@@ -1,5 +1,4 @@
 use sha2::{Digest, Sha256};
-use worth_proof::TransitionOutcome;
 use worth_store_physical_format::RecordAnchor;
 
 use super::frame::JournalRecordHeader;
@@ -8,12 +7,8 @@ use super::{
     CanonicalCommitEntry, CanonicalCommitJournal, CanonicalCommitPublication,
     CanonicalCommitPublicationFailure, CanonicalCommitPublished,
 };
-use crate::physical_runtime::record_serving::RecordBatchAnchorAdvance;
-use crate::physical_runtime::{
-    PhysicalMutationIdempotencyMaterial, PhysicalMutationOutcome,
-    PhysicalMutationPreparationSuccess, PhysicalMutationRequest, PhysicalRecordId,
-    RecordAppendBatch,
-};
+use crate::physical_runtime::record_serving::{AnchoredRecordAppend, AnchoredRecordAppendFailure};
+use crate::physical_runtime::PhysicalRecordId;
 
 type Failure = CanonicalCommitPublicationFailure;
 
@@ -70,62 +65,39 @@ impl CanonicalCommitJournal<'_> {
         )
         .filter(|header| header.position == publication.position)
         .ok_or(Failure::Read(super::CanonicalCommitReadFailure::Damaged))?;
-        let batch = RecordAppendBatch::builder()
-            .push_owned(header.encode_record(&publication.payload))
-            .build()
-            .and_then(|batch| {
-                batch.with_anchor_advance(RecordBatchAnchorAdvance {
-                    name: self.name,
-                    expected_generation: head_position,
-                    record_index: 0,
-                })
-            })
-            .map_err(Failure::Batch)?;
-        let submission = self.runtime.record_submission();
-        let key = submission
-            .issue_idempotency_key(PhysicalMutationIdempotencyMaterial::new(material(
-                self.name.as_str(),
-                publication.position,
-                digest,
-            )))
-            .map_err(Failure::Idempotency)?;
-        let request = PhysicalMutationRequest::platform_durable(key, publication.deadline);
-        let completed = match submission
-            .prepare_durable_append(batch, publication.placement, request)
-            .into_raw()
-        {
-            TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Prepared(prepared)) => {
-                match prepared.execute() {
-                    PhysicalMutationOutcome::Completed(completed) => completed,
-                    PhysicalMutationOutcome::ProvenNoEffect(fate) => {
-                        return Err(Failure::ProvenNoEffect(fate))
-                    }
-                    PhysicalMutationOutcome::Indeterminate(fate) => {
-                        state.unresolved = Some(publication.position);
-                        return Err(Failure::Indeterminate(fate));
-                    }
-                }
-            }
-            TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Completed(done)) => done,
-            TransitionOutcome::Success(PhysicalMutationPreparationSuccess::ProvenNoEffect(
-                fate,
-            )) => return Err(Failure::ProvenNoEffect(fate)),
-            TransitionOutcome::Success(PhysicalMutationPreparationSuccess::Indeterminate(fate)) => {
+        let record = AnchoredRecordAppend {
+            record: header.encode_record(&publication.payload),
+            anchor: self.name,
+            expected_generation: head_position,
+            idempotency: material(self.name.as_str(), publication.position, digest),
+            placement: publication.placement,
+            deadline: publication.deadline,
+        }
+        .submit(&self.runtime.record_submission())
+        .map_err(|failure| {
+            if failure.leaves_fate_unresolved() {
                 state.unresolved = Some(publication.position);
-                return Err(Failure::Indeterminate(fate));
             }
-            other => return Err(Failure::Preparation(other.into())),
-        };
-        let [record] = completed.persisted_records() else {
-            state.unresolved = Some(publication.position);
-            return Err(Failure::CompletedWithoutRecord);
-        };
+            journal_failure(failure)
+        })?;
         Ok(CanonicalCommitPublished::Committed(CanonicalCommitEntry {
             position: publication.position,
-            record: PhysicalRecordId::from_persisted(*record),
+            record: PhysicalRecordId::from_persisted(record),
             payload_sha256: digest,
             payload_bytes: publication.payload.len() as u64,
         }))
+    }
+}
+
+/// The journal's name for each anchored-append failure.
+fn journal_failure(failure: AnchoredRecordAppendFailure) -> Failure {
+    match failure {
+        AnchoredRecordAppendFailure::Batch(denial) => Failure::Batch(denial),
+        AnchoredRecordAppendFailure::Idempotency(denial) => Failure::Idempotency(denial),
+        AnchoredRecordAppendFailure::Preparation(outcome) => Failure::Preparation(outcome),
+        AnchoredRecordAppendFailure::ProvenNoEffect(fate) => Failure::ProvenNoEffect(fate),
+        AnchoredRecordAppendFailure::Indeterminate(fate) => Failure::Indeterminate(fate),
+        AnchoredRecordAppendFailure::CompletedWithoutRecord => Failure::CompletedWithoutRecord,
     }
 }
 

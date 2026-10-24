@@ -36,7 +36,7 @@ const COMMITS: usize = 6;
 /// Targets: the journal's first entry (no anchor yet) and a later one.
 const TARGETS: [u64; 2] = [1, 4];
 
-fn placement() -> AdmittedRecordPlacementPolicy {
+pub(crate) fn placement() -> AdmittedRecordPlacementPolicy {
     PhysicalRecordPlacementPolicy::builder()
         .manifest_capacity(ManifestEntryCapacity::new(64).unwrap())
         .admit(format())
@@ -71,7 +71,7 @@ fn publish(
 /// Opens the cleanly closed store with one fault rule per `(role, n)`, each
 /// firing at the nth identified operation of its role after its activation.
 /// `None` when the schedule refuses a directive for its role.
-fn open_with_faults(
+pub(crate) fn open_with_faults(
     root: &Path,
     faults: &[(MediaOperationRole, NonZeroU64, MediaFaultDirective)],
 ) -> Option<(
@@ -141,7 +141,7 @@ fn prepared_store(
     root
 }
 
-fn serve(root: &Path, stage: &str) -> ServingPhysicalRuntime {
+pub(crate) fn serve(root: &Path, stage: &str) -> ServingPhysicalRuntime {
     let outcome = WorthStoreRecovery::recover(certified_release_serving::request(root));
     let PhysicalRecoveryOutcome::Recovered(handoff) = outcome else {
         panic!("{stage} did not recover: {outcome:?}");
