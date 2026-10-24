@@ -1870,6 +1870,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-store-relational"
+version = "0.1.0"
+dependencies = [
+ "tempfile",
+ "worth-execution",
+ "worth-foundational",
+ "worth-proof",
+ "worth-relational",
+ "worth-store",
+ "worth-store-recovery-runtime",
+]
+
+[[package]]
 name = "worth-store-replication"
 version = "0.1.0"
 dependencies = [

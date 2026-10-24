@@ -1,0 +1,29 @@
+[package]
+workspace = "../.."
+name = "worth-store-relational"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+description = "A Relational home on Worth Store: durable canonical commits, checkpoints and recovery."
+
+[dependencies]
+
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-proof = { path = "../../../../crates/worth-proof" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-store.workspace = true
+worth-store-recovery-runtime.workspace = true
+
+[dev-dependencies]
+tempfile = "3"
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+
+[features]
+certification-test-authority = [
+    "worth-store/certification-test-authority",
+    "worth-store-recovery-runtime/certification-test-authority",
+]
+
+[lints]
+workspace = true

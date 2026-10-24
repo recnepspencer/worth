@@ -114,6 +114,30 @@ impl HistorySubsystem {
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), String> {
+        // A replayed commit's prior cell state that equals a cell recovery
+        // already admitted (from the checkpoint or an earlier tail commit),
+        // once rebound to this runtime, was validated then, including its fork
+        // provenance. Readmitting it again would demand the provenance root,
+        // which a checkpoint taken after the source branch moved on no longer
+        // retains.
+        if self
+            .branch_cell(expected_branch_id)
+            .is_some_and(|existing| {
+                RelationalBranchReferenceCell::from_checkpoint_with_root(
+                    self.runtime_instance_id,
+                    checkpoint.clone(),
+                    None,
+                )
+                .is_ok_and(|rebound| {
+                    history_recovery_validation::branch_cell_truth_matches(
+                        &existing.checkpoint(),
+                        &rebound.checkpoint(),
+                    )
+                })
+            })
+        {
+            return Ok(());
+        }
         if let Some(FoundationalBranchTarget::Basis(target)) = checkpoint
             .fork_provenance
             .as_ref()
