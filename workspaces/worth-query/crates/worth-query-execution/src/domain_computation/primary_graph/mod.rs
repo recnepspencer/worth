@@ -76,7 +76,6 @@ mod resolution;
 mod resolution_denial;
 mod root;
 mod schema_layout;
-pub(crate) mod settlement_repair;
 mod typed_bootstrap;
 mod value_decode;
 pub(in crate::domain_computation) mod workflow;

@@ -21,8 +21,6 @@ mod live_outputs;
 mod migration;
 #[path = "adoption/program_codec.rs"]
 mod program_codec;
-#[path = "adoption/recovery_terminals.rs"]
-mod recovery_terminals;
 #[path = "adoption/roster_admission.rs"]
 mod roster_admission;
 #[path = "adoption/rostered_restore.rs"]

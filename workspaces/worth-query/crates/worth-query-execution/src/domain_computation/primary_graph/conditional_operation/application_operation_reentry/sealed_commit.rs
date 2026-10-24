@@ -142,9 +142,6 @@ fn classify_commit(
         WorthQueryApplicationCommitOutcome::Deferred(deferred) => {
             WorthQueryTemporalReentryOutcome::ProviderCommitBackpressured(deferred)
         }
-        WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
-            WorthQueryTemporalReentryOutcome::SettlementDeferred(deferred)
-        }
         WorthQueryApplicationCommitOutcome::Indeterminate(evidence) => {
             WorthQueryTemporalReentryOutcome::Indeterminate(
                 super::super::WorthQueryConditionalReentryFailure::UnresolvedCommit(evidence),

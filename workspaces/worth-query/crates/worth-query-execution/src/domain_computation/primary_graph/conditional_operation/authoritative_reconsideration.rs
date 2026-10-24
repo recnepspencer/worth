@@ -210,7 +210,6 @@ fn retained_decision_evidence_mut(
         | Decision::OperationBackpressured(evidence, _)
         | Decision::OperationControlStopped(evidence, _)
         | Decision::OperationTerminalFailure(evidence, _)
-        | Decision::OperationSettlementDeferred(evidence, _)
         | Decision::OperationProductUnpublished(evidence, _)
         | Decision::OperationProductStale(evidence, _)
         | Decision::OperationNoEffect(evidence, _)
@@ -219,7 +218,6 @@ fn retained_decision_evidence_mut(
         | Decision::OperationAlreadyCommitted(evidence) => Some(evidence),
         Decision::OperationCommitRetryable(evidence, _)
         | Decision::OperationExecutionControlRetryable(evidence, _) => Some(evidence),
-        Decision::OperationSettlementExecutionDenied(evidence, _, _) => Some(evidence),
         Decision::Failed(_) | Decision::InterruptedDuringReentry => None,
     }
 }

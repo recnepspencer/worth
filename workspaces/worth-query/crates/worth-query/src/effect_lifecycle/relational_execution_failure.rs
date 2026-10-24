@@ -1,12 +1,16 @@
 use super::execution::EffectExecutionDenialKind;
 
+/// The durable medium could not say whether the effect's commit became
+/// durable. Nothing was installed live, but the commit may be durable, so this
+/// is neither a denial nor a performed effect; only reopening the Relational
+/// owner resolves it.
 #[derive(Debug)]
-pub struct RelationalEffectSettlementDeferred {
+pub struct RelationalEffectDurabilityUnresolved {
     message: String,
-    settlement: worth_relational::facade::publication::DeferredPublicationSettlement,
+    unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
 }
 
-impl RelationalEffectSettlementDeferred {
+impl RelationalEffectDurabilityUnresolved {
     pub fn message(&self) -> &str {
         &self.message
     }
@@ -15,9 +19,9 @@ impl RelationalEffectSettlementDeferred {
         self,
     ) -> (
         String,
-        worth_relational::facade::publication::DeferredPublicationSettlement,
+        worth_relational::facade::durability::RelationalDurabilityUnresolved,
     ) {
-        (self.message, self.settlement)
+        (self.message, self.unresolved)
     }
 }
 
@@ -35,7 +39,7 @@ pub enum RelationalEffectExecutionFailure {
         kind: super::EffectExecutionControlStopKind,
         message: String,
     },
-    SettlementDeferred(RelationalEffectSettlementDeferred),
+    DurabilityUnresolved(RelationalEffectDurabilityUnresolved),
 }
 
 impl RelationalEffectExecutionFailure {
@@ -46,29 +50,17 @@ impl RelationalEffectExecutionFailure {
         }
     }
 
-    pub(crate) fn settlement_deferred(
-        message: impl Into<String>,
-        settlement: worth_relational::facade::publication::DeferredPublicationSettlement,
+    pub(crate) fn durability_unresolved(
+        unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
     ) -> Self {
-        Self::SettlementDeferred(RelationalEffectSettlementDeferred {
-            message: message.into(),
-            settlement,
+        Self::DurabilityUnresolved(RelationalEffectDurabilityUnresolved {
+            message: format!(
+                "durable publication of position {} is unresolved: {}",
+                unresolved.position().0,
+                unresolved.detail()
+            ),
+            unresolved,
         })
-    }
-
-    pub fn from_publication_failure(
-        kind: EffectExecutionDenialKind,
-        message: impl Into<String>,
-        settlement: Option<worth_relational::facade::publication::DeferredPublicationSettlement>,
-    ) -> Self {
-        let message = message.into();
-        match settlement {
-            Some(settlement) => Self::SettlementDeferred(RelationalEffectSettlementDeferred {
-                message,
-                settlement,
-            }),
-            None => Self::Denied { kind, message },
-        }
     }
 
     pub fn message(&self) -> &str {
@@ -76,7 +68,7 @@ impl RelationalEffectExecutionFailure {
             Self::Deferred { message, .. }
             | Self::Denied { message, .. }
             | Self::ControlStopped { message, .. } => message,
-            Self::SettlementDeferred(deferred) => deferred.message(),
+            Self::DurabilityUnresolved(unresolved) => unresolved.message(),
         }
     }
 }

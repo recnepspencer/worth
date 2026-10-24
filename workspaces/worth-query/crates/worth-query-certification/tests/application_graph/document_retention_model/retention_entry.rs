@@ -38,13 +38,9 @@ use super::schema::{
 #[path = "retention_entry/candidate_tracking.rs"]
 mod candidate_tracking;
 pub use candidate_tracking::{
-    assessment_counts, candidate_count, decision_count, ordinary_counts, reset_candidate_count,
-    reset_decision_count, reset_ordinary_counts,
+    assessment_counts, candidate_count, decision_count, reset_candidate_count,
 };
-pub(super) use candidate_tracking::{
-    record_assessment_candidate, record_assessment_decision, record_ordinary_candidate,
-    record_ordinary_decision,
-};
+pub(super) use candidate_tracking::{record_assessment_candidate, record_assessment_decision};
 #[path = "retention_entry/occurrence_write.rs"]
 mod occurrence_write;
 #[path = "retention_entry/reviewed_write.rs"]
@@ -63,8 +59,6 @@ pub use set_retention_handler::SetRetentionHandler;
 /// The one document every host in this court seeds and both programs act on.
 pub const DOCUMENT_IDENTITY: &str = "document-1";
 pub const RELATED_DOCUMENT_IDENTITY: &str = "document-2";
-/// Reserved fixture value whose candidate-authoring count proves migration recovery does not replay.
-pub const MIGRATION_CANDIDATE_PROBE_RETENTION: u64 = 17;
 
 #[derive(Clone, Debug)]
 pub struct DocumentRetentionRead {

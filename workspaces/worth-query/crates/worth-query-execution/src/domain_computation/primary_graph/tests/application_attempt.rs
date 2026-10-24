@@ -71,8 +71,6 @@ mod program_occurrence_gate;
 mod provider_terminal_evidence;
 #[path = "application_attempt/retry_outbox_rebind.rs"]
 mod retry_outbox_rebind;
-#[path = "application_attempt/settlement_failures.rs"]
-mod settlement_failures;
 #[path = "application_attempt/structured_effect_validation.rs"]
 mod structured_effect_validation;
 #[path = "application_attempt/terminal_failures.rs"]
@@ -241,56 +239,6 @@ pub(in crate::domain_computation::primary_graph) fn idempotency(
     intent: u8,
 ) -> WorthQueryApplicationIdempotencyBinding {
     WorthQueryApplicationIdempotencyBinding::new([key; 32], [intent; 32])
-}
-
-pub(in crate::domain_computation::primary_graph) fn world_issued_unpublished_material(
-    seed: u8,
-) -> (
-    worth_runtime_world::facade::ProductBranchObservation,
-    WorthQueryApplicationIdempotencyBinding,
-    worth_runtime_world::facade::ProductUnpublishedRecoveryHandle,
-) {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let binding = idempotency(seed, seed);
-    let program = world
-        .application
-        .with_host_advancement(|phase| {
-            let phase_custody = &phase.test_host_request();
-            let principal =
-                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
-            let account = resolved_account(
-                &(phase_custody).test_host_request(),
-                &world,
-                "open",
-                &request,
-            );
-            let program = admitted_program(
-                &phase_custody.phase_for_application(&world.application),
-                &world,
-                &principal,
-                &account,
-                &request,
-                "bounded-unpublished-material",
-            );
-            world
-                .application
-                .fail_next_durable_append_for_test(&phase_custody.borrowed_request_for_test());
-
-            program
-        })
-        .expect("fixture preparation owns its host call");
-    let outcome = world.application.compare_and_commit_application(
-        program,
-        binding,
-        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    );
-    let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) = outcome else {
-        panic!("the real World must issue unpublished recovery material: {outcome:?}")
-    };
-    let observation = partial.expected_product().clone();
-    let handle = partial.into_recovery().record_handle().clone();
-    (observation, binding, handle)
 }
 
 pub(in crate::domain_computation::primary_graph) fn authenticated_principal(

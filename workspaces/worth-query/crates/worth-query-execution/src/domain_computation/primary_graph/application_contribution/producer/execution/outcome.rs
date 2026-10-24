@@ -274,13 +274,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         .with_uncommitted(graph::WorthQueryApplicationUncommitted::Indeterminate(
             outcome,
         ))),
-        WorthQueryApplicationCommitOutcome::SettlementDeferred(outcome) => Err(denial(
-            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
-            identity.to_owned(),
-        )
-        .with_uncommitted(graph::WorthQueryApplicationUncommitted::SettlementDeferred(
-            outcome,
-        ))),
         outcome @ (WorthQueryApplicationCommitOutcome::Deferred(_)
         | WorthQueryApplicationCommitOutcome::NoEffect(_)
         | WorthQueryApplicationCommitOutcome::Aborted) => Err(failed(identity, outcome)),
@@ -322,7 +315,6 @@ fn refused_preflight(
         | WorthQueryApplicationCommitOutcome::TimedOut
         | WorthQueryApplicationCommitOutcome::Denied(_)
         | WorthQueryApplicationCommitOutcome::Aborted
-        | WorthQueryApplicationCommitOutcome::SettlementDeferred(_)
         | WorthQueryApplicationCommitOutcome::Indeterminate(_) => return None,
     };
     let kind = match stop {

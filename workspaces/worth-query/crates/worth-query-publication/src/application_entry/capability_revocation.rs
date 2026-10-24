@@ -14,7 +14,6 @@ pub enum WorthQueryApplicationCapabilityRevocationDenial<PreparationDenial> {
     PrincipalMismatch,
     InputCapture(worth_query_execution::publication_boundary::operation_input_capture::WorthQueryOperationInputCaptureDenial),
     Recovery(worth_query_execution::facade::primary_graph::WorthQueryManagedApplicationRecoveryDenial),
-    Settlement(worth_query_execution::publication_boundary::capability_command::WorthQueryCommandSettlementDenial),
     PrincipalBindingInstallation(
         worth_query_installation::facade::WorthQueryPrincipalBindingInstallationDenial,
     ),

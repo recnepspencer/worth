@@ -16,8 +16,6 @@ pub(in crate::domain_computation) use release::WorthQueryUnpublishedReleaseReser
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use reservation::unwind_recovery_inspection_count;
 pub(in crate::domain_computation::primary_graph) use reservation::WorthQueryUnpublishedIdempotencyReservation;
-#[cfg(test)]
-mod tests;
 
 type WorthQueryUnpublishedIdempotencyKey = super::idempotency::WorthQueryIdempotencyLookupKey;
 

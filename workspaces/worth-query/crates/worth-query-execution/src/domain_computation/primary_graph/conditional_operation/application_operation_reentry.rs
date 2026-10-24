@@ -8,7 +8,6 @@ mod processing;
 mod provider_commit_deferred;
 mod reentry_counts;
 mod sealed_commit;
-mod settlement_reentry;
 mod temporal_idempotency;
 mod wake_retirement;
 pub(in crate::domain_computation::primary_graph::conditional_operation) use denial::WorthQueryTemporalReentryDenial;
@@ -56,9 +55,6 @@ pub(super) enum WorthQueryTemporalReentryOutcome {
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitDeferred,
     ),
     ControlStopped(WorthQueryTemporalControlStop),
-    SettlementDeferred(
-        crate::domain_computation::primary_graph::WorthQueryApplicationSettlementDeferred,
-    ),
     Indeterminate(super::WorthQueryConditionalReentryFailure),
 }
 

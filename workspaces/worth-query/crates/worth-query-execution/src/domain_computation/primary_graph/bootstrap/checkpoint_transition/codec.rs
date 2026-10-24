@@ -77,6 +77,19 @@ pub(super) fn map_refusal(
         indexes::DerivedIndexMaintenanceDenialKind as Index,
         mvcc::RelationalPublicationOutcome as Publication,
     };
+    // Nothing was installed live, but the medium may hold the transition, so
+    // it is never reported as a refusal without performance.
+    if let Refusal::Publication(outcome) = refused
+        && let Publication::DurabilityUnresolved(unresolved) = outcome.as_ref()
+    {
+        return WorthQueryPrimaryGraphInstallationDenial::new(
+            crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::RelationalDurabilityUnresolved,
+            format!(
+                "checkpoint native transition durability is unresolved at position {}",
+                unresolved.position().0
+            ),
+        );
+    }
     let cause = match refused {
         Refusal::CodecRequest(cause) => Some(*cause),
         Refusal::CodecIndexPreparation(index) => match &index.kind {

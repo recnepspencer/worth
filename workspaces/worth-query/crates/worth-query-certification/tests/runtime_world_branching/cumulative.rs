@@ -120,14 +120,6 @@ fn active_world_attempt_population_does_not_expand_query_work() {
 }
 
 #[test]
-fn retained_product_partial_population_does_not_expand_query_work() {
-    let host_request = crate::test_request_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    cost::assert_retained_partial_slopes(request_execution);
-}
-
-#[test]
 #[ignore = "scheduled timing evidence; structural counters are the ordinary regression gate"]
 fn scheduled_public_read_timings_report_cold_and_warm_distributions() {
     cost::run_scheduled_public_read_timings();

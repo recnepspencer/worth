@@ -1,14 +1,12 @@
 use worth_relational::facade::history::RelationalCommitReceipt;
-use worth_relational::facade::publication::{
-    DeferredPublicationSettlement, DeferredPublicationSettlementError,
-};
+use worth_relational::facade::publication::PublicationSettlementRepairError;
 
 use super::EffectExecutionAuthority;
 
 #[derive(Debug)]
 pub enum EffectSettlementRepairError {
     MissingRelationalAuthority,
-    Settlement(DeferredPublicationSettlementError),
+    Settlement(PublicationSettlementRepairError),
 }
 
 impl std::fmt::Display for EffectSettlementRepairError {
@@ -25,18 +23,6 @@ impl std::fmt::Display for EffectSettlementRepairError {
 }
 
 impl std::error::Error for EffectSettlementRepairError {}
-
-pub(crate) fn repair_effect_settlement(
-    mut authority: EffectExecutionAuthority<'_>,
-    settlement: &DeferredPublicationSettlement,
-) -> Result<RelationalCommitReceipt, EffectSettlementRepairError> {
-    let runtime = authority
-        .relational_runtime()
-        .ok_or(EffectSettlementRepairError::MissingRelationalAuthority)?;
-    runtime
-        .repair_deferred_publication_settlement(settlement)
-        .map_err(EffectSettlementRepairError::Settlement)
-}
 
 pub(crate) fn repair_pending_effect_settlement(
     mut authority: EffectExecutionAuthority<'_>,

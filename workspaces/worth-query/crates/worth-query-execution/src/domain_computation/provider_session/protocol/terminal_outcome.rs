@@ -1,6 +1,6 @@
 use super::{
     WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolCounters,
-    WorthQueryProviderSessionRecoveryPosture, WorthQueryProviderSessionSettlementDeferred,
+    WorthQueryProviderSessionRecoveryPosture,
 };
 
 /// Provider-authored text describing a completed physical transition.
@@ -41,7 +41,6 @@ pub enum WorthQuerySessionCommitOrAbortOutcome {
     CommitDenied(WorthQueryProviderSessionFailure),
     CommitDeferred(super::WorthQueryProviderSessionCommitDeferred),
     CommitControlStopped(super::WorthQueryProviderSessionCommitControlStopped),
-    CommitSettlementDeferred(WorthQueryProviderSessionSettlementDeferred),
     CommitRecoveryRequired(WorthQueryProviderSessionFailure),
     AbortRecoveryRequired(WorthQueryProviderSessionFailure),
 }
@@ -56,8 +55,7 @@ impl WorthQuerySessionCommitOrAbortOutcome {
             | Self::CommitDenied(_)
             | Self::CommitDeferred(_)
             | Self::CommitControlStopped(_) => WorthQueryProviderSessionRecoveryPosture::Closed,
-            Self::CommitSettlementDeferred(_)
-            | Self::ProductUnpublished(_)
+            Self::ProductUnpublished(_)
             | Self::CommitRecoveryRequired(_)
             | Self::AbortRecoveryRequired(_) => {
                 WorthQueryProviderSessionRecoveryPosture::RecoveryRequired
@@ -76,24 +74,7 @@ impl WorthQuerySessionCommitOrAbortOutcome {
             | Self::ProductUnpublished(_)
             | Self::Aborted(_)
             | Self::CommitDeferred(_)
-            | Self::CommitControlStopped(_)
-            | Self::CommitSettlementDeferred(_) => None,
-        }
-    }
-
-    pub fn settlement_deferred(&self) -> Option<&WorthQueryProviderSessionSettlementDeferred> {
-        match self {
-            Self::CommitSettlementDeferred(deferred) => Some(deferred),
-            Self::Committed(_)
-            | Self::ProductStale(_)
-            | Self::NoEffect(_)
-            | Self::ProductUnpublished(_)
-            | Self::Aborted(_)
-            | Self::CommitDenied(_)
-            | Self::CommitDeferred(_)
-            | Self::CommitControlStopped(_)
-            | Self::CommitRecoveryRequired(_)
-            | Self::AbortRecoveryRequired(_) => None,
+            | Self::CommitControlStopped(_) => None,
         }
     }
 

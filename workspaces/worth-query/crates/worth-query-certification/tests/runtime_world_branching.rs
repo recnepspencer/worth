@@ -159,16 +159,6 @@ fn shared_component_sibling_revalidates_its_own_security() {
 }
 
 #[test]
-fn temporal_wake_settlement_repair_keeps_the_original_product_unpublished() {
-    let host_request = crate::test_request_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    courtroom_settlement::temporal_wake_settlement_repair_keeps_the_original_product_unpublished(
-        request_execution,
-    );
-}
-
-#[test]
 fn temporal_wake_post_commit_snapshot_recovery_preserves_its_product_commit() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);

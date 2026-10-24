@@ -1,7 +1,7 @@
 use super::execution_artifacts::EffectMergeAuthority;
 pub use super::execution_artifacts::{
     EffectExecutionAuthority, EffectExecutionControlStopped, EffectExecutionDeferred,
-    EffectExecutionDenial, EffectExecutionDenialKind, EffectExecutionSettlementDeferred,
+    EffectExecutionDenial, EffectExecutionDenialKind, EffectExecutionDurabilityUnresolved,
     EffectExecutionStop, ExecutedEffectAuthorityArtifact, ExecutedEffectPlan,
 };
 use super::execution_bridge::execute_lowered_writeback;
@@ -150,10 +150,10 @@ fn lower_relational_stop(
                 lowered, kind, message,
             ))
         }
-        RelationalEffectExecutionFailure::SettlementDeferred(deferred) => {
-            let (message, settlement) = deferred.into_parts();
-            EffectExecutionStop::SettlementDeferred(EffectExecutionSettlementDeferred::new(
-                lowered, message, settlement,
+        RelationalEffectExecutionFailure::DurabilityUnresolved(unresolved) => {
+            let (message, unresolved) = unresolved.into_parts();
+            EffectExecutionStop::DurabilityUnresolved(EffectExecutionDurabilityUnresolved::new(
+                lowered, message, unresolved,
             ))
         }
     }

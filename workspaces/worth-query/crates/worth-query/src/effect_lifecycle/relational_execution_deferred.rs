@@ -147,9 +147,9 @@ pub(super) fn transaction_commit(
         }
         TransactionCommitError::PublicationDeferred { deferred, .. } => publication(deferred),
         TransactionCommitError::PublicationFailed { failure, .. } => publication_failure(failure),
-        TransactionCommitError::PerformedButDurabilityDeferred {
-            settlement, error, ..
-        } => RelationalEffectExecutionFailure::settlement_deferred(error.detail, settlement),
+        TransactionCommitError::DurabilityUnresolved { unresolved, .. } => {
+            RelationalEffectExecutionFailure::durability_unresolved(unresolved)
+        }
         other @ (TransactionCommitError::Publication { .. }
         | TransactionCommitError::Preparation { .. }
         | TransactionCommitError::PublicationDenied { .. }) => denied(&other),

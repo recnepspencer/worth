@@ -1,11 +1,10 @@
 use std::num::NonZeroUsize;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
-use super::settlement_failures::assert_idempotency_refuses_unpublished;
 use super::{
     admitted_program, authenticated_principal, idempotency, installed_authorization_world,
-    live_scope, resolved_account, WorthQueryApplicationCommitDenialStage,
-    WorthQueryApplicationCommitOutcome,
+    live_scope, resolved_account, WorthQueryApplicationCommitDenialKind,
+    WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
 };
 
 #[test]
@@ -148,5 +147,19 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
         denial.stage(),
         WorthQueryApplicationCommitDenialStage::Idempotency,
         "cleanup removes the retained idempotency denial before fresh admission",
+    );
+}
+
+fn assert_idempotency_refuses_unpublished(outcome: WorthQueryApplicationCommitOutcome) {
+    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+        panic!("owner-local idempotency row without original product publication must remain ineligible: {outcome:?}");
+    };
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::Idempotency
+    );
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProviderRejected
     );
 }

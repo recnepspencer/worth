@@ -13,5 +13,3 @@ mod capability;
 mod document_retention_model;
 #[path = "application_graph/source_only/authorization.rs"]
 mod source_authorization;
-#[path = "support/execution_policy.rs"]
-mod test_request_policy;

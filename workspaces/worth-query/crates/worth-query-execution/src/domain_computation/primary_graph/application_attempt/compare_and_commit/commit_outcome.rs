@@ -66,11 +66,6 @@ impl WorthQueryApplicationNoEffect {
     }
 }
 
-mod settlement_deferred;
-pub use settlement_deferred::{
-    WorthQueryApplicationSettlementDeferred, WorthQueryApplicationSettlementNextAction,
-};
-
 /// Evidence that sealed decision facts changed at the admitted commit basis.
 /// Nothing was committed.
 ///
@@ -102,9 +97,8 @@ pub use denial::{
 ///
 /// `Committed` and `AlreadyCommitted` landed and carry the receipt. Every other
 /// variant did not land cleanly; see [`landed`](Self::landed) to split the two
-/// sides. Some of those variants did move the branch: `SettlementDeferred` is
-/// performed but not settled, and `Indeterminate` is unresolved, not failed.
-/// Neither calls for a blind retry.
+/// sides. `Indeterminate` may have moved the branch: it is unresolved, not
+/// failed, and does not call for a blind retry.
 #[derive(Debug)]
 pub enum WorthQueryApplicationCommitOutcome {
     /// Business evidence and actual refused managed-cleanup custody remain separate.
@@ -137,9 +131,6 @@ pub enum WorthQueryApplicationCommitOutcome {
     /// A capacity or lifetime limit stopped the attempt before it landed. Retry
     /// later.
     Deferred(WorthQueryApplicationCommitDeferred),
-    /// The branch moved, but durability or publication did not finish. Recover the
-    /// settlement; do not redo the change.
-    SettlementDeferred(WorthQueryApplicationSettlementDeferred),
     /// Whether the commit landed is unresolved. Recover in the direction the
     /// evidence names.
     Indeterminate(WorthQueryApplicationUnresolvedCommitEvidence),
@@ -161,7 +152,6 @@ impl WorthQueryApplicationCommitOutcome {
             | Self::Denied(_)
             | Self::Aborted
             | Self::Deferred(_)
-            | Self::SettlementDeferred(_)
             | Self::Indeterminate(_)) => Err(other),
         }
     }
@@ -187,7 +177,6 @@ impl WorthQueryApplicationCommitOutcome {
             Self::Denied(denial) => Uncommitted::Denied(denial),
             Self::Aborted => Uncommitted::Aborted,
             Self::Deferred(deferred) => Uncommitted::Deferred(deferred),
-            Self::SettlementDeferred(deferred) => Uncommitted::SettlementDeferred(deferred),
             Self::Indeterminate(evidence) => Uncommitted::Indeterminate(evidence),
         })
     }
@@ -209,7 +198,6 @@ pub enum WorthQueryApplicationUncommitted {
     Denied(WorthQueryApplicationCommitDenial),
     Aborted,
     Deferred(WorthQueryApplicationCommitDeferred),
-    SettlementDeferred(WorthQueryApplicationSettlementDeferred),
     Indeterminate(WorthQueryApplicationUnresolvedCommitEvidence),
 }
 
@@ -227,7 +215,6 @@ impl From<WorthQueryApplicationUncommitted> for WorthQueryApplicationCommitOutco
             Uncommitted::Denied(denial) => Self::Denied(denial),
             Uncommitted::Aborted => Self::Aborted,
             Uncommitted::Deferred(deferred) => Self::Deferred(deferred),
-            Uncommitted::SettlementDeferred(deferred) => Self::SettlementDeferred(deferred),
             Uncommitted::Indeterminate(evidence) => Self::Indeterminate(evidence),
         }
     }

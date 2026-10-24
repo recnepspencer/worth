@@ -4,12 +4,10 @@ use std::num::NonZeroUsize;
 use std::time::{Duration, SystemTime};
 use worth_query_host::facade::admission::authenticated_principal::*;
 use worth_query_host::facade::application_entry::{
-    WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchSetAdoptionAdvanceDenial,
-    WorthQueryBranchSetAdoptionProgress,
+    WorthQueryBranchSetAdoptionAdvanceDenial, WorthQueryBranchSetAdoptionProgress,
 };
 use worth_query_host::facade::primary_graph::{
-    WorthQueryBranchAdoptionRecoveryDenial, WorthQueryPrincipalResolutionDenialKind,
-    WorthQueryPrincipalResolutionRefusalKind,
+    WorthQueryPrincipalResolutionDenialKind, WorthQueryPrincipalResolutionRefusalKind,
 };
 pub(super) struct ExpiringOperator;
 impl WorthQueryAuthenticationAdapter for ExpiringOperator {
@@ -142,58 +140,4 @@ fn expired_authentication_retains_prepared_and_pending_owners_for_fresh_publicat
         WorthQueryBranchSetAdoptionProgress::Performed { .. }
     ));
     assert!(pending.close().is_ok());
-}
-#[test]
-fn expired_authentication_returns_actual_unpublished_recovery_without_settlement() {
-    let host = publish_on_first_program();
-    let branch = host.current_world();
-    let target = *host
-        .supported_program::<RetentionProgramP1>()
-        .unwrap()
-        .owned_revision();
-    let scope = request_scope();
-    let current = authenticate_operator(host.installed_schema(), &scope);
-    let programs = host.runtime().request(&current, &scope).programs();
-    let requirements = programs.compare(&target).unwrap();
-    let prepared = programs.adopt(&requirements).unwrap().prepare(64).unwrap();
-    let policy = crate::test_request_policy::serial_request();
-    host.runtime()
-        .fail_next_durable_append_for_test(&worth_execution::ExecutionRequest::serial(&policy));
-    let recovery = match host
-        .runtime()
-        .request(&current, &scope)
-        .programs()
-        .publish(prepared)
-    {
-        WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => {
-            unpublished.into_recovery()
-        }
-        _ => panic!("native durable append refusal must retain recovery"),
-    };
-    let stale = expired_operator(&host, &scope);
-    let failure = host
-        .runtime()
-        .request(&stale, &scope)
-        .on_branch(branch)
-        .programs()
-        .recover(recovery)
-        .err()
-        .unwrap();
-    match &failure {
-        worth_query_host::facade::application_entry::WorthQueryApplicationProgramAdoptionRecoveryFailure::Recovery(failure) => {
-            assert!(matches!(failure.denial(), WorthQueryBranchAdoptionRecoveryDenial::Authorization(WorthQueryProgramAdoptionAuthorizationDenial::PrincipalResolution(denial)) if denial.kind() == WorthQueryPrincipalResolutionDenialKind::Refused(WorthQueryPrincipalResolutionRefusalKind::ExpiredAuthentication)));
-        }
-        _ => panic!("expiry must precede owner settlement"),
-    }
-    assert_eq!(host.current_world(), branch);
-    let outcome = host
-        .runtime()
-        .request(&current, &scope)
-        .on_branch(branch)
-        .programs()
-        .recover(failure.into_recovery());
-    assert!(matches!(
-        outcome,
-        Ok(WorthQueryBranchAdoptionRecoveryOutcome::Performed { .. })
-    ));
 }

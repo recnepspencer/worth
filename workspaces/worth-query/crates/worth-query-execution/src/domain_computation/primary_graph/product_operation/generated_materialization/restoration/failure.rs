@@ -84,7 +84,8 @@ pub(super) fn preparation_failure_cause(
         | TransactionCommitError::PublicationDenied { .. }
         | TransactionCommitError::PublicationDeferred { .. }
         | TransactionCommitError::PublicationFailed { .. }
-        | TransactionCommitError::PerformedButDurabilityDeferred { .. } => {
+        // Restoration preparation stops before publication.
+        | TransactionCommitError::DurabilityUnresolved { .. } => {
             return Cause::Preparation
         }
     };

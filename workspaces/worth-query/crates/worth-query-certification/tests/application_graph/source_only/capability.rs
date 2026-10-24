@@ -15,8 +15,6 @@ mod interleaving;
 mod program;
 #[path = "capability/readback.rs"]
 mod readback;
-#[path = "capability/recovery.rs"]
-mod recovery;
 #[path = "capability/schema.rs"]
 mod schema;
 

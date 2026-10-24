@@ -117,14 +117,18 @@ pub(super) fn execute_lowered_mutation_batch(
                 failure,
             ));
         }
+        worth_relational::facade::mvcc::RelationalPublicationOutcome::DurabilityUnresolved(
+            unresolved,
+        ) => {
+            return Err(RelationalEffectExecutionFailure::durability_unresolved(
+                unresolved,
+            ));
+        }
     };
     runtime
         .settle_performed_publication(performed)
         .map_err(|error| {
-            let settlement = error.deferred_settlement().cloned();
-            let (kind, message) =
-                lower_runtime_error(error, EffectExecutionDenialKind::RelationalCommitFailed);
-            RelationalEffectExecutionFailure::from_publication_failure(kind, message, settlement)
+            lower_runtime_error(error, EffectExecutionDenialKind::RelationalCommitFailed).into()
         })
 }
 

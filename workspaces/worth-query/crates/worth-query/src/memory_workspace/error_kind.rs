@@ -45,4 +45,8 @@ pub enum WorthQueryWorkspaceErrorKind {
     RelationalBasisUnavailable,
     InvalidationCompanionPending,
     InvalidationCompanionCapacityExhausted,
+    /// The durable medium could not say whether the commit became durable. It
+    /// was not installed live and may already be durable; the Relational owner
+    /// refuses further publication until it is reopened.
+    DurabilityUnresolved,
 }

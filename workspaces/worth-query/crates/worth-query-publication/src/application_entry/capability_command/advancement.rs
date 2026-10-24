@@ -90,9 +90,6 @@ where
                     .map_err(WorthQueryCapabilityCommandDenial::Cleanup)?;
                 NativeCommandAction::Resolve
             }
-            State::Keyed(WorthQueryApplicationUncommitted::SettlementDeferred(deferred)) => {
-                NativeCommandAction::Settle(deferred)
-            }
             State::Keyed(_) | State::UnresolvedAdvancement(_) => NativeCommandAction::Resolve,
             State::Stopped(_) => return Ok(Step::Terminal),
             State::AdmissionStopped(never) | State::RetainedPending(never) => match *never {},
@@ -161,12 +158,6 @@ where
                 )),
                 _ => unreachable!("a genuine committed receipt completes keyed settlement"),
             },
-            Err(WorthQueryApplicationUncommitted::SettlementDeferred(deferred)) => {
-                self.state = NativePublicationState::Keyed(
-                    WorthQueryApplicationUncommitted::SettlementDeferred(deferred),
-                );
-                Ok(Step::Progress)
-            }
             // These native command outcomes prove publication did not occur. A fresh
             // attempt rebuilds only the command projection, never a performed effect.
             Err(

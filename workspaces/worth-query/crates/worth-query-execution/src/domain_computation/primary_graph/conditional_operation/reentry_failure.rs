@@ -27,6 +27,4 @@ pub enum WorthQueryConditionalReentryFailure {
     UnresolvedCommit(
         crate::domain_computation::primary_graph::WorthQueryApplicationUnresolvedCommitEvidence,
     ),
-    SettlementIdempotencyAbsent,
-    SettlementIdempotencyDrift,
 }

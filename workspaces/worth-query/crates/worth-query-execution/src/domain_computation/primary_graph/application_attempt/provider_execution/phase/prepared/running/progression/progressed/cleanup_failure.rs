@@ -105,8 +105,7 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
         | Progression::AlreadyCommitted(_)
         | Progression::Stale(_)
         | Progression::Aborted
-        | Progression::Deferred(_)
-        | Progression::SettlementDeferred(_) => cleanup_indeterminate(),
+        | Progression::Deferred(_) => cleanup_indeterminate(),
     }
 }
 
