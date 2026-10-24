@@ -35,7 +35,6 @@ pub(super) fn persisted_strategy_runtime(
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(strategy_schema_registry())
-        .durable_medium(medium)
         .commit_strategy(
             crate::facade::commit_strategies::CommitStrategyRegistration::new(
                 intent_descriptor.clone(),
@@ -74,7 +73,7 @@ pub(super) fn persisted_strategy_runtime(
                 &replacement_descriptor,
             ),
         )
-        .build()
+        .build_durable(medium.attachment())
 }
 
 pub(super) fn persisted_replacement_strategy_runtime(
@@ -86,7 +85,6 @@ pub(super) fn persisted_replacement_strategy_runtime(
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(strategy_schema_registry())
-        .durable_medium(medium)
         .commit_strategy(
             crate::facade::commit_strategies::CommitStrategyRegistration::new(
                 replacement_descriptor.clone(),
@@ -98,7 +96,7 @@ pub(super) fn persisted_replacement_strategy_runtime(
                 &replacement_descriptor,
             ),
         )
-        .build()
+        .build_durable(medium.attachment())
 }
 
 pub(super) fn persisted_strategy_runtime_without_executors(
@@ -119,7 +117,6 @@ pub(super) fn persisted_strategy_runtime_without_executors(
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(strategy_schema_registry())
-        .durable_medium(medium)
         .commit_strategy(
             CommitStrategyRegistration::new(intent_descriptor).expect("intent registration"),
         )
@@ -133,7 +130,7 @@ pub(super) fn persisted_strategy_runtime_without_executors(
             CommitStrategyRegistration::new(replacement_descriptor)
                 .expect("replacement registration"),
         )
-        .build()
+        .build_durable(medium.attachment())
 }
 
 pub(super) fn persisted_strategy_runtime_with_failing_intent_executor(
@@ -154,7 +151,6 @@ pub(super) fn persisted_strategy_runtime_with_failing_intent_executor(
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(strategy_schema_registry())
-        .durable_medium(medium)
         .commit_strategy(
             CommitStrategyRegistration::new(intent_descriptor.clone())
                 .expect("intent registration"),
@@ -186,7 +182,7 @@ pub(super) fn persisted_strategy_runtime_with_failing_intent_executor(
                 &replacement_descriptor,
             ),
         )
-        .build()
+        .build_durable(medium.attachment())
 }
 
 fn strategy_schema_registry() -> crate::schema::data::RelationalSchemaRegistry {

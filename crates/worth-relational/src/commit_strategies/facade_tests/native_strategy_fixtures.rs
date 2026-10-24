@@ -166,7 +166,6 @@ pub(crate) fn persisted_intent_runtime(
     let descriptor = IntentReconciliationStrategy::descriptor(CommitStrategyId(161));
     let mut builder = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
-        .durable_medium(medium)
         .commit_strategy(
             CommitStrategyRegistration::new(descriptor.clone())
                 .expect("intent strategy registration"),
@@ -176,7 +175,7 @@ pub(crate) fn persisted_intent_runtime(
             IntentReconciliationStrategy::execution_registration(&descriptor),
         );
     }
-    builder.build()
+    builder.build_durable(medium.attachment())
 }
 
 pub(super) fn persisted_intent_runtime_with_failing_executor(
@@ -185,7 +184,6 @@ pub(super) fn persisted_intent_runtime_with_failing_executor(
     let descriptor = IntentReconciliationStrategy::descriptor(CommitStrategyId(161));
     RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
-        .durable_medium(medium)
         .commit_strategy(
             CommitStrategyRegistration::new(descriptor.clone())
                 .expect("intent strategy registration"),
@@ -194,7 +192,7 @@ pub(super) fn persisted_intent_runtime_with_failing_executor(
             &descriptor,
             DeterministicFailureExecutor,
         ))
-        .build()
+        .build_durable(medium.attachment())
 }
 
 pub(crate) fn execute_persisted_intent_strategy_commit(

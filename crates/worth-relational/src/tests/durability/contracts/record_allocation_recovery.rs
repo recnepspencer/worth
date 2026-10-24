@@ -40,7 +40,7 @@ fn tail_replay_consumes_canonical_reused_record_allocation() {
     let mut recovered = durable_runtime_with_test_schema_profile(
         crate::facade::config::RelationalRuntimeProfile::AiWorkflow,
     );
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -91,7 +91,7 @@ fn checkpoint_restores_burned_append_frontier_beyond_all_retained_roots() {
     )
     .unwrap();
     let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -127,7 +127,7 @@ fn recovery_releases_orphaned_append_reservation_without_reusing_its_gap() {
     drop(pending);
 
     let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -178,7 +178,7 @@ fn recovery_returns_orphaned_reclaimed_reservation_to_reuse() {
     let mut recovered = durable_runtime_with_test_schema_profile(
         crate::facade::config::RelationalRuntimeProfile::AiWorkflow,
     );
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -226,7 +226,7 @@ fn tail_replay_rejects_canonical_allocation_targeting_a_live_slot() {
     ]);
 
     let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -260,7 +260,7 @@ fn tail_replay_rejects_missing_canonical_allocation_evidence() {
         .install_record_allocations(Vec::new());
 
     let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -305,7 +305,7 @@ fn tail_replay_gap_admission_cannot_replace_a_different_canonical_effect() {
         ]);
 
     let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -361,7 +361,7 @@ fn metadata_only_merge_rejects_unconsumable_allocation_evidence() {
     )]);
 
     let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)

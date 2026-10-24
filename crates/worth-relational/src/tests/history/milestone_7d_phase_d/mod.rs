@@ -124,8 +124,7 @@ fn durable_runtime_with_topology_identity_registry(
     crate::facade::runtime::RelationalRuntimeApi::builder()
         .profile(crate::tests::support::RelationalRuntimeProfile::CertificationCore)
         .schema_registry(topology_identity_registry())
-        .durable_medium(medium)
-        .build()
+        .build_durable(medium.attachment())
 }
 use crate::{
     config::data::{CascadeDeletePolicy, CrossContextPolicy},

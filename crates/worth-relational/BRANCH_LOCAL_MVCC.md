@@ -277,7 +277,7 @@ reclamation are explicit cold paths.
 ## Current limits
 
 The owner catalog, immutable roots, branch cells, and retention accounting are
-memory-resident. With a durable medium attached (`durable_medium(..)`), each
+memory-resident. With a durable medium attached (`build_durable(..)`), each
 publication is made durable before its cutover installs the new head, so a
 selected head is always durable; a refusal (`DurablePublicationRefused`) or an
 unknown fate (`DurabilityUnresolved`) installs nothing. Restart reconstructs

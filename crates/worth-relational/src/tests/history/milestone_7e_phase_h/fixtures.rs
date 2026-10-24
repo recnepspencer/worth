@@ -171,8 +171,7 @@ pub(super) fn runtime_with_relation_identity_registry(
 
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .durable_medium(medium)
-        .build()
+        .build_durable(medium.attachment())
 }
 
 pub(super) fn create_named_entity_on_branch(
@@ -309,9 +308,9 @@ fn runtime_with_schema_declared_entity_policy_builder(
             })
         })
         .expect("schema-declared merge policy registry");
-    let mut builder = RelationalRuntimeApi::builder().schema_registry(registry);
-    if let Some(medium) = medium {
-        builder = builder.durable_medium(medium);
+    let builder = RelationalRuntimeApi::builder().schema_registry(registry);
+    match medium {
+        Some(medium) => builder.build_durable(medium.attachment()),
+        None => builder.build(),
     }
-    builder.build()
 }

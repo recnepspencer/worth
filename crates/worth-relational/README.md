@@ -146,9 +146,13 @@ surface.
 A runtime is memory-only by default: its canonical history lives in an
 in-memory log and `durability().recovery_plan(..)` reconstructs from it.
 
-A durable runtime is built with `durable_medium(medium)`, where `medium`
-implements `RelationalDurableMedium` (Worth Store's Relational home is the
-production implementation). Every commit is durable before it is live: the
+A durable runtime is built with `build_durable(Box::new(medium))`, where
+`medium` implements `RelationalDurableMedium` (Worth Store's Relational home
+is the production implementation). The medium is moved into exactly that one
+runtime: the builder never holds it, so cloning a builder cannot share it;
+recovery moves it into the rebuilt runtime, after which the old attachment
+refuses with `RelationalDurablePublicationRefusal::MediumMoved`; and a forked
+runtime never inherits it. Every commit is durable before it is live: the
 positioned commit is encoded as its `RelationalCanonicalCommitArtifact` and
 published to the medium inside the patch-position reservation, and only a
 `Committed` answer lets the cutover install the new head.
@@ -162,13 +166,13 @@ published to the medium inside the patch-position reservation, and only a
   runtime refuses every later publication the same way until it is reopened.
 
 To reopen, the medium's owner hands back its checkpoint and journal tail as a
-`RelationalDurableRecoverySource`; a fresh runtime built with the same medium
-calls `durability().recovery_plan_from_source(..)` and then
+`RelationalDurableRecoverySource`; a fresh runtime built with a medium over
+the same storage calls `durability().recovery_plan_from_source(..)` and then
 `durability_recovery().recover(..)`. Every artifact is readmitted, the tail
 must continue exactly from the checkpoint's covered position, and any damage,
 gap or misfiled checkpoint refuses with a typed `RecoveryFailureClass` before
-service. Recovery binds the medium only after replay, so replay never
-republishes. A recovered runtime publishes its next commit at the next
+service. Recovery moves the medium into the rebuilt runtime only after
+replay, so replay never republishes. A recovered runtime publishes its next commit at the next
 position. These types are in `worth_relational::facade::durability`.
 
 The owner catalog, branch cells, roots, and retention accounting stay

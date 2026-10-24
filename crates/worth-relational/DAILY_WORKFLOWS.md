@@ -13,14 +13,15 @@ Use:
 - `storage_setup(...)`
 - `durability_setup(...)`
 - `strategy_setup(...)`
-- `durable_medium(...)` when commits must be durable before they are live
-- `build()`
+- `build()`, or `build_durable(...)` when commits must be durable before they
+  are live; the medium moves into that one runtime
 
 ## Reopen a durable runtime
 
 Use:
 
-- a fresh builder with the same schema and the same `durable_medium(...)`
+- a fresh builder with the same schema, built with `build_durable(...)` over a
+  medium on the same storage
 - `durability().recovery_plan_from_source(...)` with the medium's
   `RelationalDurableRecoverySource`
 - `durability_recovery().recover(...)`

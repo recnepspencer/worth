@@ -1,20 +1,49 @@
-//! Reaching the test medium a runtime publishes to, and binding a fresh
-//! runtime to it, as a home builds its runtime with the medium it recovers.
+//! The medium a runtime owns over the test medium's durable contents, and
+//! reaching those contents from a runtime, as a home builds a fresh journal
+//! medium over its Store each time it opens.
 
 use std::sync::Arc;
 
 use super::TestDurableMedium;
-use crate::durability::medium::RelationalDurableMedium;
+use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
+use crate::durability::medium::{RelationalDurableMedium, RelationalDurablePublication};
 use crate::runtime::RelationalRuntime;
 
-/// The test medium a runtime is bound to, shared with that runtime.
+/// One runtime's medium over shared test durable contents. It is not
+/// cloneable: like any medium, it is moved into exactly one runtime.
+#[derive(Debug)]
+pub(crate) struct TestDurableMediumAttachment {
+    contents: Arc<TestDurableMedium>,
+}
+
+impl TestDurableMediumAttachment {
+    pub(super) fn new(contents: Arc<TestDurableMedium>) -> Self {
+        Self { contents }
+    }
+}
+
+impl RelationalDurableMedium for TestDurableMediumAttachment {
+    fn publish(
+        &self,
+        artifact: &RelationalCanonicalCommitArtifact,
+    ) -> RelationalDurablePublication {
+        self.contents.publish(artifact)
+    }
+
+    fn in_crate_test_medium(&self) -> Option<Arc<TestDurableMedium>> {
+        Some(Arc::clone(&self.contents))
+    }
+}
+
+/// The test durable contents a runtime publishes to.
 #[derive(Debug, Clone)]
-pub(crate) struct AttachedTestMedium(Arc<dyn RelationalDurableMedium>);
+pub(crate) struct AttachedTestMedium(Arc<TestDurableMedium>);
 
 impl AttachedTestMedium {
-    /// The medium as the runtime holds it, for binding another runtime.
-    pub(crate) fn shared(&self) -> Arc<dyn RelationalDurableMedium> {
-        Arc::clone(&self.0)
+    /// A fresh medium over the same contents, for another runtime to own, as
+    /// a reopened home builds its own journal medium over the same Store.
+    pub(crate) fn attachment(&self) -> Box<dyn RelationalDurableMedium> {
+        self.0.attachment()
     }
 }
 
@@ -22,33 +51,32 @@ impl std::ops::Deref for AttachedTestMedium {
     type Target = TestDurableMedium;
 
     fn deref(&self) -> &TestDurableMedium {
-        self.0
-            .in_crate_test_medium()
-            .expect("durable test runtimes publish to the in-crate test medium")
+        &self.0
     }
 }
 
-/// The durable medium `runtime` publishes to, if it has one.
+/// The test durable contents `runtime` publishes to, if it owns a medium.
 pub(crate) fn attached_durable_medium(
     runtime: &RelationalRuntime,
-) -> Option<Arc<dyn RelationalDurableMedium>> {
-    runtime.durability.medium().map(|binding| binding.medium())
+) -> Option<Arc<TestDurableMedium>> {
+    runtime.durability.medium().map(|binding| {
+        binding
+            .in_crate_test_medium()
+            .expect("durable test runtimes publish to the in-crate test medium")
+    })
 }
 
-/// The in-crate test medium `runtime` publishes to.
+/// The in-crate test medium contents `runtime` publishes to.
 pub(crate) fn attached_test_medium(runtime: &RelationalRuntime) -> AttachedTestMedium {
-    let medium = attached_durable_medium(runtime).expect("runtime publishes to a durable medium");
-    assert!(
-        medium.in_crate_test_medium().is_some(),
-        "durable test runtimes publish to the in-crate test medium"
-    );
-    AttachedTestMedium(medium)
+    AttachedTestMedium(
+        attached_durable_medium(runtime).expect("runtime publishes to a durable medium"),
+    )
 }
 
-/// Bind a freshly built runtime to `medium` before it recovers.
+/// Move `medium` into a freshly built runtime before it recovers.
 pub(crate) fn bind_durable_medium(
     recovering: &mut RelationalRuntime,
-    medium: Arc<dyn RelationalDurableMedium>,
+    medium: Box<dyn RelationalDurableMedium>,
 ) {
     recovering
         .unshared_state_mut()

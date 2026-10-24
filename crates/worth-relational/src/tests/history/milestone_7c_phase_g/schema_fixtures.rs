@@ -99,6 +99,5 @@ pub(super) fn durable_runtime_with_registry(
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(registry)
-        .durable_medium(medium)
-        .build()
+        .build_durable(medium.attachment())
 }

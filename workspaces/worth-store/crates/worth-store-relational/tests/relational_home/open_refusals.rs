@@ -44,6 +44,25 @@ fn home_with(
     (directory, location, script, acknowledged)
 }
 
+/// A home's journal medium is owned by the one runtime the open home serves
+/// (D1): a second runtime opening the same location while it is open is
+/// refused, and the first keeps serving.
+#[test]
+fn a_second_runtime_cannot_open_a_home_that_is_open() {
+    let request = workload::serial_request();
+    let execution = ExecutionRequest::serial(&request);
+    let (_directory, location, script, acknowledged) = home_with(2, &execution);
+    let home = open(&location, &execution).expect("the home opens");
+    let second = open(&location, &execution);
+    assert!(
+        second.is_err(),
+        "a second runtime opened the medium of a home that is open"
+    );
+    drop(second);
+    assert_holds(&home, &script, &acknowledged);
+    home.close();
+}
+
 #[test]
 fn a_home_opened_as_another_runtime_refuses_as_foreign() {
     let request = workload::serial_request();

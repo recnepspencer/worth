@@ -70,8 +70,7 @@ fn durable_recovery_and_schema_mismatch_test() {
             }
             .build_registry(),
         )
-        .durable_medium(TestDurableMedium::new())
-        .build();
+        .build_durable(TestDurableMedium::new().attachment());
     let _outcome = recovered
         .durability_recovery()
         .recover(execution, plan.clone())
@@ -270,8 +269,7 @@ fn durability_contract_failure_relation_integrity_plan_mismatch_is_explicit() {
     let medium = TestDurableMedium::new();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(base_registry)
-        .durable_medium(medium.clone())
-        .build();
+        .build_durable(medium.attachment());
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
     create_relation_outcome(execution, &runtime, source, target, "guarded");
@@ -322,8 +320,7 @@ fn durability_contract_failure_relation_integrity_plan_mismatch_is_explicit() {
         .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(mismatched_registry)
-        .durable_medium(medium)
-        .build();
+        .build_durable(medium.attachment());
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)

@@ -99,7 +99,7 @@ fn native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_own
     let recovery_lease = test_execution_lease();
     let execution = &ExecutionRequest::leased(&recovery_lease);
     let mut restored = crate::runtime::RelationalRuntime::new(recovery_config);
-    bind_durable_medium(&mut restored, medium.shared());
+    bind_durable_medium(&mut restored, medium.attachment());
     let plan = restored
         .durability()
         .recovery_plan_from_source(

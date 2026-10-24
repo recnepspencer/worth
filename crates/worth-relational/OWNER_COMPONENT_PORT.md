@@ -525,7 +525,7 @@ Milestone 9.17.2 may not:
 
 Relational branch cells, roots, owner admission, the pending-settlement
 registry, and retention accounting are memory-resident. Canonical history is
-Relational-owned. A runtime built with `durable_medium(..)` publishes each
+Relational-owned. A runtime built with `build_durable(..)` publishes each
 commit's canonical artifact to that medium before the live cutover; the medium
 (Worth Store's Relational home) makes it durable and, on reopen, hands back a
 `RelationalDurableRecoverySource` that `recovery_plan_from_source(..)` readmits.

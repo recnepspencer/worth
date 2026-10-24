@@ -132,8 +132,7 @@ fn schema_evolution_cdc_contract_test() {
         RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
             .schema_registry(registry)
-            .durable_medium(TestDurableMedium::new())
-            .build()
+            .build_durable(TestDurableMedium::new().attachment())
     });
 
     let recovered_envelope = recovered

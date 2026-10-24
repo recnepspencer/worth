@@ -98,7 +98,7 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
     )
     .unwrap();
     let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
     recovered
         .durability_recovery()
         .recover(execution, plan)

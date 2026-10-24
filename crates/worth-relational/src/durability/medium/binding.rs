@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Mutex, MutexGuard};
 
 use super::{
     RelationalDurabilityUnresolved, RelationalDurableMedium, RelationalDurablePublication,
@@ -9,14 +9,23 @@ use crate::history::data::PositionedCanonicalCommit;
 
 /// A runtime's attachment to its durable medium.
 ///
-/// It owns the one fact the runtime keeps about the medium between
-/// publications: whether an earlier publication's fate is unknown. Once it is,
-/// every later publication refuses with the same answer, because a later
-/// position cannot be published over an unresolved one.
+/// It owns the medium itself. The medium was moved into exactly one runtime
+/// and leaves it only by moving into the runtime recovery rebuilds (D1); from
+/// then on this attachment, and every port of the runtime that held it,
+/// refuses to publish. It also owns the one fact the runtime keeps about the
+/// medium between publications: whether an earlier publication's fate is
+/// unknown. Once it is, every later publication refuses with the same answer,
+/// because a later position cannot be published over an unresolved one.
 #[derive(Debug)]
 pub(crate) struct RelationalDurableMediumBinding {
-    medium: Arc<dyn RelationalDurableMedium>,
-    unresolved: Mutex<Option<RelationalDurabilityUnresolved>>,
+    state: Mutex<BindingState>,
+}
+
+#[derive(Debug)]
+struct BindingState {
+    /// `None` once the medium moved to a recovered runtime.
+    medium: Option<Box<dyn RelationalDurableMedium>>,
+    unresolved: Option<RelationalDurabilityUnresolved>,
 }
 
 /// Why the durable step did not make a commit durable.
@@ -29,10 +38,12 @@ pub(crate) enum RelationalDurableStepStop {
 }
 
 impl RelationalDurableMediumBinding {
-    pub(crate) fn new(medium: Arc<dyn RelationalDurableMedium>) -> Self {
+    pub(crate) fn new(medium: Box<dyn RelationalDurableMedium>) -> Self {
         Self {
-            medium,
-            unresolved: Mutex::new(None),
+            state: Mutex::new(BindingState {
+                medium: Some(medium),
+                unresolved: None,
+            }),
         }
     }
 
@@ -45,13 +56,15 @@ impl RelationalDurableMediumBinding {
         commit: &PositionedCanonicalCommit,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<(), RelationalDurableStepStop> {
-        let mut unresolved = self
-            .unresolved
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if let Some(earlier) = unresolved.as_ref() {
+        let mut state = self.state();
+        if let Some(earlier) = state.unresolved.as_ref() {
             return Err(RelationalDurableStepStop::Unresolved(earlier.clone()));
         }
+        let Some(medium) = state.medium.as_ref() else {
+            return Err(RelationalDurableStepStop::Refused(
+                RelationalDurablePublicationRefusal::MediumMoved,
+            ));
+        };
         let artifact = RelationalCanonicalCommitArtifact::from_positioned(commit, policy).map_err(
             |denial| {
                 RelationalDurableStepStop::Refused(RelationalDurablePublicationRefusal::Encoding(
@@ -59,7 +72,7 @@ impl RelationalDurableMediumBinding {
                 ))
             },
         )?;
-        match self.medium.publish(&artifact) {
+        match medium.publish(&artifact) {
             RelationalDurablePublication::Committed => Ok(()),
             RelationalDurablePublication::ProvenNoEffect { detail } => {
                 Err(RelationalDurableStepStop::Refused(
@@ -73,14 +86,34 @@ impl RelationalDurableMediumBinding {
                     artifact.payload_digest(),
                     detail,
                 );
-                *unresolved = Some(fate.clone());
+                state.unresolved = Some(fate.clone());
                 Err(RelationalDurableStepStop::Unresolved(fate))
             }
         }
     }
 
-    /// The medium itself, for a recovered runtime to rebind to.
-    pub(crate) fn medium(&self) -> Arc<dyn RelationalDurableMedium> {
-        Arc::clone(&self.medium)
+    /// Move the medium out so recovery can move it into the rebuilt runtime.
+    /// Waits for a publication in flight; afterwards this attachment refuses
+    /// every publication. An unresolved fate stays behind: the rebuilt
+    /// runtime's recovery has decided it. `None` if it already moved.
+    pub(crate) fn detach(&self) -> Option<Box<dyn RelationalDurableMedium>> {
+        self.state().medium.take()
+    }
+
+    /// The in-crate test medium behind this binding, if it is one.
+    #[cfg(test)]
+    pub(crate) fn in_crate_test_medium(
+        &self,
+    ) -> Option<std::sync::Arc<crate::tests::support::TestDurableMedium>> {
+        self.state()
+            .medium
+            .as_ref()
+            .and_then(|medium| medium.in_crate_test_medium())
+    }
+
+    fn state(&self) -> MutexGuard<'_, BindingState> {
+        self.state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 }

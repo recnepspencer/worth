@@ -314,8 +314,7 @@ fn hostile_commit_replay_equivalence_test() {
             }
             .build_registry(),
         )
-        .durable_medium(TestDurableMedium::new())
-        .build();
+        .build_durable(TestDurableMedium::new().attachment());
     recovered
         .durability_recovery()
         .recover(execution, recovery_plan)

@@ -187,6 +187,5 @@ fn runtime_with_topology_identity_registry(
 
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .durable_medium(medium)
-        .build()
+        .build_durable(medium.attachment())
 }

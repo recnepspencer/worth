@@ -20,7 +20,7 @@ fn recovered_world(
     // The restored runtime continues the source's medium, which already holds
     // the history its checkpoint covers.
     let mut target = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut target, attached_test_medium(&source).shared());
+    bind_durable_medium(&mut target, attached_test_medium(&source).attachment());
     let (_, authority) = target
         .durability_recovery()
         .restore_native_checkpoint_with_authority(execution, &checkpoint)

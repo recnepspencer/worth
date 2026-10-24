@@ -194,8 +194,7 @@ fn diff_cdc_truth_parity_test() {
         RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
             .schema_registry(registry)
-            .durable_medium(TestDurableMedium::new())
-            .build()
+            .build_durable(TestDurableMedium::new().attachment())
     });
 
     let recovered_batch = recovered

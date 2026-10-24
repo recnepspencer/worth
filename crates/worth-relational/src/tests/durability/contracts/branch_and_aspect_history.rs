@@ -178,9 +178,8 @@ fn durability_contract_recovery_preserves_branch_local_endpoint_deletion_retirem
     let medium = TestDurableMedium::new();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry.clone())
-        .durable_medium(medium.clone())
         .cascade_delete_policy(CascadeDeletePolicy::RetainDanglingForAudit)
-        .build();
+        .build_durable(medium.attachment());
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
     let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "retained");
@@ -251,9 +250,8 @@ fn durability_contract_recovery_preserves_branch_local_endpoint_deletion_retirem
     .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .durable_medium(medium)
         .cascade_delete_policy(CascadeDeletePolicy::RetainDanglingForAudit)
-        .build();
+        .build_durable(medium.attachment());
     let outcome = recovered
         .durability_recovery()
         .recover(execution, plan)

@@ -6,4 +6,5 @@
 mod durable_before_live;
 mod recovered_publication;
 mod recovery_refusals;
+mod single_owner;
 mod unresolved_fate;

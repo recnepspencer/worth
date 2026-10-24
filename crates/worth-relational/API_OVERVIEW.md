@@ -39,9 +39,9 @@ source currentness or publication authority.
   - `storage_setup(...)`
   - `durability_setup(...)`
   - `strategy_setup(...)`
-- `durable_medium(...)` to make every commit durable in a
-  `RelationalDurableMedium` before it is live; without it the runtime is
-  memory-only
+- `build_durable(medium)` to make every commit durable in a
+  `RelationalDurableMedium` before it is live; the medium moves into that one
+  runtime. `build()` builds a memory-only runtime
 
 ### Write truth
 
