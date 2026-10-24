@@ -21,17 +21,18 @@ use worth_query_package_archive::facade::{
 };
 
 #[test]
-fn approved_payment_wait_round_trips_through_v5_and_binds_to_live_bank_vocabulary() {
+fn approved_payment_wait_round_trips_through_v7_and_binds_to_live_bank_vocabulary() {
     let runtime = installed_bank();
     let installed = runtime.approved_payment_workflow_spec();
     let original = approved_business_payment_definition().expect("Bank authors the payment wait");
     let bytes =
         encode_workflow_definition_draft(&original, WorthQueryPackageArchiveLimits::DEFAULT)
             .expect("the payment definition fits the archive budget");
-    assert_eq!(&bytes[..6], b"WQWD\0\x05", "the authored wait writes v5");
+    // The wait has no captured operation inputs, so it keeps the v7 layout.
+    assert_eq!(&bytes[..6], b"WQWD\0\x07", "the authored wait writes v7");
 
     let rebuilt = decode_workflow_definition_draft(&bytes, WorthQueryPackageArchiveLimits::DEFAULT)
-        .expect("the bounded v5 draft decodes")
+        .expect("the bounded v7 draft decodes")
         .author(installed)
         .expect("every portable member resolves against the installed Bank vocabulary")
         .validate()
