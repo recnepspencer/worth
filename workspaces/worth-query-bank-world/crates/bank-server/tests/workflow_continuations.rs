@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 #[allow(
     dead_code,
     reason = "the shared read fixture has discovery-only helpers exercised by its owning test binary"

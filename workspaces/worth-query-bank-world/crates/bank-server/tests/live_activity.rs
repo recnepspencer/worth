@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 #[path = "live_activity/consumer_scale.rs"]
 mod consumer_scale;
 #[allow(

@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 #[path = "approved_payment_workflow/actor_handoff.rs"]
 mod actor_handoff;
 #[path = "approved_payment_workflow/approval.rs"]
