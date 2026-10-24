@@ -1,7 +1,7 @@
 //! Native disclosed values and their recursive source footprint stay together.
 //! This interprets the materialized tree; it never reads/traverses the graph.
-use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOneShotDenialKind as Denial;
 use crate::domain_computation::primary_graph::application_query::projection::WorthQueryApplicationProjectionNode;
+use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOneShotDenialKind as Denial;
 use worth_foundational::expression_api::{ExpressionSchema, ExpressionValue};
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryCardinality, ApplicationQueryExpressionSnapshot,

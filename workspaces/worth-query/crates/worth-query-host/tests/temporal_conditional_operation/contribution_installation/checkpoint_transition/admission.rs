@@ -61,7 +61,12 @@ fn until_committed<T>(
                 let Kind::ExecutionDenied {
                     kind:
                         Session::ExecutionResource {
-                            denial: Resource::MemoryLimit { requested, admitted, .. },
+                            denial:
+                                Resource::MemoryLimit {
+                                    requested,
+                                    admitted,
+                                    ..
+                                },
                             policy_ancestor: Some(0),
                             ..
                         },

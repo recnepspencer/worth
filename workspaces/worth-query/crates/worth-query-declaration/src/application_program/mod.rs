@@ -77,10 +77,10 @@ pub use evaluated_requirement::{
 };
 pub(in crate::application_program) use evolution::ApplicationProgramRevisionBudgetDenial;
 pub use evolution::{
-    ApplicationProgramMigrationAssessmentRequirement, ApplicationProgramRevision,
-    ApplicationSemanticChange, ApplicationSemanticChangeKind, ApplicationSemanticDescription,
-    ApplicationSemanticDiff, ApplicationSemanticDiffDenial, ApplicationSemanticFact,
-    ApplicationSemanticFamily, operation_semantic_owner,
+    operation_semantic_owner, ApplicationProgramMigrationAssessmentRequirement,
+    ApplicationProgramRevision, ApplicationSemanticChange, ApplicationSemanticChangeKind,
+    ApplicationSemanticDescription, ApplicationSemanticDiff, ApplicationSemanticDiffDenial,
+    ApplicationSemanticFact, ApplicationSemanticFamily,
 };
 pub use external_input::{ApplicationExternalInputProvider, ApplicationExternalInputResolution};
 pub use feature::{

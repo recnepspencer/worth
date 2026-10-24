@@ -39,7 +39,6 @@ use super::schema::{
 mod candidate_tracking;
 #[path = "retention_entry/decision_hold.rs"]
 mod decision_hold;
-pub use decision_hold::with_decision_hold;
 pub use candidate_tracking::{
     assessment_counts, candidate_count, decision_count, ordinary_counts, reset_candidate_count,
     reset_decision_count, reset_ordinary_counts,
@@ -48,6 +47,7 @@ pub(super) use candidate_tracking::{
     record_assessment_candidate, record_assessment_decision, record_ordinary_candidate,
     record_ordinary_decision,
 };
+pub use decision_hold::with_decision_hold;
 #[path = "retention_entry/occurrence_write.rs"]
 mod occurrence_write;
 #[path = "retention_entry/reviewed_write.rs"]

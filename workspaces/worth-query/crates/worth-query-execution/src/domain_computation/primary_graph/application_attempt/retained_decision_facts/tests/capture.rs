@@ -108,13 +108,17 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
                 .expect("the fixture read owns its installed host call");
             match denial.invariant_denial().map(|denial| denial.kind()) {
                 Some(WorthQueryInvariantProjectionDenialKind::ValueDecode(
-                    WorthQueryValueDecodeDenial::Scope(worth_execution::WorkCeilingDenial::Admission(
-                        LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial::Capacity {
-                            requested,
-                            admitted,
-                            ..
-                        }),
-                    )),
+                    WorthQueryValueDecodeDenial::Scope(
+                        worth_execution::WorkCeilingDenial::Admission(
+                            LeaseDenial::MemoryExhausted(
+                                worth_execution::MemoryLimitDenial::Capacity {
+                                    requested,
+                                    admitted,
+                                    ..
+                                },
+                            ),
+                        ),
+                    ),
                 )) => {
                     keep += requested - admitted;
                     None

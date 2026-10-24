@@ -11,9 +11,9 @@ pub(super) fn capacity_mismatch_detail(
             continue;
         }
         return match actual.envelope().optional_scale_ceiling(axis) {
-            Some(supported) => format!(
-                "{subject} supports {axis:?}={supported}, below the required {required}"
-            ),
+            Some(supported) => {
+                format!("{subject} supports {axis:?}={supported}, below the required {required}")
+            }
             None => format!("{subject} does not support required {axis:?}"),
         };
     }

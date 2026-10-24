@@ -63,7 +63,9 @@ fn run() {
         bits: 2.5_f64.to_bits(),
         read: OwnWriteRead::Blind,
     }));
-    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.accounting().expect("this fixture declares accounting");
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY
+        .accounting()
+        .expect("this fixture declares accounting");
     bound(Some(worth_foundational::ExecutionBudget::new(
         NonZeroUsize::MIN,
         policy.charged_memory_bytes(),
@@ -175,7 +177,9 @@ fn producer_caller_pass_refuses_before_its_source_or_handler_reads() {
         .unwrap();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         for zero_memory in [false, true] {
-            let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.accounting().expect("this fixture declares accounting");
+            let policy = support::observation::CHECKPOINT_EXECUTION_POLICY
+                .accounting()
+                .expect("this fixture declares accounting");
             let _restore = Restore(
                 place(placement),
                 bound(Some(worth_foundational::ExecutionBudget::new(

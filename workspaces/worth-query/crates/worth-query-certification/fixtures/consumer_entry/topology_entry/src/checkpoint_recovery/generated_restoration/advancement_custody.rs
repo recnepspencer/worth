@@ -25,7 +25,9 @@ impl Drop for Restore {
     }
 }
 fn limit(memory: bool) {
-    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.accounting().expect("this fixture declares accounting");
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY
+        .accounting()
+        .expect("this fixture declares accounting");
     bound(Some(worth_foundational::ExecutionBudget::new(
         NonZeroUsize::MIN,
         if memory {

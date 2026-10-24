@@ -1,9 +1,9 @@
 //! Installation-authored semantic impact and adoption obligations.
 
 use worth_query_declaration::facade::application_program::{
-    ApplicationProgramMigrationAssessmentRequirement, ApplicationProgramRevision,
-    ApplicationSemanticChangeKind, ApplicationSemanticDiff, ApplicationSemanticDiffDenial,
-    ApplicationSemanticFamily, operation_semantic_owner,
+    operation_semantic_owner, ApplicationProgramMigrationAssessmentRequirement,
+    ApplicationProgramRevision, ApplicationSemanticChangeKind, ApplicationSemanticDiff,
+    ApplicationSemanticDiffDenial, ApplicationSemanticFamily,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationInvariantScopeTarget, ApplicationSchema, ApplicationSchemaBindingIdentity,

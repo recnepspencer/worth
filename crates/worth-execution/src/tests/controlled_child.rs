@@ -108,7 +108,10 @@ fn controlled_child_made_inside_a_descendant_worker_descends_from_that_worker() 
             parent.charged_memory_bytes() - before
         })
         .unwrap();
-    assert_eq!(charged, 8, "the attempt's charge reaches the caller's lease");
+    assert_eq!(
+        charged, 8,
+        "the attempt's charge reaches the caller's lease"
+    );
     // Outside any worker the child still descends from the lease itself.
     let outside = parent.controlled_child(CancellationToken::new(), None);
     assert_eq!(outside.lineage_depth(), parent.lineage_depth() + 1);

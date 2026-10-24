@@ -13,7 +13,10 @@ fn descent_names_the_lease_and_its_descendants_never_siblings_parents_or_other_a
     assert!(child.descends_from(&parent));
     assert!(grandchild.descends_from(&parent));
     assert!(grandchild.descends_from(&child));
-    assert!(!parent.descends_from(&child), "a parent is not its child's descendant");
+    assert!(
+        !parent.descends_from(&child),
+        "a parent is not its child's descendant"
+    );
     assert!(!sibling.descends_from(&child));
     assert!(!child.descends_from(&sibling));
     assert!(!child.descends_from(&other_root));
