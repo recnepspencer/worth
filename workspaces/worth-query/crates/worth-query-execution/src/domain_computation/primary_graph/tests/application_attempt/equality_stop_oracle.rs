@@ -79,6 +79,7 @@ fn equality_stop_oracle_at_the_public_commit_door() {
             partition_identity: None, policy_ancestor: None,
         })), "inner work stop at equality consult {k}");
     }
+    assert!(recompared, "no consult reached the commit-time recompare");
     // A write cannot publish under a caller's zero-work request.
     let (_, stop) = run(None, Some(0), None);
     assert!(matches!(stop, Some(Stop::Denied(_, Some(Ok(Session::ExecutionResource {
