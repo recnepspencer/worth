@@ -30,6 +30,7 @@ pub(crate) static TEST_LOCK: Mutex<()> = Mutex::new(());
 mod adversarial;
 mod byte_counter_ownership;
 mod controlled_child;
+mod lease_lineage;
 mod decompose_unknown_identity;
 mod map_dispatch;
 mod measured_result;

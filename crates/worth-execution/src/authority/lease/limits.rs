@@ -67,6 +67,15 @@ impl<'a> ExecutionResourceLease<'a> {
         })
     }
 
+    /// Whether this lease is `ancestor` itself or sits below it in the same
+    /// authority's lineage. A sibling, a parent or another authority's lease
+    /// does not descend from it.
+    pub fn descends_from(&self, ancestor: &ExecutionResourceLease<'_>) -> bool {
+        Arc::ptr_eq(&self.authority, &ancestor.authority)
+            && std::iter::successors(Some(self.node.as_ref()), |node| node.parent.as_deref())
+                .any(|node| node.id == ancestor.node.id)
+    }
+
     fn child_from_validated_request(&self, request: LeaseRequest) -> Self {
         Self {
             authority: Arc::clone(&self.authority),
