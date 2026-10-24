@@ -202,8 +202,7 @@ fn run(workers: usize, wait: Duration) -> Run {
         .summary()
         .blocking_failure()
         .expect("a violation blocks the commit");
-    let InvariantViolationFields::CustomInvariantViolation { identity, refusal } =
-        failure.fields()
+    let InvariantViolationFields::CustomInvariantViolation { identity, refusal } = failure.fields()
     else {
         panic!("the winner is a custom refusal: {:?}", failure.fields());
     };
@@ -231,7 +230,10 @@ fn first_installed_violation_wins_at_one_two_and_eight_workers() {
             Some(PreparationStrategySelection::StagedParallel),
             "{workers} workers fan custom rules out"
         );
-        assert!(parallel.overlapped, "{workers} workers ran both rules at once");
+        assert!(
+            parallel.overlapped,
+            "{workers} workers ran both rules at once"
+        );
         assert_eq!(parallel.winner, first_installed(), "{workers} workers");
     }
 }

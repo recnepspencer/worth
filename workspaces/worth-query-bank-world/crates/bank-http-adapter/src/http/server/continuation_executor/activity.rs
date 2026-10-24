@@ -26,8 +26,7 @@ where
         if matches!(
             outcome,
             BankHttpAccountActivityPageOutcome::Delivered { .. }
-        ) && let Err(denial) =
-            revalidate_replay(application, &principal, request, &scope)
+        ) && let Err(denial) = revalidate_replay(application, &principal, request, &scope)
         {
             if revokes_cached_access(denial) {
                 access(registry, |registry| {
@@ -123,8 +122,7 @@ where
             if matches!(
                 outcome,
                 BankHttpAccountActivityPageOutcome::Delivered { .. }
-            ) && let Err(denial) =
-                revalidate_replay(application, &principal, request, &scope)
+            ) && let Err(denial) = revalidate_replay(application, &principal, request, &scope)
             {
                 if revokes_cached_access(denial) {
                     access(registry, |registry| {

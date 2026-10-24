@@ -144,8 +144,8 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
 
 #[tokio::test]
 async fn replay_revalidation_keeps_the_cache_on_retry_and_scrubs_it_on_drift() {
-    use super::super::continuation_executor::replay_fault::fail_next_replay_read;
     use super::super::super::protocol::{BankHttpDenial, BankHttpNextAction};
+    use super::super::continuation_executor::replay_fault::fail_next_replay_read;
 
     let account = AccountId::new(100).unwrap();
     let application = Arc::new(application(account));
@@ -176,10 +176,16 @@ async fn replay_revalidation_keeps_the_cache_on_retry_and_scrubs_it_on_drift() {
     // cached publication for the next one.
     fail_next_replay_read(
         "replay-revalidation-fault",
-        BankHttpDenial::new(BankHttpDenialKind::ResourceExhausted, BankHttpNextAction::Retry),
+        BankHttpDenial::new(
+            BankHttpDenialKind::ResourceExhausted,
+            BankHttpNextAction::Retry,
+        ),
     );
     let refused = post_page(&client, &endpoint, &request).await;
-    assert!(denied(BankHttpDenialKind::ResourceExhausted)(&refused), "{refused:?}");
+    assert!(
+        denied(BankHttpDenialKind::ResourceExhausted)(&refused),
+        "{refused:?}"
+    );
     assert_eq!(post_page(&client, &endpoint, &request).await, first);
 
     // A drifted basis refuses the replay and retires the cached response.

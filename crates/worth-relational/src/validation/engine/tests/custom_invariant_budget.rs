@@ -290,6 +290,9 @@ fn rule_overrunning_its_installed_work_is_an_execution_error_not_a_violation() {
         failure,
         &crate::validation::data::ResultCustomInvariantFailureKind::ExecutionError
     );
-    assert_eq!(detail, "custom invariant exceeded its installed work budget");
+    assert_eq!(
+        detail,
+        "custom invariant exceeded its installed work budget"
+    );
     assert_eq!(results.summary().custom_failure_count(), 1);
 }
