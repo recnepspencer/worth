@@ -18,6 +18,15 @@ at `generation + 1` under the same durable root decision and fates as the
 journal, and read back verified against its anchor. Its oracle is
 `anchored_records*` beside the journal's.
 
+Milestone 2: `worth-store-relational` is the Relational home.
+`RelationalStoreHome::open` creates a Store only at an unused location and
+otherwise recovers it, checks the home descriptor, hands the selected
+checkpoint and the journal after it to Relational for readmission, and
+attaches the journal as the runtime's only durable medium. Every commit is
+durable before it is live. `checkpoint()` selects a new Relational checkpoint
+and completes a Store physical checkpoint. See the
+[Milestone 2 specification](../../plans/database-foundation/milestone-2.md).
+
 This workspace is the clean rebuild of Worth Store. It separates the semantic
 durability roadmap from the physical database foundation so the new store does
 not inherit the heap-shaped implementation boundary from the legacy crate.
