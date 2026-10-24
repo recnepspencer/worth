@@ -49,7 +49,7 @@ pub(super) fn next(
     (batch, choice <= 2)
 }
 
-fn create(step: usize) -> WorkerIntentBatch {
+pub(super) fn create(step: usize) -> WorkerIntentBatch {
     let name = format!("entity-{step}");
     WorkerIntentBatch::new(format!("create-{step}")).push(MutationIntent::Create(
         CreateIntent::Entity(EntitySpec {
@@ -61,7 +61,7 @@ fn create(step: usize) -> WorkerIntentBatch {
     ))
 }
 
-fn update(entity_id: EntityId, step: usize) -> WorkerIntentBatch {
+pub(super) fn update(entity_id: EntityId, step: usize) -> WorkerIntentBatch {
     WorkerIntentBatch::new(format!("update-{step}")).push(MutationIntent::Entity(
         EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
             entity_id,
@@ -70,7 +70,7 @@ fn update(entity_id: EntityId, step: usize) -> WorkerIntentBatch {
     ))
 }
 
-fn relate(source: EntityId, target: EntityId, step: usize) -> WorkerIntentBatch {
+pub(super) fn relate(source: EntityId, target: EntityId, step: usize) -> WorkerIntentBatch {
     let label = format!("link-{step}");
     WorkerIntentBatch::new(format!("relate-{step}")).push(MutationIntent::Create(
         CreateIntent::Relation(RelationSpec {
@@ -84,19 +84,21 @@ fn relate(source: EntityId, target: EntityId, step: usize) -> WorkerIntentBatch 
     ))
 }
 
-fn delete(entity_id: EntityId) -> WorkerIntentBatch {
+pub(super) fn delete(entity_id: EntityId) -> WorkerIntentBatch {
     WorkerIntentBatch::new("delete").push(MutationIntent::Entity(EntityMutationIntent::Delete(
         DeleteEntityIntent { entity_id },
     )))
 }
 
-pub(super) fn schema_registry() -> RelationalSchemaRegistry {
+/// The oracle schema at `version`. Every version has the same executable
+/// meaning; a schema transition moves a branch between versions.
+pub(super) fn schema_registry(version: SchemaVersionId) -> RelationalSchemaRegistry {
     RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
             kind_name: "oracle.entity".to_string(),
             schema_id: SchemaId("oracle".to_string()),
-            schema_version_id: SchemaVersionId(1),
+            schema_version_id: version,
             aspect_contract_declarations: KindAspectContractDeclarations::new(vec![
                 DeclaredAspectContractBinding {
                     binding: AspectBinding::EntityField {
@@ -111,7 +113,7 @@ pub(super) fn schema_registry() -> RelationalSchemaRegistry {
                 kind_id: KindId(2),
                 kind_name: "oracle.relation".to_string(),
                 schema_id: SchemaId("oracle".to_string()),
-                schema_version_id: SchemaVersionId(1),
+                schema_version_id: version,
                 cross_context_policy: CrossContextPolicy::AllowExplicit,
                 cascade_delete_policy: CascadeDeletePolicy::CascadeDeleteRelations,
                 aspect_contract_declarations: KindAspectContractDeclarations::new(vec![
@@ -141,7 +143,7 @@ fn field_patch(label: &str, value: &str) -> AspectFieldPatch {
     AspectFieldPatch::from(fields)
 }
 
-fn field_key(label: &str) -> FieldKey {
+pub(super) fn field_key(label: &str) -> FieldKey {
     FieldKey::new(label).expect("oracle field key")
 }
 

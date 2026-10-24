@@ -11,8 +11,9 @@ use std::path::Path;
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
     FilesystemAccessPosture, FilesystemMediaAdmission, MediaOwnedPhysicalRuntime,
-    PhysicalRecordInitialization, PhysicalRecordOpen, PhysicalRuntimeAdmission, PhysicalStore,
-    RecoveredPhysicalCheckpointCustody, ServingPhysicalRuntime,
+    PhysicalRecordInitialization, PhysicalRecordOpen, PhysicalRecoveryProcessYieldpoint,
+    PhysicalRuntimeAdmission, PhysicalStore, RecoveredPhysicalCheckpointCustody,
+    ServingPhysicalRuntime,
 };
 use worth_store_recovery_runtime::{
     PhysicalRecoveryLimits, PhysicalRecoveryOpenRequest, PhysicalRecoveryOutcome,
@@ -60,9 +61,47 @@ impl RelationalStorePhysicalRefusal {
 type Refusal = RelationalStorePhysicalRefusal;
 type Stage = RelationalStorePhysicalStage;
 
+/// How a home reaches its Store: production media admission and the
+/// production recovery entry. Certification may substitute a fault-scheduled
+/// media admission or a recovery that parks at a process yieldpoint; every
+/// other step is unchanged.
+pub(crate) struct PhysicalOpening {
+    media: FilesystemMediaAdmission,
+    recovery_yieldpoint: Option<PhysicalRecoveryProcessYieldpoint>,
+}
+
+impl PhysicalOpening {
+    pub(crate) fn production() -> Self {
+        Self {
+            media: FilesystemMediaAdmission::production(
+                FilesystemAccessPosture::CoordinatedServiceAccount,
+            ),
+            recovery_yieldpoint: None,
+        }
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(crate) fn with_media(mut self, media: FilesystemMediaAdmission) -> Self {
+        self.media = media;
+        self
+    }
+
+    #[cfg(feature = "certification-test-authority")]
+    pub(crate) fn with_recovery_yieldpoint(
+        mut self,
+        yieldpoint: PhysicalRecoveryProcessYieldpoint,
+    ) -> Self {
+        self.recovery_yieldpoint = Some(yieldpoint);
+        self
+    }
+}
+
 /// Create a new, empty Store at `root`.
-pub(crate) fn initialize(root: &Path) -> Result<ServingPhysicalRuntime, Refusal> {
-    let media = admit_media(root)?;
+pub(crate) fn initialize(
+    root: &Path,
+    opening: PhysicalOpening,
+) -> Result<ServingPhysicalRuntime, Refusal> {
+    let media = admit_media(root, opening.media)?;
     let durability = admit_durability(&media)?;
     let request = PhysicalRecordInitialization::new(
         profile::record_format(),
@@ -86,9 +125,12 @@ pub(crate) fn initialize(root: &Path) -> Result<ServingPhysicalRuntime, Refusal>
 
 /// Recover the Store at `root` through the production recovery entry and
 /// open it for serving under the custody recovery established.
-pub(crate) fn recover(root: &Path) -> Result<ServingPhysicalRuntime, Refusal> {
-    let custody = recover_custody(root)?;
-    let media = admit_media(root)?;
+pub(crate) fn recover(
+    root: &Path,
+    opening: PhysicalOpening,
+) -> Result<ServingPhysicalRuntime, Refusal> {
+    let custody = recover_custody(root, opening.recovery_yieldpoint)?;
+    let media = admit_media(root, opening.media)?;
     let durability = admit_durability(&media)?;
     let open = PhysicalRecordOpen::new(profile::record_format(), profile::access(), durability);
     let open = match custody {
@@ -109,7 +151,10 @@ pub(crate) fn recover(root: &Path) -> Result<ServingPhysicalRuntime, Refusal> {
     }
 }
 
-fn recover_custody(root: &Path) -> Result<Option<RecoveredPhysicalCheckpointCustody>, Refusal> {
+fn recover_custody(
+    root: &Path,
+    yieldpoint: Option<PhysicalRecoveryProcessYieldpoint>,
+) -> Result<Option<RecoveredPhysicalCheckpointCustody>, Refusal> {
     let limits = PhysicalRecoveryLimits::admit(profile::recovery_limits())
         .map_err(|denial| Refusal::new(Stage::RecoveryAdmission, format!("{denial:?}")))?;
     let configuration = profile::recovery_configuration();
@@ -124,7 +169,13 @@ fn recover_custody(root: &Path) -> Result<Option<RecoveredPhysicalCheckpointCust
         limits,
         authority,
     );
-    match WorthStoreRecovery::recover(request) {
+    let outcome = match yieldpoint {
+        None => WorthStoreRecovery::recover(request),
+        Some(yieldpoint) => {
+            WorthStoreRecovery::recover_with_process_yieldpoint(request, yieldpoint)
+        }
+    };
+    match outcome {
         PhysicalRecoveryOutcome::Recovered(handoff) => {
             Ok(handoff.into_core().into_checkpoint_custody())
         }
@@ -132,17 +183,15 @@ fn recover_custody(root: &Path) -> Result<Option<RecoveredPhysicalCheckpointCust
     }
 }
 
-fn admit_media(root: &Path) -> Result<MediaOwnedPhysicalRuntime, Refusal> {
+fn admit_media(
+    root: &Path,
+    media: FilesystemMediaAdmission,
+) -> Result<MediaOwnedPhysicalRuntime, Refusal> {
     let admission = PhysicalRuntimeAdmission::new(root)
         .map_err(|error| Refusal::new(Stage::RuntimeAdmission, format!("{error:?}")))?;
     let runtime = PhysicalStore::admit(admission)
         .map_err(|error| Refusal::new(Stage::RuntimeAdmission, format!("{error:?}")))?;
-    match runtime
-        .try_admit_filesystem_media(FilesystemMediaAdmission::production(
-            FilesystemAccessPosture::CoordinatedServiceAccount,
-        ))
-        .into_raw()
-    {
+    match runtime.try_admit_filesystem_media(media).into_raw() {
         TransitionOutcome::Success(media) => Ok(media),
         TransitionOutcome::Denied(denial) => {
             let reason = format!("{:?}", denial.reason());
