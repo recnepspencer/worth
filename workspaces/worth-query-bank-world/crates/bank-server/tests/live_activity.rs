@@ -17,7 +17,7 @@ use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::RevokeAccountAuthorization;
 use bank_server::{
     mutations, BankAccountActivityLiveOutcome, BankApplicationLiveCloseOutcome,
-    BankApplicationQueryDenial, BankMutationControls,
+    BankMutationControls,
 };
 
 use fixture::{ordinary_read_world, OWNER, TELLER, VIEWER};
