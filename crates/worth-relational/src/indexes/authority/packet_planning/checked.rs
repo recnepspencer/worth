@@ -64,10 +64,9 @@ pub(in crate::indexes::authority) fn plan_index_packets_checked(
         .ok_or(PacketExecutionStop::Admission(
             crate::execution::PacketAdmissionDenial::MemoryOverflow,
         ))?;
-    let ceiling = lease
-        .policy()
-        .charged_memory_bytes()
-        .map_or(declared_bytes, |limit| limit / 8);
+    // Planning declares what it will hold; the lease's own memory policy
+    // admits that declaration, not a fixed share of the policy.
+    let ceiling = declared_bytes;
     let outcome = crate::execution::run_with_remaining_request_work(
         lease,
         Some(work_budget),
@@ -130,19 +129,10 @@ pub(in crate::indexes::authority) fn plan_index_packets_checked(
                         input.value.header.packet_index,
                     )
                 });
-                let memory = lease.policy().charged_memory_bytes().map_or(
-                    crate::execution::PacketMemory::Tracked,
-                    |limit| {
-                        let ceiling = limit / (inputs.len().max(1) as u64).saturating_mul(8);
-                        crate::execution::PacketMemory::Declared {
-                            scratch: ceiling,
-                            result: ceiling,
-                        }
-                    },
-                );
+                // Each packet charges the lease what it actually holds.
                 for (ordinal, input) in inputs.iter_mut().enumerate() {
                     input.identity = PartitionIdentity::new(ordinal as u64);
-                    input.memory = memory;
+                    input.memory = crate::execution::PacketMemory::Tracked;
                 }
                 Ok((
                     (),

@@ -58,7 +58,7 @@ pub(super) fn prepare<'state>(
     );
     match outcome {
         Ok((Ok((plan, bytes)), report)) => Ok((plan, bytes, report)),
-        // The single planning stage is partition 1, as on the declared scan path.
+        // The single planning stage is partition 1.
         Ok((Err(cause), _)) => Err(PacketExecutionStop::Execution {
             boundary: Some(PartitionIdentity::new(1)),
             reason: MapStop::Failure {

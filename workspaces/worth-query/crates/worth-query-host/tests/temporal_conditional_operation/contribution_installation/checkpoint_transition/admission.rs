@@ -26,14 +26,14 @@ fn funding_lease() -> worth_execution::ExecutionResourceLease<'static> {
         .unwrap()
 }
 
-/// The caller lease, `ancestor` controlled levels above the charging worker,
-/// has only `admitted` of `requested` left.
-fn exhausted_lease(requested: u64, admitted: u64, ancestor: u32) -> AllocationKind {
+/// The caller lease, which the capture charges directly, has only `admitted`
+/// of `requested` left.
+fn exhausted_lease(requested: u64, admitted: u64) -> AllocationKind {
     AllocationKind::Lease(LeaseDenial::MemoryExhausted(
         worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
             requested,
             admitted,
-            level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor },
+            level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 },
         },
     ))
 }
@@ -41,7 +41,10 @@ fn exhausted_lease(requested: u64, admitted: u64, ancestor: u32) -> AllocationKi
 /// One caller lease funds the authoring, the bootstrap commit and the capture.
 /// To prove ACK precedes capture exhaustion the hook leaves the commit exactly
 /// its quote, learned from the commit's own refusal (MENTALITY §7): each refused
-/// run adds `requested - admitted`. Returns the final outcome and that quote.
+/// run adds `requested - admitted`. Commit admission charges the caller lease
+/// itself (ancestor 0); preparation charges a controlled child of it, so its
+/// refusal names the caller one level up (ancestor 1), as the capture's does.
+/// Returns the final outcome and that quote.
 fn until_committed<T>(
     mut attempt: impl FnMut(u64) -> Result<T, InstallationDenial>,
 ) -> (Result<T, InstallationDenial>, u64) {
@@ -67,13 +70,17 @@ fn until_committed<T>(
                                     admitted,
                                     ..
                                 },
-                            policy_ancestor: Some(0),
+                            policy_ancestor: Some(ancestor),
                             ..
                         },
                 } = cause.kind()
                 else {
                     return (Err(InstallationDenial::Graph(cause)), keep);
                 };
+                assert!(
+                    ancestor <= 1,
+                    "the caller lease refuses, seen from itself or its charging child: {ancestor}"
+                );
                 quotes.push((requested, admitted));
                 keep += requested - admitted;
             }
@@ -184,9 +191,27 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
         .requested_payload_bytes()
         .expect("checked real native payload quote");
     assert!(native_quote > 0);
-    // The committed transaction returned its quote; the capture charges the
-    // call's controlled child of the lease.
-    assert_eq!(denied.kind(), exhausted_lease(native_quote, keep, 1));
+    // The committed transaction returned what it held, so the capture sees at
+    // least the commit's learned room, and the caller lease refuses its exact
+    // native quote.
+    let AllocationKind::Lease(LeaseDenial::MemoryExhausted(
+        worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
+            requested,
+            admitted,
+            level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 },
+        },
+    )) = denied.kind()
+    else {
+        panic!(
+            "the caller lease must refuse the capture: {:?}",
+            denied.kind()
+        );
+    };
+    assert_eq!(requested, native_quote);
+    assert!(
+        keep <= admitted && admitted < requested,
+        "{keep} {admitted} {requested}"
+    );
     assert_eq!(
         calls, 1,
         "capture refusal follows actual authoring and acknowledgment"
@@ -210,7 +235,7 @@ fn checkpoint_transition_admission_refusal_retains_acknowledged_effects_for_expl
         .requested_payload_bytes()
         .expect("checked real final-frame payload quote");
     assert!(frame_quote > native_quote);
-    assert_eq!(denied.kind(), exhausted_lease(frame_quote, 0, 2));
+    assert_eq!(denied.kind(), exhausted_lease(frame_quote, 0));
     assert_eq!(native_only.charged_memory_bytes(), 0);
     let repair = funding_lease();
     let checkpoint = pending

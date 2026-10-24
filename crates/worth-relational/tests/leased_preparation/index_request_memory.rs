@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
+fn one_large_index_build_stops_at_its_request_memory_without_publication() {
     let host_request =
         crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
@@ -60,9 +60,8 @@ fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
         .build_for_commit(execution, request.clone());
     assert!(serial.execution_denial.is_none());
     let published = serial.generations[0].generation_id;
-    // One worker's map reservation fits this policy; projection growth
-    // reaches the packet's 8 KiB result ceiling: final Arc-backed entries
-    // charge more bytes per unique key than their temporary scratch entries.
+    // The 128-key build needs more than this request's 64 KiB memory policy.
+    // The request's own policy refuses it, and nothing is published.
     let mut request_lease = lease_request(64 * 1024, CancellationToken::new());
     request_lease.policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Automatic,
@@ -76,11 +75,17 @@ fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
         &worth_execution::ExecutionRequest::leased(&lease),
         request.clone(),
     );
-    assert_eq!(
-        stopped.execution_denial.map(|denial| denial.kind),
-        Some(DerivedIndexExecutionDenialKind::Cause(
-            Cause::ResultCapacityExceeded
-        )),
+    let Some(DerivedIndexExecutionDenialKind::Cause(Cause::PolicyMemoryExhausted {
+        requested,
+        admitted: 65_536,
+        ancestor: 0,
+    })) = stopped.execution_denial.map(|denial| denial.kind)
+    else {
+        panic!("the request's memory policy refuses the build");
+    };
+    assert!(
+        requested > 64 * 1024,
+        "the refused charge exceeds the request: {requested}"
     );
     assert!(stopped.generations.is_empty());
     assert_eq!(

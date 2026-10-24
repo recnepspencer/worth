@@ -60,18 +60,28 @@ fn uniqueness_refuses_large_matching_field_before_cloning_it() {
     )
     .unwrap();
     let before = runtime_marker(&runtime);
-    assert!(matches!(
-        evaluate(&runtime),
-        Err(TransactionCommitError::Execution {
-            denial: crate::transactions::data::CommitExecutionDenial {
-                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
-                    crate::execution::RelationalExecutionDenialCause::ScratchCapacityExceeded
-                ),
+    // The request refuses the matching field's clone at its charge, before
+    // the clone exists: the refused increment is at least the field itself.
+    let Err(TransactionCommitError::Execution {
+        denial:
+            crate::transactions::data::CommitExecutionDenial {
+                kind:
+                    crate::transactions::data::CommitExecutionDenialKind::Cause(
+                        crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                            requested,
+                            admitted,
+                            ..
+                        },
+                    ),
                 partition_identity: Some(0),
             },
-            ..
-        })
-    ));
+        ..
+    }) = evaluate(&runtime)
+    else {
+        panic!("the request's memory policy refuses the large matching field");
+    };
+    assert!(requested >= LARGE_TEXT as u64, "refused charge {requested}");
+    assert!(admitted <= REQUEST_MEMORY, "admitted {admitted}");
     assert_runtime_marker_unchanged(&runtime, before);
 }
 

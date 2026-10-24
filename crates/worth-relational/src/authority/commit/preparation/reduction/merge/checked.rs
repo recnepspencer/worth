@@ -93,10 +93,9 @@ where
             owned_bytes,
         },
     )])?;
-    let ceiling = lease
-        .policy()
-        .charged_memory_bytes()
-        .map_or(declared_bytes, |limit| limit / 4);
+    // The merge declares the extent it will hold; the lease's own memory
+    // policy admits that declaration, not a fixed share of the policy.
+    let ceiling = declared_bytes;
     let outcome = crate::execution::run_with_remaining_request_work(
         lease,
         work_budget,

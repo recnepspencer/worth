@@ -43,9 +43,10 @@ fn index_builds_use_the_memory_ceiling_of_their_request() {
     assert_eq!(baseline.generations.len(), 32);
     let published = runtime.index_access().generations_snapshot();
     let version = runtime.current_version_id();
-    // A 4 KiB request admits the singleton planning scan. Its 512-byte
-    // descriptor ceiling cannot hold 32 index descriptors, before any index
-    // payload is cloned or any replacement generation can be published.
+    // Planning 32 index descriptors and their owned payloads declares more
+    // than a 4 KiB request holds. The request's own memory policy refuses
+    // that declaration before any index payload is cloned or any replacement
+    // generation can be published.
     for exact_basis in [false, true] {
         let lease = test_execution_authority()
             .request_lease(LeaseRequest {
@@ -68,15 +69,21 @@ fn index_builds_use_the_memory_ceiling_of_their_request() {
                 .index_authority()
                 .build_for_commit(&execution, request.clone())
         };
-        assert_eq!(
-            refused.execution_denial,
-            Some(DerivedIndexExecutionDenial {
-                kind: DerivedIndexExecutionDenialKind::Cause(
-                    crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded,
+        let Some(DerivedIndexExecutionDenial {
+            kind:
+                DerivedIndexExecutionDenialKind::Cause(
+                    crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                        requested,
+                        admitted: 4096,
+                        ancestor: 0,
+                    },
                 ),
-                partition_identity: Some(1),
-            })
-        );
+            partition_identity: None,
+        }) = refused.execution_denial
+        else {
+            panic!("the request's memory policy must refuse planning: {refused:?}");
+        };
+        assert!(requested > 4096, "{requested}");
         assert!(refused.generations.is_empty());
         assert_eq!(refused.failed_indexes, request.index_ids);
         assert_eq!(runtime.current_version_id(), version);
