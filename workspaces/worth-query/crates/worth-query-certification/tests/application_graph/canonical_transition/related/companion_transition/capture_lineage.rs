@@ -1,5 +1,6 @@
 //! A capture policy that does not descend from the funding lease refuses at
 //! entry: no authoring, no commit, no charge, and the checkpoint unchanged.
+//! A foreign lease is nested-lease misuse; naming no lease is unleased backing.
 use super::*;
 use worth_execution::ExecutionResourceLease;
 use worth_query_host::facade::{
@@ -12,6 +13,7 @@ use worth_query_host::facade::{
 
 fn assert_refused_at_entry(
     denied: Result<Target, installation::WorthQueryInMemoryApplicationDenial>,
+    unleased: bool,
 ) {
     let installation::WorthQueryInMemoryApplicationDenial::Graph(denial) = denied
         .err()
@@ -19,18 +21,30 @@ fn assert_refused_at_entry(
     else {
         panic!("the refusal is the typed entry refusal, not a later stage")
     };
-    assert!(
-        matches!(
-            denial.kind(),
-            Kind::ExecutionDenied {
-                kind: SessionKind::ExecutionResource {
-                    denial: Resource::NestedLeaseMisuse,
-                    ..
+    if unleased {
+        assert!(
+            matches!(
+                denial.kind(),
+                Kind::ExecutionDenied {
+                    kind: SessionKind::ResourceEnvelopeMismatch
                 }
-            }
-        ),
-        "{denial:?}"
-    );
+            ),
+            "{denial:?}"
+        );
+    } else {
+        assert!(
+            matches!(
+                denial.kind(),
+                Kind::ExecutionDenied {
+                    kind: SessionKind::ExecutionResource {
+                        denial: Resource::NestedLeaseMisuse,
+                        ..
+                    }
+                }
+            ),
+            "{denial:?}"
+        );
+    }
 }
 
 #[test]
@@ -70,12 +84,14 @@ fn sibling_foreign_and_unnamed_capture_policies_refuse_before_work_or_charge() {
         // Naming no lease never silently inherits the funding lease.
         installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
     ] {
-        assert_refused_at_entry(transition_funded(
-            checkpoint.clone(),
-            &funding,
+        let unleased = matches!(
             capture,
-            &mut callbacks,
-        ));
+            installation::WorthQueryCheckpointCapturePolicy::SystemAllocation
+        );
+        assert_refused_at_entry(
+            transition_funded(checkpoint.clone(), &funding, capture, &mut callbacks),
+            unleased,
+        );
         assert_eq!(callbacks, 0, "no authoring ran");
         assert_eq!(successor::output::decodes(), 0);
         for lease in leases {

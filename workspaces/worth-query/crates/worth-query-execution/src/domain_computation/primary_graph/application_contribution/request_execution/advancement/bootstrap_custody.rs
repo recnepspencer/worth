@@ -119,7 +119,7 @@ impl WorthQueryBootstrapAdvancementPhase<'_> {
             {
                 Ok(capture)
             }
-            _ => Err(D::new(
+            (Policy::Execution(_), Policy::Execution(_)) => Err(D::new(
                 K::ExecutionDenied {
                     kind: crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
                         denial: Resource::NestedLeaseMisuse,
@@ -128,6 +128,15 @@ impl WorthQueryBootstrapAdvancementPhase<'_> {
                     },
                 },
                 "checkpoint capture requires a lease descending from the transition's funding lease",
+            )),
+            // Naming no lease never inherits the funding lease; funding that is
+            // not leased was already refused by `funded_capture_policy`.
+            (Policy::Execution(_) | Policy::SystemAllocation, Policy::SystemAllocation)
+            | (Policy::SystemAllocation, Policy::Execution(_)) => Err(D::new(
+                K::ExecutionDenied {
+                    kind: crate::domain_computation::WorthQueryProviderSessionDenialKind::ResourceEnvelopeMismatch,
+                },
+                "checkpoint capture requires leased backing; system allocation is unsupported",
             )),
         }
     }
