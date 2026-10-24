@@ -20,10 +20,14 @@ mod media_case;
 mod media_faults;
 #[path = "relational_home/media_sweep.rs"]
 mod media_sweep;
+#[path = "relational_home/open_refusals.rs"]
+mod open_refusals;
 #[path = "relational_home/prepared_home.rs"]
 mod prepared_home;
 #[path = "relational_home/process_kill.rs"]
 mod process_kill;
+#[path = "relational_home/publication_refusals.rs"]
+mod publication_refusals;
 #[path = "relational_home/recovery_interruption.rs"]
 mod recovery_interruption;
 #[path = "relational_home/schema_recovery.rs"]
