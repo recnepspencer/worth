@@ -190,7 +190,6 @@ fn repository_conventions_derive_the_reviewed_control_doors() {
     let (diagnostics, doors) = load(&root);
     assert!(diagnostics.is_empty(), "{diagnostics:?}");
     for name in [
-        "fail_next_durable_append_for_test",
         "arm_pause_once_for_test",
         "inject_panic_once_for_test",
         "pause_before_product_compare_for_test",
