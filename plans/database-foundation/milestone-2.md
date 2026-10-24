@@ -42,7 +42,11 @@ sequencing and checkpoint publication for a home (Milestone 1 D1).
 
 A medium is moved into exactly one runtime when that runtime is built or
 recovered. It is not cloneable through the builder, and a forked runtime never
-inherits it, so two runtimes cannot publish to one medium.
+inherits it, so two runtimes cannot publish to one medium. The builder never
+holds it: `build_durable(Box<dyn RelationalDurableMedium>)` moves it into the
+runtime it builds. Recovery moves it out of the recovering runtime into the
+rebuilt one; the attachment it left refuses every later publication with the
+pre-effect `MediumMoved`.
 
 **D2. Durable before live.** With a medium attached, publication runs in this
 order: preparation and validation against the exact admitted basis;
@@ -60,7 +64,12 @@ Live state never selects a commit the medium has not made durable.
 - A commit waiting for the patch-position reservation while another commit's
   durable publication is in flight waits within its execution deadline. It is
   not deferred because a concurrent publisher holds the reservation for I/O.
-  Memory-only runtimes keep their existing reservation behavior.
+  Waiters are served first come, first served and observe the request's
+  cancellation and deadline; a stopped waiter returns `RequestStopped` before
+  any effect, holding no position. The wait cannot deadlock: a publisher takes
+  its own branch's critical section before the reservation, and the holder
+  takes no other branch's while holding it. Memory-only runtimes keep their
+  existing reservation behavior.
 - The settlement-time append and its "performed but durability deferred"
   repair path are deleted: durability can no longer fail after the cutover.
   Settlement that fails for another reason keeps the durable commit under its
