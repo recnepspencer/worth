@@ -90,7 +90,9 @@ type QueryAccountActivityContinuation = WorthQueryApplicationQueryContinuation<
 /// }
 /// ```
 pub struct BankAccountActivityContinuation {
-    query: QueryAccountActivityContinuation,
+    /// Boxed: the HTTP continuation registry moves this handle in and out of
+    /// its records and hands it back on refusal, so it stays pointer-sized.
+    query: Box<QueryAccountActivityContinuation>,
 }
 
 pub struct BankAccountActivityPageResult {
@@ -170,12 +172,14 @@ impl BankAccountActivityPageResult {
 }
 
 impl BankAccountActivityContinuation {
-    const fn from_query(query: QueryAccountActivityContinuation) -> Self {
-        Self { query }
+    fn from_query(query: QueryAccountActivityContinuation) -> Self {
+        Self {
+            query: Box::new(query),
+        }
     }
 
     pub(super) fn into_query(self) -> QueryAccountActivityContinuation {
-        self.query
+        *self.query
     }
 }
 
