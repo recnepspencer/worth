@@ -17,6 +17,15 @@ fn run_script(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
 ) {
+    let entity = script_opening(execution, runtime);
+    script_close(execution, runtime, entity);
+}
+
+/// Commits on main, a fork and a commit on it.
+fn script_opening(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut RelationalRuntime,
+) -> crate::facade::identity::EntityId {
     let created = create_entity_outcome(execution, runtime, "main-a");
     let entity = created
         .changed_records
@@ -29,6 +38,15 @@ fn run_script(
     create_branch_from_main(runtime, FEATURE);
     create_entity_outcome_on_branch(execution, runtime, "feature-a", branch(FEATURE));
     create_entity_outcome(execution, runtime, "main-b");
+    entity
+}
+
+/// An executed merge, a commit on the fork and a schema transition.
+fn script_close(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut RelationalRuntime,
+    entity: crate::facade::identity::EntityId,
+) {
     let prepared = runtime
         .prepare_merge_execution(
             execution,
@@ -94,22 +112,47 @@ fn artifacts(runtime: &RelationalRuntime) -> Vec<Vec<u8>> {
         .collect()
 }
 
-/// The first line on which two envelopes' renderings differ, to name the
-/// field that carries process-local identity when the claim fails.
-fn first_difference(left: &RelationalRuntime, right: &RelationalRuntime, index: usize) -> String {
-    let render = |runtime: &RelationalRuntime| {
-        format!(
-            "{:#?}",
-            runtime.history.positioned_canonical_commits_snapshot()[index].envelope()
-        )
+/// The first line on which two artifacts' readmitted envelopes render
+/// differently, to name the field that carries process-local identity when
+/// the claim fails.
+fn first_difference(left: &[u8], right: &[u8]) -> String {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let render = |bytes: &[u8]| {
+        crate::facade::durability::RelationalCanonicalCommitArtifact::readmit(bytes, execution)
+            .map(|readmitted| format!("{:#?}", readmitted.envelope()))
+            .unwrap_or_else(|refusal| format!("{refusal:?}"))
     };
     let (left, right) = (render(left), render(right));
-    left.lines()
+    let lines = left.lines().collect::<Vec<_>>();
+    lines
+        .iter()
         .zip(right.lines())
-        .enumerate()
-        .find(|(_, (l, r))| l != r)
-        .map(|(line, (l, r))| format!("line {line}: `{}` vs `{}`", l.trim(), r.trim()))
+        .position(|(l, r)| *l != r)
+        .map(|line| {
+            format!(
+                "{} > `{}` vs `{}`",
+                enclosing_fields(&lines, line),
+                lines[line].trim(),
+                right.lines().nth(line).unwrap_or_default().trim()
+            )
+        })
         .unwrap_or_else(|| "renderings agree; encodings differ".to_owned())
+}
+
+/// The fields enclosing `line` of a pretty `Debug` rendering, outermost first.
+fn enclosing_fields(lines: &[&str], line: usize) -> String {
+    let indent = |text: &str| text.len() - text.trim_start().len();
+    let mut depth = indent(lines[line]);
+    let mut path = Vec::new();
+    for text in lines[..line].iter().rev() {
+        if indent(text) < depth {
+            depth = indent(text);
+            path.push(text.trim());
+        }
+    }
+    path.reverse();
+    path.join(" > ")
 }
 
 #[test]
@@ -121,16 +164,47 @@ fn independent_runtimes_publish_byte_identical_canonical_artifacts() {
     assert_ne!(first.runtime_instance_id(), second.runtime_instance_id());
     run_script(execution, &mut first);
     run_script(execution, &mut second);
+    assert_same_artifacts(&first, &second, "independent runtimes");
+}
 
-    let (left, right) = (artifacts(&first), artifacts(&second));
-    assert_eq!(left.len(), 6, "every script commit is retained");
-    assert_eq!(left.len(), right.len());
+/// A durable runtime that stops partway, is recovered by another process from
+/// its medium — from the journal alone, or from a checkpoint and the journal
+/// after it — and finishes the script publishes the reference's artifacts.
+#[test]
+fn a_recovered_runtime_continues_with_the_reference_artifacts() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let mut reference = runtime_with_test_schema();
+    run_script(execution, &mut reference);
+    for checkpointed in [false, true] {
+        let mut stopped = durable_runtime_with_test_schema();
+        let entity = script_opening(execution, &mut stopped);
+        if checkpointed {
+            checkpoint_durably(execution, &stopped).expect("the checkpoint captures");
+        }
+        let (_, mut recovered) =
+            recover_with(execution, &stopped, durable_runtime_with_test_schema);
+        drop(stopped);
+        script_close(execution, &mut recovered, entity);
+        let case = if checkpointed {
+            "recovered from a checkpoint"
+        } else {
+            "recovered from the journal"
+        };
+        assert_same_artifacts(&reference, &recovered, case);
+    }
+}
+
+fn assert_same_artifacts(expected: &RelationalRuntime, found: &RelationalRuntime, case: &str) {
+    let (left, right) = (artifacts(expected), artifacts(found));
+    assert_eq!(left.len(), 6, "{case}: every script commit is retained");
+    assert_eq!(left.len(), right.len(), "{case}: commit count");
     for (index, (l, r)) in left.iter().zip(&right).enumerate() {
         assert!(
             l == r,
-            "artifact at position {} differs: {}",
+            "{case}: artifact at position {} differs: {}",
             index + 1,
-            first_difference(&first, &second, index)
+            first_difference(l, r)
         );
     }
 }

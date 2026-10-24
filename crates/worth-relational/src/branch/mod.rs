@@ -58,7 +58,7 @@ pub(crate) use basis_observation::{
 pub(crate) use basis_registry::{
     RelationalBranchBasisRegistry, RelationalBranchBasisRegistryMetrics,
 };
-pub(crate) use canonical_runtime_frame::CANONICAL_RUNTIME_INSTANCE_ID;
+pub(crate) use canonical_runtime_frame::{CANONICAL_RUNTIME_INSTANCE_ID, CANONICAL_TRANSACTION_ID};
 pub use coordination::RelationalBranchCoordinationCellId;
 pub use fork::{RelationalForkDenial, RelationalForkOutcome};
 pub use fork_port::RelationalForkPort;

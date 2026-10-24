@@ -106,8 +106,9 @@ pub(crate) fn canonical_commit_envelope(
                 detail,
             ))
         })?;
-    // The envelope records the cell in the canonical runtime frame, so its
-    // bytes do not depend on which process produced it (D11).
+    // The envelope records process-local identities in the canonical runtime
+    // frame, so its bytes do not depend on which process produced it (D11).
+    envelope.merged_plan.transaction_id = crate::branch::CANONICAL_TRANSACTION_ID;
     envelope.branch_cell_checkpoint = runtime
         .history
         .branch_cell(branch_id)

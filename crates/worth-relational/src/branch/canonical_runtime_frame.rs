@@ -27,6 +27,12 @@ pub(crate) const CANONICAL_RUNTIME_INSTANCE_ID: u64 = 1_000_000_000;
 /// ids are issued by each process and are not durable history.
 const CANONICAL_ROOT_IDENTITY: u64 = 0;
 
+/// The transaction id an envelope's merged plan records. Transaction ids are
+/// issued per process, one for every transaction begun, reads included, so
+/// they are not durable history. Live ids start at one; zero is never issued.
+pub(crate) const CANONICAL_TRANSACTION_ID: crate::transactions::data::TransactionId =
+    crate::transactions::data::TransactionId(0);
+
 impl RelationalBranchCellCheckpoint {
     /// This cell image with every runtime identity in the canonical frame:
     /// the owner, the observed reference and the fork provenance.
