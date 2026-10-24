@@ -1,5 +1,6 @@
 //! Certification of the application graph: what a branch's own program means
 //! for the rules it actually enforces.
+#![recursion_limit = "256"]
 
 #[path = "application_graph/adoption.rs"]
 mod adoption;
