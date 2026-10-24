@@ -10,15 +10,19 @@ status-level = "fail"
 final-status-level = "slow"
 slow-timeout = { period = "60s", terminate-after = 10 }
 
+# trybuild builds every crate's cases in one shared project tree, and its
+# cross-process lock does not hold on Windows (the heartbeat never advances the
+# lock file's mtime). nextest runs each test in its own process, so two
+# sessions at once overwrite each other's generated manifest: one at a time.
 [test-groups.compiler-boundary]
-max-threads = 2
+max-threads = 1
 
 [[profile.default.overrides]]
-filter = 'binary(/compile_fail|_ui$/)'
+filter = 'binary(/compile_fail|_ui$|_compile$/)'
 test-group = 'compiler-boundary'
 slow-timeout = { period = "60s", terminate-after = 15 }
 
 [[profile.ci.overrides]]
-filter = 'binary(/compile_fail|_ui$/)'
+filter = 'binary(/compile_fail|_ui$|_compile$/)'
 test-group = 'compiler-boundary'
 slow-timeout = { period = "60s", terminate-after = 15 }
