@@ -54,8 +54,7 @@ that the owner did not already retain.
 | `RelationalCommitReceipt` | `facade::history` | The one terminal answer for a settled commit identity |
 | `CommitResult` | `facade::mvcc` | Full settlement result, issued once to one claimant |
 | `CommitId` | `facade::history` | Owner-issued identity; a registry lookup key only |
-| `DeferredPublicationSettlement` | `facade::publication` | Accepted external carrier for one durability-deferred route |
-| `DeferredPublicationSettlementError` | `facade::publication` | Typed repair refusal |
+| `PublicationSettlementRepairError` | `facade::publication` | Typed refusal of repair by commit identity |
 | `TransactionCommitError` | `facade::mvcc` | Typed settlement and convenience-commit failure |
 | `RelationalBranchPublicationAuthority` | `facade::branch` | Concrete owner-sealed publication authority, with its own marker type |
 | `RelationalForkOutcome` and `RelationalForkDenial` | `facade::branch` | Fork evidence and typed refusal; evidence does not mint a basis |
@@ -81,7 +80,7 @@ alive. Holding one never excludes another owner operation.
 | `RelationalPreparationPort` | `facade::mvcc` | `preparation_port()` | `prepare_branch_transaction`, `discard_prepared_candidate` |
 | `RelationalForkPort` | `facade::branch` | `fork_port()` | `observe_fork_source`, `fork_branch` |
 | `RelationalPublicationPort` | `facade::mvcc` | `publication_port()` | `compare_and_publish` |
-| `RelationalSettlementPort` | `facade::mvcc` | `settlement_port()` | `settle_performed_publication`, `repair_deferred_publication_settlement`, `repair_pending_publication_settlement`, `retains_pending_settlement`, `runtime_instance_id` |
+| `RelationalSettlementPort` | `facade::mvcc` | `settlement_port()` | `settle_performed_publication`, `repair_pending_publication_settlement`, `retains_pending_settlement`, `runtime_instance_id` |
 | `RelationalBranchBasisPort` | `facade::branch` | `basis_port()` | `observe_branch`, `admit_branch_basis`, `readmit_branch_basis`, `readmit_retained_branch_basis`, `retain_component_basis`, `release_component_basis` |
 | `RelationalBranchLifecyclePort` | `facade::branch` | `lifecycle_port()` | `archive_branch`, `delete_branch`, `owner_lifecycle_observation` |
 
@@ -103,9 +102,8 @@ owner state.
 | `observe_fork_source` | `&BranchId` | `Result<(RelationalForkSourceDescriptor, AdmittedRelationalForkSourceBasis), RelationalForkDenial>` | source branch cell | runtime `observe_fork_source`; live non-empty source plus missing, archived, deleting, empty, and owner-loss denials |
 | `fork_branch` | `BranchId`, `AdmittedRelationalForkSourceBasis` | `Result<RelationalForkOutcome, RelationalForkDenial>` | source cell plus target reservation | runtime `fork_branch`; shared immutable source plus stale/foreign/duplicate/retired/capacity denials |
 | `compare_and_publish` | `PreparedRelationalCommitCandidate` | `RelationalPublicationOutcome` | one branch publication cell | runtime publication convenience delegates through `publication_port`; performed, stale, denied, deferred, failed-before-movement, one-winner, and residue cleanup |
-| `settle_performed_publication` | `PerformedRelationalCommit` | `Result<CommitResult, TransactionCommitError>` | pending-settlement registry and executor | runtime `settle_performed_publication`; settled, deferred durability, foreign owner, owner loss, and exactly-once claimant |
-| `repair_deferred_publication_settlement` | `&DeferredPublicationSettlement` | `Result<RelationalCommitReceipt, DeferredPublicationSettlementError>` | retained performed route | runtime same name; durable repair, wrong route/owner, already settled, and owner loss |
-| `repair_pending_publication_settlement` | `CommitId` | `Result<RelationalCommitReceipt, DeferredPublicationSettlementError>` | pending-settlement registry | runtime same name; lost-capability repair, unknown/foreign identity, already settled, and owner loss |
+| `settle_performed_publication` | `PerformedRelationalCommit` | `Result<CommitResult, TransactionCommitError>` | pending-settlement registry and executor | runtime `settle_performed_publication`; settled, foreign owner, owner loss, and exactly-once claimant |
+| `repair_pending_publication_settlement` | `CommitId` | `Result<RelationalCommitReceipt, PublicationSettlementRepairError>` | pending-settlement registry | runtime same name; lost-capability repair, unknown/foreign identity, already settled, and owner loss |
 | `retains_pending_settlement` | `CommitId` | `bool` | pending-settlement registry observation | port-only observation with no direct runtime delegate; true/false around settlement and cleanup; never authority |
 | `runtime_instance_id` | none | `u64` | settlement-port diagnostic affinity | no operational delegate; descriptive correlation only |
 | `observe_branch` | `&RelationalBranchIdentity` | `Result<(RelationalBranchBasisDescriptor, AdmittedRelationalBranchBasis), RelationalBranchBasisDenial>` | branch reference cell and root retention | runtime `observe_branch`; live exact observation plus foreign/unknown/archived/deleting/owner-loss denial |
@@ -273,7 +271,7 @@ does not create the record.
 
 Between movement and authorization the identity is addressable as work in
 progress. Repair by identity answers
-`DeferredPublicationSettlementError::SettlementInProgress`, never a missing
+`PublicationSettlementRepairError::SettlementInProgress`, never a missing
 record.
 
 The registry is bounded by the same published-snapshot handle budget the
@@ -292,43 +290,33 @@ the retention obligation, mark the route settled, or make repair unavailable.
 
 ## Lost-capability repair
 
-Two repair routes address the same runtime-owned record, and both run through
-the one executor:
-
-- `repair_deferred_publication_settlement` accepts the exact
-  `DeferredPublicationSettlement` carrier a durability deferral produced. The
-  carrier is a view of the record, never a second registry or a compatibility
-  authority lane. It is checked against the record's retained route before any
-  effect, and a mismatch is refused as `PerformedRouteMismatch`.
-- `repair_pending_publication_settlement` addresses the same record by `CommitId`
-  when the capability holder was lost entirely.
+A commit is durable before it is live, so settlement of performed work cannot
+fail or defer: it installs the derived state and records the commit in the
+runtime's own canonical log under its original identity. The one repair route,
+`repair_pending_publication_settlement`, addresses the runtime-owned record by
+`CommitId` when the holder of the performed witness was lost entirely.
 
 Settlement artifacts are runtime-affine. Before claiming the executor gate,
 `settle_performed_publication` compares the performed witness's retained record
-with the settlement service's runtime, and
-`repair_deferred_publication_settlement` performs the same check against its
-carrier. A mismatch is typed as `RelationalPublicationDenial::ForeignRuntime`
-inside `TransactionCommitError::PublicationDenied` for the performed-witness
-entry, or `DeferredPublicationSettlementError::ForeignRuntime` for deferred
-repair. In both errors, `expected_runtime_instance_id` is the runtime of the
-service that received the call, and `actual_runtime_instance_id` is the runtime
-carried by the witness or deferred route.
+with the settlement service's runtime. A mismatch is typed as
+`RelationalPublicationDenial::ForeignRuntime` inside
+`TransactionCommitError::PublicationDenied`; `expected_runtime_instance_id` is
+the runtime of the service that received the call, and
+`actual_runtime_instance_id` is the runtime carried by the witness.
 
 `settle_performed_publication` consumes its witness argument even when a foreign
 service rejects it, but rejection does not claim or remove the source runtime's
 pending record. The source owner can still complete the obligation through
-`repair_pending_publication_settlement(commit_id)`. A foreign deferred-repair
-attempt borrows its carrier, so the same carrier remains usable with its source
-owner.
+`repair_pending_publication_settlement(commit_id)`.
 
-After affinity validation, `settle_performed_publication` and both repair routes
+After affinity validation, `settle_performed_publication` and repair by identity
 enter one per-commit executor gate before claiming any work. Concurrent or
 repeated callers therefore converge on one terminal receipt and never repeat a
-durable append or a derived completion. A repeated call after settlement
-returns the same `RelationalCommitReceipt`, including when the record itself has
-already been released.
+derived completion. A repeated call after settlement returns the same
+`RelationalCommitReceipt`, including when the record itself has already been
+released.
 
-Both repair routes return `RelationalCommitReceipt`. Only
+Repair by identity returns `RelationalCommitReceipt`. Only
 `settle_performed_publication` returns the full `CommitResult`, which is issued
 once to one claimant along with responsibility for releasing its published
 snapshot.
@@ -338,7 +326,7 @@ unsettled record for an identity. It is a posture question, not a capability.
 
 When the owning runtime closes settlement admission, it drains every pending
 record exactly once. A later repair then answers
-`DeferredPublicationSettlementError::OwnerUnavailable` rather than a receipt.
+`PublicationSettlementRepairError::OwnerUnavailable` rather than a receipt.
 
 ## Cancellation contract
 
@@ -447,16 +435,16 @@ These are the complete sets the Runtime World composition owner must match on.
 `RetentionIdentityExhausted`, `RetentionOwner`,
 `PendingSettlementIdentityConflict`.
 
-`DeferredPublicationSettlementError`: `RecoveryUnavailable`, `ForeignRuntime`,
-`PerformedRouteMissing`, `PerformedRouteMismatch`, `SettlementInProgress`,
-`OwnerUnavailable`, `DurableAppend`.
+`PublicationSettlementRepairError`: `RecoveryUnavailable`, `ForeignRuntime`,
+`SettlementInProgress`, `OwnerUnavailable`.
 
 `TransactionCommitError`: `Conflict`, `Publication`, `Preparation`,
 `Interrupted`, `PublicationDenied`, `PublicationDeferred`, `PublicationFailed`,
-`DurabilityUnresolved`, and `PerformedButDurabilityDeferred`. Only the last
-carries performed work; it supplies the `DeferredPublicationSettlement` carrier
-for repair. `DurabilityUnresolved` installed nothing; its fate is decided by
-reopening from the durable medium.
+and `DurabilityUnresolved`. None carries performed work. A medium refusal is
+`PublicationDenied` with `DurablePublicationRefused`. `DurabilityUnresolved`
+installed nothing, but the commit may be durable; the runtime refuses later
+publications until it is reopened, and reopening from the durable medium
+decides its fate.
 
 `RelationalBranchRetentionTerminalOutcome`: `Released`, `OwnerUnavailable`.
 

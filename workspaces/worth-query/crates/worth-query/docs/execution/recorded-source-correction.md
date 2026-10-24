@@ -707,9 +707,6 @@ For a committed source whose retention was refused, call
 Success returns the original performed-source owner. Refusal returns the denial
 and the complete failure owner for another attempt.
 
-The [compiled recovery journey](../../../worth-query-certification/examples/application_correction_support/required_output_recovery.rs)
-shows publication recovery, explicit cleanup and native output settlement.
-
 ## Compatibility and current authority
 
 Recorded-inverse eligibility compares the original operation's complete semantic dependencies

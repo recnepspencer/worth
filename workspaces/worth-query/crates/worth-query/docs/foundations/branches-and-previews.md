@@ -177,10 +177,10 @@ Stable ordinary branch-merge operations under
 - `declare_branch_merge(...)`
 - `branch_merge(...)`
 - `WorthQueryBranchMergeOutcome`
-- `WorthQueryBranchMergeSettlementDeferred`
-- `WorthQueryBranchMergeNextAction::RepairDeferredBranchMergeSettlement`
-- `WorthQueryRuntime::repair_deferred_branch_merge_settlement(...)`
-- `WorthQueryWorkspace::repair_deferred_branch_merge_settlement(...)`
+- `WorthQueryBranchMergeDurabilityUnresolved`
+- `WorthQueryBranchMergeNextAction::ReopenRelationalOwner`
+- `WorthQueryRuntime::repair_pending_branch_merge_settlement(...)`
+- `WorthQueryWorkspace::repair_pending_branch_merge_settlement(...)`
 
 Stable preview-live planning entry points live under
 `worth_query::facade::policy`:
@@ -386,8 +386,8 @@ let branch_result = {
 };
 ```
 
-An ordinary branch merge handles performed-but-unsettled publication through
-the workspace that owns the Relational runtime:
+An ordinary branch merge whose durable fate is unknown returns a typed
+unresolved outcome from the workspace that owns the Relational runtime:
 
 ```rust
 use worth_query::facade::workflow::{
@@ -402,22 +402,26 @@ match declaration.using(context).run(&mut workspace) {
     WorthQueryBranchMergeOutcome::Completed(completion) => {
         inspect_merge(completion);
     }
-    WorthQueryBranchMergeOutcome::SettlementDeferred(deferred) => {
+    WorthQueryBranchMergeOutcome::DurabilityUnresolved(unresolved) => {
         assert_eq!(
-            deferred.next_action(),
-            WorthQueryBranchMergeNextAction::RepairDeferredBranchMergeSettlement,
+            unresolved.next_action(),
+            WorthQueryBranchMergeNextAction::ReopenRelationalOwner,
         );
-        let receipt = workspace
-            .repair_deferred_branch_merge_settlement(&deferred)?;
-        record_repaired_merge(receipt);
+        record_unresolved_merge(unresolved.commit_id());
+        reopen_relational_owner();
     }
     other => handle_merge_stop(other),
 }
 ```
 
-The deferred carrier hides the raw Relational settlement. Repair with a foreign
-runtime is rejected, repair with the owning workspace is idempotent, and a
-subsequent public operation can proceed after repair.
+Relational publishes the merge commit to its durable medium before the live
+cutover. `DurabilityUnresolved` means nothing was installed live but the commit
+may be durable; the Relational owner refuses later publications until it is
+reopened, and reopening resolves the fate. The workflow counters report
+`durability_unresolved_count()`. A performed merge commit whose witness was
+lost is repaired by commit identity with
+`repair_pending_branch_merge_settlement(...)` on the owning workspace or
+runtime.
 
 When a preview also carries a live plan, keep basis admission explicit:
 
@@ -537,8 +541,8 @@ Look for:
   serialized descriptor instead of owner readmission.
 - Assuming a reference-selected read follows later branch movement; an admitted
   basis is repeatable and remains pinned to its immutable root.
-- Retrying a merge after `WorthQueryBranchMergeOutcome::SettlementDeferred` or
-  reaching for the raw Relational repair capability.
+- Retrying a merge after `WorthQueryBranchMergeOutcome::DurabilityUnresolved`
+  instead of reopening the Relational owner.
 
 ## Current Limits
 

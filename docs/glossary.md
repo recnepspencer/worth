@@ -644,18 +644,17 @@ explained). Rust names are given where a type embodies the term.
   correspondence with `DeclaredWidening` precision, yields no region.
 
 **Settled**
-: Performed, and also made durable and published by Query. A commit that
-  moved the branch but did not finish settlement is `SettlementDeferred`. The
-  fix is to recover settlement, not to redo the change. Query's in-memory
+: Performed, and also published by Query. A Relational commit is durable
+  before it is live, so a performed commit always settles; an unknown durable
+  answer installs nothing and is `Indeterminate`. Query's in-memory
   settlement records do not themselves guarantee survival of a process
   restart; that requires Store's durable ownership
   ([How WORTH Works §15.1](how-it-works.md#151-store-durable-physical-survival)).
 
 **Settlement**
 : The word is used at several levels; the context names which. (1) *Commit
-  settlement*: finishing durability and Query publication after the branch
-  moved (see *Settled*; `SettlementDeferred`,
-  `recover_deferred_application_settlement`). (2) *Output settlement*: the
+  settlement*: finishing Query publication after the branch moved (see
+  *Settled*). (2) *Output settlement*: the
   recorded result of a program output's producer, which *marking* marks dirty
   or pending and which a demand reports as `Settled`. (3) *Workflow node
   settlement*: the record that a node took its control outcome. A guarded

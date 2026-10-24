@@ -208,13 +208,9 @@ do not refresh recovery authority. Relational attests native lineage; the
 application still owns predecessor selection and target migration validation.
 
 Refusal returns the original authority; a durable medium's refusal or unknown
-answer is such a refusal, because nothing was installed. A settlement failure
-after the cutover returns a linear deferred transition, which grants no
-successor authority. Pass it to
-`repair_checkpoint_transition(...)` to repair the existing native settlement
-route without publishing another commit. Failed repair returns the same custody
-for retry; successful repair carries the performed successor, even if current
-branch state has moved since that performance. These types are available through
+answer is such a refusal, because nothing was installed. The transition is
+durable before it is live, so a performed transition settles without deferral
+and acknowledges its successor. These types are available through
 `worth_relational::facade::durability`.
 
 ## Aspect-Precise Publication

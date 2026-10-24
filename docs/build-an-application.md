@@ -1969,20 +1969,19 @@ and decode custody through completion. A swallowed seed refusal or late
 cancellation denies the final page, image or successful delivery. Closing a
 live consumer and closing its publisher are separate lifecycle operations.
 
-A deferred native settlement returns `CheckpointTransitionDeferred` with the
-exact unpublished repair custody. Consuming `repair_to_checkpoint` returns a
-target checkpoint after acknowledgment, or the same capsule if repair/capture
-stops. `CheckpointTransitionCaptureStopped` specifically retains the acknowledged
-phase when its first checkpoint capture stops. A later installation failure returns
+`CheckpointTransitionCaptureStopped` retains the acknowledged phase when its
+first checkpoint capture stops. Consuming `repair_to_checkpoint` returns a
+target checkpoint, or the same capsule if capture stops again. A later installation failure returns
 `CheckpointTransitionFinalizationStopped` if target finalization refused before
 capture; its capsule retains the acknowledged successor and exposes the original
 typed `finalization_denial()`. Capture retries preserve that original cause.
 A later installation failure after checkpoint capture returns
 `CheckpointTransitionAcknowledged`
 with the already acknowledged target checkpoint and the original phase denial;
-fix the installation configuration and ordinary-restore that checkpoint. A
-terminal performed settlement failure has its own typed denial and issues no
-acknowledged successor.
+fix the installation configuration and ordinary-restore that checkpoint. An
+unknown durable fate for the native transition is a typed
+`RelationalDurabilityUnresolved` installation denial and issues no acknowledged
+successor.
 
 ---
 
@@ -2922,7 +2921,7 @@ without performing an effect. A refused constructor returns the original
 against the correct declaration. It retains no authenticated principal or grant.
 
 Shape, with illustrative names; the executable counterpart is
-[`required_unpublished.rs`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/required_unpublished.rs):
+[`fixed_delivery.rs`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_delivery.rs):
 
 <!-- illustrative -->
 ```rust,ignore
