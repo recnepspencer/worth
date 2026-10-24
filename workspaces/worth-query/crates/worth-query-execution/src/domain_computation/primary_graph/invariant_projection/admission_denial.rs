@@ -55,6 +55,24 @@ impl WorthQueryInvariantProjectionDenial {
             retention_denial: None,
         }
     }
+    /// The final handoff consults the original request. A stop there is that
+    /// request's own stop, reported as `ExecutionRequest` like every native
+    /// read stop before it; only a retained decode failure stays `ValueDecode`.
+    pub(super) fn value_decode_handoff_stopped(
+        cause: super::WorthQueryValueDecodeDenial,
+        work: Option<super::WorthQueryInvariantProjectionWork>,
+    ) -> Self {
+        use super::WorthQueryValueDecodeDenial as Decode;
+        match cause {
+            Decode::Scope(request) => Self::execution_request_stopped(request.into(), work),
+            Decode::Checkpoint(_)
+            | Decode::Memory(_)
+            | Decode::Reservation(_)
+            | Decode::AccountingOverflow
+            | Decode::BindingContractMismatch
+            | Decode::CodecRejected => Self::value_decode_stopped(cause, work),
+        }
+    }
     pub(super) fn execution_request_stopped(
         cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
         work: Option<super::WorthQueryInvariantProjectionWork>,

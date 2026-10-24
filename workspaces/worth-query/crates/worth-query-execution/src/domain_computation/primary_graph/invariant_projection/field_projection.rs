@@ -42,7 +42,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionSnapshot
             );
         }
         decode.check(execution).map_err(|cause| {
-            WorthQueryInvariantProjectionDenial::value_decode_stopped(cause, None)
+            WorthQueryInvariantProjectionDenial::value_decode_handoff_stopped(cause, None)
         })?;
         Ok(output)
     }

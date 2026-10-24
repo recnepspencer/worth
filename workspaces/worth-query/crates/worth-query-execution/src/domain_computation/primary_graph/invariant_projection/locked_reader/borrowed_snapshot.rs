@@ -145,7 +145,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
             WorthQueryInvariantProjectionDenial::source_retention_denied(denial, work)
         })?;
         decode.check(execution).map_err(|cause| {
-            WorthQueryInvariantProjectionDenial::value_decode_stopped(cause, Some(work))
+            WorthQueryInvariantProjectionDenial::value_decode_handoff_stopped(cause, Some(work))
         })?;
         Ok(CompletedSnapshotRead {
             output,

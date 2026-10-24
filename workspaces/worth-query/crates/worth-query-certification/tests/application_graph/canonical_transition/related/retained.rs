@@ -128,12 +128,9 @@ fn changed_codec_retained_snapshot_keeps_original_pin_and_latched_completion() {
             assert!(first && returned);
             assert_eq!(
                 cancelled.err().unwrap().kind(),
-                WorthQueryInvariantProjectionDenialKind::ValueDecode(
-                    WorthQueryValueDecodeDenial::Scope(
-                        worth_execution::WorkCeilingDenial::Stopped(
-                            worth_execution::MapKernelStop::Cancelled
-                        )
-                    )
+                // The final handoff reports the original request's own stop.
+                WorthQueryInvariantProjectionDenialKind::ExecutionRequest(
+                    worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled
                 )
             );
             let (retry, first, returned, _) = run(8_000_000, false);

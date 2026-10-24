@@ -134,12 +134,9 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
                 cancelled
                     .expect_err("late cancellation vetoes the completed callback")
                     .kind(),
-                WorthQueryInvariantProjectionDenialKind::ValueDecode(
-                    WorthQueryValueDecodeDenial::Scope(
-                        worth_execution::WorkCeilingDenial::Stopped(
-                            worth_execution::MapKernelStop::Cancelled
-                        )
-                    )
+                // The final handoff reports the original request's own stop.
+                WorthQueryInvariantProjectionDenialKind::ExecutionRequest(
+                    worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled
                 )
             );
 
