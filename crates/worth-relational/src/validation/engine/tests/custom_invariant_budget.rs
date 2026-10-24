@@ -207,3 +207,89 @@ fn unrelated_bulk_relation_endpoint_scan_cannot_escape_work_budget() {
         0
     );
 }
+
+/// Reads adjacency until its installed allowance refuses, then swallows the
+/// refusal and reports a domain violation anyway.
+struct SwallowsWorkExhaustionRule;
+
+impl CustomInvariantRule for SwallowsWorkExhaustionRule {
+    type Scope = ();
+
+    fn descriptor(&self) -> CustomInvariantDescriptor {
+        let mut descriptor = AlwaysViolatesCustomRule.descriptor();
+        descriptor.identity.rule_id = CustomInvariantRuleId::new("test.custom.swallows-work");
+        descriptor.operational.maximum_work_units = Some(std::num::NonZeroU64::new(4).unwrap());
+        descriptor
+    }
+
+    fn prepare_scope(
+        &self,
+        _: &mut CustomInvariantScopePlanner<'_>,
+    ) -> Result<Self::Scope, CustomInvariantPreparationError> {
+        Ok(())
+    }
+
+    fn evaluate(
+        &self,
+        context: &CustomInvariantExecutionContext<'_>,
+        _: &Self::Scope,
+    ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
+        let entity = crate::identity::data::EntityId::new(PartitionId::main(), 1, 1);
+        while context
+            .relations()
+            .outgoing_relations_for_entity(entity)
+            .is_ok()
+        {}
+        Ok(CustomInvariantVerdict::Violation(
+            crate::validation::data::CustomInvariantRefusal::Empty,
+        ))
+    }
+}
+
+#[test]
+fn rule_overrunning_its_installed_work_is_an_execution_error_not_a_violation() {
+    let runtime = RelationalRuntimeApi::builder()
+        .schema_registry(RelationalSchemaRegistry::new())
+        .custom_invariant(CustomInvariantRegistration::new(SwallowsWorkExhaustionRule).unwrap())
+        .build();
+    let results = InvariantEngine::new(&runtime).execute_fixture(
+        InvariantExecutionRequest::from_profile_with_contract(
+            InvariantRequestProfile::CommitBoundary,
+            &runtime,
+            InvariantObservation::committed(runtime.storage_access().current_edition()),
+            runtime.current_version_id(),
+            None,
+            None,
+        ),
+    );
+
+    assert_eq!(results.results().len(), 1);
+    let crate::validation::data::InvariantVerdict::Violation(violation) =
+        &results.results()[0].verdict
+    else {
+        panic!("an overrun rule must fail closed");
+    };
+    let crate::validation::data::InvariantViolationFields::CustomInvariantFailure {
+        identity,
+        phase,
+        failure,
+        detail,
+    } = &violation.fields
+    else {
+        panic!("the swallowed refusal must not reach the caller: {violation:?}");
+    };
+    assert_eq!(
+        identity.semantic_identity().rule_id.as_str(),
+        "test.custom.swallows-work"
+    );
+    assert_eq!(
+        phase,
+        &crate::validation::data::CustomInvariantFailurePhase::Execution
+    );
+    assert_eq!(
+        failure,
+        &crate::validation::data::ResultCustomInvariantFailureKind::ExecutionError
+    );
+    assert_eq!(detail, "custom invariant exceeded its installed work budget");
+    assert_eq!(results.summary().custom_failure_count(), 1);
+}
