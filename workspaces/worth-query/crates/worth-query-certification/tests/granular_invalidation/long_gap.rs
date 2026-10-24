@@ -10,15 +10,15 @@ use crate::host_world::{request_scope, CourtroomWorld};
 use crate::query_runtime_world::build_primary_query_world;
 use crate::schema::{IntentGateField, UnrelatedValueField};
 
-/// A relevant write followed by more unrelated writes than the subscription
-/// retains forces the conditional observation to heal from truth. The gap's
-/// invalidations are never delivered, so the healed batch must make every
-/// live projection refresh its full scope, and the projection must show the
-/// relevant write.
-pub fn assert_healed_observation_refreshes_live_projection(
+/// A relevant write followed by many unrelated writes reaches the next
+/// conditional observation exactly. The subscription keeps no retention
+/// window (master's ee07da2b0e removed it), so no commit count loses
+/// continuity: the batch keeps exact coverage, and the live projection shows
+/// the relevant write.
+pub fn assert_long_gap_observation_delivers_the_relevant_write_exactly(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
-    // Strictly more than the installation's retained positions (128).
+    // More than the 128 positions the removed window retained.
     const UNRELATED_COMMITS: u64 = 130;
     let mut world = CourtroomWorld::publish_with_unrelated_rows("blocked", 1);
     let mut query = build_primary_query_world(request_execution, &world);
@@ -69,12 +69,12 @@ pub fn assert_healed_observation_refreshes_live_projection(
             .expect("the fixture native write performs");
     }
 
-    let mut healed = observe(request_execution, &mut world);
-    let batch = healed.take_granular_invalidation_batch();
+    let mut observed = observe(request_execution, &mut world);
+    let batch = observed.take_granular_invalidation_batch();
     assert_eq!(
         batch.coverage(),
-        WorthQueryGranularInvalidationCoverage::RefreshAll,
-        "a healed observation must not claim exact coverage of its gap"
+        WorthQueryGranularInvalidationCoverage::Exact,
+        "no commit count loses subscription continuity"
     );
     let binding = bind_primary_runtime_granular_invalidations(
         &query.live,
@@ -87,14 +87,14 @@ pub fn assert_healed_observation_refreshes_live_projection(
         &binding,
         batch,
     )
-    .expect("the healed batch must maintain the live projection");
+    .expect("the observed batch must maintain the live projection");
     let WorthQueryPrimaryGranularMaintenanceOutcome::Performed(performed) = outcome else {
         panic!("the gap's relevant write must reach the live projection")
     };
     let patch = performed.deliveries()[0]
         .effect()
         .projection_patch()
-        .expect("the full-scope refresh must carry the performed field patch");
+        .expect("the maintenance must carry the performed field patch");
     let gate = patch
         .fields()
         .iter()
@@ -108,7 +108,7 @@ pub fn assert_healed_observation_refreshes_live_projection(
                         .eq(["IntentFacts", "IntentGateField"])
                 })
         })
-        .expect("the refreshed projection must carry the gate field");
+        .expect("the maintained projection must carry the gate field");
     assert_eq!(
         gate.native_value().scalar(),
         Some(&AspectValue::String("ready".into()))
