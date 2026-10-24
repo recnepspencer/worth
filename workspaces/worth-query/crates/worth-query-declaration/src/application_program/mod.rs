@@ -80,7 +80,7 @@ pub use evolution::{
     ApplicationProgramMigrationAssessmentRequirement, ApplicationProgramRevision,
     ApplicationSemanticChange, ApplicationSemanticChangeKind, ApplicationSemanticDescription,
     ApplicationSemanticDiff, ApplicationSemanticDiffDenial, ApplicationSemanticFact,
-    ApplicationSemanticFamily,
+    ApplicationSemanticFamily, operation_semantic_owner,
 };
 pub use external_input::{ApplicationExternalInputProvider, ApplicationExternalInputResolution};
 pub use feature::{

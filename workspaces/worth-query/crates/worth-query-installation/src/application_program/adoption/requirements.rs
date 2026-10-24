@@ -3,7 +3,7 @@
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramMigrationAssessmentRequirement, ApplicationProgramRevision,
     ApplicationSemanticChangeKind, ApplicationSemanticDiff, ApplicationSemanticDiffDenial,
-    ApplicationSemanticFamily,
+    ApplicationSemanticFamily, operation_semantic_owner,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationInvariantScopeTarget, ApplicationSchema, ApplicationSchemaBindingIdentity,
@@ -327,29 +327,50 @@ fn compile_custody_inventory(
     diff: &ApplicationSemanticDiff,
 ) -> Vec<WorthQueryProgramCustodyInventoryRequirement> {
     let mut requirements = Vec::new();
+    // One continuation per action: its delivery and body facets are part of
+    // the same operation meaning, never operations of their own.
+    let mut operations: Vec<(&str, Option<ApplicationSemanticChangeKind>)> = Vec::new();
+    for change in diff.changes() {
+        if change.family() != ApplicationSemanticFamily::Operations {
+            continue;
+        }
+        let owner = operation_semantic_owner(change.subject());
+        let own = (owner == change.subject()).then_some(change.kind());
+        match operations.iter_mut().find(|(known, _)| *known == owner) {
+            Some((_, kind)) => *kind = own.or(*kind),
+            None => operations.push((owner, own)),
+        }
+    }
+    for (owner, own) in operations {
+        // A facet change alters a surviving action; the action's own fact
+        // says whether it was removed, changed or newly added.
+        let kind = match own {
+            Some(ApplicationSemanticChangeKind::Added) => continue,
+            Some(kind) => kind,
+            None => ApplicationSemanticChangeKind::Changed,
+        };
+        requirements.push(custody_inventory_requirement(
+            WorthQueryProgramCustodyInventoryKind::OperationContinuation,
+            kind,
+            owner,
+        ));
+        if source
+            .effectful_action_subjects()
+            .iter()
+            .any(|subject| subject == owner)
+        {
+            requirements.push(custody_inventory_requirement(
+                WorthQueryProgramCustodyInventoryKind::ExternalEffectRecovery,
+                kind,
+                owner,
+            ));
+        }
+    }
     for change in diff.changes() {
         let removed_or_changed = matches!(
             change.kind(),
             ApplicationSemanticChangeKind::Removed | ApplicationSemanticChangeKind::Changed
         );
-        if change.family() == ApplicationSemanticFamily::Operations && removed_or_changed {
-            requirements.push(custody_inventory_requirement(
-                WorthQueryProgramCustodyInventoryKind::OperationContinuation,
-                change.kind(),
-                change.subject(),
-            ));
-            if source
-                .effectful_action_subjects()
-                .iter()
-                .any(|subject| subject == change.subject())
-            {
-                requirements.push(custody_inventory_requirement(
-                    WorthQueryProgramCustodyInventoryKind::ExternalEffectRecovery,
-                    change.kind(),
-                    change.subject(),
-                ));
-            }
-        }
         if change.family() == ApplicationSemanticFamily::Resources && removed_or_changed {
             requirements.push(custody_inventory_requirement(
                 WorthQueryProgramCustodyInventoryKind::ResourceCustody,

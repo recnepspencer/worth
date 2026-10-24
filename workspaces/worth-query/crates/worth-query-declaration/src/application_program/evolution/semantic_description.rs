@@ -71,6 +71,38 @@ impl ApplicationActionDeclaration {
     }
 }
 
+const DELIVERY_FACET: &str = "delivery:";
+const BODY_FACET: &str = "/body";
+
+/// The action whose meaning an Operations fact subject describes.
+///
+/// An action owns its own fact plus its delivery and body facets. Action
+/// subjects are length-framed, so they start with a digit and end exactly at
+/// a frame boundary; neither facet marker can be mistaken for subject text.
+pub fn operation_semantic_owner(subject: &str) -> &str {
+    let subject = subject.strip_prefix(DELIVERY_FACET).unwrap_or(subject);
+    match subject.strip_suffix(BODY_FACET) {
+        Some(owner) if framed_whole(owner) => owner,
+        _ => subject,
+    }
+}
+
+fn framed_whole(mut encoded: &str) -> bool {
+    while !encoded.is_empty() {
+        let Some((length, rest)) = encoded.split_once(':') else {
+            return false;
+        };
+        let Ok(length) = length.parse::<usize>() else {
+            return false;
+        };
+        let Some(rest) = rest.get(length..) else {
+            return false;
+        };
+        encoded = rest;
+    }
+    true
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ApplicationSemanticDescription {
     revision: ApplicationProgramRevision,
@@ -171,7 +203,7 @@ fn append_actions(
         if let Some(delivery) = action.delivery() {
             facts.push(fact(
                 ApplicationSemanticFamily::Operations,
-                format!("delivery:{subject}"),
+                format!("{DELIVERY_FACET}{subject}"),
                 delivery.canonical_meaning(),
             ));
         }
@@ -247,7 +279,7 @@ fn append_actions(
         if let Some(body) = action.operation_body() {
             facts.push(fact(
                 ApplicationSemanticFamily::Operations,
-                format!("{subject}/body"),
+                format!("{subject}{BODY_FACET}"),
                 crate::application_program::operation_body_encoding::operation_body_record(body),
             ));
         }
