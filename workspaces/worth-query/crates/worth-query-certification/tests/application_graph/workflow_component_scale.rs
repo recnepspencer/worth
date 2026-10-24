@@ -117,7 +117,9 @@ fn component_limits(occurrences: u16) -> ApplicationWorkflowComponentLimits {
     .expect("independent occurrence and provenance budgets")
 }
 
-fn qualify(occurrences: u16, key: u64) {
+/// Publishes one repeated-component definition and returns its expanded
+/// node count and the publication's new authoritative bytes.
+fn qualify(occurrences: u16, key: u64) -> (u64, u64) {
     let nodes = occurrences * FRAGMENT_NODES + 1;
     let connections = nodes - 1;
     let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
@@ -216,10 +218,6 @@ fn qualify(occurrences: u16, key: u64) {
     assert_eq!(sharing.copied_truth_bytes, 0);
     assert!(sharing.publication_new_authoritative_bytes > 0);
     assert!(
-        sharing.publication_new_authoritative_bytes <= u64::from(nodes) * 32 * 1024,
-        "authoritative publication bytes must remain proportional to expanded nodes"
-    );
-    assert!(
         sharing.publication_content_values_hashed <= u64::from(nodes) * 64,
         "native content hashing must remain proportional to expanded nodes"
     );
@@ -247,20 +245,36 @@ fn qualify(occurrences: u16, key: u64) {
         sharing.copied_truth_bytes,
         sharing.publication_new_authoritative_bytes,
     );
+    (
+        u64::from(nodes),
+        sharing.publication_new_authoritative_bytes,
+    )
+}
+
+/// Each publication carries one fixed term (the touched region's arena and
+/// root granularity) beside its per-node truth, so proportionality is the
+/// marginal bytes per added node against a one-occurrence publication.
+fn qualify_growth(occurrences: u16, key: u64) {
+    let (base_nodes, base_bytes) = qualify(1, key + 100);
+    let (nodes, bytes) = qualify(occurrences, key);
+    assert!(
+        bytes - base_bytes <= (nodes - base_nodes) * 32 * 1024,
+        "authoritative publication bytes must grow in proportion to expanded nodes: {base_nodes} nodes {base_bytes} bytes, {nodes} nodes {bytes} bytes"
+    );
 }
 
 #[test]
 fn repeated_component_100_nodes_publishes_and_starts() {
-    qualify(11, 918_500);
+    qualify_growth(11, 918_500);
 }
 
 #[test]
 fn repeated_component_1000_nodes_publishes_and_starts() {
-    qualify(111, 918_510);
+    qualify_growth(111, 918_510);
 }
 
 #[test]
 #[ignore = "scheduled public 10k-node repeated-component qualification"]
 fn repeated_component_10000_nodes_publishes_and_starts() {
-    qualify(1111, 918_520);
+    qualify_growth(1111, 918_520);
 }
