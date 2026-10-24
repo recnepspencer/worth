@@ -19,11 +19,7 @@ fn discover(state: &DemandRegistryState, key: &WorthQueryOutputDemandKey) -> Vec
     }
     let mut candidates = Vec::new();
     for (other, record) in occurrence_rows(&state.records, key) {
-        let same_row = {
-            #[cfg(test)]
-            super::super::demand_key::observe_row_comparison();
-            other == key
-        };
+        let same_row = other == key;
         let superseded = if same_row {
             record.settlements.len().saturating_sub(1)
         } else if key.replacement_order(other) == Some(std::cmp::Ordering::Greater) {
@@ -61,8 +57,6 @@ mod tests {
                 &receipts[..entries],
                 neighbors,
             );
-            let published =
-                SupersededSettlements::new(registry.clone(), Arc::new(selected.clone()));
             let before = super::super::super::record_map::occurrence_rows_visited();
             assert!(after_publication(&state, &selected).is_empty());
             contacts.push(super::super::super::record_map::occurrence_rows_visited() - before);

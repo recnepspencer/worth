@@ -195,7 +195,6 @@ fn commit_own_write(
     }).expect("the fixture host admits its own-write preparation");
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
     let (key, dependency) = world
         .application
         .with_host_advancement(|phase| {

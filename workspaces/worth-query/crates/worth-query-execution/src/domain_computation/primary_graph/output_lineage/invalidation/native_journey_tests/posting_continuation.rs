@@ -212,7 +212,7 @@ fn native_projection_continuation_keeps_exact_bindings_and_rejects_source_races(
         ),
         "equal unrelated backing reconstructs"
     );
-    let retired = owner.retire_settlements(&[first.clone()]);
+    let retired = owner.retire_settlements(std::slice::from_ref(&first));
     assert!(retired.contains(&first));
     let retired_image = cell.read_image();
     assert!(!retired_image

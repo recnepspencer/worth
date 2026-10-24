@@ -20,9 +20,6 @@ impl WorthQueryOutputDemandRegistry {
                 self.drain_foreign_cleanup();
                 return Ok(());
             };
-            #[cfg(test)]
-            self.state.lock().unwrap().records.note_cleanup_entry();
-
             let released = std::mem::take(&mut retired._settlements);
             drop(retired);
             let state = self
@@ -33,17 +30,5 @@ impl WorthQueryOutputDemandRegistry {
             drop(state);
             self.retire_released_settlements(released, owner);
         }
-    }
-}
-
-#[cfg(test)]
-impl DemandRegistryState {
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn drain_terminal_cleanup(
-        &mut self,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        while let Some(retired) = self.take_terminal_cleanup_step()? {
-            drop(retired);
-        }
-        Ok(())
     }
 }

@@ -135,6 +135,9 @@ impl RuntimeSymbolTable {
             .clone()
     }
 
+    /// Unit tests observe the live table; checkpoints capture through the
+    /// funded basis instead.
+    #[cfg(test)]
     pub(crate) fn snapshot(&self) -> SymbolTableSnapshot {
         self.state
             .read()

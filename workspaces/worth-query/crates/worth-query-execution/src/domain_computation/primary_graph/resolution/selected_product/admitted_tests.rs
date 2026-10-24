@@ -28,12 +28,6 @@ fn admitted_selected_principal_matches_ordinary_and_certification() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .expect("legacy selected principal resolves");
-            let owner = &world
-                .application
-                .primary_provider
-                .graph
-                .source_owner
-                .invalidation_owner;
 
             for mode in [
                 WorthQueryPrincipalResolutionMode::Ordinary,

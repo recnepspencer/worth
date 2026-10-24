@@ -56,7 +56,6 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
     let graph = world.application.runtime.primary_graph().unwrap();
     let layout = graph.layout();
     let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
     let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         TypeId::of::<()>(),
         TypeId::of::<()>(),

@@ -61,8 +61,6 @@ mod tree_report;
 mod tree_update;
 pub(in super::super) use observed::observe_retained_full_tree;
 pub use observed::partitioned_computation_tree_work_on_this_thread_for_test;
-#[cfg(test)]
-pub(in super::super) use observed::{observe_full_tree, FullTreeMapWork};
 pub use tree_report::{
     WorthQueryPartitionedTreeAccounting, WorthQueryPartitionedTreeMetrics,
     WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,

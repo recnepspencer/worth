@@ -51,59 +51,6 @@ pub(super) fn observe(
     RUNS.with(|runs| runs.borrow_mut().push((run, report)));
 }
 
-/// Captures existing execution counters before its work ceiling settles.
-#[cfg(test)]
-pub(in super::super::super) fn observe_full_tree<Tree, E>(
-    cause: super::retained::WorthQueryPartitionedComputationFullCause,
-    outcome: &Result<
-        (Tree, ExecutionReport, worth_execution::ReductionMetrics),
-        worth_execution::ReduceInputDenial<E>,
-    >,
-    mapped: &FullTreeMapWork,
-) {
-    if !mapped.observing {
-        return;
-    }
-    use worth_execution::ReduceInputDenial;
-    let metrics = match outcome {
-        Ok((_, _, metrics)) => TreeMetrics::from_native(*metrics),
-        Err(ReduceInputDenial::ReductionStopped { failure, .. }) => {
-            TreeMetrics::from_native(failure.metrics)
-        }
-        Err(ReduceInputDenial::ScopeAdmission { report, .. }) => {
-            let Some((work, _)) = report.accounted_cost() else {
-                observe_tree(WorthQueryPartitionedTreeRun::Full(
-                    cause,
-                    TreeMetrics::from_native(worth_execution::ReductionMetrics::native()),
-                ));
-                return;
-            };
-            // Scope admission precedes kernels or follows a completed map and
-            // shape. A completed tree settles inside its already held build bound.
-            let visits = work
-                .checked_sub(mapped.work())
-                .expect("scope work covers every completed map kernel");
-            if visits == 0 {
-                assert_eq!(
-                    mapped.work(),
-                    0,
-                    "a completed map must report its shape work"
-                );
-                return;
-            }
-            TreeMetrics::from_accounted(TreeAccounting {
-                structural_visits: visits.into(),
-                recombined_nodes: 0,
-                combine_calls: 0,
-                charged_work: visits.into(),
-                charged_span: visits.into(),
-            })
-        }
-        Err(ReduceInputDenial::MapStopped { .. }) => return,
-    };
-    observe_tree(WorthQueryPartitionedTreeRun::Full(cause, metrics));
-}
-
 /// Already-settled native evidence; observing work never interrogates the
 /// kernel context or changes whether its actual result may be carried.
 pub(in super::super::super) fn observe_retained_full_tree<R, F, E, Tree>(
@@ -171,55 +118,6 @@ pub fn partitioned_computation_runs_on_this_thread_for_test() -> Vec<(
     Option<ExecutionReport>,
 )> {
     RUNS.with(|runs| std::mem::take(&mut *runs.borrow_mut()))
-}
-
-/// Captures the completed map's exposed kernel work for post-shape admission.
-/// Scope admission after a completed map accepts every kernel's work.
-#[cfg(test)]
-pub(in super::super::super) struct FullTreeMapWork {
-    observing: bool,
-    work: std::sync::atomic::AtomicU64,
-}
-
-#[cfg(test)]
-impl Default for FullTreeMapWork {
-    fn default() -> Self {
-        Self {
-            observing: crate::domain_computation::execution_observation::is_installed(),
-            work: Default::default(),
-        }
-    }
-}
-
-#[cfg(test)]
-impl FullTreeMapWork {
-    pub(in super::super::super) fn kernel<T, R, E>(
-        &self,
-        input: &T,
-        context: &mut worth_execution::MapKernelContext<'_, '_>,
-        kernel: &impl Fn(
-            &T,
-            &mut worth_execution::MapKernelContext<'_, '_>,
-        ) -> Result<R, worth_execution::MapKernelFailure<E>>,
-    ) -> Result<R, worth_execution::MapKernelFailure<E>> {
-        if !self.observing || !context.has_accounting() {
-            return kernel(input, context);
-        }
-        let before = context.charged_work();
-        let outcome = kernel(input, context);
-        self.work.fetch_add(
-            context
-                .charged_work()
-                .checked_sub(before)
-                .expect("same kernel work counter is monotone"),
-            std::sync::atomic::Ordering::Relaxed,
-        );
-        outcome
-    }
-
-    fn work(&self) -> u64 {
-        self.work.load(std::sync::atomic::Ordering::Relaxed)
-    }
 }
 
 thread_local! { static CLEANUP_REGISTERED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }

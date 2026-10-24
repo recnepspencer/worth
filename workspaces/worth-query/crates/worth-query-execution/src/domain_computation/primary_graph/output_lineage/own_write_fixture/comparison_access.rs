@@ -3,14 +3,7 @@ use super::*;
 
 #[test]
 fn own_write_cutoff_cannot_project_retained_facts_for_comparison() {
-    with_generated_own_write(|world, _, cell, _| {
-        let handle = world
-            .application
-            .runtime
-            .primary_graph()
-            .unwrap()
-            .integration_handle();
-        let owner = &handle.source_owner.invalidation_owner;
+    with_generated_own_write(|_, _, cell, _| {
         let candidate =
             super::super::input_cutoff::RetainedInputCutoffCandidate::from_exact_cell(cell);
         assert!(

@@ -31,7 +31,7 @@ fn postcommit_observation_cannot_certify_original_own_write_output() {
             WorthQueryCurrentOutputDenialKind,
         };
         use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
-        with_committed_own_write(|world, receipt, _, resources| {
+        with_committed_own_write(|world, receipt, _, _| {
             world
                 .application
                 .with_host_advancement(|phase| {
@@ -77,13 +77,6 @@ fn postcommit_observation_cannot_certify_original_own_write_output() {
                             &host_custody.phase_for_application(&world.application),
                             &admitted,
                             |reader, root| {
-                                let positioned = reader
-                                    .reader
-                                    .runtime
-                                    .read_truth()
-                                    .positioned_snapshot(reader.reader.snapshot)
-                                    .unwrap();
-                                let owner = &reader.reader.invalidation_owner;
                                 reader
                                     .current_output::<RetainedFamily, _>(root)
                                     .map(|_| ())

@@ -95,11 +95,6 @@ impl SourceInvalidationOwner {
         registration: SettlementRegistration,
         selected: &'selected PositionedRelationalSnapshot,
     ) -> Result<PreparedCurrentSettlementRegistration<'selected>, SettlementRegistrationStop> {
-        let visits = u64::try_from(selected.branch_id().0.len())
-            .ok()
-            .and_then(|bytes| bytes.checked_add(7))
-            .ok_or(worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow)?;
-
         if registration.read_basis != *selected {
             return Err(SettlementRegistrationStop::Foreign);
         }

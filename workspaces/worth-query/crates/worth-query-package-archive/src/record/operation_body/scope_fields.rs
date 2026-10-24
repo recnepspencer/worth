@@ -62,13 +62,13 @@ pub(super) fn decode(
 ) -> Result<Vec<ApplicationOperationBodyScopeField>, Denial> {
     decode_sequence(input, budget, 20, |input, _| {
         let tag = input.u16()?;
-        if !matches!(tag, 1 | 2)
-            && !(version >= 2 && tag == 3)
-            && !(version >= 5 && matches!(tag, 4 | 5))
-            && !(version >= 6 && tag == 6)
-            && !(version >= 9 && tag == 7)
-            && !(version >= 28 && tag == 8)
-            && !(version >= 30 && tag == 9)
+        if !(matches!(tag, 1 | 2)
+            || (version >= 2 && tag == 3)
+            || (version >= 5 && matches!(tag, 4 | 5))
+            || (version >= 6 && tag == 6)
+            || (version >= 9 && tag == 7)
+            || (version >= 28 && tag == 8)
+            || (version >= 30 && tag == 9))
         {
             return Err(Denial::new(Kind::UnsupportedRecordVariant));
         }

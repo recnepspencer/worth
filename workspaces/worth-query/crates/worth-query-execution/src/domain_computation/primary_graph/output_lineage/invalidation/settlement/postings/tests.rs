@@ -69,7 +69,6 @@ fn source_and_output_facts_share_one_key_but_keep_both_composite_ordinals() {
 
     let prepared = PreparedPostingOrdinals::prepare(&source, Some(&output), &mut None).unwrap();
     let mut state = MarkState::initial();
-    let resources = resources();
     let projection = prepared.into_projection(0, source.len(), output.len(), None);
     super::super::posting_bindings::bind(&mut state, &projection, &identity).unwrap();
     let ordinals = &projection.ordinals;
@@ -106,7 +105,6 @@ fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch()
             .all(|ordinals| ordinals.len() == copies));
 
         let (_, identity) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
-        let resources = resources();
         let mut state = MarkState::initial();
         let prior = state.postings.clone();
         let projection = prepared.into_projection(0, facts.len(), 0, None);
@@ -123,11 +121,6 @@ fn final_posting_storage_keeps_all_ordinals_without_retaining_grouping_scratch()
 
         drop(projection);
     }
-}
-
-fn resources() -> crate::domain_computation::execution_runtime::source_invalidation::WorthQueryInvalidationResources{
-    use crate::domain_computation::execution_runtime::source_invalidation::WorthQueryInvalidationResources;
-    WorthQueryInvalidationResources::new()
 }
 
 mod bindings;

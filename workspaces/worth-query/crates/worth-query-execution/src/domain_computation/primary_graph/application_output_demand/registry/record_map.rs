@@ -15,7 +15,6 @@ pub(super) struct DemandRecords(Map, BTreeMap<
     super::cleanup::ClosedCleanupQueue,
     super::publication_head::PublicationHeads,
     #[cfg(test)] std::cell::Cell<u64>,
-    #[cfg(test)] std::cell::Cell<u64>,
 );
 
 thread_local! { static WHOLE_ROWS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
@@ -41,15 +40,6 @@ impl DemandRecords {
     #[cfg(test)]
     pub(super) fn occurrence_visits_for_test(&self) -> u64 {
         self.4.get()
-    }
-
-    #[cfg(test)]
-    pub(super) fn note_cleanup_entry(&self) {
-        self.5.set(self.5.get() + 1);
-    }
-    #[cfg(test)]
-    pub(super) fn cleanup_entries_for_test(&self) -> u64 {
-        self.5.get()
     }
 
     pub(super) fn retain(
@@ -88,8 +78,6 @@ impl DemandRecords {
             Default::default(),
             Default::default(),
             queue,
-            Default::default(),
-            #[cfg(test)]
             Default::default(),
             #[cfg(test)]
             Default::default(),
